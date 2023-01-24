@@ -1,0 +1,122 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.os.platform</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>linux</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.inputs</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values conjunction="AND">
+                <proceed:value>Touch</proceed:value>
+                <proceed:value>Keyboard</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.inputs</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>Touch</proceed:value>
+                <proceed:value>Keyboard</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.possibleConnectionTo</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>google.de</proceed:value>
+            </proceed:values>
+            <proceed:hardConstraints>
+                <proceed:hardConstraint>
+                    <proceed:name>latency</proceed:name>
+                    <proceed:condition>&lt;</proceed:condition>
+                    <proceed:values>
+                        <proceed:value unit="ms">50</proceed:value>
+                    </proceed:values>
+                </proceed:hardConstraint>
+            </proceed:hardConstraints>
+        </proceed:hardConstraint>
+        
+        <proceed:hardConstraint>
+            <proceed:name>machine.possibleConnectionTo</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>google.de</proceed:value>
+                <proceed:value>yahoo.de</proceed:value>
+            </proceed:values>
+            <proceed:hardConstraints>
+                <proceed:hardConstraint>
+                    <proceed:name>latency</proceed:name>
+                    <proceed:condition>&lt;</proceed:condition>
+                    <proceed:values>
+                        <proceed:value unit="ms">50</proceed:value>
+                    </proceed:values>
+                </proceed:hardConstraint>
+            </proceed:hardConstraints>
+        </proceed:hardConstraint>
+
+        <proceed:constraintGroup id="g1" conjunction="AND">
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.platform</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>linux</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.distro</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>Ubuntu</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+        </proceed:constraintGroup>
+
+        <proceed:constraintGroup id="g2" conjunction="AND">
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.platform</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>linux</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+
+            <proceed:hardConstraint>
+                <proceed:name>machine.cpu.currentLoad</proceed:name>
+                <proceed:condition>&lt;</proceed:condition>
+                <proceed:values>
+                    <proceed:value>60</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+        </proceed:constraintGroup>
+
+        <proceed:constraintGroup id="g3" conjunction="OR">
+            <proceed:constraintGroupRef ref="g1" />
+            <proceed:constraintGroupRef ref="g2" />
+        </proceed:constraintGroup>
+
+    </proceed:hardConstraints>
+
+    <proceed:softConstraints>
+
+        <proceed:softConstraint weight="5">
+            <proceed:name>machine.mem.free</proceed:name>
+            <proceed:condition>max</proceed:condition>
+        </proceed:softConstraint>
+
+        <proceed:softConstraint weight="10">
+            <proceed:name>machine.cpu.currentLoad</proceed:name>
+            <proceed:condition>min</proceed:condition>
+        </proceed:softConstraint>
+
+    </proceed:softConstraints>
+
+</proceed:processConstraints>

@@ -1,0 +1,123 @@
+[
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "og": "http://ogp.me/ns#"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "schema:potentialAction": {
+            "@type": ["schema:PhotographAction", "fno:Function"],
+            "@id": "_:PhotographActionDefinition"
+          }
+        },
+        {
+          "@id": "_:PhotographActionDefinition",
+          "fno:expects": {
+            "@list": []
+          },
+          "fno:returns": {
+            "@list": [{ "@id": "_:imageParameter" }]
+          }
+        },
+        {
+          "@id": "_:PhotograhActionImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "take-photo.js"
+        },
+        {
+          "@id": "_:imageParameter",
+          "fno:predicate": [{ "@type": "schema:ImageObject" }],
+          "@type": "fno:Output",
+          "terms:hasPart": {
+            "@list": [
+              {
+                "@id": "_:photographParameter",
+                "fno:predicate": [{ "@type": "schema:Photograph" }],
+                "@type": "fno:Output",
+                "schema:encodingFormat": "image/png",
+                "encoding": "base64"
+              }
+            ]
+          }
+        },
+        {
+          "@id": "_:PhotograhActionMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:PhotographActionDefinition",
+          "fno:implementation": "_:PhotograhActionImplementation",
+          "fno:returnMapping": [
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": "_:imageParameter",
+              "fnom:implementationProperty": "img"
+            },
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": [
+                "_:imageParameter",
+                "_:photographParameter"
+              ],
+              "fnom:implementationProperty": "img/p"
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": "RaspberryPiProceedPhotoAction"
+  },
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "og": "http://ogp.me/ns#",
+        "time": "http://www.w3.org/2006/time#"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "odpa:sameSettingAs": "saref:Sensor",
+          "schema:potentialAction": {
+            "@type": ["saref:SensingFunction", "fno:Function"],
+            "@id": "_:SensingFunctionDefinition"
+          }
+        },
+        {
+          "@id": "_:SensingFunctionDefinition",
+          "fno:expects": {
+            "@list": []
+          },
+          "fno:returns": {
+            "@list": []
+          }
+        },
+        {
+          "@id": "_:proceedImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "sense-motion.js"
+        },
+        {
+          "@id": "_:SensingFunctionMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:SensingFunctionDefinition",
+          "fno:implementation": "_:SensingFunctionImplementation"
+        }
+      ]
+    },
+    "identifier": "RaspberryPiProceedMotionSensor"
+  }
+]

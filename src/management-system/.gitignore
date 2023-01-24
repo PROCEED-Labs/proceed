@@ -1,0 +1,6 @@
+/build
+/coverage
+/dist
+.env
+.env.production
+/src/backend/server/environment-configurations

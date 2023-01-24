@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_fdf6c05f-87b8-4085-80da-d1ebdc1b9086" name="parallelScriptTaskDynamicProcess.xml" targetNamespace="https://docs.proceed-labs.org/_fdf6c05f-87b8-4085-80da-d1ebdc1b9086" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="_57e5dbf8-54b0-4b44-870b-2d5c250e909e" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <documentation />
+    <startEvent id="StartEvent_1">
+      <outgoing>Flow_0yzk82t</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0yzk82t" sourceRef="StartEvent_1" targetRef="Gateway_1qgcro8" />
+    <parallelGateway id="Gateway_1qgcro8">
+      <incoming>Flow_0yzk82t</incoming>
+      <outgoing>Flow_19wwn6j</outgoing>
+      <outgoing>Flow_0xsb6pm</outgoing>
+    </parallelGateway>
+    <task id="Activity_13f2plc">
+      <incoming>Flow_19wwn6j</incoming>
+      <outgoing>Flow_0knga08</outgoing>
+    </task>
+    <sequenceFlow id="Flow_19wwn6j" sourceRef="Gateway_1qgcro8" targetRef="Activity_13f2plc" />
+    <parallelGateway id="Gateway_1br4fav">
+      <incoming>Flow_0knga08</incoming>
+      <incoming>Flow_0ijy7a4</incoming>
+      <outgoing>Flow_13jottu</outgoing>
+    </parallelGateway>
+    <sequenceFlow id="Flow_0knga08" sourceRef="Activity_13f2plc" targetRef="Gateway_1br4fav" />
+    <endEvent id="Event_1765wmq">
+      <incoming>Flow_13jottu</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_13jottu" sourceRef="Gateway_1br4fav" targetRef="Event_1765wmq" />
+    <sequenceFlow id="Flow_0xsb6pm" sourceRef="Gateway_1qgcro8" targetRef="Activity_024hiuu" />
+    <sequenceFlow id="Flow_0ijy7a4" sourceRef="Activity_024hiuu" targetRef="Gateway_1br4fav" />
+    <scriptTask id="Activity_024hiuu" scriptFormat="application/javascript">
+      <incoming>Flow_0xsb6pm</incoming>
+      <outgoing>Flow_0ijy7a4</outgoing>
+      <script>return new Promise(resolve => setTimeout(resolve, 2000))</script>
+    </scriptTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_57e5dbf8-54b0-4b44-870b-2d5c250e909e">
+      <bpmndi:BPMNEdge id="Flow_13jottu_di" bpmnElement="Flow_13jottu">
+        <di:waypoint x="685" y="210" />
+        <di:waypoint x="772" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0knga08_di" bpmnElement="Flow_0knga08">
+        <di:waypoint x="540" y="350" />
+        <di:waypoint x="660" y="350" />
+        <di:waypoint x="660" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19wwn6j_di" bpmnElement="Flow_19wwn6j">
+        <di:waypoint x="340" y="235" />
+        <di:waypoint x="340" y="350" />
+        <di:waypoint x="440" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0yzk82t_di" bpmnElement="Flow_0yzk82t">
+        <di:waypoint x="198" y="210" />
+        <di:waypoint x="315" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xsb6pm_di" bpmnElement="Flow_0xsb6pm">
+        <di:waypoint x="340" y="185" />
+        <di:waypoint x="340" y="70" />
+        <di:waypoint x="440" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ijy7a4_di" bpmnElement="Flow_0ijy7a4">
+        <di:waypoint x="540" y="70" />
+        <di:waypoint x="660" y="70" />
+        <di:waypoint x="660" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="162" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0xlfjkc_di" bpmnElement="Gateway_1qgcro8">
+        <dc:Bounds x="315" y="185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13f2plc_di" bpmnElement="Activity_13f2plc">
+        <dc:Bounds x="440" y="310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0ma51ly_di" bpmnElement="Gateway_1br4fav">
+        <dc:Bounds x="635" y="185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1765wmq_di" bpmnElement="Event_1765wmq">
+        <dc:Bounds x="772" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m7x4cq_di" bpmnElement="Activity_024hiuu">
+        <dc:Bounds x="440" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

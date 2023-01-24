@@ -1,0 +1,53 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": ["./src/"],
+    "exclude": [
+      "./jsdoc",
+      "./src/config-server",
+      "./src/engine/e2e_tests",
+      "./src/engine/native/android",
+      "./src/engine/native/swift",
+      "./src/engine/native/web/server/public",
+      "./src/management-system/dist",
+      "./src/management-system/tests"
+    ],
+    "includePattern": ".+\\.(vue|js|jsx|jsdoc)?$",
+    "excludePattern": "(^|\\/|\\\\)(_|node_modules)"
+  },
+  "plugins": [
+    "./jsdoc/template/plugins/categories.js",
+    "plugins/markdown",
+    "node_modules/jsdoc-vuejs"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false,
+    "default": {
+      "outputSourceFiles": true,
+      "layoutFile": "./jsdoc/template/tmpl/mlayout.tmpl",
+      "staticFiles": {
+        "include": ["./jsdoc/template/static/"]
+      }
+    },
+    "css": ["styles/mstyle.css"]
+  },
+  "opts": {
+    "recurse": true,
+    "verbose": true,
+    "destination": "./jsdoc/output_html",
+    "template": "./jsdoc/template",
+    "includeClassInNav": true,
+    "noCategoryTitle": "Other Projects",
+    "categoryByPath": {
+      "Helper Modules": "src/helper-modules",
+      "Engine: Universal Part": "src/engine/universal",
+      "Engine: Native Part": "src/engine/native",
+      "Management System Frontend": "src/management-system/src/frontend",
+      "Management System Backend": "src/management-system/src/backend",
+      "Capabilities": "src/capabilities"
+    }
+  }
+}

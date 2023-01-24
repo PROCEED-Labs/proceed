@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_aef1a356-0d84-4afc-a0f6-c978dea07d96" name="adaptiveProcess" targetNamespace="https://docs.proceed-labs.org/_aef1a356-0d84-4afc-a0f6-c978dea07d96" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="Process_1ouq4b7" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <startEvent id="StartEvent_07xjwc1">
+      <outgoing>Flow_0b9vgiw</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0b9vgiw" sourceRef="StartEvent_07xjwc1" targetRef="Gateway_1yy3siu" />
+    <sequenceFlow id="Flow_1yx1pxq" sourceRef="Gateway_1yy3siu" targetRef="Activity_1xguu75" />
+    <sequenceFlow id="Flow_0n4onyv" sourceRef="Gateway_1yy3siu" targetRef="Activity_1pgsbor">
+      <conditionExpression xsi:type="tFormalExpression">3 &gt; 5</conditionExpression>
+    </sequenceFlow>
+    <endEvent id="Event_1xux0ti">
+      <incoming>Flow_0a145pl</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0a145pl" sourceRef="Activity_1xguu75" targetRef="Event_1xux0ti" />
+    <endEvent id="Event_0w5iuw9">
+      <incoming>Flow_0dgw2dp</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0dgw2dp" sourceRef="Activity_1pgsbor" targetRef="Event_0w5iuw9" />
+    <userTask id="Activity_1xguu75" proceed:fileName="User_Task_09g3sdq" implementation="https://html.spec.whatwg.org/">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.online</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values>
+                <proceed:value>true</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_1yx1pxq</incoming>
+      <outgoing>Flow_0a145pl</outgoing>
+    </userTask>
+    <userTask id="Activity_1pgsbor" proceed:fileName="User_Task_0dqts41" implementation="https://html.spec.whatwg.org/">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.online</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values>
+                <proceed:value>true</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_0n4onyv</incoming>
+      <outgoing>Flow_0dgw2dp</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_1yy3siu" default="Flow_1yx1pxq">
+      <incoming>Flow_0b9vgiw</incoming>
+      <outgoing>Flow_1yx1pxq</outgoing>
+      <outgoing>Flow_0n4onyv</outgoing>
+    </exclusiveGateway>
+  </process>
+</definitions>

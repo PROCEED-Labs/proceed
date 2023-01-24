@@ -1,0 +1,123 @@
+package mocks.roles
+
+# includes default PROCEED roles @everyone, @guest and admin
+
+roles = {
+	"7cf26d82-b40f-443f-a025-84e149042c33": {
+		"name": "@everyone",
+		"permissions": {},
+		"id": "7cf26d82-b40f-443f-a025-84e149042c33",
+		"default": true
+	},
+	"4242450a-eb22-4ce4-9cb0-1c2f74ba6546": {
+		"name": "@guest",
+		"permissions": {},
+		"id": "4242450a-eb22-4ce4-9cb0-1c2f74ba6546",
+		"default": true
+	},
+	"a13a443b-524a-4054-895b-3fd068b9d18b": {
+		"name": "admin",
+		"permissions": {
+			"Role": 9007199254740991,
+			"User": 9007199254740991,
+			"Process": 9007199254740991,
+			"Project": 9007199254740991,
+			"Template": 9007199254740991,
+			"Task": 9007199254740991,
+			"Setting": 9007199254740991,
+			"EnvConfig": 9007199254740991,
+			"Machine": 9007199254740991,
+			"Execution": 9007199254740991,
+			"All": 9007199254740991
+		},
+		"id": "a13a443b-524a-4054-895b-3fd068b9d18b",
+		"default": true
+	},
+	"d19a443b-524a-4054-895b-3fd068b9de42":	{
+		"name": "process_engineer_admin",
+		"default": true,
+		"permissions": {
+			"Process": 9007199254740991,
+			"Project": 9007199254740991,
+			"Template": 9007199254740991,
+		},
+		"id": "d19a443b-524a-4054-895b-3fd068b9de42"
+  	},
+	"b52a443b-524a-4054-895b-3fd068b9d78c": {
+		"name": "environment_admin",
+		"default": true,
+		"permissions": {
+			"Setting": 9007199254740991,
+			"EnvConfig": 9007199254740991,
+		},
+		"id": "b52a443b-524a-4054-895b-3fd068b9d78c",
+	},
+	"1943cce1-a88f-4c58-aae6-f74b25730a2c": {
+		"name": "user_manager",
+		"permissions": {
+			"User": 208
+		},
+		"expiration": null,
+		"id": "1943cce1-a88f-4c58-aae6-f74b25730a2c",
+		"default": false
+	},
+	"114db4a8-9109-4f20-b1b3-6efb21dd23d2": {
+		"permissions": {
+			"Setting": 9007199254740991,
+			"EnvConfig": 9007199254740991,
+		},
+		"expiration": null,
+		"id": "114db4a8-9109-4f20-b1b3-6efb21dd23d2",
+		"default": false
+	},
+	"d59266f8-0818-4923-8a31-abeff91c4963": {
+		"permissions": {
+			"Role": 16
+		},
+		"name": "role_manager",
+		"members": [],
+		"expiration": null,
+		"id": "d59266f8-0818-4923-8a31-abeff91c4963",
+		"default": false
+	},
+	"c6e6193e-8a25-40fe-a594-0fdd4882339a": {
+		"permissions": {
+			"Role": 16,
+			"User": 208,
+			"Process": 49,
+			"Project": 49,
+			"Template": 49,
+			"Task": 1,
+			"Machine": 17,
+			"Execution": 17,
+			"Share": 11,
+		},
+		"expiration": "2021-10-29T14:02:51.983Z",
+		"id": "c6e6193e-8a25-40fe-a594-0fdd4882339a",
+		"default": false
+	},
+	"99c60055-7538-426c-8592-34bfe68f7e0d": {
+		"permissions": {
+			"Role": 16,
+			"User": 208,
+			"Process": 49,
+			"Project": 49,
+			"Template": 49,
+			"Task": 1,
+			"Machine": 17,
+			"Execution": 17,
+			"Share": 11,
+		},
+		"expiration": null,
+		"id": "99c60055-7538-426c-8592-34bfe68f7e0d",
+		"default": false
+	},
+	"8ae56c4f-fe37-4cf8-ae0f-42fab0fce1be": {
+		"name": "machine_admin",
+		"permissions": {
+			"Machine": 9007199254740991,
+		},
+		"id": "8ae56c4f-fe37-4cf8-ae0f-42fab0fce1be",
+		"default": false
+	},
+}

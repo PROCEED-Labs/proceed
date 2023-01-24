@@ -1,0 +1,460 @@
+{
+  "info": {
+    "name": "distribution-service-api",
+    "_postman_id": "baf97ced-1331-f6d2-2a05-baf4ebdebc5a",
+    "description": "",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "status",
+      "description": "",
+      "item": [
+        {
+          "name": "get status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/status/",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "process",
+      "description": "",
+      "item": [
+        {
+          "name": "add process",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d878d8c9-7d42-4ace-ab51-146c1012305d",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:camunda=\"http://camunda.org/schema/1.0/bpmn\">\n  <process id=\"theProcess\" isExecutable=\"true\">\n    <serviceTask id=\"serviceTask1\" name=\"Get\" camunda:expression=\"\\${services.get}\" />\n    <serviceTask id=\"serviceTask2\" name=\"Get with var\" camunda:expression=\"\\${services.getService(variables.choice)}\" />\n    <serviceTask id=\"serviceTask9\" name=\"Call api\" camunda:expression=\"\\${services.getWithIO}\">\n      <extensionElements>\n        <camunda:inputOutput>\n          <camunda:inputParameter name=\"uri\">\\${variables.api}/v1/data</camunda:inputParameter>\n          <camunda:inputParameter name=\"json\">\\${true}</camunda:inputParameter>\n          <camunda:inputParameter name=\"headers\">\n            <camunda:map>\n              <camunda:entry key=\"User-Agent\">curl</camunda:entry>\n              <camunda:entry key=\"Accept\">application/json</camunda:entry>\n            </camunda:map>\n          </camunda:inputParameter>\n          <camunda:outputParameter name=\"statusCode\">\\${result[0].statusCode}</camunda:outputParameter>\n          <camunda:outputParameter name=\"body\">\\${result[1]}</camunda:outputParameter>\n        </camunda:inputOutput>\n      </extensionElements>\n    </serviceTask>\n  </process>\n</definitions>"
+            },
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "get process  by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1ffcc4fe-86d5-4eb9-92b9-99e060d1c772",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "list all processes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ea4a8110-a68a-42ef-989a-a3381e741bd0",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "html",
+      "description": "",
+      "item": [
+        {
+          "name": "get user task by process ID with non exist userTaskId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8852af7f-70cf-4ca9-bef0-2552e39cdc6f",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 404 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 404;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}/html/{{userTaskId}}",
+            "description": null
+          },
+          "response": []
+        },
+        {
+          "name": "add user task to existed process",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4d6075e6-8661-4005-94c1-95bdb2c6598c",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "<html>\n<body>\n\n<h2>HTML Tables</h2>\n\n<p>HTML tables start with a table tag.</p>\n<p>Table rows start with a tr tag.</p>\n<p>Table data start with a td tag.</p>\n\n<hr>\n<h2>1 Column:</h2>\n\n<table>\n  <tr>\n    <td>100</td>\n  </tr>\n</table>\n\n<hr>\n<h2>1 Row and 3 Columns:</h2>\n<table>\n  <tr>\n    <td>100</td>\n    <td>200</td>\n    <td>300</td>\n  </tr>\n</table>\n\n<hr>\n<h2>3 Rows and 3 Columns:</h2>\n<table>\n  <tr>\n    <td>100</td>\n    <td>200</td>\n    <td>300</td>\n  </tr>\n  <tr>\n    <td>400</td>\n    <td>500</td>\n    <td>600</td>\n  </tr>\n  <tr>\n    <td>700</td>\n    <td>800</td>\n    <td>900</td>\n  </tr>\n</table>\n\n<hr>\n\n</body>\n</html>\n"
+            },
+            "url": "{{api}}/process/{{processId}}/html/{{userTaskId}}",
+            "description": null
+          },
+          "response": []
+        },
+        {
+          "name": "get user task by process ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "5959315f-48c4-49cd-b690-8f8f1a5cf152",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}/html/{{userTaskId}}",
+            "description": null
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "nextDevice",
+      "description": "",
+      "item": [
+        {
+          "name": "get next device by process ID with non exist json file copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "99dc9a8b-1910-49bf-81e1-bd0cafcda666",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 404 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 404;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}/nextDevice",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "add next device to existed process",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e21e3ec2-7942-4984-af4d-b973fdb4c0c7",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\"\": {\"ip\":\"localhost:8080\",\"nextProcessId\":\"process4\"}\n}"
+            },
+            "url": "{{api}}/process/{{processId}}/nextDevice",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "get next device by process ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2e5f28f2-4221-4fa1-b0c8-29595b9c135a",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}/nextDevice",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Cases",
+      "description": "",
+      "item": [
+        {
+          "name": "add process with empty BPMN content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2a76531f-0775-43f6-b540-4491f56d5660",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 400 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 400;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "add user task to existed process with empty HTML content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e8f357fb-2a02-4da3-9614-45ae5640c6bf",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 400 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 400;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": "{{api}}/process/{{processId}}/html/{{userTaskId}}",
+            "description": null
+          },
+          "response": []
+        },
+        {
+          "name": "add next device to existed process with invalid JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e21e3ec2-7942-4984-af4d-b973fdb4c0c7",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 200 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 200;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\"\": {\"ip\":\"localhost:8080\",\"nextProcessId\":\"process4\"}\n}"
+            },
+            "url": "{{api}}/process/{{processId}}/nextDevice",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "delete process  by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "62a59f08-517a-47ff-8013-666dda4e1b7a",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 204 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 204;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "get process  by non exist ID ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "76108ff8-de4b-4844-bb33-6f61f8ba2c2d",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 404 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 404;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "delete process  by non exist ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "cdc966e9-5745-40d2-9a85-ab175dd1515e",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 404 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 404;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {},
+            "url": "{{api}}/process/{{processId}}",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "add user task to non exist process",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2d47beaa-7da7-4ac3-bfd2-e49e5d5865fb",
+                "type": "text/javascript",
+                "exec": [
+                  "tests[\"Status code is 404 - Response Time: \" + responseTime + \"ms\" ] = responseCode.code === 404;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "<html>\n<body>\n\n<h2>HTML Tables</h2>\n\n<p>HTML tables start with a table tag.</p>\n<p>Table rows start with a tr tag.</p>\n<p>Table data start with a td tag.</p>\n\n<hr>\n<h2>1 Column:</h2>\n\n<table>\n  <tr>\n    <td>100</td>\n  </tr>\n</table>\n\n<hr>\n<h2>1 Row and 3 Columns:</h2>\n<table>\n  <tr>\n    <td>100</td>\n    <td>200</td>\n    <td>300</td>\n  </tr>\n</table>\n\n<hr>\n<h2>3 Rows and 3 Columns:</h2>\n<table>\n  <tr>\n    <td>100</td>\n    <td>200</td>\n    <td>300</td>\n  </tr>\n  <tr>\n    <td>400</td>\n    <td>500</td>\n    <td>600</td>\n  </tr>\n  <tr>\n    <td>700</td>\n    <td>800</td>\n    <td>900</td>\n  </tr>\n</table>\n\n<hr>\n\n</body>\n</html>\n"
+            },
+            "url": "{{api}}/process/{{processId}}/html/{{userTaskId}}",
+            "description": null
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

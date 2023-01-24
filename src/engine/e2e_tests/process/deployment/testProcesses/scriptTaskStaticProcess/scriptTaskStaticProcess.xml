@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="http://docs.snet.tu-berlin.de/proceed" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_303e6640-39be-4205-a8b9-8e443880a562" name="scriptTaskStaticProcess" targetNamespace="http://docs.snet.tu-berlin.de/proceed/_303e6640-39be-4205-a8b9-8e443880a562" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="http://docs.snet.tu-berlin.de/proceed http://docs.snet.tu-berlin.de/proceed/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="_1585f3ac-3db9-416c-a333-17243c2bf908" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="static">
+    <documentation />
+    <extensionElements>
+      <proceed:processConstraints />
+    </extensionElements>
+    <startEvent id="StartEvent_1" proceed:machineId="machineId1">
+      <outgoing>Flow_0n4ueli</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0n4ueli" sourceRef="StartEvent_1" targetRef="Activity_1m0u15u" />
+    <task id="Activity_1h9twnk" proceed:machineId="machineId1">
+      <incoming>Flow_1t4tcmh</incoming>
+      <outgoing>Flow_1txhgvm</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1t4tcmh" sourceRef="Activity_1m0u15u" targetRef="Activity_1h9twnk" />
+    <endEvent id="Event_1yprmoh" proceed:machineId="machineId1">
+      <incoming>Flow_1txhgvm</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1txhgvm" sourceRef="Activity_1h9twnk" targetRef="Event_1yprmoh" />
+    <scriptTask id="Activity_1m0u15u" name="2 sec" scriptFormat="application/javascript" proceed:machineId="machineId1">
+      <incoming>Flow_0n4ueli</incoming>
+      <outgoing>Flow_1t4tcmh</outgoing>
+        <script>
+            return new Promise(resolve => setTimeout(resolve, 2000));
+        </script>
+    </scriptTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_1585f3ac-3db9-416c-a333-17243c2bf908">
+      <bpmndi:BPMNEdge id="Flow_1txhgvm_di" bpmnElement="Flow_1txhgvm">
+        <di:waypoint x="630" y="258" />
+        <di:waypoint x="742" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t4tcmh_di" bpmnElement="Flow_1t4tcmh">
+        <di:waypoint x="430" y="258" />
+        <di:waypoint x="530" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n4ueli_di" bpmnElement="Flow_0n4ueli">
+        <di:waypoint x="238" y="258" />
+        <di:waypoint x="330" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="202" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1h9twnk_di" bpmnElement="Activity_1h9twnk">
+        <dc:Bounds x="530" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1yprmoh_di" bpmnElement="Event_1yprmoh">
+        <dc:Bounds x="742" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0azqr0m_di" bpmnElement="Activity_1m0u15u">
+        <dc:Bounds x="330" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

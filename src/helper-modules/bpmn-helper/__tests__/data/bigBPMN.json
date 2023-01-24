@@ -1,0 +1,246 @@
+{
+  "$type": "bpmn:Definitions",
+  "id": "_e934aa63-13d9-4d1d-b399-b8ca56e007e9",
+  "name": "Test",
+  "targetNamespace": "https://docs.proceed-labs.org/_e934aa63-13d9-4d1d-b399-b8ca56e007e9",
+  "expressionLanguage": "https://ecma-international.org/ecma-262/8.0/",
+  "typeLanguage": "https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf",
+  "exporter": "PROCEED Management System",
+  "exporterVersion": "0.1.0",
+  "rootElements": [
+    {
+      "$type": "bpmn:Process",
+      "id": "_dd0e56f8-9a7b-4b7c-8da1-b1c20aa69429",
+      "name": "PROCEED Main Process",
+      "processType": "Private",
+      "isExecutable": true,
+      "flowElements": [
+        {
+          "$type": "bpmn:StartEvent",
+          "id": "StartEvent_1"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_17z5psy"
+        },
+        {
+          "$type": "bpmn:ScriptTask",
+          "id": "Task_0zqje9k",
+          "scriptFormat": "application/javascript",
+          "extensionElements": {
+            "$type": "bpmn:ExtensionElements",
+            "values": [
+              {
+                "$type": "proceed:processConstraints",
+                "hardConstraints": {
+                  "$type": "proceed:hardConstraints",
+                  "hardConstraint": [
+                    {
+                      "$type": "proceed:hardConstraint",
+                      "name": {
+                        "$type": "proceed:name",
+                        "name": "machine.id"
+                      },
+                      "condition": "!=",
+                      "values": {
+                        "$type": "proceed:values",
+                        "value": [
+                          {
+                            "$type": "proceed:value",
+                            "name": "7"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "softConstraints": {
+                  "$type": "proceed:softConstraints",
+                  "softConstraint": [
+                    {
+                      "$type": "proceed:softConstraint",
+                      "weight": "6",
+                      "name": {
+                        "$type": "proceed:name",
+                        "name": "machine.cpu.cores"
+                      },
+                      "condition": "min"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "script": "\n/************** LIBRARY BEGINS **************/\n\n/************** LIBRARY ENDS **************/\n/************** SCRIPT BEGINS **************/\nconsole.log('Hello World!');\n/************** SCRIPT ENDS **************/\n"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_0j6flal"
+        },
+        {
+          "$type": "bpmn:EndEvent",
+          "id": "EndEvent_16twtfn"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_0ifsfdi"
+        },
+        {
+          "$type": "bpmn:UserTask",
+          "id": "Task_1gt2wn2",
+          "extensionElements": {
+            "$type": "bpmn:ExtensionElements",
+            "values": [
+              {
+                "$type": "proceed:processConstraints",
+                "hardConstraints": {
+                  "$type": "proceed:hardConstraints",
+                  "hardConstraint": [
+                    {
+                      "$type": "proceed:hardConstraint",
+                      "name": {
+                        "$type": "proceed:name",
+                        "name": "machine.output"
+                      },
+                      "condition": "==",
+                      "values": {
+                        "$type": "proceed:values",
+                        "value": [
+                          {
+                            "$type": "proceed:value",
+                            "name": "Screen"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "$type": "proceed:hardConstraint",
+                      "name": {
+                        "$type": "proceed:name",
+                        "name": "machine.online"
+                      },
+                      "condition": "==",
+                      "values": {
+                        "$type": "proceed:values",
+                        "value": [
+                          {
+                            "$type": "proceed:value",
+                            "name": "true"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "$type": "bpmndi:BPMNDiagram",
+      "id": "BPMNDiagram_1",
+      "plane": {
+        "$type": "bpmndi:BPMNPlane",
+        "id": "BPMNPlane_1",
+        "planeElement": [
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "_BPMNShape_StartEvent_2",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 412,
+              "y": 240,
+              "width": 36,
+              "height": 36
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_17z5psy_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 448,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 500,
+                "y": 258
+              }
+            ]
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "ScriptTask_0k4zyn8_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 500,
+              "y": 218,
+              "width": 100,
+              "height": 80
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_0j6flal_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 600,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 660,
+                "y": 258
+              }
+            ]
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "EndEvent_16twtfn_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 822,
+              "y": 240,
+              "width": 36,
+              "height": 36
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_0ifsfdi_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 760,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 822,
+                "y": 258
+              }
+            ]
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "UserTask_1iafqj1_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 660,
+              "y": 218,
+              "width": 100,
+              "height": 80
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

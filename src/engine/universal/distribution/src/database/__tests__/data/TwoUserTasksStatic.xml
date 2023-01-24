@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:proceed="https://docs.proceed-labs.org/BPMN" id="_54c9b123-2dac-4978-8bf6-2f34a36d3d48" name="OneUserTaskStatic" targetNamespace="https://docs.proceed-labs.org/_54c9b123-2dac-4978-8bf6-2f34a36d3d48" expressionLanguage="http://www.ecma-international.org/ecma-262/#sec-relational-operators" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <Process id="_ee06adcc-9301-494e-b4a8-504b88ecf9a0" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="static">
+    <startEvent id="StartEvent_1" proceed:machineId="otherId">
+      <outgoing>Flow_1goah00</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_1goah00" sourceRef="StartEvent_1" targetRef="Activity_1ss26d2" />
+    <sequenceFlow id="Flow_1rys7pk" sourceRef="Activity_1ss26d2" targetRef="Activity_0zsfcx4" />
+    <endEvent id="Event_0d2sn03" proceed:machineId="otherId">
+      <incoming>Flow_02oa7qo</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_02oa7qo" sourceRef="Activity_0zsfcx4" targetRef="Event_0d2sn03" />
+    <userTask id="Activity_1ss26d2" proceed:fileName="User_Task_1" proceed:machineId="otherId">
+      <incoming>Flow_1goah00</incoming>
+      <outgoing>Flow_1rys7pk</outgoing>
+    </userTask>
+    <userTask id="Activity_0zsfcx4" proceed:fileName="User_Task_2" proceed:machineId="mockId">
+      <incoming>Flow_1rys7pk</incoming>
+      <outgoing>Flow_02oa7qo</outgoing>
+    </userTask>
+  </Process>
+</definitions>

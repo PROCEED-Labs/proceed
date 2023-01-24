@@ -1,0 +1,33 @@
+{
+  "name": "",
+  "description": "",
+  "logs": {
+    "enabled": true,
+    "logLevel": "info",
+    "forwardToConsole": true,
+    "consoleLevel": "info",
+    "maxProcessLogEntries": 500,
+    "maxProcessLogTables": 5,
+    "rotationInterval": 600,
+    "maxStandardLogEntries": 1000
+  },
+  "processes": {
+    "acceptUserTasks": true,
+    "deactivateProcessExecution": false
+  },
+  "engine": {
+    "networkRequestTimeout": 10,
+    "loadInterval": 10
+  },
+  "machine": {
+    "port": 33029,
+    "classes": ["Portable"],
+    "domains": [],
+    "inputs": [],
+    "outputs": [],
+    "onlineCheckingAddresses": [
+      "https://europe-west3-proceed-274611.cloudfunctions.net/online-checking-address"
+    ],
+    "currentlyConnectedEnvironments": []
+  }
+}

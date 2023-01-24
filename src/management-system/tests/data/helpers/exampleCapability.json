@@ -1,0 +1,99 @@
+{
+  "schema": "https://schema.org/PhotographAction",
+  "name": "PhotographAction",
+  "parameters": [
+    {
+      "schema": "https://schema.org/height",
+      "name": "height",
+      "type": "https://schema.org/Integer",
+      "required": true,
+      "unit": "px",
+      "validators": []
+    },
+    {
+      "schema": "https://schema.org/width",
+      "name": "width",
+      "type": "https://schema.org/Integer",
+      "validators": [
+        {
+          "type": "max",
+          "rule": 20
+        }
+      ],
+      "required": true,
+      "unit": "px"
+    },
+    {
+      "schema": "/dpi",
+      "name": "dpi",
+      "type": "https://schema.org/Integer",
+      "required": false,
+      "description": "required Dots Per Inch value, resolution",
+      "validators": []
+    },
+    {
+      "schema": "/options",
+      "name": "options",
+      "type": "http://www.w3.org/2001/XMLSchema#complexType",
+      "required": false,
+      "validators": [],
+      "subTypes": [
+        {
+          "schema": "/blackWhite",
+          "name": "blackWhite",
+          "type": "https://schema.org/Boolean",
+          "required": false,
+          "default": false,
+          "validators": []
+        },
+        {
+          "schema": "/rotation",
+          "name": "rotation",
+          "type": "https://schema.org/Integer",
+          "default": 0,
+          "validators": [
+            { "type": "max", "rule": 359 },
+            { "type": "min", "rule": 0 }
+          ],
+          "required": false
+        }
+      ]
+    }
+  ],
+  "returnValues": [
+    {
+      "schema": "https://schema.org/ImageObject",
+      "name": "ImageObject",
+      "type": "http://www.w3.org/2001/XMLSchema#complexType",
+      "validators": [],
+      "subTypes": [
+        {
+          "schema": "https://schema.org/GeoCoordinates",
+          "name": "GeoCoordinates",
+          "type": "http://www.w3.org/2001/XMLSchema#complexType",
+          "validators": [],
+          "subTypes": [
+            {
+              "schema": "https://schema.org/latitude",
+              "name": "latitude",
+              "type": "https://schema.org/Float",
+              "validators": []
+            },
+            {
+              "schema": "https://schema.org/longitude",
+              "name": "longitude",
+              "type": "https://schema.org/Float",
+              "validators": []
+            }
+          ]
+        },
+        {
+          "schema": "https://schema.org/Photograph",
+          "name": "Photograph",
+          "encoding": "image/png",
+          "validators": []
+        }
+      ]
+    }
+  ]
+}

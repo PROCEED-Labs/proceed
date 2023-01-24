@@ -1,0 +1,169 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g2"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g2",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g1"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g3",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g4"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g4",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g5"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g5",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g3"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g6",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g7"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.cpu.cores",
+            "condition": ">=",
+            "values": [{ "value": 2, "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g7",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.platform",
+            "condition": "=",
+            "values": [{ "value": "linux", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      }
+    ]
+  }
+}

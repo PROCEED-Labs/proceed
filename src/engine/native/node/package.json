@@ -1,0 +1,28 @@
+{
+  "name": "proceed-engine",
+  "fullname": "PROCEED Engine",
+  "version": "1.0.0",
+  "author": {
+    "name": "PROCEED Project",
+    "email": "proceed@snet.tu-berlin.de",
+    "url": "https://proceed.snet.tu-berlin.de/"
+  },
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "bugs": "https://gitlab.com/dBPMS-PROCEED/proceed/-/issues",
+  "description": "The Execution Engine for the PROCEED project",
+  "keywords": [
+    "Process Execution Engine",
+    "BPMN",
+    "BPMS"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/dBPMS-PROCEED/proceed.git",
+    "directory": "src/management-system/"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "vm2": "3.9.2"
+  }
+}

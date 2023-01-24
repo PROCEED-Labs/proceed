@@ -1,0 +1,108 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach by Process ID",
+      "processId": "${command:PickProcess}"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch PROCEED",
+      "program": "${workspaceFolder}/src/engine/native/node/index.js",
+      "autoAttachChildProcesses": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest: current file",
+      //"env": { "NODE_ENV": "test" },
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": ["${fileBasenameNoExtension}", "--config", "jest.config.js"],
+      "console": "integratedTerminal",
+      "disableOptimisticBPs": true,
+      "windows": {
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch MS Server",
+      "program": "${workspaceFolder}/src/management-system/src/backend/server/index.js",
+      "env": { "NODE_ENV": "development" },
+      "preLaunchTask": "start-ms-dev-servers"
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "name": "Attach to web client",
+      "port": 9222,
+      "urlFilter": "https://localhost:33083/*",
+      "webRoot": "${workspaceFolder}/src/management-system/src",
+      "sourceMaps": true,
+      "disableNetworkCache": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*.js": "${webRoot}/*.js",
+        "webpack:///src/*.vue": "${webRoot}/*.vue"
+      }
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "name": "Attach to puppeteer client",
+      "port": 9223,
+      "urlFilter": "https://localhost:33084/*",
+      "webRoot": "${workspaceFolder}/src/management-system/src",
+      "sourceMaps": true,
+      "disableNetworkCache": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*.js": "${webRoot}/*.js",
+        "webpack:///src/*.vue": "${webRoot}/*.vue"
+      }
+    },
+    {
+      "name": "Electron: Main",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "preLaunchTask": "electron-debug",
+      "args": [
+        "--remote-debugging-port=9223",
+        "${workspaceFolder}/build/management-system/electron"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/src/management-system/build/electron/**/*.js"
+      ]
+    },
+    {
+      "name": "Electron: Renderer",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9223,
+      "urlFilter": "http://localhost:*",
+      "timeout": 30000,
+      "webRoot": "${workspaceFolder}/src/management-system",
+      "sourceMapPathOverrides": {
+        "webpack:///*.vue": "${webRoot}/*.vue",
+        "webpack:///./*.js": "${webRoot}/*.js",
+        "webpack:///../*.js": "${webRoot}/../*.js"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Electron: All",
+      "configurations": ["Electron: Main", "Electron: Renderer"]
+    }
+  ]
+}

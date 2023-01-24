@@ -1,0 +1,14 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "maxMachineHops",
+        "condition": "==",
+        "values": [{ "value": 2, "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ]
+  }
+}

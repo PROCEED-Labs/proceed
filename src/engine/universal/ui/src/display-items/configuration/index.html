@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuration</title>
+  </head>
+
+  <body>
+    <div
+      id="header"
+      class="pure-g"
+      role="group"
+      aria-label="Configuration buttons"
+    >
+      <div class="pure-u-1-24"></div>
+      <button class="pure-u-6-24 secondary" onclick="onDeleteUserConfig()">
+        Restore Defaults
+      </button>
+      <div class="pure-u-2-24"></div>
+      <button class="pure-u-6-24 secondary" onclick="onRefreshData()">
+        Reload
+      </button>
+      <div class="pure-u-2-24"></div>
+      <button class="pure-u-6-24 primary" onclick="onWriteUserConfig()">
+        Submit
+      </button>
+      <div class="pure-u-1-24"></div>
+    </div>
+
+    <div id="root"></div>
+  </body>
+</html>

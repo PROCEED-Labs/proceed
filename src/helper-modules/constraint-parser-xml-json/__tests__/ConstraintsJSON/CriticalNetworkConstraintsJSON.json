@@ -1,0 +1,54 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.network.ip4",
+        "condition": "==",
+        "values": [
+          { "value": "123.123.123.123", "_valueAttributes": {} },
+          { "value": "111.111.111.111", "_valueAttributes": {} }
+        ],
+        "_valuesAttributes": {
+          "conjunction": "AND"
+        }
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.network.ip6",
+            "condition": "==",
+            "values": [
+              { "value": "1234:ABCD:1234:ABCD", "_valueAttributes": {} },
+              { "value": "AB12:CD34:AB12:CD34", "_valueAttributes": {} }
+            ],
+            "_valuesAttributes": {
+              "conjunction": "AND"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.network.mac",
+            "condition": "==",
+            "values": [
+              { "value": "10-AB-10-AB-10-AB", "_valueAttributes": {} },
+              { "value": "12-CD-12-CD-12-CD", "_valueAttributes": {} }
+            ],
+            "_valuesAttributes": {
+              "conjunction": "AND"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

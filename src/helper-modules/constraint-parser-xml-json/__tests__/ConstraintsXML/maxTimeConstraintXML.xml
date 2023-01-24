@@ -1,0 +1,14 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:hardConstraint>
+            <proceed:name>maxTime</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>2000</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+    </proceed:hardConstraints>
+
+</proceed:processConstraints>

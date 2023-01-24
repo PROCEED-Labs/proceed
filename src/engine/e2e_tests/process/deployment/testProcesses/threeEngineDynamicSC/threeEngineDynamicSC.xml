@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:proceed="https://docs.proceed-labs.org/BPMN" id="_586c4bc8-0888-44c5-b04a-1dd227f9c791" name="threeEngineDynamicSC" targetNamespace="https://docs.proceed-labs.org/_586c4bc8-0888-44c5-b04a-1dd227f9c791" expressionLanguage="http://www.ecma-international.org/ecma-262/#sec-relational-operators" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="_3fee7ffa-9e56-4b02-aeb4-4823090cec2d" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <extensionElements>
+      <proceed:processConstraints>
+        <proceed:hardConstraints>
+          <proceed:hardConstraint>
+            <proceed:name>machine.classes</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values conjunction="OR">
+              <proceed:value>mockMachine</proceed:value>
+            </proceed:values>
+          </proceed:hardConstraint>
+        </proceed:hardConstraints>
+      </proceed:processConstraints>
+    </extensionElements>
+    <startEvent id="StartEvent_1">
+      <outgoing>Flow_04e05aw</outgoing>
+    </startEvent>
+    <task id="Activity_00ovd1m">
+      <incoming>Flow_04e05aw</incoming>
+      <outgoing>Flow_1o4ewqd</outgoing>
+    </task>
+    <sequenceFlow id="Flow_04e05aw" sourceRef="StartEvent_1" targetRef="Activity_00ovd1m" />
+    <task id="Activity_1j4puwu">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:softConstraints>
+            <proceed:softConstraint>
+              <proceed:name>machine.cpu.cores</proceed:name>
+              <proceed:condition>max</proceed:condition>
+            </proceed:softConstraint>
+          </proceed:softConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_1o4ewqd</incoming>
+      <outgoing>Flow_0cmy65u</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1o4ewqd" sourceRef="Activity_00ovd1m" targetRef="Activity_1j4puwu" />
+    <task id="Activity_0nkqieq">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:softConstraints>
+            <proceed:softConstraint>
+              <proceed:name>machine.cpu.speed</proceed:name>
+              <proceed:condition>max</proceed:condition>
+            </proceed:softConstraint>
+          </proceed:softConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_0cmy65u</incoming>
+      <outgoing>Flow_021uq0s</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0cmy65u" sourceRef="Activity_1j4puwu" targetRef="Activity_0nkqieq" />
+    <endEvent id="Event_18gxr62">
+      <incoming>Flow_021uq0s</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_021uq0s" sourceRef="Activity_0nkqieq" targetRef="Event_18gxr62" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_3fee7ffa-9e56-4b02-aeb4-4823090cec2d">
+      <bpmndi:BPMNEdge id="Flow_021uq0s_di" bpmnElement="Flow_021uq0s">
+        <di:waypoint x="650" y="250" />
+        <di:waypoint x="712" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0cmy65u_di" bpmnElement="Flow_0cmy65u">
+        <di:waypoint x="490" y="250" />
+        <di:waypoint x="550" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o4ewqd_di" bpmnElement="Flow_1o4ewqd">
+        <di:waypoint x="330" y="250" />
+        <di:waypoint x="390" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04e05aw_di" bpmnElement="Flow_04e05aw">
+        <di:waypoint x="178" y="250" />
+        <di:waypoint x="230" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="142" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00ovd1m_di" bpmnElement="Activity_00ovd1m">
+        <dc:Bounds x="230" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1j4puwu_di" bpmnElement="Activity_1j4puwu">
+        <dc:Bounds x="390" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nkqieq_di" bpmnElement="Activity_0nkqieq">
+        <dc:Bounds x="550" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_18gxr62_di" bpmnElement="Event_18gxr62">
+        <dc:Bounds x="712" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

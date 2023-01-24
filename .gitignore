@@ -1,0 +1,49 @@
+node_modules/
+.yarn-cache/
+/*.zip
+coverage/
+
+# PROCEED files
+src/engine/native/node/**/data_files
+src/engine/native/node/native-config/src/config.json
+
+src/engine/native/web/server/public/*
+src/engine/native/web/server/node_modules
+
+src/engine/e2e_tests/testEngine/config.json
+
+# OS files
+.DS_Store
+.directory
+
+# Build dirs
+jsdoc/output_html/
+!build/index.html
+build/*
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# yarn is used as package manager, so npm files
+package-lock.json 
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# git modules
+.gitmodules
+
+# env configs
+./src/management-system/src/backend/server/environment-configurations/
+./src/backend/server/environment-configurations/

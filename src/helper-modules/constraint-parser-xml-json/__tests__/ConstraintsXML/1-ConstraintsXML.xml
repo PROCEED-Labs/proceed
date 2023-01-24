@@ -1,0 +1,23 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.network.ip4</proceed:name>
+            <proceed:condition>!=</proceed:condition>
+            <proceed:values>
+                <proceed:value>222.222.222.222</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+    </proceed:hardConstraints>
+
+    <proceed:softConstraints>
+
+        <proceed:softConstraint>
+            <proceed:name>machine.mem.free</proceed:name>
+            <proceed:condition>max</proceed:condition>
+        </proceed:softConstraint>
+
+    </proceed:softConstraints>
+
+</proceed:processConstraints>

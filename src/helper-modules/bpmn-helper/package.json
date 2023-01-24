@@ -1,0 +1,17 @@
+{
+  "name": "@proceed/bpmn-helper",
+  "version": "1.0.0",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "description": "This library provides functions that help gather information about or change BPMN processes for PROCEED",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "bpmn-moddle": "^6.0.0",
+    "ids": "^1.0.0"
+  }
+}

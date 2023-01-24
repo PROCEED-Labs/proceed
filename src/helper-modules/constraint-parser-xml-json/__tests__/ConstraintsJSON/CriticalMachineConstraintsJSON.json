@@ -1,0 +1,54 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.id",
+        "condition": "==",
+        "values": [
+          { "value": 1, "_valueAttributes": {} },
+          { "value": 2, "_valueAttributes": {} }
+        ],
+        "_valuesAttributes": {
+          "conjunction": "AND"
+        }
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.name",
+            "condition": "==",
+            "values": [
+              { "value": "Max Laptop", "_valueAttributes": {} },
+              { "value": "Mustermann Laptop", "_valueAttributes": {} }
+            ],
+            "_valuesAttributes": {
+              "conjunction": "AND"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.hostname",
+            "condition": "==",
+            "values": [
+              { "value": "max-t480", "_valueAttributes": {} },
+              { "value": "mustermann-t480", "_valueAttributes": {} }
+            ],
+            "_valuesAttributes": {
+              "conjunction": "AND"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

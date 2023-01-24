@@ -1,0 +1,45 @@
+.primary {
+  background: #0094a0;
+  color: white;
+}
+button.primary:hover {
+  background-color: #00b8c9;
+}
+
+.secondary {
+  background: #574f4f;
+  color: white;
+}
+button.secondary:hover {
+  background-color: #272727;
+}
+
+.success {
+  background: #4caf50;
+}
+button.success:hover {
+  background-color: #67dc6b;
+}
+
+.info {
+  background-color: #2196f3;
+  color: white;
+}
+button.info:hover {
+  background-color: #0084f0;
+}
+
+.warning {
+  background: #fb8c00;
+}
+button.warning:hover {
+  background-color: #e97115;
+}
+
+.error {
+  background: #e64242;
+  color: white;
+}
+button.error:hover {
+  background-color: #ff1e1e;
+}

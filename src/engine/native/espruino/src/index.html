@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <script src="../modules/engine-lib.js"></script>
+    <script>
+      window.document.addEventListener('DOMContentLoaded', () => {
+        class CustomIPC extends engine.IPC {
+          emit(...params) {
+            console.log(params);
+          }
+        }
+        engine.init({}, new CustomIPC());
+        engine.test();
+      });
+    </script>
+  </head>
+  <body></body>
+</html>

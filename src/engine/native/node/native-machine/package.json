@@ -1,0 +1,14 @@
+{
+  "name": "@proceed/native-machine",
+  "version": "1.0.0",
+  "description": "Native module that implements the `read_device_info` command.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0",
+    "machine-uuid": "^1.2.0",
+    "systeminformation": "^4.30.1",
+    "ping": "^0.3.0"
+  }
+}

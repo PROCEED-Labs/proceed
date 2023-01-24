@@ -1,0 +1,171 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.os.platform",
+        "condition": "==",
+        "values": [{ "value": "linux", "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      },
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.inputs",
+        "condition": "==",
+        "values": [
+          { "value": "Touch", "_valueAttributes": {} },
+          { "value": "Keyboard", "_valueAttributes": {} }
+        ],
+        "_valuesAttributes": {
+          "conjunction": "AND"
+        }
+      },
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.inputs",
+        "condition": "==",
+        "values": [
+          { "value": "Touch", "_valueAttributes": {} },
+          { "value": "Keyboard", "_valueAttributes": {} }
+        ],
+        "_valuesAttributes": {}
+      },
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.possibleConnectionTo",
+        "condition": "==",
+        "values": [{ "value": "google.de", "_valueAttributes": {} }],
+        "_valuesAttributes": {},
+        "hardConstraints": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "latency",
+            "condition": "<",
+            "values": [{ "value": 50, "_valueAttributes": { "unit": "ms" } }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.possibleConnectionTo",
+        "condition": "==",
+        "values": [
+          { "value": "google.de", "_valueAttributes": {} },
+          { "value": "yahoo.de", "_valueAttributes": {} }
+        ],
+        "_valuesAttributes": {},
+        "hardConstraints": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "latency",
+            "condition": "<",
+            "values": [
+              {
+                "value": 50,
+                "_valueAttributes": { "unit": "ms" }
+              }
+            ],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.platform",
+            "condition": "==",
+            "values": [{ "value": "linux", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "==",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g2",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.platform",
+            "condition": "==",
+            "values": [{ "value": "linux", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.cpu.currentLoad",
+            "condition": "<",
+            "values": [{ "value": 60, "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g3",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g1"
+            }
+          },
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g2"
+            }
+          }
+        ]
+      }
+    ],
+    "softConstraints": [
+      {
+        "_type": "softConstraint",
+        "_attributes": {
+          "weight": 5
+        },
+        "name": "machine.mem.free",
+        "condition": "max"
+      },
+      {
+        "_type": "softConstraint",
+        "_attributes": {
+          "weight": 10
+        },
+        "name": "machine.cpu.currentLoad",
+        "condition": "min"
+      }
+    ]
+  }
+}

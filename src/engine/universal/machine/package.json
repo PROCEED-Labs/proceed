@@ -1,0 +1,17 @@
+{
+  "name": "@proceed/machine",
+  "version": "1.0.0",
+  "description": "monitoring and configuration",
+  "main": "module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@proceed/system": "^1.0.0"
+  },
+  "devDependencies": {
+    "supertest": "^4.0.2"
+  }
+}

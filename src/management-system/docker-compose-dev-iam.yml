@@ -1,0 +1,44 @@
+# build with: docker compose -f ./docker-compose-dev-iam.yml up; start with: docker compose -f ./docker-compose-dev.yml up
+# only run redis with: docker compose -f ./docker-compose-dev.yml up redis
+# only run opa with: docker compose -f ./docker-compose-dev.yml up opa
+
+version: '3.8'
+
+services:
+  redis:
+    image: 'redis:alpine'
+    container_name: proceed-redis
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD:-password}
+    ports:
+      - 6379:6379
+    volumes:
+      - session_storage:/data
+    networks:
+      proceed:
+
+  opa:
+    image: openpolicyagent/opa:0.38.0
+    container_name: proceed-opa
+    ports:
+      - 8181:8181
+    command:
+      - 'run'
+      - '--server'
+      - '--watch'
+      - '--log-level=debug'
+      - '--set=default_decision=/main/decision'
+      - './main.rego'
+      - './policies'
+    volumes:
+      - ./opa/policies:/policies
+      - ./opa/main.rego:/main.rego
+    networks:
+      proceed:
+
+volumes:
+  session_storage:
+    name: session_storage
+
+networks:
+  proceed:
+    name: proceed

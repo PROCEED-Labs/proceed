@@ -1,0 +1,14 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "sameMachine",
+        "condition": "==",
+        "values": [{ "value": true, "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ]
+  }
+}

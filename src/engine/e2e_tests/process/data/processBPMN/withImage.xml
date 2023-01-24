@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_64552049-90bf-4f5b-96dd-e00747261755" name="With Image" targetNamespace="https://docs.proceed-labs.org/_64552049-90bf-4f5b-96dd-e00747261755#1671026484009" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:version="1671026484009" proceed:versionName="Version 1" proceed:versionDescription="Initial Version" proceed:versionBasedOn="1671024712832" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1j9yeom" name="PROCEED Main Process" processType="Private" isExecutable="true" deploymentMethod="dynamic">
+    <startEvent id="StartEvent_0k2upti">
+      <outgoing>Flow_1g4gvbf</outgoing>
+    </startEvent>
+    <task id="Activity_08fwikp">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:overviewImage>/resources/process/_64552049-90bf-4f5b-96dd-e00747261755/images/Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png</proceed:overviewImage>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1g4gvbf</incoming>
+      <outgoing>Flow_01rz36j</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1g4gvbf" sourceRef="StartEvent_0k2upti" targetRef="Activity_08fwikp" />
+    <sequenceFlow id="Flow_01rz36j" sourceRef="Activity_08fwikp" targetRef="Activity_0xl6c36" />
+    <endEvent id="Event_1mxl4wk">
+      <incoming>Flow_0744116</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0744116" sourceRef="Activity_0xl6c36" targetRef="Event_1mxl4wk" />
+    <userTask id="Activity_0xl6c36" proceed:fileName="User_Task_1qjpbcl-1671026484009" implementation="https://html.spec.whatwg.org/">
+      <incoming>Flow_01rz36j</incoming>
+      <outgoing>Flow_0744116</outgoing>
+    </userTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1j9yeom">
+      <bpmndi:BPMNEdge id="Flow_1g4gvbf_di" bpmnElement="Flow_1g4gvbf">
+        <di:waypoint x="386" y="218" />
+        <di:waypoint x="440" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01rz36j_di" bpmnElement="Flow_01rz36j">
+        <di:waypoint x="540" y="218" />
+        <di:waypoint x="600" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0744116_di" bpmnElement="Flow_0744116">
+        <di:waypoint x="700" y="218" />
+        <di:waypoint x="762" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_0k2upti_di" bpmnElement="StartEvent_0k2upti">
+        <dc:Bounds x="350" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08fwikp_di" bpmnElement="Activity_08fwikp">
+        <dc:Bounds x="440" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1mxl4wk_di" bpmnElement="Event_1mxl4wk">
+        <dc:Bounds x="762" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0l4vbfy_di" bpmnElement="Activity_0xl6c36">
+        <dc:Bounds x="600" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

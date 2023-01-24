@@ -1,0 +1,12 @@
+{
+  "name": "@proceed/native",
+  "version": "1.0.0",
+  "description": "Native part for the PROCEED engine implemented in NodeJS.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/core": "^1.0.0",
+    "is-valid-path": "^0.1.1"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g2"
+            }
+          },
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g3"
+            }
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g2",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g3"
+            }
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g3",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "constraintGroupRef",
+            "_attributes": {
+              "ref": "g1"
+            }
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g4",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "=",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      }
+    ]
+  }
+}

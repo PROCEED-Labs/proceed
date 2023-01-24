@@ -1,0 +1,14 @@
+[Unit]
+Description=Service which starts the MissionController on the boot.
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python  MissionController.py --drone_address tcp:127.0.0.1:5760
+WorkingDirectory=/home/pi/raspberry3-drone-ardupilot
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

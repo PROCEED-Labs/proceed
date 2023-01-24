@@ -1,0 +1,10 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme.Launcher" parent="AppTheme">
+        <!-- Customize your theme here. -->
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+
+    </style>
+
+</resources>

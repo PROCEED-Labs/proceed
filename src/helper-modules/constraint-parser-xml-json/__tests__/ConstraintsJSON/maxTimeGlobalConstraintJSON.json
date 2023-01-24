@@ -1,0 +1,14 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "maxTimeGlobal",
+        "condition": "==",
+        "values": [{ "value": 60000, "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ]
+  }
+}

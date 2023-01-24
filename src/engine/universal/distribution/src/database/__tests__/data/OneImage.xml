@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_64552049-90bf-4f5b-96dd-e00747261755" name="With Image" targetNamespace="https://docs.proceed-labs.org/_64552049-90bf-4f5b-96dd-e00747261755#1671024712832" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:version="1671024712832" proceed:versionName="Version 1" proceed:versionDescription="Initial Version" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1j9yeom" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <startEvent id="StartEvent_0k2upti">
+      <outgoing>Flow_1g4gvbf</outgoing>
+    </startEvent>
+    <task id="Activity_08fwikp">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:overviewImage>/resources/process/_64552049-90bf-4f5b-96dd-e00747261755/images/Activity_08fwikp_image123e6803-63a8-4cf1-9596-2999fdd016a7.png</proceed:overviewImage>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1g4gvbf</incoming>
+      <outgoing>Flow_0h4k9u0</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1g4gvbf" sourceRef="StartEvent_0k2upti" targetRef="Activity_08fwikp" />
+    <endEvent id="Event_12vrsd9">
+      <incoming>Flow_0h4k9u0</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0h4k9u0" sourceRef="Activity_08fwikp" targetRef="Event_12vrsd9" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1j9yeom">
+      <bpmndi:BPMNEdge id="Flow_1g4gvbf_di" bpmnElement="Flow_1g4gvbf">
+        <di:waypoint x="386" y="218" />
+        <di:waypoint x="440" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0h4k9u0_di" bpmnElement="Flow_0h4k9u0">
+        <di:waypoint x="540" y="218" />
+        <di:waypoint x="602" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_0k2upti_di" bpmnElement="StartEvent_0k2upti">
+        <dc:Bounds x="350" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08fwikp_di" bpmnElement="Activity_08fwikp">
+        <dc:Bounds x="440" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_12vrsd9_di" bpmnElement="Event_12vrsd9">
+        <dc:Bounds x="602" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

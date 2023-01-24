@@ -1,0 +1,35 @@
+{
+  "name": "web",
+  "version": "0.0.1",
+  "description": "Native part of PROCEED engine for web browser.",
+  "main": "index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "serve": "webpack --config webpack.config.js && node server.js"
+  },
+  "dependencies": {
+    "@proceed/native-capabilities": "^1.0.0",
+    "@proceed/native-config": "^1.0.0",
+    "@proceed/native-console": "^1.0.0",
+    "@proceed/native-express": "1.0.0",
+    "@proceed/native-fs": "^1.0.0",
+    "@proceed/native-koa": "^1.0.0",
+    "@proceed/native-machine": "^1.0.0",
+    "@proceed/native-mdns": "^1.0.0",
+    "body-parser": "^1.19.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "cors": "^2.8.5",
+    "device-uuid": "^1.0.4",
+    "express": "^4.17.1",
+    "html-loader": "^0.5.5",
+    "html-webpack-plugin": "^3.2.0",
+    "platform": "^1.3.5",
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0",
+    "webcpu": "^0.4.6",
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
+  }
+}

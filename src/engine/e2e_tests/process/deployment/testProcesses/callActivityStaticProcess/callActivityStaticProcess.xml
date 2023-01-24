@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:p07d96="https://docs.proceed-labs.org/_aef1a356-0d84-4afc-a0f6-c978dea07d96" id="_58ea5281-66c9-45a5-a477-a0dbcb62c87a" name="CallActivity" targetNamespace="https://docs.proceed-labs.org/_58ea5281-66c9-45a5-a477-a0dbcb62c87a" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <import importType="http://www.omg.org/spec/BPMN/20100524/MODEL" location="_aef1a356-0d84-4afc-a0f6-c978dea07d96" namespace="https://docs.proceed-labs.org/_aef1a356-0d84-4afc-a0f6-c978dea07d96" proceed:version="123" />
+  <process id="Process_0inmb3p" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="static">
+    <startEvent id="StartEvent_1tbhzra" proceed:machineId="machineId1">
+      <outgoing>Flow_0ad549t</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0ad549t" sourceRef="StartEvent_1tbhzra" targetRef="Activity_1dotfaz" />
+    <endEvent id="Event_02k934p" proceed:machineId="machineId1">
+      <incoming>Flow_1ujjrjl</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1ujjrjl" sourceRef="Activity_1dotfaz" targetRef="Event_02k934p" />
+    <callActivity id="Activity_1dotfaz" name="Test" calledElement="p07d96:Process_1ouq4b7" proceed:machineId="machineId1">
+      <incoming>Flow_0ad549t</incoming>
+      <outgoing>Flow_1ujjrjl</outgoing>
+    </callActivity>
+  </process>
+</definitions>

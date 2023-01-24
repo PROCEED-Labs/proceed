@@ -1,0 +1,38 @@
+services:
+  gcs:
+    url: https://storage.googleapis.com/proceed-management-system-opa-policies/
+
+bundles:
+  authz:
+    service: gcs
+    resource: 'bundle.tar.gz?alt=media'
+    persist: true
+    polling:
+      long_polling_timeout_seconds: 10
+      min_delay_seconds: 60
+      max_delay_seconds: 120
+    signing:
+      keyid: global_key
+
+default_decision: /main/decision
+persistence_directory: /var/opa
+
+keys:
+  global_key:
+    algorithm: RS256
+    key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAw0G2rD43fmfMGaYheM3a
+      cwKiitxn6kKLPoRe2rT08L23DqDBk4FQbPA02/sCe9v2dTNCd7uDcl2ZGTDpW6Wr
+      kbxYiTr/JAidGgr+JK9my5sZhFGbr0k2j3axpJHUxWYe4P/rPxatq0yICH3douQA
+      FKRty2AzJ5CXwCKFGldVP0KRlAJhBYrcmyv3Um/lz4cOWowetpUhzULioGVpwQSa
+      5m/MJBZKuO6vg57SKwydOougEuZhemxS70mG7kHzy9Vdk4E1FIip+07Ro/II/rQQ
+      zAE/jZP83f7RyQORiaFmIUOrIkv94gagJBpB2oREUmz4N+9/F/rPTixXzGVgg8Kd
+      xP5H0R4kwEMJsx376o/5BZPLHAQ7fG0MWwSww6oQDyHszU0kqOxiCb+4eiyLOXrF
+      2tohCaxHyhDUS8LOXg5BjUq8BpHTjtqoVyKM0ZWPHw/iAvZ+qZl8zQ3S5qpJM5UC
+      Cctq0VW+i71LoYdrvF5YQ6ltYiPYh2sAU9xnsm3Tli1BAgMBAAE=
+      -----END PUBLIC KEY-----
+
+caching:
+  inter_query_builtin_cache:
+    max_size_bytes: 10000000

@@ -1,0 +1,78 @@
+# use in production environment
+
+version: '3.8'
+
+services:
+  management_system:
+    image: proceed/ms-server:${MS_TAG:-latest}
+    container_name: proceed-ms-server
+    volumes:
+      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/ssl:/opt/proceed-ms-server/ssl
+      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Processes:/opt/proceed-ms-server/Processes
+      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Storage:/opt/proceed-ms-server/Storage
+      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Engine:/opt/proceed-ms-server/Engine
+      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Config:/opt/proceed-ms-server/Config
+    logging:
+      driver: ${MS_LOG_DRIVER:-"local"}
+    cap_add:
+      - SYS_ADMIN
+    depends_on:
+      - redis
+      - opa
+    ports:
+      - 80:80
+      - ${MS_HTTPS_PORT:-33080}:33080
+      - 33081:33081
+    networks:
+      proceed:
+
+  redis:
+    image: 'redis:alpine'
+    container_name: proceed-redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - 6379
+    volumes:
+      - session_storage:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      proceed:
+
+  opa:
+    image: openpolicyagent/opa:0.39.0
+    container_name: proceed-opa
+    ports:
+      - 8181
+    command:
+      - 'run'
+      - '--server'
+      - '--watch'
+      - 'data.json'
+      - '--config-file=/opt/opa/config.yaml'
+    volumes:
+      - ./opa:/opt/opa
+      - ./data.json:/data.json
+    networks:
+      proceed:
+
+  engine:
+    image: proceed/engine:${ENGINE_TAG:-latest}
+    container_name: 'proceed-engine'
+    volumes:
+      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/data_files:/opt/proceed-engine/data_files
+      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/capabilities:/opt/proceed-engine/capabilities
+      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/config.json:/opt/proceed-engine/config.json
+    logging:
+      driver: ${ENGINE_LOG_DRIVER:-"local"}
+    ports:
+      - 33029:33029
+    networks:
+      proceed:
+
+volumes:
+  session_storage:
+    name: session_storage
+
+networks:
+  proceed:
+    name: proceed

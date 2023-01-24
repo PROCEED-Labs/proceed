@@ -1,0 +1,74 @@
+{
+  "info": {
+    "_postman_id": "e3a307ec-f05b-4c0a-9a31-5df5e1e86459",
+    "name": "capability_module",
+    "description": "Expose an endpoint to list the engine's own capabilities.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "capabilities",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "localhost:8080/capabilities",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["capabilities"]
+        },
+        "description": "Endpoint for getting all the capabilities of an engine in JSON-LD"
+      },
+      "response": [
+        {
+          "name": "capabilities",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:8080/capabilities",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["capabilities"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "2843"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"b1b-DWRC9Hhh3PV4gdjO1I2YwtaDNHc\""
+            },
+            {
+              "key": "Date",
+              "value": "Fri, 21 Jun 2019 10:17:34 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"@context\": {\n        \"schema\": \"https://schema.org/\",\n        \"fno\": \"https://w3id.org/function/ontology#\",\n        \"xsd\": \"http://www.w3.org/2001/XMLSchema#\",\n        \"dbpedia-owl\": \"http://dbpedia.org/ontology/\",\n        \"fnom\": \"https://w3id.org/function/vocabulary/mapping#\",\n        \"dcterms\": \"http://purl.org/dc/elements/1.1/\",\n        \"doap\": \"http://usefulinc.com/ns/doap#\",\n        \"fnoi\": \"https://w3id.org/function/vocabulary/implementation\",\n        \"iotschema\": \"http://iotschema.org/\",\n        \"saref\": \"https://w3id.org/saref#\",\n        \"odpa\": \"http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#\",\n        \"terms\": \"http://purl.org/dc/terms/\"\n    },\n    \"@graph\": [\n        {\n            \"@id\": \"Machine\",\n            \"schema:potentialAction\": {\n                \"@id\": \"_:PhotographActionDefinition\",\n                \"@type\": [\n                    \"schema:PhotographAction\",\n                    \"fno:Function\"\n                ]\n            }\n        },\n        {\n            \"@id\": \"_:PhotographActionDefinition\",\n            \"fno:expects\": {\n                \"@list\": [\n                    {\n                        \"@id\": \"_:heightParameter\"\n                    },\n                    {\n                        \"@id\": \"_:widthParameter\"\n                    },\n                    {\n                        \"@id\": \"_:dpiParameter\"\n                    },\n                    {\n                        \"@id\": \"_:optionsParameter\"\n                    }\n                ]\n            },\n            \"fno:returns\": {\n                \"@id\": \"_:imageParameter\"\n            }\n        },\n        {\n            \"@id\": \"_:heightParameter\",\n            \"fno:predicate\": \"schema:height\",\n            \"@type\": [\n                \"fno:Parameter\",\n                \"schema:Integer\"\n            ],\n            \"schema:unitText\": \"px\",\n            \"fno:required\": true\n        },\n        {\n            \"@id\": \"_:widthParameter\",\n            \"fno:predicate\": \"schema:width\",\n            \"@type\": [\n                \"fno:Parameter\",\n                \"schema:Integer\"\n            ],\n            \"schema:unitText\": \"px\",\n            \"schema:maxValue\": 20,\n            \"fno:required\": true\n        },\n        {\n            \"@id\": \"_:dpiParameter\",\n            \"fno:predicate\": \"dpi\",\n            \"@type\": [\n                \"fno:Parameter\",\n                \"schema:Integer\"\n            ],\n            \"schema:description\": \"required Dots Per Inch value\",\n            \"fno:required\": false\n        },\n        {\n            \"@id\": \"_:optionsParameter\",\n            \"fno:predicate\": \"options\",\n            \"@type\": [\n                \"fno:Parameter\",\n                \"_:options\"\n            ],\n            \"terms:hasPart\": {\n                \"@graph\": [\n                    {\n                        \"@id\": \"_:blackWhiteParameter\",\n                        \"fno:predicate\": \"blackWhite\",\n                        \"@type\": [\n                            \"fno:Parameter\",\n                            \"schema:Boolean\"\n                        ],\n                        \"fno:required\": false,\n                        \"schema:defaultValue\": false\n                    },\n                    {\n                        \"@id\": \"_:rotationParameter\",\n                        \"fno:predicate\": \"rotation\",\n                        \"@type\": [\n                            \"fno:Parameter\",\n                            \"schema:Integer\"\n                        ],\n                        \"schema:minValue\": 0,\n                        \"schema:maxValue\": 359,\n                        \"schema:defaultValue\": 0,\n                        \"fno:required\": false\n                    }\n                ]\n            },\n            \"fno:required\": false\n        },\n        {\n            \"@id\": \"_:imageParameter\",\n            \"fno:predicate\": \"schema:ImageObject\",\n            \"@type\": \"fno:Output\",\n            \"terms:hasPart\": {\n                \"@graph\": [\n                    {\n                        \"@id\": \"_:geoCoordinatesParameter\",\n                        \"fno:predicate\": \"schema:GeoCoordinates\",\n                        \"@type\": \"fno:Output\",\n                        \"terms:hasPart\": {\n                            \"@graph\": [\n                                {\n                                    \"@id\": \"_:latiduteParameter\",\n                                    \"fno:predicate\": \"schema:latitude\",\n                                    \"@type\": [\n                                        \"fno:Output\",\n                                        \"schema:Float\"\n                                    ]\n                                },\n                                {\n                                    \"@id\": \"_:longitudeParameter\",\n                                    \"fno:predicate\": \"schema:longitude\",\n                                    \"@type\": [\n                                        \"fno:Output\",\n                                        \"schema:Float\"\n                                    ]\n                                }\n                            ]\n                        }\n                    },\n                    {\n                        \"@id\": \"_:photographParameter\",\n                        \"fno:predicate\": \"schema:Photograph\",\n                        \"@type\": \"fno:Output\",\n                        \"schema:encodingFormat\": \"image/png\",\n                        \"encoding\": \"base64\"\n                    }\n                ]\n            }\n        },\n        {\n            \"@id\": \"Machine\",\n            \"odpa:sameSettingAs\": \"saref:LightingDevice\",\n            \"schema:potentialAction\": {\n                \"@type\": [\n                    \"iotschema:TurnOn\",\n                    \"fno:Function\"\n                ],\n                \"@id\": \"_:TurnOnDefinition\"\n            }\n        },\n        {\n            \"@id\": \"_:TurnOnDefinition\",\n            \"fno:expects\": {\n                \"@list\": [\n                    {\n                        \"@id\": \"_:colourParameter\"\n                    }\n                ]\n            },\n            \"fno:returns\": {\n                \"@list\": []\n            }\n        },\n        {\n            \"@id\": \"_:colourParameter\",\n            \"fno:predicate\": \"schema:colour\",\n            \"@type\": [\n                \"fno:Parameter\",\n                \"schema:Text\"\n            ],\n            \"fno:required\": true\n        }\n    ]\n}"
+        }
+      ]
+    }
+  ]
+}

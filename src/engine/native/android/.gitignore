@@ -1,0 +1,12 @@
+*.iml
+*.externalNativeBuild
+*.cxx
+
+local.properties
+app/src/main/assets/universal.js
+
+.gradle/
+.idea/
+app/build/
+captures/
+build/

@@ -1,0 +1,122 @@
+{
+  "$type": "bpmn:Definitions",
+  "id": "_ddd0fcfb-6b3b-4030-a95e-8337020e7f6f",
+  "name": "aaaaaa",
+  "targetNamespace": "https://docs.proceed-labs.org/_ddd0fcfb-6b3b-4030-a95e-8337020e7f6f",
+  "expressionLanguage": "http://www.ecma-international.org/ecma-262/#sec-relational-operators",
+  "typeLanguage": "https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf",
+  "exporter": "PROCEED Management System",
+  "exporterVersion": "0.1.0",
+  "rootElements": [
+    {
+      "$type": "bpmn:Process",
+      "id": "_31b0e877-67bc-48ca-aa0b-f6eba6b5fc0b",
+      "name": "PROCEED Main Process",
+      "processType": "Private",
+      "isExecutable": true,
+      "deploymentMethod": "static",
+      "flowElements": [
+        {
+          "$type": "bpmn:StartEvent",
+          "id": "StartEvent_1",
+          "machineId": "1234"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_0sg88tq"
+        },
+        {
+          "$type": "bpmn:EndEvent",
+          "id": "EndEvent_1d3ier5",
+          "machineAddress": "192.168.1.1:1234"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_1d7q3nw"
+        },
+        {
+          "$type": "bpmn:UserTask",
+          "id": "Task_074i09w",
+          "machineId": "1234"
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "$type": "bpmndi:BPMNDiagram",
+      "id": "BPMNDiagram_1",
+      "plane": {
+        "$type": "bpmndi:BPMNPlane",
+        "id": "BPMNPlane_1",
+        "planeElement": [
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "_BPMNShape_StartEvent_2",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 412,
+              "y": 240,
+              "width": 36,
+              "height": 36
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_0sg88tq_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 448,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 500,
+                "y": 258
+              }
+            ]
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "EndEvent_1d3ier5_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 652,
+              "y": 240,
+              "width": 36,
+              "height": 36
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_1d7q3nw_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 600,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 652,
+                "y": 258
+              }
+            ]
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "UserTask_08we8sm_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 500,
+              "y": 218,
+              "width": 100,
+              "height": 80
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

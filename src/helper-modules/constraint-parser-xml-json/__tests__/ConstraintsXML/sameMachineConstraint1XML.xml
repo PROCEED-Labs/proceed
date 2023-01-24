@@ -1,0 +1,14 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:hardConstraint>
+            <proceed:name>sameMachine</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>true</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+    </proceed:hardConstraints>
+
+</proceed:processConstraints>

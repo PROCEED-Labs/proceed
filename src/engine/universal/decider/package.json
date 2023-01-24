@@ -1,0 +1,20 @@
+{
+  "name": "@proceed/decider",
+  "version": "1.0.0",
+  "description": "This module handles the evaluations of task, process, user and environment constraints",
+  "main": "module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@proceed/capabilities": "^1.0.0",
+    "@proceed/constraint-parser-xml-json": "^1.0.0",
+    "@proceed/distribution": "^1.0.0",
+    "@proceed/machine": "^1.0.0",
+    "@proceed/system": "^1.0.0",
+    "jest-when": "^2.7.0"
+  }
+}

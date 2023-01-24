@@ -1,0 +1,9 @@
+{
+  "name": "take-photo",
+  "main": "take-photo.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "node-raspistill": "^0.0.16"
+  }
+}

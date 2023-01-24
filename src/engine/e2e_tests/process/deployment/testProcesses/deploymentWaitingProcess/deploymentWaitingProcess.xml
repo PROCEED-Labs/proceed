@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="http://docs.snet.tu-berlin.de/proceed" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_a0caef92-33de-4305-8359-7b2141612a75" name="deploymentWaitingProcess" targetNamespace="http://docs.snet.tu-berlin.de/proceed/_a0caef92-33de-4305-8359-7b2141612a75" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="http://docs.snet.tu-berlin.de/proceed http://docs.snet.tu-berlin.de/proceed/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="_ca53c5cd-1aff-4b66-8df5-eaef4634c1d2" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <documentation />
+    <extensionElements>
+      <proceed:processConstraints />
+    </extensionElements>
+    <startEvent id="StartEvent_1">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>machineId1</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>machineId1</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <outgoing>Flow_0nalk4q</outgoing>
+    </startEvent>
+    <task id="Activity_0ngpal8">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>machineId1</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_0nalk4q</incoming>
+      <outgoing>Flow_1k0g6oo</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0nalk4q" sourceRef="StartEvent_1" targetRef="Activity_0ngpal8" />
+    <task id="Activity_148ll0y">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>non-existing</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_1k0g6oo</incoming>
+      <outgoing>Flow_0rz90m8</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1k0g6oo" sourceRef="Activity_0ngpal8" targetRef="Activity_148ll0y" />
+    <endEvent id="Event_01jv1rw">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>machineId1</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_0rz90m8</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0rz90m8" sourceRef="Activity_148ll0y" targetRef="Event_01jv1rw" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_ca53c5cd-1aff-4b66-8df5-eaef4634c1d2">
+      <bpmndi:BPMNEdge id="Flow_0nalk4q_di" bpmnElement="Flow_0nalk4q">
+        <di:waypoint x="198" y="240" />
+        <di:waypoint x="300" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1k0g6oo_di" bpmnElement="Flow_1k0g6oo">
+        <di:waypoint x="400" y="240" />
+        <di:waypoint x="520" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rz90m8_di" bpmnElement="Flow_0rz90m8">
+        <di:waypoint x="620" y="240" />
+        <di:waypoint x="752" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="162" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ngpal8_di" bpmnElement="Activity_0ngpal8">
+        <dc:Bounds x="300" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_148ll0y_di" bpmnElement="Activity_148ll0y">
+        <dc:Bounds x="520" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_01jv1rw_di" bpmnElement="Event_01jv1rw">
+        <dc:Bounds x="752" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

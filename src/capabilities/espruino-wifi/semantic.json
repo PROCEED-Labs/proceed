@@ -1,0 +1,93 @@
+{
+  "@context": {
+    "schema": "https://schema.org/",
+    "fno": "https://w3id.org/function/ontology#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dbpedia-owl": "http://dbpedia.org/ontology/",
+    "fnom": "https://w3id.org/function/vocabulary/mapping#",
+    "doap": "http://usefulinc.com/ns/doap#",
+    "fnoi": "https://w3id.org/function/vocabulary/implementation",
+    "og": "http://ogp.me/ns#",
+    "time": "http://www.w3.org/2006/time#"
+  },
+  "@graph": [
+    {
+      "@id": "WiFi",
+      "schema:potentialAction": {
+        "@type": ["schema:Action", "fno:Function"],
+        "@id": "startAccessPoint"
+      }
+    },
+    {
+      "@id": "startAccessPoint",
+      "fno:expects": {
+        "@list": [
+          {
+            "@id": "args"
+          },
+          {
+            "@id": "callback"
+          }
+        ]
+      },
+      "fno:returns": {
+        "@list": [
+          {
+            "@id": "success"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "args",
+      "@type": ["fno:Parameter", "xsd:complexType"],
+      "xsd:complexType": [
+        {
+          "password": {
+            "@type": ["xsd:element", "xsd:string"],
+            "schema:defaultValue": "",
+            "schema:description": "The access point password"
+          },
+          "authMode": {
+            "@type": ["xsd:element", "xsd:string"],
+            "schema:defaultValue": "wpa2",
+            "schema:description": "The authentication method"
+          }
+        }
+      ],
+      "fno:required": "false"
+    },
+    {
+      "@id": "callback",
+      "@type": ["fno:Parameter", "fno:Function"],
+      "fno:required": "true"
+    },
+    {
+      "@id": "proceedImplementation",
+      "@type": "fnoi:JavaScriptFunction",
+      "dbpedia-owl:filename": "start-access-point.js"
+    },
+    {
+      "@id": "fno:startAccessPointMapping",
+      "@type": "fno:Mapping",
+      "fno:function": "startAccessPoint",
+      "fno:implementation": "proceedImplementation",
+      "fno:methodMapping": {
+        "@type": "fnom:StringMethodMapping",
+        "fnom:method-name": "startAccessPoint"
+      },
+      "fno:parameterMapping": [
+        {
+          "@type": "fnom:PositionParameterMapping",
+          "fnom:functionParameter": "args",
+          "fnom:implementationParameterPosition": 1
+        },
+        {
+          "@type": "fnom:PositionParameterMapping",
+          "fnom:functionParameter": "callback",
+          "fnom:implementationParameterPosition": 2
+        }
+      ]
+    }
+  ]
+}

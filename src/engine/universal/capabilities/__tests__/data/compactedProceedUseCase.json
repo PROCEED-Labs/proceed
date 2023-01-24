@@ -1,0 +1,54 @@
+{
+  "@context": {
+    "dbpedia-owl": "http://dbpedia.org/ontology/",
+    "doap": "http://usefulinc.com/ns/doap#",
+    "fno": "https://w3id.org/function/ontology#",
+    "fnoi": "https://w3id.org/function/vocabulary/implementation",
+    "fnom": "https://w3id.org/function/vocabulary/mapping#",
+    "og": "http://ogp.me/ns#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@graph": [
+    {
+      "@id": "_:capability",
+      "schema:potentialAction": {
+        "@id": "_:PhotographActionDefinition",
+        "@type": ["schema:PhotographAction", "fno:Function"]
+      }
+    },
+    {
+      "@id": "_:PhotographActionDefinition",
+      "fno:expects": { "@list": [] },
+      "fno:returns": { "@list": [{ "@id": "_:imageParameter" }] }
+    },
+    {
+      "@id": "_:imageParameter",
+      "@type": "fno:Output",
+      "fno:predicate": { "@type": "schema:ImageObject" },
+      "terms:hasPart": {
+        "@list": [
+          {
+            "@id": "_:photographParameter",
+            "@type": "fno:Output",
+            "fno:predicate": { "@type": "schema:Photograph" },
+            "schema:encodingFormat": "image/png"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "_:capability",
+      "odpa:sameSettingAs": "saref:Sensor",
+      "schema:potentialAction": {
+        "@id": "_:SensingFunctionDefinition",
+        "@type": ["saref:SensingFunction", "fno:Function"]
+      }
+    },
+    {
+      "@id": "_:SensingFunctionDefinition",
+      "fno:expects": { "@list": [] },
+      "fno:returns": { "@list": [] }
+    }
+  ]
+}

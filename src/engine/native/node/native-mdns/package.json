@@ -1,0 +1,13 @@
+{
+  "name": "@proceed/native-mdns",
+  "version": "1.0.0",
+  "description": "Native module that implements the `discover` and `publish` commands.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0",
+    "nbonjour": "^3.6.3",
+    "@darkobits/adeiu": "^0.2.6"
+  }
+}

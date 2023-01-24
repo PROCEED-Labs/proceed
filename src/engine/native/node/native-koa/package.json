@@ -1,0 +1,17 @@
+{
+  "name": "@proceed/native-koa",
+  "version": "1.0.0",
+  "description": "Native module that implements the `serve` and `respond` commands.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0",
+    "koa": "^2.11.0",
+    "@koa/cors": "^3.0.0",
+    "@koa/router": "^8.0.2",
+    "koa-bodyparser": "^4.2.1",
+    "busboy": "0.3.1",
+    "stoppable": "^1.1.0"
+  }
+}

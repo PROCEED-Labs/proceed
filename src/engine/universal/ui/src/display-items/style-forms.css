@@ -1,0 +1,47 @@
+input,
+select,
+textarea {
+  background-color: transparent;
+  border-style: none;
+  border-radius: 0;
+}
+/* todo: style for textarea */
+
+select {
+  border: 0.1rem solid rgba(0, 0, 0, 0.5);
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+input {
+  border-bottom: 0.1rem solid rgb(0, 0, 0, 0.8);
+  min-height: 2rem;
+  -webkit-rtl-ordering: logical;
+  writing-mode: horizontal-tb;
+  -webkit-writing-mode: horizontal-tb;
+  text-rendering: auto;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-indent: 0px;
+  text-shadow: none;
+  display: inline-block;
+  text-align: start;
+}
+
+input:active,
+input:focus {
+  border-bottom: 0.2em solid #0094a0;
+  caret-color: #0094a0;
+  outline: none;
+}
+
+input[type='text'] {
+  min-width: 25rem;
+}
+
+input[type='checkbox'] {
+  min-width: 1.5rem;
+  cursor: pointer;
+}

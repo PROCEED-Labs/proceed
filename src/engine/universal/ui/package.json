@@ -1,0 +1,21 @@
+{
+  "name": "@proceed/ui",
+  "version": "1.0.0",
+  "description": "User Interface module for the PROCEED engine",
+  "main": "./module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "dev-tasklist": "cross-env TARGET=tasklist webpack-dev-server --mode=development --open --config ./src/display-items/webpack.config.js",
+    "dev-configuration": "cross-env TARGET=configuration webpack-dev-server --mode=development --open --config ./src/display-items/webpack.config.js",
+    "dev-logging": "cross-env TARGET=logging webpack-dev-server --mode=development --open --config ./src/display-items/webpack.config.js",
+    "build-tasklist": "cross-env TARGET=tasklist webpack --config ./src/display-items/webpack.config.js",
+    "build-configuration": "cross-env TARGET=configuration webpack --config ./src/display-items/webpack.config.js",
+    "build-logging": "cross-env TARGET=logging webpack --config ./src/display-items/webpack.config.js"
+  },
+  "dependencies": {
+    "@proceed/distribution": "^1.0.0",
+    "@proceed/system": "^1.0.0",
+    "whiskers": "^0.4.0"
+  }
+}

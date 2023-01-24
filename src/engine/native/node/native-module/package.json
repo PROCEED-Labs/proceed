@@ -1,0 +1,8 @@
+{
+  "name": "@proceed/native-module",
+  "version": "1.0.0",
+  "description": "Native module class for use in the @proceed/native part",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT"
+}

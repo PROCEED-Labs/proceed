@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:proceed="https://docs.proceed-labs.org/BPMN" id="_ddd0fcfb-6b3b-4030-a95e-8337020e7f6f" name="aaaaaa" targetNamespace="https://docs.proceed-labs.org/_ddd0fcfb-6b3b-4030-a95e-8337020e7f6f" expressionLanguage="http://www.ecma-international.org/ecma-262/#sec-relational-operators" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.1.0" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="">
+  <bpmn2:Process id="_31b0e877-67bc-48ca-aa0b-f6eba6b5fc0b" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="static">
+    <bpmn2:startEvent id="StartEvent_1" proceed:machineId="1234">
+      <bpmn2:outgoing>SequenceFlow_0sg88tq</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:sequenceFlow id="SequenceFlow_0sg88tq" sourceRef="StartEvent_1" targetRef="Task_074i09w" />
+    <bpmn2:endEvent id="EndEvent_1d3ier5" proceed:machineAddress="192.168.1.1:1234">
+      <bpmn2:incoming>SequenceFlow_1d7q3nw</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:sequenceFlow id="SequenceFlow_1d7q3nw" sourceRef="Task_074i09w" targetRef="EndEvent_1d3ier5" />
+    <bpmn2:userTask id="Task_074i09w" proceed:machineId="1234">
+      <bpmn2:incoming>SequenceFlow_0sg88tq</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_1d7q3nw</bpmn2:outgoing>
+    </bpmn2:userTask>
+  </bpmn2:Process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_31b0e877-67bc-48ca-aa0b-f6eba6b5fc0b">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="412" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0sg88tq_di" bpmnElement="SequenceFlow_0sg88tq">
+        <di:waypoint x="448" y="258" />
+        <di:waypoint x="500" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1d3ier5_di" bpmnElement="EndEvent_1d3ier5">
+        <dc:Bounds x="652" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1d7q3nw_di" bpmnElement="SequenceFlow_1d7q3nw">
+        <di:waypoint x="600" y="258" />
+        <di:waypoint x="652" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_08we8sm_di" bpmnElement="Task_074i09w">
+        <dc:Bounds x="500" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

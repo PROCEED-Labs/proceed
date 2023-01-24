@@ -1,0 +1,56 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g1",
+          "conjunction": "AND"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.platform",
+            "condition": "==",
+            "values": [{ "value": "linux", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "==",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      },
+      {
+        "_type": "constraintGroup",
+        "_attributes": {
+          "id": "g2",
+          "conjunction": "OR"
+        },
+        "constraintGroup": [
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.platform",
+            "condition": "==",
+            "values": [{ "value": "linux", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          },
+          {
+            "_type": "hardConstraint",
+            "_attributes": {},
+            "name": "machine.os.distro",
+            "condition": "==",
+            "values": [{ "value": "Ubuntu", "_valueAttributes": {} }],
+            "_valuesAttributes": {}
+          }
+        ]
+      }
+    ]
+  }
+}

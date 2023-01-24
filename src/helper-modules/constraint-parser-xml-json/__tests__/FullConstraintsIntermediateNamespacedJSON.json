@@ -1,0 +1,125 @@
+{
+  "proceed:processConstraints": {
+    "proceed:hardConstraints": {
+      "proceed:hardConstraint": [
+        {
+          "proceed:name": "machine.os.platform",
+          "proceed:condition": "==",
+          "proceed:values": {
+            "proceed:value": "linux"
+          }
+        },
+        {
+          "proceed:name": "machine.inputs",
+          "proceed:condition": "==",
+          "proceed:values": {
+            "_attributes": {
+              "conjunction": "AND"
+            },
+            "proceed:value": ["Touch", "Keyboard"]
+          }
+        },
+        {
+          "proceed:name": "machine.possibleConnectionTo",
+          "proceed:condition": "==",
+          "proceed:values": {
+            "proceed:value": "google.de"
+          },
+          "proceed:hardConstraints": {
+            "proceed:hardConstraint": {
+              "proceed:name": "latency",
+              "proceed:condition": "&lt;",
+              "proceed:values": {
+                "proceed:value": {
+                  "#text": 50,
+                  "_attributes": {
+                    "unit": "ms"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "proceed:constraintGroup": [
+        {
+          "_attributes": {
+            "id": "g1",
+            "conjunction": "AND"
+          },
+          "proceed:hardConstraint": [
+            {
+              "proceed:name": "machine.os.platform",
+              "proceed:condition": "==",
+              "proceed:values": {
+                "proceed:value": "linux"
+              }
+            },
+            {
+              "proceed:name": "machine.os.distro",
+              "proceed:condition": "==",
+              "proceed:values": {
+                "proceed:value": "Ubuntu"
+              }
+            }
+          ]
+        },
+        {
+          "_attributes": {
+            "id": "g2",
+            "conjunction": "AND"
+          },
+          "proceed:hardConstraint": [
+            {
+              "proceed:name": "machine.os.platform",
+              "proceed:condition": "==",
+              "proceed:values": {
+                "proceed:value": "linux"
+              }
+            },
+            {
+              "proceed:name": "machine.cpu.currentLoad",
+              "proceed:condition": "&lt;",
+              "proceed:values": {
+                "proceed:value": 60
+              }
+            }
+          ]
+        },
+        {
+          "_attributes": {
+            "id": "g3",
+            "conjunction": "OR"
+          },
+          "proceed:constraintGroupRef": [
+            {
+              "_attributes": {
+                "ref": "g1"
+              }
+            },
+            {
+              "_attributes": {
+                "ref": "g2"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "proceed:softConstraints": {
+      "proceed:softConstraint": [
+        {
+          "_attributes": {
+            "weight": 8
+          },
+          "proceed:name": "machine.mem.free",
+          "proceed:condition": "max"
+        },
+        {
+          "proceed:name": "machine.cpu.currentLoad",
+          "proceed:condition": "min"
+        }
+      ]
+    }
+  }
+}

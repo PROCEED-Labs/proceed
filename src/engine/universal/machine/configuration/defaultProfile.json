@@ -1,0 +1,61 @@
+{
+  "js": {
+    "allowCapabilityExecution": true,
+    "allowedCapabilities": ["*"],
+    "deniedCapabilities": [],
+    "allowInternalLibraries": true,
+    "allowedInternalLibraries": ["*"],
+    "deniedInternalLibraries": [],
+    "allowExternalLibraries": true,
+    "allowedExternalLibraries": ["*"],
+    "deniedExternalLibraries": []
+  },
+  "router": {
+    "selectionAlgorithm": "random",
+    "softConstraintPolicy": "FlowNode",
+    "scPolicyAsFastAsPossible": ["machine.cpu.currentLoad", "machine.mem.load"],
+    "waitTimeExternalEvaluations": 5000,
+    "reEvaluateTimer": 15000,
+    "maxStorageTime": 2592000,
+    "maxStorageRounds": -1
+  },
+  "process": {
+    "maxTimeProcessGlobal": -1,
+    "maxTimeProcessLocal": -1,
+    "maxTimeFlowNode": -1,
+    "runUntrustedCode": false,
+    "deniedBPMNElements": [],
+    "acceptedProcesses": ["*"],
+    "deniedProcesses": [],
+    "allowProcessesCreatedInExtEnvs": true,
+    "acceptedProcessesCreatedInEnvs": ["*"],
+    "deniedProcessesCreatedInEnvs": [],
+    "allowProcessesFromExtMachines": true,
+    "acceptedProcessesFromMachineEnvs": ["*"],
+    "deniedProcessesFromMachineEnvs": [],
+    "acceptedProcessesFromMachines": ["*"],
+    "deniedProcessesFromMachines": [],
+    "allowProcessesToExtMachines": true,
+    "acceptedProcessesToMachinesEnvs": ["*"],
+    "deniedProcessesToMachinesEnvs": [],
+    "acceptedProcessesToMachines": ["*"],
+    "deniedProcessesToMachines": []
+  },
+  "machine": {
+    "maxCPULoad": 100,
+    "maxMemLoad": 100,
+    "port": 8080,
+    "env": {
+      "offline": false,
+      "allowedConnections": [],
+      "deniedConnections": [],
+      "reachableMachines": [],
+      "reachableMachinesTimeout": 300,
+      "allowSCValuesForHomeEnv": true,
+      "allowSCValuesForExtEnv": true,
+      "allowedToWorkInsideExtEnvs": true,
+      "acceptedEnvsToWorkIn": ["*"],
+      "deniedEnvsToWorkIn": []
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@proceed/config-server",
+  "version": "1.0.0",
+  "author": "PROCEED Project",
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "description": "The central storage server for advanced use cases in the PROCEED project. It mainly stores config data used for multiple companies to cooperate",
+  "license": "MIT",
+  "main": "./configServer.js",
+  "scripts": {
+    "dev": "node ./configServer.js"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "vue"
+    ],
+    "transform": {
+      ".*\\.(vue)$": "vue-jest",
+      "^.+\\.js$": "<rootDir>/node_modules/babel-jest"
+    }
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {}
+}

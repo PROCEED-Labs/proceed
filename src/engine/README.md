@@ -1,0 +1,1 @@
+This folder contains the PROCEED Engine which executes process diagrams. It is splitted into a `native` part containing OS-dependent code and a `universal` part containing most of the execution logic and is written pure ECMAScript.

@@ -1,0 +1,23 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:hardConstraint>
+            <proceed:name>machine.os.platform</proceed:name>
+            <proceed:condition>==</proceed:condition>
+            <proceed:values>
+                <proceed:value>windows</proceed:value>
+            </proceed:values>
+        </proceed:hardConstraint>
+
+    </proceed:hardConstraints>
+
+    <proceed:softConstraints>
+
+        <proceed:softConstraint>
+            <proceed:name>machine.cpu.currentLoad</proceed:name>
+            <proceed:condition>min</proceed:condition>
+        </proceed:softConstraint>
+
+    </proceed:softConstraints>
+
+</proceed:processConstraints>

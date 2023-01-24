@@ -1,0 +1,84 @@
+{
+  "$type": "bpmn:Definitions",
+  "id": "sample-diagram",
+  "name": "Test",
+  "targetNamespace": "https://docs.proceed-labs.org/",
+  "expressionLanguage": "https://ecma-international.org/ecma-262/8.0/",
+  "typeLanguage": "https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf",
+  "exporter": "PROCEED Management System",
+  "exporterVersion": "0.1.0",
+  "rootElements": [
+    {
+      "$type": "bpmn:Process",
+      "id": "_d1650d0e-7063-4583-ac59-f9ce26e3a550",
+      "name": "PROCEED Main Process",
+      "processType": "Private",
+      "isExecutable": true,
+      "flowElements": [
+        {
+          "$type": "bpmn:StartEvent",
+          "id": "StartEvent_1"
+        },
+        {
+          "$type": "bpmn:SequenceFlow",
+          "id": "SequenceFlow_0ktuoe1"
+        },
+        {
+          "$type": "bpmn:ScriptTask",
+          "id": "Task_0lmz8am",
+          "script": "console.log('Hello World');"
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "$type": "bpmndi:BPMNDiagram",
+      "id": "BPMNDiagram_1",
+      "plane": {
+        "$type": "bpmndi:BPMNPlane",
+        "id": "BPMNPlane_1",
+        "planeElement": [
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "_BPMNShape_StartEvent_2",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 412,
+              "y": 240,
+              "width": 36,
+              "height": 36
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNShape",
+            "id": "ScriptTask_09hyvoc_di",
+            "bounds": {
+              "$type": "dc:Bounds",
+              "x": 500,
+              "y": 218,
+              "width": 100,
+              "height": 80
+            }
+          },
+          {
+            "$type": "bpmndi:BPMNEdge",
+            "id": "SequenceFlow_0ktuoe1_di",
+            "waypoint": [
+              {
+                "$type": "dc:Point",
+                "x": 448,
+                "y": 258
+              },
+              {
+                "$type": "dc:Point",
+                "x": 500,
+                "y": 258
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

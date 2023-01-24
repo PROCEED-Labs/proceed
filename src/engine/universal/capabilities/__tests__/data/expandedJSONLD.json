@@ -1,0 +1,376 @@
+[
+  {
+    "@id": "_:capability",
+    "https://schema.org/potentialAction": [
+      {
+        "@id": "_:PhotographActionDefinition",
+        "@type": [
+          "https://schema.org/PhotographAction",
+          "https://w3id.org/function/ontology#Function"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:PhotographActionDefinition",
+    "https://w3id.org/function/ontology#expects": [
+      {
+        "@list": [
+          { "@id": "_:heightParameter" },
+          { "@id": "_:widthParameter" },
+          { "@id": "_:dpiParameter" },
+          { "@id": "_:optionsParameter" }
+        ]
+      }
+    ],
+    "https://w3id.org/function/ontology#returns": [
+      { "@id": "_:imageParameter" }
+    ]
+  },
+  {
+    "@id": "_:heightParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      { "@type": ["https://schema.org/height"] }
+    ],
+    "https://w3id.org/function/ontology#required": [{ "@value": true }],
+    "https://schema.org/unitText": [{ "@value": "px" }]
+  },
+  {
+    "@id": "_:widthParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      { "@type": ["https://schema.org/width"] }
+    ],
+    "https://w3id.org/function/ontology#required": [{ "@value": true }],
+    "https://schema.org/maxValue": [{ "@value": 20 }],
+    "https://schema.org/unitText": [{ "@value": "px" }]
+  },
+  {
+    "@id": "_:dpiParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [{ "@type": ["/dpi"] }],
+    "https://w3id.org/function/ontology#required": [{ "@value": false }],
+    "https://schema.org/description": [
+      { "@value": "required Dots Per Inch value, resolution" }
+    ]
+  },
+  {
+    "@id": "_:optionsParameter",
+    "@type": ["https://w3id.org/function/ontology#Parameter"],
+    "https://w3id.org/function/ontology#predicate": [{ "@type": ["/options"] }],
+    "https://w3id.org/function/ontology#required": [{ "@value": false }],
+    "http://purl.org/dc/terms/hasPart": [
+      {
+        "@list": [
+          {
+            "@id": "_:blackWhiteParameter",
+            "@type": [
+              "https://w3id.org/function/ontology#Parameter",
+              "https://schema.org/Boolean"
+            ],
+            "https://w3id.org/function/ontology#predicate": [
+              { "@type": ["/blackWhite"] }
+            ],
+            "https://w3id.org/function/ontology#required": [
+              { "@value": false }
+            ],
+            "https://schema.org/defaultValue": [{ "@value": false }]
+          },
+          {
+            "@id": "_:rotationParameter",
+            "@type": [
+              "https://w3id.org/function/ontology#Parameter",
+              "https://schema.org/Integer"
+            ],
+            "https://w3id.org/function/ontology#predicate": [
+              { "@type": ["/rotation"] }
+            ],
+            "https://w3id.org/function/ontology#required": [
+              { "@value": false }
+            ],
+            "https://schema.org/defaultValue": [{ "@value": 0 }],
+            "https://schema.org/maxValue": [{ "@value": 359 }],
+            "https://schema.org/minValue": [{ "@value": 0 }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:imageParameter",
+    "@type": ["https://w3id.org/function/ontology#Output"],
+    "https://w3id.org/function/ontology#predicate": [
+      { "@type": ["https://schema.org/ImageObject"] }
+    ],
+    "http://purl.org/dc/terms/hasPart": [
+      {
+        "@list": [
+          {
+            "@id": "_:geoCoordinatesParameter",
+            "@type": ["https://w3id.org/function/ontology#Output"],
+            "https://w3id.org/function/ontology#predicate": [
+              { "@type": ["https://schema.org/GeoCoordinates"] }
+            ],
+            "http://purl.org/dc/terms/hasPart": [
+              {
+                "@list": [
+                  {
+                    "@id": "_:latiduteParameter",
+                    "@type": [
+                      "https://w3id.org/function/ontology#Output",
+                      "https://schema.org/Float"
+                    ],
+                    "https://w3id.org/function/ontology#predicate": [
+                      { "@type": ["https://schema.org/latidute"] }
+                    ]
+                  },
+                  {
+                    "@id": "_:longitudeParameter",
+                    "@type": [
+                      "https://w3id.org/function/ontology#Output",
+                      "https://schema.org/Float"
+                    ],
+                    "https://w3id.org/function/ontology#predicate": [
+                      { "@type": ["https://schema.org/longitude"] }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "@id": "_:photographParameter",
+            "@type": ["https://w3id.org/function/ontology#Output"],
+            "https://w3id.org/function/ontology#predicate": [
+              { "@type": ["https://schema.org/Photograph"] }
+            ],
+            "https://schema.org/encodingFormat": [{ "@value": "image/png" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:PhotograhActionImplementation",
+    "@type": [
+      "https://w3id.org/function/vocabulary/implementationJavaScriptFunction"
+    ],
+    "http://dbpedia.org/ontology/filename": [{ "@value": "index.js" }]
+  },
+  {
+    "@id": "_:PhotograhActionMapping",
+    "@type": ["https://w3id.org/function/ontology#Mapping"],
+    "https://w3id.org/function/ontology#function": [
+      { "@value": "_:PhotographActionDefinition" }
+    ],
+    "https://w3id.org/function/ontology#implementation": [
+      { "@value": "_:PhotograhActionImplementation" }
+    ],
+    "https://w3id.org/function/ontology#parameterMapping": [
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:heightParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "h" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:widthParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "w" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:dpiParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "dpi" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:optionsParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "options" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:optionsParameter" },
+          { "@value": "_:blackWhiteParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "options/blackWhite" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:optionsParameter" },
+          { "@value": "_:rotationParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "options/rotation" }
+        ]
+      }
+    ],
+    "https://w3id.org/function/ontology#returnMapping": [
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:imageParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "img" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:imageParameter" },
+          { "@value": "_:geoCoordinatesParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "img/gps" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:imageParameter" },
+          { "@value": "_:geoCoordinatesParameter" },
+          { "@value": "_:latiduteParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "img/gps/lat" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:imageParameter" },
+          { "@value": "_:geoCoordinatesParameter" },
+          { "@value": "_:longitudeParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "img/gps/long" }
+        ]
+      },
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:imageParameter" },
+          { "@value": "_:photographParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "img/photo" }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:capability",
+    "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#sameSettingAs": [
+      { "@value": "saref:LightingDevice" }
+    ],
+    "https://schema.org/potentialAction": [
+      {
+        "@id": "_:TurnOnDefinition",
+        "@type": [
+          "http://iotschema.org/TurnOn",
+          "https://w3id.org/function/ontology#Function"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:TurnOnDefinition",
+    "https://w3id.org/function/ontology#expects": [
+      { "@list": [{ "@id": "_:colourParameter" }] }
+    ],
+    "https://w3id.org/function/ontology#returns": [{ "@list": [] }]
+  },
+  {
+    "@id": "_:colourParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Text"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      { "@type": ["https://schema.org/color"] }
+    ],
+    "https://w3id.org/function/ontology#required": [{ "@value": true }]
+  },
+  {
+    "@id": "_:TurnOnImplementation",
+    "@type": [
+      "https://w3id.org/function/vocabulary/implementationJavaScriptFunction"
+    ],
+    "http://dbpedia.org/ontology/filename": [{ "@value": "index.js" }]
+  },
+  {
+    "@id": "_:turnOnMapping",
+    "@type": ["https://w3id.org/function/ontology#Mapping"],
+    "https://w3id.org/function/ontology#function": [
+      { "@value": "_:TurnOnDefinition" }
+    ],
+    "https://w3id.org/function/ontology#implementation": [
+      { "@value": "_:TurnOnImplementation" }
+    ],
+    "https://w3id.org/function/ontology#parameterMapping": [
+      {
+        "@type": [
+          "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
+        ],
+        "https://w3id.org/function/vocabulary/mapping#functionParameter": [
+          { "@value": "_:colourParameter" }
+        ],
+        "https://w3id.org/function/vocabulary/mapping#implementationProperty": [
+          { "@value": "col" }
+        ]
+      }
+    ]
+  }
+]

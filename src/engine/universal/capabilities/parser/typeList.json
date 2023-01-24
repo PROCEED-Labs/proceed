@@ -1,0 +1,10 @@
+[
+  "https://schema.org/Boolean",
+  "https://schema.org/Date",
+  "https://schema.org/DateTime",
+  "https://schema.org/Number",
+  "https://schema.org/Float",
+  "https://schema.org/Integer",
+  "https://schema.org/Text",
+  "https://schema.org/Time"
+]

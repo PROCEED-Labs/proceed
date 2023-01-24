@@ -1,0 +1,11 @@
+{
+  "name": "@proceed/monitoring",
+  "version": "1.0.0",
+  "description": "Monitoring module for the PROCEED engine",
+  "main": "src/module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/system": "^1.0.0"
+  }
+}

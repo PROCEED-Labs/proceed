@@ -1,0 +1,27 @@
+.active {
+  color: #0095dd;
+}
+
+.inactive {
+  color: #4d4e53;
+}
+.page-title {
+  font-size: 2rem;
+}
+/* for templateChanges.js */
+.modClassUl {
+  margin-top: 15px;
+}
+
+.modClassUl li + li {
+  margin-left: 20px;
+}
+
+/* for publish.js */
+.modClassLinks {
+  margin-left: 20px;
+}
+
+.univClassUl {
+  margin-top: 15px;
+}

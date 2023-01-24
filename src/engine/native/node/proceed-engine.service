@@ -1,0 +1,14 @@
+[Unit]
+Description=PROCEED Engine
+Documentation=https://docs.proceed-labs.org/
+
+[Service]
+WorkingDirectory=<dir-where-proceed-engine-is-installed>
+ExecStart=<path-to-node-binary> proceed-engine.js
+SyslogIdentifier=proceed-engine
+Restart=on-failure
+RestartSec=3
+User=<user>
+
+[Install]
+WantedBy=multi-user.target

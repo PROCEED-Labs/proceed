@@ -1,0 +1,119 @@
+#header {
+  margin: 1rem 0;
+}
+#root {
+  border: 0.1rem solid rgba(104, 104, 104, 0.1);
+  margin: 1rem;
+}
+
+.config-sub-object-title {
+  text-align: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  min-height: 3rem;
+  border-bottom: 0.1rem solid lightgray;
+  align-items: center;
+  display: flex;
+  flex: 1 1 100%;
+}
+
+/* title is use for config-sub-object-title and array-node-title */
+.title {
+  flex: 1;
+}
+
+.config-sub-object-title:hover {
+  background-color: rgba(247, 247, 247);
+}
+.config-sub-object-title:focus {
+  background-color: #d3d3d3;
+}
+
+.config-sub-object-title .menuIconArrowDown {
+  float: right;
+  margin-right: 1rem;
+}
+
+.config-sub-object-body,
+.array-node-body {
+  background-color: rgba(190, 190, 190, 0.1);
+}
+
+.noshow {
+  display: none;
+}
+.show {
+  display: block;
+}
+
+.input-line {
+  margin-bottom: 1rem;
+  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.input-label-cell {
+  box-sizing: border-box;
+  padding-right: 1rem;
+  text-align: right;
+}
+
+.input-label-cell + .input-input-cell {
+  box-sizing: border-box;
+  text-align: left;
+  padding-left: 1rem;
+}
+
+.array-node-title {
+  cursor: pointer;
+  min-height: 3rem;
+  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.array-node-title:hover {
+  background-color: rgba(155, 155, 155, 0.1);
+}
+.array-node-title:focus {
+  background-color: #d3d3d3;
+}
+.menuIconArrowDown {
+  margin-left: 1rem;
+}
+
+.array-node-body {
+  background-color: rgb(252, 252, 252);
+  margin: 0 0.5rem;
+}
+
+.array-node-body .input-input-cell {
+  text-align: right;
+  box-sizing: border-box;
+  padding-right: 1rem;
+}
+
+.input-remove-cell {
+  cursor: pointer;
+  text-align: center;
+  box-sizing: border-box;
+  padding-left: 1rem;
+  color: #e64242;
+  font-size: 1.5rem;
+}
+
+.array-node-add {
+  text-align: center;
+}
+
+.back-arrow {
+  height: 100%;
+  font-weight: 700;
+}

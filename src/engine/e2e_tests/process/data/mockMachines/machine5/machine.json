@@ -1,0 +1,16 @@
+{
+  "id": "machineId5",
+  "cpu": {
+    "cores": 1,
+    "physicalCores": 2,
+    "processors": 1,
+    "speed": "0.1",
+    "currentLoad": 8.685843203609702,
+    "loadLastMinute": 0,
+    "loadLastTenMinutes": 0,
+    "loadLastHalfHour": 0,
+    "loadLastHour": 0,
+    "loadLastHalfDay": 0,
+    "loadLastDay": 0
+  }
+}

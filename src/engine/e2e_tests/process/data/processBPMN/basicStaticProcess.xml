@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:proceed="https://docs.proceed-labs.org/BPMN" id="_1b1d06f3-dbab-49bd-8989-47af615bd071" name="basicStaticProcess" targetNamespace="https://docs.proceed-labs.org/_1b1d06f3-dbab-49bd-8989-47af615bd071" expressionLanguage="http://www.ecma-international.org/ecma-262/#sec-relational-operators" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="_84d10daf-496a-4f60-8ea7-352070c63a45" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="static">
+    <startEvent id="StartEvent_1" proceed:machineId="machineId1">
+      <outgoing>Flow_09gzsbw</outgoing>
+    </startEvent>
+    <task id="Activity_0xfbs3r" proceed:machineId="machineId1">
+      <incoming>Flow_09gzsbw</incoming>
+      <outgoing>Flow_07g4pnw</outgoing>
+    </task>
+    <sequenceFlow id="Flow_09gzsbw" sourceRef="StartEvent_1" targetRef="Activity_0xfbs3r" />
+    <endEvent id="Event_0maz5yf" proceed:machineId="machineId1">
+      <incoming>Flow_07g4pnw</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_07g4pnw" sourceRef="Activity_0xfbs3r" targetRef="Event_0maz5yf" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_84d10daf-496a-4f60-8ea7-352070c63a45">
+      <bpmndi:BPMNEdge id="Flow_09gzsbw_di" bpmnElement="Flow_09gzsbw">
+        <di:waypoint x="448" y="258" />
+        <di:waypoint x="500" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07g4pnw_di" bpmnElement="Flow_07g4pnw">
+        <di:waypoint x="600" y="258" />
+        <di:waypoint x="652" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="412" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xfbs3r_di" bpmnElement="Activity_0xfbs3r">
+        <dc:Bounds x="500" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0maz5yf_di" bpmnElement="Event_0maz5yf">
+        <dc:Bounds x="652" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,22 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.network.ip4",
+        "condition": "!=",
+        "values": [{ "value": "222.222.222.222", "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ],
+    "softConstraints": [
+      {
+        "_type": "softConstraint",
+        "_attributes": {},
+        "name": "machine.mem.free",
+        "condition": "max"
+      }
+    ]
+  }
+}

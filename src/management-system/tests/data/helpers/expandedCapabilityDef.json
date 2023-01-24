@@ -1,0 +1,317 @@
+[
+  {
+    "@id": "_:capability",
+    "https://schema.org/potentialAction": [
+      {
+        "@id": "_:PhotographActionDefinition",
+        "@type": [
+          "https://schema.org/PhotographAction",
+          "https://w3id.org/function/ontology#Function"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:PhotographActionDefinition",
+    "https://w3id.org/function/ontology#expects": [
+      {
+        "@list": [
+          {
+            "@id": "_:heightParameter"
+          },
+          {
+            "@id": "_:widthParameter"
+          },
+          {
+            "@id": "_:dpiParameter"
+          },
+          {
+            "@id": "_:optionsParameter"
+          }
+        ]
+      }
+    ],
+    "https://w3id.org/function/ontology#returns": [
+      {
+        "@list": [
+          {
+            "@id": "_:imageParameter"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:heightParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["https://schema.org/height"]
+      }
+    ],
+    "https://w3id.org/function/ontology#required": [
+      {
+        "@value": true
+      }
+    ],
+    "https://schema.org/unitText": [
+      {
+        "@value": "px"
+      }
+    ]
+  },
+  {
+    "@id": "_:widthParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["https://schema.org/width"]
+      }
+    ],
+    "https://w3id.org/function/ontology#required": [
+      {
+        "@value": true
+      }
+    ],
+    "https://schema.org/maxValue": [
+      {
+        "@value": 20
+      }
+    ],
+    "https://schema.org/unitText": [
+      {
+        "@value": "px"
+      }
+    ]
+  },
+  {
+    "@id": "_:dpiParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Integer"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["/dpi"]
+      }
+    ],
+    "https://w3id.org/function/ontology#required": [
+      {
+        "@value": false
+      }
+    ],
+    "https://schema.org/description": [
+      {
+        "@value": "required Dots Per Inch value, resolution"
+      }
+    ]
+  },
+  {
+    "@id": "_:optionsParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "http://www.w3.org/2001/XMLSchema#complexType"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["/options"]
+      }
+    ],
+    "https://w3id.org/function/ontology#required": [
+      {
+        "@value": false
+      }
+    ],
+    "http://purl.org/dc/terms/hasPart": [
+      {
+        "@list": [
+          {
+            "@id": "_:blackWhiteParameter",
+            "@type": [
+              "https://w3id.org/function/ontology#Parameter",
+              "https://schema.org/Boolean"
+            ],
+            "https://w3id.org/function/ontology#predicate": [
+              {
+                "@type": ["/blackWhite"]
+              }
+            ],
+            "https://w3id.org/function/ontology#required": [
+              {
+                "@value": false
+              }
+            ],
+            "https://schema.org/defaultValue": [
+              {
+                "@value": false
+              }
+            ]
+          },
+          {
+            "@id": "_:rotationParameter",
+            "@type": [
+              "https://w3id.org/function/ontology#Parameter",
+              "https://schema.org/Integer"
+            ],
+            "https://w3id.org/function/ontology#predicate": [
+              {
+                "@type": ["/rotation"]
+              }
+            ],
+            "https://w3id.org/function/ontology#required": [
+              {
+                "@value": false
+              }
+            ],
+            "https://schema.org/defaultValue": [
+              {
+                "@value": 0
+              }
+            ],
+            "https://schema.org/maxValue": [
+              {
+                "@value": 359
+              }
+            ],
+            "https://schema.org/minValue": [
+              {
+                "@value": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:imageParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Output",
+      "http://www.w3.org/2001/XMLSchema#complexType"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["https://schema.org/ImageObject"]
+      }
+    ],
+    "http://purl.org/dc/terms/hasPart": [
+      {
+        "@list": [
+          {
+            "@id": "_:geoCoordinatesParameter",
+            "@type": [
+              "https://w3id.org/function/ontology#Output",
+              "http://www.w3.org/2001/XMLSchema#complexType"
+            ],
+            "https://w3id.org/function/ontology#predicate": [
+              {
+                "@type": ["https://schema.org/GeoCoordinates"]
+              }
+            ],
+            "http://purl.org/dc/terms/hasPart": [
+              {
+                "@list": [
+                  {
+                    "@id": "_:latitudeParameter",
+                    "@type": [
+                      "https://w3id.org/function/ontology#Output",
+                      "https://schema.org/Float"
+                    ],
+                    "https://w3id.org/function/ontology#predicate": [
+                      {
+                        "@type": ["https://schema.org/latitude"]
+                      }
+                    ]
+                  },
+                  {
+                    "@id": "_:longitudeParameter",
+                    "@type": [
+                      "https://w3id.org/function/ontology#Output",
+                      "https://schema.org/Float"
+                    ],
+                    "https://w3id.org/function/ontology#predicate": [
+                      {
+                        "@type": ["https://schema.org/longitude"]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "@id": "_:photographParameter",
+            "@type": ["https://w3id.org/function/ontology#Output"],
+            "https://w3id.org/function/ontology#predicate": [
+              {
+                "@type": ["https://schema.org/Photograph"]
+              }
+            ],
+            "https://schema.org/encodingFormat": [
+              {
+                "@value": "image/png"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:capability",
+    "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#sameSettingAs": [
+      {
+        "@value": "saref:LightingDevice"
+      }
+    ],
+    "https://schema.org/potentialAction": [
+      {
+        "@id": "_:TurnOnDefinition",
+        "@type": [
+          "http://iotschema.org/TurnOn",
+          "https://w3id.org/function/ontology#Function"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "_:TurnOnDefinition",
+    "https://w3id.org/function/ontology#expects": [
+      {
+        "@list": [
+          {
+            "@id": "_:colourParameter"
+          }
+        ]
+      }
+    ],
+    "https://w3id.org/function/ontology#returns": [
+      {
+        "@list": []
+      }
+    ]
+  },
+  {
+    "@id": "_:colourParameter",
+    "@type": [
+      "https://w3id.org/function/ontology#Parameter",
+      "https://schema.org/Text"
+    ],
+    "https://w3id.org/function/ontology#predicate": [
+      {
+        "@type": ["https://schema.org/color"]
+      }
+    ],
+    "https://w3id.org/function/ontology#required": [
+      {
+        "@value": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "name": "@proceed/capabilities",
+  "version": "1.0.0",
+  "description": "",
+  "main": "module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "jsonld": "^1.6.2",
+    "lodash": "^4.17.11",
+    "@proceed/system": "^1.0.0"
+  }
+}

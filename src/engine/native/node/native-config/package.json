@@ -1,0 +1,11 @@
+{
+  "name": "@proceed/native-config",
+  "version": "1.0.0",
+  "description": "Native module that implements the `config` command.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0"
+  }
+}

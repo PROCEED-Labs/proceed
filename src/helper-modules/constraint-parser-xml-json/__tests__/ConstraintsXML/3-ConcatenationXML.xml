@@ -1,0 +1,42 @@
+<proceed:processConstraints>
+    <proceed:hardConstraints>
+
+        <proceed:constraintGroup id="g1" conjunction="AND">
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.platform</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>linux</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.distro</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>Ubuntu</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+        </proceed:constraintGroup>
+
+        <proceed:constraintGroup id="g2" conjunction="OR">
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.platform</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>linux</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+
+            <proceed:hardConstraint>
+                <proceed:name>machine.os.distro</proceed:name>
+                <proceed:condition>==</proceed:condition>
+                <proceed:values>
+                    <proceed:value>Ubuntu</proceed:value>
+                </proceed:values>
+            </proceed:hardConstraint>
+        </proceed:constraintGroup>
+
+    </proceed:hardConstraints>
+
+</proceed:processConstraints>

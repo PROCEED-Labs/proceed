@@ -1,0 +1,22 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "machine.os.platform",
+        "condition": "==",
+        "values": [{ "value": "windows", "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ],
+    "softConstraints": [
+      {
+        "_type": "softConstraint",
+        "_attributes": {},
+        "name": "machine.cpu.currentLoad",
+        "condition": "min"
+      }
+    ]
+  }
+}

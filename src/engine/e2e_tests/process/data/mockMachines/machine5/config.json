@@ -1,0 +1,40 @@
+{
+  "name": "machine5",
+  "description": "",
+  "logs": {
+    "enabled": true,
+    "logLevel": "info",
+    "forwardToConsole": true,
+    "consoleLevel": "info",
+    "maxProcessLogEntries": 500,
+    "maxProcessLogTables": 5,
+    "rotationInterval": 600,
+    "maxStandardLogEntries": 1000
+  },
+  "processes": {
+    "acceptUserTasks": false,
+    "deactivateProcessExecution": false
+  },
+  "engine": {
+    "networkRequestTimeout": 10,
+    "loadInterval": 10
+  },
+  "machine": {
+    "port": 33024,
+    "classes": ["mockMachine"],
+    "domains": [],
+    "loadInterval": 10,
+    "inputs": ["Camera"],
+    "outputs": [],
+    "onlineCheckingAddresses": ["clients3.google.com", "1.1.1.1"],
+    "currentlyConnectedEnvironments": []
+  },
+  "router": {
+    "softConstraintPolicy": "PreferLocalMachine",
+    "reEvaluateTimer": 100,
+    "waitTimeExternalEvaluations": 5000
+  },
+  "process": {
+    "maxTimeProcessLocal": 1
+  }
+}

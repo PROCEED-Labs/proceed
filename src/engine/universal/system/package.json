@@ -1,0 +1,12 @@
+{
+  "name": "@proceed/system",
+  "version": "1.0.0",
+  "description": "Proceed system framework.",
+  "main": "src/module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "browser-request": "^0.3.3",
+    "uuid": "^3.3.3"
+  }
+}

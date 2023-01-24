@@ -1,0 +1,52 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "electron-debug",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/src/management-system"
+      },
+      "command": "yarn electron:serve --debug",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": ""
+        },
+        "background": {
+          "beginsPattern": "Starting development server\\.\\.\\.",
+          "endsPattern": "Not launching electron as debug argument was passed\\."
+        }
+      }
+    },
+    {
+      "label": "start-ms-dev-servers",
+      "type": "shell",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/src/management-system"
+      },
+      "command": "yarn web:dev-serve-frontend & yarn web:dev-serve-backend-puppeteer",
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": "__do__not__match",
+              "file": 1,
+              "location": 2,
+              "message": 3
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "Starting development server...",
+            "endsPattern": "Local:   https://localhost:33083/"
+          }
+        }
+      ]
+    }
+  ]
+}

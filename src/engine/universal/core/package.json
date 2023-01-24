@@ -1,0 +1,25 @@
+{
+  "name": "@proceed/core",
+  "version": "1.0.0",
+  "main": "./src/module.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "scripts": {
+    "start": "echo 'Do not start the engine module directly!\nInstead do yarn dev.'"
+  },
+  "dependencies": {
+    "@proceed/capabilities": "^1.0.0",
+    "@proceed/decider": "^1.0.0",
+    "@proceed/distribution": "^1.0.0",
+    "@proceed/machine": "^1.0.0",
+    "@proceed/monitoring": "^1.0.0",
+    "@proceed/system": "^1.0.0",
+    "@proceed/ui": "^1.0.0",
+    "bpmn-moddle": "^5.1.6",
+    "neo-bpmn-engine": "^6.3.2",
+    "vm2": "3.8.4"
+  },
+  "devDependencies": {
+    "esm": "^3.2.1"
+  }
+}

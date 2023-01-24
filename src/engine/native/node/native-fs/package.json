@@ -1,0 +1,15 @@
+{
+  "name": "@proceed/native-fs",
+  "version": "1.0.0",
+  "description": "Native module that implements the `read` and `write`commands.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@darkobits/adeiu": "^0.2.6",
+    "@proceed/native-module": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.1.3"
+  }
+}

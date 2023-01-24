@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_d506e74a-bacc-45f8-aa6b-b86a9f7ecc57" name="scriptTaskDynamicProcess" targetNamespace="https://docs.proceed-labs.org/_d506e74a-bacc-45f8-aa6b-b86a9f7ecc57" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="_5a9583e2-d6c4-4505-a603-4e56016a1361" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <documentation />
+    <startEvent id="StartEvent_1">
+      <outgoing>Flow_03qmegv</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_03qmegv" sourceRef="StartEvent_1" targetRef="Activity_1alt9t5" />
+    <task id="Activity_09nqr1h">
+      <incoming>Flow_1kq2fh1</incoming>
+      <outgoing>Flow_04ga6ct</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1kq2fh1" sourceRef="Activity_1alt9t5" targetRef="Activity_09nqr1h" />
+    <endEvent id="Event_0fyqwns">
+      <incoming>Flow_04ga6ct</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_04ga6ct" sourceRef="Activity_09nqr1h" targetRef="Event_0fyqwns" />
+    <scriptTask id="Activity_1alt9t5" scriptFormat="application/javascript">
+      <incoming>Flow_03qmegv</incoming>
+      <outgoing>Flow_1kq2fh1</outgoing>
+      <script>return new Promise(resolve => setTimeout(resolve, 3000))</script>
+    </scriptTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_5a9583e2-d6c4-4505-a603-4e56016a1361">
+      <bpmndi:BPMNEdge id="Flow_03qmegv_di" bpmnElement="Flow_03qmegv">
+        <di:waypoint x="208" y="258" />
+        <di:waypoint x="320" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kq2fh1_di" bpmnElement="Flow_1kq2fh1">
+        <di:waypoint x="420" y="258" />
+        <di:waypoint x="520" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04ga6ct_di" bpmnElement="Flow_04ga6ct">
+        <di:waypoint x="620" y="258" />
+        <di:waypoint x="732" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_09nqr1h_di" bpmnElement="Activity_09nqr1h">
+        <dc:Bounds x="520" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0fyqwns_di" bpmnElement="Event_0fyqwns">
+        <dc:Bounds x="732" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0bzes3v_di" bpmnElement="Activity_1alt9t5">
+        <dc:Bounds x="320" y="218" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

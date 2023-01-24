@@ -1,0 +1,27 @@
+PODS:
+  - Embassy (4.0.8)
+  - PlainPing (0.5)
+  - SQLite.swift (0.12.0):
+    - SQLite.swift/standard (= 0.12.0)
+  - SQLite.swift/standard (0.12.0)
+
+DEPENDENCIES:
+  - Embassy
+  - PlainPing
+  - SQLite.swift
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - Embassy
+    - SQLite.swift
+  trunk:
+    - PlainPing
+
+SPEC CHECKSUMS:
+  Embassy: fe6a3f8dd2d705881c172dcb144fb97b9408f4cd
+  PlainPing: 6b248b94d92be7ec0410952d1b09af43b9a39015
+  SQLite.swift: 7cad9db150a03716336e69469ec9559c85aece5b
+
+PODFILE CHECKSUM: ce70b0bcdf265dafef85c129448bb968b2adcb2b
+
+COCOAPODS: 1.8.4

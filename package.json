@@ -1,0 +1,105 @@
+{
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "src/engine/universal/*",
+      "src/engine/native/node/*",
+      "src/config-server",
+      "src/management-system",
+      "src/helper-modules/*",
+      "src/engine/native/web/server"
+    ],
+    "nohoist": [
+      "**/monaco-editor",
+      "**/monaco-editor/**"
+    ]
+  },
+  "author": {
+    "name": "PROCEED Project",
+    "email": "proceed@snet.tu-berlin.de",
+    "url": "https://proceed.snet.tu-berlin.de/"
+  },
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "bugs": "https://gitlab.com/dBPMS-PROCEED/proceed/-/issues",
+  "description": "The PROCEED project aims to create a new kind of process execution engine with distributed and decentralized features.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/dBPMS-PROCEED/proceed.git",
+    "directory": "src/management-system"
+  },
+  "engines": {
+    "node": ">=12.0.0",
+    "yarn": ">=1.0.0"
+  },
+  "prettier": {
+    "singleQuote": true
+  },
+  "scripts": {
+    "dev": "node --trace-warnings src/engine/native/node/index.js",
+    "dev-ms": "cd src/management-system && yarn electron:serve",
+    "dev-ms-iam": "cd src/management-system && yarn web:dev-iam",
+    "dev-ms-server": "cd src/management-system && yarn web:dev",
+    "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
+    "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
+    "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.js && node ./build-injector.js && cd ../../universal && webpack --config webpack.universal.config.js",
+    "build-ms": "cd src/management-system && yarn electron:build-windows-linux",
+    "build-ms-mac": "cd src/management-system && yarn electron:build-mac",
+    "build-ms-web": "cd src/management-system && yarn web:build-server-frontend",
+    "build-ms-server": "cd src/management-system && yarn web:build-server",
+    "build-web": "yarn build && cd src/engine/native/web/server && yarn build",
+    "docker:run": "docker container run --publish 33029:33029 --rm --network host --detach --name engine proceed/engine:latest",
+    "docker:stop": "docker container stop engine",
+    "docker:run-server": "docker container run --detach --rm -p 443:33080 -p 33081:33081 --cap-add=SYS_ADMIN --name ms-server proceed/ms-server:latest",
+    "docker:stop-server": "docker container stop ms-server",
+    "test": "yarn test-engine",
+    "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
+    "test-ms": "cd src/management-system && yarn test:unit",
+    "test-e2e": "jest src/engine/e2e_tests/",
+    "test-all": "yarn test-engine && yarn test-ms && yarn test-e2e",
+    "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
+    "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
+    "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged",
+      "pre-push": "yarn test-engine && yarn test-ms"
+    }
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.0",
+    "@babel/plugin-proposal-class-properties": "^7.5.0",
+    "@babel/preset-env": "^7.5.2",
+    "@open-wc/webpack-import-meta-loader": "0.4.7",
+    "@userfrosting/merge-package-dependencies": "^1.2.0",
+    "babel-eslint": "^10.0.3",
+    "babel-loader": "^8.0.6",
+    "clean-webpack-plugin": "^2.0.1",
+    "cross-env": "^6.0.2",
+    "css-loader": "^2.1.1",
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.17.0",
+    "eslint-plugin-node": "^10.0.0",
+    "fs-extra": "^7.0.1",
+    "html-webpack-inline-source-plugin": "^0.0.10",
+    "html-webpack-plugin": "^3.2.0",
+    "husky": "^4.2.3",
+    "jest": "^24.9.0",
+    "jest-when": "^2.7.0",
+    "jsdoc": "^3.6.6",
+    "mini-css-extract-plugin": "^0.6.0",
+    "nodemon": "^2.0.12",
+    "optimize-css-assets-webpack-plugin": "^5.0.1",
+    "prettier": "~2.5.1",
+    "pretty-quick": "2.0.1",
+    "style-loader": "^0.23.1",
+    "supertest": "^4.0.2",
+    "webpack": "^4.35.3",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.2.1"
+  }
+}

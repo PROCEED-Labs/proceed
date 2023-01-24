@@ -1,0 +1,38 @@
+#header {
+  margin: 1rem 0.5rem;
+}
+.LogElem {
+  margin: 0.1rem 0.5rem;
+  box-shadow: 0 0 0.2rem -0.15rem #bbbbbb;
+  border-radius: 0;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.data {
+  margin: 0px 3px;
+}
+
+.log-debug {
+  background-color: rgba(255, 235, 206, 0.349);
+}
+
+.log-error > .level {
+  color: red;
+}
+
+.log-info > .level {
+  color: green;
+}
+
+.log-info > .warn {
+  color: orange;
+}
+
+#instance-select {
+  display: none;
+}
+
+.instance-container {
+  padding: 0;
+}

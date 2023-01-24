@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="http://docs.snet.tu-berlin.de/proceed" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_c6b521de-5cf8-4224-8fbf-9d6e32e1e974" name="deciderStopTokenProcess" targetNamespace="http://docs.snet.tu-berlin.de/proceed/_c6b521de-5cf8-4224-8fbf-9d6e32e1e974" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="0.0.1" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="http://docs.snet.tu-berlin.de/proceed http://docs.snet.tu-berlin.de/proceed/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd" proceed:version="123">
+  <process id="_5156a25c-0fe2-42b1-8ccd-b8cf82cc56c1" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <documentation />
+    <startEvent id="StartEvent_1">
+      <outgoing>Flow_1enzrq0</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_1enzrq0" sourceRef="StartEvent_1" targetRef="Gateway_0t67gjs" />
+    <parallelGateway id="Gateway_0t67gjs">
+      <incoming>Flow_1enzrq0</incoming>
+      <outgoing>Flow_1qga0qa</outgoing>
+      <outgoing>Flow_1pzlp7r</outgoing>
+    </parallelGateway>
+    <task id="Activity_1p2hs43">
+      <extensionElements>
+        <proceed:processConstraints>
+          <proceed:hardConstraints>
+            <proceed:hardConstraint>
+              <proceed:name>machine.id</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>non-existing</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+            <proceed:hardConstraint>
+              <proceed:name>maxTokenStorageRounds</proceed:name>
+              <proceed:condition>==</proceed:condition>
+              <proceed:values conjunction="OR">
+                <proceed:value>1</proceed:value>
+              </proceed:values>
+            </proceed:hardConstraint>
+          </proceed:hardConstraints>
+        </proceed:processConstraints>
+      </extensionElements>
+      <incoming>Flow_1qga0qa</incoming>
+      <outgoing>Flow_0dnfrtp</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1qga0qa" sourceRef="Gateway_0t67gjs" targetRef="Activity_1p2hs43" />
+    <sequenceFlow id="Flow_1pzlp7r" sourceRef="Gateway_0t67gjs" targetRef="Activity_0fxx8a4" />
+    <endEvent id="Event_15eeeoh">
+      <incoming>Flow_0dnfrtp</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0dnfrtp" sourceRef="Activity_1p2hs43" targetRef="Event_15eeeoh" />
+    <endEvent id="Event_125goxg">
+      <incoming>Flow_0a94qz4</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0a94qz4" sourceRef="Activity_0fxx8a4" targetRef="Event_125goxg" />
+    <scriptTask id="Activity_0fxx8a4" scriptFormat="application/javascript">
+      <incoming>Flow_1pzlp7r</incoming>
+      <outgoing>Flow_0a94qz4</outgoing>
+      <script>
+        return new Promise(resolve => setTimeout(resolve, 1000));
+      </script>
+    </scriptTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="_5156a25c-0fe2-42b1-8ccd-b8cf82cc56c1">
+      <bpmndi:BPMNEdge id="Flow_0a94qz4_di" bpmnElement="Flow_0a94qz4">
+        <di:waypoint x="490" y="340" />
+        <di:waypoint x="612" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dnfrtp_di" bpmnElement="Flow_0dnfrtp">
+        <di:waypoint x="490" y="90" />
+        <di:waypoint x="622" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pzlp7r_di" bpmnElement="Flow_1pzlp7r">
+        <di:waypoint x="300" y="283" />
+        <di:waypoint x="300" y="340" />
+        <di:waypoint x="390" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qga0qa_di" bpmnElement="Flow_1qga0qa">
+        <di:waypoint x="300" y="233" />
+        <di:waypoint x="300" y="90" />
+        <di:waypoint x="390" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1enzrq0_di" bpmnElement="Flow_1enzrq0">
+        <di:waypoint x="148" y="258" />
+        <di:waypoint x="275" y="258" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="112" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1mlrfnq_di" bpmnElement="Gateway_0t67gjs">
+        <dc:Bounds x="275" y="233" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1p2hs43_di" bpmnElement="Activity_1p2hs43">
+        <dc:Bounds x="390" y="50" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_15eeeoh_di" bpmnElement="Event_15eeeoh">
+        <dc:Bounds x="622" y="72" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_125goxg_di" bpmnElement="Event_125goxg">
+        <dc:Bounds x="612" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0671jln_di" bpmnElement="Activity_0fxx8a4">
+        <dc:Bounds x="390" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

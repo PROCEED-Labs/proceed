@@ -1,0 +1,16 @@
+{
+  "name": "@proceed/constraint-parser-xml-json",
+  "version": "1.0.0",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "description": "This library transforms the PROCEED process constraints from XML to JSON or vice versa",
+  "main": "parser.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "fast-xml-parser": "3.15.0"
+  }
+}

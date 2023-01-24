@@ -1,0 +1,285 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  font-size: 16px;
+  color: #464646;
+  height: 100%;
+}
+
+#wrapper {
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+.infoBox {
+  text-align: center;
+  margin: 40px 10px 10px;
+  font-size: 1.1em;
+  color: #a5a5a5;
+  letter-spacing: 0.03em;
+}
+
+#tasks {
+  box-shadow: 0px 0px 6px -3px #9a9a9a;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+#tasks .task {
+  background-color: white;
+  margin: 10px;
+  box-shadow: 0 0 5px -3px #6d6d6d;
+  border-radius: 12px;
+  color: #868686;
+  position: relative;
+}
+
+#tasks .taskInfo {
+  height: 90px;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  cursor: pointer;
+  position: relative;
+  border-radius: inherit;
+}
+
+#tasks .taskInfo > div {
+  margin: 0 20px;
+}
+
+#tasks .taskInfo:hover {
+  background-color: #f9f9f9;
+}
+
+#tasks .taskInfo .title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 1.3em;
+  letter-spacing: 0.03em;
+  color: #464646;
+  flex-grow: 1;
+  min-width: 100px;
+}
+
+#tasks .taskInfo .user {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+  height: 100%;
+}
+
+#tasks .taskInfo .user svg {
+  height: 1.7em;
+}
+
+#tasks .taskInfo .user .name {
+  margin-top: 5px;
+  font-size: 0.7em;
+}
+
+#tasks .taskInfo .time {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 0.85em;
+  letter-spacing: 0.03em;
+}
+
+#tasks .taskInfo .time svg {
+  height: 1em;
+  vertical-align: top;
+}
+
+#tasks .taskInfo .time > div {
+  margin-top: 5px;
+}
+
+#tasks .taskInfo .time > div:first-child {
+  margin-top: 0;
+}
+
+#tasks .taskInfo .id {
+  position: absolute;
+  bottom: 1px;
+  font-size: 0.5em;
+  color: #c3c3c3;
+  display: none;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+#tasks .taskInfo:hover .id {
+  display: block;
+}
+
+#tasks .task .close {
+  display: none;
+}
+
+#tasks .task.form .taskInfo {
+  background-color: #0094a0;
+  color: white;
+}
+
+#tasks .task.form .taskInfo .title {
+  color: white;
+}
+
+#formView {
+  flex-grow: 1;
+  background-color: white;
+  font-size: 0;
+}
+
+#formView .form {
+  width: 100%;
+  height: 100%;
+  border: none;
+  flex-grow: 1;
+}
+
+@media (max-width: 1024px) {
+  html,
+  body {
+    font-size: 14px;
+  }
+  #tasks {
+    font-size: 0.85em;
+  }
+  #tasks .task {
+    border-radius: 9px;
+  }
+  #tasks .taskInfo {
+    height: 80px;
+  }
+  #tasks .taskInfo > div {
+    margin: 0 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  html,
+  body {
+    font-size: 10px;
+  }
+  #tasks .task {
+    margin: 5px;
+    border-radius: 7px;
+  }
+  #tasks .taskInfo {
+    height: 45px;
+  }
+  #tasks .taskInfo > div {
+    margin: 0 5px;
+  }
+}
+
+@media (max-width: 425px) {
+  html,
+  body {
+    height: auto;
+    font-size: 16px;
+  }
+  #wrapper {
+    width: auto;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #tasks {
+    box-shadow: none;
+    z-index: auto;
+    width: 100%;
+  }
+  #tasks .task {
+    margin: 7px;
+  }
+  #tasks .task.hidden {
+    display: none;
+  }
+  #tasks .task .taskInfo {
+    height: 80px;
+  }
+  #tasks .taskInfo > div {
+    margin: 0 15px;
+  }
+  #tasks .task.form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 50px;
+    margin-bottom: 0;
+  }
+  #tasks .task .form {
+    width: 100%;
+    height: 100%;
+    border: none;
+    flex-grow: 1;
+  }
+  #tasks .task.form .taskInfo {
+    border-bottom: 1px solid #efefef;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #tasks .taskInfo:hover {
+    background-color: inherit;
+  }
+  #tasks .task.form .close {
+    display: block;
+    position: absolute;
+    top: -40px;
+    right: 0;
+    font-size: 24.48px;
+    color: #ffffff;
+    background-color: #7d7d7d;
+    height: 30px;
+    width: 30px;
+    text-align: center;
+    border-radius: 100%;
+    line-height: 28px;
+    font-weight: 100;
+  }
+  #tasks .task.form .close:hover {
+    background-color: #464646;
+    cursor: pointer;
+  }
+  #formView {
+    margin: 0 7px 7px;
+    box-shadow: 0 0 5px -3px #6d6d6d;
+    border-radius: 0 0 7px 7px;
+  }
+  #formView:empty {
+    display: none;
+  }
+}
+@media (max-width: 375px) {
+  html,
+  body {
+    font-size: 13px;
+  }
+  #tasks .task .taskInfo {
+    height: 70px;
+  }
+  #tasks .taskInfo > div {
+    margin: 0 10px;
+  }
+}
+@media (max-width: 320px) {
+  html,
+  body {
+    font-size: 12px;
+  }
+  #tasks .task .taskInfo {
+    height: 65px;
+  }
+  #tasks .taskInfo > div {
+    margin: 0 8px;
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "processConstraints": {
+    "hardConstraints": [
+      {
+        "_type": "hardConstraint",
+        "_attributes": {},
+        "name": "maxTokenStorageRounds",
+        "condition": "==",
+        "values": [{ "value": 5, "_valueAttributes": {} }],
+        "_valuesAttributes": {}
+      }
+    ]
+  }
+}

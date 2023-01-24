@@ -1,0 +1,279 @@
+[
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "dcterms": "http://purl.org/dc/elements/1.1/",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "iotschema": "http://iotschema.org/",
+        "saref": "https://w3id.org/saref#",
+        "odpa": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#",
+        "terms": "http://purl.org/dc/terms/"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "schema:potentialAction": {
+            "@id": "_:PhotographActionDefinition",
+            "@type": ["schema:PhotographAction", "fno:Function"]
+          }
+        },
+        {
+          "@id": "_:PhotographActionDefinition",
+          "fno:expects": {
+            "@list": [
+              { "@id": "_:heightParameter" },
+              { "@id": "_:widthParameter" },
+              { "@id": "_:dpiParameter" },
+              { "@id": "_:optionsParameter" }
+            ]
+          },
+          "fno:returns": {
+            "@list": [{ "@id": "_:imageParameter" }]
+          }
+        },
+        {
+          "@id": "_:heightParameter",
+          "@type": ["fno:Parameter", "schema:Integer", "schema:height"],
+          "schema:unitText": "px",
+          "fno:required": true
+        },
+        {
+          "@id": "_:widthParameter",
+          "fno:type": "schema:Integer",
+          "@type": ["fno:Parameter"],
+          "fno:predicate": [{ "@type": "schema:width" }],
+          "schema:unitText": "px",
+          "schema:maxValue": 20,
+          "fno:required": true
+        },
+        {
+          "@id": "_:dpiParameter",
+          "@type": ["fno:Parameter", "schema:Integer", "dpi"],
+          "schema:description": "required Dots Per Inch value, resolution",
+          "fno:required": false
+        },
+        {
+          "@id": "_:optionsParameter",
+          "fno:predicate": [{ "@type": "options" }],
+          "@type": ["fno:Parameter"],
+          "terms:hasPart": {
+            "@list": [
+              {
+                "@id": "_:blackWhiteParameter",
+                "@type": ["fno:Parameter", "schema:Boolean"],
+                "fno:predicate": [{ "@type": "blackWhite" }],
+                "fno:required": false,
+                "schema:defaultValue": false
+              },
+              {
+                "@id": "_:rotationParameter",
+                "fno:predicate": [{ "@type": "rotation" }],
+                "@type": ["fno:Parameter"],
+                "fno:type": "schema:Integer",
+                "schema:minValue": 0,
+                "schema:maxValue": 359,
+                "schema:defaultValue": 0,
+                "fno:required": false
+              }
+            ]
+          },
+          "fno:required": false
+        },
+        {
+          "@id": "_:imageParameter",
+          "@type": ["fno:Output", "schema:ImageObject"],
+          "terms:hasPart": {
+            "@list": [
+              {
+                "@id": "_:geoCoordinatesParameter",
+                "@type": ["fno:Output", "schema:GeoCoordinates"],
+                "terms:hasPart": {
+                  "@list": [
+                    {
+                      "@id": "_:latiduteParameter",
+                      "@type": ["fno:Output", "schema:latidute"],
+                      "fno:type": "schema:Float"
+                    },
+                    {
+                      "@id": "_:longitudeParameter",
+                      "fno:predicate": [{ "@type": "schema:longitude" }],
+                      "@type": ["fno:Output", "schema:Float"]
+                    }
+                  ]
+                }
+              },
+              {
+                "@id": "_:photographParameter",
+                "fno:predicate": [{ "@type": "schema:Photograph" }],
+                "@type": "fno:Output",
+                "schema:encodingFormat": "image/png",
+                "encoding": "base64"
+              }
+            ]
+          }
+        },
+        {
+          "@id": "_:PhotograhActionImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "index.js"
+        },
+        {
+          "@id": "_:PhotograhActionMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:PhotographActionDefinition",
+          "fno:implementation": "_:PhotograhActionImplementation",
+          "fno:parameterMapping": [
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:heightParameter",
+              "fnom:implementationProperty": "h"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:widthParameter",
+              "fnom:implementationProperty": "w"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:dpiParameter",
+              "fnom:implementationProperty": "dpi"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:optionsParameter",
+              "fnom:implementationProperty": "options"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": [
+                "_:optionsParameter",
+                "_:blackWhiteParameter"
+              ],
+              "fnom:implementationProperty": "options/blackWhite"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": [
+                "_:optionsParameter",
+                "_:rotationParameter"
+              ],
+              "fnom:implementationProperty": "options/rotation"
+            }
+          ],
+          "fno:returnMapping": [
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": "_:imageParameter",
+              "fnom:implementationProperty": "img"
+            },
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": [
+                "_:imageParameter",
+                "_:geoCoordinatesParameter"
+              ],
+              "fnom:implementationProperty": "img/gps"
+            },
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": [
+                "_:imageParameter",
+                "_:geoCoordinatesParameter",
+                "_:latiduteParameter"
+              ],
+              "fnom:implementationProperty": "img/gps/lat"
+            },
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": [
+                "_:imageParameter",
+                "_:geoCoordinatesParameter",
+                "_:longitudeParameter"
+              ],
+              "fnom:implementationProperty": "img/gps/long"
+            },
+            {
+              "@type": "fnom:DefaultReturnMapping",
+              "fnom:functionParameter": [
+                "_:imageParameter",
+                "_:photographParameter"
+              ],
+              "fnom:implementationProperty": "img/photo"
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": "id1"
+  },
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "dcterms": "http://purl.org/dc/elements/1.1/",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "iotschema": "http://iotschema.org/",
+        "saref": "https://w3id.org/saref#",
+        "odpa": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#",
+        "og": "http://ogp.me/ns#",
+        "exif": "http://www.w3.org/2003/12/exif/ns#",
+        "time": "http://www.w3.org/2006/time#"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "odpa:sameSettingAs": "saref:LightingDevice",
+          "schema:potentialAction": {
+            "@type": ["iotschema:TurnOn", "fno:Function"],
+            "@id": "_:TurnOnDefinition"
+          }
+        },
+        {
+          "@id": "_:TurnOnDefinition",
+          "fno:expects": {
+            "@list": [{ "@id": "_:colourParameter" }]
+          },
+          "fno:returns": {
+            "@list": []
+          }
+        },
+        {
+          "@id": "_:colourParameter",
+          "fno:predicate": [{ "@type": "schema:color" }],
+          "@type": ["fno:Parameter", "schema:Text"],
+          "fno:required": true
+        },
+        {
+          "@id": "_:TurnOnImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "index.js"
+        },
+        {
+          "@id": "_:turnOnMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:TurnOnDefinition",
+          "fno:implementation": "_:TurnOnImplementation",
+          "fno:parameterMapping": [
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:colourParameter",
+              "fnom:implementationProperty": "col"
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": "id2"
+  }
+]

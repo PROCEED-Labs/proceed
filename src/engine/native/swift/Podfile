@@ -1,0 +1,7 @@
+use_frameworks!
+
+target 'Proceed-App' do
+	pod 'Embassy'
+	pod 'SQLite.swift'
+    pod "PlainPing"
+end

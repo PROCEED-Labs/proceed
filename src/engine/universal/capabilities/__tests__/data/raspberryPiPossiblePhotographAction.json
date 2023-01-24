@@ -1,0 +1,179 @@
+[
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "og": "http://ogp.me/ns#"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "schema:potentialAction": {
+            "@type": ["schema:PhotographAction", "fno:Function"],
+            "@id": "_:PhotographActionDefinition"
+          }
+        },
+        {
+          "@id": "_:PhotographActionDefinition",
+          "fno:expects": {
+            "@list": [
+              { "@id": "_:nofilesaveParameter" },
+              { "@id": "_:heightParameter" },
+              { "@id": "_:widthParameter" },
+              { "@id": "_:encodingFormatParameter" },
+              { "@id": "_:durationParameter" }
+            ]
+          },
+          "fno:returns": {
+            "@list": []
+          }
+        },
+        {
+          "@id": "_:nofilesaveParameter",
+          "fno:predicate": [{ "@type": "nofilesave" }],
+          "@type": ["fno:Parameter", "schema:Boolean"],
+          "schema:defaultValue": "true",
+          "schema:description": "The image taken won't be saved locally by default",
+          "fno:required": false
+        },
+        {
+          "@id": "_:heightParameter",
+          "fno:predicate": [{ "@type": "schema:height" }],
+          "@type": ["fno:Parameter", "schema:Integer"],
+          "schema:defaultValue": 700,
+          "fno:required": false
+        },
+        {
+          "@id": "_:widthParameter",
+          "fno:predicate": [{ "@type": "schema:width" }],
+          "@type": ["fno:Parameter", "schema:Integer"],
+          "schema:defaultValue": 700,
+          "fno:required": false
+        },
+        {
+          "@id": "_:encodingFormatParameter",
+          "fno:predicate": [{ "@type": "schema:encodingFormat" }],
+          "@type": ["fno:Parameter", "schema:Text"],
+          "schema:encodingFormat": "jpg",
+          "schema:defaultValue": "jpg",
+          "fno:required": false
+        },
+        {
+          "@id": "_:durationParameter",
+          "fno:predicate": [{ "@type": "schema:Duration" }],
+          "@type": ["fno:Parameter", "schema:Integer"],
+          "fno:required": false
+        },
+        {
+          "@id": "_:PhotograhActionImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "take-photo.js"
+        },
+        {
+          "@id": "_:PhotograhActionMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:PhotographActionDefinition",
+          "fno:implementation": "_:PhotograhActionImplementation",
+          "fno:parameterMapping": [
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:nofilesaveParameter",
+              "fnom:implementationProperty": "nofilesave"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:heightParameter",
+              "fnom:implementationProperty": "height"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:widthParameter",
+              "fnom:implementationProperty": "width"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:encodingFormatParameter",
+              "fnom:implementationProperty": "encoding"
+            },
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:durationParameter",
+              "fnom:implementationProperty": "time"
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": "id1"
+  },
+  {
+    "semanticDescription": {
+      "@context": {
+        "schema": "https://schema.org/",
+        "fno": "https://w3id.org/function/ontology#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "dbpedia-owl": "http://dbpedia.org/ontology/",
+        "fnom": "https://w3id.org/function/vocabulary/mapping#",
+        "dcterms": "http://purl.org/dc/elements/1.1/",
+        "doap": "http://usefulinc.com/ns/doap#",
+        "fnoi": "https://w3id.org/function/vocabulary/implementation",
+        "iotschema": "http://iotschema.org/",
+        "saref": "https://w3id.org/saref#",
+        "odpa": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#",
+        "og": "http://ogp.me/ns#",
+        "exif": "http://www.w3.org/2003/12/exif/ns#",
+        "time": "http://www.w3.org/2006/time#"
+      },
+      "@graph": [
+        {
+          "@id": "_:capability",
+          "odpa:sameSettingAs": "saref:LightingDevice",
+          "schema:potentialAction": {
+            "@type": ["iotschema:TurnOn", "fno:Function"],
+            "@id": "_:TurnOnDefinition"
+          }
+        },
+        {
+          "@id": "_:TurnOnDefinition",
+          "fno:expects": {
+            "@list": [{ "@id": "_:colourParameter" }]
+          },
+          "fno:returns": {
+            "@list": []
+          }
+        },
+        {
+          "@id": "_:colourParameter",
+          "fno:predicate": [{ "@type": "schema:color" }],
+          "@type": ["fno:Parameter", "schema:Text"],
+          "fno:required": true
+        },
+        {
+          "@id": "_:TurnOnImplementation",
+          "@type": "fnoi:JavaScriptFunction",
+          "dbpedia-owl:filename": "index.js"
+        },
+        {
+          "@id": "_:turnOnMapping",
+          "@type": "fno:Mapping",
+          "fno:function": "_:TurnOnDefinition",
+          "fno:implementation": "_:TurnOnImplementation",
+          "fno:parameterMapping": [
+            {
+              "@type": "fnom:PropertyParameterMapping",
+              "fnom:functionParameter": "_:colourParameter",
+              "fnom:implementationProperty": "col"
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": "id2"
+  }
+]

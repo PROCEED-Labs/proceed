@@ -1,0 +1,103 @@
+{
+  "@context": {
+    "schema": "https://schema.org/",
+    "fno": "https://w3id.org/function/ontology#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dbpedia-owl": "http://dbpedia.org/ontology/",
+    "fnom": "https://w3id.org/function/vocabulary/mapping#",
+    "dcterms": "http://purl.org/dc/elements/1.1/",
+    "doap": "http://usefulinc.com/ns/doap#",
+    "fnoi": "https://w3id.org/function/vocabulary/implementation",
+    "iotschema": "http://iotschema.org/",
+    "saref": "https://w3id.org/saref#",
+    "odpa": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#",
+    "terms": "http://purl.org/dc/terms/"
+  },
+  "@graph": [
+    {
+      "@id": "_:process",
+      "schema:potentialAction": {
+        "@id": "_:PhotographActionDefinition",
+        "@type": ["schema:PhotographAction", "fno:Function"]
+      }
+    },
+    {
+      "@id": "_:PhotographActionDefinition",
+      "fno:expects": {
+        "@list": [
+          { "@id": "_:widthParameter" },
+          { "@id": "_:dpiParameter" },
+          { "@id": "_:optionsParameter" }
+        ]
+      },
+      "fno:returns": {
+        "@list": [{ "@id": "_:imageParameter" }]
+      }
+    },
+    {
+      "@id": "_:widthParameter",
+      "@type": ["fno:Parameter", "schema:Integer"],
+      "fno:predicate": { "@type": "schema:width" },
+      "fno:required": true,
+      "schema:unitText": "px"
+    },
+    {
+      "@id": "_:dpiParameter",
+      "fno:predicate": [{ "@type": "dpi" }],
+      "@type": ["fno:Parameter", "schema:Integer"],
+      "schema:description": "required Dots Per Inch value, resolution",
+      "fno:required": true
+    },
+    {
+      "@id": "_:optionsParameter",
+      "fno:predicate": [{ "@type": "options" }],
+      "@type": ["fno:Parameter"],
+      "terms:hasPart": {
+        "@list": [
+          {
+            "@id": "_:blackWhiteParameter",
+            "fno:predicate": [{ "@type": "blackWhite" }],
+            "@type": ["fno:Parameter", "schema:Boolean"],
+            "fno:required": true,
+            "schema:defaultValue": true
+          },
+          {
+            "@id": "_:rotationParameter",
+            "fno:predicate": [{ "@type": "rotation" }],
+            "@type": ["fno:Parameter", "schema:Integer"],
+            "fno:required": false
+          }
+        ]
+      },
+      "fno:required": true
+    },
+    {
+      "@id": "_:imageParameter",
+      "@type": "fno:Output",
+      "fno:predicate": { "@type": "schema:ImageObject" },
+      "terms:hasPart": {
+        "@list": [
+          {
+            "@id": "_:geoCoordinatesParameter",
+            "@type": "fno:Output",
+            "fno:predicate": [{ "@type": "schema:GeoCoordinates" }],
+            "terms:hasPart": {
+              "@list": [
+                {
+                  "@id": "_:latiduteParameter",
+                  "@type": ["fno:Output", "schema:Float"],
+                  "fno:predicate": { "@type": "schema:latidute" }
+                },
+                {
+                  "@id": "_:longitudeParameter",
+                  "@type": ["fno:Output", "schema:Float"],
+                  "fno:predicate": { "@type": "schema:longitude" }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

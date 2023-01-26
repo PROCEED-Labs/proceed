@@ -88,7 +88,6 @@
     "hex-rgba": "^1.0.2",
     "host-validator": "^0.1.0",
     "ids": "^1.0.0",
-    "inherits": "^2.0.4",
     "ioredis": "^5.0.1",
     "js-md5": "^0.7.3",
     "jsonwebtoken": "^8.5.1",

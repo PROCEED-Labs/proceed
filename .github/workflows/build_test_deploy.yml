@@ -9,8 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: proceed/ci-build-image:latest
     steps:
       - uses: actions/checkout@v3
       

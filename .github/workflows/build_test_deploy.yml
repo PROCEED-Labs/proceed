@@ -87,4 +87,4 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn yarn test-e2e --ci
+      - run: yarn test-e2e --ci

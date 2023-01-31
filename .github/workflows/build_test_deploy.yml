@@ -54,7 +54,7 @@ jobs:
 
       - run: yarn prettier --check .
 
-  test-engine:
+  testEngine:
     runs-on: ubuntu-latest
     needs: install
     steps:
@@ -96,7 +96,10 @@ jobs:
 
   buildEngine:
     runs-on: ubuntu-latest
-    needs: install
+    needs:
+      - testEngine
+      - testEngineE2E
+    if: contains(github.ref, 'main')
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
@@ -104,6 +107,13 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          check-latest: true
+          cache: 'yarn'
 
       - run: yarn build
 

@@ -2,12 +2,17 @@ name: Build, test, and deploy
 
 on:
   push:
-    branches: ['main']
+    branches:
+      - main
   pull_request:
-    branches: ['main']
+    branches:
+      - main
+
+env:
+  OUTPUT_PATH_ENGINE_NODE: './build/engine/'
 
 jobs:
-  build:
+  install:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,21 +26,21 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      # Cache build for this workflow run.
+      # Cache for this workflow run.
       - uses: actions/cache@v3
         timeout-minutes: 2
-        id: cache-build
+        id: cache-install
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
   lint:
     runs-on: ubuntu-latest
-    needs: build
+    needs: install
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
-        id: restore-build
+        id: restore-install
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
@@ -51,11 +56,11 @@ jobs:
 
   test-engine:
     runs-on: ubuntu-latest
-    needs: build
+    needs: install
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
-        id: restore-build
+        id: restore-install
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
@@ -71,11 +76,11 @@ jobs:
 
   testEngineE2E:
     runs-on: ubuntu-latest
-    needs: build
+    needs: install
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
-        id: restore-build
+        id: restore-install
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
@@ -88,3 +93,22 @@ jobs:
           cache: 'yarn'
 
       - run: yarn test-e2e --ci
+
+  buildEngine:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/cache@v3
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - run: yarn build
+
+      - name: Upload engine build
+        uses: actions/upload-artifact@v3
+        with:
+          name: PROCEED_Engine
+          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}

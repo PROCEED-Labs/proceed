@@ -27,4 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          check-latest: true
+          cache: 'yarn'
+          
       - run: yarn prettier --check .

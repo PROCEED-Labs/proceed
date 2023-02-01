@@ -10,6 +10,9 @@ on:
 
 env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
+  BUILD_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
+  FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
+  FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
 
 jobs:
   install:
@@ -96,10 +99,11 @@ jobs:
 
   buildEngine:
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     needs:
+      - lint
       - testEngine
       - testEngineE2E
-    if: contains(github.ref, 'main')
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
@@ -122,3 +126,34 @@ jobs:
         with:
           name: PROCEED_Engine
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+
+  buildEngineAndroid:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs:
+      - lint
+      - testEngine
+      - testEngineE2E
+    steps:
+      - uses: actions/cache@v3
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn build-android
+      - run: cp ${{ OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ BUILD_PATH_ENGINE_ANDROID }}/${{ FILE_NAME_ANDROID }}
+
+      - name: Upload android engine build
+        uses: actions/upload-artifact@v3
+        with:
+          name: PROCEED_Engine_Android
+          path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID} }}

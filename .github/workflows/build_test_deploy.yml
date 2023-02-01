@@ -10,7 +10,7 @@ on:
 
 env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
-  BUILD_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
+  OUTPUT_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
 

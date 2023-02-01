@@ -90,6 +90,7 @@ export default {
         customerId,
         isUsing5i,
         overviewImage,
+        priority,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,

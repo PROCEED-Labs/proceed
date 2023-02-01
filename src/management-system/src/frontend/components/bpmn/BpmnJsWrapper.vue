@@ -15,6 +15,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
 
 export default {
   name: 'BpmnJsWrapper',
@@ -167,5 +168,10 @@ export default {
 
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: #ffd3d3ff !important;
+}
+.bjs-breadcrumbs {
+  left: -10px !important;
+  top: unset;
+  bottom: 10px;
 }
 </style>

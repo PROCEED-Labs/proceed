@@ -34,6 +34,12 @@
             ></progress-setter>
           </v-col>
         </v-row>
+        <v-row class="mt-n4" v-if="isUserTask">
+          <v-col cols="6"><span class="text-subtitle-1 font-weight-medium">Priority:</span></v-col>
+          <v-col cols="6">
+            <span class="text-subtitle-1 font-weight-medium">{{ priority }}</span></v-col
+          >
+        </v-row>
         <v-row class="mt-n4">
           <v-col cols="6"
             ><span class="text-subtitle-1 font-weight-medium">Planned Costs:</span></v-col
@@ -120,6 +126,9 @@ export default {
     isRootElement() {
       return this.selectedElement && this.selectedElement.type === 'bpmn:Process';
     },
+    isUserTask() {
+      return this.selectedElement && this.selectedElement.type === 'bpmn:UserTask';
+    },
     elementIsActive() {
       const elementToken = this.instance.tokens.find(
         (l) => l.currentFlowElementId == this.selectedElement.id
@@ -169,6 +178,10 @@ export default {
     costsCurrency() {
       const environmentConfigSettings = this.$store.getters['environmentConfigStore/settings'];
       return environmentConfigSettings.currency;
+    },
+    priority() {
+      const priorityValue = this.metaData['priority'];
+      return priorityValue || 1;
     },
     costsPlanned() {
       const costsValue = this.metaData['costsPlanned'];

@@ -14,6 +14,7 @@ const proceedExtensionElements = {
   customerId: { parent: 'Meta' },
   customerName: { parent: 'Meta' },
   overviewImage: { parent: 'Meta' },
+  priority: { parent: 'Meta' },
   property: { parent: 'Meta', identifier: 'name' },
   Milestones: { isRoot: true },
   milestone: { parent: 'Milestones' },

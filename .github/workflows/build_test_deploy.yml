@@ -150,7 +150,7 @@ jobs:
           cache: 'yarn'
 
       - run: yarn build-android
-      - run: cp ${{ OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ BUILD_PATH_ENGINE_ANDROID }}/${{ FILE_NAME_ANDROID }}
+      - run: cp ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ env.BUILD_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
 
       - name: Upload android engine build
         uses: actions/upload-artifact@v3

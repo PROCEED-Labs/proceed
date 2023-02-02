@@ -126,14 +126,41 @@ jobs:
         with:
           name: PROCEED_Engine
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+  #  buildEngineAndroid:
+  #    runs-on: ubuntu-latest
+  #    if: ${{ github.ref == 'refs/heads/main' }}
+  #    needs:
+  #      - lint
+  #      - testEngine
+  #      - testEngineE2E
+  # steps:
+  #   - uses: actions/cache@v3
+  #     timeout-minutes: 2
+  #     id: restore-install
+  #     with:
+  #       path: ./*
+  #       key: ${{ github.sha }}-${{ github.run_number }}
+  #
+  #   - name: Set up Node.js
+  #     uses: actions/setup-node@v3
+  #     with:
+  #       node-version: 16
+  #       check-latest: true
+  #       cache: 'yarn'
+  #
+  #   - run: yarn build-android
+  #   - run: cp ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ env.BUILD_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
+  #
+  #   - name: Upload android engine build
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: PROCEED_Engine_Android
+  #       path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
 
-  buildEngineAndroid:
+  docker:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs:
-      - lint
-      - testEngine
-      - testEngineE2E
+    needs: buildEngine
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
@@ -142,18 +169,11 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
         with:
-          node-version: 16
-          check-latest: true
-          cache: 'yarn'
-
-      - run: yarn build-android
-      - run: cp ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/app-debug.apk ${{ env.BUILD_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
-
-      - name: Upload android engine build
-        uses: actions/upload-artifact@v3
-        with:
-          name: PROCEED_Engine_Android
-          path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
+          image: proceed/engine
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ./build/engine/
+          tag: edge

@@ -37,6 +37,10 @@ export default {
       type: Array,
       required: false,
     },
+    subprocessId: {
+      type: String,
+      default: '',
+    },
   },
   data() {
     return {
@@ -54,6 +58,20 @@ export default {
     flowElementsStyling() {
       this.removeCurrentColors();
       this.applyColors();
+    },
+    subprocessId() {
+      if (this.viewer) {
+        const canvas = this.viewer.get('canvas');
+
+        let rootEl;
+        if (this.subprocessId) {
+          rootEl = canvas.findRoot(`${this.subprocessId}_plane`);
+        } else {
+          rootEl = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
+        }
+        canvas.setRootElement(rootEl);
+        canvas.zoom('fit-viewport', 'auto');
+      }
     },
   },
   methods: {

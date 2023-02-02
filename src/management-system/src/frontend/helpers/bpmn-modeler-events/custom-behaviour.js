@@ -7,7 +7,7 @@ const CustomModelingModule = require('./custom-modeling.js');
  * BEWARE!! This module is used in the frontend modeler as well as the backend puppeteer modeler; only add functionality that should run in both
  */
 class CustomBehaviour {
-  constructor(eventBus, modeling, customModeling, commandStack) {
+  constructor(eventBus, modeling, customModeling, commandStack, elementRegistry) {
     // cleanup before removing an element
     eventBus.on('commandStack.shape.delete.preExecute', 10000, ({ context }) => {
       let { shape } = context;
@@ -16,14 +16,16 @@ class CustomBehaviour {
       }
     });
 
-    // create startEvent inside of collapsed subprocess
     eventBus.on('commandStack.shape.replace.postExecute', 10000, ({ context }) => {
+      // create startEvent inside of collapsed subprocess
       let { newShape, oldShape } = context;
       if (newShape.type === 'bpmn:SubProcess' && !isExpanded(newShape)) {
+        // get the plane that represents the opened subprocess
+        const subprocessPlane = elementRegistry.get(`${newShape.id}_plane`);
         modeling.createShape(
-          { type: 'bpmn:StartEvent', hidden: true },
+          { type: 'bpmn:StartEvent' },
           { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
-          newShape,
+          subprocessPlane, // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
           { autoResize: false }
         );
       }
@@ -63,7 +65,13 @@ class CustomBehaviour {
   }
 }
 
-CustomBehaviour.$inject = ['eventBus', 'modeling', 'customModeling', 'commandStack'];
+CustomBehaviour.$inject = [
+  'eventBus',
+  'modeling',
+  'customModeling',
+  'commandStack',
+  'elementRegistry',
+];
 
 module.exports = {
   __init__: ['customBehaviour'],

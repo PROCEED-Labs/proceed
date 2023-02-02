@@ -114,7 +114,7 @@ class ProceedUserTask {
         });
       }
 
-      const processElement = canvas.getRootElement();
+      const processElement = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
       if (context.element === processElement) {
         const rootMetaData = proceedMeta.getRootMetaData();
         customModeling.changeUserTasksImplementation(

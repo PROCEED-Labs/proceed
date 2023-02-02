@@ -162,13 +162,6 @@ export function parse(elementRegistry, elementFactory, bpmnFactory, command, con
           const businessObject = bpmnFactory.create(info.type, { id: info.id });
           parsedContext.connection = elementFactory.createConnection({ ...info, businessObject });
 
-          if (context.changedBySubprocessId) {
-            const element = elementRegistry.get(context.changedBySubprocessId);
-            if (element && element.type !== 'bpmn:Process') {
-              parsedContext.connection.hidden = true;
-            }
-          }
-
           break;
         }
       // fall through to getting the existing connection by id
@@ -184,13 +177,6 @@ export function parse(elementRegistry, elementFactory, bpmnFactory, command, con
               id: info.processRef,
             });
             parsedContext[key].businessObject.processRef = process;
-          }
-
-          if (context.changedBySubprocessId) {
-            const element = elementRegistry.get(context.changedBySubprocessId);
-            if (element && element.type !== 'bpmn:Process') {
-              parsedContext[key].hidden = true;
-            }
           }
           break;
         }

@@ -1,10 +1,6 @@
 import * as R from 'ramda';
 import { processInterface, eventHandler } from '@/frontend/backend-api/index.js';
-import {
-  getSubprocessContent,
-  ensureCorrectProceedNamespace,
-  addSubprocessContentToProcessXML,
-} from '@proceed/bpmn-helper';
+import { ensureCorrectProceedNamespace } from '@proceed/bpmn-helper';
 import { mergeIntoObject } from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
 
 let xmlChagedCallback;
@@ -15,7 +11,6 @@ let xmlChagedCallback;
 export default function createProcessEditorStore() {
   const initialState = {
     processXml: null, // the xml of the main process
-    subprocessXml: null, // the xml of a subprocess if one is opened in the editor
     forceUpdateXml: null, // mostly used to signal to the modeler that a new xml has to be imported
     elementCapabilityMapping: {},
     library: {
@@ -24,6 +19,7 @@ export default function createProcessEditorStore() {
     },
     processDefinitionsId: null,
     subprocessId: null,
+    instanceId: null,
     version: null,
     editingDisabled: false,
     lostConnection: false,
@@ -39,14 +35,14 @@ export default function createProcessEditorStore() {
     subprocessId(state) {
       return state.subprocessId;
     },
+    instanceId(state) {
+      return state.instanceId;
+    },
     version(state) {
       return state.version;
     },
     processXml(state) {
       return state.processXml;
-    },
-    subprocessXml(state) {
-      return state.subprocessXml;
     },
     forceUpdateXml(state) {
       return state.forceUpdateXml;
@@ -109,10 +105,7 @@ export default function createProcessEditorStore() {
       commit('setState', JSON.parse(JSON.stringify(initialState)));
     },
 
-    async loadProcessFromStore(
-      { state, commit, dispatch },
-      { processDefinitionsId, version, subprocessId }
-    ) {
+    async loadProcessFromStore({ state, commit, dispatch }, { processDefinitionsId, version }) {
       // make sure that the editing of the potentially previously loaded process is signaled to be stopped
       dispatch('stopEditing');
 
@@ -133,26 +126,12 @@ export default function createProcessEditorStore() {
 
       commit('setProcessXml', xml);
 
-      // will set the subprocessId on the state and load the subprocessXml from the processXml
-      await dispatch('setSubprocessId', subprocessId);
-
       // make sure that the every module is informed that the xml has to be updated (e.g. modeler and xml viewer)
       // TODO: Bug: if the incoming xml is the same as the one that was imported  last time the modeler will not reload (load => make changes => rollback to initial version)
-      commit('setForceUpdateXml', state.subprocessXml || state.processXml);
+      commit('setForceUpdateXml', state.processXml);
 
       // signal to the backend that the process will be edited (if possible)
       dispatch('startEditing');
-    },
-
-    // Set subprocessId on the state and make sure to load the subprocessXml from the current processXml
-    async setSubprocessId({ state, commit }, subprocessId) {
-      commit('setSubprocessId', subprocessId);
-
-      const subprocessXml = subprocessId
-        ? await getSubprocessContent(state.processXml, subprocessId)
-        : null;
-
-      commit('setSubprocessXml', subprocessXml);
     },
 
     // store the processXml and inform the processStore that the bpmn changed so it can try to infer changes to the process meta info
@@ -165,21 +144,6 @@ export default function createProcessEditorStore() {
         { id: state.processDefinitionsId, bpmn: xml },
         { root: true }
       );
-    },
-
-    // will store the new subprocessXml and will ensure that the processXml is kept up to date with the new subprocess xml inside it
-    async setSubprocessXml({ state, commit, dispatch, rootGetters }, xml) {
-      commit('setSubprocessXml', xml);
-
-      const mainProcessXml = await rootGetters['processStore/xmlById'](state.processDefinitionsId);
-
-      const mainProcessWithSubprocessContentXml = await addSubprocessContentToProcessXML(
-        mainProcessXml,
-        xml,
-        state.subprocessId
-      );
-
-      dispatch('setProcessXml', mainProcessWithSubprocessContentXml);
     },
 
     setElementCapabilityMapping({ commit }, { elementId, capabilities, elementCapabilityMapping }) {
@@ -278,16 +242,16 @@ export default function createProcessEditorStore() {
       state.subprocessId = subprocessId;
     },
 
+    setInstanceId(state, instanceId) {
+      state.instanceId = instanceId;
+    },
+
     setVersion(state, version) {
       state.version = version;
     },
 
     setProcessXml(state, xml) {
       state.processXml = xml;
-    },
-
-    setSubprocessXml(state, xml) {
-      state.subprocessXml = xml;
     },
 
     setForceUpdateXml(state, xml) {

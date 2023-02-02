@@ -66,7 +66,6 @@ export default {
         this.$store.dispatch('processEditorStore/loadProcessFromStore', {
           process: this.process,
           version: this.process.version,
-          subprocessId: this.process.subprocessId,
         });
       }
 

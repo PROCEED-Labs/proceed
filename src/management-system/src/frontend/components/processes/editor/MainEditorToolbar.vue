@@ -68,7 +68,7 @@
         @click="openSubprocessModeler"
       >
         <template #tooltip-text>Edit SubProcess</template>
-        mdi-open-in-new
+        mdi-arrow-bottom-right-bold-box-outline
       </tooltip-button>
       <constraint-handling :process="process" />
     </toolbar-group>
@@ -226,12 +226,7 @@ export default {
       document.body.removeChild(dummyInput);
     },
     openSubprocessModeler() {
-      this.$emit('addTab', {
-        processDefinitionsId: this.process.id,
-        subprocessId: this.selectedElement.id,
-        version: this.selectedVersion ? this.selectedVersion.version : undefined,
-        instanceId: this.process.instanceId,
-      });
+      this.$store.commit('processEditorStore/setSubprocessId', this.selectedElement.id);
     },
     editUserTask() {
       if (

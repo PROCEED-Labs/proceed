@@ -2,17 +2,14 @@ import { preSerialize, parse } from './event-serialization.js';
 import { processInterface } from '@/frontend/backend-api/index.js';
 
 let processDefinitionsId = null;
-let subprocessId = null;
 
 /**
- * Sets processDefinitionsId and optional subprocessId which is needed when distributing the event
+ * Sets processDefinitionsId which is needed when distributing the event
  *
- * @param {String} pId supposed id of the process insidethe modeler
- * @param {String} sId supposed id of the subprocess
+ * @param {String} pId supposed id of the process inside the modeler
  */
-export function setProcessDefinitionsId(pId, sId) {
+export function setProcessDefinitionsId(pId) {
   processDefinitionsId = pId;
-  subprocessId = sId || null;
 }
 
 let elementRegistry;
@@ -103,22 +100,6 @@ export function activateDistribution() {
     // if the event was neither triggered by an outside event nor by another event we already sent, send it
     // this check can be overridden by setting a flag in the event
     if ((!wasInjected && !executionHeap.length) || context.forceDistribution) {
-      if (subprocessId) {
-        context.changedBySubprocessId = subprocessId;
-
-        // only set parent to currently editing collapsed subprocess if element is not part of another (expanded) subprocess
-        if (
-          (!context.parent || context.parent.type !== 'bpmn:SubProcess') &&
-          (!context.newParent || context.newParent.type !== 'bpmn:SubProcess')
-        ) {
-          context.parent = { id: subprocessId };
-          context.newParent = { id: subprocessId };
-          context.hints
-            ? (context.hints = { ...context.hints, autoResize: false })
-            : (context.hints = { autoResize: false });
-        }
-      }
-
       // transform the context into a reproducable form
       const information = preSerialize(command, context);
 
@@ -163,16 +144,9 @@ export function applyExternalEvent(command, context) {
     JSON.parse(JSON.stringify(context))
   );
 
-  if (subprocessId && subprocessId !== context.changedBySubprocessId) {
-    const subprocessInProcess = elementRegistry.get(context.changedBySubprocessId);
-    if (!subprocessInProcess) {
-      return;
-    }
-  }
-
   // store root process before changing to collaboration to use it in the first particpant that will be created
   if (command === 'canvas.updateRoot') {
-    const root = canvas.getRootElement();
+    const root = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
     if (root.type === 'bpmn:Process') {
       oldRootProcess = root;
     }

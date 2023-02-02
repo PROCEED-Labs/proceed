@@ -169,6 +169,14 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
+      - name: Download engine build
+        uses: actions/download-artifact@v3
+        with:
+          name: PROCEED_Engine
+
+      - name: Display structure of downloaded files
+        run: ls
+
       - name: Kaniko build
         uses: aevea/action-kaniko@master
         with:

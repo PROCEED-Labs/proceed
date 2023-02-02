@@ -173,9 +173,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: PROCEED_Engine
+          path: build/engine
 
       - name: Display structure of downloaded files
-        run: ls
+        run: ls build/engine
 
       - name: Kaniko build
         uses: aevea/action-kaniko@master

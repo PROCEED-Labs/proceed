@@ -470,9 +470,12 @@ export default {
 
       // make tokens draggable
       const element = document.getElementById(token.tokenId);
-      element.addEventListener('dragstart', this.existingTokenDragStart);
-      element.addEventListener('dragend', this.tokenDragEnd);
-      element.addEventListener('dblclick', this.selectToken);
+
+      if (element) {
+        element.addEventListener('dragstart', this.existingTokenDragStart);
+        element.addEventListener('dragend', this.tokenDragEnd);
+        element.addEventListener('dblclick', this.selectToken);
+      }
     },
     isDroppable(element) {
       return !(
@@ -499,17 +502,21 @@ export default {
     addDroppableHandlers(elementId) {
       const domEl = document.querySelector(`[data-element-id='${elementId}']`);
 
-      domEl.addEventListener('dragover', this.tokenDragOver);
-      domEl.addEventListener('drop', this.tokenDrop);
+      if (domEl) {
+        domEl.addEventListener('dragover', this.tokenDragOver);
+        domEl.addEventListener('drop', this.tokenDrop);
+      }
     },
     resetIsDroppable(element) {
       const domEl = document.querySelector(`[data-element-id='${element.id}']`);
 
-      domEl.removeEventListener('dragover', this.tokenDragOver);
-      domEl.removeEventListener('drop', this.tokenDrop);
+      if (domEl) {
+        domEl.removeEventListener('dragover', this.tokenDragOver);
+        domEl.removeEventListener('drop', this.tokenDrop);
 
-      if (this.isDroppable(element)) {
-        this.addDroppableHandlers(element.id);
+        if (this.isDroppable(element)) {
+          this.addDroppableHandlers(element.id);
+        }
       }
     },
   },

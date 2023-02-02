@@ -183,7 +183,6 @@ export default {
         color: 'info',
       },
       deployment: null,
-      subprocessId: null,
       pollingInterval: null,
       location: {
         timeZone: 'Europe/Berlin',

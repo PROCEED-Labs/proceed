@@ -1,6 +1,6 @@
 <template>
   <div class="instance-viewer">
-    <hovering-toolbar justify="space-between" v-if="!hideToolbar">
+    <hovering-toolbar justify="space-between" v-show="!hideToolbar">
       <div style="flex: 1 1 fit-content">
         <slot name="toolbar" :usedVersion="versionToShowInfo"></slot>
       </div>
@@ -28,6 +28,9 @@
       viewerMode="navigated-viewer"
       :xml="bpmnViewerXml"
       :flowElementsStyling="flowElementsStyling"
+      :subprocessId="subprocessId"
+      :showDrilldownOverlay="!hideToolbar"
+      :showSubprocessBreadcrumbs="!hideToolbar"
       @element:click="handleElementClick"
       @element:hover="handleElementHover"
       @element:out="handleElementOut"
@@ -43,7 +46,7 @@ import TokenToolbar from './Tokens.vue';
 import HoveringToolbar from '@/frontend/components/universal/toolbar/HoveringToolbar.vue';
 import InstanceControl from '@/frontend/components/deployments/InstanceControl.vue';
 
-import { getSubprocessContent, removeColorFromAllElements } from '@proceed/bpmn-helper';
+import { removeColorFromAllElements } from '@proceed/bpmn-helper';
 
 import { calculateProgress, getPlannedEnd } from '@/frontend/helpers/instance-information';
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
@@ -187,7 +190,7 @@ export default {
       this.$emit('newViewer', viewer);
     },
     /**
-     * set xml for bpmn viewer: remove stored colors from all elements if other color mode than 'processColors' is selected, cut out subprocess if selected
+     * set xml for bpmn viewer: remove stored colors from all elements if other color mode than 'processColors' is selected
      */
     async setBpmnViewerXml() {
       if (!this.versionToShowInfo) {
@@ -198,10 +201,6 @@ export default {
 
       if (this.colors !== 'processColors') {
         xml = await removeColorFromAllElements(xml);
-      }
-
-      if (this.subprocessId) {
-        xml = await getSubprocessContent(xml, this.subprocessId);
       }
 
       this.bpmnViewerXml = xml;
@@ -239,7 +238,7 @@ export default {
     handleElementClick({ element }) {
       if (!this.singleClickTimeout) {
         this.singleClickTimeout = setTimeout(() => {
-          if (element.type === 'bpmn:Process') {
+          if (element.type === 'bpmn:Process' || element.id.includes('_plane')) {
             this.clickedElement = null;
           } else {
             let canvas = this.viewer.get('canvas');
@@ -276,11 +275,6 @@ export default {
     }
   },
   watch: {
-    async subprocessId(newSubprocessId, oldSubprocessId) {
-      if (newSubprocessId !== oldSubprocessId) {
-        await this.setBpmnViewerXml();
-      }
-    },
     async colors(newValue, oldValue) {
       if (newValue !== oldValue) {
         await this.setBpmnViewerXml();

@@ -487,64 +487,6 @@ async function addDocumentationToProcessObject(processObj, description) {
   }
 }
 
-/**
- * Adds content of a subprocess into the main process in which the subprocess is used
- *
- * @param {string} mainProcessBPMN - the process definition as XML string
- * @param {string} subprocessBPMN - the content of the subprocess as XML string
- * @param {string} subprocessId - ID of the subprocess in which the content should be inserted
- */
-async function addSubprocessContentToProcessXML(mainProcessBPMN, subprocessBPMN, subprocessId) {
-  const mainProcessBpmnObj = await toBpmnObject(mainProcessBPMN);
-
-  const subprocessBpmnObj = await toBpmnObject(subprocessBPMN);
-  const subprocessRootElement = getElementById(subprocessBpmnObj, subprocessId);
-  const subprocessContent = getAllElements(subprocessRootElement).filter(
-    (element) => element.id && element.id !== subprocessId
-  );
-
-  // Add content of subprocess in subprocess-element of the main process
-  await manipulateElementById(mainProcessBpmnObj, subprocessId, (subprocessElement) => {
-    subprocessElement.flowElements = getChildren(subprocessRootElement).filter(
-      (element) => element.id && element.id !== subprocessId
-    );
-    subprocessElement.extensionElements = subprocessRootElement.extensionElements;
-    subprocessElement.name = subprocessRootElement.name;
-  });
-
-  // Add potential new imported processes for call activity
-  await manipulateElementsByTagName(mainProcessBpmnObj, 'bpmn:Definitions', (definitions) => {
-    definitions.imports = subprocessBpmnObj.imports;
-    Object.entries(subprocessBpmnObj.$attrs).forEach(([key, value]) => {
-      definitions.$attrs[key] = value;
-    });
-  });
-
-  mainProcessBpmnObj.diagrams[0].plane.planeElement =
-    mainProcessBpmnObj.diagrams[0].plane.planeElement
-      .filter((element) => {
-        if (element.bpmnElement) {
-          const removedFromFlowElements = !getAllElements(mainProcessBpmnObj).find(
-            (flowElement) => flowElement.id === element.bpmnElement.id
-          );
-
-          if (removedFromFlowElements) {
-            return false;
-          }
-
-          const alreadyExistingInSubprocess = !subprocessContent
-            .map((e) => e.id)
-            .includes(element.bpmnElement.id);
-
-          return alreadyExistingInSubprocess;
-        }
-        return false;
-      })
-      .concat(subprocessBpmnObj.diagrams[0].plane.planeElement || []);
-
-  return toBpmnXml(mainProcessBpmnObj);
-}
-
 async function removeColorFromAllElements(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
@@ -576,5 +518,4 @@ module.exports = {
   removeColorFromAllElements,
   addDocumentation,
   addDocumentationToProcessObject,
-  addSubprocessContentToProcessXML,
 };

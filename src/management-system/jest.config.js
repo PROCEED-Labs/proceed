@@ -8,7 +8,10 @@ module.exports = {
     '.+\\.(css|styl|less|sass|scss|svg|png|jpg|ttf|woff|woff2)$': 'jest-transform-stub',
     '^.+\\.jsx?$': 'babel-jest',
   },
-  transformIgnorePatterns: ['/node_modules/(?!bpmn-js|diagram.js)', '<rootDir>/build/'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!bpmn-js|diagram.js|@bpmn-io/diagram-js-ui)',
+    '<rootDir>/build/',
+  ],
   moduleNameMapper: {
     '^./ms-api-interface/(.*).js$': '<rootDir>/src/frontend/backend-api/ms-api-electron/$1.js',
     '^(.*)/dirname-node.js$': '$1/dirname-webpack.js',

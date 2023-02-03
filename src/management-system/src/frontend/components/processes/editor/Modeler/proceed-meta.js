@@ -26,11 +26,13 @@ class ProceedMeta {
     });
 
     eventBus.on('import.done', () => {
-      const processElement = canvas.getRootElement();
-
-      // initialize rootMetaData and metaData with values from the process element
-      this.selectedElementMetaData = getMetaData(processElement);
+      // initialize rootMetaData with values from the process element
+      const processElement = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
       this.rootMetaData = getMetaData(processElement);
+      // initialize the meta for the selected element with the ones from the currently displayed plane
+      // (may be a subprocess if the user switched from one process to a tab that represents a subprocess of another process)
+      const currentPlane = canvas.getRootElement();
+      this.selectedElementMetaData = getMetaData(currentPlane);
 
       eventBus.fire('proceedMeta.root.changed', { newRootMetaData: this.rootMetaData });
       eventBus.fire('proceedMeta.selected.changed', { newMetaData: this.selectedElementMetaData });

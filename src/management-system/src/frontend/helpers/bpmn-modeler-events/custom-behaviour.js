@@ -7,7 +7,7 @@ const CustomModelingModule = require('./custom-modeling.js');
  * BEWARE!! This module is used in the frontend modeler as well as the backend puppeteer modeler; only add functionality that should run in both
  */
 class CustomBehaviour {
-  constructor(eventBus, modeling, customModeling, commandStack) {
+  constructor(eventBus, modeling, customModeling, commandStack, elementRegistry) {
     // cleanup before removing an element
     eventBus.on('commandStack.shape.delete.preExecute', 10000, ({ context }) => {
       let { shape } = context;
@@ -16,17 +16,8 @@ class CustomBehaviour {
       }
     });
 
-    // create startEvent inside of collapsed subprocess
     eventBus.on('commandStack.shape.replace.postExecute', 10000, ({ context }) => {
       let { newShape, oldShape } = context;
-      if (newShape.type === 'bpmn:SubProcess' && !isExpanded(newShape)) {
-        modeling.createShape(
-          { type: 'bpmn:StartEvent', hidden: true },
-          { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
-          newShape,
-          { autoResize: false }
-        );
-      }
 
       // if the old shape was a placeholder remove the placeholder attribute
       if (oldShape.businessObject.placeholder) {
@@ -51,6 +42,27 @@ class CustomBehaviour {
       }
     });
 
+    eventBus.on('commandStack.shape.replace.postExecuted', ({ context }) => {
+      let { newShape } = context;
+      // create startEvent inside of collapsed subprocess
+      // (the timeout will ensure that the event distribution will send this event to all other machines so the same start event is created there)
+      setTimeout(() => {
+        if (
+          !context.isExternalEvent &&
+          newShape.type === 'bpmn:SubProcess' &&
+          !isExpanded(newShape)
+        ) {
+          // get the plane that represents the opened subprocess
+          const subprocessPlane = elementRegistry.get(`${newShape.id}_plane`);
+          modeling.createShape(
+            { type: 'bpmn:StartEvent' },
+            { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
+            subprocessPlane // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
+          );
+        }
+      }, 10);
+    });
+
     // ensure that a collpsed subprocess can be freely resized regardless of its content
     eventBus.on('resize.start', 500, (event) => {
       if (
@@ -63,7 +75,13 @@ class CustomBehaviour {
   }
 }
 
-CustomBehaviour.$inject = ['eventBus', 'modeling', 'customModeling', 'commandStack'];
+CustomBehaviour.$inject = [
+  'eventBus',
+  'modeling',
+  'customModeling',
+  'commandStack',
+  'elementRegistry',
+];
 
 module.exports = {
   __init__: ['customBehaviour'],

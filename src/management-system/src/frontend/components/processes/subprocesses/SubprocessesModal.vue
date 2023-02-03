@@ -24,6 +24,7 @@
           <BpmnPreview
             :process="selectedProcess"
             :version="selectedVersion"
+            :subprocessId="selectedSubprocessId"
             @editBpmn="$emit('editBpmn', { process: selectedProcess })"
           ></BpmnPreview>
         </div>
@@ -68,7 +69,17 @@ export default {
     selectedNodeTitle: '',
     unnamedLabel: 'Unnamed',
     subprocesses: [],
+    selectedSubprocess: null,
   }),
+  computed: {
+    selectedSubprocessId() {
+      if (this.selectedSubprocess) {
+        return this.selectedSubprocess.id;
+      }
+
+      return null;
+    },
+  },
   methods: {
     async openItem(item) {
       //Setting selected node title
@@ -79,6 +90,7 @@ export default {
         //Creating Process Object with only id element to emit to parent component when bpmn preview is @clicked
         this.selectedProcess = { id: item.calledProcessId };
         this.selectedVersion = { version: item.version };
+        this.selectedSubprocess = null;
 
         //Setting selected node type
         this.selectedNodeTitle = `Global Process ${this.selectedNodeTitle}`;
@@ -86,6 +98,11 @@ export default {
         this.selectedProcess = this.process;
         this.selectedVersion = null;
         this.selectedNodeTitle = '';
+        // we need to wait in the case that we want to switch to another process and select a subprocess at the same time
+        // (the diagram of the other process has to be loaded before we can select the subprocess)
+        setTimeout(() => {
+          this.selectedSubprocess = item.isSubprocess ? item : null;
+        }, 10);
       }
     },
   },

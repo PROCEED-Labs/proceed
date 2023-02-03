@@ -53,6 +53,7 @@ function getNestedSubprocessesAndCallActivities(element, definitions) {
           );
           const di = getElementDI(flowElement, definitions);
           subprocessInfo.isExpanded = di.isExpanded;
+          subprocessInfo.isSubprocess = true;
         }
         subprocesses.push(subprocessInfo);
       }

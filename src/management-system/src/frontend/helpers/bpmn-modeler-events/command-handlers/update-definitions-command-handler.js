@@ -28,7 +28,9 @@ function setProperties(definitions, properties) {
 
 UpdateDefinitionsHandler.prototype.execute = function (context) {
   const { properties } = context;
-  const definitions = getRootFromElement(this.canvas.getRootElement().businessObject);
+  const definitions = getRootFromElement(
+    this.canvas.getRootElements().find((el) => el.type === 'bpmn:Process').businessObject
+  );
 
   if (!properties) {
     throw new Error('properties required');

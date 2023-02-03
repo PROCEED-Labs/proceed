@@ -62,12 +62,7 @@ export default {
       return this.$store.getters['processEditorStore/editingDisabled'];
     },
     xml() {
-      let xml = this.$store.getters['processEditorStore/subprocessXml'];
-      if (!xml) {
-        xml = this.$store.getters['processEditorStore/processXml'];
-      }
-
-      return xml;
+      return this.$store.getters['processEditorStore/processXml'];
     },
     forceUpdateXml() {
       return this.$store.getters['processEditorStore/forceUpdateXml'];
@@ -112,11 +107,7 @@ export default {
         // prevent problems if the user somehow changed the proceed namespace URI
         xml = ensureCorrectProceedNamespace(xml);
 
-        if (this.subprocessId) {
-          await this.$store.dispatch('processEditorStore/setSubprocessXml', xml);
-        } else {
-          await this.$store.dispatch('processEditorStore/setProcessXml', xml);
-        }
+        await this.$store.dispatch('processEditorStore/setProcessXml', xml);
         this.$store.commit('processEditorStore/setForceUpdateXml', xml);
 
         this.$store.dispatch('processStore/update', {

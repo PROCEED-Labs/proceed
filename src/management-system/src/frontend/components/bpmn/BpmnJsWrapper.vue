@@ -15,6 +15,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
 
 export default {
   name: 'BpmnJsWrapper',
@@ -36,6 +37,19 @@ export default {
       type: Array,
       required: false,
     },
+    subprocessId: {
+      type: String,
+      default: '',
+    },
+    // allow to hide the bpmn-js overlays for subprocess navigation for cases like process previews
+    showDrilldownOverlay: {
+      type: Boolean,
+      default: false,
+    },
+    showSubprocessBreadcrumbs: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -53,6 +67,29 @@ export default {
     flowElementsStyling() {
       this.removeCurrentColors();
       this.applyColors();
+    },
+    subprocessId() {
+      if (this.viewer) {
+        const canvas = this.viewer.get('canvas');
+
+        let rootEl;
+        if (this.subprocessId) {
+          rootEl = canvas.findRoot(`${this.subprocessId}_plane`);
+        } else {
+          rootEl = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
+        }
+
+        if (rootEl) {
+          canvas.setRootElement(rootEl);
+          canvas.zoom('fit-viewport', 'auto');
+        }
+      }
+    },
+    showDrilldownOverlay() {
+      this.toggleDrillDownVisibility();
+    },
+    showSubprocessBreadcrumbs() {
+      this.toggleSubprocessBreadcrumbVisibility();
     },
   },
   methods: {
@@ -123,6 +160,16 @@ export default {
         if (warnings && warnings.length) {
           console.warn(warnings);
         }
+
+        // try to show the selected subprocess after loading the bpmn
+        if (this.subprocessId) {
+          const canvas = this.viewer.get('canvas');
+          const subprocessPlane = canvas.findRoot(`${this.subprocessId}_plane`);
+          if (subprocessPlane) {
+            canvas.setRootElement(subprocessPlane);
+          }
+        }
+
         this.viewer.get('canvas').zoom('fit-viewport', 'auto');
         this.applyColors();
       } catch (err) {
@@ -134,6 +181,28 @@ export default {
 
       this.$emit('xml:changed');
     },
+    /**
+     * Will toggle if the bpmn-js overlay to drill down into a subprocess is shown (should be hidden in small process overviews)
+     */
+    toggleDrillDownVisibility() {
+      const canvasEl = document.getElementById(this.canvasID);
+      if (this.showDrilldownOverlay) {
+        canvasEl.classList.remove('bpmn-js-wrapper-hide-drilldown-overlay');
+      } else {
+        canvasEl.classList.add('bpmn-js-wrapper-hide-drilldown-overlay');
+      }
+    },
+    /**
+     * Will toggle if the bpmn-js breadcrumbs that display the position in the subprocess hierarchy are shown (should be hidden in small process overviews)
+     */
+    toggleSubprocessBreadcrumbVisibility() {
+      const canvasEl = document.getElementById(this.canvasID);
+      if (this.showSubprocessBreadcrumbs) {
+        canvasEl.classList.remove('bpmn-js-wrapper-hide-subprocess-breadcrumbs');
+      } else {
+        canvasEl.classList.add('bpmn-js-wrapper-hide-subprocess-breadcrumbs');
+      }
+    },
   },
   beforeDestroy() {
     if (this.viewer) {
@@ -143,6 +212,8 @@ export default {
   mounted() {
     this.setupViewer();
     this.loadXML();
+    this.toggleDrillDownVisibility();
+    this.toggleSubprocessBreadcrumbVisibility();
   },
 };
 </script>
@@ -151,6 +222,18 @@ export default {
 .vue-bpmn-diagram-container {
   height: 100%;
   width: 100%;
+}
+
+.bpmn-js-wrapper-hide-drilldown-overlay {
+  .djs-overlay-drilldown {
+    display: none;
+  }
+}
+
+.bpmn-js-wrapper-hide-subprocess-breadcrumbs {
+  .bjs-breadcrumbs {
+    display: none;
+  }
 }
 
 .orange:not(.djs-connection) .djs-visual > :nth-child(1) {
@@ -167,5 +250,10 @@ export default {
 
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: #ffd3d3ff !important;
+}
+.bjs-breadcrumbs {
+  left: -10px !important;
+  top: unset;
+  bottom: 10px;
 }
 </style>

@@ -67,8 +67,8 @@ export function preSerialize(command, context) {
                 info.businessObject.eventDefinitions[0].$type;
               preSerializedContext.eventDefinitionId = info.businessObject.eventDefinitions[0].id;
             }
-            if (info.businessObject.di && preSerializedContext[key].isExpanded === undefined) {
-              preSerializedContext[key].isExpanded = info.businessObject.di.isExpanded; // needed for subProcesses
+            if (info.di && preSerializedContext[key].isExpanded === undefined) {
+              preSerializedContext[key].isExpanded = info.di.isExpanded; // needed for subProcesses
             }
             if (info.type === 'bpmn:Lane') {
               preSerializedContext.laneSetId = info.businessObject.$parent.id;
@@ -85,6 +85,7 @@ export function preSerialize(command, context) {
           break;
         }
       // replace all of the following with their id
+      case 'rootElement':
       case 'source':
       case 'target':
         if (info.businessObject.properties) {
@@ -161,13 +162,6 @@ export function parse(elementRegistry, elementFactory, bpmnFactory, command, con
           const businessObject = bpmnFactory.create(info.type, { id: info.id });
           parsedContext.connection = elementFactory.createConnection({ ...info, businessObject });
 
-          if (context.changedBySubprocessId) {
-            const element = elementRegistry.get(context.changedBySubprocessId);
-            if (element && element.type !== 'bpmn:Process') {
-              parsedContext.connection.hidden = true;
-            }
-          }
-
           break;
         }
       // fall through to getting the existing connection by id
@@ -184,16 +178,10 @@ export function parse(elementRegistry, elementFactory, bpmnFactory, command, con
             });
             parsedContext[key].businessObject.processRef = process;
           }
-
-          if (context.changedBySubprocessId) {
-            const element = elementRegistry.get(context.changedBySubprocessId);
-            if (element && element.type !== 'bpmn:Process') {
-              parsedContext[key].hidden = true;
-            }
-          }
           break;
         }
       // fall through to getting the existing element by id
+      case 'rootElement':
       case 'source':
       case 'target':
       case 'newSource':

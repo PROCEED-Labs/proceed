@@ -1,6 +1,6 @@
 # PROCEED dBPMS
 
-[![pipeline status](https://gitlab.com/dBPMS-PROCEED/proceed/badges/master/pipeline.svg)](https://gitlab.com/dBPMS-PROCEED/proceed/-/commits/master)
+[![CI/CD](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml/badge.svg)](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml)
 
 PROCEED is a decentralized Business Process Management System (dBPMS) specialized on the creation, execution and monitoring of individual IoT processes.
 The execution is done decentralized without a controlling instance.

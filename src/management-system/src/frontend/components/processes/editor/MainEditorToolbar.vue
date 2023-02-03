@@ -94,7 +94,7 @@
         <template #tooltip-text>Open Properties Panel</template>
         mdi-cog-off-outline
       </tooltip-button>
-      <tooltip-button v-if="!isElectron" :disabled="!isShared" @click="clipUrl">
+      <tooltip-button v-if="!isElectron" @click="share">
         <template #tooltip-text>Share</template>
         mdi-share-outline
       </tooltip-button>
@@ -215,7 +215,17 @@ export default {
     },
   },
   methods: {
-    clipUrl() {
+    async share() {
+      if (!this.isShared) {
+        // if the process is currently not stored in the backend => move it into the backend
+        await this.$store.dispatch('processStore/update', {
+          id: this.process.id,
+          changes: { shared: true },
+        });
+        // subscribe for editing events from other clients and inform the backend that this client is currently editing the process
+        await this.$store.dispatch('processEditorStore/startEditing');
+      }
+
       // Hacky workaround to copy the current url into the clipboard: https://stackoverflow.com/a/49618964
       const dummyInput = document.createElement('input');
       document.body.appendChild(dummyInput);

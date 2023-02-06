@@ -1,0 +1,48 @@
+name: Deploy to environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      SSH_USER:
+        required: true
+      SSH_KEY:
+        required: true
+      SSH_HOST:
+        required: true
+
+jobs:
+  deployEngine:
+    runs-on: ubuntu-latest
+    needs: docker
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          ENV: ${{ inputs.environment }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      # Get the new version from dockerhub
+      - run: ssh staging "sudo docker run --rm -e MS_TAG="edge" -e ENGINE_TAG="edge" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull engine"
+
+      # Restart the engine container with the new image
+      - run: ssh staging "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="local" -e ENGINE_LOG_DRIVER="local" -e MS_HTTPS_PORT="443" -e MS_TAG="edge" -e ENGINE_TAG="edge" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans engine"
+
+      # Remove unused images
+      - run: ssh staging "sudo docker image prune -f -a"

@@ -189,30 +189,11 @@ jobs:
   deployEngineStaging:
     runs-on: ubuntu-latest
     needs: docker
-    environment: Staging
     steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/staging.key
-          chmod 600 ~/.ssh/staging.key
-          cat >>~/.ssh/config <<END
-          Host staging
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/staging.key
-            StrictHostKeyChecking no
-          END
-        env:
+      - uses: ./.github/workflows/deploy
+        with:
+          - environment: Staging
+        secrets:
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-
-      # Get the new version from dockerhub
-      - run: ssh staging "sudo docker run --rm -e MS_TAG="edge" -e ENGINE_TAG="edge" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull engine"
-
-      # Restart the engine container with the new image
-      - run: ssh staging "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="local" -e ENGINE_LOG_DRIVER="local" -e MS_HTTPS_PORT="443" -e MS_TAG="edge" -e ENGINE_TAG="edge" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans engine"
-
-      # Remove unused images
-      - run: ssh staging "sudo docker image prune -f -a"

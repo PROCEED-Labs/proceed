@@ -193,7 +193,7 @@ jobs:
     steps:
       - uses: ./.github/workflows/deploy
         with:
-          - environment: Staging
+          environment: Staging
         secrets:
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}

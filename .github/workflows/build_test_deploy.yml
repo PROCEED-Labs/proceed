@@ -191,7 +191,7 @@ jobs:
     needs: docker
     environment: Staging
     steps:
-      - uses: ./.github/workflows/deploy
+      - uses: ./.github/workflows/deploy.yml
         with:
           environment: Staging
         secrets:

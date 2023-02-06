@@ -187,14 +187,12 @@ jobs:
           tag: edge
 
   deployEngineStaging:
-    runs-on: ubuntu-latest
     needs: docker
     environment: Staging
-    steps:
-      - uses: ./.github/workflows/deploy.yml
-        with:
-          environment: Staging
-        secrets:
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: Staging
+    secrets:
+      SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}

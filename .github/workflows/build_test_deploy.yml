@@ -188,7 +188,6 @@ jobs:
 
   deployEngineStaging:
     needs: docker
-    environment: Staging
     uses: ./.github/workflows/deploy.yml
     with:
       environment: Staging

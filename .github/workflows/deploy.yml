@@ -18,7 +18,6 @@ jobs:
   deployEngine:
     runs-on: ubuntu-latest
     needs: docker
-    environment: ${{ inputs.environment }}
     steps:
       - name: Configure SSH
         run: |

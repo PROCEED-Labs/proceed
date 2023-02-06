@@ -189,6 +189,7 @@ jobs:
   deployEngineStaging:
     runs-on: ubuntu-latest
     needs: docker
+    environment: Staging
     steps:
       - uses: ./.github/workflows/deploy
         with:

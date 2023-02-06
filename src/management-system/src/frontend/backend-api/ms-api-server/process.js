@@ -353,21 +353,21 @@ async function pushToBackend(processDefinitionsId) {
         images[imageFileName] = file;
       });
 
-      saveUserTaskHTML(processDefinitionsId, fileName, updatedHtml);
+      await saveUserTaskHTML(processDefinitionsId, fileName, updatedHtml);
     });
     // send additional process versions to the backend
-    Object.entries(versions).forEach(([versionNumber, bpmn]) => {
-      addProcessVersion(processDefinitionsId, bpmn);
+    await asyncForEach(Object.entries(versions), async ([versionNumber, bpmn]) => {
+      await addProcessVersion(processDefinitionsId, bpmn);
     });
     // send images to the backend
-    asyncForEach(Object.entries(images), async ([fileName, image]) => {
+    await asyncForEach(Object.entries(images), async ([fileName, image]) => {
       let imageFile = image;
       if (typeof imageFile === 'string') {
         // convert base64 string to image file and push to backend
         const imageBlob = await fetch(image).then((res) => res.blob());
         imageFile = new File([imageBlob], { type: imageBlob.type });
       }
-      saveImage(processDefinitionsId, fileName, imageFile);
+      await saveImage(processDefinitionsId, fileName, imageFile);
     });
   }
 }
@@ -635,7 +635,11 @@ async function saveUserTaskHTML(definitionsId, taskFileName, html) {
   }
 
   if (!browserStorage.isProcessLocal(definitionsId)) {
-    processSockets[definitionsId].edit.emit('data_saveUserTaskHTML', taskFileName, html);
+    return new Promise((resolve) => {
+      processSockets[definitionsId].edit.emit('data_saveUserTaskHTML', taskFileName, html, () => {
+        resolve();
+      });
+    });
   }
 }
 

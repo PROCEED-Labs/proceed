@@ -274,6 +274,16 @@ export default {
         this.openPopup();
       } else {
         this.isCurrentlyDeploying = true;
+
+        // check if the process is already stored in the backend (otherwise the backend cannot deploy it)
+        if (!processToDeploy.shared) {
+          // if not => move it into the backend
+          await this.$store.dispatch('processStore/update', {
+            id: this.processToDeploy.id,
+            changes: { shared: true },
+          });
+        }
+
         try {
           await engineNetworkInterface.deployProcessVersion(processToDeploy.id, version, dynamic);
           this.popupData.body = 'Deployed process version successfully';

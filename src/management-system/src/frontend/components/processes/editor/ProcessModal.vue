@@ -128,11 +128,6 @@ export default {
         };
       });
 
-      // don't show local processes as deployable
-      if (this.isDeploymentMode && !process.env.IS_ELECTRON) {
-        processes = processes.filter((process) => process.shared);
-      }
-
       if (this.showFavoriteList) {
         processes = processes.filter((process) => process.isFavorite);
       }

@@ -5,10 +5,15 @@ import {
   getProcessInfo,
   getDefaultProcessMetaInfo,
 } from '@/shared-frontend-backend/helpers/processHelpers.js';
-import { mergeIntoObject } from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
+import {
+  mergeIntoObject,
+  asyncForEach,
+  asyncMap,
+} from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
 import { initResourcePermissions } from '@/frontend/helpers/iam/permissions/permissions-handler.js';
 import { scaleDownImage } from '@/frontend/helpers/image-helper.js';
 import { subject } from '@casl/ability';
+import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 export default function createProcessStore() {
   let processStoreResolver;
@@ -87,7 +92,14 @@ export default function createProcessStore() {
 
       processStoreResolver();
     },
-    async add({ state, commit, dispatch }, { process, bpmn, override }) {
+    async add({ state, commit, dispatch, rootGetters }, { process, bpmn, override }) {
+      // if it is not explicitly defined if the process should be shared or not check if the user is currently logged in
+      // yes => store the process in the backend (shared = true)
+      // no  => store the process locally (shared = false)
+      if (typeof process.shared !== 'boolean') {
+        process.shared = !!rootGetters['authStore/isAuthenticated'];
+      }
+
       // make sure that the process only contains expected entries
       process = mergeIntoObject(getDefaultProcessMetaInfo(), process, false, true, false);
 
@@ -195,7 +207,33 @@ export default function createProcessStore() {
       }
     },
     /** Moves a process from the local storage in the browser to the backend server */
-    async moveToBackend(_, { process }) {
+    async moveToBackend({ state, dispatch }, { process }) {
+      // recursively move all imports too to prevent problems on later deployment (if an import is missing in the backend the deployment will fail) or if another user tries to look at an import
+
+      // get the bpmn for all versions of the process (including the latest version) which might include call activities referencing other processes
+      const allBpmns = await asyncMap(
+        process.versions,
+        async ({ version }) => await getters.xmlByVersion()(process.id, version)
+      );
+      allBpmns.push(await getters.xmlById()(process.id));
+
+      // get the definitionsIds of all imported processes in all versions (prevent infinite loops if a process imports another version of itself)
+      const allImportInformations = await asyncMap(allBpmns, async (bpmn) => {
+        const importInformation = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
+        return Object.values(importInformation).map(({ definitionId }) => definitionId);
+      });
+      const allUniqueReferencedProcesses = Array.from(new Set(allImportInformations.flat())).filter(
+        (el) => el !== process.id
+      );
+
+      // recursively update all imports to be stored in the backend (if they are not already)
+      await asyncForEach(allUniqueReferencedProcesses, async (definitionId) => {
+        const importedProcess = state.processes.find((p) => p.id === definitionId);
+        if (!importedProcess.shared) {
+          await dispatch('update', { id: importedProcess.id, changes: { shared: true } });
+        }
+      });
+
       await processInterface.pushToBackend(process.id);
     },
     async moveToLocalStorage(_, { process }) {

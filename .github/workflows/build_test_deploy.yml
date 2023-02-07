@@ -230,7 +230,7 @@ jobs:
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Display structure of downloaded files
-        run: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+        run: ls ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Kaniko build engine
         uses: aevea/action-kaniko@master
@@ -248,7 +248,7 @@ jobs:
           path: ${{ env.OUTPUT_PATH_MS_SERVER }}
 
       - name: Display structure of downloaded files
-        run: ${{ env.OUTPUT_PATH_MS_SERVER }}
+        run: ls ${{ env.OUTPUT_PATH_MS_SERVER }}
 
       - name: Kaniko build MS server
         uses: aevea/action-kaniko@master
@@ -280,7 +280,7 @@ jobs:
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Display structure of downloaded files
-        run: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+        run: ls ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Kaniko build engine
         uses: aevea/action-kaniko@master
@@ -298,7 +298,7 @@ jobs:
           path: ${{ env.OUTPUT_PATH_MS_SERVER }}
 
       - name: Display structure of downloaded files
-        run: ${{ env.OUTPUT_PATH_MS_SERVER }}
+        run: ls ${{ env.OUTPUT_PATH_MS_SERVER }}
 
       - name: Kaniko build MS server
         uses: aevea/action-kaniko@master

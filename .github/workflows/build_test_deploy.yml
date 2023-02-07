@@ -157,7 +157,7 @@ jobs:
   #       name: PROCEED_Engine_Android
   #       path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
 
-  docker:
+  dockerStaging:
     runs-on: ubuntu-latest
     needs: buildEngine
     steps:
@@ -186,8 +186,38 @@ jobs:
           path: ./build/engine/
           tag: edge
 
+  dockerProduction:
+    runs-on: ubuntu-latest
+    needs: buildEngine
+    if: false
+    steps:
+      - uses: actions/cache@v3
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Download engine build
+        uses: actions/download-artifact@v3
+        with:
+          name: PROCEED_Engine
+          path: build/engine
+
+      - name: Display structure of downloaded files
+        run: ls build/engine
+
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
+        with:
+          image: proceed/engine
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ./build/engine/
+          tag: latest
+
   deployEngineStaging:
-    needs: docker
+    needs: dockerStaging
     uses: ./.github/workflows/deploy.yml
     with:
       ENVIRONMENT: Staging
@@ -200,7 +230,7 @@ jobs:
       SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
   deployEngineProduction:
-    needs: docker
+    needs: dockerProduction
     uses: ./.github/workflows/deploy.yml
     with:
       ENVIRONMENT: Production

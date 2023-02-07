@@ -212,7 +212,9 @@ jobs:
 
   dockerStaging:
     runs-on: ubuntu-latest
-    needs: buildEngine
+    needs:
+      - buildEngine
+      - buildMS
     steps:
       - uses: actions/cache@v3
         timeout-minutes: 2
@@ -220,28 +222,48 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
-
+      # TODO: Use matrix for engine and ms docker
       - name: Download engine build
         uses: actions/download-artifact@v3
         with:
           name: PROCEED_Engine
-          path: build/engine
+          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Display structure of downloaded files
-        run: ls build/engine
+        run: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
-      - name: Kaniko build
+      - name: Kaniko build engine
         uses: aevea/action-kaniko@master
         with:
           image: proceed/engine
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ./build/engine/
+          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+          tag: edge
+
+      - name: Download MS server build
+        uses: actions/download-artifact@v3
+        with:
+          name: PROCEED_Management_System_Server
+          path: ${{ env.OUTPUT_PATH_MS_SERVER }}
+
+      - name: Display structure of downloaded files
+        run: ${{ env.OUTPUT_PATH_MS_SERVER }}
+
+      - name: Kaniko build MS server
+        uses: aevea/action-kaniko@master
+        with:
+          image: proceed/ms-server
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ${{ env.OUTPUT_PATH_MS_SERVER }}
           tag: edge
 
   dockerProduction:
     runs-on: ubuntu-latest
-    needs: buildEngine
+    needs:
+      - buildEngine
+      - buildMS
     if: false
     steps:
       - uses: actions/cache@v3
@@ -255,18 +277,36 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: PROCEED_Engine
-          path: build/engine
+          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
       - name: Display structure of downloaded files
-        run: ls build/engine
+        run: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
 
-      - name: Kaniko build
+      - name: Kaniko build engine
         uses: aevea/action-kaniko@master
         with:
           image: proceed/engine
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ./build/engine/
+          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+          tag: latest
+
+      - name: Download MS server build
+        uses: actions/download-artifact@v3
+        with:
+          name: PROCEED_Management_System_Server
+          path: ${{ env.OUTPUT_PATH_MS_SERVER }}
+
+      - name: Display structure of downloaded files
+        run: ${{ env.OUTPUT_PATH_MS_SERVER }}
+
+      - name: Kaniko build MS server
+        uses: aevea/action-kaniko@master
+        with:
+          image: proceed/ms-server
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          path: ${{ env.OUTPUT_PATH_MS_SERVER }}
           tag: latest
 
   deployEngineStaging:

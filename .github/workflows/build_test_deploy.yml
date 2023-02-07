@@ -190,8 +190,24 @@ jobs:
     needs: docker
     uses: ./.github/workflows/deploy.yml
     with:
-      environment: Staging
+      ENVIRONMENT: Staging
+      ENGINE_TAG: edge
+      MS_TAG: edge
+      LOG_DRIVER: local
     secrets:
       SSH_USER: ${{ secrets.STAGING_SSH_USER }}
       SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
       SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+
+  deployEngineProduction:
+    needs: docker
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ENVIRONMENT: Production
+      ENGINE_TAG: latest
+      MS_TAG: latest
+      LOG_DRIVER: gcplogs
+    secrets:
+      SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+      SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+      SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}

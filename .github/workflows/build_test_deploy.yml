@@ -220,8 +220,6 @@ jobs:
           - output: PROCEED_Management_System_Server
             output_path: OUTPUT_PATH_MS_SERVER
             image: proceed/ms-server
-    env:
-      OUTPUT_PATH: ${{ env[matrix.output_path] }}
     runs-on: ubuntu-latest
     needs:
       - buildEngine
@@ -231,10 +229,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.output }}
-          path: ${{ env.OUTPUT_PATH }}
+          path: ${{ env[matrix.output_path] }}
 
       - name: Display structure of downloaded files
-        run: ls ${{ env.OUTPUT_PATH }}
+        run: ls ${{ env[matrix.output_path] }}
 
       - name: Kaniko build
         uses: aevea/action-kaniko@master
@@ -242,7 +240,7 @@ jobs:
           image: ${{ matrix.image }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env.OUTPUT_PATH }}
+          path: ${{ env[matrix.output_path] }}
           tag: edge
 
   dockerProduction:
@@ -256,8 +254,6 @@ jobs:
           - output: PROCEED_Management_System_Server
             output_path: OUTPUT_PATH_MS_SERVER
             image: proceed/ms-server
-    env:
-      OUTPUT_PATH: ${{ env[matrix.output_path] }}
     runs-on: ubuntu-latest
     needs:
       - buildEngine
@@ -267,10 +263,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.output }}
-          path: ${{ env.OUTPUT_PATH }}
+          path: ${{ env[matrix.output_path] }}
 
       - name: Display structure of downloaded files
-        run: ls ${{ env.OUTPUT_PATH }}
+        run: ls ${{ env[matrix.output_path] }}
 
       - name: Kaniko build
         uses: aevea/action-kaniko@master
@@ -278,7 +274,7 @@ jobs:
           image: ${{ matrix.image }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env.OUTPUT_PATH }}
+          path: ${{ env[matrix.output_path] }}
           tag: latest
 
   deployEngineStaging:

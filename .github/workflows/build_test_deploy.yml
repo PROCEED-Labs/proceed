@@ -251,10 +251,10 @@ jobs:
       matrix:
         include:
           - output: PROCEED_Engine
-            output_path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+            output_path: OUTPUT_PATH_ENGINE_NODE
             image: proceed/engine
           - output: PROCEED_Management_System_Server
-            output_path: ${{ env.OUTPUT_PATH_MS_SERVER }}
+            output_path: OUTPUT_PATH_MS_SERVER
             image: proceed/ms-server
     env:
       OUTPUT_PATH: ${{ env[matrix.output_path] }}

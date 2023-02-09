@@ -134,7 +134,7 @@
       ]
     },
     {
-      "name": "priority",
+      "name": "defaultPriority",
       "properties": [
         {
           "name": "value",
@@ -213,9 +213,9 @@
           "type": "overviewImage"
         },
         {
-          "name": "priority",
+          "name": "defaultPriority",
           "isMany": false,
-          "type": "priority"
+          "type": "defaultPriority"
         }
       ]
     },

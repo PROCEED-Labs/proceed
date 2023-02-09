@@ -34,11 +34,30 @@
             ></progress-setter>
           </v-col>
         </v-row>
-        <v-row class="mt-n4" v-if="isUserTask">
+        <v-row class="mt-n4" align="center" v-if="isUserTask">
           <v-col cols="6"><span class="text-subtitle-1 font-weight-medium">Priority:</span></v-col>
-          <v-col cols="6">
-            <span class="text-subtitle-1 font-weight-medium">{{ priority }}</span></v-col
-          >
+          <v-col cols="4">
+            <v-text-field
+              v-if="settingPriority"
+              ref="priority"
+              type="number"
+              min="0"
+              max="10"
+              :value="priority"
+              :rules="[inputRules.valueBetween1And10]"
+              autofocus
+              dense
+              @blur="setPriority($event.target.value)"
+            />
+            <div v-else>
+              <span v-if="priority" class="text-subtitle-1 font-weight-medium mr-2"
+                >{{ priority }}
+              </span>
+              <v-icon v-if="elementIsActive" dense class="mb-1" @click="settingPriority = true"
+                >mdi-pencil</v-icon
+              >
+            </div>
+          </v-col>
         </v-row>
         <v-row class="mt-n4">
           <v-col cols="6"
@@ -119,7 +138,12 @@ export default {
   data() {
     return {
       settingRealCosts: false,
+      settingPriority: false,
       settingState: false,
+      inputRules: {
+        valueBetween1And10: (value) =>
+          !value || (value >= 1 && value <= 10) || 'Priority must be between 1 and 10',
+      },
     };
   },
   computed: {
@@ -180,8 +204,20 @@ export default {
       return environmentConfigSettings.currency;
     },
     priority() {
-      const priorityValue = this.metaData['priority'];
-      return priorityValue || 1;
+      const token = this.instance.tokens.find(
+        (l) => l.currentFlowElementId == this.selectedElement.id
+      );
+
+      const logInfo = this.instance.log.find(
+        (logEntry) => logEntry.flowElementId === this.selectedElement.id
+      );
+
+      if (token) {
+        return token.priority;
+      } else if (logInfo) {
+        return logInfo.priority;
+      }
+      return null;
     },
     costsPlanned() {
       const costsValue = this.metaData['costsPlanned'];
@@ -235,22 +271,7 @@ export default {
     },
   },
   methods: {
-    async setRealCosts(costs) {
-      this.settingRealCosts = false;
-      const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
-      );
-
-      if (token) {
-        engineNetworkInterface.updateToken(
-          this.deployment.definitionId,
-          this.instance.processInstanceId,
-          token.tokenId,
-          { costsRealSetByOwner: costs }
-        );
-      }
-    },
-    async setProgress(newProgress) {
+    async updateToken(updatedInfoObj) {
       const token = this.instance.tokens.find(
         (l) => l.currentFlowElementId == this.selectedElement.id
       );
@@ -260,15 +281,32 @@ export default {
           this.deployment.definitionId,
           this.instance.processInstanceId,
           token.tokenId,
-          { currentFlowNodeProgress: newProgress }
+          updatedInfoObj
         );
+      }
+    },
+    async setRealCosts(costs) {
+      this.settingRealCosts = false;
+      await this.updateToken({ costsRealSetByOwner: costs });
+    },
+    async setPriority(newPriority) {
+      this.settingPriority = false;
+      const valid = this.$refs['priority'].validate();
+      if (valid && newPriority) {
+        await this.updateToken({ priority: parseInt(newPriority) });
+      }
+    },
+    async setProgress(newProgress) {
+      const token = this.instance.tokens.find(
+        (l) => l.currentFlowElementId == this.selectedElement.id
+      );
 
-        if (newProgress.value === 100) {
-          await engineNetworkInterface.completeUserTask(
-            this.instance.processInstanceId,
-            token.currentFlowElementId
-          );
-        }
+      if (token && newProgress.value === 100) {
+        await this.updateToken({ currentFlowNodeProgress: newProgress });
+        await engineNetworkInterface.completeUserTask(
+          this.instance.processInstanceId,
+          token.currentFlowElementId
+        );
       }
     },
   },

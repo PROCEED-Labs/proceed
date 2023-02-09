@@ -213,6 +213,7 @@ jobs:
   dockerStaging:
     strategy:
       matrix:
+        # Run a job each for the engine and MS server images
         include:
           - output: PROCEED_Engine
             output_path: OUTPUT_PATH_ENGINE_NODE

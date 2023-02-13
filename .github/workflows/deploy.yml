@@ -51,6 +51,8 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
+      - run: echo "$LOG_DRIVER"
+
       # Get the new version from dockerhub
       - run: ssh $ENV "sudo docker run --rm -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull engine"
 

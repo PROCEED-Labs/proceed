@@ -20,7 +20,6 @@ env:
   OUTPUT_PATH_MS_SERVER: './build/management-system/server/'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
-  ENVIRONMENT: ${{ inputs.environment || 'Staging' }}
 
 jobs:
   install:
@@ -229,7 +228,7 @@ jobs:
             output_path: OUTPUT_PATH_MS_SERVER
             image: proceed/ms-server
     runs-on: ubuntu-latest
-    environment: ${{ env.ENVIRONMENT }}
+    environment: ${{ inputs.environment || 'Staging' }}
     needs:
       - buildEngine
       - buildMS

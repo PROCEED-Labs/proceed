@@ -258,7 +258,7 @@ jobs:
       ENVIRONMENT: ${{ inputs.environment || 'Staging' }}
       ENGINE_TAG: ${{ vars.IMAGE_TAG }}
       MS_TAG: ${{ vars.IMAGE_TAG }}
-      LOG_DRIVER: ${{ vars.LOG_DRIVER }}
+      LOG_DRIVER: local
     secrets:
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_KEY: ${{ secrets.SSH_KEY }}

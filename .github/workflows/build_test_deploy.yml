@@ -251,29 +251,15 @@ jobs:
           path: ${{ env[matrix.output_path] }}
           tag: ${{ vars.IMAGE_TAG }}
 
-  deployEngineStaging:
+  deploy:
     needs: docker
     uses: ./.github/workflows/deploy.yml
     with:
-      ENVIRONMENT: Staging
-      ENGINE_TAG: edge
-      MS_TAG: edge
-      LOG_DRIVER: local
+      ENVIRONMENT: ${{ inputs.environment || 'Staging' }}
+      ENGINE_TAG: ${{ vars.IMAGE_TAG }}
+      MS_TAG: ${{ vars.IMAGE_TAG }}
+      LOG_DRIVER: ${{ vars.LOG_DRIVER }}
     secrets:
-      SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-      SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-
-  deployEngineProduction:
-    if: false
-    needs: docker
-    uses: ./.github/workflows/deploy.yml
-    with:
-      ENVIRONMENT: Production
-      ENGINE_TAG: latest
-      MS_TAG: latest
-      LOG_DRIVER: gcplogs
-    secrets:
-      SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
-      SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-      SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}

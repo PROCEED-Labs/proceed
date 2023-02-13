@@ -16,7 +16,7 @@
 <!--
   A list of changes and any additional information that could be relevant for this pull request.
 
-  Example:
-    - Function foobar() now takes an optional third parameter
-    - The version of dependency dep-js was changed to 1.3.7
+Example:
+- Function foobar() now takes an optional third parameter
+- The version of dependency dep-js was changed to 1.3.7
 -->

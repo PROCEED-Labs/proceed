@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
 
 env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
@@ -14,6 +20,7 @@ env:
   OUTPUT_PATH_MS_SERVER: './build/management-system/server/'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
+  ENVIRONMENT: ${{ inputs.environment || 'Staging' }}
 
 jobs:
   install:
@@ -210,7 +217,7 @@ jobs:
           name: PROCEED_Management_System_Server
           path: ${{ env.OUTPUT_PATH_MS_SERVER }}
 
-  dockerStaging:
+  docker:
     strategy:
       matrix:
         # Run a job each for the engine and MS server images
@@ -222,6 +229,7 @@ jobs:
             output_path: OUTPUT_PATH_MS_SERVER
             image: proceed/ms-server
     runs-on: ubuntu-latest
+    environment: ${{ env.ENVIRONMENT }}
     needs:
       - buildEngine
       - buildMS
@@ -242,44 +250,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           path: ${{ env[matrix.output_path] }}
-          tag: edge
-
-  dockerProduction:
-    if: false
-    strategy:
-      matrix:
-        include:
-          - output: PROCEED_Engine
-            output_path: OUTPUT_PATH_ENGINE_NODE
-            image: proceed/engine
-          - output: PROCEED_Management_System_Server
-            output_path: OUTPUT_PATH_MS_SERVER
-            image: proceed/ms-server
-    runs-on: ubuntu-latest
-    needs:
-      - buildEngine
-      - buildMS
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ matrix.output }}
-          path: ${{ env[matrix.output_path] }}
-
-      - name: Display structure of downloaded files
-        run: ls ${{ env[matrix.output_path] }}
-
-      - name: Kaniko build
-        uses: aevea/action-kaniko@master
-        with:
-          image: ${{ matrix.image }}
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env[matrix.output_path] }}
-          tag: latest
+          tag: ${{ secrets.IMAGE_TAG }}
 
   deployEngineStaging:
-    needs: dockerStaging
+    needs: docker
     uses: ./.github/workflows/deploy.yml
     with:
       ENVIRONMENT: Staging
@@ -292,7 +266,8 @@ jobs:
       SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
   deployEngineProduction:
-    needs: dockerProduction
+    if: false
+    needs: docker
     uses: ./.github/workflows/deploy.yml
     with:
       ENVIRONMENT: Production

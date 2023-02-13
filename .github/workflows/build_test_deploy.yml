@@ -249,7 +249,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           path: ${{ env[matrix.output_path] }}
-          tag: ${{ secrets.IMAGE_TAG }}
+          tag: ${{ vars.IMAGE_TAG }}
 
   deployEngineStaging:
     needs: docker

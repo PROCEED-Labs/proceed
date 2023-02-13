@@ -254,7 +254,6 @@ jobs:
   deploy:
     needs: docker
     uses: ./.github/workflows/deploy.yml
-    environment: ${{ inputs.environment || 'Staging' }}
     with:
       ENVIRONMENT: ${{ inputs.environment || 'Staging' }}
       ENGINE_TAG: ${{ vars.IMAGE_TAG }}

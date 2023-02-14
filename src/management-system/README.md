@@ -7,10 +7,10 @@ There is a portable Desktop version for Mac OS, Win and Linux and a Server versi
 
 ## Background
 
-The project was originally created with the [Vue Cli]](https://cli.vuejs.org/config/) like described [in the Wiki](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/PROCEED-MS-Code-Structure).
+The project was originally created with the [Vue Cli]](https://cli.vuejs.org/config/) like described [in the Wiki](https://github.com/PROCEED-Labs/proceed/wiki/PROCEED-MS-Code-Structure).
 
-There is a whole section [in the Wiki](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/home#proceed-management-system) to get an overview about the architecture.
-Especially, this page is useful: https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/MS/Architecture-Server-and-Desktop-App.
+There is a whole section [in the Wiki](https://github.com/PROCEED-Labs/proceed/wiki#proceed-management-system) to get an overview about the architecture.
+Especially, this page is useful: https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App.
 Unfortunately, not everything is documented or up-to-date, so the best source for information is the source code.
 
 For development commands (dev, test, build), please see the main `package.json` and README in the root folder.

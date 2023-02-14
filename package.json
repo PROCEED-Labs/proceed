@@ -20,12 +20,12 @@
     "url": "https://proceed.snet.tu-berlin.de/"
   },
   "homepage": "https://proceed.snet.tu-berlin.de/",
-  "bugs": "https://gitlab.com/dBPMS-PROCEED/proceed/-/issues",
+  "bugs": "https://github.com/PROCEED-Labs/proceed/issues",
   "description": "The PROCEED project aims to create a new kind of process execution engine with distributed and decentralized features.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/dBPMS-PROCEED/proceed.git",
+    "url": "https://github.com/PROCEED-Labs/proceed.git",
     "directory": "src/management-system"
   },
   "engines": {

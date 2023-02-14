@@ -8,7 +8,7 @@
     "url": "https://proceed.snet.tu-berlin.de/"
   },
   "homepage": "https://proceed.snet.tu-berlin.de/",
-  "bugs": "https://gitlab.com/dBPMS-PROCEED/proceed/-/issues",
+  "bugs": "https://github.com/PROCEED-Labs/proceed/issues",
   "description": "The Management System for the PROCEED project",
   "keywords": [
     "BPMN",
@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/dBPMS-PROCEED/proceed.git",
+    "url": "https://github.com/PROCEED-Labs/proceed.git",
     "directory": "src/management-system/"
   },
   "main": "background.js",

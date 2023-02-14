@@ -30,7 +30,7 @@ const configPath =
 
 /**
  * For explanation for the general server architecture, see:
- * https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/MS/Architecture-Server-and-Desktop-App#ms-server-architecture
+ * https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App#ms-server-architecture
  */
 
 async function init() {

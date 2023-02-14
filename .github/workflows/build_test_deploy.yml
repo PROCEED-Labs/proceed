@@ -254,6 +254,7 @@ jobs:
   deployEngine:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
+    needs: docker
     env:
       ENV: ${{ inputs.environment || 'Staging' }}
       ENGINE_TAG: ${{ vars.IMAGE_TAG }}
@@ -281,7 +282,7 @@ jobs:
       - run: ssh $ENV "sudo docker run --rm -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull engine"
 
       # Restart the engine container with the new image
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="\${{ inputs.LOG_DRIVER }}" -e ENGINE_LOG_DRIVER="\${{ inputs.LOG_DRIVER }}" -e MS_HTTPS_PORT="443" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans engine"
+      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="443" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans engine"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

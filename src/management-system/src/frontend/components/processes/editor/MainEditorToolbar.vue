@@ -1,5 +1,6 @@
 <template>
   <hovering-toolbar v-show="currentView === 'modeler'">
+    <popup :popupData="popupData" />
     <toolbar-group>
       <v-toolbar-title>
         <span v-if="name.length < 20">
@@ -130,6 +131,7 @@ import TimerHandling from '@/frontend/components/processes/editor/TimerHandling.
 import CallActivityHandling from '@/frontend/components/processes/editor/CallActivityHandling.vue';
 import ConstraintHandling from '@/frontend/components/processes/editor/ConstraintHandling.vue';
 import ProcessExport from '@/frontend/components/processes/editor/ProcessExport.vue';
+import AlertWindow from '@/frontend/components/universal/Alert.vue';
 
 export default {
   name: 'main-editor-toolbar',
@@ -145,6 +147,7 @@ export default {
     CallActivityHandling,
     ConstraintHandling,
     ProcessExport,
+    popup: AlertWindow,
   },
   props: {
     process: {
@@ -171,6 +174,11 @@ export default {
   data() {
     return {
       displayTypeSelection: 0,
+      popupData: {
+        body: '',
+        display: 'none',
+        color: '',
+      },
     };
   },
   computed: {
@@ -234,6 +242,14 @@ export default {
       dummyInput.setSelectionRange(0, 99999);
       document.execCommand('copy');
       document.body.removeChild(dummyInput);
+
+      this.popupData.body =
+        'A link has been copied to your clipboard. Send it to other users to collaboratively edit this process.';
+      this.popupData.color = 'success';
+      this.popupData.display = 'block';
+      setTimeout(() => {
+        this.popupData.display = 'none';
+      }, 4000);
     },
     openSubprocessModeler() {
       this.$store.commit('processEditorStore/setSubprocessId', this.selectedElement.id);

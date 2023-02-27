@@ -1,6 +1,10 @@
 <template>
   <hovering-toolbar v-show="currentView === 'modeler'">
-    <popup :popupData="popupData" />
+    <popup :popupData="popupData">
+      <div>The following link can shared with others to collaboratively edit this process.</div>
+      <div><v-textarea rows="1" v-model="url" auto-grow readonly></v-textarea></div>
+      <div>It has been automatically copied to your clipboard.</div>
+    </popup>
     <toolbar-group>
       <v-toolbar-title>
         <span v-if="name.length < 20">
@@ -221,6 +225,9 @@ export default {
     showSelectedOptions() {
       return this.selectedElement && this.selectedElement.type !== 'bpmn:SequenceFlow';
     },
+    url() {
+      return window.location.href;
+    },
   },
   methods: {
     async share() {
@@ -234,22 +241,11 @@ export default {
         await this.$store.dispatch('processEditorStore/startEditing');
       }
 
-      // Hacky workaround to copy the current url into the clipboard: https://stackoverflow.com/a/49618964
-      const dummyInput = document.createElement('input');
-      document.body.appendChild(dummyInput);
-      dummyInput.value = window.location.href;
-      dummyInput.select();
-      dummyInput.setSelectionRange(0, 99999);
-      document.execCommand('copy');
-      document.body.removeChild(dummyInput);
+      // automatically write the url into the users clipboard
+      window.navigator.clipboard.writeText(window.location.href);
 
-      this.popupData.body =
-        'A link has been copied to your clipboard. Send it to other users to collaboratively edit this process.';
       this.popupData.color = 'success';
       this.popupData.display = 'block';
-      setTimeout(() => {
-        this.popupData.display = 'none';
-      }, 4000);
     },
     openSubprocessModeler() {
       this.$store.commit('processEditorStore/setSubprocessId', this.selectedElement.id);

@@ -75,7 +75,7 @@
 </template>
 
 <script>
-import { parseISODuration } from '@/frontend/helpers/instance-information.js';
+import { parseISODuration } from '@proceed/bpmn-helper';
 export default {
   name: 'DurationForm',
   props: {

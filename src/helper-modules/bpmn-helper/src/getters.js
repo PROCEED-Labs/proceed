@@ -856,6 +856,71 @@ function getResourcesFromElement(element) {
   return { consumableMaterial, tool, inspectionInstrument };
 }
 
+/**
+ * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
+ * @param {String} isoDuration
+ * @returns {Object} Object with number of years, months, days, hours, minutes and seconds
+ */
+function parseISODuration(isoDuration) {
+  let years = null;
+  let months = null;
+  let days = null;
+  let hours = null;
+  let minutes = null;
+  let seconds = null;
+  let dateStr = isoDuration.substring(isoDuration.lastIndexOf('P') + 1);
+  let timeStr = '';
+
+  if (dateStr.includes('T')) {
+    dateStr = isoDuration.substring(isoDuration.lastIndexOf('P') + 1, isoDuration.lastIndexOf('T'));
+    timeStr = isoDuration.substring(isoDuration.lastIndexOf('T') + 1);
+  }
+  if (dateStr.includes('Y')) {
+    const yearsStr = dateStr.substring(0, dateStr.lastIndexOf('Y'));
+    years = parseInt(yearsStr) || null;
+    dateStr = dateStr.substring(dateStr.lastIndexOf('Y') + 1);
+  }
+  if (dateStr.includes('M')) {
+    const monthsStr = dateStr.substring(0, dateStr.lastIndexOf('M'));
+    months = parseInt(monthsStr) || null;
+    dateStr = dateStr.substring(dateStr.lastIndexOf('M') + 1);
+  }
+  if (dateStr.includes('D')) {
+    const daysStr = dateStr.substring(0, dateStr.lastIndexOf('D'));
+    days = parseInt(daysStr) || null;
+  }
+  if (timeStr.includes('H')) {
+    const hoursStr = timeStr.substring(0, timeStr.lastIndexOf('H'));
+    hours = parseInt(hoursStr) || null;
+    timeStr = timeStr.substring(timeStr.lastIndexOf('H') + 1);
+  }
+  if (timeStr.includes('M')) {
+    const minutesStr = timeStr.substring(0, timeStr.lastIndexOf('M'));
+    minutes = parseInt(minutesStr) || null;
+    timeStr = timeStr.substring(timeStr.lastIndexOf('M') + 1);
+  }
+  if (timeStr.includes('S')) {
+    const secondsStr = timeStr.substring(0, timeStr.lastIndexOf('S'));
+    seconds = parseInt(secondsStr) || null;
+  }
+
+  return { years, months, days, hours, minutes, seconds };
+}
+
+function convertISODurationToMiliseconds(isoDuration) {
+  const { years, months, days, hours, minutes, seconds } = parseISODuration(isoDuration);
+
+  const durationInMiliseconds =
+    seconds * 1000 +
+    minutes * (1000 * 60) +
+    hours * (1000 * 60 * 60) +
+    days * (1000 * 60 * 60 * 24) +
+    months * (1000 * 60 * 60 * 24 * 30) +
+    years * (1000 * 60 * 60 * 24 * 365);
+
+  return durationInMiliseconds;
+}
+
 module.exports = {
   // 'definitions' element related
   getDefinitionsId,
@@ -901,4 +966,6 @@ module.exports = {
   getMilestonesFromElementById,
   getResourcesFromElement,
   getLocationsFromElement,
+  parseISODuration,
+  convertISODurationToMiliseconds,
 };

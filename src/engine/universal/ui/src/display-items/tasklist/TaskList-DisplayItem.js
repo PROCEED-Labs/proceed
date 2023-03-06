@@ -60,6 +60,7 @@ class TaskListTab extends DisplayItem {
       ['_5thIndustryInspectionOrderLink']: inspectionOrderLink,
       activate,
       definitionVersion,
+      tokenId,
     } = userTask;
 
     if (!processInstance) {
@@ -92,7 +93,7 @@ class TaskListTab extends DisplayItem {
       const script = `
       const instanceID = '${query.instanceID}';
       const userTaskID = '${query.userTaskID}';
-      
+
       window.addEventListener('submit', (event) => {
         event.preventDefault();
 
@@ -127,7 +128,7 @@ class TaskListTab extends DisplayItem {
             .split('milestone-')
             .slice(1)
             .join('');
-            
+
             window.PROCEED_DATA.put(
               '/tasklist/api/milestone',
               { [milestoneName]: parseInt(event.target.value) },
@@ -153,7 +154,7 @@ class TaskListTab extends DisplayItem {
             .join('');
 
             clearTimeout(variableInputTimer);
-            
+
             variableInputTimer = setTimeout(() => {
               window.PROCEED_DATA.put(
                 '/tasklist/api/variable',
@@ -163,13 +164,13 @@ class TaskListTab extends DisplayItem {
                   userTaskID,
                 }
               );
-            }, 5000) 
+            }, 5000)
           });
         });
       })
       `;
 
-      const variables = processInstance.getVariables();
+      const variables = processInstance.getVariables(tokenId);
       const milestones = await getMilestonesFromElementById(bpmn, query.userTaskID);
       const milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
       const parsedHtml = whiskers.render(html, {

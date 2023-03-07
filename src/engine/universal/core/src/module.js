@@ -48,6 +48,9 @@ module.exports = {
       // Start normally if no options or silentMode != true
       await this.deactivateSilentMode();
     }
+
+    // start all processes that were still running when the engine stopped running
+    await management.restoreInterruptedInstances();
   },
 
   provideScriptExecutor(scriptExecutor) {

@@ -3,7 +3,13 @@
     <popup :popupData="popupData">
       <div>The following link can be shared with others to collaboratively edit this process.</div>
       <div><v-textarea rows="1" v-model="url" auto-grow readonly></v-textarea></div>
-      <div>It has been automatically copied to your clipboard.</div>
+      <div v-if="automaticLinkCopyFailed">
+        Copy it and send it to other users to grant them access.
+      </div>
+      <div v-else>
+        It has been automatically copied to your clipboard so you can send it to others to grant
+        them access.
+      </div>
     </popup>
     <toolbar-group>
       <v-toolbar-title>
@@ -183,6 +189,7 @@ export default {
         display: 'none',
         color: '',
       },
+      automaticLinkCopyFailed: false,
     };
   },
   computed: {
@@ -241,8 +248,13 @@ export default {
         await this.$store.dispatch('processEditorStore/startEditing');
       }
 
-      // automatically write the url into the users clipboard
-      window.navigator.clipboard.writeText(window.location.href);
+      try {
+        // automatically write the url into the users clipboard
+        await window.navigator.clipboard.writeText(window.location.href);
+        this.automaticLinkCopyFailed = false;
+      } catch (err) {
+        this.automaticLinkCopyFailed = true;
+      }
 
       this.popupData.color = 'success';
       this.popupData.display = 'block';

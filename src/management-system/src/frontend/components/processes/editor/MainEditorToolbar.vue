@@ -1,7 +1,7 @@
 <template>
   <hovering-toolbar v-show="currentView === 'modeler'">
     <popup :popupData="popupData">
-      <div>The following link can shared with others to collaboratively edit this process.</div>
+      <div>The following link can be shared with others to collaboratively edit this process.</div>
       <div><v-textarea rows="1" v-model="url" auto-grow readonly></v-textarea></div>
       <div>It has been automatically copied to your clipboard.</div>
     </popup>

@@ -40,6 +40,11 @@ jest.mock('@proceed/system', () => {
     getMachineInfo: jest.fn(),
   };
 
+  const timer = {
+    clearTimeout: jest.fn().mockImplementation((...args) => clearTimeout(...args)),
+    setTimeout: jest.fn().mockImplementation((...args) => setTimeout(...args)),
+  };
+
   return {
     http,
     console,
@@ -47,6 +52,7 @@ jest.mock('@proceed/system', () => {
     capability,
     device: machine,
     discovery,
+    timer,
   };
 });
 jest.mock('@proceed/capabilities');

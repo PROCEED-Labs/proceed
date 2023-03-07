@@ -11,6 +11,10 @@ const { getNewInstanceHandler } = require('../hookCallbacks.js');
 const { db } = require('@proceed/distribution');
 const { abortInstanceOnNetwork } = require('../processForwarding.js');
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 let mockEngine;
 
 const onStarted = jest.fn();
@@ -18,6 +22,7 @@ const onEnded = jest.fn();
 const onTokenEnded = jest.fn();
 
 let mockNewInstance;
+let mockStateStream;
 
 let instanceHandler;
 describe('Test for the function that sets up callbacks for the different lifecycle hooks exposed by the neo engine', () => {
@@ -37,6 +42,16 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       _instanceIdProcessMapping: {},
       getInstanceInformation: jest.fn().mockReturnValue({}),
       instanceEventHandlers: { onStarted, onEnded, onTokenEnded },
+      _management: {
+        getEngineWithID: jest.fn(),
+      },
+    };
+
+    mockStateStream = {
+      subscribe: jest.fn().mockImplementation(function (cb) {
+        this.subscriber = cb;
+      }),
+      subscriber: null,
     };
 
     mockNewInstance = {
@@ -109,6 +124,10 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       instanceStateChange: jest.fn().mockImplementation(function (state) {
         this.instanceStateChangeCallback(state);
       }),
+
+      isEnded: jest.fn(),
+
+      getState$: jest.fn().mockReturnValue(mockStateStream),
     };
 
     instanceHandler = getNewInstanceHandler(mockEngine, undefined);
@@ -143,6 +162,44 @@ describe('Test for the function that sets up callbacks for the different lifecyc
         expect(mockEngine._log.info).toHaveBeenCalled();
         expect(onEnded).toHaveBeenCalled();
         expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {});
+      });
+
+      it('completed the call activity in the calling instance if this instance was started to execute that call activity', () => {
+        mockNewInstance.callingInstance = 'otherInstance';
+        mockNewInstance.getVariables = jest.fn().mockReturnValue({ some: 'value' });
+
+        const mockCallingInstance = {
+          getState: jest.fn().mockReturnValue({
+            tokens: [
+              {
+                tokenId: 'someOtherToken',
+                calledInstance: 'someOtherInstance',
+                currentFlowElementId: 'someOtherCallActivityId',
+              },
+              {
+                tokenId: 'someToken',
+                calledInstance: 'newInstanceId',
+                currentFlowElementId: 'targetCallActivityId',
+              },
+            ],
+          }),
+          completeActivity: jest.fn(),
+        };
+        const mockOtherEngine = {
+          getInstance: jest.fn().mockReturnValue(mockCallingInstance),
+        };
+
+        mockEngine._management.getEngineWithID.mockReturnValueOnce(mockOtherEngine);
+
+        mockNewInstance.ended();
+
+        expect(mockCallingInstance.completeActivity).toHaveBeenCalledWith(
+          'targetCallActivityId',
+          'someToken',
+          {
+            some: 'value',
+          }
+        );
       });
     });
 
@@ -179,6 +236,80 @@ describe('Test for the function that sets up callbacks for the different lifecyc
           machine: { id: 'machineId' },
         });
         expect(mockEngine._log.info).toHaveBeenCalled();
+      });
+    });
+
+    describe('state change', () => {
+      it('will archive the instance on a state change', async () => {
+        // the on state change logic has been suscribed to the state stream
+        expect(mockStateStream.subscribe).toHaveBeenCalledWith(expect.any(Function));
+
+        mockEngine.getInstanceInformation.mockReturnValue({
+          some: 'data',
+          other: 123,
+        });
+        mockNewInstance.isEnded.mockReturnValue(false);
+
+        mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+        await sleep(1000);
+
+        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
+          some: 'data',
+          other: 123,
+          isCurrentlyExecutedInBpmnEngine: true,
+        });
+      });
+
+      it('will not archive the instance if it has already ended', async () => {
+        mockEngine.getInstanceInformation.mockReturnValue({
+          some: 'data',
+          other: 123,
+        });
+        mockNewInstance.isEnded.mockReturnValue(true);
+
+        mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+        await sleep(1000);
+
+        expect(db.archiveInstance).not.toHaveBeenCalled();
+      });
+
+      it('will archive the instance only with the latest state in case of fast consecutive state changes', async () => {
+        mockNewInstance.isEnded.mockReturnValue(false);
+
+        mockEngine.getInstanceInformation.mockReturnValue({
+          some: 'data',
+          other: 123,
+        });
+        await sleep(100);
+
+        mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+        mockEngine.getInstanceInformation.mockReturnValue({
+          some: 'data',
+          other: 456,
+        });
+        await sleep(100);
+
+        mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+        mockEngine.getInstanceInformation.mockReturnValue({
+          some: 'data',
+          other: 789,
+        });
+        await sleep(100);
+
+        mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+        await sleep(1000);
+
+        expect(db.archiveInstance).toHaveBeenCalledTimes(1);
+        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
+          some: 'data',
+          other: 789,
+          isCurrentlyExecutedInBpmnEngine: true,
+        });
       });
     });
   });

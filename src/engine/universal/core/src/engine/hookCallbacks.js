@@ -46,6 +46,24 @@ function getOnEndedHandler(engine, instance) {
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);
     }
+    // if this instance was invoked by a call activity make sure to complete that call activity in the calling instance
+    if (instance.callingInstance) {
+      // get the final variable state of this instance
+      const variables = instance.getVariables();
+
+      // get the instance from which this one got started
+      const callingEngine = engine._management.getEngineWithID(instance.callingInstance);
+      const callingInstance = callingEngine.getInstance(instance.callingInstance);
+
+      // get the token and activity that started this instance
+      const callingToken = callingInstance
+        .getState()
+        .tokens.find((token) => token.calledInstance === instance.id);
+      const callActivityId = callingToken.currentFlowElementId;
+
+      // complete the call activity in the calling instance with the final variable state of this instance
+      callingInstance.completeActivity(callActivityId, callingToken.tokenId, variables);
+    }
   };
 }
 

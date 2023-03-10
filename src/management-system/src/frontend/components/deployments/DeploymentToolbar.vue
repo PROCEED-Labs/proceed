@@ -45,6 +45,10 @@
               <ul>
                 <li>White: the activity was not executed yet</li>
                 <li>Green: the activity was executed successfully</li>
+                <li>
+                  Yellow: the activity was executed successfully after its execution had been
+                  interrupted
+                </li>
                 <li>Red: the activity could not be executed successfully</li>
               </ul>
             </v-col>

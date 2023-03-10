@@ -10,9 +10,10 @@ export function statusToType(status) {
     case 'ENDED':
       return 'success';
     case 'ABORTED':
-    case 'ERROR_SEMANTIC':
-    case 'ERROR_TECHNICAL':
-    case 'ERROR_CONSTRAINT_UNFULFILLED':
+    case 'ERROR-SEMANTIC':
+    case 'ERROR-TECHNICAL':
+    case 'ERROR-CONSTRAINT-UNFULFILLED':
+    case 'ERROR-INTERRUPTED-SCRIPT-TASK':
     case 'STOPPED':
       return 'error';
     default:

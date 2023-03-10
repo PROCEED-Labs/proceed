@@ -314,6 +314,14 @@ module.exports = {
             });
             newInstance.updateToken(execution.tokenId, { calledInstance: undefined });
           }
+          if (token.flowElementExecutionWasInterrupted) {
+            newInstance.updateLog(execution.flowElementId, execution.tokenId, {
+              executionWasInterrupted: true,
+            });
+            newInstance.updateToken(execution.tokenId, {
+              flowElementExecutionWasInterrupted: undefined,
+            });
+          }
 
           if (token.costsRealSetByOwner) {
             newInstance.updateLog(execution.flowElementId, execution.tokenId, {

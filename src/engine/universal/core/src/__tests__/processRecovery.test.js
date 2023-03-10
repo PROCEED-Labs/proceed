@@ -37,7 +37,6 @@ let information;
 let management;
 let Engine;
 let distribution;
-let capabilities;
 let decider;
 
 describe('Tests for the restart of interrupted processes at engine startup', () => {
@@ -50,13 +49,12 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     management = require('../management.js');
     Engine = require('../engine/engine.js');
     distribution = require('@proceed/distribution');
-    capabilities = require('@proceed/capabilities');
     decider = require('@proceed/decider');
 
     mockPassToken.mockImplementation(async () => true);
 
     distribution.communication.getAvailableMachines.mockReturnValue([
-      { ip: '192.168.1.1', id: 'mockId' },
+      { ip: '192.168.1.3', id: 'mockId', port: 33029 },
     ]);
     distribution.db.getProcess.mockReturnValue(taskBpmn);
     distribution.db.getProcessInfo.mockResolvedValue({
@@ -68,6 +66,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     information.getMachineInformation.mockResolvedValue({
       id: 'mockId',
       name: 'mockName',
+      port: 33029,
     });
     logging.getLogger.mockReturnValue({
       trace: jest.fn(),
@@ -190,7 +189,12 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     expect(startInstance).toBeCalledWith(
       '1677505265559',
       archivedState.variables,
-      { ...archivedState, processId: 'Process1#1677505265559', processVersion: undefined },
+      {
+        ...archivedState,
+        tokens: [{ ...archivedState.tokens[0], flowElementExecutionWasInterrupted: true }],
+        processId: 'Process1#1677505265559',
+        processVersion: undefined,
+      },
       expect.any(Function)
     );
 
@@ -246,12 +250,86 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     await management.restoreInterruptedInstances();
 
-    await sleep(100);
-
     const engine = management.getAllEngines()[0];
     const instanceId = engine.instanceIDs[0];
-    const instanceState = engine.getInstanceState(instanceId);
+
+    let instanceState = engine.getInstanceState(instanceId);
+    expect(instanceState).toBe('running');
+
+    let instanceInformation = engine.getInstanceInformation(instanceId);
+
+    expect(instanceInformation).toEqual({
+      ...archivedState,
+
+      tokens: [
+        {
+          ...archivedState.tokens[0],
+          state: 'READY',
+          intermediateVariablesState: {},
+          localExecutionTime: expect.any(Number),
+          currentFlowElementStartTime: expect.any(Number),
+          currentFlowNodeState: 'READY',
+          flowElementExecutionWasInterrupted: true,
+        },
+      ],
+
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
+
+    await sleep(100);
+
+    instanceState = engine.getInstanceState(instanceId);
     expect(instanceState).toBe('ended');
+
+    instanceInformation = engine.getInstanceInformation(instanceId);
+    expect(instanceInformation).toEqual({
+      ...archivedState,
+      instanceState: ['ENDED'],
+      tokens: [
+        {
+          ...archivedState.tokens[0],
+          state: 'ENDED',
+          currentFlowElementId: 'EndEvent_02e1jkg',
+          currentFlowNodeState: 'COMPLETED',
+          previousFlowElementId: 'SequenceFlow_0jfbrh9',
+          localExecutionTime: expect.any(Number),
+          currentFlowElementStartTime: expect.any(Number),
+          localExecutionTime: expect.any(Number),
+        },
+      ],
+      log: [
+        ...archivedState.log,
+        {
+          flowElementId: 'Task_1y4wd2q',
+          tokenId: 'c1a1922d-2018-419f-9b25-089c85c48ea2',
+          executionState: 'COMPLETED',
+          startTime: expect.any(Number),
+          endTime: expect.any(Number),
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+          executionWasInterrupted: true,
+        },
+        {
+          flowElementId: 'EndEvent_02e1jkg',
+          tokenId: 'c1a1922d-2018-419f-9b25-089c85c48ea2',
+          executionState: 'COMPLETED',
+          startTime: expect.any(Number),
+          endTime: expect.any(Number),
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+        },
+      ],
+
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
   });
 
   it('will restart an activity that was previously running allowing the instance to finish', async () => {
@@ -433,6 +511,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           ...archivedState.tokens[0],
           state: 'PAUSED',
           localExecutionTime: expect.any(Number),
+          flowElementExecutionWasInterrupted: true,
         },
       ],
       isCurrentlyExecutedInBpmnEngine: undefined,

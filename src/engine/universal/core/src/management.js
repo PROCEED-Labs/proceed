@@ -382,6 +382,7 @@ const Management = {
       return {
         ...token,
         state: newState,
+        flowElementExecutionWasInterrupted: true,
       };
     });
 

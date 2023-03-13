@@ -317,8 +317,8 @@ export default {
       switch (token.state) {
         case 'ERROR-SEMANTIC':
         case 'ERROR-TECHNICAL':
+        case 'ERROR-INTERRUPTED':
         case 'ERROR-CONSTRAINT-UNFULFILLED':
-        case 'ERROR-INTERRUPTED-SCRIPT-TASK':
           return 'var(--v-error-base)';
         case 'SKIPPED':
           return 'white';

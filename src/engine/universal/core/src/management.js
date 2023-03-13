@@ -374,9 +374,9 @@ const Management = {
 
       let newState = needTokenRestart ? 'READY' : token.state;
 
-      if (currentFlowElement.$type === 'bpmn:ScriptTask') {
-        // script tasks should not be restarted due to the risk of reexecuting commands that are not idempotent
-        newState = 'ERROR-INTERRUPTED-SCRIPT-TASK';
+      if (currentFlowElement.manualInterruptionHandling) {
+        // some elements should not be restarted due to the risk of reexecuting commands that are not idempotent
+        newState = 'ERROR-INTERRUPTED';
       }
 
       return {

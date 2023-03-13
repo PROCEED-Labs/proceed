@@ -11,7 +11,10 @@ const fs = require('fs');
 const path = require('path');
 
 const taskBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'task.bpmn'), 'utf-8');
-const scriptTaskBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'scriptTask.bpmn'), 'utf-8');
+const manualInterruptionHandlingBpmn = fs.readFileSync(
+  path.resolve(__dirname, 'bpmn', 'manualInterruptionHandling.bpmn'),
+  'utf-8'
+);
 const parallelBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'parallel.bpmn'), 'utf-8');
 const parallelMergeBpmn = fs.readFileSync(
   path.resolve(__dirname, 'bpmn', 'parallelMerge.bpmn'),
@@ -618,7 +621,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     expect(instanceInformation.instanceState).toEqual(['ENDED', 'FAILED', 'TERMINATED']);
   });
 
-  it('will put an interrupted script task into an error state to prevent problems with execution of logic that is not idempotent', async () => {
+  it('will put an interrupted element into an error state if it has the manualInterruptionHandling flag', async () => {
     distribution.db.getAllProcesses.mockResolvedValue(['Process1']);
 
     const archivedState = {
@@ -663,7 +666,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     distribution.db.getArchivedInstances.mockResolvedValue({ instance1: archivedState });
 
-    distribution.db.getProcessVersion.mockResolvedValue(scriptTaskBpmn);
+    distribution.db.getProcessVersion.mockResolvedValue(manualInterruptionHandlingBpmn);
 
     await management.restoreInterruptedInstances();
 
@@ -673,7 +676,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     const instanceId = engine.instanceIDs[0];
 
     const instanceInformation = engine.getInstanceInformation(instanceId);
-    expect(instanceInformation.instanceState).toEqual(['ERROR-INTERRUPTED-SCRIPT-TASK']);
+    expect(instanceInformation.instanceState).toEqual(['ERROR-INTERRUPTED']);
 
     const instanceState = engine.getInstanceState(instanceId);
     expect(instanceState).toBe('running');

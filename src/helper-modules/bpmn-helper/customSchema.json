@@ -423,6 +423,17 @@
       ]
     },
     {
+      "name": "manualInterruptionHandling",
+      "extends": ["bpmn:FlowElement"],
+      "properties": [
+        {
+          "name": "manualInterruptionHandling",
+          "isAttr": true,
+          "type": "Boolean"
+        }
+      ]
+    },
+    {
       "name": "Script",
       "superClass": ["InputOutputParameterDefinition"],
       "properties": [

@@ -20,7 +20,16 @@
           <p class="font-weight-medium">General</p>
           <v-text-field disabled label="Name" v-model="businessObject.name" filled />
           <v-text-field disabled label="Id" filled v-model="businessObject.id" />
-          <external-form />
+          <boolean-bpmn-property-form-vue
+            propertyName="external"
+            label="External"
+            :validFor="['bpmn:Task']"
+          />
+          <boolean-bpmn-property-form-vue
+            propertyName="manualInterruptionHandling"
+            label="Manual Interruption Handling"
+            :validFor="['bpmn:FlowElement']"
+          />
           <milestone-selection v-if="isUserTask" />
         </v-container>
         <v-container>
@@ -110,7 +119,7 @@
 import ViewportRelativeResizableWindow from '@/frontend/components/resizable-window/ViewportRelativeResizableWindow.vue';
 import InspectionPlanSelection from '@/frontend/components/5thIndustry/inspectionPlanSelection.vue';
 import inspectionOrderSelection from '@/frontend/components/5thIndustry/inspectionOrderSelection.vue';
-import ExternalForm from '@/frontend/components/processes/editor/PropertiesPanel/ExternalForm.vue';
+import BooleanBpmnPropertyFormVue from './BooleanBpmnPropertyForm.vue';
 import MilestoneSelection from '@/frontend/components/processes/editor/PropertiesPanel/MilestoneSelection.vue';
 import TimePlannedForm from '@/frontend/components/processes/editor/PropertiesPanel/TimePlannedForm.vue';
 import ResourceForm from '@/frontend/components/processes/editor/PropertiesPanel/resources/ResourceForm.vue';
@@ -129,7 +138,7 @@ export default {
     TimePlannedForm,
     ResourceForm,
     CustomPropertyForm,
-    ExternalForm,
+    BooleanBpmnPropertyFormVue,
     DocumentationForm,
     FlowElementColor,
     ImageSelection,

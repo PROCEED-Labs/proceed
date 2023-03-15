@@ -12324,10 +12324,10 @@ neo-async@^2.5.0, neo-async@^2.6.0, neo-async@^2.6.1:
   resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
 
-neo-bpmn-engine@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/neo-bpmn-engine/-/neo-bpmn-engine-7.0.1.tgz#427685d80066a536200237e9dd49fbe0a07effa7"
-  integrity sha512-aKPcBD36gk0YK5Y3h6e+tp//6gPXGHuyHyJN30PgiARUB2Vl7mgH2LEdAORLQwOn1kjHX362T5bUYh20/TJymw==
+neo-bpmn-engine@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/neo-bpmn-engine/-/neo-bpmn-engine-7.0.2.tgz#0e4434d48df42eeb04623f81427954247c071a8e"
+  integrity sha512-3i1UTt1JS8w30x5BwZu2pV4wE8N7EHjlaKP0fI2Ad2vKrwuVWMQhzKgHiFWv7p2s07a0k7x3UQSBGHlic8XXlg==
   dependencies:
     bpmn-moddle "^6.0.0"
     iso8601-duration "^1.2.0"

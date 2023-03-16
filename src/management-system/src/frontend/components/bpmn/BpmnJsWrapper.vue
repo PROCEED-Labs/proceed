@@ -249,7 +249,7 @@ export default {
 }
 
 .yellow:not(.djs-connection) .djs-visual > :nth-child(1) {
-  fill: rgb(255, 252, 214) !important;
+  fill: #f2ffd6 !important;
 }
 
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {

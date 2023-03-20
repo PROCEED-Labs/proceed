@@ -6,6 +6,7 @@ const {
   getRootFromElement,
   getTargetDefinitionsAndProcessIdForCallActivityByObject,
   getMilestonesFromElementById,
+  getMetaData,
 } = require('@proceed/bpmn-helper');
 
 const { getShouldActivateFlowNode } = require('../shouldActivateFlowNode.js');
@@ -37,6 +38,7 @@ beforeEach(() => {
     getInstance: jest.fn().mockImplementation(() => mockInstance),
     getInstanceInformation: jest.fn().mockReturnValue({ processVersion: 123 }),
     getInstanceBpmn: jest.fn(),
+    getToken: jest.fn().mockReturnValue({ currentFlowElementStartTime: 0 }),
     updateMilestones: jest.fn(),
   };
 
@@ -50,6 +52,9 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
     beforeEach(() => {
       getMilestonesFromElementById.mockImplementation(() => {
         return [];
+      });
+      getMetaData.mockImplementation(() => {
+        return {};
       });
 
       mockTask = {
@@ -80,6 +85,9 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
           definitionVersion: 123,
           activate: expect.any(Function),
           tokenId: 'mockTokenId',
+          state: 'READY',
+          startTime: 0,
+          endTime: null,
         },
       ]);
     });

@@ -37,6 +37,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       _instanceIdProcessMapping: {},
       getInstanceInformation: jest.fn().mockReturnValue({}),
       instanceEventHandlers: { onStarted, onEnded, onTokenEnded },
+      archiveInstance: jest.fn(),
     };
 
     mockNewInstance = {
@@ -142,7 +143,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
 
         expect(mockEngine._log.info).toHaveBeenCalled();
         expect(onEnded).toHaveBeenCalled();
-        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {});
+        expect(mockEngine.archiveInstance).toHaveBeenCalledWith('newInstanceId');
       });
     });
 

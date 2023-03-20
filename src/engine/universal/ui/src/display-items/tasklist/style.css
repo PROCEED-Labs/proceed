@@ -8,14 +8,34 @@ body {
   height: 100%;
 }
 
-#wrapper {
+.tasklist-container {
   width: auto;
   display: flex;
   flex-direction: row;
   height: 100%;
 }
 
-.infoBox {
+.tasklist-container .list {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 6px -3px #9a9a9a;
+  background: #fafafa;
+  z-index: 1;
+}
+
+.tasklist-container .list .tasks-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 12px;
+}
+
+.tasklist-container .list .tasks-wrapper .tasks {
+  display: flex;
+  flex-direction: column;
+}
+
+.tasklist-container .list .tasks-wrapper .tasks .infoBox {
   text-align: center;
   margin: 40px 10px 10px;
   font-size: 1.1em;
@@ -23,263 +43,481 @@ body {
   letter-spacing: 0.03em;
 }
 
-#tasks {
-  box-shadow: 0px 0px 6px -3px #9a9a9a;
-  z-index: 1;
-  flex-shrink: 0;
+.tasklist-container .list .tasks-wrapper .return {
+  display: none;
 }
 
-#tasks .task {
-  background-color: white;
-  margin: 10px;
-  box-shadow: 0 0 5px -3px #6d6d6d;
-  border-radius: 12px;
-  color: #868686;
+.tasklist-container .list .tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid lightgrey;
+}
+
+.tools .dropdown-check-list .anchor {
   position: relative;
-}
-
-#tasks .taskInfo {
-  height: 90px;
   display: flex;
-  flex-direction: row;
-  flex-shrink: 0;
-  justify-content: flex-end;
-  cursor: pointer;
-  position: relative;
-  border-radius: inherit;
-}
-
-#tasks .taskInfo > div {
-  margin: 0 20px;
-}
-
-#tasks .taskInfo:hover {
-  background-color: #f9f9f9;
-}
-
-#tasks .taskInfo .title {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  font-size: 1.3em;
-  letter-spacing: 0.03em;
-  color: #464646;
-  flex-grow: 1;
-  min-width: 100px;
-}
-
-#tasks .taskInfo .user {
-  display: flex;
-  flex-direction: column;
-  text-align: center;
+  align-items: center;
   justify-content: center;
   height: 100%;
-}
-
-#tasks .taskInfo .user svg {
-  height: 1.7em;
-}
-
-#tasks .taskInfo .user .name {
-  margin-top: 5px;
-  font-size: 0.7em;
-}
-
-#tasks .taskInfo .time {
-  display: flex;
-  flex-direction: column;
+  width: 140px;
+  padding: 0 8px;
+  margin: auto 0;
+  cursor: pointer;
+  box-shadow: 0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%),
+    0px 1px 5px 0px rgb(0 0 0 / 12%);
+  background-color: #f5f5f5;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.87);
+  border-style: none;
+  align-items: center;
+  border-radius: 4px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-weight: 600;
+  letter-spacing: 0.0892857143em;
   justify-content: center;
-  font-size: 0.85em;
-  letter-spacing: 0.03em;
+  outline: 0;
+  text-decoration: none;
+  text-indent: 0.0892857143em;
+  text-transform: uppercase;
+  transition-duration: 0.28s;
+  transition-property: box-shadow, transform, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-family: 'Roboto', sans-serif;
 }
 
-#tasks .taskInfo .time svg {
-  height: 1em;
-  vertical-align: top;
+.tools .dropdown-check-list svg {
+  height: 1.6em;
+  vertical-align: sub;
 }
 
-#tasks .taskInfo .time > div {
-  margin-top: 5px;
-}
-
-#tasks .taskInfo .time > div:first-child {
-  margin-top: 0;
-}
-
-#tasks .taskInfo .id {
-  position: absolute;
-  bottom: 1px;
-  font-size: 0.5em;
-  color: #c3c3c3;
+.tools .dropdown-check-list div.items {
   display: none;
   margin: 0;
-  width: 100%;
-  text-align: center;
+  border: 1px solid #ccc;
+  box-shadow: 0px 5px 5px -3px rgb(0 0 0 / 20%), 0px 8px 10px 1px rgb(0 0 0 / 14%),
+    0px 3px 14px 2px rgb(0 0 0 / 12%);
+  border-radius: 4px;
+  padding: 8px 0;
 }
 
-#tasks .taskInfo:hover .id {
+.tools .dropdown-check-list.visible .items {
   display: block;
+  position: absolute;
+  top: 35px;
+  z-index: 10;
+  background-color: white;
+  min-width: 100%;
 }
 
-#tasks .task .close {
+.tools .dropdown-check-list.visible.sort .items {
+  right: 0;
+}
+
+.tools .dropdown-check-list.visible.selection .items {
+  left: 0;
+}
+
+.tools .dropdown-check-list.visible .items > div {
+  padding: 12px 16px;
+}
+
+.tools .dropdown-check-list.selection,
+.tools .dropdown-check-list.sort {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 5px;
+  height: 35px;
+}
+
+.tools .dropdown-check-list.sort .items > div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.tools .dropdown-check-list.sort .items span {
+  white-space: nowrap;
+}
+
+.tools .dropdown-check-list.sort .items svg {
+  height: 1.2em;
+  fill: currentColor;
+}
+
+.tools .dropdown-check-list.sort .items > div:not(.selected) {
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.tools .dropdown-check-list.sort .items div:hover::before {
+  opacity: 0.04;
+}
+
+.tools .dropdown-check-list.sort .items > div::before {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  content: '';
+  pointer-events: none;
+  background-color: currentColor;
+  opacity: 0;
+}
+
+.tools .dropdown-check-list.sort .items div.selected {
+  color: #1976d2;
+}
+
+.tools .dropdown-check-list.sort .items div.selected::before {
+  opacity: 0.12;
+}
+
+.tools .dropdown-check-list.sort .items div.selected.ascending::after {
+  content: url('data:image/svg+xml; utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-up-thin</title><path fill="%231976d2" d="M7.03 9.97H11.03V18.89L13.04 16.92V9.97H17.03L12.03 4.97Z" /></svg>');
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-left: 4px;
+}
+
+.tools .dropdown-check-list.sort .items div.selected.descending::after {
+  content: url('data:image/svg+xml; utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-down-thin</title><path fill="%231976d2" d="M7.03 13.92H11.03V5L13.04 4.97V13.92H17.03L12.03 18.92Z" /></svg>');
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-left: 4px;
+}
+
+.tools .dropdown-check-list .items .status > div {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.tools .dropdown-check-list .items .status,
+.tools .dropdown-check-list .items .priority {
+  border-bottom: 1px solid lightgrey;
+}
+
+.tools .dropdown-check-list.selection .status input[type='checkbox'] {
+  height: 16px;
+  width: 16px;
+  margin-right: 10px;
+}
+
+.tools .dropdown-check-list.selection .slider {
+  display: flex;
+  align-items: center;
+}
+
+.tools .dropdown-check-list.selection .slider span {
+  white-space: nowrap;
+}
+.tools .dropdown-check-list.selection input[type='range']:active,
+:focus {
+  outline: none;
+}
+
+.tools .dropdown-check-list.selection input[type='range']::-webkit-slider-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 12px;
+  background-color: #1976d2;
+  position: relative;
+  margin: 5px 0;
+  /* Add some margin to ensure box shadow is shown */
+  cursor: pointer;
+  appearance: none;
+  pointer-events: all;
+  box-shadow: 0 1px 4px 0.5px rgba(0, 0, 0, 0.25);
+}
+
+.tools .dropdown-check-list.selection input[type='range']::-webkit-slider-thumb::before {
+  content: ' ';
+  display: block;
+  position: absolute;
+  top: 13px;
+  left: 100%;
+  width: 2000px;
+  height: 2px;
+}
+
+.tools .dropdown-check-list.selection input[type='range'] {
+  box-sizing: border-box;
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  /* Add some L/R padding to ensure box shadow of handle is shown */
+  overflow: hidden;
+  border: 0;
+  border-radius: 1px;
+  outline: none;
+  background: linear-gradient(#1976d2, #1976d2) no-repeat center;
+  /* Use a linear gradient to generate only the 2px height background */
+  background-size: 100% 2px;
+  pointer-events: none;
+}
+
+.tools .dropdown-check-list.selection .multi-range {
+  position: relative;
+  width: 120px;
+  height: 32px;
+  margin-right: 10px;
+}
+
+.tools .dropdown-check-list.selection .multi-range input[type='range']:nth-child(2) {
+  background: none;
+}
+
+.tools .dropdown-check-list.selection .multi-range input[type='range'] {
+  position: absolute;
+}
+
+.tasks .task {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+  font-family: sans-serif;
+  background-color: white;
+  max-width: 300px;
+  margin-bottom: 10px;
+  box-shadow: 0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%),
+    0px 1px 5px 0px rgb(0 0 0 / 12%);
+  border: 1px solid lightgrey;
+  border-radius: 8px;
+  color: #868686;
+}
+
+.tasks .task > .taskTitle {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1em;
+  margin-bottom: 10px;
+}
+
+.tasks .task > .taskTitle span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tasks .task > .taskTitle .progress-circular {
   display: none;
+  vertical-align: middle;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
-#tasks .task.form .taskInfo {
+.tasks .task > .taskTitle .progress-circular.visible {
+  display: flex;
+}
+
+.tasks .task > .taskTitle .progress-circular > svg {
+  width: 100%;
+  height: 100%;
+  margin: auto;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
+.tasks .task > .taskTitle .progress-circular__underlay {
+  stroke: #b6b6b6 !important;
+}
+
+.tasks .task > .taskTitle .progress-circular__overlay {
+  stroke: currentColor;
+  z-index: 2;
+  transition: all 0.6s ease-in-out;
+}
+
+.tasks .task > .taskTitle .progress-circular__info {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.tasks .task > .taskTitle .progress-circular__info .progressText {
+  font-size: 0.8em;
+}
+
+.tasks .task .mainInfo {
+  display: flex;
+  flex-direction: row;
+  font-size: 0.8em;
+}
+
+.tasks .task .mainInfo .user {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.tasks .task .leftCol,
+.tasks .task .rightCol {
+  display: flex;
+  flex-direction: column;
+  margin: 0px 5px;
+}
+
+.tasks .task .leftCol > div,
+.tasks .task .rightCol > div {
+  margin: 2px 0px;
+}
+
+.tasks .task.paused,
+.tasks .task.completed {
+  background-color: #868686;
+  color: white;
+  border: 1px solid #868686;
+}
+
+.tasks .task svg {
+  fill: #868686;
+  height: 1.2em;
+  vertical-align: text-bottom;
+}
+
+.tasks .task.form svg,
+.tasks .task.paused svg,
+.tasks .task.completed svg {
+  fill: white;
+}
+
+.tasks .task.form {
   background-color: #0094a0;
   color: white;
+  border: 1px solid #0094a0;
 }
 
-#tasks .task.form .taskInfo .title {
-  color: white;
-}
-
-#formView {
+.tasklist-container .formView {
   flex-grow: 1;
+  height: 100%;
   background-color: white;
   font-size: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-#formView .form {
+.tasklist-container .formView .form {
   width: 100%;
   height: 100%;
   border: none;
   flex-grow: 1;
 }
 
+.tasklist-container .formView .form.paused,
+.tasklist-container .formView .form.completed {
+  opacity: 0.25;
+}
+
+.tasklist-container .formView .overlay {
+  position: absolute;
+  font-size: x-large;
+  text-align: center;
+}
+
 @media (max-width: 1024px) {
-  html,
-  body {
-    font-size: 14px;
-  }
-  #tasks {
-    font-size: 0.85em;
-  }
-  #tasks .task {
-    border-radius: 9px;
-  }
-  #tasks .taskInfo {
-    height: 80px;
-  }
-  #tasks .taskInfo > div {
-    margin: 0 10px;
+  .tasklist-container .list .tasks-wrapper .tasks .task {
+    padding: 6px;
   }
 }
 
 @media (max-width: 768px) {
   html,
   body {
-    font-size: 10px;
-  }
-  #tasks .task {
-    margin: 5px;
-    border-radius: 7px;
-  }
-  #tasks .taskInfo {
-    height: 45px;
-  }
-  #tasks .taskInfo > div {
-    margin: 0 5px;
-  }
-}
-
-@media (max-width: 425px) {
-  html,
-  body {
     height: auto;
     font-size: 16px;
   }
-  #wrapper {
+  .tasklist-container {
     width: auto;
     flex-direction: column;
     height: 100vh;
   }
-  #tasks {
+  .tasklist-container .list {
     box-shadow: none;
     z-index: auto;
     width: 100%;
+    flex-grow: 1;
   }
-  #tasks .task {
-    margin: 7px;
+  .tasklist-container .list .tasks-wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 10px 10px 0px;
   }
-  #tasks .task.hidden {
+  .tasklist-container .list .tasks-wrapper .tasks {
+    margin: auto;
+  }
+  .tasklist-container .list .tasks-wrapper .tasks .task {
+    padding: 6px;
+  }
+  .tasklist-container .list .tasks-wrapper .tasks .task.hidden {
     display: none;
   }
-  #tasks .task .taskInfo {
-    height: 80px;
-  }
-  #tasks .taskInfo > div {
-    margin: 0 15px;
-  }
-  #tasks .task.form {
+  .tasklist-container .list .tasks-wrapper .tasks .task.form {
     display: flex;
     flex-direction: column;
-    margin-top: 50px;
-    margin-bottom: 0;
   }
-  #tasks .task .form {
+  .tasklist-container .list .tasks-wrapper .tasks .task .form {
     width: 100%;
     height: 100%;
     border: none;
     flex-grow: 1;
   }
-  #tasks .task.form .taskInfo {
-    border-bottom: 1px solid #efefef;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-  #tasks .taskInfo:hover {
-    background-color: inherit;
-  }
-  #tasks .task.form .close {
+  .tasklist-container .list .tasks-wrapper .return:not(.hidden) {
     display: block;
-    position: absolute;
-    top: -40px;
-    right: 0;
-    font-size: 24.48px;
-    color: #ffffff;
-    background-color: #7d7d7d;
-    height: 30px;
-    width: 30px;
-    text-align: center;
-    border-radius: 100%;
-    line-height: 28px;
-    font-weight: 100;
-  }
-  #tasks .task.form .close:hover {
-    background-color: #464646;
     cursor: pointer;
   }
-  #formView {
-    margin: 0 7px 7px;
-    box-shadow: 0 0 5px -3px #6d6d6d;
-    border-radius: 0 0 7px 7px;
+  .tasklist-container .list .tasks-wrapper .return > svg {
+    fill: #868686;
+    width: 24px;
+    height: 24px;
   }
-  #formView:empty {
+  .tasklist-container .formView {
+    border-top: 1px solid lightgrey;
+  }
+  .tasklist-container .formView:empty {
     display: none;
+  }
+}
+
+@media (max-width: 425px) {
+  .tasklist-container .list .tasks-wrapper {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 8px 8px 0px;
+  }
+  .tasklist-container .list .tasks-wrapper .return:not(.hidden) {
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
   }
 }
 @media (max-width: 375px) {
   html,
   body {
-    font-size: 13px;
-  }
-  #tasks .task .taskInfo {
-    height: 70px;
-  }
-  #tasks .taskInfo > div {
-    margin: 0 10px;
-  }
-}
-@media (max-width: 320px) {
-  html,
-  body {
-    font-size: 12px;
-  }
-  #tasks .task .taskInfo {
-    height: 65px;
-  }
-  #tasks .taskInfo > div {
-    margin: 0 8px;
+    font-size: 14px;
   }
 }

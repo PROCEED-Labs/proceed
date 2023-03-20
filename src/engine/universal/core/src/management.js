@@ -270,6 +270,7 @@ const Management = {
       this.removeInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
+      await distribution.db.deleteArchivedInstance(definitionId, instanceId);
     }
 
     const resumedTokens = instanceInformation.tokens.map((token) => {
@@ -347,13 +348,72 @@ const Management = {
   },
 
   /**
-   * Return all activities that currently wait for user input.
+   * Return all pending userTasks that currently wait for user input.
    * @returns {object[]}
    */
   getPendingUserTasks() {
-    const userTasks = this._engines.flatMap((engine) => engine.getUserTasks());
+    const allPendingUserTasks = this._engines.flatMap((engine) => engine.getPendingUserTasks());
+    return allPendingUserTasks;
+  },
 
-    return userTasks;
+  /**
+   * Return all userTasks that are currently not active
+   * @returns {object[]}
+   */
+  async getInactiveUserTasks() {
+    // get inactive userTasks of still running instances
+    const allInactiveUserTasks = this._engines.flatMap((engine) => engine.getInactiveUserTasks());
+    // get inactive userTasks of already archived instances
+    const allProcesses = await distribution.db.getAllProcesses();
+    const allArchivedInstances = await allProcesses.reduce(async (acc, currentDefinitionId) => {
+      const archivedInstancesForDefinitionId = await distribution.db.getArchivedInstances(
+        currentDefinitionId
+      );
+
+      const nonDuplicateArchivedInstancesForDefinitionId = {};
+
+      Object.keys(archivedInstancesForDefinitionId).forEach((instanceId) => {
+        const executingEngine = this.getEngineWithID(instanceId);
+        if (!executingEngine) {
+          nonDuplicateArchivedInstancesForDefinitionId[instanceId] =
+            archivedInstancesForDefinitionId[instanceId];
+        }
+      });
+
+      return { ...acc, ...nonDuplicateArchivedInstancesForDefinitionId };
+    }, {});
+
+    const allArchivedUserTasks = Object.values(allArchivedInstances).flatMap((archivedInstance) => {
+      if (archivedInstance.userTasks) {
+        const instanceUserTasks = archivedInstance.userTasks.map((uT) => {
+          const userTaskToken = archivedInstance.tokens.find(
+            (token) => token.tokenId === uT.tokenId && token.currentFlowElementId === uT.id
+          );
+
+          if (userTaskToken) {
+            return {
+              ...uT,
+              priority: userTaskToken.priority,
+              progress: userTaskToken.currentFlowNodeProgress.value,
+            };
+          } else {
+            const userTaskLogEntry = archivedInstance.log.find(
+              (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId
+            );
+
+            return {
+              ...uT,
+              priority: userTaskLogEntry.priority,
+              progress: userTaskLogEntry.progress.value,
+            };
+          }
+        });
+        return instanceUserTasks;
+      }
+      return [];
+    });
+
+    return [...allInactiveUserTasks, ...allArchivedUserTasks];
   },
 };
 

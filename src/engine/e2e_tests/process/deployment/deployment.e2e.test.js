@@ -2027,6 +2027,7 @@ describe('Test deploying a process', () => {
                   deciderStorageTime: expect.any(Number),
                   intermediateVariablesState: {},
                   milestones: {},
+                  priority: 1,
                 },
               ]);
 
@@ -2041,6 +2042,11 @@ describe('Test deploying a process', () => {
                 id: 'Activity_1xguu75',
                 instanceID: instanceId,
                 attrs: expect.any(Object),
+                priority: 1,
+                progress: 0,
+                startTime: expect.any(Number),
+                endTime: null,
+                state: 'READY',
               });
             });
             afterEach(async () => {
@@ -2089,6 +2095,7 @@ describe('Test deploying a process', () => {
                   deciderStorageTime: expect.any(Number),
                   intermediateVariablesState: {},
                   milestones: {},
+                  priority: 1,
                 },
               ]);
 
@@ -2102,15 +2109,32 @@ describe('Test deploying a process', () => {
                 },
               ]);
 
-              // check that only the new user task is in the list
+              // check that the new user task is in the list
               const engineResponse = await request.get(`:${usedEngine.port}/tasklist/api`);
 
-              expect(engineResponse.body.length).toBe(1);
-              expect(engineResponse.body[0]).toEqual({
-                id: 'Activity_1pgsbor',
-                instanceID: instanceId,
-                attrs: expect.any(Object),
-              });
+              // contain the new user task and also the user task that was skipped due to token move with status skipped
+              expect(engineResponse.body).toEqual([
+                {
+                  id: 'Activity_1pgsbor',
+                  instanceID: instanceId,
+                  attrs: expect.any(Object),
+                  priority: 1,
+                  progress: 0,
+                  startTime: expect.any(Number),
+                  endTime: null,
+                  state: 'READY',
+                },
+                {
+                  id: 'Activity_1xguu75',
+                  instanceID: instanceId,
+                  attrs: expect.any(Object),
+                  priority: 1,
+                  progress: 0,
+                  startTime: expect.any(Number),
+                  endTime: null,
+                  state: 'SKIPPED',
+                },
+              ]);
             });
             it('will allow removing a token from an instance', async () => {
               // check the state after the removal to be correct
@@ -2138,6 +2162,7 @@ describe('Test deploying a process', () => {
                 machine: expect.any(Object),
                 progress: { value: 0, manual: false },
                 milestones: {},
+                priority: 1,
               });
 
               expect(instanceInfo.adaptationLog).toEqual([
@@ -2149,10 +2174,21 @@ describe('Test deploying a process', () => {
                 },
               ]);
 
-              // check that the user task was removed from the list
+              // check that the user task is skipped in the list
               const engineResponse = await request.get(`:${usedEngine.port}/tasklist/api`);
 
-              expect(engineResponse.body.length).toBe(0);
+              expect(engineResponse.body).toEqual([
+                {
+                  id: 'Activity_1xguu75',
+                  instanceID: instanceId,
+                  attrs: expect.any(Object),
+                  priority: 1,
+                  progress: 0,
+                  startTime: expect.any(Number),
+                  endTime: null,
+                  state: 'SKIPPED',
+                },
+              ]);
             });
             // TODO: add Token
           });
@@ -2227,6 +2263,11 @@ describe('Test deploying a process', () => {
                 id: 'Activity_1xguu75',
                 instanceID: instanceId,
                 attrs: expect.any(Object),
+                priority: 1,
+                progress: 0,
+                startTime: expect.any(Number),
+                endTime: null,
+                state: 'READY',
               });
             });
             afterEach(async () => {
@@ -2427,6 +2468,7 @@ describe('Test deploying a process', () => {
                   deciderStorageTime: 0,
                   intermediateVariablesState: {},
                   milestones: {},
+                  priority: 1,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -2457,6 +2499,7 @@ describe('Test deploying a process', () => {
                   },
                   progress: { value: 100, manual: false },
                   milestones: {},
+                  priority: 1,
                 },
               ]);
 
@@ -2596,6 +2639,7 @@ describe('Test deploying a process', () => {
                   },
                   progress: { value: 0, manual: false },
                   milestones: {},
+                  priority: 1,
                 },
                 {
                   tokenId: expect.any(String),
@@ -2611,6 +2655,7 @@ describe('Test deploying a process', () => {
                   },
                   progress: { value: 100, manual: false },
                   milestones: {},
+                  priority: 1,
                 },
                 {
                   tokenId: expect.any(String),
@@ -2765,6 +2810,7 @@ describe('Test deploying a process', () => {
                   },
                   progress: { value: 0, manual: false },
                   milestones: {},
+                  priority: 1,
                 },
                 {
                   tokenId: expect.any(String),
@@ -2780,6 +2826,7 @@ describe('Test deploying a process', () => {
                   },
                   progress: { value: 100, manual: false },
                   milestones: {},
+                  priority: 1,
                 },
                 {
                   tokenId: expect.any(String),

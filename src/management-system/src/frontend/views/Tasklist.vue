@@ -2,52 +2,167 @@
   <div class="wrapper">
     <v-toolbar class="flex-grow-0">
       <v-toolbar-title>Tasklist</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <div class="d-flex align-end justify-end">
+        <v-menu :close-on-content-click="false" bottom offset-y>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" class="mr-2">
+              <v-icon v-on="on">mdi-filter</v-icon
+              ><span v-if="$vuetify.breakpoint.width > 768">Filter Tasks</span>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title>Status:</v-list-item-title>
+                <div class="d-flex flex-column">
+                  <v-checkbox
+                    v-for="filterItem in filterItems"
+                    :key="filterItem"
+                    v-model="selectedStatus"
+                    :label="filterItem"
+                    :value="filterItem"
+                    hide-details
+                  ></v-checkbox>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title>Priority:</v-list-item-title>
+                <div class="d-flex align-center">
+                  <v-range-slider
+                    min="1"
+                    max="10"
+                    v-model="selectedPriority"
+                    hide-details
+                  ></v-range-slider>
+                  <span class="ml-2">{{ selectedPriority[0] }} - {{ selectedPriority[1] }}</span>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title>Progress:</v-list-item-title>
+                <div class="d-flex align-center">
+                  <v-range-slider
+                    min="0"
+                    max="100"
+                    v-model="selectedProgress"
+                    hide-details
+                  ></v-range-slider>
+                  <span class="ml-2">{{ selectedProgress[0] }} - {{ selectedProgress[1] }}</span>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+        <v-menu :close-on-content-click="false" bottom offset-y>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on">
+              <v-icon v-on="on">mdi-sort</v-icon
+              ><span v-if="$vuetify.breakpoint.width > 768">Sort Tasks</span></v-btn
+            >
+          </template>
+          <v-list>
+            <v-list-item-group
+              mandatory
+              :value="selectedSorting.value"
+              @change="updateSorting($event, true)"
+              color="primary"
+            >
+              <v-list-item v-for="item in sortItems" :key="item.value" :value="item">
+                <template v-slot:default="{ active, toggle }">
+                  <v-list-item-content>
+                    <v-list-item-title v-model="active">
+                      <div
+                        v-if="active"
+                        @click="updateSorting(selectedSorting.value, !selectedSorting.ascending)"
+                      >
+                        <span class="mr-2">{{ item }}</span>
+                        <v-icon dense v-if="selectedSorting.ascending">mdi-arrow-up-thin</v-icon>
+                        <v-icon dense v-else>mdi-arrow-down-thin</v-icon>
+                      </div>
+                      <span v-else>{{ item }}</span>
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </template>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-menu>
+      </div>
     </v-toolbar>
-    <v-container fluid class="flex-container">
-      <v-row justify="center" class="flex-grow-1">
-        <v-col cols="3">
-          <p v-if="activeUserTasks.length === 0" class="text-center centered text-overline">
-            There are currently no tasks in your queue.
-          </p>
-          <v-card
-            v-else
-            v-for="userTask in activeUserTasks"
-            :key="`${userTask.id}-${userTask.instanceID}`"
-            @click.stop="showUserTask(userTask)"
-            class="my-2 px-2 rounded-lg"
-            :color="isSelected(userTask) ? '#0094a0' : ''"
-          >
-            <v-card-title
-              :class="isSelected(userTask) ? 'justify-center white--text' : 'justify-center'"
-              >{{ userTask.name || userTask.id }}</v-card-title
+    <div class="tasklist-container">
+      <div class="list">
+        <div class="tasks-wrapper">
+          <div class="tasks">
+            <p v-if="showingUserTasks.length === 0" class="infoBox">
+              There are currently no tasks in your queue.
+            </p>
+            <user-task-card
+              v-else
+              v-for="userTask in showingUserTasks"
+              :key="`${userTask.id}-${userTask.instanceID}`"
+              class="task"
+              :userTask="userTask"
+              :isSelected="isSelected(userTask)"
+              @click="showUserTask(userTask)"
+            ></user-task-card>
+          </div>
+          <div class="return">
+            <v-icon
+              v-if="$vuetify.breakpoint.width <= 768 && selectedUserTask"
+              @click="showUserTask(null)"
+              >mdi-arrow-left</v-icon
             >
-            <v-card-text
-              :class="isSelected(userTask) ? 'pa-0 text-center white--text' : 'pa-0 text-center'"
-            >
-              {{ getDefinitionName(userTask) }}
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-divider vertical></v-divider>
-        <v-col cols="9">
-          <div
-            id="iframe-container"
-            :style="{
-              display: selectedUserTask ? 'block' : 'none',
-            }"
-          ></div>
-        </v-col>
-      </v-row>
-    </v-container>
+          </div>
+        </div>
+      </div>
+      <v-divider v-if="$vuetify.breakpoint.width <= 768 && selectedUserTask"></v-divider>
+      <div
+        class="formView"
+        :style="{
+          display: selectedUserTask ? 'flex' : 'none',
+        }"
+      >
+        <div
+          :style="{
+            display: selectedUserTask && !isUserTaskActive(selectedUserTask) ? 'block' : 'none',
+          }"
+          class="overlay"
+        ></div>
+      </div>
+    </div>
   </div>
 </template>
 <script>
+import UserTaskCard from '@/frontend/components/userTasks/userTaskCard.vue';
 import { engineNetworkInterface, processInterface } from '../backend-api/index.js';
 export default {
-  components: {},
+  components: { UserTaskCard },
   data() {
     return {
       selectedUserTask: null,
+      sortItems: ['Start Time', 'Deadline', 'Progress', 'Priority', 'State'],
+      filterItems: ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'],
+      items: [
+        {
+          name: 'Status:',
+          children: [
+            { name: 'READY' },
+            { name: 'ACTIVE' },
+            { name: 'COMPLETED' },
+            { name: 'PAUSED' },
+          ],
+        },
+      ],
+      selectedStatus: ['READY', 'ACTIVE'],
+      selectedPriority: [1, 10],
+      selectedProgress: [0, 100],
+      selectedSorting: { value: 'Start Time', ascending: true },
     };
   },
   computed: {
@@ -57,8 +172,15 @@ export default {
         port: machine.port,
       }));
     },
-    activeUserTasks() {
+    userTasks() {
       return this.$store.getters['deploymentStore/activeUserTasks'];
+    },
+    showingUserTasks() {
+      const userTasks = this.updateUserTaskPlacement();
+      if (this.$vuetify.breakpoint.width <= 768 && this.selectedUserTask) {
+        return userTasks.length > 0 ? [this.selectedUserTask] : [];
+      }
+      return userTasks;
     },
   },
   methods: {
@@ -71,6 +193,9 @@ export default {
         this.selectedUserTask.id === userTask.id &&
         this.selectedUserTask.instanceID === userTask.instanceID
       );
+    },
+    isUserTaskActive(userTask) {
+      return userTask.state === 'READY' || userTask.state === 'ACTIVE';
     },
     getStoredProcessOfUserTask(userTask) {
       if (userTask) {
@@ -90,7 +215,87 @@ export default {
       }
       return 'Loading...';
     },
+    calculateRunningTime(startTime) {
+      const runningTimeInMs = +new Date() - startTime;
+      const days = runningTimeInMs / (1000 * 60 * 60 * 24);
+      const hours = (days - Math.floor(days)) * 24;
+      const minutes = (hours - Math.floor(hours)) * 60;
 
+      const daysString = days >= 1 ? `${Math.floor(days)}d` : '';
+      const hoursString = hours >= 1 ? `${Math.floor(hours)}h` : '';
+      return `${daysString} ${hoursString} ${Math.floor(minutes)}min`;
+    },
+    updateSorting(sortingValue, isAscending) {
+      this.selectedSorting = { value: sortingValue, ascending: isAscending };
+    },
+    updateUserTaskPlacement() {
+      const showingUserTasks = this.userTasks.filter((uT) => {
+        return (
+          this.selectedStatus.includes(uT.state) &&
+          uT.priority >= this.selectedPriority[0] &&
+          uT.priority <= this.selectedPriority[1] &&
+          uT.progress >= this.selectedProgress[0] &&
+          uT.progress <= this.selectedProgress[1]
+        );
+      });
+
+      switch (this.selectedSorting.value) {
+        case 'Start Time':
+          showingUserTasks.sort((a, b) =>
+            this.selectedSorting.ascending ? a.startTime - b.startTime : b.startTime - a.startTime
+          );
+          break;
+        case 'Deadline':
+          showingUserTasks.sort((a, b) => {
+            if (a.endTime === b.endTime) {
+              this.selectedSorting.ascending
+                ? a.startTime - b.startTime
+                : b.startTime - a.startTime;
+            }
+            return this.selectedSorting.ascending ? a.endTime - b.endTime : b.endTime - a.endTime;
+          });
+          break;
+        case 'Progress':
+          showingUserTasks.sort((a, b) => {
+            if (a.progress === b.progress) {
+              this.selectedSorting.ascending
+                ? a.startTime - b.startTime
+                : b.startTime - a.startTime;
+            }
+            return this.selectedSorting.ascending
+              ? a.progress - b.progress
+              : b.progress - a.progress;
+          });
+          break;
+        case 'Priority':
+          showingUserTasks.sort((a, b) => {
+            if (a.priority === b.priority) {
+              this.selectedSorting.ascending
+                ? a.startTime - b.startTime
+                : b.startTime - a.startTime;
+            }
+            return this.selectedSorting.ascending
+              ? a.priority - b.priority
+              : b.priority - a.priority;
+          });
+          break;
+        case 'State':
+          showingUserTasks.sort((a, b) => {
+            const stateOrder = ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'];
+            if (a.state === b.state) {
+              this.selectedSorting.ascending
+                ? a.startTime - b.startTime
+                : b.startTime - a.startTime;
+            }
+            const indexA = stateOrder.findIndex((state) => a.state === state);
+            const indexB = stateOrder.findIndex((state) => b.state === state);
+            return this.selectedSorting.ascending ? indexA - indexB : indexB - indexA;
+          });
+          break;
+      }
+
+      return showingUserTasks;
+    },
     async importProcess(userTask) {
       const deployments = this.$store.getters['deploymentStore/deployments'];
       const userTaskDeployment = Object.entries(deployments).find(([deploymentId]) => {
@@ -111,12 +316,41 @@ export default {
     async showUserTask(userTask) {
       this.selectedUserTask = userTask;
 
-      const container = document.querySelector('#iframe-container');
-      container.innerHTML = '';
+      const container = document.querySelector('.formView');
+      const iframes = container.querySelectorAll('iframe');
+      Array.from(iframes).forEach((iFr) => {
+        container.removeChild(iFr);
+      });
+      const overlay = document.querySelector('.overlay');
+      overlay.innerHTML = '';
+
+      if (!userTask) {
+        return;
+      }
+
       const iframe = document.createElement('iframe');
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.border = 0;
+
+      if (userTask.state === 'PAUSED') {
+        iframe.style.pointerEvents = 'none';
+        const h3 = document.createElement('h3');
+        h3.innerText = 'This task is paused!';
+        const p = document.createElement('p');
+        p.innerText = 'This task was paused by your supervisor.';
+
+        overlay.append(h3, p);
+        iframe.style.opacity = '0.2';
+      } else if (userTask.state === 'COMPLETED') {
+        iframe.style.pointerEvents = 'none';
+        const h3 = document.createElement('h3');
+        h3.innerText = 'This task is completed!';
+
+        overlay.append(h3);
+        iframe.style.opacity = '0.2';
+      }
+
       container.appendChild(iframe);
       iframe.contentWindow.document.open();
       iframe.contentWindow.document.write(userTask.html);
@@ -158,15 +392,19 @@ export default {
     await this.$store.dispatch('deploymentStore/unsubscribeFromActiveUserTaskUpdates');
   },
   watch: {
-    activeUserTasks(updatedActiveUserTasks) {
-      updatedActiveUserTasks.forEach((userTask) => {
-        if (!this.getStoredProcessOfUserTask(userTask)) {
-          this.importProcess(userTask);
-        }
-      });
-
+    userTasks: {
+      handler(updatedUserTasks) {
+        updatedUserTasks.forEach((userTask) => {
+          if (!this.getStoredProcessOfUserTask(userTask)) {
+            this.importProcess(userTask);
+          }
+        });
+      },
+      immediate: true,
+    },
+    showingUserTasks(newShowingUserTasks) {
       if (this.selectedUserTask) {
-        const selectedUserTaskRemoved = !updatedActiveUserTasks.find(
+        const selectedUserTaskRemoved = !newShowingUserTasks.find(
           (userTask) =>
             userTask.instanceID === this.selectedUserTask.instanceID &&
             userTask.id === this.selectedUserTask.id
@@ -180,22 +418,115 @@ export default {
   },
 };
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 .wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.flex-container {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  margin: 6px 0;
+.infoBox {
+  text-align: center;
+  margin: 40px 10px 10px;
+  font-size: 1.1em;
+  color: #a5a5a5;
+  letter-spacing: 0.03em;
 }
 
-#iframe-container {
-  width: 100%;
+.tasklist-container {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 0px 6px -3px #9a9a9a;
+    background: #fafafa;
+
+    .tasks-wrapper {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .tasks {
+      display: flex;
+      flex-direction: column;
+    }
+    .task {
+      margin-bottom: 10px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .tasklist-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+
+    .list {
+      flex-grow: 1;
+
+      .tasks-wrapper {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        padding: 10px 10px 0px;
+
+        .tasks {
+          margin: auto;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 425px) {
+  .tasklist-container .list .tasks-wrapper {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 8px 8px 0px;
+
+    .return {
+      display: flex;
+      flex-direction: row;
+      justify-content: end;
+    }
+  }
+}
+
+.formView {
   height: 100%;
+  display: flex;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.overlay {
+  position: absolute;
+  font-size: x-large;
+  text-align: center;
+}
+
+.v-progress-circular__underlay {
+  stroke: rgb(182 182 182) !important;
+}
+
+.v-treeview-node__root {
+  padding-left: 0 !important;
+}
+.v-treeview-node__toggle {
+  display: none !important;
+}
+.v-treeview-node__checkbox {
+  margin-left: 0 !important;
+}
+.v-treeview-node__level {
+  width: 12px !important;
 }
 </style>

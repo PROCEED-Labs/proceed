@@ -297,6 +297,29 @@ class Engine {
   }
 
   /**
+   * Archive an Instance which is not active anymore
+   *
+   * @param {string} instanceID
+   */
+  async archiveInstance(instanceID) {
+    const instanceInformation = { ...this.getInstanceInformation(instanceID) };
+    const archiveInformation = {
+      ...instanceInformation,
+      userTasks: this.userTasks
+        .filter((userTask) => userTask.processInstance.id === instanceID)
+        .map((userTask) => ({
+          ...userTask,
+          processInstance: {
+            id: userTask.processInstance.id,
+          },
+          definitionId: this.definitionId,
+        })),
+    };
+
+    await distribution.db.archiveInstance(this.definitionId, instanceID, archiveInformation);
+  }
+
+  /**
    * Signals the user task as completed to the corresponding process instance,
    * which is responsible.
    * @param {string} instanceID The id of the process instance to be notified
@@ -525,6 +548,7 @@ class Engine {
             endTime: +new Date(),
             machine: this.machineInformation,
             progress: token.currentFlowNodeProgress,
+            priority: token.priority,
           });
         }
       });
@@ -532,11 +556,7 @@ class Engine {
       instance.stop();
 
       // archive the information for the stopped instance
-      await distribution.db.archiveInstance(
-        this.definitionId,
-        instance.id,
-        this.getInstanceInformation(instanceID)
-      );
+      await this.archiveInstance(instance.id);
       this.deleteInstance(instance.id);
     }
   }
@@ -589,11 +609,7 @@ class Engine {
       }
     });
 
-    await distribution.db.archiveInstance(
-      this.definitionId,
-      instance.id,
-      this.getInstanceInformation(instanceID)
-    );
+    await this.archiveInstance(instance.id);
     this.deleteInstance(instance.id);
   }
 
@@ -624,11 +640,7 @@ class Engine {
     });
 
     // archive the information for the stopped instance
-    await distribution.db.archiveInstance(
-      this.definitionId,
-      instance.id,
-      this.getInstanceInformation(instanceID)
-    );
+    await this.archiveInstance(instance.id);
     this.deleteInstance(instance.id);
   }
 
@@ -650,12 +662,30 @@ class Engine {
       let tokensRunning = false;
       // pause flowNode execution of tokens with state READY and DEPLOYMENT-WAITING
       tokens.forEach((token) => {
+        const userTaskIndex = this.userTasks.findIndex(
+          (uT) => uT.processInstance.id === instanceID && uT.id === token.currentFlowElementId
+        );
         if (token.state === 'DEPLOYMENT-WAITING' || token.state === 'READY') {
           instance.pauseToken(token.tokenId);
           this.updateToken(instanceID, token.tokenId, { state: 'PAUSED' });
+
+          if (userTaskIndex !== -1) {
+            this.userTasks.splice(userTaskIndex, 1, {
+              ...this.userTasks[userTaskIndex],
+              state: 'PAUSED',
+            });
+          }
         }
         if (token.state === 'RUNNING') {
-          tokensRunning = true;
+          if (userTaskIndex !== -1) {
+            // pause userTask immediately
+            instance.pauseToken(token.tokenId);
+            this.updateToken(instanceID, token.tokenId, { state: 'PAUSED' });
+            const newUserTask = { ...this.userTasks[userTaskIndex], state: 'PAUSED' };
+            this.userTasks.splice(userTaskIndex, 1, newUserTask);
+          } else {
+            tokensRunning = true;
+          }
         }
       });
 
@@ -682,19 +712,44 @@ class Engine {
       })
         .then(() => {
           instance.pause();
-          distribution.db.archiveInstance(
-            this.definitionId,
-            instance.id,
-            this.getInstanceInformation(instanceID)
-          );
+          this.archiveInstance(instance.id);
           this.deleteInstance(instance.id);
         })
         .catch(() => {});
     }
   }
 
-  getUserTasks() {
-    return this.userTasks;
+  getPendingUserTasks() {
+    const pendingUserTasks = this.userTasks.filter(
+      (userTask) => userTask.state === 'READY' || userTask.state === 'ACTIVE'
+    );
+
+    const pendingUserTasksWithTokenInfo = pendingUserTasks.map((uT) => {
+      const token = this.getToken(uT.processInstance.id, uT.tokenId);
+      return { ...uT, priority: token.priority, progress: token.currentFlowNodeProgress.value };
+    });
+    return pendingUserTasksWithTokenInfo;
+  }
+
+  getInactiveUserTasks() {
+    const inactiveUserTasks = this.userTasks.filter(
+      (userTask) => userTask.state !== 'READY' && userTask.state !== 'ACTIVE'
+    );
+
+    const inactiveUserTasksWithLogInfo = inactiveUserTasks.map((uT) => {
+      const instance = this.getInstance(uT.processInstance.id);
+      const logs = instance.getState().log;
+      const userTaskLogEntry = logs.find(
+        (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId
+      );
+
+      return {
+        ...uT,
+        priority: userTaskLogEntry.priority,
+        progress: userTaskLogEntry.progress.value,
+      };
+    });
+    return inactiveUserTasksWithLogInfo;
   }
 
   getMilestones(instanceID, userTaskID) {

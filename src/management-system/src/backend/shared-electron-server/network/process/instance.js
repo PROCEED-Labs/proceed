@@ -59,9 +59,6 @@ export async function completeUserTask(instanceId, userTaskId) {
       userTaskId
     );
 
-    if (userTask) {
-      removeActiveUserTask(instanceId, userTaskId);
-    }
     if (instance) {
       immediateInstanceInfoRequest(instanceId);
     }

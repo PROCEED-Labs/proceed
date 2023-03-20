@@ -38,6 +38,7 @@ import ProcessModal from '@/frontend/components/processes/editor/ProcessModal.vu
 import AlertWindow from '@/frontend/components/universal/Alert.vue';
 
 import { eventHandler, processInterface } from '@/frontend/backend-api/index.js';
+import { isSubset, deepEquals } from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
 
 export default {
   components: { ProcessTab, ProcessModal, AlertWindow },
@@ -63,6 +64,12 @@ export default {
         return this.tabs[this.currentTabIndex];
       }
       return undefined;
+    },
+    modeler() {
+      return this.$store.getters['processEditorStore/modeler'];
+    },
+    subprocessId() {
+      return this.$store.getters['processEditorStore/subprocessId'];
     },
   },
   methods: {
@@ -132,19 +139,61 @@ export default {
   },
   watch: {
     currentTab: {
-      handler() {
-        if (this.currentTab) {
-          const newPath = this.$router.resolve({
-            params: { id: this.currentTab.processDefinitionsId },
-            query: { instance: this.currentTab.instanceId },
-          }).href;
+      async handler(newTab, oldTab) {
+        if (newTab) {
+          const { processDefinitionsId, version, instanceId, subprocessId } = newTab;
 
-          history.replaceState({}, '', '/' + newPath);
+          // check if something else than the subprocessId or the instanceId changed (e.g. the process or the version of the process)
+          if (
+            !oldTab ||
+            !deepEquals(
+              { ...newTab, subprocessId: null, instanceId: null },
+              { ...oldTab, subprocessId: null, instanceId: null }
+            )
+          ) {
+            // there was a tab change to a new process or to another version of the current process (optional instance and subprocess change possible)
+            const newPath = this.$router.resolve({
+              params: { id: processDefinitionsId },
+              query: { instance: instanceId },
+            }).href;
 
-          this.$emit('changedTab', this.currentTab);
+            history.replaceState({}, '', '/' + newPath);
+
+            await this.$store.dispatch('processEditorStore/loadProcessFromStore', {
+              processDefinitionsId,
+              version,
+            });
+
+            this.$store.commit('processEditorStore/setInstanceId', instanceId);
+            this.$store.commit('processEditorStore/setSubprocessId', subprocessId);
+          } else if (oldTab) {
+            // there was a tab change and the only difference is the subprocessId or instanceId
+            this.$store.commit('processEditorStore/setSubprocessId', subprocessId);
+            this.$store.commit('processEditorStore/setInstanceId', instanceId);
+          }
+          this.$emit('changedTab', newTab);
         }
       },
       immediate: true,
+    },
+    subprocessId(newSubprocessId) {
+      // check if there is a tab for this subprocess (or one for the base process if the id is null/undefined)
+      const existingTabIndex = this.tabs.findIndex((tab) =>
+        isSubset(tab, { ...this.currentTab, newSubprocessId })
+      );
+
+      if (existingTabIndex < 0) {
+        // add a new tab if none exists for this subprocess (or the base process)
+        this.addTab(
+          this.currentTab.processDefinitionsId,
+          newSubprocessId,
+          this.currentTab.version,
+          this.currentTab.instanceId
+        );
+      } else if (existingTabIndex !== this.currentTabIndex) {
+        // open the existing tab if it is not already open
+        this.currentTabIndex = existingTabIndex;
+      }
     },
   },
   mounted() {

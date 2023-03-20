@@ -1,7 +1,7 @@
 <template>
   <div>
     <tooltip-button
-      v-if="process.type === 'process' && !process.version && !process.subprocessId"
+      v-if="process.type === 'process' && !process.version && !subprocessId"
       :loading="isCreatingVersion"
       @click="createVersion"
     >
@@ -12,7 +12,7 @@
       v-else-if="
         (process.type === 'process' || process.type === 'process-instance') &&
         process.version &&
-        !process.subprocessId
+        !subprocessId
       "
       @click="showVersionSelectionDialog = true"
     >
@@ -72,6 +72,9 @@ export default {
     },
     currentProcessXml() {
       return this.$store.getters['processEditorStore/processXml'];
+    },
+    subprocessId() {
+      return this.$store.getters['processEditorStore/subprocessId'];
     },
   },
   methods: {

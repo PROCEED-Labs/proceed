@@ -8,13 +8,13 @@ const { config } = require('@proceed/machine');
 /**
  * This Module evaluates constaints and finds the next fitting Machines
  * @module @proceed/decider
- * @see https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Process/Decision-Making#architecture-of-decider
+ * @see https://github.com/PROCEED-Labs/proceed/wiki/Decision-Making#architecture-of-decider
  *
  */
 const decider = {
   /**
    * Function to decide after each flow node which Machine is the optimal one for the next execution
-   * @see  {@link https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Process/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
+   * @see  {@link https://github.com/PROCEED-Labs/proceed/wiki/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
    *
    * @param {Object} processInfo - Infos about the current running Process Model
    * @param {string} processInfo.id - the definitions ID of the current process
@@ -25,7 +25,7 @@ const decider = {
    * @param {string} processInfo.nextFlowNode.id - the ID of the next BPMN element
    * @param {boolean} processInfo.nextFlowNode.isUserTask - indicates if next flow Node is a usertask
    *
-   * @param {Object} token - Infos about the current running process instance, but contains only one token of the current flow (see {@link https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Process/Process-Instance,-Tokens,-Datastructure-and-REST-Endpoint#the-instance|Wiki Instance Description}), at least:
+   * @param {Object} token - Infos about the current running process instance, but contains only one token of the current flow (see {@link https://github.com/PROCEED-Labs/proceed/wiki/Process-Instance,-Tokens,-Datastructure-and-REST-Endpoint#the-instance|Wiki Instance Description}), at least:
    * @param {Date} token.globalStartTime - Time when the Instance was started globally
    * @param {Date} token.localStartTime - Time and date of the token start (on the local Engine)
    * @param {Date} token.localExecutionTime - Relative time in seconds a token has already needed for executing the BPMN elements
@@ -153,7 +153,7 @@ const decider = {
    * Function to check if a process can be executed locally
    * (after receiving and before starting a process)
    * Skips steps 3.3 and 3.6
-   * @see  {@link https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Process/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
+   * @see  {@link https://github.com/PROCEED-Labs/proceed/wiki/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
    *
    * @param {Object} processInfo - see {@link findOptimalNextMachine()}
    * @param {Object} token - see {@link findOptimalNextMachine()}
@@ -199,7 +199,7 @@ const decider = {
   /**
    * Function to find the optimal Machine in the MS
    * Skips steps 3.1, 3.2 and 3.4
-   * @see  {@link https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Process/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
+   * @see  {@link https://github.com/PROCEED-Labs/proceed/wiki/Decision-Making#architecture-of-decider|Wiki Step 1 and 5}
    *
    * @param {Object} processInfo - see {@link findOptimalNextMachine()}
    * @param {flowNodeConstraints} - see {@link findOptimalNextMachine()}

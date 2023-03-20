@@ -1,6 +1,6 @@
 # PROCEED dBPMS
 
-[![pipeline status](https://gitlab.com/dBPMS-PROCEED/proceed/badges/master/pipeline.svg)](https://gitlab.com/dBPMS-PROCEED/proceed/-/commits/master)
+[![CI/CD](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml/badge.svg)](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml)
 
 PROCEED is a decentralized Business Process Management System (dBPMS) specialized on the creation, execution and monitoring of individual IoT processes.
 The execution is done decentralized without a controlling instance.
@@ -21,12 +21,12 @@ We started with a small developer team based on a research project.
 The requirements are still driven by research projects, but we are also very open for community feedback and contributions.
 
 Currently, we mainly organize our development tasks with [Trello](https://trello.com/b/9FsPcQhv).
-If you have ideas or find bugs, please create a an [Issue](https://gitlab.com/dBPMS-PROCEED/proceed/-/issues).
+If you have ideas or find bugs, please create a an [Issue](https://github.com/PROCEED-Labs/proceed/issues).
 We are very open for help and project contributions.
 Regularly there are on-boarding development workshops and, if you are interested, we have weekly video calls on Thursday with all developers.
 
-We've created [many Wiki pages](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/home) for a better understanding of the internals.
-For development you should start with looking at the [Hints for Installation and Configuration with our preferred tools](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/General/Installation-and-Configuration-for-Development) and afterwards read the [Contribution information](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/General/Contribution)
+We've created [many Wiki pages](https://github.com/PROCEED-Labs/proceed/wiki) for a better understanding of the internals.
+For development you should start with looking at the [Hints for Installation and Configuration with our preferred tools](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and afterwards read the [Contribution information](https://github.com/PROCEED-Labs/proceed/wiki/Contribution)
 
 For further information, just contact us: proceed@snet.tu-berlin.de
 
@@ -43,7 +43,7 @@ This project is organized as a Mono-Repo and contains multiple software project 
 
 To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v12.18.
 
-For further information about installation and configuration of our favorite development environment, [see the Wiki page](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Installation-and-Configuration-for-Development) and [the debugging configuration](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine-and-MS/Debugging).
+For further information about installation and configuration of our favorite development environment, [see the Wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and [the debugging configuration](https://github.com/PROCEED-Labs/proceed/wiki/Debugging).
 
 ## Install PROCEED Dependencies
 
@@ -88,9 +88,9 @@ yarn dev-ms-iam
 
 > Please note that you need access to the private Environment Configurations repository, if you want to develop with Authentication & Authorization!
 
-_Server version:_ If successful, this automatically starts a Chrome/Chromium browser, and afterwards the MS frontend inside the Browser (hot-reloading) on the URL: https://localhost:33083/ For more information, see [the architecture description in the Wiki](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/MS/Architecture-Server-and-Desktop-App#ms-server-architecture).
+_Server version:_ If successful, this automatically starts a Chrome/Chromium browser, and afterwards the MS frontend inside the Browser (hot-reloading) on the URL: https://localhost:33083/ For more information, see [the architecture description in the Wiki](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App#ms-server-architecture).
 
-> Beware: We are using HTTPS with a self-signed certificate for development. This will most likely lead to your browser warning you upon the first start of the frontend. You have to accept that warning and create an exception to continue to the site. The self-signed certificate will also lead to errors when the frontend [tries to connect to the other HTTPS endpoints (WebSocket and Puppeteer)](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/MS/Architecture-Server-and-Desktop-App). The easiest way to solve this, is to open all endpoints directly inside the browser and add an exception for every enpoint-certificate combination. For the development this is https://localhost:33080 and https://localhost:33081.
+> Beware: We are using HTTPS with a self-signed certificate for development. This will most likely lead to your browser warning you upon the first start of the frontend. You have to accept that warning and create an exception to continue to the site. The self-signed certificate will also lead to errors when the frontend [tries to connect to the other HTTPS endpoints (WebSocket and Puppeteer)](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App). The easiest way to solve this, is to open all endpoints directly inside the browser and add an exception for every enpoint-certificate combination. For the development this is https://localhost:33080 and https://localhost:33081.
 > This should allow the frontend to connect to the other endpoints in subsequent tries.
 
 ## Testing

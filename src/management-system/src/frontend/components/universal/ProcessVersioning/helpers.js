@@ -140,7 +140,7 @@ export async function createNewProcessVersion(store, bpmn, versionName, versionD
     bpmn: versionedBpmn,
   });
 
-  processInterface.updateProcessVersionBasedOn(definitionId, epochTime);
+  await processInterface.updateProcessVersionBasedOn(definitionId, epochTime);
 
   return epochTime;
 }

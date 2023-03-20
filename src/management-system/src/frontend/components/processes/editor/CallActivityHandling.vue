@@ -167,10 +167,8 @@ export default {
 
     async filterSelectableSubprocesses() {
       // only processes should be executed and be executed more that once so they are the only valid selection
-      // hide local subprocesses to avoid problems on deployment down the line
-      // local processes are not deployable since they are unknown to the backend
       this.selectableProcesses = this.$store.getters['processStore/processes'].filter((process) => {
-        return process.type === 'process' && process.shared;
+        return process.type === 'process';
       });
     },
     async selectCurrentSubprocess() {

@@ -13,7 +13,7 @@ services:
       - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Engine:/opt/proceed-ms-server/Engine
       - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Config:/opt/proceed-ms-server/Config
     logging:
-      driver: ${MS_LOG_DRIVER:-"local"}
+      driver: ${MS_LOG_DRIVER:-local}
     cap_add:
       - SYS_ADMIN
     depends_on:
@@ -63,7 +63,7 @@ services:
       - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/capabilities:/opt/proceed-engine/capabilities
       - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/config.json:/opt/proceed-engine/config.json
     logging:
-      driver: ${ENGINE_LOG_DRIVER:-"local"}
+      driver: ${ENGINE_LOG_DRIVER:-local}
     ports:
       - 33029:33029
     networks:

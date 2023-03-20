@@ -1,5 +1,16 @@
 <template>
   <hovering-toolbar v-show="currentView === 'modeler'">
+    <popup :popupData="popupData">
+      <div>The following link can be shared with others to collaboratively edit this process.</div>
+      <div><v-textarea rows="1" v-model="url" auto-grow readonly></v-textarea></div>
+      <div v-if="automaticLinkCopyFailed">
+        Copy it and send it to other users to grant them access.
+      </div>
+      <div v-else>
+        It has been automatically copied to your clipboard so you can send it to others to grant
+        them access.
+      </div>
+    </popup>
     <toolbar-group>
       <v-toolbar-title>
         <span v-if="name.length < 20">
@@ -68,7 +79,7 @@
         @click="openSubprocessModeler"
       >
         <template #tooltip-text>Edit SubProcess</template>
-        mdi-open-in-new
+        mdi-arrow-bottom-right-bold-box-outline
       </tooltip-button>
       <constraint-handling :process="process" />
     </toolbar-group>
@@ -94,7 +105,7 @@
         <template #tooltip-text>Open Properties Panel</template>
         mdi-cog-off-outline
       </tooltip-button>
-      <tooltip-button v-if="!isElectron" :disabled="!isShared" @click="clipUrl">
+      <tooltip-button v-if="!isElectron" @click="share">
         <template #tooltip-text>Share</template>
         mdi-share-outline
       </tooltip-button>
@@ -130,6 +141,7 @@ import TimerHandling from '@/frontend/components/processes/editor/TimerHandling.
 import CallActivityHandling from '@/frontend/components/processes/editor/CallActivityHandling.vue';
 import ConstraintHandling from '@/frontend/components/processes/editor/ConstraintHandling.vue';
 import ProcessExport from '@/frontend/components/processes/editor/ProcessExport.vue';
+import AlertWindow from '@/frontend/components/universal/Alert.vue';
 
 export default {
   name: 'main-editor-toolbar',
@@ -145,6 +157,7 @@ export default {
     CallActivityHandling,
     ConstraintHandling,
     ProcessExport,
+    popup: AlertWindow,
   },
   props: {
     process: {
@@ -171,6 +184,12 @@ export default {
   data() {
     return {
       displayTypeSelection: 0,
+      popupData: {
+        body: '',
+        display: 'none',
+        color: '',
+      },
+      automaticLinkCopyFailed: false,
     };
   },
   computed: {
@@ -213,25 +232,35 @@ export default {
     showSelectedOptions() {
       return this.selectedElement && this.selectedElement.type !== 'bpmn:SequenceFlow';
     },
+    url() {
+      return window.location.href;
+    },
   },
   methods: {
-    clipUrl() {
-      // Hacky workaround to copy the current url into the clipboard: https://stackoverflow.com/a/49618964
-      const dummyInput = document.createElement('input');
-      document.body.appendChild(dummyInput);
-      dummyInput.value = window.location.href;
-      dummyInput.select();
-      dummyInput.setSelectionRange(0, 99999);
-      document.execCommand('copy');
-      document.body.removeChild(dummyInput);
+    async share() {
+      if (!this.isShared) {
+        // if the process is currently not stored in the backend => move it into the backend
+        await this.$store.dispatch('processStore/update', {
+          id: this.process.id,
+          changes: { shared: true },
+        });
+        // subscribe for editing events from other clients and inform the backend that this client is currently editing the process
+        await this.$store.dispatch('processEditorStore/startEditing');
+      }
+
+      try {
+        // automatically write the url into the users clipboard
+        await window.navigator.clipboard.writeText(window.location.href);
+        this.automaticLinkCopyFailed = false;
+      } catch (err) {
+        this.automaticLinkCopyFailed = true;
+      }
+
+      this.popupData.color = 'success';
+      this.popupData.display = 'block';
     },
     openSubprocessModeler() {
-      this.$emit('addTab', {
-        processDefinitionsId: this.process.id,
-        subprocessId: this.selectedElement.id,
-        version: this.selectedVersion ? this.selectedVersion.version : undefined,
-        instanceId: this.process.instanceId,
-      });
+      this.$store.commit('processEditorStore/setSubprocessId', this.selectedElement.id);
     },
     editUserTask() {
       if (

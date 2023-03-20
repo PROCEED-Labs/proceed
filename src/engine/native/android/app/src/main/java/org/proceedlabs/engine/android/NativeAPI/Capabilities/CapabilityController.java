@@ -14,11 +14,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 
-// Übersicht
-// https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Capability-Module/Capabilities_Android
+// Overview
+// https://github.com/PROCEED-Labs/proceed/wiki/Capabilities_Android
 
 // Test API
-// https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/REST-Endpoints#engine-requesting-capability-information
+// https://github.com/PROCEED-Labs/proceed/wiki/REST:-Common-Functionality
 
 
 public class CapabilityController extends IPCTask {

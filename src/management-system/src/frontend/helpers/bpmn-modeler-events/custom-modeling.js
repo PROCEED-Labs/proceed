@@ -133,7 +133,7 @@ class CustomModeling {
   async addConstraints(processConstraints, taskConstraintMapping) {
     const promises = [];
     if (processConstraints) {
-      const process = this.canvas.getRootElement();
+      const process = this.canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
       promises.push(this.addConstraintsToElement(process, processConstraints));
     }
 

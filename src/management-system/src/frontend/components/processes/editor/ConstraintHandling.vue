@@ -73,11 +73,20 @@ export default {
     modeler() {
       return this.$store.getters['processEditorStore/modeler'];
     },
-    isSubprocess() {
-      return !!this.$store.getters['processEditorStore/subprocessId'];
+    selection() {
+      return this.$store.getters['processEditorStore/selectedElement'];
     },
     selectedElement() {
-      return this.$store.getters['processEditorStore/selectedElement'];
+      if (this.selection && this.selection.id.includes('_plane')) {
+        // if we have an open subprocess and no element is selected by the user the selection will be the subprocess plane
+        // => we map this to the subprocess being selected
+        return this.modeler.get('elementRegistry').get(this.selection.id.replace(/_plane/g, ''));
+      } else {
+        return this.selection;
+      }
+    },
+    isSubprocess() {
+      return this.selectedElement && this.selectedElement.type === 'bpmn:SubProcess';
     },
     /**
      * Checks if a flow node was selected
@@ -91,7 +100,13 @@ export default {
           new RegExp('Gateway'),
           new RegExp('Event'),
         ];
-        if (elements.some((expression) => expression.test(this.selectedElement.type))) {
+        // we want to display a different prompt if a collapsed subprocess is currently open and no element is selected inside it
+        const selectionIsCollapsedSubprocessPlane =
+          this.modeler.get('canvas').getRootElement().id === `${this.selectedElement.id}_plane`;
+        if (
+          !selectionIsCollapsedSubprocessPlane &&
+          elements.some((expression) => expression.test(this.selectedElement.type))
+        ) {
           return true;
         }
       }
@@ -156,14 +171,11 @@ export default {
       'elementConstraintsChanged',
       ({ processDefinitionsId, elementId, constraints }) => {
         if (this.modeler && this.process.id === processDefinitionsId) {
-          const elementRegistry = this.modeler.get('elementRegistry');
-          if (this.process.subprocessId && this.process.subprocessId !== elementId) {
-            const elementInProcess = elementRegistry.get(elementId);
-            if (!elementInProcess) {
-              return;
-            }
-          }
-          this.addConstraints(constraints, elementRegistry.get(elementId), true);
+          this.addConstraints(
+            constraints,
+            this.modeler.get('elementRegistry').get(elementId),
+            true
+          );
         }
       }
     );

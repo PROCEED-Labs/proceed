@@ -87,14 +87,6 @@
                     <small>*indicates required field</small>
                   </v-col>
                 </v-row>
-                <v-row v-if="canShareProcess && !storedInBackend">
-                  <v-col>
-                    <v-switch
-                      v-model="currentData.shared"
-                      :label="`Make process publicly accessible.`"
-                    ></v-switch>
-                  </v-col>
-                </v-row>
                 <fifth-industry-properties
                   :processType="processType"
                   :currentData="currentData"
@@ -175,9 +167,7 @@ import BpmnPreview from '@/frontend/components/bpmn/BpmnPreview.vue';
  * @vue-prop {String} action - the kind of action that is performed by the sorrounding form (used for header)
  * @vue-prop {String} processType - the kind of process that is manipulated (e.g. process, project, ...) (used for header)
  *
- * @vue-computed {boolean} canShareProcess - if the component is executed in a web client that allows sharing via the backend
  * @vue-computed {Process[]} storedProcesses - all processes from the vuex store
- * @vue-computed {Process[]} storedInBackend - all processes that are stored in the backend and not locally in the browser
  * @vue-computed {String[]} departmentNames - names of all possible departments
  * @vue-computed {*} departments - all possible departments
  * @vue-computed {number} currentIndex - the current displayed Page minus 1 (index in array)
@@ -222,16 +212,8 @@ export default {
     isProject() {
       return this.processType === 'project';
     },
-    canShareProcess() {
-      return !process.env.IS_ELECTRON && Storage;
-    },
     storedProcesses() {
       return this.$store.getters['processStore/processes'];
-    },
-    storedInBackend() {
-      const { id } = this.currentData;
-      const storedProcess = this.storedProcesses.find((p) => p.id === id);
-      return storedProcess && storedProcess.shared;
     },
     departmentNames() {
       return this.departments.map((department) => department.name);
@@ -365,7 +347,7 @@ export default {
     },
     // this will be called from a function in the mixin if a new entry is added
     initProcessData() {
-      return { type: this.processType, shared: false };
+      return { type: this.processType };
     },
     // this will be called from a function in the mixin if the bpmn of a processesDataEntry changes
     async initProcessDataFromBPMN(_, changes) {
@@ -382,7 +364,6 @@ export default {
 
       return {
         departments: [...existingProcess.departments],
-        shared: existingProcess.shared || false,
       };
     },
   },

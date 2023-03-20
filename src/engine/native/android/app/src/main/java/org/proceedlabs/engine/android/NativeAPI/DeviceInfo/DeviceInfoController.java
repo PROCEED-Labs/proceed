@@ -14,7 +14,7 @@ import java.util.HashMap;
 /*
  * DOCUMENTATION:
  * See documentation of implemented values here
- * https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/Machine/Machine-Information
+ * https://github.com/PROCEED-Labs/proceed/wiki/Machine-Information
  *
  * See documentation of node-implementation here
  * https://www.npmjs.com/package/systeminformation

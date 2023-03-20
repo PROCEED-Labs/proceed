@@ -19,7 +19,7 @@
         <a
           class="text-decoration-none font-weight-medium"
           color="primary"
-          href="https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/home"
+          href="https://github.com/PROCEED-Labs/proceed/wiki"
           target="_blank"
           >project documentation <v-icon small color="primary">mdi-open-in-new</v-icon></a
         >.</span

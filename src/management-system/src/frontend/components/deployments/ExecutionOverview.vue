@@ -14,7 +14,7 @@
       :title="selectedElement.businessObject.name || selectedElement.id"
       :selectedToken="selectedToken"
     >
-      <template v-slot:process-preview v-if="isSelectedElementSubprocess">
+      <template v-slot:process-preview v-if="isSelectedElementSubprocessElement">
         <div class="d-flex flex-column">
           <instance-view
             :deployment="deployment"
@@ -46,7 +46,6 @@
       :deployment="deployment"
       :selectedVersion="selectedVersion"
       :instance="instance"
-      :subprocessId="subprocessId"
       :isProjectView="isProjectView"
       @element:click="handleElementClick"
       @element:dblclick="handleElementDoubleClick"
@@ -57,30 +56,6 @@
       <template #content="data"><slot name="content" v-bind="data"></slot></template>
       <template #toolbar="data"><slot name="toolbar" v-bind="data"></slot></template>
     </instance-view>
-    <div class="breadcrumb-menu">
-      <v-breadcrumbs style="padding: 0px 12px" :items="breadcrumbItems">
-        <template v-slot:divider>
-          <v-icon>mdi-chevron-right</v-icon>
-        </template>
-        <template v-slot:item="{ item }">
-          <v-breadcrumbs-item class="breadcrumb-item" @click.stop="selectBreadcrumbItem(item.id)">
-            <v-icon style="font-size: 1rem" class="mr-2" v-if="item.id === 'mainView'"
-              >mdi-chevron-right</v-icon
-            >
-            <span
-              :class="{
-                caption: true,
-                'font-weight-bold':
-                  breadcrumbItems.findIndex((bItem) => bItem.id === item.id) ===
-                  breadcrumbItems.length - 1,
-              }"
-              style="font-size: 1rem !important"
-              >{{ item.text }}</span
-            >
-          </v-breadcrumbs-item>
-        </template>
-      </v-breadcrumbs>
-    </div>
   </div>
 </template>
 
@@ -109,8 +84,6 @@ export default {
     return {
       clickedElement: null,
       selectedToken: null,
-      subprocessId: null,
-      subprocessBreadcrumbItems: [],
       viewer: null,
     };
   },
@@ -127,44 +100,40 @@ export default {
     selectedElementMilestones() {
       return this.selectedElement ? getMilestones(this.selectedElement) : [];
     },
-    isSelectedElementSubprocess() {
+    viewerCanvas() {
+      return this.viewer ? this.viewer.get('canvas') : null;
+    },
+    isSelectedElementSubprocessElement() {
       if (this.selectedElement) {
-        return this.selectedElement.type === 'bpmn:SubProcess';
+        // check if we want to show a preview of a selected subprocess in the ActivityCard
+        return (
+          this.selectedElement.type === 'bpmn:SubProcess' &&
+          this.selectedElement.id !== this.viewerCanvas.getRootElement().id // we dont want to show the subprocess preview if the subprocess is already open in the main viewer
+        );
       }
       return false;
-    },
-    breadcrumbItems() {
-      return [{ text: 'Root Process', id: 'mainView' }, ...this.subprocessBreadcrumbItems];
     },
   },
   methods: {
     setViewer(viewer) {
       this.viewer = viewer;
     },
-    selectBreadcrumbItem(itemId) {
-      const indexItem = this.subprocessBreadcrumbItems.findIndex((item) => item.id === itemId);
-      if (indexItem > -1) {
-        this.subprocessId = itemId;
-      } else {
-        // main process was selected
-        this.subprocessId = null;
-      }
-      this.subprocessBreadcrumbItems = this.subprocessBreadcrumbItems.slice(0, indexItem + 1);
-    },
     openSubprocess(subprocess) {
-      this.clickedElement = null;
-      this.subprocessId = subprocess.id;
-      this.subprocessBreadcrumbItems.push({
-        text: subprocess.name || subprocess.id,
-        id: subprocess.id,
-      });
+      // set the plane containing the subprocess content as the new root so it is shown in the viewer
+      const canvas = this.viewer.get('canvas');
+      const subprocessPlane = canvas.findRoot(`${subprocess.id}_plane`);
+      canvas.setRootElement(subprocessPlane);
     },
     /**
      * If the clicked element is not the whole process or a sequence flow, set the clicked element and get its meta information
      * @param {Object} element - the clicked element
      */
     handleElementClick(element) {
-      if (element.type === 'bpmn:Process' || element.type === 'bpmn:SequenceFlow') {
+      if (
+        element.type === 'bpmn:Process' || // allow the user to close the ActivityCard by clicking on the open space
+        element.id.includes('_plane') ||
+        element.type === 'bpmn:SequenceFlow'
+      ) {
         this.clickedElement = null;
       } else {
         this.clickedElement = element;
@@ -209,21 +178,22 @@ export default {
         this.$emit('update:showProcessInfo', false);
       }
     },
+    viewer: {
+      handler(newViewer) {
+        if (newViewer) {
+          // autoselect the plane plane element if the user moves up/down the subprocess tree (unselect potentially selected element that is not visible anymore)
+          newViewer.on('root.set', ({ element }) => {
+            this.clickedElement = element;
+          });
+        }
+      },
+      immediate: true,
+    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.breadcrumb-menu {
-  position: absolute;
-  left: 0px;
-  bottom: 15px;
-
-  .breadcrumb-item {
-    cursor: pointer;
-  }
-}
-
 .card-wrapper {
   display: flex;
   justify-content: center;

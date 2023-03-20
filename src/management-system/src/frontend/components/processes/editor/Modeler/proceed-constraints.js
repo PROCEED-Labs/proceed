@@ -6,7 +6,9 @@ class ProceedConstraints {
 
     eventBus.on('import.done', () => {
       // initializing constraintMapping from the root moddle element
-      const processElement = canvas.getRootElement().businessObject;
+      const processElement = canvas
+        .getRootElements()
+        .find((el) => el.type === 'bpmn:Process').businessObject;
 
       setTimeout(async () => {
         const processConstraints = await getProcessConstraints(processElement);

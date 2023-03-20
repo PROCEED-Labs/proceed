@@ -81,4 +81,4 @@ But additionally, to achieve a somehow consistent look on all display items, we 
 
 ### More Info
 
-For further, non-technical details please take a look at the [UI module section](https://gitlab.com/dBPMS-PROCEED/proceed/-/wikis/Engine/Universal/UI/PROCEED-Engine-UI-Module) in the wiki.
+For further, non-technical details please take a look at the [UI module section](https://github.com/PROCEED-Labs/proceed/wiki/PROCEED-Engine-UI-Module) in the wiki.

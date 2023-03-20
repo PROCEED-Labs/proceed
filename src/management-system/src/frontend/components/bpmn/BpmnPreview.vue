@@ -2,7 +2,12 @@
   <div>
     <v-hover v-if="viewerMode === 'viewer' && !isDeploymentMode" v-slot:default="{ hover }">
       <v-card outlined tile width="100%" height="100%" @click="$emit('editBpmn', process)">
-        <BpmnJsWrapper v-if="xml" :viewerMode="viewerMode" :xml="xml"></BpmnJsWrapper>
+        <BpmnJsWrapper
+          v-if="xml"
+          :viewerMode="viewerMode"
+          :xml="xml"
+          :subprocessId="subprocessId"
+        ></BpmnJsWrapper>
         <v-fade-transition>
           <!-- BPMN Logo of the Viewer has an z-index of 100 -->
           <v-overlay v-if="!hover" absolute opacity="0.8" z-index="101">
@@ -52,6 +57,10 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    subprocessId: {
+      type: String,
+      default: '',
     },
   },
   computed: {

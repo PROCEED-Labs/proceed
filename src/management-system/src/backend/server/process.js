@@ -244,12 +244,12 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
         .emit(event, ...data);
     }
 
-    socket.on('data_saveUserTaskHTML', async (taskId, html) => {
+    socket.on('data_saveUserTaskHTML', async (taskId, html, callback) => {
       logger.debug(
         `Request to save html for user task with id ${taskId} in process with id ${processDefinitionsId}.`
       );
       await saveUserTaskHTML(processDefinitionsId, taskId, html);
-
+      callback();
       broadcastToView('user_task_html_changed', taskId, html);
     });
 

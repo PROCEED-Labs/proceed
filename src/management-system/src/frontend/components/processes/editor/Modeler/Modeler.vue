@@ -29,6 +29,7 @@ import CustomRules from '@/frontend/helpers/override-modules/custom-rules.js';
 import DisableKeyboardBinding from '@/frontend/helpers/override-modules/custom-keyboard-bindings.js';
 import CustomPopUpMenuProvider from '@/frontend/helpers/override-modules/custom-popup-menu-provider.js';
 import AutoResizeProvider from '@/frontend/helpers/override-modules/ProceedAutoResizeProvider.js';
+import CustomRootElementsBehavior from '@/frontend/helpers/override-modules/custom-root-element-behavior.js';
 
 import CustomModelingModule from '@/frontend/helpers/bpmn-modeler-events/custom-modeling.js';
 import CustomBehaviourModule from '@/frontend/helpers/bpmn-modeler-events/custom-behaviour.js';
@@ -102,12 +103,7 @@ export default {
       return this.$store.getters['processEditorStore/forceUpdateXml'];
     },
     xml() {
-      let xml = this.$store.getters['processEditorStore/subprocessXml'];
-      if (!xml) {
-        xml = this.$store.getters['processEditorStore/processXml'];
-      }
-
-      return xml;
+      return this.$store.getters['processEditorStore/processXml'];
     },
   },
   methods: {
@@ -127,6 +123,7 @@ export default {
           ProceedConstraintModule,
           PlaceholderRenderer,
           AutoResizeProvider,
+          CustomRootElementsBehavior,
         ],
         moddleExtensions: {
           proceed: proceedModdleExtension,
@@ -162,7 +159,7 @@ export default {
       await this.loadXmlIntoModeler();
 
       eventDistribution.registerModeler(this.modeler);
-      eventDistribution.setProcessDefinitionsId(this.process.id, this.subprocessId);
+      eventDistribution.setProcessDefinitionsId(this.process.id);
       eventDistribution.activateDistribution();
 
       const eventBus = this.modeler.get('eventBus');
@@ -183,6 +180,19 @@ export default {
           }
         }
       );
+
+      // handle a user opening a subprocess through the functionality exposed by bpmn-js
+      this.modeler.on('root.set', ({ element }) => {
+        if (element.type) {
+          const subprocessId =
+            element.type === 'bpmn:SubProcess' ? element.id.replace(/_plane/g, '') : undefined;
+
+          if (subprocessId !== this.subprocessId) {
+            // the subprocess differs from the one currently open
+            this.$store.commit('processEditorStore/setSubprocessId', subprocessId);
+          }
+        }
+      });
     },
     /** */
     async saveXmlFromModeler() {
@@ -192,11 +202,8 @@ export default {
           console.warn(warnings);
         }
 
-        if (this.subprocessId) {
-          await this.$store.dispatch('processEditorStore/setSubprocessXml', xml);
-        } else {
-          await this.$store.dispatch('processEditorStore/setProcessXml', xml);
-        }
+        await this.$store.dispatch('processEditorStore/setProcessXml', xml);
+
         this.$emit('saved');
       } catch (err) {
         console.error(err);
@@ -256,10 +263,17 @@ export default {
       }
     },
     process(newProcess) {
-      eventDistribution.setProcessDefinitionsId(
-        newProcess ? newProcess.id : null,
-        this.subprocessId
-      );
+      eventDistribution.setProcessDefinitionsId(newProcess ? newProcess.id : null);
+    },
+    subprocessId(newId) {
+      if (this.modeler) {
+        // the subprocess that is supposed to be displayed has changed
+        const canvas = this.modeler.get('canvas');
+        const processElement = canvas.getRootElements().find((el) => el.type === 'bpmn:Process');
+        const rootElementId = newId ? `${newId}_plane` : processElement.id;
+        canvas.setRootElement(canvas.findRoot(rootElementId));
+        canvas.zoom('fit-viewport', 'auto');
+      }
     },
   },
   beforeMount() {

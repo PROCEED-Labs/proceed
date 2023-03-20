@@ -1,6 +1,6 @@
 <template>
   <div class="modeler-container">
-    <tab-bar ref="tab-bar" @returnToOverview="returnToOverview" @changedTab="changeProcess" />
+    <tab-bar ref="tab-bar" @returnToOverview="returnToOverview" @changedTab="resetCloseTimeout" />
     <v-btn v-if="!process" class="loading-message" :loading="true" text color="green">
       <template v-slot:loader>
         <span>Pulling requested process from server...</span>
@@ -120,6 +120,18 @@ export default {
     VariableToolbar,
   },
   computed: {
+    processDefinitionsId() {
+      return this.$store.getters['processEditorStore/id'];
+    },
+    subprocessId() {
+      return this.$store.getters['processEditorStore/subprocessId'];
+    },
+    instanceId() {
+      return this.$store.getters['processEditorStore/instanceId'];
+    },
+    version() {
+      return this.$store.getters['processEditorStore/version'];
+    },
     selectedElement() {
       return this.$store.getters['processEditorStore/selectedElement'];
     },
@@ -130,14 +142,6 @@ export default {
       set(newValue) {
         this.$store.dispatch('userPreferencesStore/setPropertiesPanelVisibility', newValue);
       },
-    },
-    xml() {
-      let xml = this.$store.getters['processEditorStore/subprocessXml'];
-      if (!xml) {
-        xml = this.$store.getters['processEditorStore/processXml'];
-      }
-
-      return xml;
     },
     process() {
       let process = this.$store.getters['processStore/processById'](this.processDefinitionsId);
@@ -188,11 +192,6 @@ export default {
       /** */
       propertiesID: 'properties_' + uuid.v4(),
 
-      processDefinitionsId: null,
-      subprocessId: null,
-      version: null,
-      instanceId: null,
-
       /** */
       timeout: null,
       /** */
@@ -232,11 +231,7 @@ export default {
 
     /** */
     async saveXml(xml) {
-      if (this.process.subprocessId) {
-        await this.$store.dispatch('processEditorStore/setSubprocessXml', xml);
-      } else {
-        await this.$store.dispatch('processEditorStore/setProcessXml', xml);
-      }
+      await this.$store.dispatch('processEditorStore/setProcessXml', xml);
     },
     onSave() {
       this.showSaveMessage();
@@ -289,25 +284,6 @@ export default {
         this.$router.push({ path: targetPath });
       }
     },
-    async changeProcess({ processDefinitionsId, subprocessId, version, instanceId }) {
-      this.processDefinitionsId = processDefinitionsId;
-      this.subprocessId = subprocessId;
-      this.version = version;
-      this.instanceId = instanceId;
-
-      if (this.processDefinitionsId.includes('-instance-')) {
-        this.instanceId = this.processDefinitionsId.split('-instance-')[1];
-      }
-
-      await this.$store.dispatch('processEditorStore/loadProcessFromStore', {
-        processDefinitionsId,
-        subprocessId,
-        version,
-      });
-      this.oldXml = this.$store.getters['processEditorStore/processXml'];
-
-      this.resetCloseTimeout();
-    },
     async removeAdaptationAndLeave() {
       const id = this.processDefinitionsId;
       // change to the user selected route
@@ -342,6 +318,14 @@ export default {
     } else {
       next();
     }
+  },
+  watch: {
+    // make sure to remember the original xml of a process when we start looking at a new one for reset purposes
+    async processDefinitionsId(newId) {
+      if (newId) {
+        this.oldXml = this.$store.getters['processEditorStore/processXml'];
+      }
+    },
   },
 };
 </script>

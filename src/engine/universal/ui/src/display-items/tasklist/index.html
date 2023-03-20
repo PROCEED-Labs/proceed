@@ -1,12 +1,124 @@
 <!DOCTYPE html>
 <html>
   <head> </head>
-  <body style="background: #fafafa">
-    <div id="wrapper">
-      <div id="tasks">
-        <div class="infoBox">There are currently no tasks in your queue.</div>
+  <body>
+    <div class="tasklist-container">
+      <div class="list">
+        <div class="tools">
+          <div class="selection dropdown-check-list">
+            <button class="anchor">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <title>Filter</title>
+                <path
+                  d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"
+                />
+              </svg>
+              <span>Filter</span>
+            </button>
+            <div class="items">
+              <div class="status">
+                <span>Status:</span>
+                <div>
+                  <input type="checkbox" value="ready" checked />
+                  <span>Ready</span>
+                </div>
+                <div>
+                  <input type="checkbox" value="active" checked />
+                  <span>Active</span>
+                </div>
+                <div>
+                  <input type="checkbox" value="paused" />
+                  <span>Paused</span>
+                </div>
+                <div>
+                  <input type="checkbox" value="completed" />
+                  <span>Completed</span>
+                </div>
+              </div>
+              <div class="priority">
+                <span>Priority:</span>
+                <div class="slider">
+                  <div class="multi-range">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value="1"
+                      class="lower"
+                    />
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value="10"
+                      class="upper"
+                    />
+                  </div>
+                  <span>1 - 10</span>
+                </div>
+              </div>
+              <div class="progress">
+                <span>Progress:</span>
+                <div class="slider">
+                  <div class="multi-range">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value="0"
+                      class="lower"
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value="100"
+                      class="upper"
+                    />
+                  </div>
+                  <span>0 - 100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sort dropdown-check-list">
+            <button class="anchor">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <title>Sort</title>
+                <path
+                  d="M18 21L14 17H17V7H14L18 3L22 7H19V17H22M2 19V17H12V19M2 13V11H9V13M2 7V5H6V7H2Z"
+                />
+              </svg>
+              <span>Sort</span>
+            </button>
+            <div class="items">
+              <div id="startTime" class="selected ascending">
+                <span>Start Time</span>
+              </div>
+              <div id="deadline"><span>Deadline</span></div>
+              <div id="progress"><span>Progress</span></div>
+              <div id="priority"><span>Priority</span></div>
+              <div id="state"><span>State</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tasks-wrapper">
+          <div class="tasks">
+            <div class="infoBox">
+              There are currently no tasks in your queue.
+            </div>
+          </div>
+          <div class="return hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <title>Return</title>
+              <path
+                d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
-      <div id="formView"></div>
+      <div class="formView"></div>
     </div>
   </body>
 </html>

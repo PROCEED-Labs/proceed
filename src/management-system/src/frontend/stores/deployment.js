@@ -138,7 +138,7 @@ export default function createDeploymentStore() {
 
     removeActiveUserTask(state, { instanceID, userTaskID }) {
       state.activeUserTasks = state.activeUserTasks.filter(
-        (userTask) => userTask.instanceID === instanceID && userTask.id === userTaskID
+        (userTask) => userTask.instanceID !== instanceID || userTask.id !== userTaskID
       );
     },
 

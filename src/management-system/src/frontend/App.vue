@@ -214,6 +214,10 @@ main.v-main {
   z-index: 200;
 }
 
+.v-tooltip {
+  z-index: 999;
+}
+
 .v-btn + .v-btn {
   margin-left: 8px;
 }

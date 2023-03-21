@@ -45,6 +45,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       _management: {
         getEngineWithID: jest.fn(),
       },
+      getInstance: jest.fn(),
     };
 
     mockStateStream = {
@@ -244,6 +245,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
         // the on state change logic has been suscribed to the state stream
         expect(mockStateStream.subscribe).toHaveBeenCalledWith(expect.any(Function));
 
+        mockEngine.getInstance.mockReturnValue(mockNewInstance);
         mockEngine.getInstanceInformation.mockReturnValue({
           some: 'data',
           other: 123,
@@ -278,6 +280,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       it('will archive the instance only with the latest state in case of fast consecutive state changes', async () => {
         mockNewInstance.isEnded.mockReturnValue(false);
 
+        mockEngine.getInstance.mockReturnValue(mockNewInstance);
         mockEngine.getInstanceInformation.mockReturnValue({
           some: 'data',
           other: 123,

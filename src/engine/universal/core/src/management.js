@@ -352,7 +352,11 @@ const Management = {
     if (instance.callingInstance) {
       ensureAwaitable(instance.callingInstance);
       // wait for the calling instance to be started before starting this instance (otherwise we run into problems if this instance finishes before the calling one is started)
-      await restartedInstances[instance.callingInstance];
+      const interruptedTokens = await restartedInstances[instance.callingInstance];
+
+      if (interruptedTokens.some((token) => token.calledInstance === instance.processInstanceId)) {
+        instance.instanceState = ['PAUSING'];
+      }
     }
 
     const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
@@ -362,6 +366,8 @@ const Management = {
     const bpmn = await distribution.db.getProcessVersion(definitionId, processVersion);
 
     const bpmnObj = await toBpmnObject(bpmn);
+
+    const interruptedTokens = [];
 
     importedInstance.tokens = importedInstance.tokens.map((token) => {
       // get the element the token was interrupted on
@@ -373,15 +379,34 @@ const Management = {
         (token.state === 'RUNNING' || token.state === 'DEPLOYMENT-WAITING');
 
       let newState = needTokenRestart ? 'READY' : token.state;
+      let currentFlowNodeState = needTokenRestart ? 'READY' : token.currentFlowNodeState;
 
-      if (currentFlowElement.manualInterruptionHandling) {
+      // see if the element can be automatically handled or if it should be interrupted for manual user handling
+      let shouldBeInterrupted = false;
+      let curr = currentFlowElement;
+      // elements that are nested inside a subprocess with manual interruption handling should also be interrupted
+      while (curr) {
+        if (curr.manualInterruptionHandling) {
+          shouldBeInterrupted = true;
+          break;
+        }
+        curr = curr.$parent;
+      }
+
+      if (shouldBeInterrupted) {
         // some elements should not be restarted due to the risk of reexecuting commands that are not idempotent
         newState = 'ERROR-INTERRUPTED';
+        currentFlowNodeState = currentFlowNodeState && 'ERROR-INTERRUPTED';
+
+        if (token.state !== 'ERROR-INTERRUPTED') {
+          interruptedTokens.push(token);
+        }
       }
 
       return {
         ...token,
         state: newState,
+        currentFlowNodeState,
         flowElementExecutionWasInterrupted: true,
       };
     });
@@ -398,20 +423,14 @@ const Management = {
       }
     );
 
-    // if the instance was called by another instance make sure that the information is also present on the restarted instance
-    if (instance.callingInstance) {
-      const restartedInstance = engine.getInstance(instanceId);
-      restartedInstance.callingInstance = instance.callingInstance;
-    }
-
     // if the instance was in the process of being paused => make sure that is paused again
     // (will lead to it being paused directly since no tasks have started yet)
     if (importedInstance.instanceState[0] === 'PAUSING') {
       await engine.pauseInstance(instanceId);
     }
 
-    // allow waiting instances to be started
-    restartedInstances[instance.processInstanceId].resolve();
+    // allow waiting instances to be started (and give information about tokens being interrupted which is needed to check if called instances should run)
+    restartedInstances[instance.processInstanceId].resolve(interruptedTokens);
   },
 
   /**

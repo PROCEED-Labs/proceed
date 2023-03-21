@@ -21,7 +21,15 @@ const parallelMergeBpmn = fs.readFileSync(
   'utf-8'
 );
 const subprocessBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'subprocess.bpmn'), 'utf-8');
+const manualSubprocessInterruptionHandlingBpmn = fs.readFileSync(
+  path.resolve(__dirname, 'bpmn', 'manualSubprocessInterruptionHandling.bpmn'),
+  'utf-8'
+);
 const importerBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'importer.bpmn'), 'utf-8');
+const manualCallActivityInterruptionHandlingBpmn = fs.readFileSync(
+  path.resolve(__dirname, 'bpmn', 'manualCallActivityInterruption.bpmn'),
+  'utf-8'
+);
 const importBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'import.bpmn'), 'utf-8');
 
 async function sleep(ms) {
@@ -677,6 +685,22 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     const instanceInformation = engine.getInstanceInformation(instanceId);
     expect(instanceInformation.instanceState).toEqual(['ERROR-INTERRUPTED']);
+    expect(instanceInformation).toEqual({
+      ...archivedState,
+      instanceState: ['ERROR-INTERRUPTED'],
+      tokens: [
+        {
+          ...archivedState.tokens[0],
+          state: 'ERROR-INTERRUPTED',
+          currentFlowNodeState: 'ERROR-INTERRUPTED',
+          intermediateVariablesState: {},
+          localExecutionTime: expect.any(Number),
+          flowElementExecutionWasInterrupted: true,
+          currentFlowElementStartTime: expect.any(Number),
+        },
+      ],
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
 
     const instanceState = engine.getInstanceState(instanceId);
     expect(instanceState).toBe('running');
@@ -770,6 +794,115 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     const instanceState = engine.getInstanceState(instanceId);
     expect(instanceState).toBe('ended');
+  });
+
+  it('will put all children of an interrupted subprocess with the manualInterruptionHandling flag into an error state', async () => {
+    distribution.db.getAllProcesses.mockResolvedValue(['Process1']);
+
+    const archivedState = {
+      processId: 'Process1',
+      processInstanceId: 'Process1-instance1',
+      globalStartTime: 1678112173919,
+      instanceState: ['RUNNING'],
+      tokens: [
+        {
+          machineHops: 0,
+          deciderStorageTime: 0,
+          deciderStorageRounds: 0,
+          localStartTime: 1678112173919,
+          tokenId: '6aad16be-0d9d-48e3-8014-7fa1fe2b8f5d',
+          state: 'RUNNING',
+          currentFlowElementId: 'Activity_116klim',
+          currentFlowNodeState: 'ACTIVE',
+          currentFlowElementStartTime: 1678112173953,
+          previousFlowElementId: 'Flow_1q1qn9y',
+          intermediateVariablesState: {},
+          localExecutionTime: 5,
+        },
+        {
+          machineHops: 0,
+          deciderStorageTime: 0,
+          deciderStorageRounds: 0,
+          localStartTime: 1678112173919,
+          tokenId: '6aad16be-0d9d-48e3-8014-7fa1fe2b8f5d#f4a5356a-2df3-461a-969d-11330a63dfda',
+          state: 'RUNNING',
+          currentFlowElementId: 'Activity_0ne9y7m',
+          currentFlowNodeState: 'READY',
+          currentFlowElementStartTime: 1678112173981,
+          previousFlowElementId: 'Flow_0z65t3n',
+          intermediateVariablesState: {},
+          localExecutionTime: 13,
+        },
+      ],
+      variables: {},
+      log: [
+        {
+          flowElementId: 'StartEvent_1pripzt',
+          tokenId: '6aad16be-0d9d-48e3-8014-7fa1fe2b8f5d',
+          executionState: 'COMPLETED',
+          startTime: 1678112173932,
+          endTime: 1678112173937,
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+        },
+        {
+          flowElementId: 'Event_04si2rz',
+          tokenId: '6aad16be-0d9d-48e3-8014-7fa1fe2b8f5d#f4a5356a-2df3-461a-969d-11330a63dfda',
+          executionState: 'COMPLETED',
+          startTime: 1678112173953,
+          endTime: 1678112173961,
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+        },
+      ],
+      adaptationLog: [],
+      processVersion: '1678112170075',
+      isCurrentlyExecutedInBpmnEngine: true,
+    };
+
+    distribution.db.getArchivedInstances.mockResolvedValue({ instance1: archivedState });
+
+    distribution.db.getProcessVersion.mockResolvedValue(manualSubprocessInterruptionHandlingBpmn);
+
+    await management.restoreInterruptedInstances();
+
+    await sleep(100);
+
+    const engine = management.getAllEngines()[0];
+    const instanceId = engine.instanceIDs[0];
+
+    const instanceInformation = engine.getInstanceInformation(instanceId);
+    expect(instanceInformation).toEqual({
+      ...archivedState,
+      instanceState: ['ERROR-INTERRUPTED'],
+      tokens: [
+        {
+          ...archivedState.tokens[0],
+          state: 'ERROR-INTERRUPTED',
+          currentFlowNodeState: 'ERROR-INTERRUPTED',
+          flowElementExecutionWasInterrupted: true,
+        },
+        {
+          ...archivedState.tokens[1],
+          state: 'ERROR-INTERRUPTED',
+          currentFlowNodeState: 'ERROR-INTERRUPTED',
+          flowElementExecutionWasInterrupted: true,
+        },
+      ],
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
+
+    const instanceState = engine.getInstanceState(instanceId);
+    // we currently consider the instance as being in a running state awaiting error handling from the user
+    expect(instanceState).toBe('running');
   });
 
   it('will continue executing a call-activity without reinvoking the call-activity element in the calling instance', async () => {
@@ -888,6 +1021,142 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       const instanceState = engine.getInstanceState(instanceId);
       expect(instanceState).toBe('ended');
     }
+  });
+
+  // TODO: handle call-activities that have manualInterruptionHandling (put the called instance into a paused state?)
+  it('will put a call-activity with the manualInterruptionHandling attribute into an error state pausing the called instance', async () => {
+    distribution.db.getAllProcesses.mockResolvedValue(['Process1', 'Process2']);
+
+    const archivedImporterState = {
+      processId: 'Process1',
+      processInstanceId: 'Process1_instance1',
+      globalStartTime: 1678113974602,
+      instanceState: ['RUNNING'],
+      tokens: [
+        {
+          machineHops: 0,
+          deciderStorageTime: 0,
+          deciderStorageRounds: 0,
+          localStartTime: 1678113974602,
+          calledInstance: 'Process2_instance1',
+          tokenId: '769ff134-2e7c-4646-acec-4b63a27be1ca',
+          state: 'RUNNING',
+          currentFlowElementId: 'Activity_0bcvgz5',
+          currentFlowNodeState: 'ACTIVE',
+          currentFlowElementStartTime: 1678113974636,
+          previousFlowElementId: 'Flow_0xrwj67',
+          intermediateVariablesState: {},
+          localExecutionTime: 5,
+        },
+      ],
+      variables: {},
+      log: [
+        {
+          flowElementId: 'StartEvent_1bprzcx',
+          tokenId: '769ff134-2e7c-4646-acec-4b63a27be1ca',
+          executionState: 'COMPLETED',
+          startTime: 1678113974615,
+          endTime: 1678113974620,
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+        },
+      ],
+      adaptationLog: [],
+      processVersion: '1678113954667',
+      isCurrentlyExecutedInBpmnEngine: true,
+    };
+
+    const archivedImportState = {
+      processId: 'Process2',
+      processInstanceId: 'Process2_instance1',
+      globalStartTime: 1678113974679,
+      instanceState: ['RUNNING'],
+      tokens: [
+        {
+          machineHops: 0,
+          deciderStorageTime: 0,
+          deciderStorageRounds: 0,
+          localStartTime: 1678113974679,
+          currentFlowNodeProgress: { value: 0, manual: false },
+          milestones: {},
+          tokenId: 'a5a97a63-8b1d-404f-afd3-548f2e5a4867',
+          state: 'RUNNING',
+          currentFlowElementId: 'Activity_1eakizd',
+          currentFlowNodeState: 'READY',
+          currentFlowElementStartTime: 1678113974704,
+          previousFlowElementId: 'Flow_1o1yusn',
+          intermediateVariablesState: {},
+          localExecutionTime: 10,
+        },
+      ],
+      variables: {},
+      log: [
+        {
+          flowElementId: 'StartEvent_0ja864u',
+          tokenId: 'a5a97a63-8b1d-404f-afd3-548f2e5a4867',
+          executionState: 'COMPLETED',
+          startTime: 1678113974686,
+          endTime: 1678113974696,
+          machine: {
+            id: 'mockId',
+            name: 'mockName',
+            ip: '192.168.1.3',
+            port: 33029,
+          },
+        },
+      ],
+      adaptationLog: [],
+      processVersion: '1678113930181',
+      callingInstance: 'Process1_instance1',
+      isCurrentlyExecutedInBpmnEngine: true,
+    };
+
+    distribution.db.getArchivedInstances.mockImplementation(async (processName) => {
+      if (processName === 'Process1') return { instance1: archivedImporterState };
+      else return { instance1: archivedImportState };
+    });
+
+    distribution.db.getProcessVersion.mockImplementation(async (processName) => {
+      if (processName === 'Process1') return manualCallActivityInterruptionHandlingBpmn;
+      else return importBpmn;
+    });
+
+    await management.restoreInterruptedInstances();
+
+    await sleep(100);
+
+    const importerEngine = management.getEngineWithID('Process1_instance1');
+    expect(importerEngine.getInstanceState('Process1_instance1')).toBe('running');
+    expect(importerEngine.getInstanceInformation('Process1_instance1')).toEqual({
+      ...archivedImporterState,
+      instanceState: ['ERROR-INTERRUPTED'],
+      tokens: [
+        {
+          ...archivedImporterState.tokens[0],
+          state: 'ERROR-INTERRUPTED',
+          currentFlowNodeState: 'ERROR-INTERRUPTED',
+          flowElementExecutionWasInterrupted: true,
+        },
+      ],
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
+
+    expect(distribution.db.archiveInstance).toHaveBeenCalledWith('Process2', 'Process2_instance1', {
+      ...archivedImportState,
+      instanceState: ['PAUSED'],
+      tokens: [
+        {
+          ...archivedImportState.tokens[0],
+          state: 'PAUSED',
+          flowElementExecutionWasInterrupted: true,
+        },
+      ],
+      isCurrentlyExecutedInBpmnEngine: undefined,
+    });
   });
 
   it('will reactivate tokens that already arrived at a gateway allowing them to be merged when the remaining tokens arrive', async () => {

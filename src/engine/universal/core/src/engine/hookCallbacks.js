@@ -179,7 +179,7 @@ function getOnCallActivityInterruptedHandler(engine, instance) {
  */
 function saveIntermediateInstanceState(engine, instance) {
   // dont archive the final instance state since it is archived by another function
-  if (!instance.isEnded()) {
+  if (!instance.isEnded() && engine.getInstance(instance.id)) {
     distribution.db.archiveInstance(engine.definitionId, instance.id, {
       ...engine.getInstanceInformation(instance.id),
       isCurrentlyExecutedInBpmnEngine: true,

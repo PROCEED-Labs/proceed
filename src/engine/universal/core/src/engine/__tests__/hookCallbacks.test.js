@@ -46,6 +46,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
         getEngineWithID: jest.fn(),
       },
       getInstance: jest.fn(),
+      archiveInstance: jest.fn(),
     };
 
     mockStateStream = {
@@ -162,7 +163,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
 
         expect(mockEngine._log.info).toHaveBeenCalled();
         expect(onEnded).toHaveBeenCalled();
-        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {});
+        expect(mockEngine.archiveInstance).toHaveBeenCalledWith('newInstanceId');
       });
 
       it('completed the call activity in the calling instance if this instance was started to execute that call activity', () => {

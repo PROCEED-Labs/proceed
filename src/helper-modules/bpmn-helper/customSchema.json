@@ -134,6 +134,16 @@
       ]
     },
     {
+      "name": "defaultPriority",
+      "properties": [
+        {
+          "name": "value",
+          "isBody": true,
+          "type": "Number"
+        }
+      ]
+    },
+    {
       "name": "Meta",
       "superClass": ["Element"],
       "properties": [
@@ -201,6 +211,11 @@
           "name": "overviewImage",
           "isMany": false,
           "type": "overviewImage"
+        },
+        {
+          "name": "defaultPriority",
+          "isMany": false,
+          "type": "defaultPriority"
         }
       ]
     },

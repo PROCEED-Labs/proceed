@@ -117,7 +117,7 @@
   </div>
 </template>
 <script>
-import { parseISODuration } from '@/frontend/helpers/instance-information.js';
+import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper';
 export default {
   props: {
     instance: Object,
@@ -171,17 +171,9 @@ export default {
     plannedDuration() {
       if (this.selectedElement && this.metaData) {
         if (this.metaData.timePlannedDuration) {
-          const { years, months, days, hours, minutes, seconds } = parseISODuration(
+          const plannedDurationInMs = convertISODurationToMiliseconds(
             this.metaData.timePlannedDuration
           );
-
-          const plannedDurationInMs =
-            seconds * 1000 +
-            minutes * (1000 * 60) +
-            hours * (1000 * 60 * 60) +
-            days * (1000 * 60 * 60 * 24) +
-            months * (1000 * 60 * 60 * 24 * 30) +
-            years * (1000 * 60 * 60 * 24 * 365);
 
           return plannedDurationInMs;
         }

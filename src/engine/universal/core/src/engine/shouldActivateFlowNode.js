@@ -3,6 +3,8 @@ const {
   getTargetDefinitionsAndProcessIdForCallActivityByObject,
   getRootFromElement,
   getMilestonesFromElementById,
+  getMetaData,
+  convertISODurationToMiliseconds,
 } = require('@proceed/bpmn-helper');
 
 /**
@@ -19,13 +21,37 @@ function onUserTask(engine, instance, tokenId, userTask) {
     });
 
     function activate() {
+      const userTaskIndex = engine.userTasks.findIndex(
+        (uT) => uT.processInstance.id === instance.id && uT.id === userTask.id
+      );
+      // update userTask state if activated
+      if (engine.userTasks[userTaskIndex].state === 'READY') {
+        const newUserTask = { ...engine.userTasks[userTaskIndex], state: 'ACTIVE' };
+        engine.userTasks.splice(userTaskIndex, 1, newUserTask);
+      }
       resolve(true);
+    }
+
+    const bpmn = engine.getInstanceBpmn(instance.id);
+
+    const token = engine.getToken(instance.id, tokenId);
+    const metaData = await getMetaData(bpmn, userTask.id);
+
+    const startTime = token.currentFlowElementStartTime;
+    let endTime = null;
+    if (metaData.timePlannedEnd) {
+      endTime = metaData.timePlannedEnd;
+    } else if (metaData.timePlannedDuration) {
+      endTime = startTime + convertISODurationToMiliseconds(metaData.timePlannedDuration);
     }
 
     const extendedUserTask = {
       processInstance: instance,
       definitionVersion: engine.getInstanceInformation(instance.id).processVersion,
       tokenId,
+      startTime,
+      endTime,
+      state: 'READY',
       ...userTask,
       attrs: userTask.$attrs || {},
       activate,
@@ -43,11 +69,15 @@ function onUserTask(engine, instance, tokenId, userTask) {
 
     engine.userTasks.push(extendedUserTask);
 
-    instance.updateToken(tokenId, { currentFlowNodeProgress: { value: 0, manual: false } });
+    instance.updateToken(tokenId, {
+      currentFlowNodeProgress: { value: 0, manual: false },
+      priority: metaData.defaultPriority | 1,
+    });
 
-    const initializedMilestones = (
-      await getMilestonesFromElementById(engine.getInstanceBpmn(instance.id), userTask.id)
-    ).reduce((acc, curr) => ({ ...acc, [curr.id]: 0 }), {});
+    const initializedMilestones = (await getMilestonesFromElementById(bpmn, userTask.id)).reduce(
+      (acc, curr) => ({ ...acc, [curr.id]: 0 }),
+      {}
+    );
 
     engine.updateMilestones(instance.id, userTask.id, initializedMilestones);
   });

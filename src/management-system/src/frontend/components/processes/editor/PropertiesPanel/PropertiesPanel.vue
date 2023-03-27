@@ -77,6 +77,23 @@
               @changed="applyChange"
             />
             <v-text-field
+              v-if="isUserTask"
+              label="Priority"
+              ref="defaultPriority"
+              :disabled="editingDisabled"
+              type="number"
+              min="0"
+              max="10"
+              :rules="[inputRules.noNegativeValue, inputRules.valueBetween1And10]"
+              :placeholder="
+                meta.defaultPriority ? meta.defaultPriority : 'Enter value from 1 to 10'
+              "
+              v-model="metaCopy.defaultPriority"
+              background-color="white"
+              @blur="applyChange('defaultPriority')"
+              filled
+            />
+            <v-text-field
               label="Planned Cost"
               ref="costsPlanned"
               :disabled="editingDisabled"
@@ -199,6 +216,7 @@ export default {
         customerName,
         customerId,
         isUsing5i,
+        defaultPriority,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,
@@ -254,6 +272,8 @@ export default {
           !value ||
           (value >= 0 && value <= 100) ||
           'Occurrence Probability must be between 0 and 100',
+        valueBetween1And10: (value) =>
+          !value || (value >= 1 && value <= 10) || 'Priority must be between 1 and 10',
         noDuplicate: (name) => !this.customMetaData[name] || 'Name already exists',
       },
     };

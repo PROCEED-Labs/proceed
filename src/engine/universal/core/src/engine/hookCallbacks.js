@@ -37,11 +37,7 @@ function getOnEndedHandler(engine, instance) {
     });
 
     // archive the information for the finalized instance
-    distribution.db.archiveInstance(
-      engine.definitionId,
-      instance.id,
-      engine.getInstanceInformation(instance.id)
-    );
+    engine.archiveInstance(instance.id);
 
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);
@@ -133,13 +129,14 @@ function getOnUserTaskInterruptedHandler(engine, instance) {
       msg: `User Task with id ${execution.flowElementId} on token ${execution.tokenId} ended. InstanceId = ${instance.id} `,
       instanceId: instance.id,
     });
-    // remove user task from list
+    // update user task in list
     const index = engine.userTasks.findIndex(
       (uT) => uT.processInstance.id === instance.id && uT.id === execution.flowElementId
     );
 
     if (index > -1) {
-      engine.userTasks.splice(index, 1);
+      const newUserTask = { ...engine.userTasks[index], state: execution.executionState };
+      engine.userTasks.splice(index, 1, newUserTask);
     }
   };
 }
@@ -330,15 +327,23 @@ module.exports = {
             newInstance.updateToken(execution.tokenId, { costsRealSetByOwner: undefined });
           }
 
+          if (token.priority) {
+            newInstance.updateLog(execution.flowElementId, execution.tokenId, {
+              priority: token.priority,
+            });
+            newInstance.updateToken(execution.tokenId, { priority: undefined });
+          }
+
           const flowElement = newInstance.getFlowElement(execution.flowElementId);
           if (flowElement && flowElement.$type === 'bpmn:UserTask') {
-            // remove user task from list
+            // update user task in list
             const index = engine.userTasks.findIndex(
               (uT) => uT.processInstance.id === newInstance.id && uT.id === flowElement.id
             );
 
             if (index > -1) {
-              engine.userTasks.splice(index, 1);
+              const newUserTask = { ...engine.userTasks[index], state: execution.executionState };
+              engine.userTasks.splice(index, 1, newUserTask);
             }
           }
         }

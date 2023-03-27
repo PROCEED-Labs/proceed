@@ -525,6 +525,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           flowElementExecutionWasInterrupted: true,
         },
       ],
+      userTasks: [],
       isCurrentlyExecutedInBpmnEngine: undefined,
     });
   });
@@ -1155,6 +1156,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           flowElementExecutionWasInterrupted: true,
         },
       ],
+      userTasks: [],
       isCurrentlyExecutedInBpmnEngine: undefined,
     });
   });

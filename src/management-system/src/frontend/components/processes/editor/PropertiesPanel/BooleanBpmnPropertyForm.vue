@@ -4,8 +4,17 @@
     :disabled="editingDisabled"
     :value="currentPropertyValue"
     @change="changeProperty"
-    :label="label"
-  />
+  >
+    <template #label>
+      {{ label }}
+      <v-tooltip v-if="info" bottom>
+        <template #activator="{ on }">
+          <v-btn icon v-on="on" @click.stop=""><v-icon>mdi-information-outline</v-icon></v-btn>
+        </template>
+        {{ info }}
+      </v-tooltip>
+    </template>
+  </v-checkbox>
 </template>
 <script>
 import { isAny } from 'bpmn-js/lib/util/ModelUtil.js';
@@ -23,6 +32,9 @@ export default {
     validFor: {
       type: Array,
       required: true,
+    },
+    info: {
+      type: String,
     },
   },
   data() {

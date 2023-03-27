@@ -29,6 +29,7 @@
             propertyName="manualInterruptionHandling"
             label="Manual Interruption Handling"
             :validFor="['bpmn:FlowElement']"
+            info="Will prevent automatic handling of the element or any nested element when the instance is continued after an unforeseen interruption. Manual handling will be required to continue the execution."
           />
           <milestone-selection v-if="isUserTask" />
         </v-container>

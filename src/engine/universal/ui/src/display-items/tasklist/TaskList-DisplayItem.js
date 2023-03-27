@@ -66,7 +66,7 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-      variables = userTask.processInstance.getVariables();
+      variables = userTask.processInstance.getVariables(userTask.tokenId);
       milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
@@ -216,11 +216,12 @@ class TaskListTab extends DisplayItem {
     }
   }
 
-  async postUserTask(body, query) {
+  async postUserTask(variables, query) {
     const engine = this.getTaskEngine(query);
-    engine.completeUserTask(query.instanceID, query.userTaskID, body);
 
-    this.logger.debug('--> Tasklist Form submitted: ', body);
+    engine.completeUserTask(query.instanceID, query.userTaskID, {});
+
+    this.logger.debug('--> Tasklist Form submitted: ', variables);
 
     return 'true';
   }

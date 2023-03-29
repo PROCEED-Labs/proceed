@@ -45,7 +45,7 @@ const Management = {
   },
 
   /**
-   * Will ensure that there is an instance of the engine for the given process and that the given instance is deployed inside it
+   * Will ensure that there is an instance of the engine for the given process and that the given process version is deployed inside it
    *
    * @param {String} definitionId
    * @param {Number} version
@@ -359,7 +359,7 @@ const Management = {
       ensureAwaitable(instance.callingInstance);
       // wait for the calling instance to be started before starting this instance (otherwise we run into problems if this instance finishes before the calling one is started)
       const interruptedTokens = await restartedInstances[instance.callingInstance];
-
+      // if the call activity that started this instance is not automatically continued we need to pause this instance until the user decides what should happen
       if (interruptedTokens.some((token) => token.calledInstance === instance.processInstanceId)) {
         instance.instanceState = ['PAUSING'];
       }
@@ -388,6 +388,7 @@ const Management = {
       let currentFlowNodeState = needTokenRestart ? 'READY' : token.currentFlowNodeState;
 
       // see if the element can be automatically handled or if it should be interrupted for manual user handling
+      // some elements should not be restarted due to the risk of reexecuting commands that are not idempotent
       let shouldBeInterrupted = false;
       let curr = currentFlowElement;
       // elements that are nested inside a subprocess with manual interruption handling should also be interrupted
@@ -400,8 +401,8 @@ const Management = {
       }
 
       if (shouldBeInterrupted) {
-        // some elements should not be restarted due to the risk of reexecuting commands that are not idempotent
         newState = 'ERROR-INTERRUPTED';
+        // if the element is a flowNode (=> has a flowNodeState) set the state to interrupted else (its a sequence flow) dont set a flowNodeState
         currentFlowNodeState = currentFlowNodeState && 'ERROR-INTERRUPTED';
 
         if (token.state !== 'ERROR-INTERRUPTED') {
@@ -429,7 +430,7 @@ const Management = {
       }
     );
 
-    // if the instance was in the process of being paused => make sure that is paused again
+    // if the instance was in the process of being paused => make sure that it is paused again
     // (will lead to it being paused directly since no tasks have started yet)
     if (importedInstance.instanceState[0] === 'PAUSING') {
       await engine.pauseInstance(instanceId);

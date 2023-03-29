@@ -9,6 +9,7 @@ const decider = require('@proceed/decider');
 const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
+const { interruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
   moduleName: 'CORE',
@@ -50,7 +51,9 @@ module.exports = {
     }
 
     // start all processes that were still running when the engine stopped running
-    await management.restoreInterruptedInstances();
+    if (interruptedInstanceRecovery) {
+      await management.restoreInterruptedInstances();
+    }
   },
 
   provideScriptExecutor(scriptExecutor) {

@@ -11,6 +11,8 @@ const { getNewInstanceHandler } = require('../hookCallbacks.js');
 const { db } = require('@proceed/distribution');
 const { abortInstanceOnNetwork } = require('../processForwarding.js');
 
+const { interruptedInstanceRecovery } = require('../../../../../../../FeatureFlags.js');
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -241,80 +243,82 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       });
     });
 
-    describe('state change', () => {
-      it('will archive the instance on a state change', async () => {
-        // the on state change logic has been suscribed to the state stream
-        expect(mockStateStream.subscribe).toHaveBeenCalledWith(expect.any(Function));
+    if (interruptedInstanceRecovery) {
+      describe('state change', () => {
+        it('will archive the instance on a state change', async () => {
+          // the on state change logic has been suscribed to the state stream
+          expect(mockStateStream.subscribe).toHaveBeenCalledWith(expect.any(Function));
 
-        mockEngine.getInstance.mockReturnValue(mockNewInstance);
-        mockEngine.getInstanceInformation.mockReturnValue({
-          some: 'data',
-          other: 123,
+          mockEngine.getInstance.mockReturnValue(mockNewInstance);
+          mockEngine.getInstanceInformation.mockReturnValue({
+            some: 'data',
+            other: 123,
+          });
+          mockNewInstance.isEnded.mockReturnValue(false);
+
+          mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+          await sleep(1000);
+
+          expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
+            some: 'data',
+            other: 123,
+            isCurrentlyExecutedInBpmnEngine: true,
+          });
         });
-        mockNewInstance.isEnded.mockReturnValue(false);
 
-        mockStateStream.subscriber(mockEngine, mockNewInstance);
+        it('will not archive the instance if it has already ended', async () => {
+          mockEngine.getInstanceInformation.mockReturnValue({
+            some: 'data',
+            other: 123,
+          });
+          mockNewInstance.isEnded.mockReturnValue(true);
 
-        await sleep(1000);
+          mockStateStream.subscriber(mockEngine, mockNewInstance);
 
-        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
-          some: 'data',
-          other: 123,
-          isCurrentlyExecutedInBpmnEngine: true,
+          await sleep(1000);
+
+          expect(db.archiveInstance).not.toHaveBeenCalled();
+        });
+
+        it('will archive the instance only with the latest state in case of fast consecutive state changes', async () => {
+          mockNewInstance.isEnded.mockReturnValue(false);
+
+          mockEngine.getInstance.mockReturnValue(mockNewInstance);
+          mockEngine.getInstanceInformation.mockReturnValue({
+            some: 'data',
+            other: 123,
+          });
+          await sleep(100);
+
+          mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+          mockEngine.getInstanceInformation.mockReturnValue({
+            some: 'data',
+            other: 456,
+          });
+          await sleep(100);
+
+          mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+          mockEngine.getInstanceInformation.mockReturnValue({
+            some: 'data',
+            other: 789,
+          });
+          await sleep(100);
+
+          mockStateStream.subscriber(mockEngine, mockNewInstance);
+
+          await sleep(1000);
+
+          expect(db.archiveInstance).toHaveBeenCalledTimes(1);
+          expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
+            some: 'data',
+            other: 789,
+            isCurrentlyExecutedInBpmnEngine: true,
+          });
         });
       });
-
-      it('will not archive the instance if it has already ended', async () => {
-        mockEngine.getInstanceInformation.mockReturnValue({
-          some: 'data',
-          other: 123,
-        });
-        mockNewInstance.isEnded.mockReturnValue(true);
-
-        mockStateStream.subscriber(mockEngine, mockNewInstance);
-
-        await sleep(1000);
-
-        expect(db.archiveInstance).not.toHaveBeenCalled();
-      });
-
-      it('will archive the instance only with the latest state in case of fast consecutive state changes', async () => {
-        mockNewInstance.isEnded.mockReturnValue(false);
-
-        mockEngine.getInstance.mockReturnValue(mockNewInstance);
-        mockEngine.getInstanceInformation.mockReturnValue({
-          some: 'data',
-          other: 123,
-        });
-        await sleep(100);
-
-        mockStateStream.subscriber(mockEngine, mockNewInstance);
-
-        mockEngine.getInstanceInformation.mockReturnValue({
-          some: 'data',
-          other: 456,
-        });
-        await sleep(100);
-
-        mockStateStream.subscriber(mockEngine, mockNewInstance);
-
-        mockEngine.getInstanceInformation.mockReturnValue({
-          some: 'data',
-          other: 789,
-        });
-        await sleep(100);
-
-        mockStateStream.subscriber(mockEngine, mockNewInstance);
-
-        await sleep(1000);
-
-        expect(db.archiveInstance).toHaveBeenCalledTimes(1);
-        expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
-          some: 'data',
-          other: 789,
-          isCurrentlyExecutedInBpmnEngine: true,
-        });
-      });
-    });
+    }
   });
 });

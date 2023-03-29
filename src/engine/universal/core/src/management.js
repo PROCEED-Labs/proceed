@@ -9,6 +9,7 @@ const decider = require('@proceed/decider');
 const Parser = require('@proceed/constraint-parser-xml-json/parser.js');
 const Engine = require('./engine/engine.js');
 const APIError = require('@proceed/distribution/src/routes/ApiError');
+const { interruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
 
 /**
  * @memberof module:@proceed/core
@@ -287,6 +288,11 @@ const Management = {
       this.removeInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
+
+      if (!interruptedInstanceRecovery) {
+        // remove intermediate state when the instance recovery is not used; when it is finally implemented this should be removed
+        await distribution.db.deleteArchivedInstance(definitionId, instanceId);
+      }
     }
 
     const resumedTokens = instanceInformation.tokens.map((token) => {

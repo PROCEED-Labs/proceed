@@ -26,6 +26,7 @@
             :validFor="['bpmn:Task']"
           />
           <boolean-bpmn-property-form-vue
+            v-if="showInstanceRecoveryFeature"
             propertyName="manualInterruptionHandling"
             label="Manual Interruption Handling"
             :validFor="['bpmn:FlowElement']"
@@ -146,6 +147,9 @@ import DocumentationForm from '@/frontend/components/processes/editor/Properties
 import FlowElementColor from '@/frontend/components/processes/editor/PropertiesPanel/FlowElementColor.vue';
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
 import ImageSelection from '@/frontend/components/processes/editor/PropertiesPanel/ImageSelection.vue';
+
+import { interruptedInstanceRecovery } from '../../../../../../../../FeatureFlags';
+
 export default {
   name: 'PropertiesPanel',
   components: {
@@ -255,6 +259,8 @@ export default {
   },
   data() {
     return {
+      showInstanceRecoveryFeature: interruptedInstanceRecovery,
+
       windowMeasurements: {
         right: `${this.convertPixelToVw(12)}vw`, // set right value to align with toolbar (padding 12px)
         top: `${this.convertPixelToVh(128)}vh`, // set top value to prevent overlay of tabbar (height 48px) and toolbar (height 80px)

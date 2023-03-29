@@ -45,7 +45,7 @@
               <ul>
                 <li>White: the activity was not executed yet</li>
                 <li>Green: the activity was executed successfully</li>
-                <li>
+                <li v-if="showInstanceRecoveryFeature">
                   Green-Yellow: the activity was executed successfully after its execution had been
                   interrupted
                 </li>
@@ -67,6 +67,8 @@ import ToolbarMenu from '@/frontend/components/universal/toolbar/ToolbarMenu.vue
 
 import EmbedConfig from './EmbedConfigurator.vue';
 
+import { interruptedInstanceRecovery } from '../../../../../../FeatureFlags';
+
 export default {
   components: {
     ToolbarGroup,
@@ -81,6 +83,11 @@ export default {
     instance: {
       type: Object,
     },
+  },
+  data() {
+    return {
+      showInstanceRecoveryFeature: interruptedInstanceRecovery,
+    };
   },
   computed: {
     colorModeItems() {

@@ -433,6 +433,16 @@ module.exports = {
     data.write(`${definitionId}/instance.json/${instanceId}`, JSON.stringify(instanceInfo));
   },
 
+  /**
+   * Deletes an archived instance from engine
+   *
+   * @param {String} definitionId
+   * @param {String} instanceId
+   */
+  async deleteArchivedInstance(definitionId, instanceId) {
+    data.delete(`${definitionId}/instance.json/${instanceId}`);
+  },
+
   async getArchivedInstances(definitionId) {
     if (!(await this.isProcessExisting(definitionId))) {
       throw new Error('Process with given ID does not exist!');

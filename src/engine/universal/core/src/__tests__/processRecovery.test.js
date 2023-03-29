@@ -1024,7 +1024,6 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     }
   });
 
-  // TODO: handle call-activities that have manualInterruptionHandling (put the called instance into a paused state?)
   it('will put a call-activity with the manualInterruptionHandling attribute into an error state pausing the called instance', async () => {
     distribution.db.getAllProcesses.mockResolvedValue(['Process1', 'Process2']);
 

@@ -168,7 +168,7 @@ class Data extends System {
    * @param {object|null} options The options for the delete operation
    */
   async delete(key, options) {
-    this.write(key, null, options);
+    return this.write(key, null, options);
   }
 }
 

@@ -72,7 +72,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 
     instance.updateToken(tokenId, {
       currentFlowNodeProgress: { value: 0, manual: false },
-      priority: metaData.defaultPriority | 1,
+      priority: metaData.defaultPriority || 1,
     });
 
     const initializedMilestones = (await getMilestonesFromElementById(bpmn, userTask.id)).reduce(

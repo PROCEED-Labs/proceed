@@ -32,9 +32,9 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: changes
         with:
-        filters: |
-          compose:
-            - 'docker-compose.yml'
+          filters: |
+            compose:
+              - 'docker-compose.yml'
 
       - name: Set up Node.js
         uses: actions/setup-node@v3

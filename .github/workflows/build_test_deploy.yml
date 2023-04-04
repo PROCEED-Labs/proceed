@@ -24,8 +24,17 @@ env:
 jobs:
   install:
     runs-on: ubuntu-latest
+    outputs:
+      compose: ${{ steps.changes.outputs.compose }}
     steps:
       - uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+        filters: |
+          compose:
+            - 'docker-compose.yml'
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -293,3 +302,46 @@ jobs:
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"
+
+  updateCompose:
+    runs-on: ubuntu-latest
+    if: ${{ needs.install.outputs.compose == 'true' }}
+    environment: ${{ inputs.environment || 'Staging' }}
+    needs:
+      - install
+      - deploy
+    env:
+      ENV: ${{ inputs.environment || 'Staging' }}
+      ENGINE_TAG: ${{ vars.IMAGE_TAG }}
+      MS_TAG: ${{ vars.IMAGE_TAG }}
+      LOG_DRIVER: ${{ vars.LOG_DRIVER }}
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      # clean up data from the old docker compose file on the compute engine if there is any
+      - run: ssh $ENV "sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 down --rmi all || true"
+
+      # copy opa config to compute engine
+      - run: scp src/management-system/opa/config.yaml $ENV:~/opa/config.yaml
+
+      # push new docker compose file to the compute engine
+      - run: scp docker-compose.yml $ENV:~
+
+      # start MS services and the engine (escaped $ to prevent gitlab CI from trying to interpret PWD which can only be determined when the command is run in the compute engine)
+      # TODO: restart when the compute engine restarts
+      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="443" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans"

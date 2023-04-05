@@ -7,7 +7,7 @@ const {
 const { abortInstanceOnNetwork } = require('./processForwarding.js');
 const { timer } = require('@proceed/system');
 
-const { interruptedInstanceRecovery } = require('../../../../../../FeatureFlags.js');
+const { enableInterruptedInstanceRecovery } = require('../../../../../../FeatureFlags.js');
 
 /**
  * Creates a callback function that can be used to handle calls from the log stream of the neo engine
@@ -362,7 +362,7 @@ module.exports = {
       });
 
       // register a callback function that handles changes to the instances state
-      if (interruptedInstanceRecovery) {
+      if (enableInterruptedInstanceRecovery) {
         newInstance.getState$().subscribe(getStateChangeHandler(engine, newInstance));
       }
     };

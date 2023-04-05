@@ -148,7 +148,7 @@ import FlowElementColor from '@/frontend/components/processes/editor/PropertiesP
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
 import ImageSelection from '@/frontend/components/processes/editor/PropertiesPanel/ImageSelection.vue';
 
-import { interruptedInstanceRecovery } from '../../../../../../../../FeatureFlags';
+import { enableInterruptedInstanceRecovery } from '../../../../../../../../FeatureFlags';
 
 export default {
   name: 'PropertiesPanel',
@@ -259,7 +259,7 @@ export default {
   },
   data() {
     return {
-      showInstanceRecoveryFeature: interruptedInstanceRecovery,
+      showInstanceRecoveryFeature: enableInterruptedInstanceRecovery,
 
       windowMeasurements: {
         right: `${this.convertPixelToVw(12)}vw`, // set right value to align with toolbar (padding 12px)

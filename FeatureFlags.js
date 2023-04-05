@@ -31,7 +31,7 @@ module.exports = {
   // -----------------------------------------------------------------------------
 
   // Features needed for the recovery of instances that were interrupted unexpectedly (e.g. when the engine crashes and is restarted)
-  interruptedInstanceRecovery: false,
+  enableInterruptedInstanceRecovery: false,
 
   // -----------------------------------------------------------------------------
   // Chopping Block

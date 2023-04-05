@@ -11,7 +11,7 @@ const { getNewInstanceHandler } = require('../hookCallbacks.js');
 const { db } = require('@proceed/distribution');
 const { abortInstanceOnNetwork } = require('../processForwarding.js');
 
-const { interruptedInstanceRecovery } = require('../../../../../../../FeatureFlags.js');
+const { enableInterruptedInstanceRecovery } = require('../../../../../../../FeatureFlags.js');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -243,7 +243,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       });
     });
 
-    if (interruptedInstanceRecovery) {
+    if (enableInterruptedInstanceRecovery) {
       describe('state change', () => {
         it('will archive the instance on a state change', async () => {
           // the on state change logic has been suscribed to the state stream

@@ -67,7 +67,7 @@ import ToolbarMenu from '@/frontend/components/universal/toolbar/ToolbarMenu.vue
 
 import EmbedConfig from './EmbedConfigurator.vue';
 
-import { interruptedInstanceRecovery } from '../../../../../../FeatureFlags';
+import { enableInterruptedInstanceRecovery } from '../../../../../../FeatureFlags';
 
 export default {
   components: {
@@ -86,7 +86,7 @@ export default {
   },
   data() {
     return {
-      showInstanceRecoveryFeature: interruptedInstanceRecovery,
+      showInstanceRecoveryFeature: enableInterruptedInstanceRecovery,
     };
   },
   computed: {

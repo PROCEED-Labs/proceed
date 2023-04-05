@@ -2287,10 +2287,15 @@ describe('Test deploying a process', () => {
             it('will allow manually changing variables in a running instance', async () => {
               // check the state after the move to be correct
               await request
+                .put(
+                  `:${usedEngine.port}/tasklist/api/variable?instanceID=${instanceId}&userTaskID=Activity_1xguu75`
+                )
+                .send({ var1: 'some-value' });
+              await request
                 .post(
                   `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`
                 )
-                .send({ var1: 'some-value' });
+                .send();
 
               await request
                 .post(

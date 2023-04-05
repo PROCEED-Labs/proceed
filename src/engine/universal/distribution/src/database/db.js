@@ -450,7 +450,7 @@ module.exports = {
 
     const instances = await data.read(`${definitionId}/instance.json`);
 
-    if (!instances) return [];
+    if (!instances) return {};
 
     Object.keys(instances).forEach((instanceId) => {
       instances[instanceId] = JSON.parse(instances[instanceId]);

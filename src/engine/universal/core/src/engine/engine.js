@@ -185,6 +185,10 @@ class Engine {
     this.instanceEventHandlers = {
       onStarted: (newInstance) => {
         resolver(newInstance.id);
+        // make sure to keep the information from the original instance on the recreated instance
+        if (instance && instance.callingInstance) {
+          newInstance.callingInstance = instance.callingInstance;
+        }
         if (typeof onStarted === 'function') {
           onStarted(newInstance);
         }

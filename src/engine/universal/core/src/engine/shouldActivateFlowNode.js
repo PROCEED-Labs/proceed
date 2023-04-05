@@ -6,7 +6,6 @@ const {
   getMetaData,
   convertISODurationToMiliseconds,
 } = require('@proceed/bpmn-helper');
-const distribution = require('@proceed/distribution');
 
 /**
  * Creates a callback function that can be used to register to the userTask stream of the neo engine
@@ -115,12 +114,6 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
         instance.updateToken(tokenId, { calledInstance: callActivityInstance.id });
         callActivityInstance.callingInstance = instance.id;
         resolve(true);
-      },
-      // onEnded callBack: return possibly changed variables from the callActivity instance back to the calling instance
-      (callActivityInstance) => {
-        const variables = callActivityInstance.getVariables();
-
-        instance.completeActivity(callActivity.id, tokenId, variables);
       }
     );
   });

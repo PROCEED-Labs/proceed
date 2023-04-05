@@ -43,22 +43,26 @@ class CustomBehaviour {
     });
 
     eventBus.on('commandStack.shape.replace.postExecuted', ({ context }) => {
-      let { newShape } = context;
-      // create startEvent inside of collapsed subprocess
-      // (the timeout will ensure that the event distribution will send this event to all other machines so the same start event is created there)
+      let { newShape, oldShape } = context;
       setTimeout(() => {
-        if (
-          !context.isExternalEvent &&
-          newShape.type === 'bpmn:SubProcess' &&
-          !isExpanded(newShape)
-        ) {
-          // get the plane that represents the opened subprocess
-          const subprocessPlane = elementRegistry.get(`${newShape.id}_plane`);
-          modeling.createShape(
-            { type: 'bpmn:StartEvent' },
-            { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
-            subprocessPlane // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
-          );
+        if (!context.isExternalEvent) {
+          // create startEvent inside of collapsed subprocess
+          // (the timeout will ensure that the event distribution will send this event to all other machines so the same start event is created there)
+          if (newShape.type === 'bpmn:SubProcess' && !isExpanded(newShape)) {
+            // get the plane that represents the opened subprocess
+            const subprocessPlane = elementRegistry.get(`${newShape.id}_plane`);
+            modeling.createShape(
+              { type: 'bpmn:StartEvent' },
+              { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
+              subprocessPlane // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
+            );
+          } else if (newShape.type === 'bpmn:ScriptTask') {
+            // script tasks might contain commands that are not idempotent => let the user handle interruptions as a default
+            customModeling.updateProperty(newShape, 'manualInterruptionHandling', true);
+          } else if (oldShape.type === 'bpmn:ScriptTask') {
+            // other task types that are supported should be continuable without problems => use automatic handling for interruptions
+            customModeling.updateProperty(newShape, 'manualInterruptionHandling', null);
+          }
         }
       }, 10);
     });

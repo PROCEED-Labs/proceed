@@ -5,6 +5,9 @@ const {
   getTargetDefinitionsAndProcessIdForCallActivityByObject,
 } = require('@proceed/bpmn-helper');
 const { abortInstanceOnNetwork } = require('./processForwarding.js');
+const { timer } = require('@proceed/system');
+
+const { enableInterruptedInstanceRecovery } = require('../../../../../../FeatureFlags.js');
 
 /**
  * Creates a callback function that can be used to handle calls from the log stream of the neo engine
@@ -40,6 +43,24 @@ function getOnEndedHandler(engine, instance) {
 
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);
+    }
+    // if this instance was invoked by a call activity make sure to complete that call activity in the calling instance
+    if (instance.callingInstance) {
+      // get the final variable state of this instance
+      const variables = instance.getVariables();
+
+      // get the instance from which this one got started
+      const callingEngine = engine._management.getEngineWithID(instance.callingInstance);
+      const callingInstance = callingEngine.getInstance(instance.callingInstance);
+
+      // get the token and activity that started this instance
+      const callingToken = callingInstance
+        .getState()
+        .tokens.find((token) => token.calledInstance === instance.id);
+      const callActivityId = callingToken.currentFlowElementId;
+
+      // complete the call activity in the calling instance with the final variable state of this instance
+      callingInstance.completeActivity(callActivityId, callingToken.tokenId, variables);
     }
   };
 }
@@ -149,10 +170,41 @@ function getOnCallActivityInterruptedHandler(engine, instance) {
   };
 }
 
+/**
+ * Archives intermediate instance states (might be used to recover the instance when the engine was intermittently stopped)
+ *
+ * @param {Object} engine proceed engine instance that contains the process information
+ * @param {Object} instance the process instance the token is in
+ */
+function saveIntermediateInstanceState(engine, instance) {
+  // dont archive the final instance state since it is archived by another function
+  if (!instance.isEnded() && engine.getInstance(instance.id)) {
+    distribution.db.archiveInstance(engine.definitionId, instance.id, {
+      ...engine.getInstanceInformation(instance.id),
+      isCurrentlyExecutedInBpmnEngine: true,
+    });
+  }
+}
+
+/**
+ * Creates a callback function that can be used to handle all changes to the overall state of an instance
+ *
+ * @param {Object} engine proceed engine instance that contains the process information
+ * @param {Object} instance the process instance the token is in
+ */
+function getStateChangeHandler(engine, instance) {
+  let timeout;
+  // Debounce to prevent the logic from being triggered for every atomic change (finishing an activity would lead to more than 20 updates)
+  return () => {
+    timer.clearTimeout(timeout);
+    timeout = timer.setTimeout(() => saveIntermediateInstanceState(engine, instance), 500);
+  };
+}
+
 module.exports = {
   /**
-   * Returns a callBack function that is used for the instance stream of the neo engine
-   * this callBack registers callBack functions for the different lifecycle hooks of a newly created process
+   * Returns a callback function that is used for the instance stream of the neo engine
+   * this callBack registers callback functions for the different lifecycle hooks of a newly created process
    *
    * @param {Object} engine proceed engine instance that contains the process information
    */
@@ -261,6 +313,14 @@ module.exports = {
             });
             newInstance.updateToken(execution.tokenId, { calledInstance: undefined });
           }
+          if (token.flowElementExecutionWasInterrupted) {
+            newInstance.updateLog(execution.flowElementId, execution.tokenId, {
+              executionWasInterrupted: true,
+            });
+            newInstance.updateToken(execution.tokenId, {
+              flowElementExecutionWasInterrupted: undefined,
+            });
+          }
 
           if (token.costsRealSetByOwner) {
             newInstance.updateLog(execution.flowElementId, execution.tokenId, {
@@ -301,24 +361,10 @@ module.exports = {
         }
       });
 
-      newInstance.onInstanceStateChange((instanceState) => {
-        //instanceState = array of token states
-        const instanceEnded = instanceState.every(
-          (s) =>
-            s === 'ENDED' ||
-            s === 'FAILED' ||
-            s === 'TERMINATED' ||
-            s === 'ABORTED' ||
-            s === 'ERROR-TECHNICAL' ||
-            s === 'ERROR-SEMANTIC' ||
-            s === 'FORWARDED' ||
-            s === 'ERROR-CONSTRAINT-UNFULFILLED'
-        );
-
-        if (instanceEnded) {
-          // TODO: save instance data, delete instance
-        }
-      });
+      // register a callback function that handles changes to the instances state
+      if (enableInterruptedInstanceRecovery) {
+        newInstance.getState$().subscribe(getStateChangeHandler(engine, newInstance));
+      }
     };
   },
 };

@@ -195,7 +195,7 @@ function saveIntermediateInstanceState(engine, instance) {
 function getStateChangeHandler(engine, instance) {
   let timeout;
   // Debounce to prevent the logic from being triggered for every atomic change (finishing an activity would lead to more than 20 updates)
-  return async () => {
+  return () => {
     timer.clearTimeout(timeout);
     timeout = timer.setTimeout(() => saveIntermediateInstanceState(engine, instance), 500);
   };

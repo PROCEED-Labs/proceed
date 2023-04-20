@@ -248,6 +248,10 @@ export default {
   fill: #dcffd6ff !important;
 }
 
+.yellow:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #f2ffd6 !important;
+}
+
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: #ffd3d3ff !important;
 }

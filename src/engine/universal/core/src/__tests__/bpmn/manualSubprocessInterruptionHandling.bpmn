@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_5133a367-531e-41d0-ac2d-7ff14d01ff91" name="Test" targetNamespace="https://docs.proceed-labs.org/_5133a367-531e-41d0-ac2d-7ff14d01ff91" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:versionBasedOn="1678112170075" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1013fde" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <startEvent id="StartEvent_1pripzt">
+      <outgoing>Flow_1q1qn9y</outgoing>
+    </startEvent>
+    <subProcess id="Activity_116klim" proceed:manualInterruptionHandling="true">
+      <incoming>Flow_1q1qn9y</incoming>
+      <outgoing>Flow_02juqdg</outgoing>
+      <startEvent id="Event_04si2rz">
+        <outgoing>Flow_0z65t3n</outgoing>
+      </startEvent>
+      <task id="Activity_0ne9y7m">
+        <incoming>Flow_0z65t3n</incoming>
+        <outgoing>Flow_0sjb66o</outgoing>
+      </task>
+      <sequenceFlow id="Flow_0z65t3n" sourceRef="Event_04si2rz" targetRef="Activity_0ne9y7m" />
+      <endEvent id="Event_0fy7473">
+        <incoming>Flow_0sjb66o</incoming>
+      </endEvent>
+      <sequenceFlow id="Flow_0sjb66o" sourceRef="Activity_0ne9y7m" targetRef="Event_0fy7473" />
+    </subProcess>
+    <sequenceFlow id="Flow_1q1qn9y" sourceRef="StartEvent_1pripzt" targetRef="Activity_116klim" />
+    <endEvent id="Event_024q5tu">
+      <incoming>Flow_02juqdg</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_02juqdg" sourceRef="Activity_116klim" targetRef="Event_024q5tu" />
+  </process>
+</definitions>

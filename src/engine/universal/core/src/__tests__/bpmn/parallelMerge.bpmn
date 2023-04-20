@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_0467d170-5774-4fae-b051-7210df0d097e" name="Test" targetNamespace="https://docs.proceed-labs.org/_0467d170-5774-4fae-b051-7210df0d097e" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:versionBasedOn="1678193019512" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_0lo5i3t" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <startEvent id="StartEvent_1xsfkzx">
+      <outgoing>Flow_0bxesp7</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0bxesp7" sourceRef="StartEvent_1xsfkzx" targetRef="Gateway_02w5btg" />
+    <parallelGateway id="Gateway_02w5btg">
+      <incoming>Flow_0bxesp7</incoming>
+      <outgoing>Flow_1wuudkw</outgoing>
+      <outgoing>Flow_08fd22x</outgoing>
+    </parallelGateway>
+    <task id="Activity_1hcy6jj">
+      <incoming>Flow_1wuudkw</incoming>
+      <outgoing>Flow_1ove1mi</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1wuudkw" sourceRef="Gateway_02w5btg" targetRef="Activity_1hcy6jj" />
+    <task id="Activity_1cv3nun">
+      <incoming>Flow_08fd22x</incoming>
+      <outgoing>Flow_0l0qebs</outgoing>
+    </task>
+    <sequenceFlow id="Flow_08fd22x" sourceRef="Gateway_02w5btg" targetRef="Activity_1cv3nun" />
+    <sequenceFlow id="Flow_1ove1mi" sourceRef="Activity_1hcy6jj" targetRef="Gateway_19fi5zi" />
+    <sequenceFlow id="Flow_0l0qebs" sourceRef="Activity_1cv3nun" targetRef="Gateway_19fi5zi" />
+    <parallelGateway id="Gateway_19fi5zi">
+      <incoming>Flow_1ove1mi</incoming>
+      <incoming>Flow_0l0qebs</incoming>
+      <outgoing>Flow_0b09n6c</outgoing>
+    </parallelGateway>
+    <endEvent id="Event_0qvihg1">
+      <incoming>Flow_0b09n6c</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0b09n6c" sourceRef="Gateway_19fi5zi" targetRef="Event_0qvihg1" />
+  </process>
+</definitions>

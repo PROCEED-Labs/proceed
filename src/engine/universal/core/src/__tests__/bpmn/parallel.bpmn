@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_13636438-452d-44a9-b1bc-b5e8d8bad8fc" name="Test" targetNamespace="https://docs.proceed-labs.org/_13636438-452d-44a9-b1bc-b5e8d8bad8fc" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1ftwvi0" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <startEvent id="StartEvent_1mcodvt">
+      <outgoing>Flow_0kwckoh</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0kwckoh" sourceRef="StartEvent_1mcodvt" targetRef="Gateway_1lwhjkl" />
+    <parallelGateway id="Gateway_1lwhjkl">
+      <incoming>Flow_0kwckoh</incoming>
+      <outgoing>Flow_13rsymi</outgoing>
+      <outgoing>Flow_15l0o0p</outgoing>
+      <outgoing>Flow_1cieo5q</outgoing>
+    </parallelGateway>
+    <sequenceFlow id="Flow_13rsymi" sourceRef="Gateway_1lwhjkl" targetRef="Activity_0jjzsn7" />
+    <sequenceFlow id="Flow_15l0o0p" sourceRef="Gateway_1lwhjkl" targetRef="Activity_1izk76r" />
+    <task id="Activity_0o4tgs8" name="C">
+      <incoming>Flow_1cieo5q</incoming>
+      <outgoing>Flow_1dee7om</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1cieo5q" sourceRef="Gateway_1lwhjkl" targetRef="Activity_0o4tgs8" />
+    <endEvent id="Event_0cqqlya">
+      <incoming>Flow_1hn1gnd</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1hn1gnd" sourceRef="Activity_1izk76r" targetRef="Event_0cqqlya" />
+    <endEvent id="Event_0fzc257">
+      <incoming>Flow_1s3jkzr</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1s3jkzr" sourceRef="Activity_0jjzsn7" targetRef="Event_0fzc257" />
+    <endEvent id="Event_0h7nfzr">
+      <incoming>Flow_1dee7om</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1dee7om" sourceRef="Activity_0o4tgs8" targetRef="Event_0h7nfzr" />
+    <task id="Activity_1izk76r" name="A">
+      <incoming>Flow_15l0o0p</incoming>
+      <outgoing>Flow_1hn1gnd</outgoing>
+    </task>
+    <task id="Activity_0jjzsn7" name="B">
+      <incoming>Flow_13rsymi</incoming>
+      <outgoing>Flow_1s3jkzr</outgoing>
+    </task>
+  </process>
+</definitions>

@@ -146,7 +146,6 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
         456,
         { mockVariable: 'mockValue' },
         undefined,
-        expect.any(Function),
         expect.any(Function)
       );
     });
@@ -157,18 +156,6 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       const instance = {};
       onStarted(instance);
       expect(instance).toEqual({ callingInstance: 'mockInstance' });
-    });
-
-    it('will call complete activity on the original instance when the instance of the imported process stopped', async () => {
-      const [_1, _2, _3, _4, _5, onEnded] = mockEngine._management.createInstance.mock.calls[0];
-
-      const calledInstance = {
-        getVariables: () => ({ some: 'variable' }),
-      };
-      onEnded(calledInstance);
-      expect(mockInstance.completeActivity).toHaveBeenCalledWith('callActivityId', 'mockToken', {
-        some: 'variable',
-      });
     });
   });
 });

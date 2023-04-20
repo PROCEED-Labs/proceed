@@ -10,13 +10,21 @@ module.exports = {
         capabilities.startCapability.call(capabilities, capabilityName, args, callback),
     });
     NeoEngine.provideService('network', {
-      get: (processId, processInstanceId, url, options) => {
+      get: (processId, processInstanceId, tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'GET',
         });
       },
-      post: (processId, processInstanceId, url, body, contentType = 'text/plain', options = {}) => {
+      post: (
+        processId,
+        processInstanceId,
+        tokenId,
+        url,
+        body,
+        contentType = 'text/plain',
+        options = {}
+      ) => {
         return system.http.request.call(system.http, url, {
           ...options,
           body,
@@ -27,7 +35,15 @@ module.exports = {
           },
         });
       },
-      put: (processId, processInstanceId, url, body, contentType = 'text/plain', options = {}) => {
+      put: (
+        processId,
+        processInstanceId,
+        tokenId,
+        url,
+        body,
+        contentType = 'text/plain',
+        options = {}
+      ) => {
         return system.http.request.call(system.http, url, {
           ...options,
           body,
@@ -38,13 +54,13 @@ module.exports = {
           },
         });
       },
-      delete: (processId, processInstanceId, url, options) => {
+      delete: (processId, processInstanceId, tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'DELETE',
         });
       },
-      head: (processId, processInstanceId, url, options) => {
+      head: (processId, processInstanceId, tokenId, url, options) => {
         return system.http.request.call(system.http, url, {
           ...options,
           method: 'HEAD',

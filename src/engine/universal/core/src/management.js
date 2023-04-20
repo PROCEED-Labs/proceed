@@ -1,10 +1,15 @@
 const { config } = require('@proceed/machine');
 const distribution = require('@proceed/distribution');
-const { getUserTaskFileNameMapping } = require('@proceed/bpmn-helper');
+const {
+  getUserTaskFileNameMapping,
+  getElementById,
+  toBpmnObject,
+} = require('@proceed/bpmn-helper');
 const decider = require('@proceed/decider');
 const Parser = require('@proceed/constraint-parser-xml-json/parser.js');
 const Engine = require('./engine/engine.js');
 const APIError = require('@proceed/distribution/src/routes/ApiError');
+const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
 
 /**
  * @memberof module:@proceed/core
@@ -25,22 +30,29 @@ const Management = {
     Engine.provideScriptExecutor(scriptExecutor);
   },
 
-  /**
-   * Will ensure that there is an instance of the engine for the given process and that the given instance is deployed inside it
-   *
-   * @param {String} definitionId
-   * @param {Number} version
-   * @returns {Engine} the instance of
-   */
-  async ensureProcessEngineWithVersion(definitionId, version) {
+  ensureProcessEngine(definitionId) {
     // check if an engine instance was already created for the process
     let engine = this.getEngineWithDefinitionId(definitionId);
 
     if (!engine) {
       // Start up a new engine
       engine = new Engine(this);
+      engine.definitionId = definitionId;
       this._engines.push(engine);
     }
+
+    return engine;
+  },
+
+  /**
+   * Will ensure that there is an instance of the engine for the given process and that the given process version is deployed inside it
+   *
+   * @param {String} definitionId
+   * @param {Number} version
+   * @returns {Engine} the instance of
+   */
+  async ensureProcessEngineWithVersion(definitionId, version) {
+    const engine = this.ensureProcessEngine(definitionId);
 
     // ensure that the version is deployed
     if (!engine.versions.includes(version)) {
@@ -102,6 +114,12 @@ const Management = {
     return await engine.startProcessVersion(version, variables, activityID, onStarted, onEnded);
   },
 
+  /**
+   * Transform instance information into the form used inside the neo-bpmn-engine
+   *
+   * @param {Object} instance the instance information as used by the PROCEED Engine
+   * @returns {Object} the process version and an object containing the instance information as used by the neo-bpmn-engine
+   */
   importInstance(instance) {
     const { processVersion } = instance;
 
@@ -270,7 +288,11 @@ const Management = {
       this.removeInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
-      await distribution.db.deleteArchivedInstance(definitionId, instanceId);
+
+      if (!enableInterruptedInstanceRecovery) {
+        // remove intermediate state when the instance recovery is not used; when it is finally implemented this should be removed
+        await distribution.db.deleteArchivedInstance(definitionId, instanceId);
+      }
     }
 
     const resumedTokens = instanceInformation.tokens.map((token) => {
@@ -312,6 +334,137 @@ const Management = {
     );
 
     return engine;
+  },
+
+  /**
+   * Will try to put an instance that has been interrupted (e.g. because of an engine crash) back into a functioning execution state
+   *
+   * @param {String} definitionId the id of the process the instance was created from
+   * @param {String} instance archived state of the instance before the crash
+   * @param {Object} restartedInstances Object containing promises that are resolved when an instance has been restarted (to allow dependent instances to wait until another dependency instance has started)
+   */
+  async restoreInterruptedInstance(definitionId, instance, restartedInstances) {
+    function ensureAwaitable(instanceId) {
+      // allow instances to await the restart of other instances (needed for call activities)
+      if (!restartedInstances[instanceId]) {
+        let resolver;
+        restartedInstances[instanceId] = new Promise((resolve) => (resolver = resolve));
+        restartedInstances[instanceId].resolve = resolver;
+      }
+    }
+    // make sure that this instance is awaitable by other instances (needed if the other instance was called by this instance)
+    ensureAwaitable(instance.processInstanceId);
+    // make sure that the called instance is awaitable by this instance
+    if (instance.callingInstance) {
+      ensureAwaitable(instance.callingInstance);
+      // wait for the calling instance to be started before starting this instance (otherwise we run into problems if this instance finishes before the calling one is started)
+      const interruptedTokens = await restartedInstances[instance.callingInstance];
+      // if the call activity that started this instance is not automatically continued we need to pause this instance until the user decides what should happen
+      if (interruptedTokens.some((token) => token.calledInstance === instance.processInstanceId)) {
+        instance.instanceState = ['PAUSING'];
+      }
+    }
+
+    const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
+    // transform instance information into the form used by the neo-engine
+    const { processVersion, importedInstance } = this.importInstance(instance);
+
+    const bpmn = await distribution.db.getProcessVersion(definitionId, processVersion);
+
+    const bpmnObj = await toBpmnObject(bpmn);
+
+    const interruptedTokens = [];
+
+    importedInstance.tokens = importedInstance.tokens.map((token) => {
+      // get the element the token was interrupted on
+      const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
+
+      const needTokenRestart =
+        currentFlowElement.$type !== 'bpmn:SubProcess' && // don't restart the subprocess itself to prevent a reinitialization of the subprocess (only continue the contained tasks)
+        (currentFlowElement.$type !== 'bpmn:CallActivity' || !token.calledInstance) && // don't restart the call activity element to prevent starting a new instance of the referenced process (continue the execution of the instance that was already started for the call activity)
+        (token.state === 'RUNNING' || token.state === 'DEPLOYMENT-WAITING');
+
+      let newState = needTokenRestart ? 'READY' : token.state;
+      let currentFlowNodeState = needTokenRestart ? 'READY' : token.currentFlowNodeState;
+
+      // see if the element can be automatically handled or if it should be interrupted for manual user handling
+      // some elements should not be restarted due to the risk of reexecuting commands that are not idempotent
+      let shouldBeInterrupted = false;
+      let curr = currentFlowElement;
+      // elements that are nested inside a subprocess with manual interruption handling should also be interrupted
+      while (curr) {
+        if (curr.manualInterruptionHandling) {
+          shouldBeInterrupted = true;
+          break;
+        }
+        curr = curr.$parent;
+      }
+
+      if (shouldBeInterrupted) {
+        newState = 'ERROR-INTERRUPTED';
+        // if the element is a flowNode (=> has a flowNodeState) set the state to interrupted else (its a sequence flow) dont set a flowNodeState
+        currentFlowNodeState = currentFlowNodeState && 'ERROR-INTERRUPTED';
+
+        if (token.state !== 'ERROR-INTERRUPTED') {
+          interruptedTokens.push(token);
+        }
+      }
+
+      return {
+        ...token,
+        state: newState,
+        currentFlowNodeState,
+        flowElementExecutionWasInterrupted: true,
+      };
+    });
+
+    const instanceId = await engine.startProcessVersion(
+      processVersion,
+      importedInstance.variables,
+      importedInstance,
+      () => {
+        engine._log.info({
+          msg: `Continuing execution of an interrupted instance (id: ${instance.processInstanceId})`,
+          instanceId: instance.processInstanceId,
+        });
+      }
+    );
+
+    // if the instance was in the process of being paused => make sure that it is paused again
+    // (will lead to it being paused directly since no tasks have started yet)
+    if (importedInstance.instanceState[0] === 'PAUSING') {
+      await engine.pauseInstance(instanceId);
+    }
+
+    // allow waiting instances to be started (and give information about tokens being interrupted which is needed to check if called instances should run)
+    restartedInstances[instance.processInstanceId].resolve(interruptedTokens);
+  },
+
+  /**
+   * BEWARE: This should only be used when the engine is (re)starting to recover interruped instances
+   *
+   * Will try to start all instances that are currently marked as still being executed in the engine
+   */
+  async restoreInterruptedInstances() {
+    const definitionIds = await distribution.db.getAllProcesses();
+
+    // promises that are resolved once an instance has started
+    const restartedInstances = {};
+
+    for (const definitionId of definitionIds) {
+      const instances = await distribution.db.getArchivedInstances(definitionId);
+
+      for (const instance of Object.values(instances)) {
+        if (instance.isCurrentlyExecutedInBpmnEngine) {
+          // make sure that only one engine is created per process
+          this.ensureProcessEngine(definitionId);
+          this.restoreInterruptedInstance(definitionId, instance, restartedInstances);
+        }
+      }
+    }
+
+    // wait until all instances have been restarted
+    await Promise.all(Object.values(restartedInstances));
   },
 
   removeProcessEngine(definitionId) {

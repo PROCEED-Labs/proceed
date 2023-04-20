@@ -41,6 +41,7 @@ jest.mock('@proceed/system', () => {
     write: jest.fn(),
     delete: jest.fn(),
   };
+
   const network = {
     sendData: jest.fn(async () => {
       throw new Error('Status code was: 404');
@@ -48,19 +49,29 @@ jest.mock('@proceed/system', () => {
     get: jest.fn(),
     post: jest.fn(),
   };
+
   const console = {
     log: jest.fn(),
   };
+
   const capability = {};
+
   const config = {
     getConfig: jest.fn(),
     constructor: {
       _setConfigModule: jest.fn(),
     },
   };
+
   const device = {
     getMachineInfo: jest.fn(),
   };
+
+  const timer = {
+    clearTimeout: jest.fn().mockImplementation((...args) => clearTimeout(...args)),
+    setTimeout: jest.fn().mockImplementation((...args) => setTimeout(...args)),
+  };
+
   return {
     data,
     network,
@@ -69,6 +80,7 @@ jest.mock('@proceed/system', () => {
     capability,
     device,
     discovery: {},
+    timer,
   };
 });
 jest.mock('@proceed/distribution');

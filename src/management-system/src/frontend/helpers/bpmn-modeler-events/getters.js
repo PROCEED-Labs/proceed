@@ -4,6 +4,7 @@ const {
   getMilestonesFromElement,
   getResourcesFromElement,
   getLocationsFromElement,
+  getMessagingInfoFromElement,
 } = require('@proceed/bpmn-helper/');
 
 export function getMilestones({ businessObject }) {
@@ -56,6 +57,12 @@ export function getMetaData({ businessObject }) {
   }
 
   return getMetaDataFromElement(businessObject);
+}
+
+export function getMessagingInfo({ businessObject }) {
+  if (!businessObject) return;
+
+  return getMessagingInfoFromElement(businessObject);
 }
 
 export function getDocumentation({ businessObject }) {

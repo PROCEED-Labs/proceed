@@ -126,6 +126,8 @@
           @change="applyMetaData"
         ></custom-property-form>
 
+        <messaging-form v-if="isProcessElement" />
+
         <documentation-form />
 
         <flow-element-color />
@@ -139,6 +141,7 @@ import ViewportRelativeResizableWindow from '@/frontend/components/resizable-win
 import InspectionPlanSelection from '@/frontend/components/5thIndustry/inspectionPlanSelection.vue';
 import inspectionOrderSelection from '@/frontend/components/5thIndustry/inspectionOrderSelection.vue';
 import BooleanBpmnPropertyFormVue from './BooleanBpmnPropertyForm.vue';
+import MessagingForm from './MessagingForm.vue';
 import MilestoneSelection from '@/frontend/components/processes/editor/PropertiesPanel/MilestoneSelection.vue';
 import TimePlannedForm from '@/frontend/components/processes/editor/PropertiesPanel/TimePlannedForm.vue';
 import ResourceForm from '@/frontend/components/processes/editor/PropertiesPanel/resources/ResourceForm.vue';
@@ -162,6 +165,7 @@ export default {
     CustomPropertyForm,
     BooleanBpmnPropertyFormVue,
     DocumentationForm,
+    MessagingForm,
     FlowElementColor,
     ImageSelection,
   },

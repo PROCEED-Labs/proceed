@@ -37,6 +37,16 @@ UpdateProceedElementsHandler.prototype.setMetaData = function (element, metaData
   return oldMetaData;
 };
 
+UpdateProceedElementsHandler.prototype.setMessaging = function (element, messaging) {
+  const oldMessaging = {};
+
+  for (let key in messaging) {
+    oldMessaging[key] = setProceedElement(element.businessObject, key, messaging[key], {});
+  }
+
+  return oldMessaging;
+};
+
 function isAChange(element, elementList) {
   const listElement = elementList.find((lElement) => lElement.id === element.id);
 
@@ -131,7 +141,7 @@ UpdateProceedElementsHandler.prototype.setResources = function (element, resourc
 };
 
 UpdateProceedElementsHandler.prototype.execute = function (context) {
-  const { elementId, milestones, metaData, resources, locations } = context;
+  const { elementId, milestones, metaData, resources, locations, messaging } = context;
 
   if (!elementId) {
     throw new Error('Element id required');
@@ -159,11 +169,15 @@ UpdateProceedElementsHandler.prototype.execute = function (context) {
     context.oldResources = this.setResources(element, resources);
   }
 
+  if (messaging) {
+    context.oldMessaging = this.setMessaging(element, messaging);
+  }
+
   context.element = element;
 };
 
 UpdateProceedElementsHandler.prototype.revert = function (context) {
-  const { oldMetaData, oldMilestones, oldLocations, oldResources, element } = context;
+  const { oldMetaData, oldMilestones, oldLocations, oldResources, oldMessaging, element } = context;
 
   if (oldMetaData) {
     this.setMetaData(element, oldMetaData);
@@ -179,5 +193,9 @@ UpdateProceedElementsHandler.prototype.revert = function (context) {
 
   if (oldResources) {
     this.setResources(element, oldResources);
+  }
+
+  if (oldMessaging) {
+    this.setMessaging(element, oldMessaging);
   }
 };

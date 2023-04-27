@@ -220,6 +220,72 @@
       ]
     },
     {
+      "name": "Messaging",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "serverAddress",
+          "isMany": false,
+          "type": "serverAddress"
+        },
+        {
+          "name": "username",
+          "isMany": false,
+          "type": "username"
+        },
+        {
+          "name": "password",
+          "isMany": false,
+          "type": "password"
+        },
+        {
+          "name": "topic",
+          "isMany": false,
+          "type": "topic"
+        }
+      ]
+    },
+    {
+      "name": "serverAddress",
+      "properties": [
+        {
+          "name": "value",
+          "isBody": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "username",
+      "properties": [
+        {
+          "name": "value",
+          "isBody": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "password",
+      "properties": [
+        {
+          "name": "value",
+          "isBody": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "topic",
+      "properties": [
+        {
+          "name": "value",
+          "isBody": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
       "name": "version",
       "extends": ["bpmn:Definitions", "bpmn:Import"],
       "properties": [

@@ -126,6 +126,19 @@ class CustomModeling {
   }
 
   /**
+   * Adds the given messaging info to the extensionselement of the given (bpmn:Process) element
+   *
+   * @param {Object} element the (process) element the messaging info should be added to
+   * @param {Object} messaging the messaging info that should be added to the process element
+   */
+  async addMessagingInfo(element, messaging) {
+    this.commandStack.execute('element.updateProceedData', {
+      elementId: element.id,
+      messaging,
+    });
+  }
+
+  /**
    * Adds process and task constraints as extension elements to the process after checking for inconsistencies
    * @param processConstraints
    * @param taskConstraintMapping

@@ -10,6 +10,8 @@ const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
+const { setupMessaging } = require('./messaging-setup.js');
+const { enableMessaging } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
   moduleName: 'CORE',
@@ -44,6 +46,11 @@ module.exports = {
     setup5thIndustryEndpoints();
     // Open /status endpoint at last
     distribution.init(management);
+
+    if (enableMessaging) {
+      setupMessaging(system.messaging, config, machineInformation);
+      system.messaging.publish('test', 'Hello World');
+    }
 
     if (!options.silentMode) {
       // Start normally if no options or silentMode != true

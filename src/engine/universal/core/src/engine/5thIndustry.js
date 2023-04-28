@@ -4,7 +4,6 @@ const {
   getMetaData,
   getProcessIds,
   getElementsByTagName,
-  getMessagingInfoFromElement,
   getMetaDataFromElement,
   getProcessDocumentationByObject,
   getMilestonesFromElement,
@@ -420,15 +419,18 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
   const bpmnObj = await toBpmnObject(bpmn);
   const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
-  const { serverAddress, username, password, topic } = getMessagingInfoFromElement(processObj);
+  const { mqttServer } = getMetaDataFromElement(processObj);
 
-  if (serverAddress) {
-    const userTasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
+  if (mqttServer) {
+    const { url, user, password, topic } = mqttServer;
+    let tasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
+    tasks = tasks.concat(getElementsByTagName(bpmnObj, 'bpmn:Task'));
+    tasks = tasks.concat(getElementsByTagName(bpmnObj, 'bpmn:ScriptTask'));
 
     const stepsInfo = {
       projectId,
       version,
-      processSteps: userTasks.map((userTask) => {
+      processSteps: tasks.map((userTask) => {
         const meta = getMetaDataFromElement(userTask);
         const description = getProcessDocumentationByObject(userTask);
         const milestones = getMilestonesFromElement(userTask);
@@ -447,7 +449,7 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
       }),
     };
     try {
-      system.messaging.publish(topic, stepsInfo, serverAddress, {}, { username, password });
+      system.messaging.publish(topic, stepsInfo, url, {}, { user, password });
     } catch (err) {
       logging.error(`Failed to send process step information.\n${err}`);
     }

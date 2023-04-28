@@ -34,7 +34,7 @@ module.exports = {
   enableInterruptedInstanceRecovery: false,
 
   // Featured needed to send data to messaging servers (currently only using mqtt)
-  enableMessaging: false,
+  enableMessaging: true,
 
   // -----------------------------------------------------------------------------
   // Chopping Block

@@ -1,5 +1,14 @@
 const system = require('@proceed/system');
-const { getMetaData, getProcessIds } = require('@proceed/bpmn-helper');
+const {
+  toBpmnObject,
+  getMetaData,
+  getProcessIds,
+  getElementsByTagName,
+  getMessagingInfoFromElement,
+  getMetaDataFromElement,
+  getProcessDocumentationByObject,
+  getMilestonesFromElement,
+} = require('@proceed/bpmn-helper');
 
 let serviceAccountId;
 let serviceAccountSecret;
@@ -407,4 +416,46 @@ async function pollInspectionOrderProgress(engine, userTask, _5iInformation) {
   }, 10000);
 }
 
-module.exports = { handle5thIndustryUserTask, setup5thIndustryEndpoints };
+async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, logging) {
+  const bpmnObj = await toBpmnObject(bpmn);
+  const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
+  const { serverAddress, username, password, topic } = getMessagingInfoFromElement(processObj);
+
+  if (serverAddress) {
+    const userTasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
+
+    const stepsInfo = {
+      projectId,
+      version,
+      processSteps: userTasks.map((userTask) => {
+        const meta = getMetaDataFromElement(userTask);
+        const description = getProcessDocumentationByObject(userTask);
+        const milestones = getMilestonesFromElement(userTask);
+
+        return {
+          stepId: userTask.id,
+          name: userTask.name,
+          taskType: userTask.$type,
+          timeStart: meta.timePlannedOccurrence,
+          timeEnd: meta.timePlannedEnd,
+          timeDuration: meta.timePlannedDuration,
+          description,
+          costs: meta.costsPlanned,
+          milestones,
+        };
+      }),
+    };
+    try {
+      system.messaging.publish(topic, stepsInfo, serverAddress, {}, { username, password });
+    } catch (err) {
+      logging.error(`Failed to send process step information.\n${err}`);
+    }
+  }
+}
+
+module.exports = {
+  handle5thIndustryUserTask,
+  setup5thIndustryEndpoints,
+  sendProcessStepsInfoTo5thIndustry,
+};

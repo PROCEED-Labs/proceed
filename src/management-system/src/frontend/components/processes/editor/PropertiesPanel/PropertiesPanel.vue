@@ -118,6 +118,18 @@
           </div>
         </v-container>
 
+        <MQTTForm
+          v-if="isProcessElement"
+          :storedServerInfo="metaCopy.mqttServer"
+          @change="
+            applyMetaData({
+              mqttServer: {
+                attributes: { ...$event },
+              },
+            })
+          "
+        ></MQTTForm>
+
         <resource-form :process="process" />
 
         <custom-property-form
@@ -141,6 +153,7 @@ import inspectionOrderSelection from '@/frontend/components/5thIndustry/inspecti
 import BooleanBpmnPropertyFormVue from './BooleanBpmnPropertyForm.vue';
 import MilestoneSelection from '@/frontend/components/processes/editor/PropertiesPanel/MilestoneSelection.vue';
 import TimePlannedForm from '@/frontend/components/processes/editor/PropertiesPanel/TimePlannedForm.vue';
+import MQTTForm from '@/frontend/components/processes/editor/PropertiesPanel/MQTTForm.vue';
 import ResourceForm from '@/frontend/components/processes/editor/PropertiesPanel/resources/ResourceForm.vue';
 import CustomPropertyForm from '@/frontend/components/processes/editor/PropertiesPanel/CustomPropertyForm.vue';
 import DocumentationForm from '@/frontend/components/processes/editor/PropertiesPanel/DocumentationForm.vue';
@@ -158,6 +171,7 @@ export default {
     inspectionOrderSelection,
     MilestoneSelection,
     TimePlannedForm,
+    MQTTForm,
     ResourceForm,
     CustomPropertyForm,
     BooleanBpmnPropertyFormVue,
@@ -221,6 +235,7 @@ export default {
         customerId,
         isUsing5i,
         defaultPriority,
+        mqttServer,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,

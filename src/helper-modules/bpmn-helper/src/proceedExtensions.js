@@ -37,6 +37,7 @@ const proceedExtensionElements = {
   Tool: { parent: 'tool', identifier: 'id' },
   inspectionInstrument: { parent: 'Resources' },
   InspectionInstrument: { parent: 'inspectionInstrument', identifier: 'id' },
+  mqttServer: { parent: 'Meta', identifier: 'url' },
 };
 
 /**

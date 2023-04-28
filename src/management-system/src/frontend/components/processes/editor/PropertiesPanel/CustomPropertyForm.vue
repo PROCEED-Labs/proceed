@@ -91,6 +91,7 @@ export default {
         isUsing5i,
         overviewImage,
         defaultPriority,
+        mqttServer,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,

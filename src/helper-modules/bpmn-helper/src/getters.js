@@ -623,6 +623,15 @@ function getMetaDataFromElement(element) {
             meta[attribute].forEach((property) => {
               properties[property.name] = property.value;
             });
+          } else if (attribute === 'mqttServer') {
+            const { url, topic, user, password } = meta[attribute];
+
+            properties[attribute] = {
+              url,
+              topic,
+              user,
+              password,
+            };
           } else {
             properties[attribute] = meta[attribute].value;
           }
@@ -857,31 +866,6 @@ function getResourcesFromElement(element) {
 }
 
 /**
- * Parses the messaging info in a bpmn:Process element
- *
- * @param {Object} element
- * @returns {Object} object containing the messaging info in the process element
- */
-function getMessagingInfoFromElement(element) {
-  const messagingInfo = { serverAddress: '', username: '', password: '', topic: '' };
-
-  if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
-    const messagingElement = element.extensionElements.values.find(
-      (child) => child.$type == 'proceed:Messaging'
-    );
-    if (messagingElement) {
-      if (messagingElement.serverAddress)
-        messagingInfo.serverAddress = messagingElement.serverAddress.value;
-      if (messagingElement.username) messagingInfo.username = messagingElement.username.value;
-      if (messagingElement.password) messagingInfo.password = messagingElement.password.value;
-      if (messagingElement.topic) messagingInfo.topic = messagingElement.topic.value;
-    }
-  }
-
-  return messagingInfo;
-}
-
-/**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {String} isoDuration
  * @returns {Object} Object with number of years, months, days, hours, minutes and seconds
@@ -990,7 +974,6 @@ module.exports = {
   getMilestonesFromElement,
   getMilestonesFromElementById,
   getResourcesFromElement,
-  getMessagingInfoFromElement,
   getLocationsFromElement,
   parseISODuration,
   convertISODurationToMiliseconds,

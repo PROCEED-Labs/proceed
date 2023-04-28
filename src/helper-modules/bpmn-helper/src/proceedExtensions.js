@@ -16,11 +16,6 @@ const proceedExtensionElements = {
   overviewImage: { parent: 'Meta' },
   defaultPriority: { parent: 'Meta' },
   property: { parent: 'Meta', identifier: 'name' },
-  Messaging: { isRoot: true },
-  serverAddress: { parent: 'Messaging' },
-  username: { parent: 'Messaging' },
-  password: { parent: 'Messaging' },
-  topic: { parent: 'Messaging' },
   Milestones: { isRoot: true },
   milestone: { parent: 'Milestones' },
   Milestone: { parent: 'milestone', identifier: 'id' },
@@ -42,6 +37,7 @@ const proceedExtensionElements = {
   Tool: { parent: 'tool', identifier: 'id' },
   inspectionInstrument: { parent: 'Resources' },
   InspectionInstrument: { parent: 'inspectionInstrument', identifier: 'id' },
+  mqttServer: { parent: 'Meta', identifier: 'url' },
 };
 
 /**

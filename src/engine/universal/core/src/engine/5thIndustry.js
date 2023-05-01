@@ -1,5 +1,13 @@
 const system = require('@proceed/system');
-const { getMetaData, getProcessIds } = require('@proceed/bpmn-helper');
+const {
+  toBpmnObject,
+  getMetaData,
+  getProcessIds,
+  getElementsByTagName,
+  getMetaDataFromElement,
+  getProcessDocumentationByObject,
+  getMilestonesFromElement,
+} = require('@proceed/bpmn-helper');
 
 let serviceAccountId;
 let serviceAccountSecret;
@@ -407,4 +415,72 @@ async function pollInspectionOrderProgress(engine, userTask, _5iInformation) {
   }, 10000);
 }
 
-module.exports = { handle5thIndustryUserTask, setup5thIndustryEndpoints };
+/**
+ * Will send data about all process steps to a messaging server if messaging server information is included in the bpmn
+ *
+ * @param {String} projectId
+ * @param {String|Number} version
+ * @param {String} bpmn
+ * @param {Object} logging the logging object of the engine the process is executed in
+ */
+async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, logging) {
+  const bpmnObj = await toBpmnObject(bpmn);
+  const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
+  const { mqttServer, timePlannedOccurrence, timePlannedDuration, timePlannedEnd } =
+    getMetaDataFromElement(processObj);
+
+  // only try to send data if messaging server information is embedded in the bpmn
+  if (mqttServer) {
+    const { url, user, password, topic } = mqttServer;
+    // get all process steps
+    let tasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
+    tasks = tasks.concat(getElementsByTagName(bpmnObj, 'bpmn:Task'));
+    tasks = tasks.concat(getElementsByTagName(bpmnObj, 'bpmn:ScriptTask'));
+
+    const stepsInfo = {
+      projectId,
+      version,
+      timeStart: timePlannedOccurrence,
+      timeDuration: timePlannedDuration,
+      timeEnd: timePlannedEnd,
+      processSteps: tasks.map((task) => {
+        // get the required information from all process steps
+        const {
+          timePlannedOccurrence,
+          timePlannedEnd,
+          timePlannedDuration,
+          costsPlanned,
+          ...rest
+        } = getMetaDataFromElement(task);
+        const description = getProcessDocumentationByObject(task);
+        const milestones = getMilestonesFromElement(task);
+
+        return {
+          stepId: task.id,
+          name: task.name,
+          taskType: task.$type,
+          timeStart: timePlannedOccurrence,
+          timeEnd: timePlannedEnd,
+          timeDuration: timePlannedDuration,
+          description,
+          costs: costsPlanned,
+          milestones,
+          ...rest,
+        };
+      }),
+    };
+    try {
+      // send the information to the requested messaging server
+      system.messaging.publish(topic, stepsInfo, url, {}, { user, password });
+    } catch (err) {
+      logging.error(`Failed to send process step information.\n${err}`);
+    }
+  }
+}
+
+module.exports = {
+  handle5thIndustryUserTask,
+  setup5thIndustryEndpoints,
+  sendProcessStepsInfoTo5thIndustry,
+};

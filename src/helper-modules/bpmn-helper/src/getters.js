@@ -623,6 +623,15 @@ function getMetaDataFromElement(element) {
             meta[attribute].forEach((property) => {
               properties[property.name] = property.value;
             });
+          } else if (attribute === 'mqttServer') {
+            const { url, topic, user, password } = meta[attribute];
+
+            properties[attribute] = {
+              url,
+              topic,
+              user,
+              password,
+            };
           } else {
             properties[attribute] = meta[attribute].value;
           }

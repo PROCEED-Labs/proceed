@@ -48,8 +48,7 @@ module.exports = {
     distribution.init(management);
 
     if (enableMessaging) {
-      setupMessaging(system.messaging, config, machineInformation);
-      system.messaging.publish('test', 'Hello World');
+      await setupMessaging(system.messaging, config, machineInformation);
     }
 
     if (!options.silentMode) {

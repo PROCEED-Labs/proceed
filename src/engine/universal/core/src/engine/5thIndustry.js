@@ -419,7 +419,8 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
   const bpmnObj = await toBpmnObject(bpmn);
   const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
-  const { mqttServer } = getMetaDataFromElement(processObj);
+  const { mqttServer, timePlannedOccurrence, timePlannedDuration, timePlannedEnd } =
+    getMetaDataFromElement(processObj);
 
   if (mqttServer) {
     const { url, user, password, topic } = mqttServer;
@@ -430,8 +431,17 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
     const stepsInfo = {
       projectId,
       version,
+      timeStart: timePlannedOccurrence,
+      timeDuration: timePlannedDuration,
+      timeEnd: timePlannedEnd,
       processSteps: tasks.map((userTask) => {
-        const meta = getMetaDataFromElement(userTask);
+        const {
+          timePlannedOccurrence,
+          timePlannedEnd,
+          timePlannedDuration,
+          costsPlanned,
+          ...rest
+        } = getMetaDataFromElement(userTask);
         const description = getProcessDocumentationByObject(userTask);
         const milestones = getMilestonesFromElement(userTask);
 
@@ -439,12 +449,13 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
           stepId: userTask.id,
           name: userTask.name,
           taskType: userTask.$type,
-          timeStart: meta.timePlannedOccurrence,
-          timeEnd: meta.timePlannedEnd,
-          timeDuration: meta.timePlannedDuration,
+          timeStart: timePlannedOccurrence,
+          timeEnd: timePlannedEnd,
+          timeDuration: timePlannedDuration,
           description,
-          costs: meta.costsPlanned,
+          costs: costsPlanned,
           milestones,
+          ...rest,
         };
       }),
     };

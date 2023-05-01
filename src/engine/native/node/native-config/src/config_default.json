@@ -30,5 +30,10 @@
       "https://europe-west3-proceed-274611.cloudfunctions.net/online-checking-address"
     ],
     "currentlyConnectedEnvironments": []
+  },
+  "messaging": {
+    "serverAddress": "",
+    "username": "",
+    "password": ""
   }
 }

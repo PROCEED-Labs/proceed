@@ -7,6 +7,7 @@ const Config = require('./config');
 const Machine = require('./machine');
 const Discovery = require('./discovery');
 const Timer = require('./timer');
+const Messaging = require('./messaging');
 const { setIPC } = require('./system');
 
 /**
@@ -42,6 +43,11 @@ const system = {
    * @returns {module:@proceed/system.Network}
    */
   network: new Network(environment),
+
+  /**
+   * @returns {module:@proceed/system.Messaging}
+   */
+  messaging: new Messaging(),
 
   /**
    * @returns {module:@proceed/system.HTTP}

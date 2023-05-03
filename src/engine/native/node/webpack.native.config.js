@@ -3,7 +3,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   target: 'node',
-  entry: './index.js',
+  entry: './index.ts',
   mode: 'development',
   output: {
     // eslint-disable-next-line no-undef
@@ -11,6 +11,15 @@ module.exports = {
     filename: 'proceed-engine.js',
   },
   // https://v4.webpack.js.org/plugins/copy-webpack-plugin/
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
   plugins: [
     new CopyWebpackPlugin([
       {

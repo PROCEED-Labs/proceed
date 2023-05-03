@@ -36,13 +36,13 @@
     "singleQuote": true
   },
   "scripts": {
-    "dev": "node --trace-warnings src/engine/native/node/index.js",
+    "dev": "node --loader ts-node/esm --trace-warnings src/engine/native/node/index.ts",
     "dev-ms": "cd src/management-system && yarn electron:serve",
     "dev-ms-iam": "cd src/management-system && yarn web:dev-iam",
     "dev-ms-server": "cd src/management-system && yarn web:dev",
     "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
     "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
-    "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.js && node ./build-injector.js && cd ../../universal && webpack --config webpack.universal.config.js",
+    "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && node --loader ts-node/esm ./build-injector.js && cd ../../universal && webpack --config webpack.universal.config.js",
     "build-ms": "cd src/management-system && yarn electron:build-windows-linux",
     "build-ms-mac": "cd src/management-system && yarn electron:build-mac",
     "build-ms-web": "cd src/management-system && yarn web:build-server-frontend",
@@ -101,6 +101,9 @@
     "supertest": "^4.0.2",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1"
+    "webpack-dev-server": "^3.2.1",
+    "typescript": "^5.0.4",
+    "ts-node": "^10.9.1",
+    "ts-loader": "8.2.0"
   }
 }

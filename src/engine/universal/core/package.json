@@ -17,7 +17,7 @@
     "@proceed/ui": "^1.0.0",
     "bpmn-moddle": "^5.1.6",
     "neo-bpmn-engine": "^8.0.1",
-    "vm2": "3.8.4"
+    "vm2": "3.9.17"
   },
   "devDependencies": {
     "esm": "^3.2.1"

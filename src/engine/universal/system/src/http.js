@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 const { System } = require('./system');
-const utils = require('./utils');
+const utils = require('././utils.ts');
 const Console = require('./console');
 const Config = require('./config');
 const timer = new (require('./timer'))();

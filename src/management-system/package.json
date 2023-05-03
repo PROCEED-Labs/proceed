@@ -32,8 +32,8 @@
     "web:dev-serve-frontend": "cross-env MODE=frontend vue-cli-service serve --open",
     "web:dev-serve-backend-puppeteer": "cross-env MODE=puppeteer vue-cli-service serve",
     "web:dev-start-backend": "cross-env NODE_ENV=development nodemon --verbose --watch ./src/backend --watch ./src/shared-frontend-backend -r dotenv/config src/backend/server/index.js",
-    "web:dev": "cross-env USE_AUTHORIZATION=false node dev-server.js",
-    "web:dev-iam": "cross-env MODE=iam node dev-server.js",
+    "web:dev": "cross-env USE_AUTHORIZATION=false ts-node dev-server.ts",
+    "web:dev-iam": "cross-env MODE=iam ts-node dev-server.ts",
     "web:build-server": "yarn web:build-server-backend && yarn web:build-server-frontend && yarn web:build-server-backend-puppeteer",
     "web:build-server-frontend": "cross-env MODE=frontend vue-cli-service build",
     "web:build-server-backend": "cd src/backend/server && webpack --config webpack.server.backend.config.cjs",
@@ -153,6 +153,7 @@
     "vue-html-loader": "^1.2.4",
     "vue-loader": "^15.9.1",
     "vue-template-compiler": "^2.6.11",
-    "vuetify-loader": "^1.3.0"
+    "vuetify-loader": "^1.3.0",
+    "ts-jest": "^26.5.4"
   }
 }

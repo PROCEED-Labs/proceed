@@ -16,6 +16,15 @@ module.exports = {
     ),
     filename: 'server.js',
   },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
   plugins: [
     new webpack.DefinePlugin({
       'process.env.SERVER': JSON.stringify(process.env.SERVER || 'true'),

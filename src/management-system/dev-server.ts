@@ -1,19 +1,12 @@
-const { spawn, execSync, spawnSync } = require('child_process');
+import { spawn, execSync, spawnSync } from 'child_process';
 const axios = require('axios');
 const fs = require('fs');
 
 const startManagementSystem = () => {
-  const frontendDevServerProcess = spawn(
-    'yarn',
-    ['web:dev-serve-frontend'],
-    { cwd: __dirname, shell: true },
-    (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-    }
-  );
+  const frontendDevServerProcess = spawn('yarn', ['web:dev-serve-frontend'], {
+    cwd: __dirname,
+    shell: true,
+  });
 
   frontendDevServerProcess.stdout.on('data', (data) => {
     const dataString = data.toString();
@@ -24,29 +17,12 @@ const startManagementSystem = () => {
     console.error('Webpack-Dev-Server-Frontend: ', dataString);
   });
 
-  const serverProcess = spawn(
-    'yarn',
-    ['web:dev-start-backend'],
-    { cwd: __dirname, shell: true },
-    (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-    }
-  );
+  const serverProcess = spawn('yarn', ['web:dev-start-backend'], { cwd: __dirname, shell: true });
 
-  const backendPuppeteerDevServerProcess = spawn(
-    'yarn',
-    ['web:dev-serve-backend-puppeteer'],
-    { cwd: __dirname, shell: true },
-    (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-    }
-  );
+  const backendPuppeteerDevServerProcess = spawn('yarn', ['web:dev-serve-backend-puppeteer'], {
+    cwd: __dirname,
+    shell: true,
+  });
 
   backendPuppeteerDevServerProcess.stdout.on('data', (data) => {
     const dataString = data.toString();
@@ -79,17 +55,10 @@ if (process.env.MODE === 'iam') {
   }
 
   // start docker container in separate subprocess
-  const opaProcess = spawn(
-    'docker compose',
-    ['-f', 'docker-compose-dev-iam.yml', 'up'],
-    { cwd: __dirname, shell: true },
-    (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-    }
-  );
+  const opaProcess = spawn('docker compose', ['-f', 'docker-compose-dev-iam.yml', 'up'], {
+    cwd: __dirname,
+    shell: true,
+  });
 
   opaProcess.stdout.on('data', (data) => {
     const dataString = data.toString();

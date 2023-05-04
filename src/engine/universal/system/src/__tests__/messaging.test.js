@@ -211,5 +211,29 @@ describe('Tests for the message interface of the dispatcher', () => {
         ],
       ]);
     });
+
+    it('will prefix "engine/[engine-id]" to the given topic if requested', async () => {
+      messaging._username = 'user';
+      messaging._password = 'password123';
+      // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
+      messaging._machineId = 'engineId';
+
+      await expect(
+        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
+          prefixDefaultTopic: true,
+        })
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_publish',
+        [
+          'mqtt://localhost:1883',
+          'engine/engineId/test/123',
+          'Hello World',
+          '{"prefixDefaultTopic":true}',
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+        ],
+      ]);
+    });
   });
 });

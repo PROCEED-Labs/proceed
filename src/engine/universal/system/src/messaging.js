@@ -120,6 +120,12 @@ class Messaging extends System {
       });
     });
 
+    // prepends the default topic path "engine/[engine-id]" to the topic
+    // this way all modules in the engine can just call publish with prefixDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
+    if (messageOptions.prefixDefaultTopic) {
+      topic = `engine/${this._machineId}/${topic}`;
+    }
+
     // make sure that everything is in the correct format to be passed to the native part
     if (typeof message !== 'string') message = JSON.stringify(message);
     messageOptions = JSON.stringify(messageOptions);

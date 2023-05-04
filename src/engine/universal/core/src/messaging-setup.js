@@ -1,3 +1,5 @@
+const { version: proceedVersion } = require('../../../native/node/package.json');
+
 /**
  * This file contains functionality that handles setup and interactions of the messaging interface with other modules of the engine
  *
@@ -11,5 +13,11 @@ module.exports = {
     const { id: machineId } = await machineModule.getMachineInformation(['id']);
 
     messaging.init(serverAddress, username, password, machineId);
+
+    // publish that the engine is online
+    messaging.publish('status', { running: true, version: proceedVersion }, undefined, {
+      prependDefaultTopic: true,
+      retain: true,
+    });
   },
 };

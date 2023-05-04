@@ -220,7 +220,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
-          prefixDefaultTopic: true,
+          prependDefaultTopic: true,
         })
       ).resolves.not.toThrow();
 
@@ -230,7 +230,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'mqtt://localhost:1883',
           'engine/engineId/test/123',
           'Hello World',
-          '{"prefixDefaultTopic":true}',
+          '{"prependDefaultTopic":true}',
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
         ],
       ]);

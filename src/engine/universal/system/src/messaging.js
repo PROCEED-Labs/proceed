@@ -122,7 +122,7 @@ class Messaging extends System {
 
     // prepends the default topic path "engine/[engine-id]" to the topic
     // this way all modules in the engine can just call publish with prefixDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
-    if (messageOptions.prefixDefaultTopic) {
+    if (messageOptions.prependDefaultTopic) {
       topic = `engine/${this._machineId}/${topic}`;
     }
 

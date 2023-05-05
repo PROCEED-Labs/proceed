@@ -40,7 +40,6 @@
             <v-text-field
               label="User"
               :value="currentServerInfo.user"
-              :rules="[inputRules.notEmpty]"
               background-color="white"
               @blur="
                 updateServer({
@@ -105,8 +104,6 @@ export default {
         !currentServerInfo ||
         !currentServerInfo.url ||
         currentServerInfo.url.length === 0 ||
-        !currentServerInfo.user ||
-        currentServerInfo.user.length === 0 ||
         !currentServerInfo.topic ||
         currentServerInfo.topic.length === 0
       ) {

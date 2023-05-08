@@ -65,6 +65,29 @@ class Messaging extends System {
     connectionOptions.clientId = this._machineId;
   }
 
+  async connect(url, connectionOptions = {}) {
+    const taskID = utils.generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, _data) => {
+        if (err) {
+          reject(`Failed to connect to ${url}\n${err}`);
+        } else {
+          resolve();
+        }
+
+        return true;
+      });
+    });
+
+    connectionOptions = JSON.stringify(connectionOptions);
+
+    this.commandRequest(taskID, ['messaging_connect', [url, connectionOptions]]);
+
+    return listenPromise;
+  }
+
   /**
    * Publish some data through a messaging server
    *
@@ -78,13 +101,7 @@ class Messaging extends System {
    * @param {String} connectionOptions.username the username to use when connecting
    * @param {String} connectionOptions.password the password to use when connecting
    */
-  async publish(
-    topic,
-    message,
-    overrideUrl = this._defaultMessagingServerAddress,
-    messageOptions = {},
-    connectionOptions = {}
-  ) {
+  async publish(topic, message, overrideUrl, messageOptions = {}, connectionOptions = {}) {
     // if no url is given use the default url if one was set
     const url = overrideUrl || this._defaultMessagingServerAddress;
 

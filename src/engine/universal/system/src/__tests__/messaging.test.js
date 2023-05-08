@@ -4,27 +4,25 @@ const { System } = require('../system');
 const Messaging = require('../messaging');
 
 describe('Tests for the message interface of the dispatcher', () => {
+  let messaging;
+  // the callback that is registered when the called function waits for a response from the native part
+  let ipcCallback;
   beforeEach(() => {
     System.mockClear();
+
+    messaging = new Messaging();
+
+    messaging._defaultMessagingServerAddress = 'mqtt://defaultAddress';
+    messaging._initialized = true;
+
+    // mock the functions that are used inside publish to ensure that publish is awaitable
+    messaging.commandResponse.mockImplementation((_id, callback) => {
+      ipcCallback = callback;
+    });
+    messaging.commandRequest.mockImplementation((id, _data) => ipcCallback(null, 'Success'));
   });
 
   describe('publish', () => {
-    let messaging;
-    // the callback that is registered when the publish function waits for a response from the native part
-    let publishCallback;
-    beforeEach(() => {
-      messaging = new Messaging();
-
-      messaging._defaultMessagingServerAddress = 'mqtt://defaultAddress';
-      messaging._initialized = true;
-
-      // mock the functions that are used inside publish to ensure that publish is awaitable
-      messaging.commandResponse.mockImplementation((_id, callback) => {
-        publishCallback = callback;
-      });
-      messaging.commandRequest.mockImplementation((id, _data) => publishCallback(null, 'Success'));
-    });
-
     it('forwards a request for publishing to the native part', async () => {
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
@@ -77,7 +75,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
     it('throws if the native part returns an error', async () => {
       messaging.commandRequest.mockImplementationOnce((_id, _info) => {
-        publishCallback('Error Message', null);
+        ipcCallback('Error Message', null);
       });
 
       await expect(
@@ -234,6 +232,32 @@ describe('Tests for the message interface of the dispatcher', () => {
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
         ],
       ]);
+    });
+  });
+
+  describe('connect', () => {
+    it('will send a command to connect to a messaging server to the backend', async () => {
+      await expect(
+        messaging.connect('mqtt://localhost:1883', {
+          username: 'test-user',
+          password: 'password123',
+        })
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_connect',
+        ['mqtt://localhost:1883', '{"username":"test-user","password":"password123"}'],
+      ]);
+    });
+
+    it('throws if the native part returns an error', async () => {
+      messaging.commandRequest.mockImplementationOnce((_id, _info) => {
+        ipcCallback('Error Message', null);
+      });
+
+      await expect(messaging.connect('mqtt://localhost:1883')).rejects.toMatch(
+        'Failed to connect to mqtt://localhost:1883\nError Message'
+      );
     });
   });
 });

@@ -7,9 +7,9 @@ class NativeMQTT extends NativeModule {
     this.commands = ['messaging_publish'];
   }
 
-  executeCommand(command, args) {
+  async executeCommand(command, args) {
     if (command === 'messaging_publish') {
-      return this.publish(args);
+      return await this.publish(args);
     }
     return undefined;
   }

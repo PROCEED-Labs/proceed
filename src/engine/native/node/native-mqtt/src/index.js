@@ -83,6 +83,11 @@ class NativeMQTT extends NativeModule {
       return this.connections[url];
     }
 
+    // if the connectionOptions contains a will message that is a stringified JSON (the mqtt library expect the payload to be a string) the JSON.parse at the start of the function will have transformed it to an object
+    if (connectionOptions.will && typeof connectionOptions.will.payload === 'object') {
+      connectionOptions.will.payload = JSON.stringify(connectionOptions.will.payload);
+    }
+
     // connect to the mqtt server using optional parameters like username and password
     const client = await mqtt.connectAsync(url, {
       clean: true, // don't reuse an earlier connection

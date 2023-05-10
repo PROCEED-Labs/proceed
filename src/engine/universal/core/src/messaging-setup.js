@@ -6,7 +6,7 @@ const { version: proceedVersion } = require('../../../native/node/package.json')
  * Its purpose is to keep the messaging interface as light as possible while providing some additional features that make its usage easier
  */
 module.exports = {
-  async setupMessaging(messaging, configModule, machineModule) {
+  async setupMessaging(messaging, configModule, machineModule, logger) {
     // get default values from the config and machine info modules that shall be used when the caller of the publish function does not provide specific data
     // this should prevent that all modules that want to publish data have to import the config and machine info modules and get these values themselves
     const { serverAddress, username, password } = await configModule.readConfig('messaging');
@@ -27,21 +27,29 @@ module.exports = {
             retain: true,
           },
         });
-      } catch (err) {}
+      } catch (err) {
+        logger.debug(`Failed to connect to the messaging server defined in the config. ${err}`);
+      }
     }
 
-    messaging.init(serverAddress, username, password, machineId);
+    messaging.init(serverAddress, username, password, machineId, logger);
 
-    try {
-      // publish that the engine is online
-      messaging.publish(
-        `engine/${machineId}/status`,
-        { running: true, version: proceedVersion },
-        undefined,
-        {
-          retain: true,
-        }
-      );
-    } catch (err) {}
+    if (serverAddress) {
+      try {
+        // publish that the engine is online
+        await messaging.publish(
+          `engine/${machineId}/status`,
+          { running: true, version: proceedVersion },
+          undefined,
+          {
+            retain: true,
+          }
+        );
+      } catch (err) {
+        logger.debug(
+          `Failed to publish the engine status to the messaging server defined in the config. ${err}`
+        );
+      }
+    }
   },
 };

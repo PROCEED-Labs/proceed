@@ -65,6 +65,14 @@ class Messaging extends System {
     connectionOptions.clientId = this._machineId;
   }
 
+  /**
+   * Create a persistent connection to a messaging server that will be used for future calls to publish if the url and the log-in information matches
+   *
+   * @param {String} url the address of the messaging server
+   * @param {Object} connectionOptions options that should be used when connecting to the messaging server
+   * @param {String} connectionOptions.username the username to use when connecting
+   * @param {String} connectionOptions.password the password to use when connecting
+   */
   async connect(url, connectionOptions = {}) {
     const taskID = utils.generateUniqueTaskID();
 
@@ -84,6 +92,40 @@ class Messaging extends System {
     connectionOptions = JSON.stringify(connectionOptions);
 
     this.commandRequest(taskID, ['messaging_connect', [url, connectionOptions]]);
+
+    return listenPromise;
+  }
+
+  /**
+   * Close a connection to a messaging server
+   *
+   * The function requires you to provide the log-in information that was used when connecting to the server to identify the correct connection
+   * (we allow multiple connections to the same server with different users)
+   *
+   * @param {String} url the address of the messaging server
+   * @param {Object} connectionOptions options that were used when connecting to the server
+   * @param {String} connectionOptions.username the username that was used when connecting
+   * @param {String} connectionOptions.password the password that was used when connecting
+   */
+  async disconnect(url, connectionOptions = {}) {
+    const taskID = utils.generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, _data) => {
+        if (err) {
+          reject(`Failed to disconnect from ${url}\n${err}`);
+        } else {
+          resolve();
+        }
+
+        return true;
+      });
+    });
+
+    connectionOptions = JSON.stringify(connectionOptions);
+
+    this.commandRequest(taskID, ['messaging_disconnect', [url, connectionOptions]]);
 
     return listenPromise;
   }

@@ -301,8 +301,8 @@ module.exports = {
    * @param {String} definitionId
    */
   async deleteProcess(definitionId) {
-    await data.delete(definitionId);
     await data.delete(`processes.json/${definitionId}`);
+    await data.delete(definitionId);
   },
 
   /**

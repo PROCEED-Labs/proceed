@@ -65,8 +65,8 @@ class NativeFS extends NativeModule {
     let table = key;
 
     // cut out given attribute in json file
-    if (key.indexOf('.json/') !== -1) {
-      table = key.substr(0, key.indexOf('.json/'));
+    if (key.indexOf('.json') !== -1) {
+      table = key.substr(0, key.indexOf('.json'));
     }
 
     // Check mutex
@@ -161,8 +161,8 @@ class NativeFS extends NativeModule {
     let table = key;
 
     // cut out given attribute in json file
-    if (key.indexOf('.json/') !== -1) {
-      table = key.substr(0, key.indexOf('.json/'));
+    if (key.indexOf('.json') !== -1) {
+      table = key.substr(0, key.indexOf('.json'));
     }
 
     let succeed;

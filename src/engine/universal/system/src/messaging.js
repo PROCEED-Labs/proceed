@@ -74,7 +74,7 @@ class Messaging extends System {
    * @param {String} connectionOptions.password the password to use when connecting
    */
   async connect(url, connectionOptions = {}) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response from the native part

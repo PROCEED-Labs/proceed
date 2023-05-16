@@ -472,7 +472,7 @@ async function sendProcessStepsInfoTo5thIndustry(projectId, version, bpmn, loggi
     };
     try {
       // send the information to the requested messaging server
-      system.messaging.publish(topic, stepsInfo, url, {}, { user, password });
+      await system.messaging.publish(topic, stepsInfo, url, {}, { username: user, password });
     } catch (err) {
       logging.error(`Failed to send process step information.\n${err}`);
     }

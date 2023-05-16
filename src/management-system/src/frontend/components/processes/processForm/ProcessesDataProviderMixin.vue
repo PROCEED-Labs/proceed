@@ -1,5 +1,5 @@
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 
 import { asyncMap } from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
 
@@ -54,7 +54,7 @@ export default {
   methods: {
     // creates a new id that can be used to identify a specific element inside processesData through changes
     createProcessDataId() {
-      return uuid.v4();
+      return v4();
     },
     /**
      * Will set processesData making sure that every entry contains an id that makes it identifyable

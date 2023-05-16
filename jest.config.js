@@ -5,34 +5,42 @@ let projects = [
     name: 'engine-unit-integration',
     displayName: 'Engine Unit and Integration Tests',
     testMatch: [
-      '<rootDir>/src/engine/**/*.(spec|test).js',
-      '<rootDir>/src/engine/**/__tests__/**/*.js?(x)',
+      '<rootDir>/src/engine/**/*.(spec|test).(js|ts)',
+      '<rootDir>/src/engine/**/__tests__/**/*.(js|ts)?(x)',
     ],
     modulePathIgnorePatterns: ['<rootDir>/src/engine/e2e_tests'],
-    testEnvironment: 'node',
+    preset: 'ts-jest',
   },
   {
     name: 'capabilities',
     displayName: 'Capabilities Tests',
     testMatch: [
-      '<rootDir>/src/capabilities/**/?(*.)test.js',
-      '<rootDir>/src/capabilities/**/__tests__/**/*.js?(x)',
+      '<rootDir>/src/capabilities/**/*.(spec|test).(js|ts)',
+      '<rootDir>/src/capabilities/**/__tests__/**/*.(js|ts)?(x)',
     ],
+    preset: 'ts-jest',
   },
   {
     name: 'helper-modules',
     displayName: 'Helper Modules Tests',
     testMatch: [
-      '<rootDir>/src/helper-modules/**/*.test.js',
-      '<rootDir>/src/helper-modules/**/__tests__/**/*.js?(x)',
+      '<rootDir>/src/helper-modules/**/*.(spec|test).(js|ts)',
+      '<rootDir>/src/helper-modules/**/__tests__/**/*.(js|ts)?(x)',
     ],
+    preset: 'ts-jest',
   },
   '<rootDir>/src/engine/e2e_tests/jest.config.js',
 ];
 
 if (process.env.USE_PROJECTS) {
   const useProjectNames = process.env.USE_PROJECTS.split(' ');
-  projects = projects.filter((project) => useProjectNames.includes(project.name));
+  projects = projects
+    .filter((project) => useProjectNames.includes(project.name))
+    // Remove the name from the project configs, so that jest does not complain
+    // about unknown options.
+    .map((project) => JSON.parse(JSON.stringify({ ...project, name: undefined })));
+} else {
+  projects = undefined;
 }
 
 module.exports = {
@@ -78,6 +86,8 @@ module.exports = {
 
   // Make calling deprecated APIs throw helpful error messages
   // errorOnDeprecated: false,
+
+  // extensionsToTreatAsEsm: ['.ts'],
 
   // Force coverage collection from ignored files usin a array of glob patterns
   // forceCoverageMatch: [],
@@ -193,7 +203,7 @@ module.exports = {
   // timers: "real",
 
   // A map from regular expressions to paths to transformers
-  // transform: null,
+  // transform: {},
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
   // transformIgnorePatterns: [

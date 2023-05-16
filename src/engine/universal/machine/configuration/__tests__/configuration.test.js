@@ -1,6 +1,3 @@
-const system = require('@proceed/system');
-const configuration = require('../configHandler');
-
 jest.mock('@proceed/system', () => {
   let mockConfig = {
     machine: {
@@ -60,6 +57,9 @@ jest.mock('@proceed/system', () => {
     data,
   };
 });
+
+const system = require('@proceed/system');
+const configuration = require('../configHandler');
 
 // TODO: since the native part is mocked (where the writing logic is happening),
 // these tests are rendered mostly useless.

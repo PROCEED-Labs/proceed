@@ -1,7 +1,5 @@
-import * as processHelpers from '@/frontend/../shared-frontend-backend/helpers/processHelpers.js';
-import { getBpmn } from '../../../helpers/processHelpers.js';
-
 jest.mock('uuid', () => ({
+  __esModule: true,
   calls: 0,
   v4: jest.fn().mockImplementation(function () {
     return `uniqueId${++this.calls}`;
@@ -17,7 +15,10 @@ jest.mock('ids', () => {
   }));
 });
 
-import uuid from 'uuid';
+import * as processHelpers from '@/frontend/../shared-frontend-backend/helpers/processHelpers.js';
+import { getBpmn } from '../../../helpers/processHelpers.js';
+
+import * as uuid from 'uuid';
 
 describe('Tests for process helpers', () => {
   describe('createProcess', () => {

@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils.ts');
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
 
 /**
  * @memberof module:@proceed/system
@@ -105,7 +105,7 @@ class Messaging extends System {
       return;
     }
 
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response from the native part

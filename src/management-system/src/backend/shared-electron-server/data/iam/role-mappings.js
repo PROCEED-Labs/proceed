@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMetaObjects } from './roles.js';
 
@@ -40,7 +40,7 @@ export async function addRoleMapping(roleMappings) {
         if (!role.hasOwnProperty('id')) throw new Error('Role not found');
       }
 
-      const id = uuid.v4();
+      const id = v4();
       const createdOn = new Date().toUTCString();
 
       const newRoleMapping = {

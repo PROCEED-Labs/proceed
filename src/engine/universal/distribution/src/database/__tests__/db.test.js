@@ -1,11 +1,3 @@
-const db = require('../db.js');
-const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('../processFragmentCheck');
-const { data } = require('@proceed/system');
-const fs = require('fs');
-const path = require('path');
-
-const { toBpmnObject } = require('@proceed/bpmn-helper');
-
 jest.mock('@proceed/system', () => {
   const original = jest.requireActual('@proceed/system');
 
@@ -29,6 +21,14 @@ jest.mock('@proceed/machine', () => ({
     getMachineInformation: jest.fn().mockResolvedValue({ id: 'mockId', ip: 'mockIp' }),
   },
 }));
+
+const db = require('../db.js');
+const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('../processFragmentCheck');
+const { data } = require('@proceed/system');
+const fs = require('fs');
+const path = require('path');
+
+const { toBpmnObject } = require('@proceed/bpmn-helper');
 
 const OneProcessDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneProcess.xml'),

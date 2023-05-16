@@ -163,7 +163,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import MachineForm from '@/frontend/components/machines/MachineForm.vue';
 import MachineConfig from '@/frontend/components/machines/MachineConfig.vue';
 import MachineInfo from '@/frontend/components/machines/MachineInfo.vue';
@@ -232,7 +232,7 @@ export default {
       await this.$store.dispatch('machineStore/add', {
         machine: {
           ...machine,
-          id: uuid.v4(),
+          id: v4(),
           saved: true,
         },
       });

@@ -316,7 +316,7 @@ describe('Native-FS', () => {
         cb();
       });
       const res = nfs.write(['table.json', null]);
-      expect(res).resolves.toBeUndefined();
+      await expect(res).resolves.toBeUndefined();
       expect(fs.rm).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
         { force: true, recursive: true },

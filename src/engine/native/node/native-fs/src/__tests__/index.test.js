@@ -232,7 +232,7 @@ describe('Native-FS', () => {
       fs.statSync.mockReset();
       fs.readFile.mockReset();
       fs.writeFile.mockReset();
-      fs.unlink.mockReset();
+      fs.rm.mockReset();
     });
 
     it('Writes a value', async () => {
@@ -309,16 +309,17 @@ describe('Native-FS', () => {
       );
     });
 
-    it('Removes a table if it is set to null', () => {
+    it('Removes a table if it is set to null', async () => {
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
 
-      fs.unlink.mockImplementationOnce((path, cb) => {
+      fs.rm.mockImplementationOnce((path, options, cb) => {
         cb();
       });
       const res = nfs.write(['table.json', null]);
       expect(res).resolves.toBeUndefined();
-      expect(fs.unlink).toHaveBeenCalledWith(
+      expect(fs.rm).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
+        { force: true, recursive: true },
         expect.any(Function)
       );
     });
@@ -364,7 +365,7 @@ describe('Native-FS', () => {
       const res4 = nfs.write(['table.json/test', null]);
       await expect(res4).rejects.toBeInstanceOf(Error);
 
-      fs.unlink.mockImplementationOnce((path, cb) => {
+      fs.rm.mockImplementationOnce((path, options, cb) => {
         const error = new Error();
         error.code = 'EISDIR';
         cb(error);

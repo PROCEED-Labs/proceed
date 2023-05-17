@@ -20,10 +20,14 @@ function startMockEngineProcess(mockFilesPath) {
 
     let outputHandlers = [];
 
-    const engineProcess = spawn('node', ['mockEngine.js', mockFilesPath], {
-      cwd: __dirname,
-      detached: false,
-    });
+    const engineProcess = spawn(
+      'yarn',
+      ['ts-node', path.resolve(__dirname, 'mockEngine.js'), path.resolve(__dirname, mockFilesPath)],
+      {
+        cwd: __dirname,
+        detached: false,
+      }
+    );
 
     const { name, machine } = JSON.parse(
       fs.readFileSync(path.resolve(mockFilesPath, 'config.json'), 'utf8')

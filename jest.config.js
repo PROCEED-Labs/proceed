@@ -29,16 +29,19 @@ let projects = [
     ],
     preset: 'ts-jest',
   },
-  '<rootDir>/src/engine/e2e_tests/jest.config.js',
 ];
 
 if (process.env.USE_PROJECTS) {
-  const useProjectNames = process.env.USE_PROJECTS.split(' ');
-  projects = projects
-    .filter((project) => useProjectNames.includes(project.name))
-    // Remove the name from the project configs, so that jest does not complain
-    // about unknown options.
-    .map((project) => JSON.parse(JSON.stringify({ ...project, name: undefined })));
+  if (process.env.USE_PROJECTS === 'engine-e2e') {
+    projects = ['<rootDir>/src/engine/e2e_tests/jest.config.js'];
+  } else {
+    const useProjectNames = process.env.USE_PROJECTS.split(' ');
+    projects = projects
+      .filter((project) => useProjectNames.includes(project.name))
+      // Remove the name from the project configs, so that jest does not complain
+      // about unknown options.
+      .map((project) => JSON.parse(JSON.stringify({ ...project, name: undefined })));
+  }
 } else {
   projects = undefined;
 }

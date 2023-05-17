@@ -55,7 +55,7 @@
     "test": "yarn test-engine",
     "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
     "test-ms": "cd src/management-system && yarn test:unit",
-    "test-e2e": "jest src/engine/e2e_tests/",
+    "test-e2e": "cross-env USE_PROJECTS=\"engine-e2e\" jest src/engine/e2e_tests/",
     "test-all": "yarn test-engine && yarn test-ms && yarn test-e2e",
     "jsdoc": "jsdoc -c ./jsdoc.config.json --pedantic",
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",

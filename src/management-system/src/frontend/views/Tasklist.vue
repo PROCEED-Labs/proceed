@@ -493,7 +493,7 @@ export default {
     .return {
       display: flex;
       flex-direction: row;
-      justify-content: end;
+      justify-content: flex-end;
     }
   }
 }

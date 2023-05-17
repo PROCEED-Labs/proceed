@@ -135,7 +135,7 @@
         <custom-property-form
           :meta="metaCopy"
           :disableEditing="editingDisabled"
-          @change="applyMetaData"
+          @change="applyCustomProperty"
         ></custom-property-form>
 
         <documentation-form />
@@ -308,6 +308,11 @@ export default {
     },
     emitWindowMeasurements(changes) {
       this.windowMeasurements = changes;
+    },
+    applyCustomProperty(newCustomPropertyName, newCustomPropertyValue) {
+      this.customModeling.updateMetaData(this.element.id, {
+        property: { value: newCustomPropertyValue, attributes: { name: newCustomPropertyName } },
+      });
     },
     applyMetaData(metaData) {
       this.customModeling.updateMetaData(this.element.id, metaData);

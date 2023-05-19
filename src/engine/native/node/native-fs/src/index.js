@@ -65,8 +65,8 @@ class NativeFS extends NativeModule {
     let table = key;
 
     // cut out given attribute in json file
-    if (key.indexOf('.json/') !== -1) {
-      table = key.substr(0, key.indexOf('.json/'));
+    if (key.indexOf('.json') !== -1) {
+      table = key.substr(0, key.indexOf('.json'));
     }
 
     // Check mutex
@@ -161,8 +161,8 @@ class NativeFS extends NativeModule {
     let table = key;
 
     // cut out given attribute in json file
-    if (key.indexOf('.json/') !== -1) {
-      table = key.substr(0, key.indexOf('.json/'));
+    if (key.indexOf('.json') !== -1) {
+      table = key.substr(0, key.indexOf('.json'));
     }
 
     let succeed;
@@ -216,27 +216,16 @@ class NativeFS extends NativeModule {
             succeed();
           });
         });
-
-        // delete file if no json with specific attribute inside is given
       } else {
+        // delete file (or directory) if no json with specific attribute inside is given
         const fullPath = `${this.path}/data_files/${key}`;
-        if (fs.existsSync(fullPath) && fs.lstatSync(fullPath).isDirectory()) {
-          fs.rmdir(fullPath, { recursive: true }, (err) => {
-            if (err && err.code !== 'ENOENT') {
-              fail(err);
-              return;
-            }
-            succeed();
-          });
-        } else {
-          fs.unlink(fullPath, (err) => {
-            if (err && err.code !== 'ENOENT') {
-              fail(err);
-              return;
-            }
-            succeed();
-          });
-        }
+        fs.rm(fullPath, { recursive: true, force: true }, (err) => {
+          if (err) {
+            fail(err);
+            return;
+          }
+          succeed();
+        });
       }
       // New val
     } else {

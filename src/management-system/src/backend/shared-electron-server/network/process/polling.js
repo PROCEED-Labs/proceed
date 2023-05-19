@@ -734,12 +734,14 @@ export function mergeInstanceInformation(storedInstanceData, machinesInstanceInf
     }
   });
 
-  storedInstanceData.instanceState.sort((firstState, secondState) => {
-    let firstStateIndex = statePrecedence.findIndex((state) => state === firstState);
-    let secondStateIndex = statePrecedence.findIndex((state) => state === secondState);
+  if (storedInstanceData) {
+    storedInstanceData.instanceState.sort((firstState, secondState) => {
+      let firstStateIndex = statePrecedence.findIndex((state) => state === firstState);
+      let secondStateIndex = statePrecedence.findIndex((state) => state === secondState);
 
-    return firstStateIndex - secondStateIndex;
-  });
+      return firstStateIndex - secondStateIndex;
+    });
+  }
 
   return storedInstanceData;
 }

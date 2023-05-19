@@ -14,7 +14,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch PROCEED",
-      "program": "${workspaceFolder}/src/engine/native/node/index.js",
+      "program": "${workspaceFolder}/src/engine/native/node/index.ts",
       "autoAttachChildProcesses": true
     },
     {

@@ -28,8 +28,8 @@ module.exports = () => {
     let out = '';
     let ready = false;
     const engineProcess = spawn(
-      'yarn',
-      ['ts-node', path.resolve(__dirname, 'testEngine', 'startEngine.js')],
+      'node',
+      ['--loader', 'ts-node/esm', path.resolve(__dirname, 'testEngine', 'startEngine.js')],
       {
         cwd: __dirname,
         detached: false,

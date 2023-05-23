@@ -68,6 +68,7 @@
     "bpmn-js": "^11.1.1",
     "bpmn-js-cli": "^2.0.0",
     "bpmn-js-differ": "^2.0.2",
+    "babel-eslint": "^10.1.0",
     "chart.js": "^2.9.4",
     "conf": "^6.2.4",
     "connect-redis": "^6.0.0",

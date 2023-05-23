@@ -45,6 +45,9 @@ module.exports = {
   node: {
     __dirname: false,
   },
+  resolve: {
+    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs'],
+  },
 };
 
 console.log(module.exports);

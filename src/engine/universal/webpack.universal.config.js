@@ -24,6 +24,7 @@ module.exports = {
     process: false,
   },
   resolve: {
+    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs'],
     alias: {
       './separator.js$': './separator.webpack.js',
     },

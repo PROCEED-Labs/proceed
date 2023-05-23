@@ -1,5 +1,5 @@
 import io from 'socket.io-client';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import eventHandler from '@/frontend/backend-api/event-system/EventHandler.js';
 import { setProcessesListener } from '@/frontend/backend-api/ms-api-server/process.js';
 import { setNetworkListener } from '@/frontend/backend-api/ms-api-server/network.js';
@@ -11,7 +11,7 @@ import {
 
 export { io };
 
-export const connectionId = uuid.v4();
+export const connectionId = v4();
 
 let socket;
 export async function connect() {
@@ -74,7 +74,7 @@ export function listen(event, listener, once = false) {
  */
 export async function request(event, ...data) {
   return new Promise((resolve) => {
-    const id = uuid.v4();
+    const id = v4();
     // Listen for the answer
     function callback(_id, ..._data) {
       if (id === _id) {

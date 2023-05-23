@@ -1,3 +1,56 @@
+jest.mock('../../logging/logging', () => ({
+  getLogger: jest.fn().mockReturnValue({
+    trace: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    fatal: jest.fn(),
+    log: jest.fn(),
+  }),
+}));
+
+jest.mock('../../configuration/configHandler', () => {
+  const readConfig = jest.fn();
+
+  // different things will be requested by the Machine Information from the Config
+  // here we mock the different return values
+  readConfig.mockImplementation((parameter) => {
+    if (parameter === 'machine.onlineCheckingAddresses') {
+      return Promise.resolve(mockConfig['machine']['onlineCheckingAddresses']);
+    } else {
+      return Promise.resolve(mockConfig[parameter]);
+    }
+  });
+
+  return { readConfig };
+});
+
+jest.mock('@proceed/system', () => {
+  const getMachineInfo = jest.fn();
+  getMachineInfo.mockImplementation((parameterAsArray) => {
+    if (mockDevice[parameterAsArray[0]]) {
+      // create correct object like it is returned from the machine module
+      // e.g. await machine.getMachineInfo(['os']); {"os":{"platform":"linux","distr...
+      return Promise.resolve({ [parameterAsArray[0]]: mockDevice[parameterAsArray[0]] });
+    } else {
+      // if non-existing, return empty object
+      return Promise.resolve({});
+    }
+  });
+
+  const sendRequest = jest.fn();
+  sendRequest.mockResolvedValue('reachable');
+
+  const setTimeout = jest.fn();
+
+  return {
+    machine: { getMachineInfo },
+    timer: { setTimeout },
+    network: { sendRequest },
+  };
+});
+
 const machineInformation = require('../machineInformation');
 const config = require('../../configuration/configHandler');
 const { machine } = require('@proceed/system');
@@ -79,59 +132,6 @@ const mockDevice = {
   inputs: [],
   currentlyConnectedEnvironments: [],
 };
-
-jest.mock('../../logging/logging', () => ({
-  getLogger: jest.fn().mockReturnValue({
-    trace: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    fatal: jest.fn(),
-    log: jest.fn(),
-  }),
-}));
-
-jest.mock('../../configuration/configHandler', () => {
-  const readConfig = jest.fn();
-
-  // different things will be requested by the Machine Information from the Config
-  // here we mock the different return values
-  readConfig.mockImplementation((parameter) => {
-    if (parameter === 'machine.onlineCheckingAddresses') {
-      return Promise.resolve(mockConfig['machine']['onlineCheckingAddresses']);
-    } else {
-      return Promise.resolve(mockConfig[parameter]);
-    }
-  });
-
-  return { readConfig };
-});
-
-jest.mock('@proceed/system', () => {
-  const getMachineInfo = jest.fn();
-  getMachineInfo.mockImplementation((parameterAsArray) => {
-    if (mockDevice[parameterAsArray[0]]) {
-      // create correct object like it is returned from the machine module
-      // e.g. await machine.getMachineInfo(['os']); {"os":{"platform":"linux","distr...
-      return Promise.resolve({ [parameterAsArray[0]]: mockDevice[parameterAsArray[0]] });
-    } else {
-      // if non-existing, return empty object
-      return Promise.resolve({});
-    }
-  });
-
-  const sendRequest = jest.fn();
-  sendRequest.mockResolvedValue('reachable');
-
-  const setTimeout = jest.fn();
-
-  return {
-    machine: { getMachineInfo },
-    timer: { setTimeout },
-    network: { sendRequest },
-  };
-});
 
 describe('Reading Machine information:', () => {
   beforeEach(() => {
@@ -237,18 +237,18 @@ describe('Reading Machine information:', () => {
 
     // snapshot is automatically created, see here: https://jestjs.io/docs/en/snapshot-testing
     expect(info).toMatchInlineSnapshot(`
-      Object {
+      {
         "acceptUserTasks": false,
-        "battery": Object {
+        "battery": {
           "hasBattery": true,
           "maxCapacity": 47500,
           "percent": 99,
         },
-        "classes": Array [
+        "classes": [
           "Portable",
           "My-Test-Class",
         ],
-        "cpu": Object {
+        "cpu": {
           "cores": 8,
           "currentLoad": 16.11170784103115,
           "loadLastDay": 0,
@@ -261,51 +261,51 @@ describe('Reading Machine information:', () => {
           "processors": 1,
           "speed": "1.80",
         },
-        "currentlyConnectedEnvironments": Array [],
+        "currentlyConnectedEnvironments": [],
         "deactivateProcessExecution": false,
         "description": "little test machine",
-        "disk": Array [
-          Object {
+        "disk": [
+          {
             "free": 192296374272,
             "total": 501456297984,
             "type": "",
             "used": 309159923712,
           },
-          Object {
+          {
             "free": 517263360,
             "total": 535805952,
             "type": "",
             "used": 18542592,
           },
         ],
-        "display": Array [
-          Object {
+        "display": [
+          {
             "currentResX": 1920,
             "currentResY": 1080,
           },
-          Object {
+          {
             "currentResX": 1920,
             "currentResY": 1200,
           },
         ],
-        "domains": Array [
+        "domains": [
           "Kitchen",
           "My-Test-Domain",
         ],
         "hostname": "my-test-laptop",
         "id": "f0123ff-12ff-0123-fff1-1234567f1234",
-        "inputs": Array [
+        "inputs": [
           "TouchScreen",
         ],
-        "mem": Object {
+        "mem": {
           "free": 23506612224,
           "load": 0.30000000000000004,
           "total": 33423282176,
           "used": 9916669952,
         },
         "name": "testName",
-        "network": Array [
-          Object {
+        "network": [
+          {
             "ip4": "127.0.0.1",
             "ip6": "::1",
             "mac": "00:00:00:00:00:00",
@@ -315,15 +315,15 @@ describe('Reading Machine information:', () => {
           },
         ],
         "online": true,
-        "onlineCheckingAddresses": Array [
+        "onlineCheckingAddresses": [
           "https://europe-west3-proceed-274611.cloudfunctions.net/online-checking-address",
         ],
-        "os": Object {
+        "os": {
           "distro": "Ubuntu",
           "platform": "linux",
           "release": "20.04.1 LTS",
         },
-        "outputs": Array [
+        "outputs": [
           "Screen",
           "Speaker",
         ],

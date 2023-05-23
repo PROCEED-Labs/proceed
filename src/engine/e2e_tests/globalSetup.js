@@ -27,10 +27,14 @@ module.exports = () => {
 
     let out = '';
     let ready = false;
-    const engineProcess = spawn('node', [path.resolve(__dirname, 'testEngine', 'startEngine.js')], {
-      cwd: __dirname,
-      detached: false,
-    });
+    const engineProcess = spawn(
+      'node',
+      ['--loader', 'ts-node/esm', path.resolve(__dirname, 'testEngine', 'startEngine.js')],
+      {
+        cwd: __dirname,
+        detached: false,
+      }
+    );
     engineProcess.stdout.on('data', (data) => {
       // eslint-disable-next-line no-console
       console.log(data.toString());

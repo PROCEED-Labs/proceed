@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import Vue from 'vue';
 
 import Vuex from 'vuex';
@@ -9,7 +9,7 @@ Vue.use(Vuex);
 
 describe('Capability store', () => {
   const createMockCapability = (name, machineId) => ({
-    id: uuid.v4(),
+    id: v4(),
     name,
     machineIds: machineId ? [machineId] : [],
   });
@@ -56,7 +56,7 @@ describe('Capability store', () => {
 
     describe('remove non-existent capability', () => {
       test('should not remove anything', () => {
-        capabilityStore.dispatch('remove', { id: uuid.v4() });
+        capabilityStore.dispatch('remove', { id: v4() });
         expect(capabilityStore.getters.capabilities).toHaveLength(6);
       });
     });

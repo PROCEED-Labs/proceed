@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils.ts');
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
 
 /**
  * @memberof module:@proceed/system
@@ -13,7 +13,7 @@ class Machine extends System {
    * @returns {Promise}
    */
   getMachineInfo(properties) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
     const dataPromise = new Promise((resolve) => {
       this.commandResponse(taskID, (err, data) => {
         resolve(data);

@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import store from '../store.js';
 import { resources } from './migrations/resources-migration.js';
 import md5 from 'js-md5';
@@ -39,7 +39,7 @@ export async function init() {
   if (md5(JSON.stringify(copyOfStoredResources)) !== md5(JSON.stringify(resources))) {
     // seed resources database with new resources
     resources.forEach((resource) => {
-      resource.id = uuid.v4();
+      resource.id = v4();
       resourcesMetaObjects[resource.id] = resource;
     });
     // set resources store

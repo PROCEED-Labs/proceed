@@ -1,13 +1,15 @@
-/* eslint-disable no-undef */
-const IPC = require('./ipc');
+import IPC from './ipc';
+
+declare global {
+  interface Window {
+    // TODO: clarify what type window.IPC is (Socket.io client?)
+    IPC: any;
+  }
+}
 
 // This will be our singleton instance
 let instance = null;
 
-/**
- * @memberof module:@proceed/system.System
- * @extends module:@proceed/system.System.IPC
- */
 class WebIPC extends IPC {
   /**
    * Create a new instance of an IPC using a Browser.
@@ -27,18 +29,14 @@ class WebIPC extends IPC {
 
   /**
    * Emit a message to the native part of the PROCEED dispatcher in use.
-   * @param {string} taskID
-   * @param {string} taskName
-   * @param {array} args
    */
-  emit(taskID, taskName, args) {
+  emit([taskID, taskName, args]: [string, string, any[]]) {
     window.IPC.emit([taskID, taskName, args]);
   }
 
-  _processReceive(message) {
-    const [taskID, args] = message;
-    this.receive(taskID, args);
+  _processReceive([taskID, [err, ...args]]: [string, [Error | undefined, any[]]]) {
+    this.receive(taskID, [err, ...args]);
   }
 }
 
-module.exports = WebIPC;
+export default WebIPC;

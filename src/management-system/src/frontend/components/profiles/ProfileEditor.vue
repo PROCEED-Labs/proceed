@@ -146,7 +146,7 @@
 
 <script>
 /* eslint-disable no-prototype-builtins */
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import { mapState } from 'vuex';
 import {
   jsKeys,
@@ -304,7 +304,7 @@ export default {
   },
   methods: {
     add() {
-      const id = uuid.v4();
+      const id = v4();
       if (this.type !== 'Class') {
         this.$store.dispatch('environmentStore/add', {
           environmentProfile: {

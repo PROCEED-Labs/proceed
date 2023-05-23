@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 
 /**
  * Some information might be continuously polled by one or multiple frontends (e.g. machine information, deployment/instance information)
@@ -51,7 +51,7 @@ export default class PollingHandler {
   }
 
   async _pollingLoop() {
-    const cycleId = uuid.v4();
+    const cycleId = v4();
     this.pollingCycleId = cycleId;
     const pollingResult = await this.pollingFunction();
 

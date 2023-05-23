@@ -1,18 +1,4 @@
 /* eslint-disable import/no-dynamic-require */
-const { config } = require('@proceed/machine');
-const { network } = require('@proceed/system');
-const { communication } = require('@proceed/distribution');
-const constraintManager = require('../constraintManager');
-
-const path = './../../../../helper-modules/constraint-parser-xml-json/__tests__/ConstraintsJSON/';
-
-const sameMachineConstraint1 = require(`${path}sameMachineConstraint1JSON.json`).processConstraints;
-const sameMachineConstraint2 = require(`${path}sameMachineConstraint2JSON.json`).processConstraints;
-
-const exampleConstraints = require(`${path}1-ConstraintsJSON.json`).processConstraints;
-
-const expectedIpConstraint = require('./data/ConstraintJSON/expectedIp.json').processConstraints;
-
 jest.mock('@proceed/distribution', () => ({
   communication: {
     getAvailableMachines: jest.fn(),
@@ -27,6 +13,20 @@ jest.mock('@proceed/machine', () => ({
     readConfig: jest.fn(),
   },
 }));
+
+const { config } = require('@proceed/machine');
+const { network } = require('@proceed/system');
+const { communication } = require('@proceed/distribution');
+const constraintManager = require('../constraintManager');
+
+const path = './../../../../helper-modules/constraint-parser-xml-json/__tests__/ConstraintsJSON/';
+
+const sameMachineConstraint1 = require(`${path}sameMachineConstraint1JSON.json`).processConstraints;
+const sameMachineConstraint2 = require(`${path}sameMachineConstraint2JSON.json`).processConstraints;
+
+const exampleConstraints = require(`${path}1-ConstraintsJSON.json`).processConstraints;
+
+const expectedIpConstraint = require('./data/ConstraintJSON/expectedIp.json').processConstraints;
 
 beforeAll(() => {
   network.sendRequest = jest.fn();

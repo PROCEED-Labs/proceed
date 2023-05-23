@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../../frontend/helpers/helpers.js';
@@ -39,7 +39,7 @@ export async function addRole(roleRepresentation) {
 
   const createdOn = new Date().toUTCString();
   const lastEdited = createdOn;
-  const id = uuid.v4();
+  const id = v4();
 
   const role = {
     name,

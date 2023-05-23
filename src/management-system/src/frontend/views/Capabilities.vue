@@ -269,7 +269,7 @@
 
 <script>
 import * as R from 'ramda';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import { mapState } from 'vuex';
 import CapabilityForm from '@/frontend/components/capabilities/CapabilityForm.vue';
 import AlertWindow from '@/frontend/components/universal/Alert.vue';
@@ -383,7 +383,7 @@ export default {
     /** */
     addCapability(capability) {
       this.$store.dispatch('capabilityStore/add', {
-        capability: { ...capability, id: uuid.v4() },
+        capability: { ...capability, id: v4() },
       });
       this.addCapabilityDialog = false;
     },

@@ -40,7 +40,7 @@ import { engineNetworkInterface } from '@/frontend/backend-api/index.js';
 import ToolbarGroup from '@/frontend/components/universal/toolbar/ToolbarGroup.vue';
 import TooltipButton from '@/frontend/components/universal/TooltipButton.vue';
 
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 
 export default {
   components: {
@@ -251,7 +251,7 @@ export default {
 
       if (!token.tokenId) {
         // if the token is new create a temporary id and set it to be added
-        const temporaryId = `tmp_${uuid.v4()}`;
+        const temporaryId = `tmp_${v4()}`;
         this.updateTokenChanges('addedTokens', temporaryId, {
           ...token,
           tokenId: temporaryId,

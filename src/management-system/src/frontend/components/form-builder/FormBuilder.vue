@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import 'grapesjs/dist/css/grapes.min.css';
 import 'grapesjs-preset-webpage/dist/grapesjs-preset-webpage.min.css';
 import grapesjs from 'grapesjs';
@@ -388,7 +388,7 @@ export default {
       } else {
         if (this.processIsShared) {
           const imageType = image.type.split('image/').pop();
-          const imageFileName = `${this.filename}_image${uuid.v4()}.${imageType}`;
+          const imageFileName = `${this.filename}_image${v4()}.${imageType}`;
           imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
 
           // store image in backend

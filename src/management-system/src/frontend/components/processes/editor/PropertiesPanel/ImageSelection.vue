@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import ImageForm from '@/frontend/components/form-builder/ImageForm.vue';
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
 import { processInterface } from '@/frontend/backend-api/index.js';
@@ -76,7 +76,7 @@ export default {
         const imageType = image.type.split('image/').pop();
         const imageFileName = `${
           this.filename || this.selectedElement.id
-        }_image${uuid.v4()}.${imageType}`;
+        }_image${v4()}.${imageType}`;
         imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
 
         // store image in backend

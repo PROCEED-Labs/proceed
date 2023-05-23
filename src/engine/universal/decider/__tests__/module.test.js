@@ -1,4 +1,13 @@
 /* eslint-disable import/no-dynamic-require */
+jest.mock('@proceed/machine', () => ({
+  information: {
+    getMachineInformation: jest.fn(),
+  },
+  config: {
+    readConfig: jest.fn(),
+  },
+}));
+
 const { information, config } = require('@proceed/machine');
 const Hceval = require('../hard_constraint_evaluation/hc-eval.js');
 const decider = require('../module');
@@ -11,15 +20,6 @@ const test2Input = require(`${path}1-ConstraintsJSON.json`).processConstraints;
 const sameMachineConstraint = require(`${path}sameMachineConstraint1JSON.json`).processConstraints;
 const maxMachineHopsConstraint =
   require(`${path}maxMachineHopsConstraintJSON.json`).processConstraints;
-
-jest.mock('@proceed/machine', () => ({
-  information: {
-    getMachineInformation: jest.fn(),
-  },
-  config: {
-    readConfig: jest.fn(),
-  },
-}));
 
 beforeAll(() => {
   Date.now = jest.fn().mockReturnValue(new Date('2020-03-13T11:21:00'));

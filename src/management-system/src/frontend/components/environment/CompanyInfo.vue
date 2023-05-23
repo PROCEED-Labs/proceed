@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 export default {
   components: {},
   data: () => ({
@@ -103,7 +103,7 @@ export default {
 
   methods: {
     generateID() {
-      return uuid.v4();
+      return v4();
     },
     saveItem() {
       const newCompany = { ...this.companyData };

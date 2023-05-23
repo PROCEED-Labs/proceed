@@ -1,21 +1,11 @@
-/* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils.ts');
+import { System } from './system';
+import { generateUniqueTaskID } from './utils';
 
 let _config;
 
-/**
- * @memberof module:@proceed/system
- * @extends module:@proceed/system.System
- * @class
- * @hideconstructor
- */
 class Config extends System {
-  /**
-   * @returns {Promise}
-   */
   getConfig() {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
     const configPromise = new Promise((resolve) => {
       this.commandResponse(taskID, (err, data) => {
         resolve(data);
@@ -29,13 +19,8 @@ class Config extends System {
     return configPromise;
   }
 
-  /**
-   *
-   * @param {*} configObj
-   * @param {*} overwrite
-   */
   writeConfig(configObj, overwrite) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
     const dataPromise = new Promise((resolve, reject) => {
       this.commandResponse(taskID, (err, data) => {
         if (err) {
@@ -49,6 +34,7 @@ class Config extends System {
     });
 
     this.commandRequest(taskID, ['write_config', [configObj, overwrite]]);
+
     return dataPromise;
   }
 
@@ -67,4 +53,4 @@ class Config extends System {
   }
 }
 
-module.exports = Config;
+export default Config;

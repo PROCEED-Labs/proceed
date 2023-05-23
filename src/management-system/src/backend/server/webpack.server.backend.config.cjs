@@ -10,10 +10,7 @@ module.exports = {
   mode: 'production',
   output: {
     // eslint-disable-next-line no-undef
-    path: path.resolve(
-      __dirname,
-      './../../../../../build/management-system/server'
-    ),
+    path: path.resolve(__dirname, './../../../../../build/management-system/server'),
     filename: 'server.js',
   },
   module: {
@@ -94,10 +91,7 @@ module.exports = {
             if (typeof external === 'string') {
               const packageJson = JSON.parse(
                 fs.readFileSync(
-                  path.join(
-                    __dirname,
-                    `../../../../../node_modules/${external}/package.json`
-                  ),
+                  path.join(__dirname, `../../../../../node_modules/${external}/package.json`),
                   'utf-8'
                 )
               );

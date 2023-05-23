@@ -80,9 +80,7 @@
         "--remote-debugging-port=9223",
         "${workspaceFolder}/build/management-system/electron"
       ],
-      "outFiles": [
-        "${workspaceFolder}/src/management-system/build/electron/**/*.js"
-      ]
+      "outFiles": ["${workspaceFolder}/src/management-system/build/electron/**/*.js"]
     },
     {
       "name": "Electron: Renderer",

@@ -43,10 +43,7 @@
   },
   {
     "@id": "_:heightParameter",
-    "@type": [
-      "https://w3id.org/function/ontology#Parameter",
-      "https://schema.org/Integer"
-    ],
+    "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
     "https://w3id.org/function/ontology#predicate": [
       {
         "@type": ["https://schema.org/height"]
@@ -65,10 +62,7 @@
   },
   {
     "@id": "_:widthParameter",
-    "@type": [
-      "https://w3id.org/function/ontology#Parameter",
-      "https://schema.org/Integer"
-    ],
+    "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
     "https://w3id.org/function/ontology#predicate": [
       {
         "@type": ["https://schema.org/width"]
@@ -92,10 +86,7 @@
   },
   {
     "@id": "_:dpiParameter",
-    "@type": [
-      "https://w3id.org/function/ontology#Parameter",
-      "https://schema.org/Integer"
-    ],
+    "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
     "https://w3id.org/function/ontology#predicate": [
       {
         "@type": ["/dpi"]
@@ -133,10 +124,7 @@
         "@list": [
           {
             "@id": "_:blackWhiteParameter",
-            "@type": [
-              "https://w3id.org/function/ontology#Parameter",
-              "https://schema.org/Boolean"
-            ],
+            "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Boolean"],
             "https://w3id.org/function/ontology#predicate": [
               {
                 "@type": ["/blackWhite"]
@@ -155,10 +143,7 @@
           },
           {
             "@id": "_:rotationParameter",
-            "@type": [
-              "https://w3id.org/function/ontology#Parameter",
-              "https://schema.org/Integer"
-            ],
+            "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
             "https://w3id.org/function/ontology#predicate": [
               {
                 "@type": ["/rotation"]
@@ -273,10 +258,7 @@
     "https://schema.org/potentialAction": [
       {
         "@id": "_:TurnOnDefinition",
-        "@type": [
-          "http://iotschema.org/TurnOn",
-          "https://w3id.org/function/ontology#Function"
-        ]
+        "@type": ["http://iotschema.org/TurnOn", "https://w3id.org/function/ontology#Function"]
       }
     ]
   },
@@ -299,10 +281,7 @@
   },
   {
     "@id": "_:colourParameter",
-    "@type": [
-      "https://w3id.org/function/ontology#Parameter",
-      "https://schema.org/Text"
-    ],
+    "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Text"],
     "https://w3id.org/function/ontology#predicate": [
       {
         "@type": ["https://schema.org/color"]

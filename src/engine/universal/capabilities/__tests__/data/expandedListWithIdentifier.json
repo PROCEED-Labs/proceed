@@ -25,16 +25,11 @@
             ]
           }
         ],
-        "https://w3id.org/function/ontology#returns": [
-          { "@list": [{ "@id": "_:imageParameter" }] }
-        ]
+        "https://w3id.org/function/ontology#returns": [{ "@list": [{ "@id": "_:imageParameter" }] }]
       },
       {
         "@id": "_:heightParameter",
-        "@type": [
-          "https://w3id.org/function/ontology#Parameter",
-          "https://schema.org/Integer"
-        ],
+        "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
         "https://w3id.org/function/ontology#predicate": [
           { "@type": ["https://schema.org/height"] }
         ],
@@ -43,35 +38,23 @@
       },
       {
         "@id": "_:widthParameter",
-        "@type": [
-          "https://w3id.org/function/ontology#Parameter",
-          "https://schema.org/Integer"
-        ],
-        "https://w3id.org/function/ontology#predicate": [
-          { "@type": ["https://schema.org/width"] }
-        ],
+        "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
+        "https://w3id.org/function/ontology#predicate": [{ "@type": ["https://schema.org/width"] }],
         "https://w3id.org/function/ontology#required": [{ "@value": true }],
         "https://schema.org/maxValue": [{ "@value": 20 }],
         "https://schema.org/unitText": [{ "@value": "px" }]
       },
       {
         "@id": "_:dpiParameter",
-        "@type": [
-          "https://w3id.org/function/ontology#Parameter",
-          "https://schema.org/Integer"
-        ],
+        "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Integer"],
         "https://w3id.org/function/ontology#predicate": [{ "@type": ["/dpi"] }],
         "https://w3id.org/function/ontology#required": [{ "@value": false }],
-        "https://schema.org/description": [
-          { "@value": "required Dots Per Inch value, resolution" }
-        ]
+        "https://schema.org/description": [{ "@value": "required Dots Per Inch value, resolution" }]
       },
       {
         "@id": "_:optionsParameter",
         "@type": ["https://w3id.org/function/ontology#Parameter"],
-        "https://w3id.org/function/ontology#predicate": [
-          { "@type": ["/options"] }
-        ],
+        "https://w3id.org/function/ontology#predicate": [{ "@type": ["/options"] }],
         "https://w3id.org/function/ontology#required": [{ "@value": false }],
         "http://purl.org/dc/terms/hasPart": [
           {
@@ -82,12 +65,8 @@
                   "https://w3id.org/function/ontology#Parameter",
                   "https://schema.org/Boolean"
                 ],
-                "https://w3id.org/function/ontology#predicate": [
-                  { "@type": ["/blackWhite"] }
-                ],
-                "https://w3id.org/function/ontology#required": [
-                  { "@value": false }
-                ],
+                "https://w3id.org/function/ontology#predicate": [{ "@type": ["/blackWhite"] }],
+                "https://w3id.org/function/ontology#required": [{ "@value": false }],
                 "https://schema.org/defaultValue": [{ "@value": false }]
               },
               {
@@ -96,12 +75,8 @@
                   "https://w3id.org/function/ontology#Parameter",
                   "https://schema.org/Integer"
                 ],
-                "https://w3id.org/function/ontology#predicate": [
-                  { "@type": ["/rotation"] }
-                ],
-                "https://w3id.org/function/ontology#required": [
-                  { "@value": false }
-                ],
+                "https://w3id.org/function/ontology#predicate": [{ "@type": ["/rotation"] }],
+                "https://w3id.org/function/ontology#required": [{ "@value": false }],
                 "https://schema.org/defaultValue": [{ "@value": 0 }],
                 "https://schema.org/maxValue": [{ "@value": 359 }],
                 "https://schema.org/minValue": [{ "@value": 0 }]
@@ -166,9 +141,7 @@
       },
       {
         "@id": "_:PhotograhActionImplementation",
-        "@type": [
-          "https://w3id.org/function/vocabulary/implementationJavaScriptFunction"
-        ],
+        "@type": ["https://w3id.org/function/vocabulary/implementationJavaScriptFunction"],
         "http://dbpedia.org/ontology/filename": [{ "@value": "index.js" }]
       },
       {
@@ -182,9 +155,7 @@
         ],
         "https://w3id.org/function/ontology#parameterMapping": [
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:heightParameter" }
             ],
@@ -193,9 +164,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:widthParameter" }
             ],
@@ -204,9 +173,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:dpiParameter" }
             ],
@@ -215,9 +182,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:optionsParameter" }
             ],
@@ -226,9 +191,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:optionsParameter" },
               { "@value": "_:blackWhiteParameter" }
@@ -238,9 +201,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:optionsParameter" },
               { "@value": "_:rotationParameter" }
@@ -252,9 +213,7 @@
         ],
         "https://w3id.org/function/ontology#returnMapping": [
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:imageParameter" }
             ],
@@ -263,9 +222,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:imageParameter" },
               { "@value": "_:geoCoordinatesParameter" }
@@ -275,9 +232,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:imageParameter" },
               { "@value": "_:geoCoordinatesParameter" },
@@ -288,9 +243,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:imageParameter" },
               { "@value": "_:geoCoordinatesParameter" },
@@ -301,9 +254,7 @@
             ]
           },
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#DefaultReturnMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:imageParameter" },
               { "@value": "_:photographParameter" }
@@ -327,10 +278,7 @@
         "https://schema.org/potentialAction": [
           {
             "@id": "_:TurnOnDefinition",
-            "@type": [
-              "http://iotschema.org/TurnOn",
-              "https://w3id.org/function/ontology#Function"
-            ]
+            "@type": ["http://iotschema.org/TurnOn", "https://w3id.org/function/ontology#Function"]
           }
         ]
       },
@@ -343,36 +291,25 @@
       },
       {
         "@id": "_:colourParameter",
-        "@type": [
-          "https://w3id.org/function/ontology#Parameter",
-          "https://schema.org/Text"
-        ],
-        "https://w3id.org/function/ontology#predicate": [
-          { "@type": ["https://schema.org/color"] }
-        ],
+        "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Text"],
+        "https://w3id.org/function/ontology#predicate": [{ "@type": ["https://schema.org/color"] }],
         "https://w3id.org/function/ontology#required": [{ "@value": true }]
       },
       {
         "@id": "_:TurnOnImplementation",
-        "@type": [
-          "https://w3id.org/function/vocabulary/implementationJavaScriptFunction"
-        ],
+        "@type": ["https://w3id.org/function/vocabulary/implementationJavaScriptFunction"],
         "http://dbpedia.org/ontology/filename": [{ "@value": "index.js" }]
       },
       {
         "@id": "_:turnOnMapping",
         "@type": ["https://w3id.org/function/ontology#Mapping"],
-        "https://w3id.org/function/ontology#function": [
-          { "@value": "_:TurnOnDefinition" }
-        ],
+        "https://w3id.org/function/ontology#function": [{ "@value": "_:TurnOnDefinition" }],
         "https://w3id.org/function/ontology#implementation": [
           { "@value": "_:TurnOnImplementation" }
         ],
         "https://w3id.org/function/ontology#parameterMapping": [
           {
-            "@type": [
-              "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-            ],
+            "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
             "https://w3id.org/function/vocabulary/mapping#functionParameter": [
               { "@value": "_:colourParameter" }
             ],

@@ -9,52 +9,34 @@
       "https://schema.org/potentialAction": [
         {
           "@id": "_:TurnOnDefinition",
-          "@type": [
-            "http://iotschema.org/TurnOn",
-            "https://w3id.org/function/ontology#Function"
-          ]
+          "@type": ["http://iotschema.org/TurnOn", "https://w3id.org/function/ontology#Function"]
         }
       ]
     },
     {
       "@id": "_:TurnOnDefinition",
-      "https://w3id.org/function/ontology#expects": [
-        { "@list": [{ "@id": "_:colourParameter" }] }
-      ],
+      "https://w3id.org/function/ontology#expects": [{ "@list": [{ "@id": "_:colourParameter" }] }],
       "https://w3id.org/function/ontology#returns": [{ "@list": [] }]
     },
     {
       "@id": "_:colourParameter",
-      "@type": [
-        "https://w3id.org/function/ontology#Parameter",
-        "https://schema.org/Text"
-      ],
-      "https://w3id.org/function/ontology#predicate": [
-        { "@type": ["https://schema.org/color"] }
-      ],
+      "@type": ["https://w3id.org/function/ontology#Parameter", "https://schema.org/Text"],
+      "https://w3id.org/function/ontology#predicate": [{ "@type": ["https://schema.org/color"] }],
       "https://w3id.org/function/ontology#required": [{ "@value": true }]
     },
     {
       "@id": "_:TurnOnImplementation",
-      "@type": [
-        "https://w3id.org/function/vocabulary/implementationJavaScriptFunction"
-      ],
+      "@type": ["https://w3id.org/function/vocabulary/implementationJavaScriptFunction"],
       "http://dbpedia.org/ontology/filename": [{ "@value": "index.js" }]
     },
     {
       "@id": "_:turnOnMapping",
       "@type": ["https://w3id.org/function/ontology#Mapping"],
-      "https://w3id.org/function/ontology#function": [
-        { "@value": "_:TurnOnDefinition" }
-      ],
-      "https://w3id.org/function/ontology#implementation": [
-        { "@value": "_:TurnOnImplementation" }
-      ],
+      "https://w3id.org/function/ontology#function": [{ "@value": "_:TurnOnDefinition" }],
+      "https://w3id.org/function/ontology#implementation": [{ "@value": "_:TurnOnImplementation" }],
       "https://w3id.org/function/ontology#parameterMapping": [
         {
-          "@type": [
-            "https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"
-          ],
+          "@type": ["https://w3id.org/function/vocabulary/mapping#PropertyParameterMapping"],
           "https://w3id.org/function/vocabulary/mapping#functionParameter": [
             { "@value": "_:colourParameter" }
           ],

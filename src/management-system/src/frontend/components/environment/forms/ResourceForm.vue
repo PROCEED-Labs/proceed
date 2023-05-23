@@ -124,7 +124,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 export default {
   props: {
     formMode: {
@@ -189,7 +189,7 @@ export default {
 
   methods: {
     generateID() {
-      return uuid.v4();
+      return v4();
     },
     resetForm() {
       this.editedItem = { ...this.defaultItem };

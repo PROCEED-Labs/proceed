@@ -7,6 +7,9 @@
   "license": "MIT",
   "dependencies": {
     "browser-request": "^0.3.3",
-    "uuid": "^3.3.3"
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.1"
   }
 }

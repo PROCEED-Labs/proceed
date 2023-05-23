@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import { listen, request, io, connectionId } from './socket.js';
 import restRequest from './rest.js';
 import eventHandler from '@/frontend/backend-api/event-system/EventHandler.js';
@@ -343,7 +343,7 @@ async function pushToBackend(processDefinitionsId) {
         const blob = await fetch(base64String).then((res) => res.blob());
         const file = new File([blob], { type: blob.type });
         const imageType = blob.type.split('image/').pop();
-        const imageFileName = `${fileName}_image${uuid.v4()}.${imageType}`;
+        const imageFileName = `${fileName}_image${v4()}.${imageType}`;
         // replace base64 string in userTask image with image path
         imageEl.setAttribute(
           'src',

@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils.ts');
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
 
 /**
  * @memberof module:@proceed/system
@@ -66,25 +66,85 @@ class Messaging extends System {
   }
 
   /**
+   * Create a persistent connection to a messaging server that will be used for future calls to publish if the url and the log-in information matches
+   *
+   * @param {String} url the address of the messaging server
+   * @param {Object} connectionOptions options that should be used when connecting to the messaging server
+   * @param {String} connectionOptions.username the username to use when connecting
+   * @param {String} connectionOptions.password the password to use when connecting
+   */
+  async connect(url, connectionOptions = {}) {
+    const taskID = generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, _data) => {
+        if (err) {
+          reject(`Failed to connect to ${url}\n${err}`);
+        } else {
+          resolve();
+        }
+
+        return true;
+      });
+    });
+
+    connectionOptions = JSON.stringify(connectionOptions);
+
+    this.commandRequest(taskID, ['messaging_connect', [url, connectionOptions]]);
+
+    return listenPromise;
+  }
+
+  /**
+   * Close a connection to a messaging server
+   *
+   * The function requires you to provide the log-in information that was used when connecting to the server to identify the correct connection
+   * (we allow multiple connections to the same server with different users)
+   *
+   * @param {String} url the address of the messaging server
+   * @param {Object} connectionOptions options that were used when connecting to the server
+   * @param {String} connectionOptions.username the username that was used when connecting
+   * @param {String} connectionOptions.password the password that was used when connecting
+   */
+  async disconnect(url, connectionOptions = {}) {
+    const taskID = utils.generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, _data) => {
+        if (err) {
+          reject(`Failed to disconnect from ${url}\n${err}`);
+        } else {
+          resolve();
+        }
+
+        return true;
+      });
+    });
+
+    connectionOptions = JSON.stringify(connectionOptions);
+
+    this.commandRequest(taskID, ['messaging_disconnect', [url, connectionOptions]]);
+
+    return listenPromise;
+  }
+
+  /**
    * Publish some data through a messaging server
    *
    * @param {String} topic the topic under which the data should be published (e.g. engine/[engine-id]/status)
    * @param {String|Object} message the data that should be published
    * @param {String} overrideUrl address of the messaging server if the default one should not be used
-   * @param {Object} options options that should be used when publishing the message
-   * @param {Number} options.qos mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
-   * @param {Boolean} options.retain mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
+   * @param {Object} messageOptions options that should be used when publishing the message
+   * @param {Number} messageOptions.qos mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
+   * @param {Boolean} messageOptions.retain mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
+   * @param {Boolean} messageOptions.prependDefaultTopic if set to true will prepend engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
    * @param {String} connectionOptions.username the username to use when connecting
    * @param {String} connectionOptions.password the password to use when connecting
    */
-  async publish(
-    topic,
-    message,
-    overrideUrl = this._defaultMessagingServerAddress,
-    messageOptions = {},
-    connectionOptions = {}
-  ) {
+  async publish(topic, message, overrideUrl, messageOptions = {}, connectionOptions = {}) {
     // if no url is given use the default url if one was set
     const url = overrideUrl || this._defaultMessagingServerAddress;
 
@@ -105,7 +165,7 @@ class Messaging extends System {
       return;
     }
 
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response from the native part
@@ -119,6 +179,12 @@ class Messaging extends System {
         return true;
       });
     });
+
+    // prepends the default topic path "engine/[engine-id]" to the topic
+    // this way all modules in the engine can just call publish with prependDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
+    if (messageOptions.prependDefaultTopic) {
+      topic = `engine/${this._machineId}/${topic}`;
+    }
 
     // make sure that everything is in the correct format to be passed to the native part
     if (typeof message !== 'string') message = JSON.stringify(message);

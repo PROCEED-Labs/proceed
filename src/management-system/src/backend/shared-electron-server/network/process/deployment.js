@@ -96,7 +96,7 @@ async function removeDeploymentFromMachines(definitionId, machines) {
 export async function removeDeployment(processDefinitionsId) {
   const deployedTo = getDeployments()[processDefinitionsId].machines;
 
-  removeDeploymentFromMachines(processDefinitionsId, deployedTo);
+  await removeDeploymentFromMachines(processDefinitionsId, deployedTo);
 
   await removeStoredDeployment(processDefinitionsId);
 

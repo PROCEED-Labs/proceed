@@ -1,5 +1,3 @@
-const { continueInstance } = require('../management.js');
-
 /* eslint-disable global-require */
 jest.mock('@proceed/machine', () => {
   const getLogger = jest.fn();

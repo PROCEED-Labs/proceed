@@ -1,40 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`UI adds a display item to the SPA (HTTP) 1`] = `
-Object {
+{
   "mimeType": "html",
   "response": "
       <!DOCTYPE html>
       <html>
         <head>
-          <meta charset=\\"UTF-8\\" />
-          <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no\\">
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
           <meta
-            name=\\"description\\"
-            content=\\"This is the tasklist from the PROCEED BPMS where you can see and work on your tasks.\\"
+            name="description"
+            content="This is the tasklist from the PROCEED BPMS where you can see and work on your tasks."
           />
-          <meta http-equiv=\\"X-UA-Compatible\\" content=\\"IE=edge\\" />
-          <link rel=\\"icon\\" type=\\"image/png\\" sizes=\\"32x32\\" href=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAB3BAMAAAAeDIOYAAAAD1BMVEUAAABZWVlgYGBmZmZsbGy1A1kgAAAAAXRSTlMAQObYZgAAAAlwSFlzAAC4jAAAuIwBzPa7LwAAAWRJREFUaN7tmu0NgzAMRMPHAEAYAFoGCBsA+w/VDQqW41wSLv8tWSfn9ZHaudvTj+qzONXZ1Q14XQOtPoJD18GqbmCGR+DQESjHsFE3MOkaqOEmKiPo9BEEwogwIozKh9FJGNUAo4C+iRthtKAjIIwyhFH3uT3BFkayEgMYnbKS+GbUy0oM5HCXlcSHUScrMYDRKioxgFErKznRERjASBgBYWRgRoTRk8keCKOsYNQTRi81o29lMBp0ZmTwZrQTRjQjmtGTyfa2MEJrQXI3nOQzcJjOwAoegTb1JfCZkTA5CCfdHYz+dSL0gfg/hg8idZZG1KWG0Ph6CAXx/5K2b8ayACqAkJLChBAggM0UQhfahtEyXIAJeZqQ5deIEEIXGkKIAOo2oQd2Hfd5cMpNBApbZooPocJ2SC5wAPA9oiY6hArbJYOv9q6EEDYAQggdQFs+hWdCiBDCBkATogkRQlgR+AOhHxPPunGOG5/7AAAAAElFTkSuQmCC\\" />
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAB3BAMAAAAeDIOYAAAAD1BMVEUAAABZWVlgYGBmZmZsbGy1A1kgAAAAAXRSTlMAQObYZgAAAAlwSFlzAAC4jAAAuIwBzPa7LwAAAWRJREFUaN7tmu0NgzAMRMPHAEAYAFoGCBsA+w/VDQqW41wSLv8tWSfn9ZHaudvTj+qzONXZ1Q14XQOtPoJD18GqbmCGR+DQESjHsFE3MOkaqOEmKiPo9BEEwogwIozKh9FJGNUAo4C+iRthtKAjIIwyhFH3uT3BFkayEgMYnbKS+GbUy0oM5HCXlcSHUScrMYDRKioxgFErKznRERjASBgBYWRgRoTRk8keCKOsYNQTRi81o29lMBp0ZmTwZrQTRjQjmtGTyfa2MEJrQXI3nOQzcJjOwAoegTb1JfCZkTA5CCfdHYz+dSL0gfg/hg8idZZG1KWG0Ph6CAXx/5K2b8ayACqAkJLChBAggM0UQhfahtEyXIAJeZqQ5deIEEIXGkKIAOo2oQd2Hfd5cMpNBApbZooPocJ2SC5wAPA9oiY6hArbJYOv9q6EEDYAQggdQFs+hWdCiBDCBkATogkRQlgR+AOhHxPPunGOG5/7AAAAAElFTkSuQmCC" />
           <title>PROCEED Tasklist</title>
-          <script type=\\"text/javascript\\">
+          <script type="text/javascript">
             function validateEndpointArgs(method, path, body, query) {
   if (!path || typeof path !== 'string') {
     throw new Error('Path is required to be a string!');
   }
-
   if (path.length < 3 || path.indexOf('/', 1) === -1) {
     throw new Error('Path has to be of form \`/key/[endpoint]\`!');
   }
-
   if (method === 'get' && body !== null) {
     throw new Error('A body payload with GET requests is not supported!');
   }
-
   if (query && typeof query !== 'object') {
     throw new Error('Query has to be an object!');
   }
 }
-            window.PROCEED_UI_CONTENTS = {\\"undefined\\":\\"\\"};
+            window.PROCEED_UI_CONTENTS = {"undefined":""};
             window.PROCEED_DATA = {
               get: async (path, query) => {
                 validateEndpointArgs('get', path, null, query);
@@ -70,7 +67,7 @@ Object {
               }
             };
           </script>
-          <style type=\\"text/css\\">
+          <style type="text/css">
   body, html {
     margin: 0;
     padding: 0;
@@ -261,19 +258,19 @@ Object {
         </head>
         <body>
           
-<div id=\\"wrapper\\">
-  <div id=\\"header\\">
-    <div class=\\"logo\\">
-    <svg preserveAspectRatio=\\"none\\" viewBox=\\"0 0 461 125\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"m48.62 87.46h-37.14v37.43h-11.48v-51.17h46.63c3.98 0 5.97-1.21 5.97-3.64v-15.7c0-2.81-1.99-4.21-5.97-4.21h-46.63v-13.74h48.04c10.7 0 16.05 4.96 16.05 14.86v21.59c0 9.63-5.16 14.49-15.47 14.58zm38.83 0v-33.36c0-2.81 1.99-4.21 5.98-4.21h43.11v-13.74h-44.52c-10.7 0-16.05 4.96-16.05 14.86v36.45zm78.4-13.74h29.29c3.98 0 5.97-1.35 5.97-4.06v-15.56c0-2.81-1.99-4.21-5.97-4.21h-29.29c-3.91 0-5.86 1.4-5.86 4.21v15.56c0 2.71 1.95 4.06 5.86 4.06zm30.69 13.74h-31.98c-10.7 0-16.05-4.9-16.05-14.72v-21.73c0-9.9 5.35-14.86 16.05-14.86h31.98c10.7 0 16.05 4.96 16.05 14.86v21.73c0 9.82-5.35 14.72-16.05 14.72zm43.99 0h44.52v-13.74h-43.11c-3.99 0-5.98-1.35-5.98-4.06v-15.56c0-2.81 1.99-4.21 5.98-4.21h43.11v-13.74h-44.52c-10.7 0-16.05 4.96-16.05 14.86v21.73c0 9.82 5.35 14.72 16.05 14.72zm80.32-.05h48.15l19.04-25.49-19.04-25.52h-48.15l19.04 25.52zm0 0\\"/><path d=\\"m296.22 75.3h25.29l9.97-13.39-9.97-13.39h-25.29l10 13.39zm164.51 13.16v-13.74h-46.63c-3.98 0-5.97-1.35-5.97-4.06v-15.57c0-2.8 1.99-4.2 5.97-4.2h46.63v-50.89h-11.6v37.15h-36.43c-10.7 0-16.06 4.95-16.06 14.86v21.73c0 9.81 5.36 14.72 16.06 14.72zm0 0\\"/></g></svg></div>
-    <div class=\\"mobileMenu\\"><svg aria-hidden=\\"true\\" focusable=\\"false\\" data-prefix=\\"fas\\" data-icon=\\"bars\\" class=\\"svg-inline--fa fa-bars fa-w-14\\" role=\\"img\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 448 512\\"><path fill=\\"currentColor\\" d=\\"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z\\"></path></svg></div><ul id=\\"nav\\">
-  <li class=\\"item\\" data-key=\\"undefined\\"><span>undefined</span><span class=\\"badge\\"></span></li>
+<div id="wrapper">
+  <div id="header">
+    <div class="logo">
+    <svg preserveAspectRatio="none" viewBox="0 0 461 125" xmlns="http://www.w3.org/2000/svg"><g fill-rule="evenodd"><path d="m48.62 87.46h-37.14v37.43h-11.48v-51.17h46.63c3.98 0 5.97-1.21 5.97-3.64v-15.7c0-2.81-1.99-4.21-5.97-4.21h-46.63v-13.74h48.04c10.7 0 16.05 4.96 16.05 14.86v21.59c0 9.63-5.16 14.49-15.47 14.58zm38.83 0v-33.36c0-2.81 1.99-4.21 5.98-4.21h43.11v-13.74h-44.52c-10.7 0-16.05 4.96-16.05 14.86v36.45zm78.4-13.74h29.29c3.98 0 5.97-1.35 5.97-4.06v-15.56c0-2.81-1.99-4.21-5.97-4.21h-29.29c-3.91 0-5.86 1.4-5.86 4.21v15.56c0 2.71 1.95 4.06 5.86 4.06zm30.69 13.74h-31.98c-10.7 0-16.05-4.9-16.05-14.72v-21.73c0-9.9 5.35-14.86 16.05-14.86h31.98c10.7 0 16.05 4.96 16.05 14.86v21.73c0 9.82-5.35 14.72-16.05 14.72zm43.99 0h44.52v-13.74h-43.11c-3.99 0-5.98-1.35-5.98-4.06v-15.56c0-2.81 1.99-4.21 5.98-4.21h43.11v-13.74h-44.52c-10.7 0-16.05 4.96-16.05 14.86v21.73c0 9.82 5.35 14.72 16.05 14.72zm80.32-.05h48.15l19.04-25.49-19.04-25.52h-48.15l19.04 25.52zm0 0"/><path d="m296.22 75.3h25.29l9.97-13.39-9.97-13.39h-25.29l10 13.39zm164.51 13.16v-13.74h-46.63c-3.98 0-5.97-1.35-5.97-4.06v-15.57c0-2.8 1.99-4.2 5.97-4.2h46.63v-50.89h-11.6v37.15h-36.43c-10.7 0-16.06 4.95-16.06 14.86v21.73c0 9.81 5.36 14.72 16.06 14.72zm0 0"/></g></svg></div>
+    <div class="mobileMenu"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars" class="svg-inline--fa fa-bars fa-w-14" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"></path></svg></div><ul id="nav">
+  <li class="item" data-key="undefined"><span>undefined</span><span class="badge"></span></li>
   </ul>
   </div>
-  <div id=\\"content\\">
+  <div id="content">
     <iframe></iframe>
   </div>
 </div>
-          <script type=\\"text/javascript\\">(() => {
+          <script type="text/javascript">(() => {
     const doc = window.document;
 
     function toggleMobileMenu() {
@@ -283,18 +280,18 @@ Object {
 
     function navigate(event) {
       let itemElement = event.target;
-
       while (itemElement.tagName !== 'LI') {
         itemElement = itemElement.parentElement;
       }
 
-      Array.from(doc.querySelectorAll('#nav li')).forEach(li => li.classList.remove('active'));
+      Array.from(doc.querySelectorAll('#nav li')).forEach((li) => li.classList.remove('active'));
       itemElement.classList.add('active');
       const iframe = doc.createElement('iframe');
       const content = doc.querySelector('#content');
       content.innerHTML = '';
       content.appendChild(iframe);
       iframe.contentWindow.PROCEED_DATA = window.PROCEED_DATA;
+
       /* DEV
       const xhr = new XMLHttpRequest();
       xhr.addEventListener('loadend', (req) => {
@@ -310,22 +307,22 @@ Object {
       iframe.contentWindow.document.open();
       iframe.contentWindow.document.write(window.PROCEED_UI_CONTENTS[itemElement.dataset.key]);
       iframe.contentWindow.document.close();
-    } // Navigation menu
+    }
 
-
-    doc.querySelectorAll('#nav .item').forEach(item => {
-      item.addEventListener('click', e => {
+    // Navigation menu
+    doc.querySelectorAll('#nav .item').forEach((item) => {
+      item.addEventListener('click', (e) => {
         // Hide burger menu on mobile
         toggleMobileMenu();
         navigate(e);
       });
-    }); // Toggle mobile burger menu
-
-    doc.querySelector('#header .mobileMenu').addEventListener('click', toggleMobileMenu); // Show first display item
-
-    navigate({
-      target: doc.querySelector('#nav li:first-child')
     });
+
+    // Toggle mobile burger menu
+    doc.querySelector('#header .mobileMenu').addEventListener('click', toggleMobileMenu);
+
+    // Show first display item
+    navigate({ target: doc.querySelector('#nav li:first-child') });
   })()</script>
         </body>
       </html>",

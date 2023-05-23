@@ -1,5 +1,5 @@
 const system = require('@proceed/system');
-const IPC = require('@proceed/system/src/ipc/ipc.js');
+const IPC = require('@proceed/system/src/ipc/ipc.ts').default;
 const { config, logging } = require('@proceed/machine');
 const { information: machineInformation } = require('@proceed/machine');
 const distribution = require('@proceed/distribution');
@@ -48,7 +48,7 @@ module.exports = {
     distribution.init(management);
 
     if (enableMessaging) {
-      await setupMessaging(system.messaging, config, machineInformation);
+      await setupMessaging(system.messaging, config, machineInformation, logger);
     }
 
     if (!options.silentMode) {

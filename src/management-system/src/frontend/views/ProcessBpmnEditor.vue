@@ -85,7 +85,7 @@ import VariableToolbar from '@/frontend/components/processes/editor/VariableTool
 import Confirmation from '@/frontend/components/universal/Confirmation.vue';
 import LostConnectionDialog from '@/frontend/components/processes/editor/LostConnectionDialog.vue';
 
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import { subject } from '@casl/ability';
 
 import hiddenElements from '@/frontend/assets/styles/hidden-non-executable-element.lazy.css';
@@ -188,9 +188,9 @@ export default {
   data() {
     return {
       /** */
-      canvasID: 'canvas_' + uuid.v4(),
+      canvasID: 'canvas_' + v4(),
       /** */
-      propertiesID: 'properties_' + uuid.v4(),
+      propertiesID: 'properties_' + v4(),
 
       /** */
       timeout: null,

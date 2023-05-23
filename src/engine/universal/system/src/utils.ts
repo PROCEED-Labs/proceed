@@ -1,7 +1,5 @@
-const uuid = require('uuid/v4');
+import { v4 } from 'uuid';
 
-module.exports = {
-  generateUniqueTaskID() {
-    return uuid();
-  },
+export const generateUniqueTaskID = () => {
+  return v4();
 };

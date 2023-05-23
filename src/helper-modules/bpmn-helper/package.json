@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "bpmn-moddle": "^6.0.0",
-    "ids": "^1.0.0"
+    "ids": "^1.0.0",
+    "uuid": "^9.0.0"
   }
 }

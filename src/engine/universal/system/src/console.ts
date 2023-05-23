@@ -1,26 +1,17 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('././utils.ts');
+import { System } from './system';
+import { generateUniqueTaskID } from './utils';
 
 let _logging;
 
-/**
- * @memberof module:@proceed/system
- * @extends module:@proceed/system.System
- * @class
- * @hideconstructor
- */
 class Console extends System {
-  /**
-   *
-   * @param {*} value
-   */
-  log(value) {
-    const taskID = utils.generateUniqueTaskID();
+  log(value: any) {
+    const taskID = generateUniqueTaskID();
     // FIXME: array args
     this.commandRequest(taskID, ['console_log', [value]]);
   }
 
+  // TODO: can we remove this when logger is an ESM module?
   /**
    * To avoid circular dependencies use dependency injection. This is a
    * workaround, to allow other system modules to use the logging module which
@@ -36,4 +27,4 @@ class Console extends System {
   }
 }
 
-module.exports = Console;
+export default Console;

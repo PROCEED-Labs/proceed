@@ -8,10 +8,10 @@ jest.setTimeout(60000);
 
 function killEngineProcess(engineProcess) {
   return new Promise((resolve) => {
-    engineProcess.kill();
     engineProcess.on('close', () => {
       resolve();
     });
+    engineProcess.kill();
   });
 }
 

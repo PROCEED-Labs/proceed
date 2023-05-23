@@ -3,7 +3,7 @@ import loggingEx from '@proceed/machine';
 const { logging } = loggingEx;
 import { capabilitiesEndpoint } from '../ms-engine-communication/module.js';
 import { convertSemanticDescription } from './capability-helper.js';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import eventHandler from '../../../../frontend/backend-api/event-system/EventHandler.js';
 
 const configObject = {
@@ -104,7 +104,7 @@ async function getCapabilities(machine, newDiscovered) {
       } else {
         newDiscovered.push({
           ...capability,
-          id: uuid.v4(),
+          id: v4(),
           machineIds: [machine.id],
         });
       }

@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import DataInterface from '../../../mocks/DataInterface.js';
@@ -9,7 +9,7 @@ Vue.use(Vuex);
 
 describe('Machine store', () => {
   const createMockMachine = () => ({
-    id: uuid.v4(),
+    id: v4(),
     name: 'this-is-a-random-name',
     ip: '125.152.616',
     ports: [3000, 5000],

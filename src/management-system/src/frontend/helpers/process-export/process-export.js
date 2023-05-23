@@ -8,7 +8,7 @@ import {
   prepareProcesses,
 } from '@/frontend/helpers/process-export/export-preparation.js';
 
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 
 let viewerElement;
 
@@ -91,7 +91,7 @@ async function getExportFile(processesToExport, options) {
   viewerElement = document.createElement('div');
 
   //Assiging process id to temp element and append to DOM
-  viewerElement.id = 'canvas_' + uuid.v4();
+  viewerElement.id = 'canvas_' + v4();
   document.body.appendChild(viewerElement);
 
   //Initiate BPMN Viewer

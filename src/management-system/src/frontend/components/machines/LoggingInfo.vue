@@ -11,22 +11,22 @@
       </v-card-title>
       <v-card-text class="ml-3">
         <div v-for="(logTypeObj, logType) in logging" :key="logType">
-          <v-row class="pt-2 font-weight-medium">
+          <div class="pt-2 font-weight-medium">
             {{
               logType == 'standard'
                 ? 'Standard log messages:'
-                : 'Process log messages for process: ' + logType
+                : `Process log messages for process ${logType}:`
             }}
-          </v-row>
+          </div>
           <div v-for="(entry, index) in logTypeObj" :key="index">
             <div v-for="(object, id) in entry" :key="id">
-              <v-row id="logRows" :style="{ fontSize: fontSize + 'px' }">
+              <div id="logRows" :style="{ fontSize: fontSize + 'px' }">
                 <span :class="colorCoding[object.level]">
                   {{ new Intl.DateTimeFormat('en-GB', options).format(new Date(object.time)) }}
                   {{ ' ' + object.level.toUpperCase() + ': ' }}
                 </span>
                 {{ object.moduleName }} {{ object.msg }}
-              </v-row>
+              </div>
               <v-divider />
             </div>
           </div>

@@ -6,6 +6,7 @@
       "src/engine/native/node/*",
       "src/config-server",
       "src/management-system",
+      "src/management-system-v2",
       "src/helper-modules/*",
       "src/engine/native/web/server"
     ],

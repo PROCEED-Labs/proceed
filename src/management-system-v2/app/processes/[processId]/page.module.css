@@ -1,0 +1,40 @@
+.Wrapper {
+  transition: all 0.2s ease-out;
+  background: white;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Make sure the modeler is always above content. */
+  z-index: 99999;
+
+  &.minimized {
+    height: 400px;
+    width: 30%;
+    right: 30px;
+    box-shadow: 0 0 31px -10px #a2a2a285;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    bottom: 20px;
+    left: initial;
+    top: initial;
+    min-height: 0 !important;
+  }
+
+  .Modeler {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+.HF {
+  transition: all 0.2s ease-out;
+  overflow: hidden;
+}
+
+.minimizedHF {
+  height: 0;
+  padding: 0;
+}

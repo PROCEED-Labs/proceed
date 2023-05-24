@@ -4,12 +4,18 @@ const mqtt = require('async-mqtt');
 class NativeMQTT extends NativeModule {
   constructor() {
     super();
-    this.commands = ['messaging_publish', 'messaging_connect', 'messaging_disconnect'];
+    this.commands = [
+      'messaging_publish',
+      'messaging_connect',
+      'messaging_disconnect',
+      'messaging_subscribe',
+      'messaging_unsubscribe',
+    ];
 
     this.connections = {};
   }
 
-  async executeCommand(command, args) {
+  async executeCommand(command, args, send) {
     if (command === 'messaging_publish') {
       return await this.publish(...args);
     }
@@ -18,6 +24,12 @@ class NativeMQTT extends NativeModule {
     }
     if (command === 'messaging_disconnect') {
       await this.disconnect(...args, true);
+    }
+    if (command === 'messaging_subscribe') {
+      await this.subscribe(...args, send);
+    }
+    if (command === 'messaging_unsubscribe') {
+      await this.unsubscribe(...args);
     }
     return undefined;
   }
@@ -97,6 +109,9 @@ class NativeMQTT extends NativeModule {
     // set this flag to ensure that the connection is not automatically cleaned up after a publish
     client.keepOpen = keepOpen;
 
+    // used to remember named subscriptions to enable unsubscribing functionality
+    client.subscriptionCallbacks = {};
+
     // store the client so we don't try to reconnect for future publish or subscribe calls
     this.connections[url] = client;
 
@@ -117,10 +132,15 @@ class NativeMQTT extends NativeModule {
     // get the connection that was stored for this address and login info combination
     const client = this.connections[url];
 
-    if (client && (forceClose || !client.keepOpen)) {
-      // close the connection and remove it
-      await client.end();
-      delete this.connections[url];
+    if (client) {
+      // eventNames includes message if there are callbacks for the message event which are added by subscriptions
+      const hasSubscriptions = client.eventNames().includes('message');
+
+      if (forceClose || (!client.keepOpen && !hasSubscriptions)) {
+        // close the connection and remove it
+        await client.end();
+        delete this.connections[url];
+      }
     }
   }
 
@@ -139,6 +159,65 @@ class NativeMQTT extends NativeModule {
     await client.publish(topic, message, { qos: 2, ...messageOptions });
 
     await this.disconnect(url, connectionOptions);
+  }
+
+  /**
+   * Allows subscriptions to topics on a mqtt broker
+   *
+   * @param {String} url
+   * @param {String} topic
+   * @param {String} connectionOptions
+   * @param {String} [subscriptionOptions] can contain a subscription id that may be used when the user wants to unsubscribe from the topic
+   * @param {Function} send callback that should be called every time that a message is received that matches the given topic string
+   */
+  async subscribe(url, topic, connectionOptions, subscriptionOptions, send) {
+    subscriptionOptions = JSON.parse(subscriptionOptions);
+
+    const connection = await this.connect(url, connectionOptions);
+
+    function subscriptionCallback(incomingTopic, message) {
+      let topicRegex = `^${topic}$`;
+      topicRegex = topicRegex.replace('+', '[^/]+'); // allow matching of one topic level per + symbol
+      topicRegex = topicRegex.replace(/(\/)?#\$/, '(|$1.*)$'); // allow matching of multiple topic levels (including 0) for a # symbol at the end
+      if (incomingTopic.match(topicRegex)) send(undefined, [incomingTopic, message]);
+    }
+
+    await connection.subscribe(topic, { qos: 2 });
+
+    connection.on('message', subscriptionCallback);
+
+    if (!connection.subscriptionCallbacks[topic]) connection.subscriptionCallbacks[topic] = {};
+    connection.subscriptionCallbacks[topic][subscriptionOptions.subscriptionId] =
+      subscriptionCallback;
+  }
+
+  async unsubscribe(originalUrl, topic, subscriptionId, originalConnectionOptions) {
+    let connectionOptions = JSON.parse(originalConnectionOptions || '{}');
+    let url = this._extendUrlAndConnectionOptions(originalUrl, connectionOptions);
+
+    if (this.connections[url]) {
+      const connection = this.connections[url];
+      if (
+        !connection.subscriptionCallbacks[topic] ||
+        !connection.subscriptionCallbacks[topic][subscriptionId]
+      ) {
+        return;
+      }
+
+      // remove the handler for the incoming messages
+      const subscriptionCallback = connection.subscriptionCallbacks[topic][subscriptionId];
+      connection.off('message', subscriptionCallback);
+      delete connection.subscriptionCallbacks[topic][subscriptionId];
+
+      // only remove the subscription if all local subscriptions have been removed (there is only one subscription per topic on the connection)
+      if (!Object.keys(connection.subscriptionCallbacks[topic]).length) {
+        await connection.unsubscribe(topic);
+        delete connection.subscriptionCallbacks[topic];
+      }
+
+      // try to clean up the connection (will do nothing if the connection is kept open by another subscription or for another reason [e.g a will message])
+      this.disconnect(originalUrl, originalConnectionOptions);
+    }
   }
 }
 

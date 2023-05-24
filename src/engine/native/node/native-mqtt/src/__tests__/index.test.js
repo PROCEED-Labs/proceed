@@ -32,8 +32,8 @@ describe('Native-MQTT', () => {
       );
     });
 
-    it('will keep the connection open and return the same connection if we try to connect with the same parameters', async () => {
-      const firstConnection = await nativeMQTT.executeCommand('messaging_connect', [
+    it('will keep the connection open and not try to open a new one if we try to connect with the same parameters', async () => {
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
@@ -49,24 +49,21 @@ describe('Native-MQTT', () => {
           keepOpen: true,
         },
       });
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
-        firstConnection
-      );
+      const [firstConnection] = Object.values(nativeMQTT.connections);
 
-      const secondConnection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
-      expect(secondConnection).toBe(firstConnection);
       expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
         firstConnection
       );
     });
 
     it('will open a new connection when a different address is requested', async () => {
-      const firstConnection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
@@ -82,27 +79,29 @@ describe('Native-MQTT', () => {
           keepOpen: true,
         },
       });
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
-        firstConnection
-      );
+      const [firstConnection] = Object.values(nativeMQTT.connections);
 
-      const secondConnection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://other-address:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(2);
-      expect(secondConnection).not.toBe(firstConnection);
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
-        firstConnection
-      );
-      expect(nativeMQTT.connections['mqtt://test-user:password123@other-address:1883']).toBe(
-        secondConnection
-      );
+      expect(nativeMQTT.connections).toStrictEqual({
+        'mqtt://test-user:password123@localhost:1883': firstConnection,
+        'mqtt://test-user:password123@other-address:1883': {
+          username: 'test-user',
+          password: 'password123',
+          clean: true,
+          end: expect.any(Function),
+          publish: expect.any(Function),
+          keepOpen: true,
+        },
+      });
     });
 
     it('will open a new connection when different log-in info is used', async () => {
-      const firstConnection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
@@ -118,34 +117,37 @@ describe('Native-MQTT', () => {
           keepOpen: true,
         },
       });
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
-        firstConnection
-      );
+      const [firstConnection] = Object.values(nativeMQTT.connections);
 
-      const secondConnection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"other-user","password":"password456"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(2);
-      expect(secondConnection).not.toBe(firstConnection);
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
-        firstConnection
-      );
-      expect(nativeMQTT.connections['mqtt://other-user:password456@localhost:1883']).toBe(
-        secondConnection
-      );
+      expect(nativeMQTT.connections).toStrictEqual({
+        'mqtt://test-user:password123@localhost:1883': firstConnection,
+        'mqtt://other-user:password456@localhost:1883': {
+          username: 'other-user',
+          password: 'password456',
+          clean: true,
+          end: expect.any(Function),
+          publish: expect.any(Function),
+          keepOpen: true,
+        },
+      });
     });
   });
 
   describe('messaging_disconnect', () => {
     it('will close an existing connection and remove it from the connection list', async () => {
-      const connection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
+      const [connection] = Object.values(nativeMQTT.connections);
 
       await nativeMQTT.executeCommand('messaging_disconnect', [
         'mqtt://localhost:1883',
@@ -157,15 +159,15 @@ describe('Native-MQTT', () => {
     });
 
     it('will do nothing if there is no connection for the given address', async () => {
-      const connection1 = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://otherAddress:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
-      const connection2 = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"other-user","password":"password123"}',
       ]);
-
+      const [connection1, connection2] = Object.values(nativeMQTT.connections);
       await expect(
         nativeMQTT.executeCommand('messaging_disconnect', [
           'mqtt://localhost:1883',
@@ -203,14 +205,14 @@ describe('Native-MQTT', () => {
     });
 
     it('will reuse an already opened connection if called with matching connection options and not close it afterwards', async () => {
-      const connection = await nativeMQTT.executeCommand('messaging_connect', [
+      await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
         '{"username":"test-user","password":"password123"}',
       ]);
 
       // should have called the mqtt function to create a connection and used that connection to send the message
       expect(mqtt.connectAsync).toHaveBeenCalledTimes(1);
-
+      const [connection] = Object.values(nativeMQTT.connections);
       await nativeMQTT.executeCommand('messaging_publish', [
         'mqtt://localhost:1883',
         'test/topic',

@@ -14,10 +14,10 @@ class NativeMQTT extends NativeModule {
       return await this.publish(...args);
     }
     if (command === 'messaging_connect') {
-      return await this.connect(...args, true);
+      await this.connect(...args, true);
     }
     if (command === 'messaging_disconnect') {
-      return await this.disconnect(...args, true);
+      await this.disconnect(...args, true);
     }
     return undefined;
   }

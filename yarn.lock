@@ -1264,10 +1264,10 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
-"@darkobits/adeiu@^0.2.6":
-  version "0.2.16"
-  resolved "https://registry.yarnpkg.com/@darkobits/adeiu/-/adeiu-0.2.16.tgz#9b61d9c6fee5d30913e4c5fc509bddf7679616ee"
-  integrity sha512-wMA5EfOJmbgo9MTA28OsVbZXkVFm2s6f66iDSKTksm63qphgnEbg2eM39Bp+2kAswL9cvYuu5iHufw/UWkxYLg==
+"@darkobits/adeiu@0.2.14":
+  version "0.2.14"
+  resolved "https://registry.yarnpkg.com/@darkobits/adeiu/-/adeiu-0.2.14.tgz#739dcc146a448bfa23b8e7a84ad2b904d5598502"
+  integrity sha512-TQIRTfnnLE9Up+j7WKlC/2U9vxnNXOjKBAB9GGUTwtLgAjpzCx0hWUx1TPLn/M28JXjAJTEMTmSXzxo06Lu2PA==
   dependencies:
     chalk "^4.1.2"
     ow "^0.27.0"

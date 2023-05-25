@@ -179,10 +179,14 @@ class NativeMQTT extends NativeModule {
       let topicRegex = `^${topic}$`;
       topicRegex = topicRegex.replace('+', '[^/]+'); // allow matching of one topic level per + symbol
       topicRegex = topicRegex.replace(/(\/)?#\$/, '(|$1.*)$'); // allow matching of multiple topic levels (including 0) for a # symbol at the end
-      if (incomingTopic.match(topicRegex)) send(undefined, [incomingTopic, message]);
+      if (incomingTopic.match(topicRegex)) send(undefined, [incomingTopic, message.toString()]);
     }
 
-    await connection.subscribe(topic, { qos: 2 });
+    await connection.subscribe(topic, {
+      qos: 2,
+      ...subscriptionOptions,
+      subscriptionId: undefined,
+    });
 
     connection.on('message', subscriptionCallback);
 
@@ -191,6 +195,14 @@ class NativeMQTT extends NativeModule {
       subscriptionCallback;
   }
 
+  /**
+   * Allows removal of subscriptions
+   *
+   * @param {String} originalUrl the url that was given when the subscription was made
+   * @param {String} topic the topic that was subscribed to with the subscriptions
+   * @param {String} subscriptionId identifier to uniquely identify the original subscription (we might have multiple subscriptions to the same topic on the same broker)
+   * @param {String} originalConnectionOptions the connection options given with the subscription (username and password)
+   */
   async unsubscribe(originalUrl, topic, subscriptionId, originalConnectionOptions) {
     let connectionOptions = JSON.parse(originalConnectionOptions || '{}');
     let url = this._extendUrlAndConnectionOptions(originalUrl, connectionOptions);

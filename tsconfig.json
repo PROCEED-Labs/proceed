@@ -8,5 +8,6 @@
     "resolveJsonModule": true,
     "target": "es6"
   },
+  "exclude": ["src/management-system-v2/**/*"],
   "include": ["src/**/*", "tests/**/*"]
 }

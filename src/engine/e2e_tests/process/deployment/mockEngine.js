@@ -15,4 +15,4 @@ native.registerModule(new Nmdns());
 native.registerModule(new Ncapabilities());
 native.registerModule(new Nconsole());
 
-native.startEngine({ childProcess: true });
+native.startEngine({ childProcess: false });

@@ -165,7 +165,7 @@ export default {
       const performers = this.userTask.performers.map(
         (performer) => performer.meta.name || performer.meta.groupname
       );
-      return performers.join(', ');
+      return performers.length > 0 ? performers.join(', ') : 'Not specified';
     },
     shortPerformers() {
       let performers = this.performers;

@@ -274,7 +274,8 @@ class Messaging extends System {
     // if no url is given use the default url if one was set
     const url = overrideUrl || this._defaultMessagingServerAddress;
 
-    if (!url) throw new Error('Tried to subscribe to a topic without providing a server address!');
+    if (!url)
+      throw new Error('Tried to unsubscribe from a topic without providing a server address!');
 
     // adds additional information to the options and serialize them for the ipc call
     this._completeLoginInfo(connectionOptions);

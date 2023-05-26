@@ -154,6 +154,7 @@ function showTaskList(tasks) {
     state: task.dataset.state,
     progress: task.dataset.progress,
     priority: task.dataset.priority,
+    performers: task.dataset.performers,
   }));
 
   tasks.forEach((task) => {

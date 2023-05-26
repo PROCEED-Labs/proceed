@@ -38,6 +38,7 @@ class TaskListTab extends DisplayItem {
         attrs: task.attrs,
         state: task.state,
         priority: task.priority,
+        performers: task.performers,
         progress: task.progress,
         startTime: task.startTime,
         endTime: task.endTime,

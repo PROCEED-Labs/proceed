@@ -567,6 +567,7 @@ class Engine {
             machine: this.machineInformation,
             progress: token.currentFlowNodeProgress,
             priority: token.priority,
+            performers: token.performers,
           });
         }
       });
@@ -744,7 +745,12 @@ class Engine {
 
     const pendingUserTasksWithTokenInfo = pendingUserTasks.map((uT) => {
       const token = this.getToken(uT.processInstance.id, uT.tokenId);
-      return { ...uT, priority: token.priority, progress: token.currentFlowNodeProgress.value };
+      return {
+        ...uT,
+        priority: token.priority,
+        progress: token.currentFlowNodeProgress.value,
+        performers: token.performers,
+      };
     });
     return pendingUserTasksWithTokenInfo;
   }
@@ -765,6 +771,7 @@ class Engine {
         ...uT,
         priority: userTaskLogEntry.priority,
         progress: userTaskLogEntry.progress.value,
+        performers: userTaskLogEntry.performers,
       };
     });
     return inactiveUserTasksWithLogInfo;

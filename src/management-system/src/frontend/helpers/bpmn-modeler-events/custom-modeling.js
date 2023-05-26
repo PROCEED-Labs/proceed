@@ -66,7 +66,6 @@ class CustomModeling {
         ${constraintXML}
       </bpmn2:extensionElements>`;
       const constraintObj = await toBpmnObject(constraintXML, 'bpmn:ExtensionElements');
-
       // if there are constraints add them to the extensionsElement, (one entry is the type)
       if (Object.keys(constraintObj.values[0]).length > 1) {
         extensionElements.values.push(constraintObj.values[0]);
@@ -293,6 +292,31 @@ class CustomModeling {
       element: userTask,
       // make sure the property change is transmitted
       properties: { implementation },
+    });
+  }
+
+  setUserTaskPerformers(elementId, performers) {
+    const userTask = this.elementRegistry.get(elementId);
+
+    if (!userTask) {
+      return;
+    }
+
+    const formalExpression = this.moddle.create('bpmn:Expression', {
+      body: JSON.stringify(performers),
+    });
+    const resourceAssignmentExpression = this.moddle.create('bpmn:ResourceAssignmentExpression', {
+      expression: formalExpression,
+    });
+
+    const potentialOwner = this.moddle.create('bpmn:PotentialOwner', {
+      resourceAssignmentExpression,
+    });
+
+    this.commandStack.execute('element.updateProperties', {
+      element: userTask,
+      properties: { resources: [potentialOwner] },
+      additionalInfo: { performers: performers },
     });
   }
 

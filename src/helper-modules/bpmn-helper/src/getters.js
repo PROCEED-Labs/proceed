@@ -697,6 +697,20 @@ async function getMilestonesFromElementById(bpmn, elementId) {
 }
 
 /**
+ * Get the performers for given element id
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {String} elementId the id of the element
+ * @returns {Array} array with all performers
+ */
+async function getPerformersFromElementById(bpmn, elementId) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const element = getElementById(bpmnObj, elementId);
+
+  return getPerformersFromElement(element);
+}
+
+/**
  * Parses the locations from a bpmn-moddle element
  *
  * @param {Object} element
@@ -865,6 +879,24 @@ function getResourcesFromElement(element) {
   return { consumableMaterial, tool, inspectionInstrument };
 }
 
+function getPerformersFromElement(element) {
+  if (element.resources) {
+    const potentialOwner = element.resources.find(
+      (resource) => resource.$type === 'bpmn:PotentialOwner'
+    );
+
+    if (
+      potentialOwner &&
+      potentialOwner.resourceAssignmentExpression &&
+      potentialOwner.resourceAssignmentExpression.expression &&
+      potentialOwner.resourceAssignmentExpression.expression.body
+    ) {
+      return JSON.parse(potentialOwner.resourceAssignmentExpression.expression.body);
+    }
+  }
+  return [];
+}
+
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {String} isoDuration
@@ -975,6 +1007,8 @@ module.exports = {
   getMilestonesFromElementById,
   getResourcesFromElement,
   getLocationsFromElement,
+  getPerformersFromElement,
+  getPerformersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
 };

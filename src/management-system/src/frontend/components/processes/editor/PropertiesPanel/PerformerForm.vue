@@ -168,17 +168,11 @@ export default {
         if (newModeler) {
           newModeler
             .get('eventBus')
-            .on('commandStack.element.updateProperties.postExecute', ({ context }) => {
-              const { element, additionalInfo } = context;
-              if (
-                element.id === this.selectedElement.id &&
-                additionalInfo &&
-                additionalInfo.performers
-              ) {
+            .on('commandStack.element.updatePerformers.postExecute', ({ context }) => {
+              const { element, performers } = context;
+              if (element.id === this.selectedElement.id && performers) {
                 // update the assigned performers when they change on the selected element
-                this.assignedPerformers = this.mapExpressionDataToFormData(
-                  additionalInfo.performers
-                );
+                this.assignedPerformers = this.mapExpressionDataToFormData(performers);
               }
             });
         }

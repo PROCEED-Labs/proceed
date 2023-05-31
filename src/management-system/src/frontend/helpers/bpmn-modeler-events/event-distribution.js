@@ -56,6 +56,7 @@ export function activateDistribution() {
     'element.updateProceedData',
     'element.updateDocumentation',
     'element.updateEventDefinition',
+    'element.updatePerformers',
     'elements.move',
     'connection.reconnect',
     'canvas.updateRoot',

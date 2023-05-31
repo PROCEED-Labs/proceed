@@ -4,6 +4,7 @@ const AddScriptHandler = require('./command-handlers/add-script-handler.js');
 const UpdateDocumentationHandler = require('./command-handlers/update-documentation.js');
 const UpdateEventDefinitionHandler = require('./command-handlers/update-event-definition.js');
 const UpdateProceedDataHandler = require('./command-handlers/update-proceed-data');
+const UpdatePerformersHandler = require('./command-handlers/update-performer-handler.js');
 
 const ConstraintParser = require('@proceed/constraint-parser-xml-json');
 const constraintParser = new ConstraintParser();
@@ -31,6 +32,7 @@ class CustomModeling {
     commandStack.registerHandler('element.updateDocumentation', UpdateDocumentationHandler);
     commandStack.registerHandler('element.updateEventDefinition', UpdateEventDefinitionHandler);
     commandStack.registerHandler('element.updateProceedData', UpdateProceedDataHandler);
+    commandStack.registerHandler('element.updatePerformers', UpdatePerformersHandler);
   }
 
   /**
@@ -296,27 +298,9 @@ class CustomModeling {
   }
 
   setUserTaskPerformers(elementId, performers) {
-    const userTask = this.elementRegistry.get(elementId);
-
-    if (!userTask) {
-      return;
-    }
-
-    const formalExpression = this.moddle.create('bpmn:Expression', {
-      body: JSON.stringify(performers),
-    });
-    const resourceAssignmentExpression = this.moddle.create('bpmn:ResourceAssignmentExpression', {
-      expression: formalExpression,
-    });
-
-    const potentialOwner = this.moddle.create('bpmn:PotentialOwner', {
-      resourceAssignmentExpression,
-    });
-
-    this.commandStack.execute('element.updateProperties', {
-      element: userTask,
-      properties: { resources: [potentialOwner] },
-      additionalInfo: { performers: performers },
+    this.commandStack.execute('element.updatePerformers', {
+      elementId,
+      performers,
     });
   }
 

@@ -31,10 +31,13 @@
           label="Type"
           @change="
             index !== performerRows.length - 1
-              ? updatePerformer({
-                  name: performer.name,
-                  type: $event,
-                })
+              ? updatePerformer(
+                  {
+                    name: performer.name,
+                    type: $event,
+                  },
+                  performer.name
+                )
               : assignPerformer({ name: performer.name, type: $event })
           "
         ></v-autocomplete>

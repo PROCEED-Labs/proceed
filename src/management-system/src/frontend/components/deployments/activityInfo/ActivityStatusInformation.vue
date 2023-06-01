@@ -1,14 +1,8 @@
 <template>
   <v-container>
-    <v-row v-if="instance" class="mb-6" justify="center">
-      <v-col :cols="size === 'large' ? 4 : 8">
-        <v-img
-          v-if="image"
-          height="170"
-          class="mt-3"
-          style="border-style: solid"
-          :src="image"
-        ></v-img>
+    <v-row v-if="instance" class="mb-6" :justify="image ? 'center' : 'start'">
+      <v-col :cols="size === 'large' ? 4 : 8" v-if="image">
+        <v-img height="170" class="mt-3" style="border-style: solid" :src="image"></v-img>
       </v-col>
       <v-col :cols="size === 'large' ? 8 : 12">
         <v-row align="center">

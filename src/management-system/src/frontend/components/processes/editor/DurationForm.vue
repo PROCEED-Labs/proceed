@@ -92,27 +92,69 @@ export default {
       minutes: null,
       seconds: null,
       yearsRule: (v) => {
-        if (v >= 0) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const year = parseInt(v);
+        if (!isNaN(year) && year >= 0) {
+          return true;
+        }
         return 'Year should be a positive number';
       },
       monthsRule: (v) => {
-        if (v >= 0 && v <= 12) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const month = parseInt(v);
+        if (!isNaN(month) && month >= 0 && month <= 12) {
+          return true;
+        }
         return 'Months should be between 0 and 12';
       },
       daysRule: (v) => {
-        if (v >= 0 && v <= 366) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const day = parseInt(v);
+        if (!isNaN(day) && day >= 0 && day <= 31) {
+          return true;
+        }
         return 'Days should be between 0 and 31';
       },
       hoursRule: (v) => {
-        if (v >= 0 && v <= 24) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const hour = parseInt(v);
+        if (!isNaN(hour) && hour >= 0 && hour <= 24) {
+          return true;
+        }
         return 'Hours should be between 0 and 24';
       },
       minutesRule: (v) => {
-        if (v >= 0 && v <= 60) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const minute = parseInt(v);
+        if (!isNaN(minute) && minute >= 0 && minute <= 60) {
+          return true;
+        }
         return 'Minutes should be between 0 and 60';
       },
       secondsRule: (v) => {
-        if (v >= 0 && v <= 60) return true;
+        if (!v || v.length === 0) {
+          return true;
+        }
+
+        const second = parseInt(v);
+        if (!isNaN(second) && second >= 0 && second <= 60) {
+          return true;
+        }
         return 'Seconds should be between 0 and 60';
       },
     };

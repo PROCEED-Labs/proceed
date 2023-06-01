@@ -4,6 +4,7 @@ const {
   getMilestonesFromElement,
   getResourcesFromElement,
   getLocationsFromElement,
+  getPerformersFromElement,
 } = require('@proceed/bpmn-helper/');
 
 export function getMilestones({ businessObject }) {
@@ -28,6 +29,14 @@ export function getResources({ businessObject }) {
   }
 
   return getResourcesFromElement(businessObject);
+}
+
+export function getPerformers({ businessObject }) {
+  if (!businessObject) {
+    return;
+  }
+
+  return getPerformersFromElement(businessObject);
 }
 
 /**

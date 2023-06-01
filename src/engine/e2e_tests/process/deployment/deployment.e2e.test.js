@@ -2028,6 +2028,7 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
               ]);
 
@@ -2043,6 +2044,7 @@ describe('Test deploying a process', () => {
                 instanceID: instanceId,
                 attrs: expect.any(Object),
                 priority: 1,
+                performers: [],
                 progress: 0,
                 startTime: expect.any(Number),
                 endTime: null,
@@ -2096,6 +2098,7 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
               ]);
 
@@ -2119,6 +2122,7 @@ describe('Test deploying a process', () => {
                   instanceID: instanceId,
                   attrs: expect.any(Object),
                   priority: 1,
+                  performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: null,
@@ -2129,6 +2133,7 @@ describe('Test deploying a process', () => {
                   instanceID: instanceId,
                   attrs: expect.any(Object),
                   priority: 1,
+                  performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: null,
@@ -2163,6 +2168,7 @@ describe('Test deploying a process', () => {
                 progress: { value: 0, manual: false },
                 milestones: {},
                 priority: 1,
+                performers: [],
               });
 
               expect(instanceInfo.adaptationLog).toEqual([
@@ -2183,6 +2189,7 @@ describe('Test deploying a process', () => {
                   instanceID: instanceId,
                   attrs: expect.any(Object),
                   priority: 1,
+                  performers: [],
                   progress: 0,
                   startTime: expect.any(Number),
                   endTime: null,
@@ -2264,6 +2271,7 @@ describe('Test deploying a process', () => {
                 instanceID: instanceId,
                 attrs: expect.any(Object),
                 priority: 1,
+                performers: [],
                 progress: 0,
                 startTime: expect.any(Number),
                 endTime: null,
@@ -2474,6 +2482,7 @@ describe('Test deploying a process', () => {
                   intermediateVariablesState: {},
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -2505,6 +2514,7 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
               ]);
 
@@ -2645,6 +2655,7 @@ describe('Test deploying a process', () => {
                   progress: { value: 0, manual: false },
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
                 {
                   tokenId: expect.any(String),
@@ -2661,6 +2672,7 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
                 {
                   tokenId: expect.any(String),
@@ -2816,6 +2828,7 @@ describe('Test deploying a process', () => {
                   progress: { value: 0, manual: false },
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
                 {
                   tokenId: expect.any(String),
@@ -2832,6 +2845,7 @@ describe('Test deploying a process', () => {
                   progress: { value: 100, manual: false },
                   milestones: {},
                   priority: 1,
+                  performers: [],
                 },
                 {
                   tokenId: expect.any(String),

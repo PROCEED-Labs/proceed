@@ -57,6 +57,36 @@
                 </div>
               </v-list-item-content>
             </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title>Users:</v-list-item-title>
+                <div class="d-flex align-center">
+                  <v-autocomplete
+                    :items="userItems"
+                    v-model="selectedUsers"
+                    multiple
+                    chips
+                    small-chips
+                  ></v-autocomplete>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title>Groups:</v-list-item-title>
+                <div class="d-flex align-center">
+                  <v-autocomplete
+                    :items="groupItems"
+                    v-model="selectedGroups"
+                    multiple
+                    chips
+                    small-chips
+                  ></v-autocomplete>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
           </v-list>
         </v-menu>
         <v-menu :close-on-content-click="false" bottom offset-y>
@@ -141,6 +171,7 @@
 <script>
 import UserTaskCard from '@/frontend/components/userTasks/userTaskCard.vue';
 import { engineNetworkInterface, processInterface } from '../backend-api/index.js';
+
 export default {
   components: { UserTaskCard },
   data() {
@@ -148,6 +179,8 @@ export default {
       selectedUserTask: null,
       sortItems: ['Start Time', 'Deadline', 'Progress', 'Priority', 'State'],
       filterItems: ['READY', 'ACTIVE', 'COMPLETED', 'PAUSED'],
+      userItems: [],
+      groupItems: [],
       items: [
         {
           name: 'Status:',
@@ -163,6 +196,8 @@ export default {
       selectedPriority: [1, 10],
       selectedProgress: [0, 100],
       selectedSorting: { value: 'Start Time', ascending: true },
+      selectedUsers: [],
+      selectedGroups: [],
     };
   },
   computed: {
@@ -230,12 +265,21 @@ export default {
     },
     updateUserTaskPlacement() {
       const showingUserTasks = this.userTasks.filter((uT) => {
+        const userTaskUsers = uT.performers.filter((u) => !!u.meta.name).map((u) => u.meta.name);
+        const userTaskGroups = uT.performers
+          .filter((u) => !!u.meta.groupname)
+          .map((u) => u.meta.groupname);
+
         return (
           this.selectedStatus.includes(uT.state) &&
           uT.priority >= this.selectedPriority[0] &&
           uT.priority <= this.selectedPriority[1] &&
           uT.progress >= this.selectedProgress[0] &&
-          uT.progress <= this.selectedProgress[1]
+          uT.progress <= this.selectedProgress[1] &&
+          (this.selectedUsers.length === 0 ||
+            this.selectedUsers.find((user) => !!userTaskUsers.find((p) => p === user))) &&
+          (this.selectedGroups.length === 0 ||
+            this.selectedGroups.find((user) => !!userTaskGroups.find((p) => p === user)))
         );
       });
 
@@ -399,6 +443,17 @@ export default {
             this.importProcess(userTask);
           }
         });
+
+        const performers = updatedUserTasks.map((uT) => uT.performers).flat();
+        const users = performers
+          .filter((performer) => !!performer.meta.name)
+          .map((user) => user.meta.name);
+        const groups = performers
+          .filter((performer) => !!performer.meta.groupname)
+          .map((group) => group.meta.groupname);
+
+        this.userItems = [...new Set(users)];
+        this.groupItems = [...new Set(groups)];
       },
       immediate: true,
     },

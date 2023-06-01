@@ -1,11 +1,3 @@
-const db = require('../db.js');
-const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('../processFragmentCheck');
-const { data } = require('@proceed/system');
-const fs = require('fs');
-const path = require('path');
-
-const { toBpmnObject } = require('@proceed/bpmn-helper');
-
 jest.mock('@proceed/system', () => {
   const original = jest.requireActual('@proceed/system');
 
@@ -29,6 +21,14 @@ jest.mock('@proceed/machine', () => ({
     getMachineInformation: jest.fn().mockResolvedValue({ id: 'mockId', ip: 'mockIp' }),
   },
 }));
+
+const db = require('../db.js');
+const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('../processFragmentCheck');
+const { data } = require('@proceed/system');
+const fs = require('fs');
+const path = require('path');
+
+const { toBpmnObject } = require('@proceed/bpmn-helper');
 
 const OneProcessDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneProcess.xml'),
@@ -99,11 +99,6 @@ describe('Tests for the functions in the database module', () => {
           123: {},
         })
       );
-      data.read.mockResolvedValueOnce(
-        JSON.stringify({
-          123: {},
-        })
-      );
 
       const result = await db.isProcessVersionExisting('testFile', 456);
 
@@ -111,11 +106,6 @@ describe('Tests for the functions in the database module', () => {
       expect(data.read).toHaveBeenCalledWith('processes.json/testFile');
     });
     it('returns true if the process version exists', async () => {
-      data.read.mockResolvedValueOnce(
-        JSON.stringify({
-          123: {},
-        })
-      );
       data.read.mockResolvedValueOnce(
         JSON.stringify({
           123: {},
@@ -150,11 +140,6 @@ describe('Tests for the functions in the database module', () => {
       expect(data.write.mock.calls[1][1]).toEqual(OneProcessDefinition);
     });
     it('will save the information of the new version alongside the ones for existing versions', async () => {
-      data.read.mockResolvedValueOnce(
-        JSON.stringify({
-          456: 'otherVersionInformation',
-        })
-      );
       data.read.mockResolvedValueOnce(
         JSON.stringify({
           456: 'otherVersionInformation',
@@ -262,11 +247,17 @@ describe('Tests for the functions in the database module', () => {
     });
   });
   describe('saveHTMLString', () => {
-    beforeEach(() => {
-      data.read.mockResolvedValueOnce('Process exists');
-    });
-
     it('saves the html of an user task into the file the process containing it is stored in', async () => {
+      data.read.mockResolvedValueOnce(
+        JSON.stringify({
+          123: {
+            deploymentDate: expect.any(Number),
+            processId: '_958fd9c3-b99d-4e8e-95a1-a0a618eaa9d3',
+            needs: { html: [], imports: [], images: [] },
+            validated: false,
+          },
+        })
+      );
       const html = '<html><head></head><body><form></form></body></html>';
       await db.saveHTMLString('processDefinitionId', 'taskFileName', html);
 

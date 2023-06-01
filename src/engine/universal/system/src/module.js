@@ -1,13 +1,14 @@
 const Network = require('./network');
 const HTTP = require('./http');
 const Data = require('./data');
-const Capability = require('./capability');
-const Console = require('./console');
-const Config = require('./config');
+const Capability = require('./capability.ts').default;
+const Console = require('./console.ts').default;
+const Config = require('./config.ts').default;
 const Machine = require('./machine');
 const Discovery = require('./discovery');
-const Timer = require('./timer');
-const { setIPC } = require('./system');
+const Timer = require('./timer.ts').default;
+const Messaging = require('./messaging');
+const { setIPC } = require('./system.ts');
 
 /**
  * Detects the environemnt and sets the `environment` property accordingly.
@@ -42,6 +43,11 @@ const system = {
    * @returns {module:@proceed/system.Network}
    */
   network: new Network(environment),
+
+  /**
+   * @returns {module:@proceed/system.Messaging}
+   */
+  messaging: new Messaging(),
 
   /**
    * @returns {module:@proceed/system.HTTP}

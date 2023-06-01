@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import store from '../store.js';
 import { TYPE_USER, TYPE_LINK } from '../../../../shared-frontend-backend/constants/index.js';
@@ -134,7 +134,7 @@ export async function addShare(share) {
   share.updatedOn = createdOn;
 
   // set share id
-  const id = uuid.v4();
+  const id = v4();
   share.id = id;
   if (shareExists(share)) {
     throw new Error('Share with same id already exists!');

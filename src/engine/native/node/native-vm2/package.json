@@ -8,6 +8,6 @@
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
     "vm2": "^3.8.4",
-    "neo-bpmn-engine": "^6.3.2"
+    "neo-bpmn-engine": "^8.0.1"
   }
 }

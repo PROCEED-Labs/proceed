@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:p882181="https://docs.proceed-labs.org/_20be22a7-da01-4dd8-a7ed-c2a533cc8882#1678113930181" id="_9b9ef813-a54d-43f2-88cd-6893e2e9d63a" name="Importer" targetNamespace="https://docs.proceed-labs.org/_9b9ef813-a54d-43f2-88cd-6893e2e9d63a" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:versionBasedOn="1678113954667" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <import importType="http://www.omg.org/spec/BPMN/20100524/MODEL" location="_20be22a7-da01-4dd8-a7ed-c2a533cc8882" namespace="https://docs.proceed-labs.org/_20be22a7-da01-4dd8-a7ed-c2a533cc8882#1678113930181" proceed:version="1678113930181" />
+  <process id="Process_1gjd8gm" name="PROCEED Main Process" processType="Private" isExecutable="true" proceed:deploymentMethod="dynamic">
+    <startEvent id="StartEvent_1bprzcx">
+      <outgoing>Flow_0xrwj67</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0xrwj67" sourceRef="StartEvent_1bprzcx" targetRef="Activity_0bcvgz5" />
+    <endEvent id="Event_00xghpj">
+      <incoming>Flow_0uf5lk2</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0uf5lk2" sourceRef="Activity_0bcvgz5" targetRef="Event_00xghpj" />
+    <callActivity id="Activity_0bcvgz5" name="Import" calledElement="p882181:Process_1wbb4f4" proceed:manualInterruptionHandling="true">
+      <incoming>Flow_0xrwj67</incoming>
+      <outgoing>Flow_0uf5lk2</outgoing>
+    </callActivity>
+  </process>
+</definitions>

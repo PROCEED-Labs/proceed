@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils');
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
 
 /**
  * @memberof module:@proceed/system
@@ -18,7 +18,7 @@ class Data extends System {
    * @param {object|null} options The options for the read operation
    */
   async read(key, options) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     // Prepare the promise
     const listenPromise = new Promise((resolve, reject) => {
@@ -48,7 +48,7 @@ class Data extends System {
    * @param {object|null} options The options for the write operation
    */
   async write(key, value, options) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     // Prepare the promise
     const listenPromise = new Promise((resolve, reject) => {
@@ -168,7 +168,7 @@ class Data extends System {
    * @param {object|null} options The options for the delete operation
    */
   async delete(key, options) {
-    this.write(key, null, options);
+    return this.write(key, null, options);
   }
 }
 

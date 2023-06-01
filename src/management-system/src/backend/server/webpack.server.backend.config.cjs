@@ -10,11 +10,17 @@ module.exports = {
   mode: 'production',
   output: {
     // eslint-disable-next-line no-undef
-    path: path.resolve(
-      __dirname,
-      './../../../../../build/management-system/server'
-    ),
+    path: path.resolve(__dirname, './../../../../../build/management-system/server'),
     filename: 'server.js',
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -85,10 +91,7 @@ module.exports = {
             if (typeof external === 'string') {
               const packageJson = JSON.parse(
                 fs.readFileSync(
-                  path.join(
-                    __dirname,
-                    `../../../../../node_modules/${external}/package.json`
-                  ),
+                  path.join(__dirname, `../../../../../node_modules/${external}/package.json`),
                   'utf-8'
                 )
               );
@@ -129,5 +132,8 @@ module.exports = {
   ],
   node: {
     __dirname: false,
+  },
+  resolve: {
+    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs'],
   },
 };

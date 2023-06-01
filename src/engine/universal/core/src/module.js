@@ -1,5 +1,5 @@
 const system = require('@proceed/system');
-const IPC = require('@proceed/system/src/ipc/ipc.js');
+const IPC = require('@proceed/system/src/ipc/ipc.ts').default;
 const { config, logging } = require('@proceed/machine');
 const { information: machineInformation } = require('@proceed/machine');
 const distribution = require('@proceed/distribution');
@@ -9,6 +9,9 @@ const decider = require('@proceed/decider');
 const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
+const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
+const { setupMessaging } = require('./messaging-setup.js');
+const { enableMessaging } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
   moduleName: 'CORE',
@@ -44,9 +47,18 @@ module.exports = {
     // Open /status endpoint at last
     distribution.init(management);
 
+    if (enableMessaging) {
+      await setupMessaging(system.messaging, config, machineInformation, logger);
+    }
+
     if (!options.silentMode) {
       // Start normally if no options or silentMode != true
       await this.deactivateSilentMode();
+    }
+
+    // start all processes that were still running when the engine stopped running
+    if (enableInterruptedInstanceRecovery) {
+      await management.restoreInterruptedInstances();
     }
   },
 

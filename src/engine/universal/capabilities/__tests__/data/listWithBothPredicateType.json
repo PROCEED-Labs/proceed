@@ -151,18 +151,12 @@
             },
             {
               "@type": "fnom:PropertyParameterMapping",
-              "fnom:functionParameter": [
-                "_:optionsParameter",
-                "_:blackWhiteParameter"
-              ],
+              "fnom:functionParameter": ["_:optionsParameter", "_:blackWhiteParameter"],
               "fnom:implementationProperty": "options/blackWhite"
             },
             {
               "@type": "fnom:PropertyParameterMapping",
-              "fnom:functionParameter": [
-                "_:optionsParameter",
-                "_:rotationParameter"
-              ],
+              "fnom:functionParameter": ["_:optionsParameter", "_:rotationParameter"],
               "fnom:implementationProperty": "options/rotation"
             }
           ],
@@ -174,10 +168,7 @@
             },
             {
               "@type": "fnom:DefaultReturnMapping",
-              "fnom:functionParameter": [
-                "_:imageParameter",
-                "_:geoCoordinatesParameter"
-              ],
+              "fnom:functionParameter": ["_:imageParameter", "_:geoCoordinatesParameter"],
               "fnom:implementationProperty": "img/gps"
             },
             {
@@ -200,10 +191,7 @@
             },
             {
               "@type": "fnom:DefaultReturnMapping",
-              "fnom:functionParameter": [
-                "_:imageParameter",
-                "_:photographParameter"
-              ],
+              "fnom:functionParameter": ["_:imageParameter", "_:photographParameter"],
               "fnom:implementationProperty": "img/photo"
             }
           ]

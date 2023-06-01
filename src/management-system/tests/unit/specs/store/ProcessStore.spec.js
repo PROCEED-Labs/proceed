@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import ProcessInterface from '../../../mocks/ProcessInterface.js';
@@ -57,7 +57,7 @@ describe('Process store', () => {
   });
 
   const createMockProcess = () => ({
-    id: uuid.v4(),
+    id: v4(),
     originalId: undefined,
     owner: null,
     name: 'this-is-a-random-name',
@@ -118,7 +118,7 @@ describe('Process store', () => {
     });
 
     test('it should return null when process by id does not exist', () => {
-      expect(store.getters['processStore/processById'](uuid.v4())).toBeUndefined();
+      expect(store.getters['processStore/processById'](v4())).toBeUndefined();
     });
   });
 
@@ -169,12 +169,12 @@ describe('Process store', () => {
 
     describe('remove non-existent process', () => {
       test('should not have removed anything', async () => {
-        await store.dispatch('processStore/remove', { id: uuid.v4() });
+        await store.dispatch('processStore/remove', { id: v4() });
         expect(store.getters['processStore/processes']).toHaveLength(3);
       });
 
       test('should not have called db store', async () => {
-        await store.dispatch('processStore/remove', { id: uuid.v4() });
+        await store.dispatch('processStore/remove', { id: v4() });
         expect(store.getters['processStore/processes']).toHaveLength(3);
         expect(ProcessInterface.prototype.removeProcess).not.toHaveBeenCalled();
       });
@@ -239,7 +239,7 @@ describe('Process store', () => {
     describe('update process bpmn with uuid when not exists', () => {
       test('should not have updated anything', async () => {
         await store.dispatch('processStore/updateBpmn', {
-          id: uuid.v4(),
+          id: v4(),
           bpmn: '<custom-xml></custom-xml>',
         });
         expect(store.getters['processStore/processes']).toHaveLength(3);
@@ -250,7 +250,7 @@ describe('Process store', () => {
 
       test('should not have called the db store', async () => {
         await store.dispatch('processStore/updateBpmn', {
-          id: uuid.v4(),
+          id: v4(),
           bpmn: '<custom-xml></custom-xml>',
         });
         expect(ProcessInterface.prototype.updateProcess).not.toHaveBeenCalled();

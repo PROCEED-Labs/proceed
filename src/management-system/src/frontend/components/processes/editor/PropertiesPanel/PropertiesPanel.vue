@@ -20,7 +20,18 @@
           <p class="font-weight-medium">General</p>
           <v-text-field disabled label="Name" v-model="businessObject.name" filled />
           <v-text-field disabled label="Id" filled v-model="businessObject.id" />
-          <external-form />
+          <boolean-bpmn-property-form-vue
+            propertyName="external"
+            label="External"
+            :validFor="['bpmn:Task']"
+          />
+          <boolean-bpmn-property-form-vue
+            v-if="showInstanceRecoveryFeature"
+            propertyName="manualInterruptionHandling"
+            label="Manual Interruption Handling"
+            :validFor="['bpmn:FlowElement']"
+            info="Will prevent automatic handling of the element or any nested element when the instance is continued after an unforeseen interruption. Manual handling will be required to continue the execution."
+          />
           <milestone-selection v-if="isUserTask" />
         </v-container>
         <v-container>
@@ -107,12 +118,24 @@
           </div>
         </v-container>
 
+        <MQTTForm
+          v-if="isProcessElement"
+          :storedServerInfo="metaCopy.mqttServer"
+          @change="
+            applyMetaData({
+              mqttServer: {
+                attributes: { ...$event },
+              },
+            })
+          "
+        ></MQTTForm>
+
         <resource-form :process="process" />
 
         <custom-property-form
           :meta="metaCopy"
           :disableEditing="editingDisabled"
-          @change="applyMetaData"
+          @change="applyCustomProperty"
         ></custom-property-form>
 
         <documentation-form />
@@ -127,15 +150,19 @@
 import ViewportRelativeResizableWindow from '@/frontend/components/resizable-window/ViewportRelativeResizableWindow.vue';
 import InspectionPlanSelection from '@/frontend/components/5thIndustry/inspectionPlanSelection.vue';
 import inspectionOrderSelection from '@/frontend/components/5thIndustry/inspectionOrderSelection.vue';
-import ExternalForm from '@/frontend/components/processes/editor/PropertiesPanel/ExternalForm.vue';
+import BooleanBpmnPropertyFormVue from './BooleanBpmnPropertyForm.vue';
 import MilestoneSelection from '@/frontend/components/processes/editor/PropertiesPanel/MilestoneSelection.vue';
 import TimePlannedForm from '@/frontend/components/processes/editor/PropertiesPanel/TimePlannedForm.vue';
+import MQTTForm from '@/frontend/components/processes/editor/PropertiesPanel/MQTTForm.vue';
 import ResourceForm from '@/frontend/components/processes/editor/PropertiesPanel/resources/ResourceForm.vue';
 import CustomPropertyForm from '@/frontend/components/processes/editor/PropertiesPanel/CustomPropertyForm.vue';
 import DocumentationForm from '@/frontend/components/processes/editor/PropertiesPanel/DocumentationForm.vue';
 import FlowElementColor from '@/frontend/components/processes/editor/PropertiesPanel/FlowElementColor.vue';
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
 import ImageSelection from '@/frontend/components/processes/editor/PropertiesPanel/ImageSelection.vue';
+
+import { enableInterruptedInstanceRecovery } from '../../../../../../../../FeatureFlags';
+
 export default {
   name: 'PropertiesPanel',
   components: {
@@ -144,9 +171,10 @@ export default {
     inspectionOrderSelection,
     MilestoneSelection,
     TimePlannedForm,
+    MQTTForm,
     ResourceForm,
     CustomPropertyForm,
-    ExternalForm,
+    BooleanBpmnPropertyFormVue,
     DocumentationForm,
     FlowElementColor,
     ImageSelection,
@@ -207,6 +235,7 @@ export default {
         customerId,
         isUsing5i,
         defaultPriority,
+        mqttServer,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,
@@ -245,6 +274,8 @@ export default {
   },
   data() {
     return {
+      showInstanceRecoveryFeature: enableInterruptedInstanceRecovery,
+
       windowMeasurements: {
         right: `${this.convertPixelToVw(12)}vw`, // set right value to align with toolbar (padding 12px)
         top: `${this.convertPixelToVh(128)}vh`, // set top value to prevent overlay of tabbar (height 48px) and toolbar (height 80px)
@@ -277,6 +308,11 @@ export default {
     },
     emitWindowMeasurements(changes) {
       this.windowMeasurements = changes;
+    },
+    applyCustomProperty(newCustomPropertyName, newCustomPropertyValue) {
+      this.customModeling.updateMetaData(this.element.id, {
+        property: { value: newCustomPropertyValue, attributes: { name: newCustomPropertyName } },
+      });
     },
     applyMetaData(metaData) {
       this.customModeling.updateMetaData(this.element.id, metaData);

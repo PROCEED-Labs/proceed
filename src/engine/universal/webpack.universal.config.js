@@ -11,10 +11,20 @@ module.exports = {
     library: 'PROCEED',
     globalObject: 'this',
   },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
   node: {
     process: false,
   },
   resolve: {
+    extensions: ['.js', '.ts', '.json', '.wasm', '.mjs'],
     alias: {
       './separator.js$': './separator.webpack.js',
     },

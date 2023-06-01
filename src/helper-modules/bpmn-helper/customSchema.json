@@ -144,6 +144,31 @@
       ]
     },
     {
+      "name": "mqttServer",
+      "properties": [
+        {
+          "name": "url",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "topic",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "user",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "password",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
       "name": "Meta",
       "superClass": ["Element"],
       "properties": [
@@ -216,6 +241,11 @@
           "name": "defaultPriority",
           "isMany": false,
           "type": "defaultPriority"
+        },
+        {
+          "name": "mqttServer",
+          "isMany": false,
+          "type": "mqttServer"
         }
       ]
     },
@@ -432,6 +462,17 @@
       "properties": [
         {
           "name": "placeholder",
+          "isAttr": true,
+          "type": "Boolean"
+        }
+      ]
+    },
+    {
+      "name": "manualInterruptionHandling",
+      "extends": ["bpmn:FlowElement"],
+      "properties": [
+        {
+          "name": "manualInterruptionHandling",
           "isAttr": true,
           "type": "Boolean"
         }

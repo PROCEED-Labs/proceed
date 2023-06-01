@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import Viewer from 'bpmn-js/dist/bpmn-viewer.production.min';
 import NavigatedViewer from 'bpmn-js/dist/bpmn-navigated-viewer.production.min';
 import Modeler from 'bpmn-js/dist/bpmn-modeler.production.min';
@@ -54,7 +54,7 @@ export default {
   data() {
     return {
       viewer: null,
-      canvasID: 'canvas_' + uuid.v4(),
+      canvasID: 'canvas_' + v4(),
       appliedStyling: [],
     };
   },
@@ -246,6 +246,10 @@ export default {
 
 .green:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: #dcffd6ff !important;
+}
+
+.yellow:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #f2ffd6 !important;
 }
 
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {

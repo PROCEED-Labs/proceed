@@ -297,15 +297,16 @@ class CustomModeling {
   }
 
   /**
-   * Sets external value on a task
+   * Changes a property of a bpmn element
    *
    * @param {Object} element the element to change
-   * @param {Boolean} external if the task is supposed to be external
+   * @param {String} propertyName the name of the property to change
+   * @param {any} propertyValue the new value for the property
    */
-  async setTaskExternal(element, external) {
+  async updateProperty(element, propertyName, propertyValue) {
     this.commandStack.execute('element.updateProperties', {
       element,
-      properties: { external: external || null },
+      properties: { [propertyName]: propertyValue || null },
     });
   }
 }

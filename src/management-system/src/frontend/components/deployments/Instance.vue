@@ -143,7 +143,10 @@ export default {
               color = 'white';
               break;
             case 'executionColors':
-              color = `${this.getExecutionColor(logEntry && logEntry.executionState)}`;
+              color = `${this.getExecutionColor(
+                logEntry && logEntry.executionState,
+                logEntry && logEntry.executionWasInterrupted
+              )}`;
               break;
             default:
               color = '';
@@ -205,10 +208,10 @@ export default {
 
       this.bpmnViewerXml = xml;
     },
-    getExecutionColor(executionState) {
+    getExecutionColor(executionState, wasInterrupted) {
       switch (executionState) {
         case 'COMPLETED':
-          return 'green';
+          return wasInterrupted ? 'yellow' : 'green';
         case 'ERROR-SEMANTIC':
         case 'ERROR-TECHNICAL':
         case 'ERROR-CONSTRAINT_UNFULFILLED':

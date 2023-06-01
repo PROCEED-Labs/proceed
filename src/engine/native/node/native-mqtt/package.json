@@ -1,0 +1,12 @@
+{
+  "name": "@proceed/native-mqtt",
+  "version": "1.0.0",
+  "description": "Native module that implements the `publish`, `subscribe` and 'unsubscribe' commands.",
+  "main": "src/index.js",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "dependencies": {
+    "@proceed/native-module": "^1.0.0",
+    "async-mqtt": "^2.6.3"
+  }
+}

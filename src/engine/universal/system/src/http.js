@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils');
-const Console = require('./console');
-const Config = require('./config');
-const timer = new (require('./timer'))();
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
+const Console = require('./console.ts').default;
+const Config = require('./config.ts').default;
+const timer = new (require('./timer.ts').default)();
 
 /**
  * @memberof module:@proceed/system
@@ -29,7 +29,7 @@ class HTTP extends System {
    * @param {number} port The port to use
    */
   setPort(port) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -52,7 +52,7 @@ class HTTP extends System {
   }
 
   unsetPort() {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -92,7 +92,7 @@ class HTTP extends System {
     }
 
     // Prepare callback
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
     this.commandResponse(taskID, async (_, resID, req) => {
       // Process the request with the given callback
       let statusCode = 200;
@@ -135,7 +135,7 @@ class HTTP extends System {
       }
 
       // Send the response back
-      const resTaskID = utils.generateUniqueTaskID();
+      const resTaskID = generateUniqueTaskID();
       this.commandRequest(resTaskID, ['respond', [sendResponse, resID, statusCode, mimeType]]);
     });
 

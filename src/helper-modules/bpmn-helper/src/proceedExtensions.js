@@ -37,6 +37,7 @@ const proceedExtensionElements = {
   Tool: { parent: 'tool', identifier: 'id' },
   inspectionInstrument: { parent: 'Resources' },
   InspectionInstrument: { parent: 'inspectionInstrument', identifier: 'id' },
+  mqttServer: { parent: 'Meta', identifier: 'url' },
 };
 
 /**
@@ -147,11 +148,9 @@ function getElementAttributes(element) {
 
 function setProceedElement(element, proceedElementType, value, attributes = {}) {
   let parent;
-  if (!proceedExtensionElements[proceedElementType]) {
+  if (proceedElementType === 'property') {
     // properties that are not explicitly defined are stored as a property element inside a property container in the meta element
     parent = 'property';
-    attributes.name = proceedElementType;
-    proceedElementType = 'property';
   } else {
     ({ parent } = proceedExtensionElements[proceedElementType]);
   }

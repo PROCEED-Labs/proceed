@@ -18,11 +18,8 @@ module.exports = {
    * @returns {Boolean} - indicates if the file exists or not
    */
   async isProcessExisting(definitionId) {
-    const result = await data.read(`processes.json/${definitionId}`);
-    if (result === null) {
-      return false;
-    }
-    return true;
+    const processInfo = await data.read(`processes.json/${definitionId}`);
+    return !!processInfo;
   },
 
   /**
@@ -34,11 +31,8 @@ module.exports = {
    * @returns {Boolean} - indicates if the version exists or not
    */
   async isProcessVersionExisting(definitionId, version) {
-    if (!(await this.isProcessExisting(definitionId))) return false;
-
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
-
-    return !!processInfo[version];
+    return !!(processInfo && processInfo[version]);
   },
 
   /**
@@ -51,9 +45,12 @@ module.exports = {
    * @returns {Boolean} - indicates if the process is valid and can be executed
    */
   async isProcessVersionValid(definitionId, version, expectedProcessId) {
-    if (!(await this.isProcessVersionExisting(definitionId, version))) return false;
-
     const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
+
+    if (!processInfo || !processInfo[version]) {
+      return false;
+    }
+
     const versionInfo = processInfo[version];
 
     if (expectedProcessId && expectedProcessId !== versionInfo.processId) {
@@ -133,10 +130,10 @@ module.exports = {
     const { version } = versionInfo;
 
     // save version info into the processes list
-    let processInfo = {};
+    let processInfo = JSON.parse(await data.read(`processes.json/${bpmnDefinitionId}`));
     // make sure to keep information about other existing versions
-    if (await this.isProcessExisting(bpmnDefinitionId)) {
-      processInfo = JSON.parse(await data.read(`processes.json/${bpmnDefinitionId}`));
+    if (!processInfo) {
+      processInfo = {};
     }
     // save version specific information (needs gives information about the required process fragments)
     processInfo[version] = {
@@ -193,11 +190,11 @@ module.exports = {
    * @returns {Array<{ version: string, bpmn: string }>} - the process definitions of every version of the process
    */
   async getProcess(definitionId) {
-    if (!(await this.isProcessExisting(definitionId))) {
+    const processInfo = await data.read(`processes.json/${definitionId}`);
+
+    if (!processInfo) {
       throw new Error('Process with given definitionId does not exist!');
     }
-
-    const processInfo = await data.read(`processes.json/${definitionId}`);
 
     const versions = Object.keys(processInfo);
 
@@ -234,18 +231,25 @@ module.exports = {
    * @returns {VersionInfo} the information about the version
    */
   async getProcessVersionInfo(processDefinitionId, version) {
-    if (!(await this.isProcessVersionExisting(processDefinitionId, version))) {
+    const processInfo = JSON.parse(await data.read(`processes.json/${processDefinitionId}`));
+
+    if (!processInfo || !processInfo[version]) {
       throw new Error(
         `Process version ${version} does not exist for the process (id: ${processDefinitionId}).`
       );
     }
 
-    const processInfo = JSON.parse(await data.read(`processes.json/${processDefinitionId}`));
     const versionInfo = processInfo[version];
 
     const deploymentDate = versionInfo.deploymentDate;
 
     const bpmn = await data.readProcessVersionBpmn(processDefinitionId, version);
+
+    if (!bpmn) {
+      throw new Error(
+        `There exists no BPMN for the process (id: ${processDefinitionId}) with version ${version}.`
+      );
+    }
 
     const definitionName = await getDefinitionsName(bpmn);
     const deploymentMethod = await getDeploymentMethod(bpmn);
@@ -276,11 +280,11 @@ module.exports = {
    * @returns {ProcessInfo} the information about the process
    */
   async getProcessInfo(processDefinitionId) {
-    if (!this.isProcessExisting(processDefinitionId)) {
+    const processInfo = JSON.parse(await data.read(`processes.json/${processDefinitionId}`));
+
+    if (!processInfo) {
       throw new Error('Process with given definitionId does not exist!');
     }
-
-    const processInfo = JSON.parse(await data.read(`processes.json/${processDefinitionId}`));
 
     const infoPromises = Object.keys(processInfo).map(
       async (version) => await this.getProcessVersionInfo(processDefinitionId, version)
@@ -297,8 +301,8 @@ module.exports = {
    * @param {String} definitionId
    */
   async deleteProcess(definitionId) {
-    await data.delete(definitionId);
     await data.delete(`processes.json/${definitionId}`);
+    await data.delete(definitionId);
   },
 
   /**
@@ -359,7 +363,8 @@ module.exports = {
    * @param {String} html
    */
   async saveHTMLString(definitionId, fileName, html) {
-    if (!(await this.isProcessExisting(definitionId))) {
+    const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
+    if (!processInfo) {
       throw new Error('Process with given ID does not exist!');
     }
 
@@ -368,8 +373,6 @@ module.exports = {
 
     if (imageDependencies.length) {
       // add the dependency to every process version that depends on the user task
-      const processInfo = JSON.parse(await data.read(`processes.json/${definitionId}`));
-
       Object.values(processInfo).forEach((version) => {
         if (version.needs.html.includes(fileName)) {
           // if the version has a dependency on the user task
@@ -450,7 +453,7 @@ module.exports = {
 
     const instances = await data.read(`${definitionId}/instance.json`);
 
-    if (!instances) return [];
+    if (!instances) return {};
 
     Object.keys(instances).forEach((instanceId) => {
       instances[instanceId] = JSON.parse(instances[instanceId]);

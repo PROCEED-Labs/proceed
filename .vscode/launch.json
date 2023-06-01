@@ -14,7 +14,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch PROCEED",
-      "program": "${workspaceFolder}/src/engine/native/node/index.js",
+      "program": "${workspaceFolder}/src/engine/native/node/index.ts",
       "autoAttachChildProcesses": true
     },
     {
@@ -80,9 +80,7 @@
         "--remote-debugging-port=9223",
         "${workspaceFolder}/build/management-system/electron"
       ],
-      "outFiles": [
-        "${workspaceFolder}/src/management-system/build/electron/**/*.js"
-      ]
+      "outFiles": ["${workspaceFolder}/src/management-system/build/electron/**/*.js"]
     },
     {
       "name": "Electron: Renderer",

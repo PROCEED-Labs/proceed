@@ -163,11 +163,11 @@
 </template>
 
 <script>
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import MachineForm from '@/frontend/components/machines/MachineForm.vue';
 import MachineConfig from '@/frontend/components/machines/MachineConfig.vue';
 import MachineInfo from '@/frontend/components/machines/MachineInfo.vue';
-import { fields } from '@/frontend/helpers/machine-fields.js';
+import { fields } from '@/frontend/helpers/machine-fields.ts';
 import confirmation from '@/frontend/components/universal/Confirmation.vue';
 import { engineNetworkInterface } from '@/frontend/backend-api/index.js';
 
@@ -232,7 +232,7 @@ export default {
       await this.$store.dispatch('machineStore/add', {
         machine: {
           ...machine,
-          id: uuid.v4(),
+          id: v4(),
           saved: true,
         },
       });

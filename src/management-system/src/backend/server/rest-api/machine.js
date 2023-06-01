@@ -4,7 +4,7 @@ import {
   addMachine,
   updateMachine,
 } from '../../shared-electron-server/data/machines.js';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import express from 'express';
 import { isAllowed } from '../iam/middleware/authorization.js';
 import {
@@ -39,7 +39,7 @@ machinesRouter.post(
     }
 
     if (!body.id) {
-      body.id = uuid.v4();
+      body.id = v4();
     }
 
     addMachine(body);

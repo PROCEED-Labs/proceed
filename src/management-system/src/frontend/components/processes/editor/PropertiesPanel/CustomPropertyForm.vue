@@ -7,16 +7,13 @@
           :key="index"
           :disabled="disableEditing"
           label="Name"
-          :rules="index === customPropertyRows.length - 1 ? [inputRules.noDuplicate] : []"
+          :rules="[noDuplicate(index)]"
           :value="name"
           background-color="white"
           @blur="
             index === customPropertyRows.length - 1
-              ? assignCustomProperty({
-                  name: $event.target.value,
-                  value: value,
-                })
-              : emitCustomPropertyChange({ [$event.target.value]: value }, name)
+              ? assignCustomProperty($event.target.value, value)
+              : emitCustomPropertyChange($event.target.value, value, name)
           "
           filled
         />
@@ -30,11 +27,8 @@
           background-color="white"
           @blur="
             index === customPropertyRows.length - 1
-              ? assignCustomProperty({
-                  name: name,
-                  value: $event.target.value,
-                })
-              : emitCustomPropertyChange({ [name]: $event.target.value })
+              ? assignCustomProperty(name, $event.target.value)
+              : emitCustomPropertyChange(name, $event.target.value)
           "
           filled
         />
@@ -52,15 +46,24 @@
 export default {
   name: 'CustomPropertyForm',
   components: {},
-  props: ['element', 'meta', 'disableEditing'],
+  props: ['meta', 'disableEditing'],
   data() {
     return {
       newCustomProperty: {
         name: '',
         value: null,
       },
-      inputRules: {
-        noDuplicate: (name) => !this.customMetaData[name] || 'Name already exists',
+      noDuplicate(index) {
+        const self = this;
+        return function (name) {
+          const duplicateIndex = self.customPropertyRows.findIndex((row) => row.name === name);
+
+          if (name.length > 0 && duplicateIndex !== -1 && duplicateIndex !== index) {
+            return 'Name already exists';
+          }
+
+          return true;
+        };
       },
     };
   },
@@ -91,6 +94,7 @@ export default {
         isUsing5i,
         overviewImage,
         defaultPriority,
+        mqttServer,
         '_5i-Inspection-Plan-ID': inspectionPlanId,
         '_5i-Inspection-Plan-Title': inspectionPlanTitle,
         '_5i-API-Address': apiAddress,
@@ -109,42 +113,46 @@ export default {
     },
   },
   methods: {
-    validateInput(customProperyInfo) {
+    validateInput(newCustomPropertyName, newCustomPropertyValue) {
       return (
-        customProperyInfo &&
-        customProperyInfo.name &&
-        customProperyInfo.value &&
-        !this.customMetaData[customProperyInfo.name]
+        newCustomPropertyName &&
+        newCustomPropertyValue &&
+        !this.customMetaData[newCustomPropertyName]
       );
     },
     deleteProperty(metaDataName) {
-      this.$emit('change', {
-        [metaDataName]: null,
-      });
+      this.$emit('change', metaDataName, null);
     },
-    emitCustomPropertyChange(newMetaData, oldMetaDataName) {
-      const metaData = { ...newMetaData };
-
-      if (oldMetaDataName && !newMetaData[oldMetaDataName]) {
-        metaData[oldMetaDataName] = undefined;
+    emitCustomPropertyChange(newCustomPropertyName, newCustomPropertyValue, oldCustomPropertyName) {
+      if (newCustomPropertyName !== oldCustomPropertyName) {
+        if (!this.customMetaData[newCustomPropertyName]) {
+          this.deleteProperty(oldCustomPropertyName);
+          this.$emit('change', newCustomPropertyName, newCustomPropertyValue);
+        }
+      } else {
+        this.$emit('change', newCustomPropertyName, newCustomPropertyValue);
       }
-
-      this.$emit('change', metaData);
     },
-    assignCustomProperty(newCustomPropertyInfo) {
-      this.newCustomProperty.name = newCustomPropertyInfo.name;
-      this.newCustomProperty.value = newCustomPropertyInfo.value;
+    assignCustomProperty(newCustomPropertyName, newCustomPropertyValue) {
+      this.newCustomProperty.name = newCustomPropertyName;
+      this.newCustomProperty.value = newCustomPropertyValue;
 
-      if (this.validateInput(newCustomPropertyInfo)) {
-        this.$emit('change', {
-          [this.newCustomProperty.name]: this.newCustomProperty.value,
-        });
+      if (this.validateInput(newCustomPropertyName, newCustomPropertyValue)) {
+        this.$emit('change', newCustomPropertyName, newCustomPropertyValue);
 
         this.newCustomProperty.name = '';
         this.newCustomProperty.value = null;
       }
     },
   },
-  watch: {},
+  watch: {
+    meta: {
+      handler(newMeta) {
+        this.newCustomProperty.name = '';
+        this.newCustomProperty.value = null;
+      },
+      immediate: true,
+    },
+  },
 };
 </script>

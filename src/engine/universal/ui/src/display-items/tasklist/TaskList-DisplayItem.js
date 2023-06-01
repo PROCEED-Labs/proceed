@@ -66,7 +66,7 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-      variables = userTask.processInstance.getVariables();
+      variables = userTask.processInstance.getVariables(userTask.tokenId);
       milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
@@ -96,6 +96,7 @@ class TaskListTab extends DisplayItem {
       ['_5thIndustryInspectionOrderLink']: inspectionOrderLink,
       activate,
       definitionVersion,
+      tokenId,
     } = userTask;
 
     if (implementation === '5thIndustry') {
@@ -127,7 +128,7 @@ class TaskListTab extends DisplayItem {
       const script = `
       const instanceID = '${query.instanceID}';
       const userTaskID = '${query.userTaskID}';
-      
+
       window.addEventListener('submit', (event) => {
         event.preventDefault();
 
@@ -162,7 +163,7 @@ class TaskListTab extends DisplayItem {
             .split('milestone-')
             .slice(1)
             .join('');
-            
+
             window.PROCEED_DATA.put(
               '/tasklist/api/milestone',
               { [milestoneName]: parseInt(event.target.value) },
@@ -188,7 +189,7 @@ class TaskListTab extends DisplayItem {
             .join('');
 
             clearTimeout(variableInputTimer);
-            
+
             variableInputTimer = setTimeout(() => {
               window.PROCEED_DATA.put(
                 '/tasklist/api/variable',
@@ -198,7 +199,7 @@ class TaskListTab extends DisplayItem {
                   userTaskID,
                 }
               );
-            }, 5000) 
+            }, 5000)
           });
         });
       })
@@ -215,11 +216,12 @@ class TaskListTab extends DisplayItem {
     }
   }
 
-  async postUserTask(body, query) {
+  async postUserTask(variables, query) {
     const engine = this.getTaskEngine(query);
-    engine.completeUserTask(query.instanceID, query.userTaskID, body);
 
-    this.logger.debug('--> Tasklist Form submitted: ', body);
+    engine.completeUserTask(query.instanceID, query.userTaskID, {});
+
+    this.logger.debug('--> Tasklist Form submitted: ', variables);
 
     return 'true';
   }

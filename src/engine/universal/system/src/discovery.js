@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
-const { System } = require('./system');
-const utils = require('./utils');
+const { System } = require('./system.ts');
+const { generateUniqueTaskID } = require('./utils.ts');
 
 /**
  * @memberof module:@proceed/system
@@ -15,7 +15,7 @@ class Discovery extends System {
    * @param {*} port
    */
   async publish(hostname, port, txt) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -38,7 +38,7 @@ class Discovery extends System {
   }
 
   unpublish() {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -65,7 +65,7 @@ class Discovery extends System {
    * @returns {Promise}
    */
   async discover() {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -94,7 +94,7 @@ class Discovery extends System {
    * @param {Number} port
    */
   removeDiscoveredService(ip, port) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     // Emit the task
     this.commandRequest(taskID, ['remove_discovered_service', [ip, port]]);
@@ -105,7 +105,7 @@ class Discovery extends System {
    * (might be used after a disconnect)
    */
   resetDiscovery() {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response
@@ -133,7 +133,7 @@ class Discovery extends System {
    * @param {Function} cb
    */
   onDiscoveredMachine(cb) {
-    const upMessageTaskId = utils.generateUniqueTaskID();
+    const upMessageTaskId = generateUniqueTaskID();
     this.commandResponse(upMessageTaskId, cb);
     this.commandRequest(upMessageTaskId, ['on_discovered', []]);
   }
@@ -144,7 +144,7 @@ class Discovery extends System {
    * @param {Function} cb
    */
   onUndiscoveredMachine(cb) {
-    const downMessageTaskId = utils.generateUniqueTaskID();
+    const downMessageTaskId = generateUniqueTaskID();
     this.commandResponse(downMessageTaskId, cb);
     this.commandRequest(downMessageTaskId, ['on_undiscovered', []]);
   }

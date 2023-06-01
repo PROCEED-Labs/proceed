@@ -30,7 +30,7 @@ module.exports = function createScriptExecutor(options = {}) {
             return new Proxy(service, {
               get: function (target, name) {
                 if (name in target && typeof target[name] === 'function') {
-                  return (...args) => target[name](processId, processInstanceId, ...args);
+                  return (...args) => target[name](processId, processInstanceId, tokenId, ...args);
                 }
 
                 return target[name];

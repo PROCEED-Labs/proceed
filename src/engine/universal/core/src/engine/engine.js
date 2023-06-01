@@ -9,6 +9,9 @@ const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
 const { getProcessIds } = require('@proceed/bpmn-helper');
 // const Separator = require('./separator.js').default;
 
+const { enableMessaging } = require('../../../../../../FeatureFlags.js');
+const { sendProcessStepsInfoTo5thIndustry } = require('./5thIndustry.js');
+
 setupNeoEngine();
 
 /**
@@ -179,12 +182,27 @@ class Engine {
     }
 
     let resolver;
-    const instanceCreatedPromise = new Promise((resolve) => (resolver = resolve));
+    const instanceCreatedPromise = new Promise((resolve) => {
+      resolver = resolve;
+
+      if (enableMessaging) {
+        sendProcessStepsInfoTo5thIndustry(
+          this.definitionId,
+          version,
+          this._versionBpmnMapping[version],
+          this._log
+        );
+      }
+    });
 
     this.originalInstanceState = instance;
     this.instanceEventHandlers = {
       onStarted: (newInstance) => {
         resolver(newInstance.id);
+        // make sure to keep the information from the original instance on the recreated instance
+        if (instance && instance.callingInstance) {
+          newInstance.callingInstance = instance.callingInstance;
+        }
         if (typeof onStarted === 'function') {
           onStarted(newInstance);
         }

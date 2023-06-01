@@ -16,6 +16,7 @@
       </v-col>
       <v-col cols="3">
         <v-text-field
+          class="mt-n3"
           :disabled="disableEditing"
           :value="resource.quantity"
           :key="`quantity-${resource.id}`"

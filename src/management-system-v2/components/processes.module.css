@@ -1,0 +1,24 @@
+.Row {
+  cursor: pointer;
+
+  .Title {
+    font-weight: 600;
+  }
+
+  .ActionCell {
+    display: flex;
+    justify-content: center;
+
+    .Action {
+      background-color: #ececec;
+      border-radius: 100%;
+      padding: 4px;
+      font-size: 17px;
+      transition: background-color 0.2s;
+    }
+
+    .Action:hover {
+      background-color: #dcdcdc;
+    }
+  }
+}

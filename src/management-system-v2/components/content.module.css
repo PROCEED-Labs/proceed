@@ -1,0 +1,38 @@
+.Main {
+  min-height: 100vh !important;
+
+  .Header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    align-items: center;
+
+    .Title {
+      letter-spacing: 0.2px;
+      font-weight: 300;
+      margin-bottom: 0;
+      display: inline-block;
+      margin-left: 20px;
+    }
+
+    .Right {
+      margin-right: 20px;
+    }
+  }
+
+  .Content {
+    overflow: initial;
+    padding: 40px 20px;
+    max-width: 100%;
+
+    &.compact {
+      padding: 0;
+    }
+  }
+
+  .Footer {
+    text-align: center;
+    color: #9a9a9a;
+    font-weight: 300;
+  }
+}

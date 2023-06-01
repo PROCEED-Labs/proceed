@@ -6,7 +6,7 @@
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
-    "@darkobits/adeiu": "^0.2.6",
+    "@darkobits/adeiu": "0.2.14",
     "@proceed/native-module": "^1.0.0"
   },
   "devDependencies": {

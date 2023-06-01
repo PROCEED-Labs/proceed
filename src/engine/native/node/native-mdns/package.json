@@ -8,6 +8,6 @@
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
     "nbonjour": "^3.6.3",
-    "@darkobits/adeiu": "^0.2.6"
+    "@darkobits/adeiu": "0.2.14"
   }
 }

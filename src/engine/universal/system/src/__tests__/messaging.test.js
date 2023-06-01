@@ -260,4 +260,173 @@ describe('Tests for the message interface of the dispatcher', () => {
       );
     });
   });
+
+  describe('subscribe', () => {
+    it('throws if no url is provided and there is no default url in the config', async () => {
+      messaging._defaultMessagingServerAddress = undefined;
+      await expect(messaging.subscribe('test/topic', () => {})).rejects.toThrow();
+    });
+
+    it('will send a command to subscribe to the backend', async () => {
+      await expect(
+        messaging.subscribe(
+          'test/topic',
+          () => {},
+          'mqtt://some-url',
+          { username: 'user', password: 'password456' },
+          { qos: 0 }
+        )
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_subscribe',
+        [
+          'mqtt://some-url',
+          'test/topic',
+          '{"username":"user","password":"password456"}',
+          expect.stringMatching(/{"qos":0,"subscriptionId":".*"}/),
+        ],
+      ]);
+    });
+
+    it('will use default values if no explicit url and log in information is given', async () => {
+      messaging._defaultMessagingServerAddress = 'mqtt://defaultAddress';
+      messaging._username = 'user123';
+      messaging._password = 'password123';
+      messaging._machineId = 'engineId';
+      await expect(messaging.subscribe('test/topic', () => {})).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_subscribe',
+        [
+          'mqtt://defaultAddress',
+          'test/topic',
+          '{"username":"user123","password":"password123","clientId":"engineId"}',
+          expect.stringMatching(/{"subscriptionId":".*"}/),
+          ,
+        ],
+      ]);
+    });
+
+    it('throws if the native part returns an error', async () => {
+      messaging.commandRequest.mockImplementationOnce((_id, _info) => {
+        ipcCallback('Error Message', null);
+      });
+
+      await expect(
+        messaging.subscribe(
+          'test/topic',
+          () => {},
+          'mqtt://some-url',
+          { username: 'user', password: 'password456' },
+          { qos: 0 }
+        )
+      ).rejects.toMatch(
+        'Failed to subscribe to mqtt://some-url (Topic: test/topic)\nError Message'
+      );
+    });
+
+    it('will call the given callback when a message is posted on the topic after the subscription', async () => {
+      messaging.commandRequest.mockImplementationOnce((_id, _info) => {
+        ipcCallback(null, undefined);
+      });
+
+      const callback = jest.fn();
+      await expect(
+        messaging.subscribe(
+          'test/topic',
+          callback,
+          'mqtt://some-url',
+          { username: 'user', password: 'password456' },
+          { qos: 0 }
+        )
+      ).resolves.not.toThrow();
+
+      expect(callback).not.toHaveBeenCalled();
+
+      ipcCallback(null, 'test/topic', 'message');
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith('test/topic', 'message');
+    });
+  });
+
+  describe('unsubscribe', () => {
+    it('throws if no url is provided and there is no default url in the config', async () => {
+      messaging._defaultMessagingServerAddress = undefined;
+      await expect(messaging.unsubscribe('test/topic', () => {})).rejects.toThrow();
+    });
+
+    it('will do nothing if the given arguments dont match an existing subscription', async () => {
+      await expect(
+        messaging.unsubscribe('test/topic', () => {}, 'mqtt://some-url', {
+          username: 'user',
+          password: 'password456',
+        })
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).not.toHaveBeenCalled();
+    });
+
+    it('will send a command to unsubscribe to the backend', async () => {
+      const callback = () => {};
+      await expect(
+        messaging.subscribe(
+          'test/topic',
+          callback,
+          'mqtt://some-url',
+          { username: 'user', password: 'password456' },
+          { qos: 0 }
+        )
+      ).resolves.not.toThrow();
+
+      const { subscriptionId } = JSON.parse(messaging.commandRequest.mock.calls[0][1][1][3]);
+
+      await expect(
+        messaging.unsubscribe('test/topic', callback, 'mqtt://some-url', {
+          username: 'user',
+          password: 'password456',
+        })
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_unsubscribe',
+        [
+          'mqtt://some-url',
+          'test/topic',
+          subscriptionId,
+          '{"username":"user","password":"password456"}',
+        ],
+      ]);
+    });
+
+    it('throws if the native part returns an error', async () => {
+      messaging.commandRequest.mockImplementationOnce((_id, _info) => {
+        ipcCallback(null, 'Subscription Success');
+      });
+
+      messaging.commandRequest.mockImplementationOnce((_id, _info) => {
+        ipcCallback('Error Message', null);
+      });
+
+      const callback = () => {};
+      await expect(
+        messaging.subscribe(
+          'test/topic',
+          callback,
+          'mqtt://some-url',
+          { username: 'user', password: 'password456' },
+          { qos: 0 }
+        )
+      ).resolves.not.toThrow();
+
+      await expect(
+        messaging.unsubscribe('test/topic', callback, 'mqtt://some-url', {
+          username: 'user',
+          password: 'password456',
+        })
+      ).rejects.toMatch(
+        'Failed to unsubscribe from mqtt://some-url (Topic: test/topic)\nError Message'
+      );
+    });
+  });
 });

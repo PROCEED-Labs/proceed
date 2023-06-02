@@ -20,6 +20,7 @@
                 :rules="[inputRules.requiredName]"
                 label="Name"
                 required
+                for="Name"
               ></v-text-field>
             </v-col>
           </v-row>

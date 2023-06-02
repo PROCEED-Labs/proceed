@@ -117,6 +117,7 @@
             ></time-planned-form>
           </div>
         </v-container>
+        <performer-form v-if="isUserTask" @change="applyPerformerChange"></performer-form>
 
         <MQTTForm
           v-if="isProcessElement"
@@ -154,6 +155,7 @@ import BooleanBpmnPropertyFormVue from './BooleanBpmnPropertyForm.vue';
 import MilestoneSelection from '@/frontend/components/processes/editor/PropertiesPanel/MilestoneSelection.vue';
 import TimePlannedForm from '@/frontend/components/processes/editor/PropertiesPanel/TimePlannedForm.vue';
 import MQTTForm from '@/frontend/components/processes/editor/PropertiesPanel/MQTTForm.vue';
+import PerformerForm from '@/frontend/components/processes/editor/PropertiesPanel/PerformerForm.vue';
 import ResourceForm from '@/frontend/components/processes/editor/PropertiesPanel/resources/ResourceForm.vue';
 import CustomPropertyForm from '@/frontend/components/processes/editor/PropertiesPanel/CustomPropertyForm.vue';
 import DocumentationForm from '@/frontend/components/processes/editor/PropertiesPanel/DocumentationForm.vue';
@@ -172,6 +174,7 @@ export default {
     MilestoneSelection,
     TimePlannedForm,
     MQTTForm,
+    PerformerForm,
     ResourceForm,
     CustomPropertyForm,
     BooleanBpmnPropertyFormVue,
@@ -275,7 +278,6 @@ export default {
   data() {
     return {
       showInstanceRecoveryFeature: enableInterruptedInstanceRecovery,
-
       windowMeasurements: {
         right: `${this.convertPixelToVw(12)}vw`, // set right value to align with toolbar (padding 12px)
         top: `${this.convertPixelToVh(128)}vh`, // set top value to prevent overlay of tabbar (height 48px) and toolbar (height 80px)
@@ -351,6 +353,9 @@ export default {
       }
 
       this.applyMetaData(metaData);
+    },
+    applyPerformerChange(performers) {
+      this.customModeling.setUserTaskPerformers(this.element.id, performers);
     },
     getOccurrenceProbabilityRule(value) {
       if (!value) {

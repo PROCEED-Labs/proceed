@@ -47,10 +47,10 @@
             <template v-slot:activator="{ on, attrs }">
               <div v-bind="attrs" v-on="on">
                 <v-icon :color="isSelected || !isUserTaskActive ? 'white' : ''">mdi-account</v-icon>
-                <span class="name" v-bind="attrs" v-on="on"> {{ owner }}</span>
+                <span class="name" v-bind="attrs" v-on="on"> {{ performers }}</span>
               </div>
             </template>
-            <span> {{ `Owner of User Task: ${owner}` }}</span>
+            <span> {{ `Performers of User Task: ${performers}` }}</span>
           </v-tooltip>
         </div>
         <div class="priority">
@@ -161,15 +161,18 @@ export default {
       }
       return title;
     },
-    owner() {
-      return 'Max Mustermann';
+    performers() {
+      const performers = this.userTask.performers.map(
+        (performer) => performer.meta.name || performer.meta.groupname
+      );
+      return performers.length > 0 ? performers.join(', ') : 'Not specified';
     },
-    shortOwner() {
-      let owner = this.owner;
-      if (owner.length > 15) {
-        owner = owner.slice(0, 14) + '...';
+    shortPerformers() {
+      let performers = this.performers;
+      if (performers.length > 15) {
+        performers = performers.slice(0, 14) + '...';
       }
-      return owner;
+      return performers;
     },
   },
   methods: {

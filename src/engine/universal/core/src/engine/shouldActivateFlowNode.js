@@ -5,6 +5,7 @@ const {
   getMilestonesFromElementById,
   getMetaData,
   convertISODurationToMiliseconds,
+  getPerformersFromElementById,
 } = require('@proceed/bpmn-helper');
 
 /**
@@ -36,6 +37,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 
     const token = engine.getToken(instance.id, tokenId);
     const metaData = await getMetaData(bpmn, userTask.id);
+    const performers = await getPerformersFromElementById(bpmn, userTask.id);
 
     const startTime = token.currentFlowElementStartTime;
     let endTime = null;
@@ -72,6 +74,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
     instance.updateToken(tokenId, {
       currentFlowNodeProgress: { value: 0, manual: false },
       priority: metaData.defaultPriority || 1,
+      performers,
     });
 
     const initializedMilestones = (await getMilestonesFromElementById(bpmn, userTask.id)).reduce(

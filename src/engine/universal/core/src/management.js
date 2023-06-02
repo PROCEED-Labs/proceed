@@ -548,6 +548,7 @@ const Management = {
               ...uT,
               priority: userTaskToken.priority,
               progress: userTaskToken.currentFlowNodeProgress.value,
+              performers: userTaskToken.performers,
             };
           } else {
             const userTaskLogEntry = archivedInstance.log.find(
@@ -558,6 +559,7 @@ const Management = {
               ...uT,
               priority: userTaskLogEntry.priority,
               progress: userTaskLogEntry.progress.value,
+              performers: userTaskToken.performers,
             };
           }
         });

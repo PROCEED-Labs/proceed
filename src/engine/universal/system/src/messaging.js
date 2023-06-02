@@ -25,6 +25,8 @@ class Messaging extends System {
 
     // if the module has been initialized with the required data
     this._initialized = false;
+
+    this.subscriptions = {};
   }
 
   /**
@@ -195,6 +197,125 @@ class Messaging extends System {
     this.commandRequest(taskID, [
       'messaging_publish',
       [url, topic, message, messageOptions, connectionOptions],
+    ]);
+
+    return listenPromise;
+  }
+
+  /**
+   * Allows the subscription to a topic on a messaging server
+   *
+   * @param {String} topic the topic to subscribe to
+   * @param {Function} callback the function that should be called every time that a new message is published to the topic
+   * @param {String} [overrideUrl] the url of the messaging server (defaults to the url in the config if none is given)
+   * @param {Object} connectionOptions the connectionOptions to use when connecting to the server (most importantly username and password)
+   * @param {Object} subscriptionOptions the subscriptionOptions to use (e.g. in case of mqtt the quality of service to use for the subscription)
+   * @throws will throw if no url is given and there is also no url defined in the config
+   */
+  async subscribe(topic, callback, overrideUrl, connectionOptions = {}, subscriptionOptions = {}) {
+    // if no url is given use the default url if one was set
+    const url = overrideUrl || this._defaultMessagingServerAddress;
+
+    if (!url) throw new Error('Tried to subscribe to a topic without providing a server address!');
+
+    const taskID = generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      let setupResponseReceived = false;
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, ...data) => {
+        if (err) {
+          // Reject and close the listener
+          reject(`Failed to subscribe to ${url} (Topic: ${topic})\n${err}`);
+          return true;
+        } else {
+          if (!setupResponseReceived) {
+            // Resolve and keep the listener open for future responses (incoming messages on the topic)
+            resolve();
+            setupResponseReceived = true;
+          } else {
+            callback(...data);
+          }
+        }
+      });
+    });
+
+    // adds additional information to the options and serialize them for the ipc call
+    subscriptionOptions.subscriptionId = taskID; // we need a way to tell the native part which subscription to remove when we unsubscribe from the topic in the future
+    subscriptionOptions = JSON.stringify(subscriptionOptions);
+    this._completeLoginInfo(connectionOptions);
+    connectionOptions = JSON.stringify(connectionOptions);
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
+    // send the subscription request to the native part
+    this.commandRequest(taskID, [
+      'messaging_subscribe',
+      [url, topic, connectionOptions, subscriptionOptions],
+    ]);
+
+    // remember the subscriptionId with the related data so we can use it in a call to unsubscribe
+    if (!this.subscriptions[url]) this.subscriptions[url] = {};
+    if (!this.subscriptions[url][sessionId]) this.subscriptions[url][sessionId] = {};
+    this.subscriptions[url][sessionId][callback] = taskID;
+
+    return listenPromise;
+  }
+
+  /**
+   * Allows unsubscribing from a topic that was subscribed to before using the subscribe function
+   *
+   * @param {String} topic the topic that was subscribed to
+   * @param {Function} callback the callback that was given to the subscribe function
+   * @param {String} [overrideUrl] the server address given to the subscribe function (might be left open to default to the address in the config)
+   * @param {Object} connectionOptions the log in information that was used for the subscription
+   * @param {Object} connectionOptions.username
+   * @param {Object} connectionOptions.password
+   */
+  async unsubscribe(topic, callback, overrideUrl, connectionOptions = {}) {
+    // if no url is given use the default url if one was set
+    const url = overrideUrl || this._defaultMessagingServerAddress;
+
+    if (!url)
+      throw new Error('Tried to unsubscribe from a topic without providing a server address!');
+
+    // adds additional information to the options and serialize them for the ipc call
+    this._completeLoginInfo(connectionOptions);
+    connectionOptions = JSON.stringify(connectionOptions);
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
+
+    if (
+      !this.subscriptions[url] ||
+      !this.subscriptions[url][sessionId] ||
+      !this.subscriptions[url][sessionId][callback]
+    ) {
+      return;
+    }
+
+    const taskID = generateUniqueTaskID();
+
+    const listenPromise = new Promise((resolve, reject) => {
+      // Listen for the response from the native part
+      this.commandResponse(taskID, (err, data) => {
+        if (err) {
+          reject(`Failed to unsubscribe from ${url} (Topic: ${topic})\n${err}`);
+        } else {
+          // remove the subscriptionId and do some clean up
+          delete this.subscriptions[url][sessionId][callback];
+          if (!Object.keys(this.subscriptions[url][sessionId]).length) {
+            delete this.subscriptions[url][sessionId];
+          }
+          if (!Object.keys(this.subscriptions[url])) delete this.subscriptions[url];
+          resolve();
+        }
+
+        return true;
+      });
+    });
+
+    const subscriptionId = this.subscriptions[url][sessionId][callback];
+
+    this.commandRequest(taskID, [
+      'messaging_unsubscribe',
+      [url, topic, subscriptionId, connectionOptions],
     ]);
 
     return listenPromise;

@@ -1,11 +1,13 @@
 /* eslint-disable class-methods-use-this */
 const NativeModule = require('@proceed/native-module');
-const bonjour = require('nbonjour').create({
+import Bonjour from 'bonjour-service';
+import exitHook from '@darkobits/adeiu';
+
+const bonjour = new Bonjour({
   multicast: true, // use udp multicasting
   loopback: true, // receive your own packets
   reuseAddr: true, // set the reu
 });
-const { default: exitHook } = require('@darkobits/adeiu');
 
 const PROCEED_SERVICE_TYPE = 'proceed';
 

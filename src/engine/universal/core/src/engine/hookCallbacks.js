@@ -133,7 +133,10 @@ function getOnUserTaskInterruptedHandler(engine, instance) {
     });
     // update user task in list
     const index = engine.userTasks.findIndex(
-      (uT) => uT.processInstance.id === instance.id && uT.id === execution.flowElementId
+      (uT) =>
+        uT.processInstance.id === instance.id &&
+        uT.id === execution.flowElementId &&
+        uT.startTime === execution.startTime
     );
 
     if (index > -1) {
@@ -347,7 +350,10 @@ module.exports = {
           if (flowElement && flowElement.$type === 'bpmn:UserTask') {
             // update user task in list
             const index = engine.userTasks.findIndex(
-              (uT) => uT.processInstance.id === newInstance.id && uT.id === flowElement.id
+              (uT) =>
+                uT.processInstance.id === newInstance.id &&
+                uT.id === flowElement.id &&
+                uT.startTime === execution.startTime
             );
 
             if (index > -1) {

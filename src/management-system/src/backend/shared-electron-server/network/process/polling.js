@@ -373,7 +373,8 @@ export async function getActiveUserTasksFromKnownMachines() {
               port: machine.port,
             },
             userTask.instanceID,
-            userTask.id
+            userTask.id,
+            userTask.startTime
           );
           return { ...userTask, html, machine };
         });
@@ -408,7 +409,10 @@ export function mergeActiveUserTasks(storedActiveUserTasks = {}, machinesActiveU
 
   machinesActiveUserTasks.forEach((activeUserTask) => {
     const activeUserTaskStoredIndex = activeUserTasks.findIndex(
-      (uT) => uT.instanceID === activeUserTask.instanceID && uT.id === activeUserTask.id
+      (uT) =>
+        uT.instanceID === activeUserTask.instanceID &&
+        uT.id === activeUserTask.id &&
+        uT.startTime === activeUserTask.startTime
     );
 
     if (activeUserTaskStoredIndex !== -1) {
@@ -420,7 +424,10 @@ export function mergeActiveUserTasks(storedActiveUserTasks = {}, machinesActiveU
 
   activeUserTasks = activeUserTasks.filter((activeUserTask) => {
     const userTaskStillActive = !!machinesActiveUserTasks.find(
-      (uT) => uT.instanceID === activeUserTask.instanceID && uT.id === activeUserTask.id
+      (uT) =>
+        uT.instanceID === activeUserTask.instanceID &&
+        uT.id === activeUserTask.id &&
+        uT.startTime === activeUserTask.startTime
     );
 
     return userTaskStillActive;

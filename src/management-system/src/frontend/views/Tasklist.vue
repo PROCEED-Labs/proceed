@@ -135,7 +135,7 @@
             <user-task-card
               v-else
               v-for="userTask in showingUserTasks"
-              :key="`${userTask.id}-${userTask.instanceID}`"
+              :key="`${userTask.id}-${userTask.instanceID}-${userTask.startTime}`"
               class="task"
               :userTask="userTask"
               :isSelected="isSelected(userTask)"
@@ -226,7 +226,8 @@ export default {
 
       return (
         this.selectedUserTask.id === userTask.id &&
-        this.selectedUserTask.instanceID === userTask.instanceID
+        this.selectedUserTask.instanceID === userTask.instanceID &&
+        this.selectedUserTask.startTime === userTask.startTime
       );
     },
     isUserTaskActive(userTask) {

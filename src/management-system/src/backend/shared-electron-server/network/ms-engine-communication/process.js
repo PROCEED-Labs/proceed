@@ -218,11 +218,11 @@ export async function getActiveUserTasks(machine) {
  * @param {string} userTaskId id of the active userTask
  * @returns {string} HTML of the userTask
  */
-export async function getActiveUserTaskHTML(machine, instanceId, userTaskId) {
+export async function getActiveUserTaskHTML(machine, instanceId, userTaskId, userTaskStartTime) {
   const { body } = await network.sendRequest(
     machine.host,
     machine.port,
-    `/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=${userTaskId}`
+    `/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=${userTaskId}&startTime=${userTaskStartTime}`
   );
 
   return JSON.parse(body);

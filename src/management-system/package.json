@@ -32,11 +32,11 @@
     "web:dev-serve-frontend": "cross-env MODE=frontend vue-cli-service serve --open",
     "web:dev-serve-backend-puppeteer": "cross-env MODE=puppeteer vue-cli-service serve",
     "web:dev-start-backend": "cross-env NODE_ENV=development nodemon --verbose --watch ./src/backend --watch ./src/shared-frontend-backend -r dotenv/config --exec ts-node src/backend/server/index.js",
-    "web:dev": "cross-env USE_AUTHORIZATION=false ts-node dev-server.ts",
+    "web:dev": "cross-env USE_AUTHORIZATION=false NODE_OPTIONS=--openssl-legacy-provider ts-node dev-server.ts",
     "web:dev-iam": "cross-env MODE=iam ts-node dev-server.ts",
     "web:build-server": "yarn web:build-server-backend && yarn web:build-server-frontend && yarn web:build-server-backend-puppeteer",
     "web:build-server-frontend": "cross-env MODE=frontend vue-cli-service build",
-    "web:build-server-backend": "cd src/backend/server && webpack --config webpack.server.backend.config.cjs",
+    "web:build-server-backend": "cd src/backend/server && NODE_OPTIONS=--openssl-legacy-provider webpack --config webpack.server.backend.config.cjs",
     "web:build-server-backend-puppeteer": "cross-env MODE=puppeteer vue-cli-service build",
     "test:unit": "cross-env MODE=electron vue-cli-service test:unit"
   },

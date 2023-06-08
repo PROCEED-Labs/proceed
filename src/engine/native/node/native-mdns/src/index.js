@@ -78,7 +78,6 @@ class MDNS extends NativeModule {
         name: hostname,
         type: PROCEED_SERVICE_TYPE,
         port,
-        host: hostname + '.local',
         txt,
       });
       service.start();

@@ -7,7 +7,7 @@
   "license": "MIT",
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
-    "nbonjour": "^3.6.3",
-    "@darkobits/adeiu": "0.2.14"
+    "bonjour-service": "1.1.1",
+    "@darkobits/adeiu": "0.3.1"
   }
 }

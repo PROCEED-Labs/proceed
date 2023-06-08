@@ -11,8 +11,8 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
   tasklistPage: async ({ page }, use) => {
     // Set up the fixture.
+    await page.goto('https://localhost:33083/#/');
     const tasklistPage = new TasklistPage(page);
-    await tasklistPage.createUsertaskProcess();
     await tasklistPage.goto();
 
     // Use the fixture value in the test.
@@ -20,6 +20,7 @@ export const test = base.extend<MyFixtures>({
 
     // Clean up the fixture.
     await tasklistPage.removeAll();
+    await page.waitForTimeout(1000);
   },
 });
 

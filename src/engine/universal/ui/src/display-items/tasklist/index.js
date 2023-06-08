@@ -27,6 +27,7 @@ async function showUserTask(event) {
   await updateUserTaskForm({
     id: curr.dataset.id,
     instanceID: curr.dataset.instanceid,
+    startTime: curr.dataset.startTime,
     state: curr.dataset.state,
   });
 
@@ -39,6 +40,7 @@ async function updateUserTaskForm(task) {
   const html = await window.PROCEED_DATA.get('/tasklist/api/userTask', {
     instanceID: task.instanceID,
     userTaskID: task.id,
+    startTime: task.startTime,
   });
 
   const form = document.createElement('iframe');
@@ -151,6 +153,7 @@ function showTaskList(tasks) {
   const currentTasks = Array.from(tasksDiv.querySelectorAll('.task')).map((task) => ({
     id: task.dataset.id,
     instanceID: task.dataset.instanceid,
+    startTime: task.dataset.startTime,
     state: task.dataset.state,
     progress: task.dataset.progress,
     priority: task.dataset.priority,
@@ -167,7 +170,10 @@ function showTaskList(tasks) {
       task.progress <= upperProgressSliderValue;
 
     for (const cTask of currentTasks) {
-      isCurrentTask = cTask.id === task.id && cTask.instanceID === task.instanceID;
+      isCurrentTask =
+        cTask.id === task.id &&
+        cTask.instanceID === task.instanceID &&
+        parseInt(cTask.startTime) === parseInt(task.startTime);
       if (isCurrentTask) {
         if (!showTask) {
           removeTask(task);
@@ -190,7 +196,12 @@ function showTaskList(tasks) {
   // Removed tasks are all tasks that are currently displayed but not in the
   // updated tasklist (currentTasks \ tasks)
   const removedTasks = currentTasks.filter((cTask) =>
-    tasks.every((task) => task.id !== cTask.id || task.instanceID !== cTask.instanceID)
+    tasks.every(
+      (task) =>
+        task.id !== cTask.id ||
+        task.instanceID !== cTask.instanceID ||
+        parseInt(task.startTime) !== parseInt(cTask.startTime)
+    )
   );
 
   // Remove tasks
@@ -295,7 +306,9 @@ function sortTasks(tasks, property, ascending) {
 function removeTask(task) {
   const tasksDiv = document.querySelector('.tasks');
   tasksDiv
-    .querySelector(`.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"]`)
+    .querySelector(
+      `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`
+    )
     .remove();
   removeUserTaskForm(task.id);
 }
@@ -304,11 +317,11 @@ function addTask(task) {
   const taskDiv = document.createElement('div');
   taskDiv.dataset.id = task.id;
   taskDiv.dataset.instanceid = task.instanceID;
+  taskDiv.dataset.startTime = task.startTime;
   taskDiv.dataset.state = task.state;
   taskDiv.dataset.priority = task.priority;
   taskDiv.dataset.progress = task.progress;
   taskDiv.dataset.endTime = task.endTime;
-  taskDiv.dataset.startTime = task.startTime;
 
   taskDiv.className = task.state === 'READY' ? 'task new' : `task ${task.state.toLowerCase()}`;
   taskDiv.innerHTML = getUserTaskContent(task);
@@ -319,7 +332,7 @@ function addTask(task) {
 function updateTask(task) {
   const tasksDiv = document.querySelector('.tasks');
   const taskDiv = tasksDiv.querySelector(
-    `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"]`
+    `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`
   );
   taskDiv.classList.remove('new', 'active', 'paused', 'completed');
   taskDiv.classList.add(task.state.toLowerCase());

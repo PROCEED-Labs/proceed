@@ -346,7 +346,10 @@ class Engine {
    */
   completeUserTask(instanceID, userTaskID, variables) {
     const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID
+      (uT) =>
+        uT.processInstance.id === instanceID &&
+        uT.id === userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
 
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
@@ -360,7 +363,10 @@ class Engine {
    */
   abortUserTask(instanceID, userTaskID) {
     const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID
+      (uT) =>
+        uT.processInstance.id === instanceID &&
+        uT.id === userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
 
     userTask.processInstance.failActivity(userTask.id, userTask.tokenId);
@@ -682,7 +688,10 @@ class Engine {
       // pause flowNode execution of tokens with state READY and DEPLOYMENT-WAITING
       tokens.forEach((token) => {
         const userTaskIndex = this.userTasks.findIndex(
-          (uT) => uT.processInstance.id === instanceID && uT.id === token.currentFlowElementId
+          (uT) =>
+            uT.processInstance.id === instanceID &&
+            uT.id === token.currentFlowElementId &&
+            uT.startTime === token.currentFlowElementStartTime
         );
         if (token.state === 'DEPLOYMENT-WAITING' || token.state === 'READY') {
           instance.pauseToken(token.tokenId);
@@ -788,7 +797,10 @@ class Engine {
   }
   updateMilestones(instanceID, userTaskID, milestones) {
     const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID
+      (uT) =>
+        uT.processInstance.id === instanceID &&
+        uT.id === userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
@@ -812,7 +824,10 @@ class Engine {
 
   updateIntermediateVariablesState(instanceID, userTaskID, variables) {
     const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID
+      (uT) =>
+        uT.processInstance.id === instanceID &&
+        uT.id === userTaskID &&
+        (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
     const token = this.getToken(instanceID, userTask.tokenId);
 

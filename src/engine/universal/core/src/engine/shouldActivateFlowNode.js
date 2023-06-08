@@ -21,18 +21,6 @@ function onUserTask(engine, instance, tokenId, userTask) {
       instanceId: instance.id,
     });
 
-    function activate() {
-      const userTaskIndex = engine.userTasks.findIndex(
-        (uT) => uT.processInstance.id === instance.id && uT.id === userTask.id
-      );
-      // update userTask state if activated
-      if (engine.userTasks[userTaskIndex].state === 'READY') {
-        const newUserTask = { ...engine.userTasks[userTaskIndex], state: 'ACTIVE' };
-        engine.userTasks.splice(userTaskIndex, 1, newUserTask);
-      }
-      resolve(true);
-    }
-
     const bpmn = engine.getInstanceBpmn(instance.id);
 
     const token = engine.getToken(instance.id, tokenId);
@@ -45,6 +33,21 @@ function onUserTask(engine, instance, tokenId, userTask) {
       endTime = metaData.timePlannedEnd;
     } else if (metaData.timePlannedDuration) {
       endTime = startTime + convertISODurationToMiliseconds(metaData.timePlannedDuration);
+    }
+
+    function activate() {
+      const userTaskIndex = engine.userTasks.findIndex(
+        (uT) =>
+          uT.processInstance.id === instance.id &&
+          uT.id === userTask.id &&
+          uT.startTime === token.currentFlowElementStartTime
+      );
+      // update userTask state if activated
+      if (engine.userTasks[userTaskIndex].state === 'READY') {
+        const newUserTask = { ...engine.userTasks[userTaskIndex], state: 'ACTIVE' };
+        engine.userTasks.splice(userTaskIndex, 1, newUserTask);
+      }
+      resolve(true);
     }
 
     const extendedUserTask = {

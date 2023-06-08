@@ -70,7 +70,7 @@
         <template #tooltip-text>Edit User Task Form</template>
         mdi-form-select
       </tooltip-button>
-      <timer-handling />
+      <timer-handling :process="process" />
       <tooltip-button
         v-if="
           selectedElement.type === 'bpmn:SubProcess' &&

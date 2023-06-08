@@ -1,17 +1,11 @@
 <template>
   <v-container>
-    <v-row v-if="instance" class="mb-6" justify="center">
-      <v-col :cols="size === 'large' ? 4 : 8">
-        <v-img
-          v-if="image"
-          height="170"
-          class="mt-3"
-          style="border-style: solid"
-          :src="image"
-        ></v-img>
+    <v-row class="mb-6" :justify="image ? 'center' : 'start'">
+      <v-col :cols="size === 'large' ? 4 : 8" v-if="image">
+        <v-img height="170" style="border-style: solid" :src="image"></v-img>
       </v-col>
       <v-col :cols="size === 'large' ? 8 : 12">
-        <v-row align="center">
+        <v-row class="mt-n4" align="center" v-if="instance">
           <v-col cols="6">
             <span class="text-subtitle-1 font-weight-medium">Current state:</span>
           </v-col>
@@ -24,7 +18,7 @@
             <v-icon v-if="elementIsActive" @click="settingState = true" dense>mdi-pencil</v-icon>
           </v-col>
         </v-row>
-        <v-row class="mt-n4" v-if="!isRootElement && currentProgress">
+        <v-row class="mt-n4" v-if="instance && !isRootElement && currentProgress">
           <v-col cols="6"><span class="text-subtitle-1 font-weight-medium">Progress:</span></v-col>
           <v-col cols="6">
             <progress-setter
@@ -67,7 +61,7 @@
             <span class="text-subtitle-1 font-weight-medium">{{ costsPlanned }}</span></v-col
           >
         </v-row>
-        <v-row class="mt-n4" align="center" v-if="!isRootElement">
+        <v-row class="mt-n4" align="center" v-if="instance && !isRootElement">
           <v-col cols="6"
             ><span class="text-subtitle-1 font-weight-medium">Real Costs:</span></v-col
           >
@@ -154,21 +148,23 @@ export default {
       return this.selectedElement && this.selectedElement.type === 'bpmn:UserTask';
     },
     elementIsActive() {
-      const elementToken = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
-      );
+      if (this.instance) {
+        const elementToken = this.instance.tokens.find(
+          (l) => l.currentFlowElementId == this.selectedElement.id
+        );
 
-      if (elementToken) {
-        const activeStates = [
-          'PAUSED',
-          'RUNNING',
-          'READY',
-          'ACTIVE',
-          'DEPLOYMENT-WAITING',
-          'WAITING',
-        ];
-        const elementIsActive = activeStates.includes(elementToken.currentFlowNodeState);
-        return elementIsActive;
+        if (elementToken) {
+          const activeStates = [
+            'PAUSED',
+            'RUNNING',
+            'READY',
+            'ACTIVE',
+            'DEPLOYMENT-WAITING',
+            'WAITING',
+          ];
+          const elementIsActive = activeStates.includes(elementToken.currentFlowNodeState);
+          return elementIsActive;
+        }
       }
       return false;
     },
@@ -204,18 +200,23 @@ export default {
       return environmentConfigSettings.currency;
     },
     priority() {
-      const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
-      );
+      if (this.instance) {
+        const token = this.instance.tokens.find(
+          (l) => l.currentFlowElementId == this.selectedElement.id
+        );
 
-      const logInfo = this.instance.log.find(
-        (logEntry) => logEntry.flowElementId === this.selectedElement.id
-      );
+        const logInfo = this.instance.log.find(
+          (logEntry) => logEntry.flowElementId === this.selectedElement.id
+        );
 
-      if (token) {
-        return token.priority;
-      } else if (logInfo) {
-        return logInfo.priority;
+        if (token) {
+          return token.priority;
+        } else if (logInfo) {
+          return logInfo.priority;
+        }
+      } else {
+        const priority = this.metaData['defaultPriority'];
+        return priority;
       }
       return null;
     },

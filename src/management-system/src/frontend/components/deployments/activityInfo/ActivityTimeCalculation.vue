@@ -25,11 +25,16 @@
           </v-col>
         </v-row>
       </v-col>
-      <v-col :cols="size === 'large' ? 4 : 6">
+      <v-col
+        :cols="size === 'large' ? 4 : 6"
+        :class="startDelay ? 'red--text text--lighten-2' : ''"
+      >
         <v-row dense>
           <v-col cols="auto">
             <span class="text-subtitle-2 font-weight-medium">
-              <v-icon left>mdi-clock-alert-outline</v-icon>Delay:
+              <v-icon :color="startDelay ? 'red lighten-2' : ''" left
+                >mdi-clock-alert-outline</v-icon
+              >Delay:
             </span>
           </v-col>
           <v-col>
@@ -63,15 +68,20 @@
           </v-col>
         </v-row>
       </v-col>
-      <v-col :cols="size === 'large' ? 4 : 6">
+      <v-col
+        :cols="size === 'large' ? 4 : 6"
+        :class="durationDelay ? 'red--text text--lighten-2' : ''"
+      >
         <v-row dense>
           <v-col cols="auto">
             <span class="text-subtitle-2 font-weight-medium">
-              <v-icon left>mdi-clock-alert-outline</v-icon>Delay:
+              <v-icon :color="durationDelay ? 'red lighten-2' : ''" left
+                >mdi-clock-alert-outline</v-icon
+              ><span>Delay:</span>
             </span>
           </v-col>
           <v-col>
-            {{ durationDelay }}
+            <span>{{ durationDelay }}</span>
           </v-col>
         </v-row>
       </v-col>
@@ -101,11 +111,12 @@
           </v-col>
         </v-row>
       </v-col>
-      <v-col :cols="size === 'large' ? 4 : 6">
+      <v-col :cols="size === 'large' ? 4 : 6" :class="endDelay ? 'red--text text--lighten-2' : ''">
         <v-row dense>
           <v-col cols="auto">
             <span class="text-subtitle-2 font-weight-medium">
-              <v-icon left>mdi-clock-alert-outline</v-icon>Delay:
+              <v-icon :color="endDelay ? 'red lighten-2' : ''" left>mdi-clock-alert-outline</v-icon
+              >Delay:
             </span>
           </v-col>
           <v-col>
@@ -156,6 +167,9 @@ export default {
       if (this.selectedElement && this.metaData) {
         if (this.metaData.timePlannedEnd) {
           return new Date(this.metaData.timePlannedEnd);
+        } else if (this.metaData.timePlannedOccurrence && this.metaData.plannedDuration) {
+          const calculatedEndTime = new Date(this.plannedStart.getTime() + this.plannedDuration);
+          return calculatedEndTime;
         }
       }
       return null;
@@ -164,6 +178,9 @@ export default {
       if (this.selectedElement && this.metaData) {
         if (this.metaData.timePlannedOccurrence) {
           return new Date(this.metaData.timePlannedOccurrence);
+        } else if (this.metaData.timePlannedEnd && this.metaData.timePlannedDuration) {
+          const calculatedStartTime = new Date(this.plannedEnd.getTime() - this.plannedDuration);
+          return calculatedStartTime;
         }
       }
       return null;
@@ -174,8 +191,10 @@ export default {
           const plannedDurationInMs = convertISODurationToMiliseconds(
             this.metaData.timePlannedDuration
           );
-
           return plannedDurationInMs;
+        } else if (this.metaData.timePlannedOccurrence && this.metaData.timePlannedEnd) {
+          const calculatedDuration = this.plannedEnd.getTime() - this.plannedStart.getTime();
+          return calculatedDuration;
         }
       }
       return null;
@@ -230,20 +249,32 @@ export default {
     startDelay() {
       if (this.plannedStart) {
         const startTime = this.start ? this.start.getTime() : new Date();
-        return this.transformMilisecondsToTimeFormat(startTime - this.plannedStart.getTime());
+        const plannedStartTimeDifference = startTime - this.plannedStart.getTime();
+        // only show delay if difference to planned start is at least one second
+        return plannedStartTimeDifference >= 1000
+          ? this.transformMilisecondsToTimeFormat(plannedStartTimeDifference)
+          : null;
       }
       return null;
     },
     durationDelay() {
       if (this.plannedDuration && this.duration) {
-        return this.transformMilisecondsToTimeFormat(this.duration - this.plannedDuration);
+        const plannedDurationDifference = this.duration - this.plannedDuration;
+        // only show delay if difference to planned duration is at least one second
+        return plannedDurationDifference >= 1000
+          ? this.transformMilisecondsToTimeFormat(plannedDurationDifference)
+          : null;
       }
       return null;
     },
     endDelay() {
       if (this.plannedEnd) {
         const endTime = this.end ? this.end.getTime() : new Date();
-        return this.transformMilisecondsToTimeFormat(endTime - this.plannedEnd.getTime());
+        const plannedEndTimeDifference = endTime - this.plannedEnd.getTime();
+        // only show delay if difference to planned end is at least one second
+        return plannedEndTimeDifference >= 1000
+          ? this.transformMilisecondsToTimeFormat(plannedEndTimeDifference)
+          : null;
       }
       return null;
     },

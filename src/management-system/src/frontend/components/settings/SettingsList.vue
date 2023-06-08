@@ -31,17 +31,27 @@
               @change="handleChange(name, $event)"
             ></v-switch>
 
-            <v-tooltip v-else-if="typeof value === 'string' && name === 'processEngineUrl'" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-text-field
-                  v-bind="attrs"
-                  v-on="on"
-                  :value="value"
-                  @change="handleChange(name, $event)"
-                />
+            <v-autocomplete
+              v-else-if="name === 'processEngineUrl'"
+              hide-details
+              :item-text="(engine) => (engine.port ? `${engine.ip}:${engine.port}` : engine.ip)"
+              :item-value="(engine) => (engine.port ? `${engine.ip}:${engine.port}` : engine.ip)"
+              :items="availableEngines"
+              :value="value"
+              :placeholder="value"
+              @change="handleChange(name, $event)"
+            >
+              <template #item="{ item }">
+                <v-tooltip right>
+                  <template #activator="{ on }">
+                    <span v-on="on">
+                      {{ item.port ? `${item.ip}:${item.port}` : `${item.ip}` }}
+                    </span>
+                  </template>
+                  <span>Machine Name: {{ item.name }}</span>
+                </v-tooltip>
               </template>
-              IPv4 address with port required. 'localhost' is not allowed, enter IP address instead
-            </v-tooltip>
+            </v-autocomplete>
 
             <v-text-field
               v-else-if="typeof value === 'string'"
@@ -137,6 +147,10 @@ export default {
       });
 
       return currentSettings;
+    },
+    availableEngines() {
+      const engines = this.$store.getters['machineStore/machines'];
+      return engines;
     },
   },
   methods: {

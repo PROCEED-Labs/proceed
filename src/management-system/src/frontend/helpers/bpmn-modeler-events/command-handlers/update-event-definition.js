@@ -73,6 +73,8 @@ UpdateEventDefinitionHandler.prototype.removeTimerEventTime = function (eventDef
 
   context.oldTimerDuration = oldTimerDuration;
   context.oldTimerDate = oldTimerDate;
+  context.newTimerDuration = null;
+  context.newTimerDate = null;
 
   delete eventDefinition.timeDuration;
   delete eventDefinition.timeDate;

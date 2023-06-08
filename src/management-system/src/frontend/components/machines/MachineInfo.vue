@@ -94,13 +94,13 @@
     </div>
     <div v-if="item.network">
       <span class="font-weight-medium"> Networks: </span>
-      <v-card class="ml-1" v-for="network in item.network" :key="network.mac">
-        <v-row class="ml-2">Type: {{ network.type }}</v-row>
-        <v-row class="ml-2">IP4: {{ network.ip4 }}</v-row>
-        <v-row class="ml-2">Netmask V4: {{ network.netmaskv4 }}</v-row>
-        <v-row class="ml-2">IP6: {{ network.ip6 }}</v-row>
-        <v-row class="ml-2">Netmask V6: {{ network.netmaskv6 }}</v-row>
-        <v-row class="ml-2">Mac: {{ network.mac }}</v-row>
+      <v-card class="ml-1 mb-1" v-for="network in item.network" :key="network.mac">
+        <div class="ml-2">Type: {{ network.type }}</div>
+        <div class="ml-2">IP4: {{ network.ip4 }}</div>
+        <div class="ml-2">Netmask V4: {{ network.netmaskv4 }}</div>
+        <div class="ml-2">IP6: {{ network.ip6 }}</div>
+        <div class="ml-2">Netmask V6: {{ network.netmaskv6 }}</div>
+        <div class="ml-2">Mac: {{ network.mac }}</div>
       </v-card>
     </div>
     <div v-if="item.deployedProcesses">

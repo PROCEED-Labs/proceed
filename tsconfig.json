@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noImplicitAny": false,
     "module": "CommonJS",
+    "outDir": "dist",
     "allowJs": true,
     "moduleResolution": "node",
     "esModuleInterop": true,

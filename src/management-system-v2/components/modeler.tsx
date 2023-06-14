@@ -1,12 +1,12 @@
 'use client';
 
-import { FC, useEffect, useRef } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
-// "window" reference. It won't be included in the intial bundle, but will be
+// "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
 // Hydration).
 const BPMNModeler =
@@ -18,13 +18,19 @@ const Modeler: FC<ModelerProps> = (props) => {
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | null>(null);
 
-  console.log('canvas', canvas.current);
-
   useEffect(() => {
     if (!canvas.current) return;
 
+    // Little ref check to ensure only the latest modeler is active.
+    // Necessary since the modeler is loaded asynchronously.
+    const active = { destroy: () => {} };
+    modeler.current = active as ModelerType;
+
     // Can't be null because we are on the client side.
     BPMNModeler!.then((BPMNModeler) => {
+      // This is not the most recent instance, so don't do anything.
+      if (active !== modeler.current) return;
+
       modeler.current = new BPMNModeler({
         container: canvas.current!,
       });

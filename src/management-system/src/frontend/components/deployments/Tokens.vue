@@ -475,7 +475,7 @@ export default {
       if (element) {
         element.addEventListener('dragstart', this.existingTokenDragStart);
         element.addEventListener('dragend', this.tokenDragEnd);
-        element.addEventListener('dblclick', this.selectToken);
+        element.addEventListener('click', this.selectToken);
       }
     },
     isDroppable(element) {

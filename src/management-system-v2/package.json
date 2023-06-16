@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "cross-env API_URL=https://localhost:33083/api next build",
     "start": "next start",
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",

@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './overlay.module.css';
+import styles from './overlay.module.scss';
 import { FC } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';

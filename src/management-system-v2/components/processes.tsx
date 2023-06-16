@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './processes.module.css';
+import styles from './processes.module.scss';
 import { FC } from 'react';
 import { Dropdown, MenuProps, Table, TableColumnsType } from 'antd';
 import { useQuery } from '@tanstack/react-query';

@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './page.module.css';
+import styles from './page.module.scss';
 import { FC, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import Modeler from '@/components/modeler';

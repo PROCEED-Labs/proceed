@@ -1,5 +1,3 @@
-import { Immutable } from 'immer';
-
 const BASE_URL = process.env.API_URL;
 
 const fetchJSON = async <T>(url: string, options = {}) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './content.module.css';
+import styles from './content.module.scss';
 import { FC, PropsWithChildren } from 'react';
 import { Layout, theme, Typography } from 'antd';
 import cn from 'classnames';

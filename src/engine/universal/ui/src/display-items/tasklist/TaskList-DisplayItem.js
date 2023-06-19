@@ -70,8 +70,22 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-      variables = userTask.processInstance.getVariables(userTask.tokenId);
-      milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+
+      if (userTask.state === 'READY' || userTask.state === 'ACTIVE') {
+        variables = userTask.processInstance.getVariables(userTask.tokenId);
+        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+      } else {
+        // get info of non-active userTask from logs
+        const logs = userTask.processInstance.getState().log;
+        const userTaskLogEntry = logs.find(
+          (logEntry) =>
+            logEntry.flowElementId === userTask.id &&
+            logEntry.tokenId === userTask.tokenId &&
+            logEntry.startTime === userTask.startTime
+        );
+        variables = userTask.processInstance.getVariables();
+        milestonesData = userTaskLogEntry.milestones;
+      }
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
       userTask = inactiveTasks.find(

@@ -160,7 +160,14 @@ export default {
             metaData,
           };
         })
-        .filter((flowElement) => flowElement.color && flowElement.type !== 'bpmn:Process');
+        .filter(
+          (flowElement) =>
+            flowElement.color &&
+            flowElement.type !== 'bpmn:Process' &&
+            flowElement.type !== 'bpmn:TextAnnotation' &&
+            flowElement.type !== 'bpmn:Group' &&
+            flowElement.type !== 'label'
+        );
     },
     versionToShow() {
       if (this.instance) {

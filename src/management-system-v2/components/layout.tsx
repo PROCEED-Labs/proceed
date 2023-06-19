@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './layout.module.css';
+import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
 import { Layout as AntLayout, Menu, MenuProps } from 'antd';
 import { EditOutlined, UnorderedListOutlined, ProfileOutlined } from '@ant-design/icons';

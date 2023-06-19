@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './page.module.css';
+import styles from './page.module.scss';
 import { FC, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import Modeler from '@/components/modeler';
@@ -26,7 +26,7 @@ const Processes: FC<ProcessProps> = () => {
     queryKey: ['processes'],
     queryFn: fetchProcesses,
   });
-  const process = data?.find((p) => p.id === Number(processId));
+  const process = data?.find((p) => p.definitionId === processId);
 
   useEffect(() => {
     // Reset closed state when page is not minimized anymore.
@@ -41,7 +41,7 @@ const Processes: FC<ProcessProps> = () => {
 
   return (
     <Content
-      title={process?.title}
+      title={process?.definitionName ?? 'Process'}
       compact
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}

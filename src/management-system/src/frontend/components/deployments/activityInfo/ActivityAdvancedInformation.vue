@@ -339,7 +339,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style scoped>
 .v-treeview-node__root {
   min-height: 24px !important;
 }
@@ -348,7 +348,8 @@ export default {
   min-height: 40px !important;
 }
 
-.v-treeview-node__toggle:not(div.v-treeview-node__children .v-treeview-node__toggle) {
+#activity-advanced-token-panel
+  >>> .v-treeview-node__toggle:not(div.v-treeview-node__children .v-treeview-node__toggle) {
   display: none !important;
 }
 </style>

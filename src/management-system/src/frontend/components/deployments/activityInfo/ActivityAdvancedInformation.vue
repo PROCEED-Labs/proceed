@@ -96,11 +96,16 @@
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <div>
-                  <v-treeview
-                    :items="tokenItems"
-                    item-key="name"
-                    :open.sync="openedTokens"
-                  ></v-treeview>
+                  <v-treeview :items="tokenItems" item-key="value" :open.sync="openedTokens">
+                    <template v-slot:label="{ item }">
+                      <div class="d-flex">
+                        <span style="white-space: pre">{{ item.name }}: </span>
+                        <span style="white-space: normal">
+                          {{ item.value }}
+                        </span>
+                      </div>
+                    </template>
+                  </v-treeview>
                 </div>
               </v-expansion-panel-content>
             </v-expansion-panel>
@@ -190,18 +195,27 @@ export default {
       }
       return [];
     },
-    tokenItems() {
+    tokensOnSelectedElement() {
       if (this.selectedElement && this.instance) {
-        const selectedElementTokens = this.isRootElement
+        const tokens = this.isRootElement
           ? this.instance.tokens
           : this.instance.tokens.filter(
               (token) => token.currentFlowElementId === this.selectedElement.id
             );
-
-        const tokensTreeViewStructure = selectedElementTokens.map((token) => {
+        return tokens;
+      }
+      return [];
+    },
+    tokenItems() {
+      if (this.selectedElement && this.instance) {
+        const tokensTreeViewStructure = this.tokensOnSelectedElement.map((token) => {
           return {
-            name: `Token ID: ${token.tokenId}`,
-            children: this.transformInfoIntoTreeViewStructure(token),
+            name: 'Token ID',
+            value: token.tokenId,
+            // get every entry of token expect for its tokenID to prevent redundancy
+            children: this.transformInfoIntoTreeViewStructure(token).filter(
+              ({ name }) => name !== 'tokenId'
+            ),
           };
         });
         return tokensTreeViewStructure;
@@ -222,7 +236,8 @@ export default {
         const variablesTreeViewStructure = [];
         Object.entries(this.instance.variables).forEach(([key, value]) => {
           variablesTreeViewStructure.push({
-            name: `${key}: ${value.value}`,
+            name: key,
+            value: value.value,
             children: this.transformInfoIntoTreeViewStructure(value),
           });
         });
@@ -237,36 +252,51 @@ export default {
 
       Object.entries(info).forEach(([key, value]) => {
         const namePrefix = Array.isArray(info) ? 'Entry ' : '';
-        if (value && typeof value === 'object') {
+        if (value && typeof value === 'object' && Object.keys(value).length > 0) {
           treeViewToken.push({
-            name: `${namePrefix}${key}:`,
+            name: `${namePrefix}${key}`,
             children: this.transformInfoIntoTreeViewStructure(value),
           });
         } else {
-          treeViewToken.push({ name: `${namePrefix}${key}: ${value}` });
+          treeViewToken.push({ name: `${namePrefix}${key}`, value: value });
         }
       });
 
       return treeViewToken;
     },
+    async showTokenInfo(tokenIds) {
+      await this.$nextTick();
+      // find the index of the token panel in the element containing all panels
+      const tokenPanelIndex = this.$refs['activity-advanced-panels'].$children.findIndex(
+        (child) => child.$attrs.id === 'activity-advanced-token-panel'
+      );
+      // make sure that the token panel is the one thats opened
+      this.panels = [tokenPanelIndex];
+      // open the token(s)
+      if (Array.isArray(tokenIds)) {
+        this.openedTokens = tokenIds.map((tokenId) => tokenId);
+      } else {
+        this.openedTokens = [tokenIds];
+      }
+    },
   },
   watch: {
-    selectedElement() {
-      this.panels = [];
-      this.openedTokens = [];
+    selectedElement: {
+      handler(newSelection) {
+        this.panels = [];
+        this.openedTokens = [];
+
+        const tokenIds = this.tokensOnSelectedElement.map((token) => token.tokenId);
+        if (!this.isRootElement && tokenIds.length > 0) {
+          this.showTokenInfo(tokenIds);
+        }
+      },
+      immediate: true,
     },
     selectedToken: {
       async handler(newSelection) {
         if (newSelection) {
-          await this.$nextTick();
-          // find the index of the token panel in the element containing all panels
-          const tokenPanelIndex = this.$refs['activity-advanced-panels'].$children.findIndex(
-            (child) => child.$attrs.id === 'activity-advanced-token-panel'
-          );
-          // make sure that the token panel is the one thats opened
-          this.panels = [tokenPanelIndex];
-          // open the token
-          this.openedTokens = [`Token ID: ${newSelection.tokenId}`];
+          await this.showTokenInfo(newSelection.tokenId);
         }
       },
       immediate: true,
@@ -282,5 +312,9 @@ export default {
 
 .v-expansion-panel-header {
   min-height: 40px !important;
+}
+
+.v-treeview-node__toggle:not(div.v-treeview-node__children .v-treeview-node__toggle) {
+  display: none !important;
 }
 </style>

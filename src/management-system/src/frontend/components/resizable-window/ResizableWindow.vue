@@ -110,8 +110,10 @@ export default {
           this.dragging = true;
         }
 
-        document.body.addEventListener('selectstart', this.disableSelect);
-        document.body.addEventListener('mouseup', this.handleMouseup);
+        if (this.resizing || this.dragging) {
+          document.body.addEventListener('selectstart', this.disableSelect);
+          document.body.addEventListener('mouseup', this.handleMouseup);
+        }
 
         this.lastMousePos.x = event.clientX;
         this.lastMousePos.y = event.clientY;

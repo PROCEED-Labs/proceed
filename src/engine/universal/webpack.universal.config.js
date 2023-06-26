@@ -3,6 +3,7 @@ const path = require('path');
 module.exports = {
   entry: './core/src/module.js',
   mode: 'production',
+  target: 'node',
   output: {
     // eslint-disable-next-line no-undef
     path: path.resolve(__dirname, '../../../build/engine'),

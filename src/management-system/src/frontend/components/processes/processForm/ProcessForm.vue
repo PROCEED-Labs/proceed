@@ -88,6 +88,7 @@
                   </v-col>
                 </v-row>
                 <fifth-industry-properties
+                  v-if="show5thIndustryFeature"
                   :processType="processType"
                   :currentData="currentData"
                   :currentIndex="currentIndex"
@@ -149,6 +150,8 @@ import onSubmitProviderMixin from './OnSubmitProviderMixin.vue';
 import UserTasksHandler from './userTasks.vue';
 import FormWarnings from './ProcessFormWarnings.vue';
 import BpmnPreview from '@/frontend/components/bpmn/BpmnPreview.vue';
+
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags';
 
 /**
  * @module components
@@ -241,6 +244,7 @@ export default {
   },
   data() {
     return {
+      show5thIndustryFeature: enable5thIndustryIntegration,
       /** validation rules for the input fields inside the form */
       inputRules: {
         requiredName: (name) => !!name || 'Name is required',

@@ -11,7 +11,7 @@ const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
 const { setupMessaging } = require('./messaging-setup.js');
-const { enableMessaging } = require('../../../../../FeatureFlags.js');
+const { enableMessaging, enable5thIndustryIntegration } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
   moduleName: 'CORE',
@@ -43,7 +43,11 @@ module.exports = {
     await decider.start();
     await monitoring.start(management);
     ui.serve(management);
-    setup5thIndustryEndpoints();
+
+    if (enable5thIndustryIntegration) {
+      setup5thIndustryEndpoints();
+    }
+
     // Open /status endpoint at last
     distribution.init(management);
 

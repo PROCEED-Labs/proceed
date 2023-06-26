@@ -30,6 +30,8 @@ const {
 
 import { asyncForEach } from '../../../../shared-frontend-backend/helpers/javascriptHelpers.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags.js';
+
 export async function completeUserTask(instanceId, userTaskId) {
   // we might deduce the machine from the active user task info or the instance info
   const userTask = getActiveUserTasks().find((uT) => uT.id === userTaskId);
@@ -129,7 +131,7 @@ export async function startInstance(processDefinitionsId, version) {
       const [process] = getElementsByTagName(bpmnObj, 'bpmn:Process');
       const metaData = getMetaDataFromElement(process);
       try {
-        if (metaData['_5i-Inspection-Plan-ID']) {
+        if (enable5thIndustryIntegration && metaData['_5i-Inspection-Plan-ID']) {
           await start5thIndustryPlan(metaData['_5i-Inspection-Plan-ID']);
           started5thIndustryPlan = true;
 
@@ -168,7 +170,7 @@ export async function startInstance(processDefinitionsId, version) {
           throw e;
         }
         // make sure to rollback in 5thIndustry App if there was a plan set to in progress but starting the instance failed
-        if (started5thIndustryPlan) {
+        if (enable5thIndustryIntegration && started5thIndustryPlan) {
           await stop5thIndustryPlan(metaData['_5i-Inspection-Plan-ID']);
         }
       }
@@ -203,7 +205,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
       const [process] = getElementsByTagName(bpmnObj, 'bpmn:Process');
       const metaData = getMetaDataFromElement(process);
 
-      if (metaData['_5i-Inspection-Plan-ID']) {
+      if (enable5thIndustryIntegration && metaData['_5i-Inspection-Plan-ID']) {
         await stop5thIndustryPlan(metaData['_5i-Inspection-Plan-ID']);
       }
 

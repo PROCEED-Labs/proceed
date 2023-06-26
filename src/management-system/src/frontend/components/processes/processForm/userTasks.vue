@@ -22,6 +22,8 @@ import { asyncForEach } from '@/shared-frontend-backend/helpers/javascriptHelper
 
 import { getUpdatedTaskConstraintMapping } from '@/frontend/helpers/usertask-helper.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags';
+
 /**
  * @module components
  */
@@ -120,7 +122,7 @@ export default {
       const userTasks = [];
 
       // if 5thIndustry is to be used don't add any user tasks
-      if (!currentData.isUsing5i) {
+      if (!(enable5thIndustryIntegration && currentData.isUsing5i)) {
         Object.entries(userTaskMapping).forEach(([taskId, { fileName }]) => {
           let userTaskData = {
             taskFileName: fileName || generateUserTaskFileName(),

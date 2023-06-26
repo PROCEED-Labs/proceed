@@ -9,7 +9,10 @@ const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
 const { getProcessIds } = require('@proceed/bpmn-helper');
 // const Separator = require('./separator.js').default;
 
-const { enableMessaging } = require('../../../../../../FeatureFlags.js');
+const {
+  enableMessaging,
+  enable5thIndustryIntegration,
+} = require('../../../../../../FeatureFlags.js');
 const { sendProcessStepsInfoTo5thIndustry } = require('./5thIndustry.js');
 
 setupNeoEngine();
@@ -185,7 +188,7 @@ class Engine {
     const instanceCreatedPromise = new Promise((resolve) => {
       resolver = resolve;
 
-      if (enableMessaging) {
+      if (enableMessaging && enable5thIndustryIntegration) {
         sendProcessStepsInfoTo5thIndustry(
           this.definitionId,
           version,

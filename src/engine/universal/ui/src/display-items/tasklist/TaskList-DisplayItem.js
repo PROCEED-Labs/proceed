@@ -3,6 +3,7 @@ const distribution = require('@proceed/distribution');
 const { logging } = require('@proceed/machine');
 const whiskers = require('whiskers/dist/whiskers.min.js');
 const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
+const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -106,7 +107,7 @@ class TaskListTab extends DisplayItem {
       tokenId,
     } = userTask;
 
-    if (implementation === '5thIndustry') {
+    if (enable5thIndustryIntegration && implementation === '5thIndustry') {
       return `
         <html>
           <head>

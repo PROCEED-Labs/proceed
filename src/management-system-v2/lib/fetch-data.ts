@@ -1,12 +1,19 @@
+import { authFetchJSON } from './iam';
+
 const BASE_URL = process.env.API_URL;
 
-const fetchJSON = async <T>(url: string, options = {}) => {
+const UnauthenticatedfetchJSON = async <T>(
+  url: string,
+  options: Parameters<typeof fetch>[1] = undefined
+) => {
   const response = await fetch(url, options);
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
   return response.json() as Promise<T>;
 };
+
+const fetchJSON = process.env.NEXT_PUBLIC_USE_AUTH ? authFetchJSON : UnauthenticatedfetchJSON;
 
 // We use distinct types for the collection and individual resource responses
 // instead of `Item[]` because they might differ in what data they contain.

@@ -1218,6 +1218,13 @@
   dependencies:
     "@ucast/mongo2js" "^1.3.0"
 
+"@casl/ability@6.5.0":
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/@casl/ability/-/ability-6.5.0.tgz#a151a7637886099b8ffe52a96601225004a5c157"
+  integrity sha512-3guc94ugr5ylZQIpJTLz0CDfwNi0mxKVECj1vJUPAvs+Lwunh/dcuUjwzc4MHM9D8JOYX0XUZMEPedpB3vIbOw==
+  dependencies:
+    "@ucast/mongo2js" "^1.3.0"
+
 "@casl/vue@1.x":
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/@casl/vue/-/vue-1.2.3.tgz#ba835f71746334cddc6a97aa879e7b77d7472451"

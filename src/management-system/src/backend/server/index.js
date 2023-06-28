@@ -41,7 +41,8 @@ async function init() {
   if (process.env.NODE_ENV === 'development') {
     origin.push(
       `https://localhost:${ports['dev-server'].frontend}`,
-      `https://localhost:${ports['dev-server'].puppeteer}`
+      `https://localhost:${ports['dev-server'].puppeteer}`,
+      `http://localhost:${ports['dev-server'].nextjs}`
     );
   }
 

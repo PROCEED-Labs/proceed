@@ -210,7 +210,7 @@ export const AuthCallbackListener: FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if (oneShot) {
+    if (oneShot && process.env.NEXT_PUBLIC_USE_AUTH) {
       oneShot = false;
       handleOauthCallback()
         .then((authRes) => authStore.oauthCallback(authRes))

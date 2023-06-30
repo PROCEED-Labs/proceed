@@ -27,6 +27,8 @@ class Messaging extends System {
     this._initialized = false;
 
     this.subscriptions = {};
+
+    this._logger = null;
   }
 
   /**
@@ -37,11 +39,13 @@ class Messaging extends System {
    * @param {String} defaultPassword
    * @param {String} machineId
    */
-  async init(defaultAddress, defaultUsername, defaultPassword, machineId) {
+  async init(defaultAddress, defaultUsername, defaultPassword, machineId, logger) {
     this._defaultMessagingServerAddress = defaultAddress;
     this._username = defaultUsername;
     this._password = defaultPassword;
     this._machineId = machineId;
+
+    this._logger = logger;
 
     this._initialized = true;
     // send all messages that were queued to wait until the module was initialized
@@ -50,6 +54,8 @@ class Messaging extends System {
     }
 
     this._preInitPublishQueue = [];
+
+    logger.debug('Initialized the messaging module');
   }
 
   /**
@@ -65,6 +71,16 @@ class Messaging extends System {
       connectionOptions.password === undefined ? this._password : connectionOptions.password;
     // always add the machine id to show that the message is coming from this engine
     connectionOptions.clientId = this._machineId;
+
+    // allow the user to define a prefix
+    //this is used to allow distinction between engine and MS which would by default get the same client-id on the same system which leads to one being disconnected if the other connects to the same server
+    if (connectionOptions.clientIdPrefix)
+      connectionOptions.clientId = connectionOptions.clientIdPrefix + connectionOptions.clientId;
+
+    // this serves the same function as the clientIdPrefix but for multiple connections to the same server on the engine or MS with different users
+    if (connectionOptions.username) connectionOptions.clientId += `|${connectionOptions.username}`;
+
+    delete connectionOptions.clientIdPrefix;
   }
 
   /**

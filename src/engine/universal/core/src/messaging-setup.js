@@ -18,7 +18,8 @@ module.exports = {
         await messaging.connect(serverAddress, {
           username,
           password,
-          clientId: machineId,
+          // To support multiple connections with the same messaging server we have to use different client ids or new connections with the same id will lead to the previous connection being closed
+          clientId: machineId + (username ? `|${username}` : ''),
           // setting up a mqtt-specific mechanism that will automatically inform all subscribed clients when the connection between the engine and the mqtt server is closed unexpectedly
           will: {
             topic: `engine/${machineId}/status`,

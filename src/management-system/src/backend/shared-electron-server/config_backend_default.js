@@ -1,4 +1,6 @@
-export default {
+import { enable5thIndustryIntegration } from '../../../../../FeatureFlags.js';
+
+const config = {
   startEngineAtStartup: false,
   logLevel: 'info',
   machinePollingInterval: 10,
@@ -10,8 +12,13 @@ export default {
   instanceStorageTime: 60 * 10,
   closeOpenEditorsInMs: 300000,
   processEngineUrl: '',
-  _5thIndustryApplicationURL: '',
-  _5thIndustryAPIURL: '',
   domains: [],
   trustedOrigins: [],
 };
+
+if (enable5thIndustryIntegration) {
+  config._5thIndustryApplicationURL = '';
+  config._5thIndustryAPIURL = '';
+}
+
+export default config;

@@ -58,12 +58,14 @@
           />
           <div v-else>
             <inspection-plan-selection
+              v-if="show5thIndustryFeature"
               :locked="true"
               :processType="processType"
               v-show="isProcessElement"
               v-model="metaCopy"
             />
             <inspection-order-selection
+              v-if="show5thIndustryFeature"
               :processType="processType"
               v-show="
                 isUserTask &&
@@ -163,7 +165,10 @@ import FlowElementColor from '@/frontend/components/processes/editor/PropertiesP
 import { getMetaData } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
 import ImageSelection from '@/frontend/components/processes/editor/PropertiesPanel/ImageSelection.vue';
 
-import { enableInterruptedInstanceRecovery } from '../../../../../../../../FeatureFlags';
+import {
+  enableInterruptedInstanceRecovery,
+  enable5thIndustryIntegration,
+} from '../../../../../../../../FeatureFlags';
 
 export default {
   name: 'PropertiesPanel',
@@ -278,6 +283,7 @@ export default {
   data() {
     return {
       showInstanceRecoveryFeature: enableInterruptedInstanceRecovery,
+      show5thIndustryFeature: enable5thIndustryIntegration,
       windowMeasurements: {
         right: `${this.convertPixelToVw(12)}vw`, // set right value to align with toolbar (padding 12px)
         top: `${this.convertPixelToVh(128)}vh`, // set top value to prevent overlay of tabbar (height 48px) and toolbar (height 80px)

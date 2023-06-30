@@ -51,6 +51,8 @@ import {
   getProcessUserTasksHtml,
 } from './helpers.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags.js';
+
 /**
  * Will return the complete data of a process version (bpmn, html)
  * The information can either come from the local storage or from engines if the process version is not known locally but deployed to some known engines
@@ -306,12 +308,12 @@ async function sendImages(processDefinitionsId, machineInfo, dynamic) {
  * @param {bool} dynamic indicates if the html is to be send to a singular machine or multiple ones
  */
 async function sendUserTaskHTML(processDefinitionsId, bpmn, machineInfo, dynamic) {
-  // don't need to send html when 5thIndustry is used as the user task application
   const bpmnObj = await toBpmnObject(bpmn);
   const [processElement] = getElementsByTagName(bpmnObj, 'bpmn:Process');
   const metaData = getMetaDataFromElement(processElement);
 
-  if (metaData['_5i-Inspection-Plan-ID']) {
+  // don't need to send html when 5thIndustry is used as the user task application
+  if (enable5thIndustryIntegration && metaData['_5i-Inspection-Plan-ID']) {
     // early exit
     return;
   }

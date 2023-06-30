@@ -27,6 +27,7 @@ const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('../process
 const { data } = require('@proceed/system');
 const fs = require('fs');
 const path = require('path');
+const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
 
 const { toBpmnObject } = require('@proceed/bpmn-helper');
 
@@ -40,10 +41,6 @@ const TwoProcessesDefinition = fs.readFileSync(
 );
 const OneUserTaskDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneUserTask.xml'),
-  'utf-8'
-);
-const _5thIndustryDefinition = fs.readFileSync(
-  path.resolve(__dirname, 'data/5thIndustryDefinition.xml'),
   'utf-8'
 );
 const MissingHtmlDefinition = fs.readFileSync(
@@ -437,17 +434,24 @@ describe('Tests for the functions in the database module', () => {
       });
     });
 
-    it('returns information about required html if a user task is using any', async () => {
-      const bpmnObj = await toBpmnObject(_5thIndustryDefinition);
+    if (enable5thIndustryIntegration) {
+      it('returns information about required html if a user task is using any', async () => {
+        const _5thIndustryDefinition = fs.readFileSync(
+          path.resolve(__dirname, 'data/5thIndustryDefinition.xml'),
+          'utf-8'
+        );
 
-      const result = await getRequiredProcessFragments(bpmnObj);
+        const bpmnObj = await toBpmnObject(_5thIndustryDefinition);
 
-      expect(result).toEqual({
-        html: [],
-        imports: [],
-        images: [],
+        const result = await getRequiredProcessFragments(bpmnObj);
+
+        expect(result).toEqual({
+          html: [],
+          imports: [],
+          images: [],
+        });
       });
-    });
+    }
 
     it('will throw if a user task is missing html information', async () => {
       const bpmnObj = await toBpmnObject(MissingHtmlDefinition);

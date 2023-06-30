@@ -11,6 +11,8 @@ import { setupDeploymentInfoRequestHandlers } from './deployment.js';
 import ports from '../../../ports.js';
 import { isOriginTrusted } from './iam/utils/utils.js';
 
+import { enable5thIndustryIntegration } from '../../../../../FeatureFlags.js';
+
 import __dirname from './dirname-node.js';
 import { Server as IO } from 'socket.io';
 
@@ -85,7 +87,9 @@ export function startWebsocketServer(httpsServerObject, loginSession, config) {
   setupNetworkRequestHandlers(addListener);
   setupMachineInfoRequestHandlers(addListener);
   setupProcessRequestHandlers(addListener, broadcast, sendCommand, io);
-  setup5thIndustryHandlers(addListener);
+  if (enable5thIndustryIntegration) {
+    setup5thIndustryHandlers(addListener);
+  }
   setupDeploymentInfoRequestHandlers(io);
 
   httpsServerObject.listen(ports.websocket, () => {

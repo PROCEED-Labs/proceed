@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { createMongoAbility, MongoAbility, RawRuleOf } from '@casl/ability';
 // @ts-ignore
 import { PERMISSION_MAPPING } from 'proceed-management-system/src/shared-frontend-backend/constants';
-import { FC, ReactNode, useEffect } from 'react';
+import { FC, PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Route } from 'next';
 
@@ -129,7 +129,6 @@ export const useAuthStore = create<AuthStoreType>((set) => ({
   loggedIn: false,
   oauthCallback(obj: AuthResponse) {
     if (obj.isLoggedIn) {
-      // console.log('hihis');
       set(
         {
           loggedIn: true,
@@ -151,13 +150,12 @@ export const useAuthStore = create<AuthStoreType>((set) => ({
 
 // frontend UTILITIES
 // ----------------------
-type AuthCanProps = {
-  action: ResourceActionType;
-  resource: ResourceType;
-  children: ReactNode;
+type AuthCanProps = PropsWithChildren<{
+  action: ResourceActionType | ResourceActionType[];
+  resource: ResourceType | ResourceType[];
   fallback?: ReactNode;
   fallbackRedirect?: Route;
-};
+}>;
 
 export const AuthCan: FC<AuthCanProps> = ({
   action,
@@ -169,11 +167,22 @@ export const AuthCan: FC<AuthCanProps> = ({
   const authStore = useAuthStore();
   const router = useRouter();
 
-  if (
-    !process.env.NEXT_PUBLIC_USE_AUTH ||
-    (authStore.loggedIn && authStore.ability.can(action, resource))
-  )
-    return children;
+  const allow = useMemo(() => {
+    if (!authStore.loggedIn) return false;
+
+    const resources = Array.isArray(resource) ? resource : [resource];
+    const actions = Array.isArray(action) ? action : [action];
+
+    for (const r of resources) {
+      for (const a of actions) {
+        if (!authStore.ability.can(a, r)) return false;
+      }
+    }
+
+    return true;
+  }, [action, resource, authStore]);
+
+  if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
 
   if (fallbackRedirect) router.push(fallbackRedirect);
 

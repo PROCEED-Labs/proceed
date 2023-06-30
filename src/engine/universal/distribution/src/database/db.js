@@ -76,7 +76,7 @@ module.exports = {
     }
 
     // get all images stored for the process
-    const knownImages = await data.readImages(definitionId);
+    const knownImages = (await data.readImages(definitionId)) || [];
 
     // check if image files are missing
     if (!requirements.images.every((fileName) => knownImages.includes(fileName))) {

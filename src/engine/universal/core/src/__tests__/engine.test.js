@@ -68,10 +68,15 @@ const userTaskBPMN = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'userTask.b
 
 const taskBPMN = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'task.bpmn'), 'utf-8');
 
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe('ProceedEngine', () => {
   let engine;
   let resolver;
-  let flushPromise;
+  let hasEnded;
+
   const onStarted = jest.fn();
   const onTokenEnded = jest.fn();
   const onEnded = jest.fn().mockImplementation(() => resolver());
@@ -83,12 +88,15 @@ describe('ProceedEngine', () => {
   beforeEach(() => {
     engine = new ProceedEngine();
     distribution.db.getProcess.mockReset();
-    flushPromise = new Promise((resolve) => {
-      resolver = resolve;
-      setTimeout(resolve, 1000);
-    });
+    hasEnded = new Promise((resolve) => (resolver = resolve));
 
     jest.clearAllMocks();
+  });
+
+  // This should allow engines to finish all execution before the test ends
+  // Hotfix for the "A worker process has failed to exit gracefully [...]" warning from jest
+  afterAll(async () => {
+    await sleep(100);
   });
 
   it('calls given callbacks for executed process', async () => {
@@ -96,7 +104,8 @@ describe('ProceedEngine', () => {
 
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded, onTokenEnded);
-    await flushPromise;
+
+    await sleep(1000);
 
     expect(onStarted).toHaveBeenCalled();
     expect(onTokenEnded).toHaveBeenCalledTimes(1);
@@ -108,7 +117,8 @@ describe('ProceedEngine', () => {
 
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded, onTokenEnded);
-    await flushPromise;
+
+    await hasEnded;
 
     const instanceInformation = engine.getInstanceInformation(engine.instanceIDs[0]);
 
@@ -178,49 +188,57 @@ describe('ProceedEngine', () => {
   it('allows the creation of multiple instances of the same process version inside the same engine instance', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(scriptTaskBPMN);
 
+    let onEnded1;
+    const hasEnded1 = new Promise((resolve) => (onEnded1 = resolve));
+
     await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded);
+    engine.startProcessVersion(123, {}, onStarted, onEnded1);
     expect(engine.instanceIDs.length).toBe(1);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await hasEnded1;
+
+    let onEnded2;
+    const hasEnded2 = new Promise((resolve) => (onEnded2 = resolve));
 
     expect(() => {
-      engine.startProcessVersion(123, {}, onStarted, onEnded);
+      engine.startProcessVersion(123, {}, onStarted, onEnded2);
     }).not.toThrow();
     expect(engine.instanceIDs.length).toBe(2);
 
-    await flushPromise;
+    await hasEnded2;
   });
 
   it('allows the creation of multiple instances of different process versions inside the same engine instance', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(taskBPMN);
 
+    let onEnded1;
+    const hasEnded1 = new Promise((resolve) => (onEnded1 = resolve));
+
     await engine.deployProcessVersion(0, 123);
-    const onStarted1 = jest.fn(),
-      onEnded1 = jest.fn();
+    const onStarted1 = jest.fn();
     engine.startProcessVersion(123, {}, onStarted1, onEnded1);
     expect(engine.instanceIDs.length).toBe(1);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await hasEnded1;
 
     distribution.db.getProcessVersion.mockResolvedValueOnce(taskBPMN);
 
+    let onEnded2;
+    const hasEnded2 = new Promise((resolve) => (onEnded2 = resolve));
+
     await engine.deployProcessVersion(0, 456);
-    const onStarted2 = jest.fn(),
-      onEnded2 = jest.fn();
+    const onStarted2 = jest.fn();
     engine.startProcessVersion(456, {}, onStarted2, onEnded2);
     expect(engine.instanceIDs.length).toBe(2);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await hasEnded2;
 
     expect(engine.instanceIDs.length).toBe(2);
 
     expect(Object.keys(engine._versionProcessMapping)).toEqual(['123', '456']);
 
     expect(onStarted1).toHaveBeenCalledTimes(1);
-    expect(onEnded1).toHaveBeenCalledTimes(1);
     expect(onStarted2).toHaveBeenCalledTimes(1);
-    expect(onEnded2).toHaveBeenCalledTimes(1);
   });
 
   it('calls given network-service in a script task', async () => {
@@ -228,8 +246,8 @@ describe('ProceedEngine', () => {
 
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded);
-    await flushPromise;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    await hasEnded;
 
     expect(System.http.request).toHaveBeenCalledWith('https://example.org/123', { method: 'GET' });
   });
@@ -240,7 +258,8 @@ describe('ProceedEngine', () => {
 
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded);
-    await flushPromise;
+
+    await sleep(500);
 
     const { userTasks } = engine;
     expect(userTasks.length).toBe(1);
@@ -250,9 +269,13 @@ describe('ProceedEngine', () => {
     const instanceID = engine.userTasks[0].processInstance.id;
     engine.updateIntermediateVariablesState(instanceID, userTaskID, { a: 2 });
 
+    await sleep(50);
+
     const instanceInformation = engine.getInstanceInformation(instanceID);
     expect(instanceInformation.tokens[0].intermediateVariablesState).toStrictEqual({ a: 2 });
     expect(instanceInformation.variables).toStrictEqual({});
+
+    await engine.stopInstance(engine.instanceIDs[0]);
   });
 
   it('takes variables input on a userTask', async () => {
@@ -260,7 +283,8 @@ describe('ProceedEngine', () => {
 
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded);
-    await flushPromise;
+
+    await sleep(500);
 
     const { userTasks } = engine;
     expect(userTasks.length).toBe(1);
@@ -269,6 +293,8 @@ describe('ProceedEngine', () => {
     // Signal user input
     const instanceID = engine.userTasks[0].processInstance.id;
     engine.completeUserTask(instanceID, 'Task_1y4wd2q', { a: 2 });
+
+    await hasEnded;
 
     const instanceInformation = engine.getInstanceInformation(instanceID);
     expect(instanceInformation.variables).toStrictEqual({
@@ -286,13 +312,17 @@ describe('ProceedEngine', () => {
 
   it('can be stopped through api function', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(userTaskBPMN);
+
     await engine.deployProcessVersion(0, 123);
     engine.startProcessVersion(123, {}, onStarted, onEnded);
-    await flushPromise;
 
-    engine.stopInstance(engine.instanceIDs[0]);
-    const instanceInformation = engine.getInstanceInformation(engine.instanceIDs[0]);
-    expect(instanceInformation.instanceState).toEqual(['STOPPED']);
+    await sleep(500);
+
+    await engine.stopInstance(engine.instanceIDs[0]);
+
+    expect(distribution.db.archiveInstance.mock.calls[0][2].instanceState).toStrictEqual([
+      'STOPPED',
+    ]);
   });
 
   it('can be started somewhere inside the process flow using an instance', async () => {
@@ -312,10 +342,10 @@ describe('ProceedEngine', () => {
     };
 
     await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, instance, undefined, onEnded);
-    await flushPromise;
+    engine.startProcessVersion(123, {}, instance, onStarted, onEnded);
 
-    expect(onEnded).toHaveBeenCalled();
+    await hasEnded;
+
     expect(engine.instanceIDs).toStrictEqual(['0-123']);
   });
 });

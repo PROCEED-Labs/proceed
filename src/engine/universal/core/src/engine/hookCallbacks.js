@@ -32,14 +32,14 @@ function getLogHandler(engine, instance) {
  * @param {Object} instance the process instance that ended
  */
 function getOnEndedHandler(engine, instance) {
-  return () => {
+  return async () => {
     engine._log.info({
       msg: `Process instance ended. Id = ${instance.id}`,
       instanceId: instance.id,
     });
 
     // archive the information for the finalized instance
-    engine.archiveInstance(instance.id);
+    await engine.archiveInstance(instance.id);
 
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);

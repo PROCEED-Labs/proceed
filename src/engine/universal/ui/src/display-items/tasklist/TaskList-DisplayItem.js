@@ -71,8 +71,20 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-      variables = userTask.processInstance.getVariables(userTask.tokenId);
-      milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+      if (userTask.variableChanges) {
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        variables = userTask.variableChanges;
+      } else {
+        // get the data from the instance (will merge the instance and token data)
+        variables = userTask.processInstance.getVariables(userTask.tokenId);
+      }
+      if (userTask.milestones) {
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        milestonesData = userTask.milestones;
+      } else {
+        // get the data from the instance (will look at the data of the token that currently resides on this user task)
+        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+      }
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
       userTask = inactiveTasks.find(

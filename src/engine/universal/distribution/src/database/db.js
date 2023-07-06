@@ -10,6 +10,8 @@ const {
 
 const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('./processFragmentCheck');
 
+const { publishDeployedVersionInfo } = require('./publishDeploymentUtils');
+
 module.exports = {
   /**
    * Checks if the file with process information exists
@@ -147,6 +149,8 @@ module.exports = {
 
     // save the bpmn
     await data.writeProcessVersionBpmn(bpmnDefinitionId, version, bpmn);
+
+    await publishDeployedVersionInfo(bpmnDefinitionId, version, bpmn);
 
     return {
       definitionId: bpmnDefinitionId,

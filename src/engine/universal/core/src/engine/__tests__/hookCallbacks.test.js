@@ -9,6 +9,7 @@ jest.mock('../processForwarding.js');
 
 const { getNewInstanceHandler } = require('../hookCallbacks.js');
 const { db } = require('@proceed/distribution');
+const { getElementsByTagName, getMetaDataFromElement } = require('@proceed/bpmn-helper');
 const { abortInstanceOnNetwork } = require('../processForwarding.js');
 
 const { enableInterruptedInstanceRecovery } = require('../../../../../../../FeatureFlags.js');
@@ -42,6 +43,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       userTasks: [],
       _versionProcessMapping: {},
       _instanceIdProcessMapping: {},
+      _versionBpmnMapping: {},
       getInstanceInformation: jest.fn().mockReturnValue({}),
       instanceEventHandlers: { onStarted, onEnded, onTokenEnded },
       _management: {
@@ -135,6 +137,9 @@ describe('Test for the function that sets up callbacks for the different lifecyc
     };
 
     instanceHandler = getNewInstanceHandler(mockEngine, undefined);
+
+    getElementsByTagName.mockReturnValue([{}]);
+    getMetaDataFromElement.mockReturnValue({});
 
     await instanceHandler(mockNewInstance);
     mockEngine._log.info.mockReset();

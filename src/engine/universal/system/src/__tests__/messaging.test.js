@@ -87,7 +87,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
-      ).rejects.toMatch('Failed to publish to mqtt://localhost:1883\nError Message');
+      ).rejects.toMatch('Failed to publish to mqtt://localhost:1883: Error Message');
     });
 
     it('automatically adds default login data (if it is available), if no other login data is given in the connection options', async () => {
@@ -182,7 +182,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).not.toHaveBeenCalled();
 
-      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId', {
+      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId', '', {
         debug: jest.fn(),
       });
 
@@ -219,11 +219,12 @@ describe('Tests for the message interface of the dispatcher', () => {
       ]);
     });
 
-    it('will prefix "engine/[engine-id]" to the given topic if requested', async () => {
+    it('will prefix "[baseTopic]/engine/[engine-id]" to the given topic if requested', async () => {
       messaging._username = 'user';
       messaging._password = 'password123';
       // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
       messaging._machineId = 'engineId';
+      messaging._baseTopic = 'base-topic/';
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
@@ -235,7 +236,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         'messaging_publish',
         [
           'mqtt://localhost:1883',
-          'engine/engineId/test/123',
+          'base-topic/engine/engineId/test/123',
           'Hello World',
           '{"prependDefaultTopic":true}',
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
@@ -265,7 +266,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       });
 
       await expect(messaging.connect('mqtt://localhost:1883')).rejects.toMatch(
-        'Failed to connect to mqtt://localhost:1883\nError Message'
+        'Failed to connect to mqtt://localhost:1883: Error Message'
       );
     });
   });
@@ -331,7 +332,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           { qos: 0 }
         )
       ).rejects.toMatch(
-        'Failed to subscribe to mqtt://some-url (Topic: test/topic)\nError Message'
+        'Failed to subscribe to mqtt://some-url (Topic: test/topic): Error Message'
       );
     });
 

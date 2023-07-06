@@ -7,6 +7,15 @@ jest.mock('@proceed/constraint-parser-xml-json/parser.js', () => {
 });
 
 jest.mock('@proceed/machine', () => ({
+  logging: {
+    getLogger: jest.fn().mockReturnValue({
+      info: jest.fn(),
+      debug: jest.fn,
+      error: jest.fn(),
+      warn: jest.fn(),
+      trace: jest.fn(),
+    }),
+  },
   config: {
     readConfig: jest.fn(),
   },

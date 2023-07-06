@@ -9,8 +9,12 @@ module.exports = {
   async setupMessaging(messaging, configModule, machineModule, logger) {
     // get default values from the config and machine info modules that shall be used when the caller of the publish function does not provide specific data
     // this should prevent that all modules that want to publish data have to import the config and machine info modules and get these values themselves
-    const { serverAddress, username, password } = await configModule.readConfig('messaging');
+    const { serverAddress, username, password, baseTopic } = await configModule.readConfig(
+      'messaging'
+    );
     const { id: machineId } = await machineModule.getMachineInformation(['id']);
+
+    if (baseTopic && !baseTopic.endsWith('/')) baseTopic += '/';
 
     // if a default server is defined try to establish a connection
     if (serverAddress) {
@@ -22,7 +26,7 @@ module.exports = {
           clientId: machineId + (username ? `|${username}` : ''),
           // setting up a mqtt-specific mechanism that will automatically inform all subscribed clients when the connection between the engine and the mqtt server is closed unexpectedly
           will: {
-            topic: `engine/${machineId}/status`,
+            topic: `${baseTopic}engine/${machineId}/status`,
             payload: { running: false, version: proceedVersion },
             qos: 1,
             retain: true,
@@ -33,13 +37,13 @@ module.exports = {
       }
     }
 
-    messaging.init(serverAddress, username, password, machineId, logger);
+    messaging.init(serverAddress, username, password, machineId, baseTopic, logger);
 
     if (serverAddress) {
       try {
         // publish that the engine is online
         await messaging.publish(
-          `engine/${machineId}/status`,
+          `${baseTopic}engine/${machineId}/status`,
           { running: true, version: proceedVersion },
           undefined,
           {

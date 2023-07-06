@@ -17,7 +17,11 @@ class Messaging extends System {
     this._username = undefined;
     // the password the engine will use for authentication if no other is given
     this._password = undefined;
-    // the machineId that identifies the engine and is used for the default topic prefix (/engine/[machineId]/[topic])
+
+    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested
+    this._baseTopic = '';
+
+    // the machineId that identifies the engine and is used for the default topic prefix ([baseTopic]/engine/[machineId]/[topic])
     this._machineId = undefined;
 
     // publish requests that were made before the module was completely initialized (should be done after initializitation was completed)
@@ -39,10 +43,11 @@ class Messaging extends System {
    * @param {String} defaultPassword
    * @param {String} machineId
    */
-  async init(defaultAddress, defaultUsername, defaultPassword, machineId, logger) {
+  async init(defaultAddress, defaultUsername, defaultPassword, machineId, baseTopic, logger) {
     this._defaultMessagingServerAddress = defaultAddress;
     this._username = defaultUsername;
     this._password = defaultPassword;
+    this._baseTopic = baseTopic;
     this._machineId = machineId;
 
     this._logger = logger;
@@ -71,7 +76,6 @@ class Messaging extends System {
       connectionOptions.password === undefined ? this._password : connectionOptions.password;
     // always add the machine id to show that the message is coming from this engine
     connectionOptions.clientId = this._machineId;
-
     // allow the user to define a prefix
     //this is used to allow distinction between engine and MS which would by default get the same client-id on the same system which leads to one being disconnected if the other connects to the same server
     if (connectionOptions.clientIdPrefix)
@@ -98,7 +102,7 @@ class Messaging extends System {
       // Listen for the response from the native part
       this.commandResponse(taskID, (err, _data) => {
         if (err) {
-          reject(`Failed to connect to ${url}\n${err}`);
+          reject(`Failed to connect to ${url}: ${err}`);
         } else {
           resolve();
         }
@@ -151,16 +155,18 @@ class Messaging extends System {
   /**
    * Publish some data through a messaging server
    *
-   * @param {String} topic the topic under which the data should be published (e.g. engine/[engine-id]/status)
+   * @param {String} topic the topic under which the data should be published (e.g. process/[process-id])
    * @param {String|Object} message the data that should be published
    * @param {String} overrideUrl address of the messaging server if the default one should not be used
    * @param {Object} messageOptions options that should be used when publishing the message
-   * @param {Number} messageOptions.qos mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
-   * @param {Boolean} messageOptions.retain mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
-   * @param {Boolean} messageOptions.prependDefaultTopic if set to true will prepend engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Number} [messageOptions.qos] mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
+   * @param {Boolean} [messageOptions.retain] mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
+   * @param {Boolean} [messageOptions.prependDefaultTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Boolean} [messageOptions.retain] if the message should be stored for the topic so that new subscribers automatically get the information
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
-   * @param {String} connectionOptions.username the username to use when connecting
-   * @param {String} connectionOptions.password the password to use when connecting
+   * @param {String} [connectionOptions.username] the username to use when connecting
+   * @param {String} [connectionOptions.password] the password to use when connecting
+   * @param {String} [connectionOptions.clientIdPrefix] can be used to define a prefix for the final clientId (clientIdPrefix + machineId + '|' + username + ':')
    */
   async publish(topic, message, overrideUrl, messageOptions = {}, connectionOptions = {}) {
     // if no url is given use the default url if one was set
@@ -189,7 +195,7 @@ class Messaging extends System {
       // Listen for the response from the native part
       this.commandResponse(taskID, (err, data) => {
         if (err) {
-          reject(`Failed to publish to ${url}\n${err}`);
+          reject(`Failed to publish to ${url}: ${err}`);
         } else {
           resolve();
         }
@@ -198,10 +204,10 @@ class Messaging extends System {
       });
     });
 
-    // prepends the default topic path "engine/[engine-id]" to the topic
+    // prepends the default topic path "[baseTopic]/engine/[engine-id]" to the topic
     // this way all modules in the engine can just call publish with prependDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
     if (messageOptions.prependDefaultTopic) {
-      topic = `engine/${this._machineId}/${topic}`;
+      topic = `${this._baseTopic}engine/${this._machineId}/${topic}`;
     }
 
     // make sure that everything is in the correct format to be passed to the native part
@@ -242,7 +248,7 @@ class Messaging extends System {
       this.commandResponse(taskID, (err, ...data) => {
         if (err) {
           // Reject and close the listener
-          reject(`Failed to subscribe to ${url} (Topic: ${topic})\n${err}`);
+          reject(`Failed to subscribe to ${url} (Topic: ${topic}): ${err}`);
           return true;
         } else {
           if (!setupResponseReceived) {

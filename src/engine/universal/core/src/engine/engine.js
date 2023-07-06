@@ -7,13 +7,10 @@ const { getNewInstanceHandler } = require('./hookCallbacks.js');
 const { getShouldPassToken } = require('./shouldPassToken.js');
 const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
 const { getProcessIds } = require('@proceed/bpmn-helper');
-// const Separator = require('./separator.js').default;
 
-const {
-  enableMessaging,
-  enable5thIndustryIntegration,
-} = require('../../../../../../FeatureFlags.js');
-const { sendProcessStepsInfoTo5thIndustry } = require('./5thIndustry.js');
+const { enableMessaging } = require('../../../../../../FeatureFlags.js');
+const { publishCurrentInstanceState } = require('./publishStateUtils');
+// const Separator = require('./separator.js').default;
 
 setupNeoEngine();
 
@@ -187,15 +184,6 @@ class Engine {
     let resolver;
     const instanceCreatedPromise = new Promise((resolve) => {
       resolver = resolve;
-
-      if (enableMessaging && enable5thIndustryIntegration) {
-        sendProcessStepsInfoTo5thIndustry(
-          this.definitionId,
-          version,
-          this._versionBpmnMapping[version],
-          this._log
-        );
-      }
     });
 
     this.originalInstanceState = instance;
@@ -206,6 +194,7 @@ class Engine {
         if (instance && instance.callingInstance) {
           newInstance.callingInstance = instance.callingInstance;
         }
+
         if (typeof onStarted === 'function') {
           onStarted(newInstance);
         }
@@ -596,6 +585,10 @@ class Engine {
 
       instance.stop();
 
+      if (enableMessaging) {
+        await publishCurrentInstanceState(this, instance);
+      }
+
       // archive the information for the stopped instance
       await this.archiveInstance(instance.id);
       this.deleteInstance(instance.id);
@@ -650,6 +643,10 @@ class Engine {
       }
     });
 
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
+
     await this.archiveInstance(instance.id);
     this.deleteInstance(instance.id);
   }
@@ -679,6 +676,10 @@ class Engine {
         instance.endToken(token.tokenId, { state: 'ABORTED', endTime: +new Date() });
       }
     });
+
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
 
     // archive the information for the stopped instance
     await this.archiveInstance(instance.id);
@@ -754,8 +755,13 @@ class Engine {
           }
         });
       })
-        .then(() => {
+        .then(async () => {
           instance.pause();
+
+          if (enableMessaging) {
+            await publishCurrentInstanceState(this, instance);
+          }
+
           this.archiveInstance(instance.id);
           this.deleteInstance(instance.id);
         })

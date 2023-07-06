@@ -13,6 +13,7 @@ describe('Tests for the message interface of the dispatcher', () => {
     messaging = new Messaging();
 
     messaging._defaultMessagingServerAddress = 'mqtt://defaultAddress';
+    messaging._machineId = 'machineId';
     messaging._initialized = true;
 
     // mock the functions that are used inside publish to ensure that publish is awaitable
@@ -30,7 +31,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://localhost:1883', 'test/123', 'Hello World', '{}', '{}'],
+        ['mqtt://localhost:1883', 'test/123', 'Hello World', '{}', '{"clientId":"machineId"}'],
       ]);
     });
 
@@ -39,7 +40,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://defaultAddress', 'test/123', 'Hello World', '{}', '{}'],
+        ['mqtt://defaultAddress', 'test/123', 'Hello World', '{}', '{"clientId":"machineId"}'],
       ]);
     });
 
@@ -48,7 +49,13 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://localhost:1883', 'test/123', `{\"some\":\"data\"}`, '{}', '{}'],
+        [
+          'mqtt://localhost:1883',
+          'test/123',
+          `{\"some\":\"data\"}`,
+          '{}',
+          '{"clientId":"machineId"}',
+        ],
       ]);
     });
 
@@ -68,7 +75,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           `{\"retain\":true}`,
-          `{\"username\":\"engine\",\"password\":\"password123\"}`,
+          `{\"username\":\"engine\",\"password\":\"password123\",\"clientId\":\"machineId|engine\"}`,
         ],
       ]);
     });
@@ -99,7 +106,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
@@ -126,7 +133,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"other user\",\"password\":\"other password\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"other user\",\"password\":\"other password\",\"clientId\":\"engineId|other user\"}`,
         ],
       ]);
     });
@@ -175,7 +182,9 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).not.toHaveBeenCalled();
 
-      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId');
+      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId', {
+        debug: jest.fn(),
+      });
 
       expect(messaging.commandRequest).toBeCalledTimes(3);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -185,7 +194,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -195,7 +204,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/456',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -205,7 +214,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/789',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
@@ -229,7 +238,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'engine/engineId/test/123',
           'Hello World',
           '{"prependDefaultTopic":true}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
@@ -283,7 +292,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         [
           'mqtt://some-url',
           'test/topic',
-          '{"username":"user","password":"password456"}',
+          '{"username":"user","password":"password456","clientId":"machineId|user"}',
           expect.stringMatching(/{"qos":0,"subscriptionId":".*"}/),
         ],
       ]);
@@ -301,7 +310,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         [
           'mqtt://defaultAddress',
           'test/topic',
-          '{"username":"user123","password":"password123","clientId":"engineId"}',
+          '{"username":"user123","password":"password123","clientId":"engineId|user123"}',
           expect.stringMatching(/{"subscriptionId":".*"}/),
           ,
         ],
@@ -394,7 +403,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'mqtt://some-url',
           'test/topic',
           subscriptionId,
-          '{"username":"user","password":"password456"}',
+          '{"username":"user","password":"password456","clientId":"machineId|user"}',
         ],
       ]);
     });

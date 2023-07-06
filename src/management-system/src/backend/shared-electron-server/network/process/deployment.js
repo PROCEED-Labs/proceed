@@ -441,6 +441,7 @@ export async function deployProcessVersion(processDefinitionsId, version) {
 }
 
 export async function importProcess(processDefinitionsId) {
+  let wasPartiallyAdded = false;
   try {
     const deployment = getDeployments()[processDefinitionsId];
 
@@ -548,21 +549,24 @@ export async function importProcess(processDefinitionsId) {
       // add the process with the editable bpmn
       // TODO: this process should most likely be stored as being owned by the user that triggered the import
       await addProcess({ bpmn });
+      // set the partially added flag so we can roll back if importing the other information fails
+      wasPartiallyAdded = true;
       // save the html of the converted version as the editable html
-      Object.entries(changedFileNames).forEach(([versioned, unversioned]) => {
-        saveProcessUserTask(processDefinitionsId, unversioned, unknownUserTasks[versioned]);
+      await asyncForEach(Object.entries(changedFileNames), async ([versioned, unversioned]) => {
+        await saveProcessUserTask(processDefinitionsId, unversioned, unknownUserTasks[versioned]);
       });
+
       // TODO: image versioning?
     }
 
     // save all unknown versions
     for (const version of unknownVersions) {
-      addProcessVersion(processDefinitionsId, version.bpmn);
+      await addProcessVersion(processDefinitionsId, version.bpmn);
     }
 
     // save all unknown user task files
     for (const [fileName, html] of Object.entries(unknownUserTasks)) {
-      saveProcessUserTask(processDefinitionsId, fileName, html);
+      await saveProcessUserTask(processDefinitionsId, fileName, html);
     }
 
     // save all unknown image files
@@ -571,6 +575,12 @@ export async function importProcess(processDefinitionsId) {
     }
   } catch (err) {
     logger.debug(`Failed to import process (id: ${processDefinitionsId}). Reason: ${err.message}`);
+
+    // remove the partially imported process information if the import could not be completed succesfully
+    if (wasPartiallyAdded) {
+      removeProcess(processDefinitionsId);
+    }
+
     throw err;
   }
 }

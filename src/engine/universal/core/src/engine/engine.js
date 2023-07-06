@@ -355,6 +355,11 @@ class Engine {
         (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
 
+    const token = this.getToken(instanceID, userTask.tokenId);
+    // remember the changes made by this user task invocation
+    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.milestones = { ...token.milestones };
+
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
   }
 
@@ -579,6 +584,14 @@ class Engine {
             performers: token.performers,
           });
         }
+      });
+
+      this.userTasks = this.userTasks.map((uT) => {
+        if (uT.processInstance === instance && (uT.state === 'READY' || uT.state === 'ACTIVE')) {
+          return { ...uT, state: 'STOPPED' };
+        }
+
+        return uT;
       });
 
       instance.stop();

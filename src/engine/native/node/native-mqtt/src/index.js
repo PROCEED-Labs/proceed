@@ -230,7 +230,7 @@ class NativeMQTT extends NativeModule {
       }
 
       // try to clean up the connection (will do nothing if the connection is kept open by another subscription or for another reason [e.g a will message])
-      this.disconnect(originalUrl, originalConnectionOptions);
+      await this.disconnect(originalUrl, originalConnectionOptions);
     }
   }
 }

@@ -209,7 +209,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
         await stop5thIndustryPlan(metaData['_5i-Inspection-Plan-ID']);
       }
 
-      activelyExecutingMachines.forEach((machineId) => {
+      await asyncForEach(activelyExecutingMachines, async (machineId) => {
         const machine = deployment.machines.find((m) => m.id === machineId);
 
         if (!machine) {
@@ -220,7 +220,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
         }
 
         try {
-          processEndpoint.stopProcessInstance(machine, processDefinitionsId, instanceId);
+          await processEndpoint.stopProcessInstance(machine, processDefinitionsId, instanceId);
         } catch (err) {
           if (logger) {
             logger.error(`Failed to stop instance on ${machine.name}: ${err}.`);

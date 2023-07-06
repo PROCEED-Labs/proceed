@@ -9,7 +9,7 @@ module.exports = {
   async setupMessaging(messaging, configModule, machineModule, logger) {
     // get default values from the config and machine info modules that shall be used when the caller of the publish function does not provide specific data
     // this should prevent that all modules that want to publish data have to import the config and machine info modules and get these values themselves
-    const { serverAddress, username, password, baseTopic } = await configModule.readConfig(
+    let { serverAddress, username, password, baseTopic } = await configModule.readConfig(
       'messaging'
     );
     const { id: machineId } = await machineModule.getMachineInformation(['id']);

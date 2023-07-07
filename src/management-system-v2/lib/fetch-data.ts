@@ -8,6 +8,15 @@ const fetchJSON = async <T>(url: string, options = {}) => {
   return response.json() as Promise<T>;
 };
 
+const fetchString = async (url: string, options = {}) => {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  return response.text();
+};
+
 // We use distinct types for the collection and individual resource responses
 // instead of `Item[]` because they might differ in what data they contain.
 
@@ -23,6 +32,16 @@ export const fetchProcesses = async () => {
   }));
 };
 
+export const fetchProcess = async (definitionId: string) => {
+  const url = `${BASE_URL}/process/${definitionId}`;
+  return await fetchJSON<Process>(url);
+};
+
+export const fetchProcessVersionBpmn = async (definitionId: string, version: number | string) => {
+  const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
+  return await fetchString(url);
+};
+
 /**
  * IMPORTANT
  *
@@ -31,7 +50,7 @@ export const fetchProcesses = async () => {
  * from the database schema (e.g. using Prisma).
  */
 
-export type Processes = {
+export type Process = {
   type: 'process';
   description: string;
   owner: string | null;
@@ -42,7 +61,10 @@ export type Processes = {
   createdOn: Date;
   lastEdited: Date;
   shared: boolean;
-  versions: [];
+  versions: { version: number | string; name: string; description: string }[];
   definitionId: string;
   definitionName: string;
-}[];
+  bpmn?: string;
+};
+
+export type Processes = Process[];

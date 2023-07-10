@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import { Button, Select } from 'antd';
+import { Button, Select, Row, Col } from 'antd';
 import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { useProcess } from '@/lib/process-queries';
 import { Toolbar, ToolbarGroup } from './toolbar';
@@ -37,7 +37,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   }
 
   const handleVersionSelectionChange = (value: number) => {
-    setSelectedVersion(value);
+    setSelectedVersion(value < 0 ? null : value);
   };
 
   const handlePropertiesPanelToggle = () => {
@@ -56,23 +56,28 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   return (
     <>
       <Toolbar>
-        <ToolbarGroup>
-          <Button>Test</Button>
-          <Select
-            defaultValue={-1}
-            options={versionSelection}
-            popupMatchSelectWidth={false}
-            onChange={handleVersionSelectionChange}
-          />
-        </ToolbarGroup>
-
-        <ToolbarGroup>
-          <Button>Test</Button>
-          <Button
-            icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-            onClick={handlePropertiesPanelToggle}
-          />
-        </ToolbarGroup>
+        <Row justify="space-between">
+          <Col>
+            <ToolbarGroup>
+              <Button>Test</Button>
+              <Select
+                defaultValue={-1}
+                options={versionSelection}
+                popupMatchSelectWidth={false}
+                onChange={handleVersionSelectionChange}
+              />
+            </ToolbarGroup>
+          </Col>
+          <Col>
+            <ToolbarGroup>
+              <Button>Test</Button>
+              <Button
+                icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                onClick={handlePropertiesPanelToggle}
+              />
+            </ToolbarGroup>
+          </Col>
+        </Row>
       </Toolbar>
       {showPropertiesPanel && !!selectedElement && (
         <PropertiesPanel selectedElement={selectedElement} />

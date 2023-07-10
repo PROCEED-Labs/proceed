@@ -15,7 +15,7 @@ export const useProcess = (definitionId: string) => {
   });
 };
 
-export const useProcessBpmn = (definitionId: string, version?: number | string) => {
+export const useProcessBpmn = (definitionId: string, version?: number | string | null) => {
   return useQuery({
     queryKey: ['process', definitionId, 'bpmn', version],
     queryFn: () => {

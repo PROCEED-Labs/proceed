@@ -12,6 +12,8 @@ const { enableMessaging } = require('../../../../../../FeatureFlags.js');
 const { publishCurrentInstanceState } = require('./publishStateUtils');
 // const Separator = require('./separator.js').default;
 
+const { teardownEngineStatusInformationPublishing } = require('./publishStateUtils');
+
 setupNeoEngine();
 
 /**
@@ -387,7 +389,9 @@ class Engine {
    * @returns {object} - the requested process instance
    */
   getInstance(instanceID) {
-    return this._instanceIdProcessMapping[instanceID].getInstanceById(instanceID);
+    if (this._instanceIdProcessMapping[instanceID]) {
+      return this._instanceIdProcessMapping[instanceID].getInstanceById(instanceID);
+    }
   }
 
   getInstanceBpmn(instanceId) {
@@ -406,8 +410,10 @@ class Engine {
    * @param {string} instanceID id of the instance to be deleted
    */
   deleteInstance(instanceID) {
+    teardownEngineStatusInformationPublishing(this, this.getInstanceInformation(instanceID));
     this.instanceIDs.splice(this.instanceIDs.indexOf(instanceID), 1);
     const process = this._instanceIdProcessMapping[instanceID];
+    delete this._instanceIdProcessMapping[instanceID];
     process.deleteInstanceById(instanceID);
     this.userTasks = this.userTasks.filter(
       (userTask) => userTask.processInstance.id !== instanceID
@@ -878,6 +884,15 @@ class Engine {
         break;
       default:
         throw new Error('Invalid state');
+    }
+  }
+
+  /**
+   * Clean up some data when the engine is supposed to be removed
+   */
+  destroy() {
+    for (const instanceId of this.instanceIDs) {
+      this.deleteInstance(instanceId);
     }
   }
 }

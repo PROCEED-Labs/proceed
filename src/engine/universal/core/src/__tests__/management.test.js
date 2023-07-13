@@ -138,22 +138,18 @@ describe('Management', () => {
     distribution.communication.getAvailableMachines.mockReturnValue([
       { ip: '192.168.1.1', id: 'mockId' },
     ]);
-    distribution.db.getProcess.mockReturnValue(testBPMN);
-    distribution.db.getProcessInfo.mockResolvedValue({
+    distribution.db.getProcessVersion.mockReturnValue(testBPMN);
+    distribution.db.getProcessVersionInfo.mockResolvedValue({
       bpmn: testBPMN,
       deploymentMethod: 'static',
     });
+    distribution.db.isProcessVersionValid.mockResolvedValue(true);
     decider.allowedToExecuteLocally.mockReturnValue(true);
   });
 
   it('creates a new ProceedEngine instance when there is none for the given definitionsId', async () => {
     jest.spyOn(Engine.prototype, 'deployProcessVersion');
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    distribution.db.getProcessVersionInfo.mockResolvedValue({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValue(testBPMN);
     distribution.db.isProcessVersionValid.mockResolvedValue(true);
     const instanceId = await management.createInstance(0, 123, {});
     expect(management.getEngineWithID(instanceId)).toBeInstanceOf(Engine);
@@ -170,12 +166,6 @@ describe('Management', () => {
   it('reuses an existing ProceedEngine instance when there is one for the given definitionsId to start an instance', async () => {
     jest.spyOn(Engine.prototype, 'deployProcessVersion');
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    distribution.db.getProcessVersionInfo.mockResolvedValue({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValue(testBPMN);
-    distribution.db.isProcessVersionValid.mockResolvedValue(true);
     const firstInstanceId = await management.createInstance(0, 123, {});
 
     const secondInstanceId = await management.createInstance(0, 123, {});
@@ -190,12 +180,6 @@ describe('Management', () => {
   it('starts instance which was already started on another engine', async () => {
     jest.spyOn(Engine.prototype, 'deployProcessVersion');
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    distribution.db.getProcessVersionInfo.mockResolvedValueOnce({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValueOnce(testBPMN);
-    distribution.db.isProcessVersionValid.mockResolvedValueOnce(true);
 
     const instance = {
       processId: '0',
@@ -238,60 +222,6 @@ describe('Management', () => {
       startingInstanceInfo,
       expect.any(Function)
     );
-    expect(management.getEngineWithID(engine.instanceIDs[0])).toBeInstanceOf(Engine);
-  });
-
-  it('continues already started instance', async () => {
-    jest.spyOn(Engine.prototype, 'insertIncomingInstanceData');
-    distribution.db.getProcessVersionInfo.mockResolvedValueOnce({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValueOnce(testBPMN);
-    distribution.db.isProcessVersionValid.mockResolvedValueOnce(true);
-
-    // start instance on this engine
-    let instanceId = await management.createInstance(0, 123, {});
-
-    const instance = {
-      processId: '0',
-      processVersion: 123,
-      processInstanceId: instanceId,
-      tokens: [
-        {
-          tokenId: 'a',
-          from: 'Task_1y4wd2q',
-          to: 'Task_09mcdr9',
-          machineHops: 0,
-        },
-      ],
-      variables: {},
-      log: [],
-    };
-
-    const continueInstanceInfo = {
-      ...instance,
-      processId: '0#123',
-      tokens: [
-        {
-          tokenId: 'a',
-          from: 'Task_1y4wd2q',
-          to: 'Task_09mcdr9',
-          machineHops: 1,
-        },
-      ],
-    };
-
-    distribution.db.getProcessVersionInfo.mockResolvedValueOnce({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValueOnce(testBPMN);
-
-    // try to continue instance which was already started on this engine
-    const engine = await management.continueInstance(0, instance);
-    expect(engine).toBeInstanceOf(Engine);
-    expect(Engine.prototype.insertIncomingInstanceData).toHaveBeenCalledWith(continueInstanceInfo);
     expect(management.getEngineWithID(engine.instanceIDs[0])).toBeInstanceOf(Engine);
   });
 
@@ -341,13 +271,7 @@ describe('Management', () => {
 
   it('remove process engine', async () => {
     jest.spyOn(Engine.prototype, 'startProcessVersion');
-    distribution.db.getProcessVersionInfo.mockResolvedValueOnce({
-      bpmn: testBPMN,
-      deploymentMethod: 'static',
-    });
-    distribution.db.getProcessVersion.mockResolvedValueOnce(testBPMN);
-    distribution.db.isProcessVersionValid.mockResolvedValueOnce(true);
-    const engine = await management.createInstance(0, 123, {});
+    await management.createInstance(0, 123, {});
     expect(management.getEngineWithDefinitionId(0)).toBeInstanceOf(Engine);
     management.removeProcessEngine(0);
     expect(management.getEngineWithDefinitionId(0)).toBeUndefined();

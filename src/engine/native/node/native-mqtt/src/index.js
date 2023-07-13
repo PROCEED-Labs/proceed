@@ -68,10 +68,11 @@ class NativeMQTT extends NativeModule {
     // (this will override the auth information in the connectionOptions if there is auth data in the url)
     connectionOptions.username = url.username || connectionOptions.username;
     connectionOptions.password = url.password || connectionOptions.password;
+
     // either keep the auth info in the url or add the info from the options object if there is none in the url
     // (will be used to identify a connection by user if there are mutliple connections to the same address)
-    url.username = url.username || connectionOptions.username;
-    url.password = url.password || connectionOptions.password;
+    url.username = url.username || connectionOptions.username || '';
+    url.password = url.password || connectionOptions.password || '';
     return url.toString();
   }
 
@@ -91,8 +92,8 @@ class NativeMQTT extends NativeModule {
 
     // check if there is already a connection for the given url
     // extendUrlAndConnectionOptions(...) will put the user auth into the url so we can differentiate between connections with different auth data to the same mqtt broker
-    if (this.connections[url]) {
-      return this.connections[url];
+    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
+      return this.connections[`${url}-${connectionOptions.clientId}`];
     }
 
     // if the connectionOptions contains a will message that is a stringified JSON (the mqtt library expect the payload to be a string) the JSON.parse at the start of the function will have transformed it to an object
@@ -113,7 +114,7 @@ class NativeMQTT extends NativeModule {
     client.subscriptionCallbacks = {};
 
     // store the client so we don't try to reconnect for future publish or subscribe calls
-    this.connections[url] = client;
+    this.connections[`${url}-${connectionOptions.clientId}`] = client;
 
     return client;
   }
@@ -130,7 +131,7 @@ class NativeMQTT extends NativeModule {
     url = this._extendUrlAndConnectionOptions(url, connectionOptions);
 
     // get the connection that was stored for this address and login info combination
-    const client = this.connections[url];
+    const client = this.connections[`${url}-${connectionOptions.clientId}`];
 
     if (client) {
       // eventNames includes message if there are callbacks for the message event which are added by subscriptions
@@ -139,7 +140,7 @@ class NativeMQTT extends NativeModule {
       if (forceClose || (!client.keepOpen && !hasSubscriptions)) {
         // close the connection and remove it
         await client.end();
-        delete this.connections[url];
+        delete this.connections[`${url}-${connectionOptions.clientId}`];
       }
     }
   }
@@ -203,14 +204,14 @@ class NativeMQTT extends NativeModule {
    * @param {String} originalUrl the url that was given when the subscription was made
    * @param {String} topic the topic that was subscribed to with the subscriptions
    * @param {String} subscriptionId identifier to uniquely identify the original subscription (we might have multiple subscriptions to the same topic on the same broker)
-   * @param {String} originalConnectionOptions the connection options given with the subscription (username and password)
+   * @param {String} originalConnectionOptions the connection options given with the subscription (username, password and clientId)
    */
   async unsubscribe(originalUrl, topic, subscriptionId, originalConnectionOptions) {
     let connectionOptions = JSON.parse(originalConnectionOptions || '{}');
     let url = this._extendUrlAndConnectionOptions(originalUrl, connectionOptions);
 
-    if (this.connections[url]) {
-      const connection = this.connections[url];
+    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
+      const connection = this.connections[`${url}-${connectionOptions.clientId}`];
       if (
         !connection.subscriptionCallbacks[topic] ||
         !connection.subscriptionCallbacks[topic][subscriptionId]

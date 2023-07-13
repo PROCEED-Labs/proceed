@@ -110,6 +110,10 @@ describe('ProceedEngine', () => {
     expect(onStarted).toHaveBeenCalled();
     expect(onTokenEnded).toHaveBeenCalledTimes(1);
     expect(onEnded).toHaveBeenCalled();
+    expect(distribution.db.archiveInstance).toHaveBeenCalled();
+
+    // the instance should be removed from the engine after it has been completed
+    expect(engine.instanceIDs.length).toBe(0);
   });
 
   it('contains added information from proceed in token and logs for executed process', async () => {
@@ -120,7 +124,7 @@ describe('ProceedEngine', () => {
 
     await hasEnded;
 
-    const instanceInformation = engine.getInstanceInformation(engine.instanceIDs[0]);
+    const instanceInformation = distribution.db.archiveInstance.mock.calls[0][2];
 
     // state of process
     expect(instanceInformation.instanceState).toEqual(['ENDED']);
@@ -203,7 +207,7 @@ describe('ProceedEngine', () => {
     expect(() => {
       engine.startProcessVersion(123, {}, onStarted, onEnded2);
     }).not.toThrow();
-    expect(engine.instanceIDs.length).toBe(2);
+    expect(engine.instanceIDs.length).toBe(1);
 
     await hasEnded2;
   });
@@ -229,11 +233,11 @@ describe('ProceedEngine', () => {
     await engine.deployProcessVersion(0, 456);
     const onStarted2 = jest.fn();
     engine.startProcessVersion(456, {}, onStarted2, onEnded2);
-    expect(engine.instanceIDs.length).toBe(2);
+    expect(engine.instanceIDs.length).toBe(1);
 
     await hasEnded2;
 
-    expect(engine.instanceIDs.length).toBe(2);
+    expect(engine.instanceIDs.length).toBe(0);
 
     expect(Object.keys(engine._versionProcessMapping)).toEqual(['123', '456']);
 
@@ -296,7 +300,7 @@ describe('ProceedEngine', () => {
 
     await hasEnded;
 
-    const instanceInformation = engine.getInstanceInformation(instanceID);
+    const instanceInformation = distribution.db.archiveInstance.mock.calls[0][2];
     expect(instanceInformation.variables).toStrictEqual({
       a: {
         value: 2,
@@ -342,10 +346,18 @@ describe('ProceedEngine', () => {
     };
 
     await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, instance, onStarted, onEnded);
+    engine.startProcessVersion(
+      123,
+      {},
+      instance,
+      () => {
+        expect(engine.instanceIDs).toStrictEqual(['0-123']);
+      },
+      onEnded
+    );
 
     await hasEnded;
 
-    expect(engine.instanceIDs).toStrictEqual(['0-123']);
+    expect(engine.instanceIDs).toStrictEqual([]);
   });
 });

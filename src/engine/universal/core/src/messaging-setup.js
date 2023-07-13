@@ -26,7 +26,7 @@ module.exports = {
           clientId: machineId + (username ? `|${username}` : ''),
           // setting up a mqtt-specific mechanism that will automatically inform all subscribed clients when the connection between the engine and the mqtt server is closed unexpectedly
           will: {
-            topic: `${baseTopic}engine/${machineId}/status`,
+            topic: `${baseTopic}proceed-pms/engine/${machineId}/status`,
             payload: { running: false, version: proceedVersion },
             qos: 1,
             retain: true,
@@ -43,7 +43,7 @@ module.exports = {
       try {
         // publish that the engine is online
         await messaging.publish(
-          `${baseTopic}engine/${machineId}/status`,
+          `${baseTopic}proceed-pms/engine/${machineId}/status`,
           { running: true, version: proceedVersion },
           undefined,
           {

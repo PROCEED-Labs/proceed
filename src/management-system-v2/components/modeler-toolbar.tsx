@@ -4,24 +4,54 @@ import React, { useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import { Button, Select, Row, Col } from 'antd';
-import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
-import { useProcess } from '@/lib/process-queries';
+import {
+  Select,
+  FloatButton,
+  Row,
+  Col,
+  Space,
+  Tooltip,
+  Button,
+  Dropdown,
+  message,
+  Badge,
+} from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
+import type { MenuProps } from 'antd';
+
+import Icon, {
+  QuestionCircleOutlined,
+  DownOutlined,
+  FormOutlined,
+  ExportOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  SettingOutlined,
+  PlusOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
+
+import { SvgXML, SvgShare } from '@/components/svg';
 
 import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
+import { useProcess } from '@/lib/process-queries';
 
 type ModelerToolbarProps = {};
 
 const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
+  const svgXML = <Icon component={SvgXML} />;
+  const svgShare = <Icon component={SvgShare} />;
+
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
+
+  const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
   const { isSuccess, data: processData } = useProcess(processId);
@@ -36,22 +66,35 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
       : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
   }
 
-  const handleVersionSelectionChange = (value: number) => {
-    setSelectedVersion(value < 0 ? null : value);
-  };
-
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  let versionSelection: { value: number | string; label: string }[] = [];
+  let versionSelection: MenuProps['items'] = [];
   if (isSuccess) {
     versionSelection = processData.versions.map(({ version, name, description }) => ({
-      value: version,
+      key: version,
       label: name,
     }));
   }
-  versionSelection.unshift({ value: -1, label: '(Latest Version)' });
+  versionSelection.unshift({ key: -1, label: 'Latest Version' });
+  const handleVersionSelectionChange: MenuProps['onClick'] = (e) => {
+    setSelectedVersion(+e.key < 0 ? null : +e.key);
+    const newIndex = versionSelection.findIndex((item) => item.key === +e.key);
+    setIndex(newIndex);
+  };
+
+  const menuProps = {
+    items: versionSelection.map((e) => {
+      return {
+        key: `${e.key}`,
+        label: `${e.label}`,
+      };
+    }),
+    onClick: handleVersionSelectionChange,
+  };
+
+  const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
 
   return (
     <>
@@ -59,28 +102,58 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
         <Row justify="space-between">
           <Col>
             <ToolbarGroup>
-              <Button>Test</Button>
+              {/*<Button>Test</Button>
               <Select
                 defaultValue={-1}
                 options={versionSelection}
                 popupMatchSelectWidth={false}
                 onChange={handleVersionSelectionChange}
-              />
+  />*/}
+
+              <Dropdown.Button icon={<DownOutlined />} menu={menuProps}>
+                {versionSelection[index].label}
+                {/* TODO: */}
+                {/* Maybe better with Zustand than useState for index ? */}
+                {/* {selectedVersion} */}
+              </Dropdown.Button>
             </ToolbarGroup>
           </Col>
           <Col>
             <ToolbarGroup>
-              <Button>Test</Button>
+              {/* <Button>Test</Button>
               <Button
                 icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                 onClick={handlePropertiesPanelToggle}
-              />
+              /> */}
+              <Tooltip title="Edit Process Constraints">
+                <Button icon={<FormOutlined />}></Button>
+              </Tooltip>
+              <Tooltip title="Show XML">
+                <Button icon={svgXML}></Button>
+              </Tooltip>
+              <Tooltip title="Export">
+                <Button icon={<ExportOutlined />}></Button>
+              </Tooltip>
+              <Tooltip title="Hide Non-Executeable Elements">
+                <Button icon={<EyeOutlined />}></Button>
+              </Tooltip>
+              <Tooltip
+                title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
+              >
+                <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
+              </Tooltip>
+              <Tooltip title="Share">
+                <Button icon={svgShare}></Button>
+              </Tooltip>
+              <Tooltip title="Create New Version">
+                <Button icon={<PlusOutlined />}></Button>
+              </Tooltip>
             </ToolbarGroup>
           </Col>
         </Row>
       </Toolbar>
       {showPropertiesPanel && !!selectedElement && (
-        <PropertiesPanel selectedElement={selectedElement} />
+        <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )}
     </>
   );

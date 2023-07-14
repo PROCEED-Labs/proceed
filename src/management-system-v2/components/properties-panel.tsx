@@ -32,6 +32,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
     const modeling = modeler!.get('modeling') as Modeling;
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
+    setName('');
   };
 
   const propPanel = (
@@ -47,7 +48,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
       <Space direction="vertical" size="large">
         <Space direction="vertical" size="large">
           <b>General</b>
-          <Input addonBefore="Name" size="large" placeholder={name} disabled />
+          <Input
+            addonBefore="Name"
+            size="large"
+            placeholder={selectedElement.businessObject.name}
+            value={name}
+            // onChange={(e) => setName(e.target.value)}
+            onBlur={handleNameChange}
+            disabled={selectedElement.type === 'bpmn:Process'}
+          />
           <Input
             addonBefore="ID &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
             size="large"
@@ -80,7 +89,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
             placeholder="Planned Duration"
           />
         </Space>
-        {true && (
+        {selectedElement.type !== 'bpmn:Process' && (
           <Space direction="vertical" size="large">
             <b>Colors</b>
             <Space>
@@ -127,7 +136,53 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
                   },
                 ]}
               />
-              <span>Pick a colour</span>
+              <span>Background Colour</span>
+            </Space>
+            <Space>
+              <ColorPicker
+                presets={[
+                  {
+                    label: 'Recommended',
+                    colors: [
+                      '#000000',
+                      '#000000E0',
+                      '#000000A6',
+                      '#00000073',
+                      '#00000040',
+                      '#00000026',
+                      '#0000001A',
+                      '#00000012',
+                      '#0000000A',
+                      '#00000005',
+                      '#F5222D',
+                      '#FA8C16',
+                      '#FADB14',
+                      '#8BBB11',
+                      '#52C41A',
+                      '#13A8A8',
+                      '#1677FF',
+                      '#2F54EB',
+                      '#722ED1',
+                      '#EB2F96',
+                      '#F5222D4D',
+                      '#FA8C164D',
+                      '#FADB144D',
+                      '#8BBB114D',
+                      '#52C41A4D',
+                      '#13A8A84D',
+                      '#1677FF4D',
+                      '#2F54EB4D',
+                      '#722ED14D',
+                      '#EB2F964D',
+                    ],
+                  },
+                  {
+                    label: 'Recent',
+                    colors: [],
+                  },
+                ]}
+              />
+              <span>Stroke Colour</span>
             </Space>
           </Space>
         )}
@@ -137,15 +192,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
 
   return (
     <>
-      <Card
+      {/* <Card
         title={selectedElement.id}
         style={{ position: 'absolute', top: 150, right: 20, zIndex: 20 }}
         onClick={(event) => event.preventDefault()}
       >
         Name:{' '}
         <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameChange} />
-      </Card>
-      {/* {propPanel} */}
+      </Card> */}
+      {propPanel}
     </>
   );
 };

@@ -18,7 +18,7 @@ class Messaging extends System {
     // the password the engine will use for authentication if no other is given
     this._password = undefined;
 
-    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested
+    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested (this consists of the base topic defined in the engine messaging config and the subtopic "proceed-pms" => [config-base-topic]/proceed-pms)
     this._baseTopic = '';
 
     // the machineId that identifies the engine and is used for the default topic prefix ([baseTopic]/engine/[machineId]/[topic])
@@ -42,6 +42,7 @@ class Messaging extends System {
    * @param {String} defaultUsername
    * @param {String} defaultPassword
    * @param {String} machineId
+   * @param {String} baseTopic // see the _baseTopic member variable
    */
   async init(defaultAddress, defaultUsername, defaultPassword, machineId, baseTopic, logger) {
     this._defaultMessagingServerAddress = defaultAddress;
@@ -168,8 +169,8 @@ class Messaging extends System {
    * @param {Object} messageOptions options that should be used when publishing the message
    * @param {Number} [messageOptions.qos] mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
    * @param {Boolean} [messageOptions.retain] mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
-   * @param {Boolean} [messageOptions.prependBaseTopic] if set to true will prepend [baseTopic]/proceed-pms to the given topic so the message is grouped into a topic with others using the base topic
-   * @param {Boolean} [messageOptions.prependEngineTopic] if set to true will prepend [baseTopic]/proceed-pms/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Boolean} [messageOptions.prependBaseTopic] if set to true will prepend [baseTopic] to the given topic so the message is grouped into a topic with others using the base topic
+   * @param {Boolean} [messageOptions.prependEngineTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
    * @param {String} [connectionOptions.username] the username to use when connecting
    * @param {String} [connectionOptions.password] the password to use when connecting
@@ -211,12 +212,12 @@ class Messaging extends System {
       });
     });
 
-    // prepends the default topic path "[baseTopic]/proceed-pms/engine/[engine-id]" to the topic
+    // prepends the default topic path "[baseTopic]/engine/[engine-id]" to the topic
     // this way all modules in the engine can just call publish with prependEngineTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
     if (messageOptions.prependEngineTopic) {
-      topic = `${this._baseTopic}proceed-pms/engine/${this._machineId}/${topic}`;
+      topic = `${this._baseTopic}/engine/${this._machineId}/${topic}`;
     } else if (messageOptions.prependBaseTopic) {
-      topic = `${this._baseTopic}proceed-pms/${topic}`;
+      topic = `${this._baseTopic}/${topic}`;
     }
     delete messageOptions.prependEngineTopic;
     delete messageOptions.prependBaseTopic;

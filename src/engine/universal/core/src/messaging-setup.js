@@ -16,6 +16,8 @@ module.exports = {
 
     if (baseTopic && !baseTopic.endsWith('/')) baseTopic += '/';
 
+    baseTopic += 'proceed-pms';
+
     // if a default server is defined try to establish a connection
     if (serverAddress) {
       try {
@@ -26,7 +28,7 @@ module.exports = {
           clientId: machineId + (username ? `|${username}` : ''),
           // setting up a mqtt-specific mechanism that will automatically inform all subscribed clients when the connection between the engine and the mqtt server is closed unexpectedly
           will: {
-            topic: `${baseTopic}proceed-pms/engine/${machineId}/status`,
+            topic: `${baseTopic}/engine/${machineId}/status`,
             payload: { running: false, version: proceedVersion },
             qos: 1,
             retain: true,
@@ -43,7 +45,7 @@ module.exports = {
       try {
         // publish that the engine is online
         await messaging.publish(
-          `${baseTopic}proceed-pms/engine/${machineId}/status`,
+          `${baseTopic}/engine/${machineId}/status`,
           { running: true, version: proceedVersion },
           undefined,
           {

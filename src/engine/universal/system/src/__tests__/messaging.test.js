@@ -219,12 +219,12 @@ describe('Tests for the message interface of the dispatcher', () => {
       ]);
     });
 
-    it('will prefix "[baseTopic]/proceed-pms/engine/[engine-id]" to the given topic if requested', async () => {
+    it('will prefix "[baseTopic]/engine/[engine-id]" to the given topic if requested', async () => {
       messaging._username = 'user';
       messaging._password = 'password123';
       // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
       messaging._machineId = 'engineId';
-      messaging._baseTopic = 'base-topic/';
+      messaging._baseTopic = 'base-topic';
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
@@ -236,7 +236,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         'messaging_publish',
         [
           'mqtt://localhost:1883',
-          'base-topic/proceed-pms/engine/engineId/test/123',
+          'base-topic/engine/engineId/test/123',
           'Hello World',
           '{}',
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
@@ -244,12 +244,12 @@ describe('Tests for the message interface of the dispatcher', () => {
       ]);
     });
 
-    it('will prefix "[baseTopic]/proceed-pms" to the given topic if requested', async () => {
+    it('will prefix "[baseTopic]" to the given topic if requested', async () => {
       messaging._username = 'user';
       messaging._password = 'password123';
       // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
       messaging._machineId = 'engineId';
-      messaging._baseTopic = 'base-topic/';
+      messaging._baseTopic = 'base-topic';
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
@@ -261,7 +261,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         'messaging_publish',
         [
           'mqtt://localhost:1883',
-          'base-topic/proceed-pms/test/123',
+          'base-topic/test/123',
           'Hello World',
           '{}',
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,

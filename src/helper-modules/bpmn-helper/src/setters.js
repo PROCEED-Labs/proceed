@@ -281,6 +281,55 @@ async function addConstraintsToElement(element, cons) {
 }
 
 /**
+ * Update the performer info of an element
+ *
+ * @param {Object} element the element to update
+ * @param {Array} performers the performer data to emplace in the element
+ */
+async function updatePerformersOnElement(element, performers) {
+  if (element) {
+    // create the moddle representation for the performers
+    const formalExpression = moddle.create('bpmn:Expression', {
+      body: JSON.stringify(performers),
+    });
+    const resourceAssignmentExpression = moddle.create('bpmn:ResourceAssignmentExpression', {
+      expression: formalExpression,
+    });
+
+    const potentialOwner = moddle.create('bpmn:PotentialOwner', {
+      resourceAssignmentExpression,
+    });
+
+    // add/update the performers of the element
+    if (!element.resources) {
+      element.resources = [];
+    }
+
+    // remove the current performers and add the new ones (if there are new performers)
+    element.resources = element.resources.filter(
+      (resource) => resource.$type !== 'bpmn:PotentialOwner'
+    );
+
+    if (performers.length) {
+      element.resources = [...element.resources, potentialOwner];
+    }
+  }
+}
+
+/**
+ * Update the performer info of an element in a bpmn file/object
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {String} elementId
+ * @param {Array} performers the performer data to emplace in the element
+ */
+async function updatePerformersOnElementById(bpmn, elementId, performers) {
+  return await manipulateElementById(bpmn, elementId, (element) => {
+    updatePerformersOnElement(element, performers);
+  });
+}
+
+/**
  * Adds the given constraints to the bpmn element with the given id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -518,4 +567,6 @@ module.exports = {
   removeColorFromAllElements,
   addDocumentation,
   addDocumentationToProcessObject,
+  updatePerformersOnElement,
+  updatePerformersOnElementById,
 };

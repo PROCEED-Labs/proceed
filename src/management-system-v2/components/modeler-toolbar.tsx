@@ -80,15 +80,23 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   versionSelection.unshift({ key: -1, label: 'Latest Version' });
   const handleVersionSelectionChange: MenuProps['onClick'] = (e) => {
     setSelectedVersion(+e.key < 0 ? null : +e.key);
-    const newIndex = versionSelection.findIndex((item) => item.key === +e.key);
-    setIndex(newIndex);
+    message.info(
+      `Loading ${
+        +e.key < 0
+          ? versionSelection![0]?.label
+          : versionSelection!.find((item) => item!.key == e?.key)?.label
+      }...`
+    );
+    // TODO:
+    // const newIndex = versionSelection!.findIndex((item) => item!.key === +e.key);
+    // setIndex(newIndex);
   };
 
   const menuProps = {
     items: versionSelection.map((e) => {
       return {
-        key: `${e.key}`,
-        label: `${e.label}`,
+        key: `${e!.key}`,
+        label: `${e!.label}`,
       };
     }),
     onClick: handleVersionSelectionChange,
@@ -111,10 +119,12 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   />*/}
 
               <Dropdown.Button icon={<DownOutlined />} menu={menuProps}>
-                {versionSelection[index].label}
+                {/* {versionSelection[index].label} */}
+                {versionSelection &&
+                  (selectedVersion != null
+                    ? versionSelection!.find((item) => item!.key == selectedVersion)?.label
+                    : versionSelection[0].label)}
                 {/* TODO: */}
-                {/* Maybe better with Zustand than useState for index ? */}
-                {/* {selectedVersion} */}
               </Dropdown.Button>
             </ToolbarGroup>
           </Col>
@@ -149,12 +159,19 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
                 <Button icon={<PlusOutlined />}></Button>
               </Tooltip>
             </ToolbarGroup>
+            {showPropertiesPanel && <div style={{ width: '650px' }}></div>}
           </Col>
+          {/* {showPropertiesPanel && <Col></Col>} */}
+          {showPropertiesPanel && selectedElement && (
+            <>
+              <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
+            </>
+          )}
         </Row>
       </Toolbar>
-      {showPropertiesPanel && !!selectedElement && (
+      {/* {showPropertiesPanel && selectedElement && (
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
-      )}
+      )} */}
     </>
   );
 };

@@ -2,6 +2,9 @@ jest.mock('@proceed/system', () => {
   const original = jest.requireActual('@proceed/system');
 
   return {
+    messaging: {
+      publish: jest.fn(),
+    },
     data: {
       ...original.data,
       read: jest.fn(),
@@ -17,6 +20,15 @@ jest.mock('@proceed/system', () => {
 });
 
 jest.mock('@proceed/machine', () => ({
+  logging: {
+    getLogger: jest.fn().mockReturnValue({
+      info: jest.fn(),
+      debug: jest.fn,
+      error: jest.fn(),
+      warn: jest.fn(),
+      trace: jest.fn(),
+    }),
+  },
   information: {
     getMachineInformation: jest.fn().mockResolvedValue({ id: 'mockId', ip: 'mockIp' }),
   },

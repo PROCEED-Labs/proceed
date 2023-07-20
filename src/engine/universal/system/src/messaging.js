@@ -171,6 +171,7 @@ class Messaging extends System {
    * @param {Boolean} [messageOptions.retain] mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
    * @param {Boolean} [messageOptions.prependBaseTopic] if set to true will prepend [baseTopic] to the given topic so the message is grouped into a topic with others using the base topic
    * @param {Boolean} [messageOptions.prependEngineTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Boolean} [messageOptions.retain] if the message should be stored for the topic so that new subscribers automatically get the information
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
    * @param {String} [connectionOptions.username] the username to use when connecting
    * @param {String} [connectionOptions.password] the password to use when connecting

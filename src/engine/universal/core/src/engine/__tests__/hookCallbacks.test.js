@@ -9,6 +9,7 @@ jest.mock('../processForwarding.js');
 
 const { getNewInstanceHandler } = require('../hookCallbacks.js');
 const { db } = require('@proceed/distribution');
+const { getElementsByTagName, getMetaDataFromElement } = require('@proceed/bpmn-helper');
 const { abortInstanceOnNetwork } = require('../processForwarding.js');
 
 const { enableInterruptedInstanceRecovery } = require('../../../../../../../FeatureFlags.js');
@@ -42,6 +43,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       userTasks: [],
       _versionProcessMapping: {},
       _instanceIdProcessMapping: {},
+      _versionBpmnMapping: {},
       getInstanceInformation: jest.fn().mockReturnValue({}),
       instanceEventHandlers: { onStarted, onEnded, onTokenEnded },
       _management: {
@@ -104,8 +106,8 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       log: jest.fn().mockImplementation(function (log) {
         this.logCallback(log);
       }),
-      ended: jest.fn().mockImplementation(function () {
-        this.endedCallback();
+      ended: jest.fn().mockImplementation(async function () {
+        await this.endedCallback();
       }),
       aborted: jest.fn().mockImplementation(function () {
         this.abortedCallback();
@@ -136,6 +138,9 @@ describe('Test for the function that sets up callbacks for the different lifecyc
 
     instanceHandler = getNewInstanceHandler(mockEngine, undefined);
 
+    getElementsByTagName.mockReturnValue([{}]);
+    getMetaDataFromElement.mockReturnValue({});
+
     await instanceHandler(mockNewInstance);
     mockEngine._log.info.mockReset();
   });
@@ -161,14 +166,14 @@ describe('Test for the function that sets up callbacks for the different lifecyc
 
     describe('instance ended', () => {
       it('logs end of instance, calls optional external onEnded, archives instance', async () => {
-        mockNewInstance.ended();
+        await mockNewInstance.ended();
 
         expect(mockEngine._log.info).toHaveBeenCalled();
         expect(onEnded).toHaveBeenCalled();
         expect(mockEngine.archiveInstance).toHaveBeenCalledWith('newInstanceId');
       });
 
-      it('completed the call activity in the calling instance if this instance was started to execute that call activity', () => {
+      it('completed the call activity in the calling instance if this instance was started to execute that call activity', async () => {
         mockNewInstance.callingInstance = 'otherInstance';
         mockNewInstance.getVariables = jest.fn().mockReturnValue({ some: 'value' });
 
@@ -195,7 +200,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
 
         mockEngine._management.getEngineWithID.mockReturnValueOnce(mockOtherEngine);
 
-        mockNewInstance.ended();
+        await mockNewInstance.ended();
 
         expect(mockCallingInstance.completeActivity).toHaveBeenCalledWith(
           'targetCallActivityId',

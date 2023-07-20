@@ -69,7 +69,16 @@
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <div>
-                  <v-treeview :items="adaptationItems" item-key="name"></v-treeview>
+                  <v-treeview :items="adaptationItems" item-key="id">
+                    <template v-slot:label="{ item }">
+                      <div class="d-flex">
+                        <span style="white-space: pre">{{ item.name }}: </span>
+                        <span style="white-space: normal">
+                          {{ item.value }}
+                        </span>
+                      </div>
+                    </template>
+                  </v-treeview>
                 </div>
               </v-expansion-panel-content>
             </v-expansion-panel>
@@ -81,7 +90,16 @@
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <div>
-                  <v-treeview :items="variableItems" item-key="name"></v-treeview>
+                  <v-treeview :items="variableItems" item-key="id">
+                    <template v-slot:label="{ item }">
+                      <div class="d-flex">
+                        <span style="white-space: pre">{{ item.name }}: </span>
+                        <span style="white-space: normal">
+                          {{ item.value }}
+                        </span>
+                      </div>
+                    </template>
+                  </v-treeview>
                 </div>
               </v-expansion-panel-content>
             </v-expansion-panel>
@@ -96,7 +114,7 @@
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <div>
-                  <v-treeview :items="tokenItems" item-key="value" :open.sync="openedTokens">
+                  <v-treeview :items="tokenItems" item-key="id" :open.sync="openedTokens">
                     <template v-slot:label="{ item }">
                       <div class="d-flex">
                         <span style="white-space: pre">{{ item.name }}: </span>
@@ -117,7 +135,16 @@
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <div>
-                  <v-treeview :items="logItems" item-key="name"></v-treeview>
+                  <v-treeview :items="logItems" item-key="id">
+                    <template v-slot:label="{ item }">
+                      <div class="d-flex">
+                        <span style="white-space: pre">{{ item.name }}: </span>
+                        <span style="white-space: normal">
+                          {{ item.value }}
+                        </span>
+                      </div>
+                    </template>
+                  </v-treeview>
                 </div>
               </v-expansion-panel-content>
             </v-expansion-panel>
@@ -210,10 +237,11 @@ export default {
       if (this.selectedElement && this.instance) {
         const tokensTreeViewStructure = this.tokensOnSelectedElement.map((token) => {
           return {
+            id: `Token ID (${token.tokenId})`,
             name: 'Token ID',
             value: token.tokenId,
             // get every entry of token expect for its tokenID to prevent redundancy
-            children: this.transformInfoIntoTreeViewStructure(token).filter(
+            children: this.transformInfoIntoTreeViewStructure(token, token.tokenId).filter(
               ({ name }) => name !== 'tokenId'
             ),
           };
@@ -236,6 +264,7 @@ export default {
         const variablesTreeViewStructure = [];
         Object.entries(this.instance.variables).forEach(([key, value]) => {
           variablesTreeViewStructure.push({
+            id: key,
             name: key,
             value: value.value,
             children: this.transformInfoIntoTreeViewStructure(value),
@@ -247,18 +276,23 @@ export default {
     },
   },
   methods: {
-    transformInfoIntoTreeViewStructure(info) {
+    transformInfoIntoTreeViewStructure(info, itemIdAddition) {
       const treeViewToken = [];
 
       Object.entries(info).forEach(([key, value]) => {
         const namePrefix = Array.isArray(info) ? 'Entry ' : '';
         if (value && typeof value === 'object' && Object.keys(value).length > 0) {
           treeViewToken.push({
+            id: itemIdAddition ? `${key} (${itemIdAddition})` : key,
             name: `${namePrefix}${key}`,
             children: this.transformInfoIntoTreeViewStructure(value),
           });
         } else {
-          treeViewToken.push({ name: `${namePrefix}${key}`, value: value });
+          treeViewToken.push({
+            id: itemIdAddition ? `${key} (${itemIdAddition})` : key,
+            name: `${namePrefix}${key}`,
+            value: value,
+          });
         }
       });
 
@@ -274,9 +308,9 @@ export default {
       this.panels = [tokenPanelIndex];
       // open the token(s)
       if (Array.isArray(tokenIds)) {
-        this.openedTokens = tokenIds.map((tokenId) => tokenId);
+        this.openedTokens = tokenIds.map((tokenId) => `Token ID (${tokenId})`);
       } else {
-        this.openedTokens = [tokenIds];
+        this.openedTokens = [`Token ID (${tokenIds})`];
       }
     },
   },
@@ -305,7 +339,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style scoped>
 .v-treeview-node__root {
   min-height: 24px !important;
 }
@@ -314,7 +348,8 @@ export default {
   min-height: 40px !important;
 }
 
-.v-treeview-node__toggle:not(div.v-treeview-node__children .v-treeview-node__toggle) {
+#activity-advanced-token-panel
+  >>> .v-treeview-node__toggle:not(div.v-treeview-node__children .v-treeview-node__toggle) {
   display: none !important;
 }
 </style>

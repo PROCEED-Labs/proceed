@@ -315,7 +315,7 @@ export default {
           await this.$store.dispatch('processStore/addVersion', {
             id: this.storedInstance.processId,
             bpmn: this.storedDeployment.versions.find(
-              ({ version }) => version === this.storedInstance.processVersion
+              ({ version }) => version == this.storedInstance.processVersion
             ).bpmn,
           });
         }
@@ -403,7 +403,9 @@ export default {
     async restartProject() {
       this.showRestartDialog = false;
       try {
-        await engineNetworkInterface.startInstance(this.project.id, this.latestVersion);
+        // remove the deployment and redeploy to get a completely clean project state
+        await this.deleteDeployment();
+        await this.startProject();
         this.popupData.body = 'Project restarted successfully';
         this.popupData.color = 'success';
       } catch (err) {

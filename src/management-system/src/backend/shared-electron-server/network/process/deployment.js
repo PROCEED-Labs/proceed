@@ -51,6 +51,8 @@ import {
   getProcessUserTasksHtml,
 } from './helpers.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags.js';
+
 /**
  * Will return the complete data of a process version (bpmn, html)
  * The information can either come from the local storage or from engines if the process version is not known locally but deployed to some known engines
@@ -306,12 +308,12 @@ async function sendImages(processDefinitionsId, machineInfo, dynamic) {
  * @param {bool} dynamic indicates if the html is to be send to a singular machine or multiple ones
  */
 async function sendUserTaskHTML(processDefinitionsId, bpmn, machineInfo, dynamic) {
-  // don't need to send html when 5thIndustry is used as the user task application
   const bpmnObj = await toBpmnObject(bpmn);
   const [processElement] = getElementsByTagName(bpmnObj, 'bpmn:Process');
   const metaData = getMetaDataFromElement(processElement);
 
-  if (metaData['_5i-Inspection-Plan-ID']) {
+  // don't need to send html when 5thIndustry is used as the user task application
+  if (enable5thIndustryIntegration && metaData['_5i-Inspection-Plan-ID']) {
     // early exit
     return;
   }
@@ -439,6 +441,7 @@ export async function deployProcessVersion(processDefinitionsId, version) {
 }
 
 export async function importProcess(processDefinitionsId) {
+  let wasPartiallyAdded = false;
   try {
     const deployment = getDeployments()[processDefinitionsId];
 
@@ -546,21 +549,24 @@ export async function importProcess(processDefinitionsId) {
       // add the process with the editable bpmn
       // TODO: this process should most likely be stored as being owned by the user that triggered the import
       await addProcess({ bpmn });
+      // set the partially added flag so we can roll back if importing the other information fails
+      wasPartiallyAdded = true;
       // save the html of the converted version as the editable html
-      Object.entries(changedFileNames).forEach(([versioned, unversioned]) => {
-        saveProcessUserTask(processDefinitionsId, unversioned, unknownUserTasks[versioned]);
+      await asyncForEach(Object.entries(changedFileNames), async ([versioned, unversioned]) => {
+        await saveProcessUserTask(processDefinitionsId, unversioned, unknownUserTasks[versioned]);
       });
+
       // TODO: image versioning?
     }
 
     // save all unknown versions
     for (const version of unknownVersions) {
-      addProcessVersion(processDefinitionsId, version.bpmn);
+      await addProcessVersion(processDefinitionsId, version.bpmn);
     }
 
     // save all unknown user task files
     for (const [fileName, html] of Object.entries(unknownUserTasks)) {
-      saveProcessUserTask(processDefinitionsId, fileName, html);
+      await saveProcessUserTask(processDefinitionsId, fileName, html);
     }
 
     // save all unknown image files
@@ -569,6 +575,12 @@ export async function importProcess(processDefinitionsId) {
     }
   } catch (err) {
     logger.debug(`Failed to import process (id: ${processDefinitionsId}). Reason: ${err.message}`);
+
+    // remove the partially imported process information if the import could not be completed succesfully
+    if (wasPartiallyAdded) {
+      removeProcess(processDefinitionsId);
+    }
+
     throw err;
   }
 }

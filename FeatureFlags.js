@@ -36,6 +36,9 @@ module.exports = {
   // Features needed to send data to messaging servers (currently only using mqtt)
   enableMessaging: true,
 
+  // Features that provide functionality supporting 5thIndustry use cases
+  enable5thIndustryIntegration: false,
+
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

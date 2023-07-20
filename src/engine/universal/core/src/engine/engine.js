@@ -7,10 +7,10 @@ const { getNewInstanceHandler } = require('./hookCallbacks.js');
 const { getShouldPassToken } = require('./shouldPassToken.js');
 const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
 const { getProcessIds } = require('@proceed/bpmn-helper');
-// const Separator = require('./separator.js').default;
 
 const { enableMessaging } = require('../../../../../../FeatureFlags.js');
-const { sendProcessStepsInfoTo5thIndustry } = require('./5thIndustry.js');
+const { publishCurrentInstanceState } = require('./publishStateUtils');
+// const Separator = require('./separator.js').default;
 
 setupNeoEngine();
 
@@ -184,15 +184,6 @@ class Engine {
     let resolver;
     const instanceCreatedPromise = new Promise((resolve) => {
       resolver = resolve;
-
-      if (enableMessaging) {
-        sendProcessStepsInfoTo5thIndustry(
-          this.definitionId,
-          version,
-          this._versionBpmnMapping[version],
-          this._log
-        );
-      }
     });
 
     this.originalInstanceState = instance;
@@ -203,6 +194,7 @@ class Engine {
         if (instance && instance.callingInstance) {
           newInstance.callingInstance = instance.callingInstance;
         }
+
         if (typeof onStarted === 'function') {
           onStarted(newInstance);
         }
@@ -351,6 +343,11 @@ class Engine {
         uT.id === userTaskID &&
         (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
+
+    const token = this.getToken(instanceID, userTask.tokenId);
+    // remember the changes made by this user task invocation
+    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.milestones = { ...token.milestones };
 
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
   }
@@ -578,7 +575,19 @@ class Engine {
         }
       });
 
+      this.userTasks = this.userTasks.map((uT) => {
+        if (uT.processInstance === instance && (uT.state === 'READY' || uT.state === 'ACTIVE')) {
+          return { ...uT, state: 'STOPPED' };
+        }
+
+        return uT;
+      });
+
       instance.stop();
+
+      if (enableMessaging) {
+        await publishCurrentInstanceState(this, instance);
+      }
 
       // archive the information for the stopped instance
       await this.archiveInstance(instance.id);
@@ -634,6 +643,10 @@ class Engine {
       }
     });
 
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
+
     await this.archiveInstance(instance.id);
     this.deleteInstance(instance.id);
   }
@@ -663,6 +676,10 @@ class Engine {
         instance.endToken(token.tokenId, { state: 'ABORTED', endTime: +new Date() });
       }
     });
+
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
 
     // archive the information for the stopped instance
     await this.archiveInstance(instance.id);
@@ -738,8 +755,13 @@ class Engine {
           }
         });
       })
-        .then(() => {
+        .then(async () => {
           instance.pause();
+
+          if (enableMessaging) {
+            await publishCurrentInstanceState(this, instance);
+          }
+
           this.archiveInstance(instance.id);
           this.deleteInstance(instance.id);
         })

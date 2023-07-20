@@ -13,6 +13,7 @@ describe('Tests for the message interface of the dispatcher', () => {
     messaging = new Messaging();
 
     messaging._defaultMessagingServerAddress = 'mqtt://defaultAddress';
+    messaging._machineId = 'machineId';
     messaging._initialized = true;
 
     // mock the functions that are used inside publish to ensure that publish is awaitable
@@ -30,7 +31,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://localhost:1883', 'test/123', 'Hello World', '{}', '{}'],
+        ['mqtt://localhost:1883', 'test/123', 'Hello World', '{}', '{"clientId":"machineId"}'],
       ]);
     });
 
@@ -39,7 +40,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://defaultAddress', 'test/123', 'Hello World', '{}', '{}'],
+        ['mqtt://defaultAddress', 'test/123', 'Hello World', '{}', '{"clientId":"machineId"}'],
       ]);
     });
 
@@ -48,7 +49,13 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
         'messaging_publish',
-        ['mqtt://localhost:1883', 'test/123', `{\"some\":\"data\"}`, '{}', '{}'],
+        [
+          'mqtt://localhost:1883',
+          'test/123',
+          `{\"some\":\"data\"}`,
+          '{}',
+          '{"clientId":"machineId"}',
+        ],
       ]);
     });
 
@@ -68,7 +75,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           `{\"retain\":true}`,
-          `{\"username\":\"engine\",\"password\":\"password123\"}`,
+          `{\"username\":\"engine\",\"password\":\"password123\",\"clientId\":\"machineId|engine\"}`,
         ],
       ]);
     });
@@ -80,7 +87,7 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
-      ).rejects.toMatch('Failed to publish to mqtt://localhost:1883\nError Message');
+      ).rejects.toMatch('Failed to publish to mqtt://localhost:1883: Error Message');
     });
 
     it('automatically adds default login data (if it is available), if no other login data is given in the connection options', async () => {
@@ -99,7 +106,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
@@ -126,7 +133,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"other user\",\"password\":\"other password\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"other user\",\"password\":\"other password\",\"clientId\":\"engineId|other user\"}`,
         ],
       ]);
     });
@@ -175,7 +182,9 @@ describe('Tests for the message interface of the dispatcher', () => {
 
       expect(messaging.commandRequest).not.toHaveBeenCalled();
 
-      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId');
+      await messaging.init('mqtt://defaultAddress', 'user', 'password123', 'engineId', '', {
+        debug: jest.fn(),
+      });
 
       expect(messaging.commandRequest).toBeCalledTimes(3);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -185,7 +194,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/123',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -195,7 +204,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/456',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -205,16 +214,17 @@ describe('Tests for the message interface of the dispatcher', () => {
           'test/789',
           'Hello World',
           '{}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
 
-    it('will prefix "engine/[engine-id]" to the given topic if requested', async () => {
+    it('will prefix "[baseTopic]/engine/[engine-id]" to the given topic if requested', async () => {
       messaging._username = 'user';
       messaging._password = 'password123';
       // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
       messaging._machineId = 'engineId';
+      messaging._baseTopic = 'base-topic/';
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
@@ -226,10 +236,10 @@ describe('Tests for the message interface of the dispatcher', () => {
         'messaging_publish',
         [
           'mqtt://localhost:1883',
-          'engine/engineId/test/123',
+          'base-topic/engine/engineId/test/123',
           'Hello World',
           '{"prependDefaultTopic":true}',
-          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId\"}`,
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);
     });
@@ -256,7 +266,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       });
 
       await expect(messaging.connect('mqtt://localhost:1883')).rejects.toMatch(
-        'Failed to connect to mqtt://localhost:1883\nError Message'
+        'Failed to connect to mqtt://localhost:1883: Error Message'
       );
     });
   });
@@ -283,7 +293,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         [
           'mqtt://some-url',
           'test/topic',
-          '{"username":"user","password":"password456"}',
+          '{"username":"user","password":"password456","clientId":"machineId|user"}',
           expect.stringMatching(/{"qos":0,"subscriptionId":".*"}/),
         ],
       ]);
@@ -301,7 +311,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         [
           'mqtt://defaultAddress',
           'test/topic',
-          '{"username":"user123","password":"password123","clientId":"engineId"}',
+          '{"username":"user123","password":"password123","clientId":"engineId|user123"}',
           expect.stringMatching(/{"subscriptionId":".*"}/),
           ,
         ],
@@ -322,7 +332,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           { qos: 0 }
         )
       ).rejects.toMatch(
-        'Failed to subscribe to mqtt://some-url (Topic: test/topic)\nError Message'
+        'Failed to subscribe to mqtt://some-url (Topic: test/topic): Error Message'
       );
     });
 
@@ -394,7 +404,7 @@ describe('Tests for the message interface of the dispatcher', () => {
           'mqtt://some-url',
           'test/topic',
           subscriptionId,
-          '{"username":"user","password":"password456"}',
+          '{"username":"user","password":"password456","clientId":"machineId|user"}',
         ],
       ]);
     });

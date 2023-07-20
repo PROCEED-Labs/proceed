@@ -3,6 +3,7 @@ const distribution = require('@proceed/distribution');
 const { logging } = require('@proceed/machine');
 const whiskers = require('whiskers/dist/whiskers.min.js');
 const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
+const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
 
 class TaskListTab extends DisplayItem {
   constructor(management) {
@@ -70,21 +71,19 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-
-      if (userTask.state === 'READY' || userTask.state === 'ACTIVE') {
-        variables = userTask.processInstance.getVariables(userTask.tokenId);
-        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+      if (userTask.variableChanges) {
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        variables = userTask.variableChanges;
       } else {
-        // get info of non-active userTask from logs
-        const logs = userTask.processInstance.getState().log;
-        const userTaskLogEntry = logs.find(
-          (logEntry) =>
-            logEntry.flowElementId === userTask.id &&
-            logEntry.tokenId === userTask.tokenId &&
-            logEntry.startTime === userTask.startTime
-        );
-        variables = userTask.processInstance.getVariables();
-        milestonesData = userTaskLogEntry.milestones;
+        // get the data from the instance (will merge the instance and token data)
+        variables = userTask.processInstance.getVariables(userTask.tokenId);
+      }
+      if (userTask.milestones) {
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        milestonesData = userTask.milestones;
+      } else {
+        // get the data from the instance (will look at the data of the token that currently resides on this user task)
+        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
       }
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
@@ -120,7 +119,7 @@ class TaskListTab extends DisplayItem {
       tokenId,
     } = userTask;
 
-    if (implementation === '5thIndustry') {
+    if (enable5thIndustryIntegration && implementation === '5thIndustry') {
       return `
         <html>
           <head>

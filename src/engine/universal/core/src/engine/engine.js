@@ -842,6 +842,8 @@ class Engine {
         manual: false,
       });
     }
+
+    userTask.milestones = newMilestones;
   }
 
   updateIntermediateVariablesState(instanceID, userTaskID, variables) {
@@ -851,11 +853,13 @@ class Engine {
         uT.id === userTaskID &&
         (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
-    const token = this.getToken(instanceID, userTask.tokenId);
 
     Object.entries(variables).forEach(([key, value]) =>
-      userTask.processInstance.setVariable(token.tokenId, key, value)
+      userTask.processInstance.setVariable(userTask.tokenId, key, value)
     );
+
+    const token = this.getToken(instanceID, userTask.tokenId);
+    userTask.variableChanges = { ...token.intermediateVariablesState };
   }
 
   setFlowNodeState(instanceId, tokenId, state, variables) {

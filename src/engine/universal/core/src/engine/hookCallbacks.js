@@ -220,7 +220,6 @@ function getStateChangeHandler(engine, instance) {
       if (enableInterruptedInstanceRecovery) {
         saveIntermediateInstanceState(engine, instance);
       }
-
       // prevent errors/crashes when the instance was already removed (archived) from the engine (publishing should have been handled by onEnded handler in that case)
       if (enableMessaging && !instance.isEnded() && engine.getInstance(instance.id)) {
         publishCurrentInstanceState(engine, instance);

@@ -390,11 +390,10 @@ export async function listenFor5thIndustryContractInformation(
     );
     subscriptions[processDefinitionsId] = undefined;
   }
-  console.log('AAAA');
+
   // the callback that should be called every time new contract information gets published
   const onMessage = async (_, message) => {
     try {
-      console.log(message);
       const contractInfo = JSON.parse(message);
       // filter out information that is not related to this project
       if (processDefinitionsId !== contractInfo.processId) return;

@@ -148,7 +148,9 @@ export async function setupEngineStatusInformationPublishing(engine, instance) {
 }
 
 /**
+ * Will publish that the engine is done executing the instance (by removing it from the instance engine information)
  *
+ * Closes the connection to the messaging server that was established for the instance
  *
  * @param {Object} engine an instance of the proceed engine in which the process is executed
  * @param {Object} instanceInformation information about the instance

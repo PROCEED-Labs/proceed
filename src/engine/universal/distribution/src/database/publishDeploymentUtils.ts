@@ -92,7 +92,7 @@ export async function publishDeployedVersionInfo(
     bpmnString: bpmn,
   };
 
-  const defaultTopic = `process/${processDefinitionsId}/versions/${version}`;
+  const defaultTopic = `process/${processDefinitionsId}/version/${version}`;
 
   // send the information to the requested messaging server (if one is set )
   if (mqttServer) {
@@ -106,7 +106,7 @@ export async function publishDeployedVersionInfo(
 
     try {
       await messaging.publish(
-        `${topic}${defaultTopic}`,
+        `${topic}proceed-pms/${defaultTopic}`,
         stepsInfo,
         url,
         { retain: true },
@@ -123,7 +123,12 @@ export async function publishDeployedVersionInfo(
   try {
     await messaging.publish(defaultTopic, stepsInfo, undefined, {
       retain: true,
-      prependDefaultTopic: true,
+      prependEngineTopic: true,
+    });
+
+    await messaging.publish(defaultTopic, stepsInfo, undefined, {
+      retain: true,
+      prependBaseTopic: true,
     });
   } catch (err) {
     logger.warn(

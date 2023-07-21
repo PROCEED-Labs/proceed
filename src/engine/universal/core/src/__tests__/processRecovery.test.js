@@ -289,10 +289,8 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     await sleep(100);
 
-    instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
-
-    instanceInformation = engine.getInstanceInformation(instanceId);
+    instanceInformation = distribution.db.archiveInstance.mock.calls[0][2];
+    delete archivedState.isCurrentlyExecutedInBpmnEngine;
     expect(instanceInformation).toEqual({
       ...archivedState,
       instanceState: ['ENDED'],
@@ -338,8 +336,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           },
         },
       ],
-
-      isCurrentlyExecutedInBpmnEngine: undefined,
+      userTasks: [],
     });
   });
 
@@ -394,10 +391,8 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     await sleep(100);
 
-    const engine = management.getAllEngines()[0];
-    const instanceId = engine.instanceIDs[0];
-    const instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
+    const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
+    expect(instanceState).toStrictEqual(['ENDED']);
   });
 
   it('will retrigger the decider for tokens where it was pending a decision if the token can continue locally allowing the instance to finish', async () => {
@@ -453,10 +448,8 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     expect(mockPassToken).toHaveBeenCalled();
 
-    const engine = management.getAllEngines()[0];
-    const instanceId = engine.instanceIDs[0];
-    const instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
+    const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
+    expect(instanceState).toStrictEqual(['ENDED']);
   });
 
   it('will put a previously pausing instance into the paused state', async () => {
@@ -622,12 +615,9 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     await sleep(100);
 
     const engine = management.getAllEngines()[0];
-    const instanceId = engine.instanceIDs[0];
-    const instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
 
-    const instanceInformation = engine.getInstanceInformation(instanceId);
-    expect(instanceInformation.instanceState).toEqual(['ENDED', 'FAILED', 'TERMINATED']);
+    const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
+    expect(instanceState).toEqual(['ENDED', 'FAILED', 'TERMINATED']);
   });
 
   it('will put an interrupted element into an error state if it has the manualInterruptionHandling flag', async () => {
@@ -787,14 +777,10 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     await sleep(100);
 
-    const engine = management.getAllEngines()[0];
-    const instanceId = engine.instanceIDs[0];
-
-    const instanceInformation = engine.getInstanceInformation(instanceId);
+    const instanceInformation = distribution.db.archiveInstance.mock.calls[0][2];
     expect(instanceInformation.tokens.length).toBe(2);
 
-    const instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
+    expect(instanceInformation.instanceState).toEqual(['ENDED']);
   });
 
   it('will put all children of an interrupted subprocess with the manualInterruptionHandling flag into an error state', async () => {
@@ -1016,11 +1002,11 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     for (let engine of engines) {
       // the engine should not have created a second called instance for the call activity
-      expect(engine.instanceIDs.length).toBe(1);
+      expect(engine.instanceIDs.length).toBe(0);
       const instanceId = engine.instanceIDs[0];
 
-      const instanceState = engine.getInstanceState(instanceId);
-      expect(instanceState).toBe('ended');
+      const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
+      expect(instanceState).toEqual(['ENDED']);
     }
   });
 
@@ -1252,9 +1238,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
 
     await sleep(100);
 
-    const engine = management.getAllEngines()[0];
-    const instanceId = engine.instanceIDs[0];
-    const instanceState = engine.getInstanceState(instanceId);
-    expect(instanceState).toBe('ended');
+    const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
+    expect(instanceState).toEqual(['ENDED']);
   });
 });

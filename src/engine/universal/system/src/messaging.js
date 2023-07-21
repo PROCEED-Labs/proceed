@@ -18,7 +18,7 @@ class Messaging extends System {
     // the password the engine will use for authentication if no other is given
     this._password = undefined;
 
-    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested
+    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested (this consists of the base topic defined in the engine messaging config and the subtopic "proceed-pms" => [config-base-topic]/proceed-pms)
     this._baseTopic = '';
 
     // the machineId that identifies the engine and is used for the default topic prefix ([baseTopic]/engine/[machineId]/[topic])
@@ -42,6 +42,7 @@ class Messaging extends System {
    * @param {String} defaultUsername
    * @param {String} defaultPassword
    * @param {String} machineId
+   * @param {String} baseTopic // see the _baseTopic member variable
    */
   async init(defaultAddress, defaultUsername, defaultPassword, machineId, baseTopic, logger) {
     this._defaultMessagingServerAddress = defaultAddress;
@@ -92,8 +93,14 @@ class Messaging extends System {
    *
    * @param {String} url the address of the messaging server
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server
-   * @param {String} connectionOptions.username the username to use when connecting
-   * @param {String} connectionOptions.password the password to use when connecting
+   * @param {String} [connectionOptions.username] the username to use when connecting
+   * @param {String} [connectionOptions.password] the password to use when connecting
+   * @param {String} [connectionOptions.clientId] the client identification to use when connecting
+   * @param {Object} [connectionOptions.will] a message that should be sent by the server to subscribers when the connection to the messaging server is closes unexpectedly
+   * @param {String} connectionOptions.will.topic the topic under which the will message should be published
+   * @param {Object} connectionOptions.will.payload the data to publish on disconnect
+   * @param {Number} connectionOptions.will.qos see the description on the publish function
+   * @param {Boolean} connectionOptions.will.retain see the description on the publish function
    */
   async connect(url, connectionOptions = {}) {
     const taskID = generateUniqueTaskID();
@@ -128,9 +135,10 @@ class Messaging extends System {
    * @param {Object} connectionOptions options that were used when connecting to the server
    * @param {String} connectionOptions.username the username that was used when connecting
    * @param {String} connectionOptions.password the password that was used when connecting
+   * @param {String} connectionOptions.clientId the clientId that was used when connecting
    */
   async disconnect(url, connectionOptions = {}) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response from the native part
@@ -161,7 +169,8 @@ class Messaging extends System {
    * @param {Object} messageOptions options that should be used when publishing the message
    * @param {Number} [messageOptions.qos] mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
    * @param {Boolean} [messageOptions.retain] mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
-   * @param {Boolean} [messageOptions.prependDefaultTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Boolean} [messageOptions.prependBaseTopic] if set to true will prepend [baseTopic] to the given topic so the message is grouped into a topic with others using the base topic
+   * @param {Boolean} [messageOptions.prependEngineTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
    * @param {Boolean} [messageOptions.retain] if the message should be stored for the topic so that new subscribers automatically get the information
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
    * @param {String} [connectionOptions.username] the username to use when connecting
@@ -205,10 +214,14 @@ class Messaging extends System {
     });
 
     // prepends the default topic path "[baseTopic]/engine/[engine-id]" to the topic
-    // this way all modules in the engine can just call publish with prependDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
-    if (messageOptions.prependDefaultTopic) {
-      topic = `${this._baseTopic}engine/${this._machineId}/${topic}`;
+    // this way all modules in the engine can just call publish with prependEngineTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
+    if (messageOptions.prependEngineTopic) {
+      topic = `${this._baseTopic}/engine/${this._machineId}/${topic}`;
+    } else if (messageOptions.prependBaseTopic) {
+      topic = `${this._baseTopic}/${topic}`;
     }
+    delete messageOptions.prependEngineTopic;
+    delete messageOptions.prependBaseTopic;
 
     // make sure that everything is in the correct format to be passed to the native part
     if (typeof message !== 'string') message = JSON.stringify(message);
@@ -267,7 +280,7 @@ class Messaging extends System {
     subscriptionOptions = JSON.stringify(subscriptionOptions);
     this._completeLoginInfo(connectionOptions);
     connectionOptions = JSON.stringify(connectionOptions);
-    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
     // send the subscription request to the native part
     this.commandRequest(taskID, [
       'messaging_subscribe',
@@ -289,8 +302,9 @@ class Messaging extends System {
    * @param {Function} callback the callback that was given to the subscribe function
    * @param {String} [overrideUrl] the server address given to the subscribe function (might be left open to default to the address in the config)
    * @param {Object} connectionOptions the log in information that was used for the subscription
-   * @param {Object} connectionOptions.username
-   * @param {Object} connectionOptions.password
+   * @param {String} [connectionOptions.username] the username to use when connecting
+   * @param {String} [connectionOptions.password] the password to use when connecting
+   * @param {String} [connectionOptions.clientIdPrefix] can be used to define a prefix for the final clientId (clientIdPrefix + machineId + '|' + username + ':')
    */
   async unsubscribe(topic, callback, overrideUrl, connectionOptions = {}) {
     // if no url is given use the default url if one was set
@@ -302,7 +316,7 @@ class Messaging extends System {
     // adds additional information to the options and serialize them for the ipc call
     this._completeLoginInfo(connectionOptions);
     connectionOptions = JSON.stringify(connectionOptions);
-    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
 
     if (
       !this.subscriptions[url] ||

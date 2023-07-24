@@ -18,7 +18,7 @@
             <v-icon v-if="elementIsActive" @click="settingState = true" dense>mdi-pencil</v-icon>
           </v-col>
         </v-row>
-        <v-row class="mt-n4" align="center">
+        <v-row class="mt-n4" align="center" v-if="!isRootElement">
           <v-col cols="6">
             <span class="text-subtitle-1 font-weight-medium">External:</span>
           </v-col>

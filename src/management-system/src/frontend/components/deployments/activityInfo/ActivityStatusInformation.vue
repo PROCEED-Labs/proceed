@@ -1,8 +1,8 @@
 <template>
   <v-container>
-    <v-row class="mb-6" :justify="image ? 'center' : 'start'">
-      <v-col :cols="size === 'large' ? 4 : 8" v-if="image">
-        <v-img height="170" style="border-style: solid" :src="image"></v-img>
+    <v-row class="mb-6" :justify="currentImage ? 'center' : 'start'">
+      <v-col :cols="size === 'large' ? 4 : 8" v-if="currentImage">
+        <v-img height="170" style="border-style: solid" :src="currentImage"></v-img>
       </v-col>
       <v-col :cols="size === 'large' ? 8 : 12">
         <v-row class="mt-n4" align="center" v-if="instance">
@@ -124,6 +124,7 @@ import ProgressSetter from '@/frontend/components/deployments/activityInfo/Progr
 import { engineNetworkInterface } from '@/frontend/backend-api/index.js';
 import { statusToType } from '@/frontend/helpers/instance-information';
 import { getDocumentation } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
+import { processInterface } from '@/frontend/backend-api/index.js';
 
 export default {
   components: { ActivityTimeCalculation, ProgressSetter },
@@ -142,6 +143,7 @@ export default {
       settingRealCosts: false,
       settingPriority: false,
       settingState: false,
+      currentImage: null,
       inputRules: {
         valueBetween1And10: (value) =>
           !value || (value >= 1 && value <= 10) || 'Priority must be between 1 and 10',
@@ -149,6 +151,12 @@ export default {
     };
   },
   computed: {
+    processDefinitionsId() {
+      return this.$router.currentRoute.params.id;
+    },
+    processIsShared() {
+      return this.$store.getters['processStore/processById'](this.processDefinitionsId).shared;
+    },
     isRootElement() {
       return this.selectedElement && this.selectedElement.type === 'bpmn:Process';
     },
@@ -175,9 +183,6 @@ export default {
         }
       }
       return false;
-    },
-    image() {
-      return this.metaData.overviewImage;
     },
     documentation() {
       return getDocumentation(this.selectedElement);
@@ -324,6 +329,25 @@ export default {
           token.currentFlowElementId
         );
       }
+    },
+  },
+  watch: {
+    metaData: {
+      async handler(newMetaData) {
+        if (newMetaData.overviewImage && !this.processIsShared) {
+          const imageFileName = newMetaData.overviewImage.split('/').pop();
+          const localImage = await processInterface.getImage(
+            this.processDefinitionsId,
+            imageFileName
+          );
+          this.currentImage = localImage;
+        } else if (newMetaData.overviewImage && this.processIsShared) {
+          this.currentImage = newMetaData.overviewImage;
+        } else {
+          this.currentImage = null;
+        }
+      },
+      immediate: true,
     },
   },
 };

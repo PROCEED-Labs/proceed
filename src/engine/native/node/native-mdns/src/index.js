@@ -165,12 +165,59 @@ class MDNS extends NativeModule {
    * @param {Array} args contains the ip of the service as its first and the port as its second element
    */
   removeDiscoveredService(args) {
-    const [ip, port] = args;
-    const service = this.browser.services.find((s) => s.referer.address === ip && s.port === port);
+    // const [ip, port] = args;
+    // const service = this.browser.services.find((s) => s.referer.address === ip && s.port === port);
 
-    if (service) {
-      this.browser._removeService(service.fqdn);
-    }
+    // if (service) {
+    //   this.browser._removeService(service.fqdn);
+    // }
+    const newBrowser = bonjour.find({ type: PROCEED_SERVICE_TYPE });
+
+    // this.browser.listeners('up').forEach((cb) => newBrowser.on('up', cb));
+    // this.browser.listeners('down').forEach((cb) => newBrowser.on('down', cb));
+    const oldBrowser = this.browser;
+    let knownServices = [...oldBrowser.services];
+    let oldUpHandlers = [...this.browser.listeners('up')];
+    oldBrowser.stop();
+    this.browser = newBrowser;
+
+    const initialUpHandler = function (service) {
+      // check if the old browser already knew the service
+      // port & host
+      if (
+        false /** !knownServices.some(s => s.identifier === service.identifier) ->  services not known before */
+      ) {
+        // call the callbacks from the old browser#
+        oldUpHandlers.forEach((cb) => cb(service));
+      } else {
+        knownServices = knownServices.filter(
+          (s) => true /** s.identifier === service.identifier */
+        );
+      }
+    };
+
+    newBrowser.on('up', initialUpHandler);
+
+    newBrowser.on('up', (...args) => {
+      newBrowser.off();
+
+      newBrowser.on('on', cb);
+      // cb(...args);
+      console.log('UP');
+    });
+    setTimeout(() => {
+      console.log('New Browser', newBrowser.services);
+      console.log('Old Browser', this.browser.services);
+
+      const removedServices = oldBrowser.services.filter((service) => newBrowser.some());
+      // this.browser.listeners('up').forEach((cb) =>
+      //   newBrowser.on('up', (...args) => {
+      //     // cb(...args);
+
+      //     console.log('UP');
+      //   })
+      // );
+    }, 2000);
   }
 
   /**

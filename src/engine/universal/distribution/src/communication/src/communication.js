@@ -193,10 +193,12 @@ module.exports = {
 
     // register callback that gets called every time a new machine is discovered
     discovery.onDiscoveredMachine(async (service) => {
+      console.log('Discovered', service);
       await addMachine(service);
     });
     // register callback that gets called every time a machine is not among the discovered anymore
     discovery.onUndiscoveredMachine(async (service) => {
+      console.log('Undiscovered', service);
       await removeMachine(service);
     });
 

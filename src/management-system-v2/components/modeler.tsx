@@ -11,6 +11,7 @@ import { useProcessBpmn } from '@/lib/process-queries';
 import ModelerToolbar from './modeler-toolbar';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
+import schema from '@/lib/schema';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -54,10 +55,16 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       if (editingDisabled) {
         modeler.current = new Viewer!({
           container: canvas.current!,
+          moddleExtensions: {
+            proceed: schema,
+          },
         });
       } else {
         modeler.current = new Modeler!({
           container: canvas.current!,
+          moddleExtensions: {
+            proceed: schema,
+          },
         });
       }
 

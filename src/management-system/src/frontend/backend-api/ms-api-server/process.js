@@ -653,6 +653,18 @@ async function deleteUserTaskHTML(processDefinitionsId, taskFileName) {
   }
 }
 
+async function getImages(processDefinitionsId) {
+  let images;
+
+  if (browserStorage.hasProcess(processDefinitionsId)) {
+    images = browserStorage.getImages(processDefinitionsId);
+  } else {
+    images = await restRequest(`process/${processDefinitionsId}/images/`);
+  }
+
+  return images;
+}
+
 async function getImage(processDefinitionsId, imageFileName) {
   let image;
 
@@ -722,6 +734,7 @@ export default {
   getUserTasksHTML,
   saveUserTaskHTML,
   deleteUserTaskHTML,
+  getImages,
   getImage,
   saveImage,
   saveScriptTaskJS,

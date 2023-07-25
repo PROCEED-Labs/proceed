@@ -993,21 +993,49 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       else return importBpmn;
     });
 
+    let doneExecuting;
+    const importingProcessExecutionEnd = new Promise((res) => (doneExecuting = res));
+
+    distribution.db.archiveInstance.mockImplementation(
+      async (_definitionId, instanceId, finalInformation) => {
+        if (instanceId === 'Process2_instance1') {
+          // this is the completion of the instance running for the imported process which should happen first
+
+          // we should have two engines, one for the importing process and one for the imported one, and for both we should have exactly one instance (restarting the importing process should not have created a new instance of the imported process)
+          const engines = management.getAllEngines();
+          expect(engines.length).toBe(2);
+          expect(engines[0].instanceIDs.length).toBe(1);
+          expect(engines[1].instanceIDs.length).toBe(1);
+
+          expect(finalInformation.instanceState).toEqual(['ENDED']);
+        } else if ('Process1_instance1') {
+          // this is the completion of the instance running for the importing process with the call activity which should happen second
+          expect(finalInformation.instanceState).toEqual(['ENDED']);
+          doneExecuting();
+        } else {
+          // an instance id other than 'Process2_instance1' or 'Process1_instance1' signals that something went wrong
+          throw new Error(
+            'Invalid instance id encountered when restarting an importing and an imported process'
+          );
+        }
+      }
+    );
+
     await management.restoreInterruptedInstances();
 
-    await sleep(100);
-
-    const engines = management.getAllEngines();
-    expect(engines.length).toBe(2);
-
-    for (let engine of engines) {
-      // the engine should not have created a second called instance for the call activity
-      expect(engine.instanceIDs.length).toBe(0);
-      const instanceId = engine.instanceIDs[0];
-
-      const instanceState = distribution.db.archiveInstance.mock.calls[0][2].instanceState;
-      expect(instanceState).toEqual(['ENDED']);
-    }
+    await importingProcessExecutionEnd;
+    // only two instances should have been started and completed, one for the importing process and one for the imported process using the existing information
+    expect(distribution.db.archiveInstance).toHaveBeenCalledTimes(2);
+    expect(distribution.db.archiveInstance).toHaveBeenCalledWith(
+      'Process2',
+      'Process2_instance1',
+      expect.any(Object)
+    );
+    expect(distribution.db.archiveInstance).toHaveBeenCalledWith(
+      'Process1',
+      'Process1_instance1',
+      expect.any(Object)
+    );
   });
 
   it('will put a call-activity with the manualInterruptionHandling attribute into an error state pausing the called instance', async () => {

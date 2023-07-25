@@ -386,7 +386,7 @@ export async function listenFor5thIndustryContractInformation(
       '2/5I-DI5App/event/contractClosed',
       subscriptions[processDefinitionsId],
       url,
-      { username, password }
+      { username, password, clientIdPrefix: 'MS-' }
     );
     subscriptions[processDefinitionsId] = undefined;
   }

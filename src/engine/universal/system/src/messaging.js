@@ -279,8 +279,8 @@ class Messaging extends System {
     subscriptionOptions.subscriptionId = taskID; // we need a way to tell the native part which subscription to remove when we unsubscribe from the topic in the future
     subscriptionOptions = JSON.stringify(subscriptionOptions);
     this._completeLoginInfo(connectionOptions);
-    connectionOptions = JSON.stringify(connectionOptions);
     const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
+    connectionOptions = JSON.stringify(connectionOptions);
     // send the subscription request to the native part
     this.commandRequest(taskID, [
       'messaging_subscribe',
@@ -315,8 +315,8 @@ class Messaging extends System {
 
     // adds additional information to the options and serialize them for the ipc call
     this._completeLoginInfo(connectionOptions);
-    connectionOptions = JSON.stringify(connectionOptions);
     const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
+    connectionOptions = JSON.stringify(connectionOptions);
 
     if (
       !this.subscriptions[url] ||

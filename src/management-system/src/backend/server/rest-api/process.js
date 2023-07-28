@@ -38,6 +38,15 @@ function toExternalFormat(processMetaData) {
   return newFormat;
 }
 
+function fromExternalFormat(processMetaData) {
+  const newFormat = { ...processMetaData };
+  newFormat.id = processMetaData.definitionId;
+  newFormat.name = processMetaData.definitionName;
+  delete newFormat.definitionId;
+  delete newFormat.definitionName;
+  return newFormat;
+}
+
 processRouter.use(
   '/',
   isAllowed(PERMISSION_VIEW, 'Process', { filter: true }),
@@ -149,7 +158,7 @@ processRouter.put(
     let { bpmn } = body;
 
     try {
-      const newProcessInfo = await updateProcess(definitionsId, body);
+      const newProcessInfo = await updateProcess(definitionsId, fromExternalFormat(body));
       bpmn = bpmn || (await getProcessBpmn(definitionsId));
       res.status(200).json(toExternalFormat({ ...newProcessInfo, bpmn }));
       await ensureOpaSync(`processes/${definitionsId}`, undefined, newProcessInfo);
@@ -177,6 +186,12 @@ processRouter.delete(
 );
 
 processRouter.get('/:definitionId/versions', async (req, res) => {
+  const { process, definitionsId } = req;
+  if (!process) {
+    res.status(404).send(`Process with id ${definitionsId} could not be found!`);
+    return;
+  }
+
   res.status(200).send(req.process.versions);
 });
 

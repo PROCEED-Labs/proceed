@@ -63,14 +63,15 @@ describe('Native-MQTT', () => {
     it('will keep the connection open and not try to open a new one if we try to connect with the same parameters', async () => {
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
-        '{"username":"test-user","password":"password123"}',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
       expect(nativeMQTT.connections).toStrictEqual({
-        'mqtt://test-user:password123@localhost:1883': {
+        'mqtt://test-user:password123@localhost:1883-engineId': {
           username: 'test-user',
           password: 'password123',
+          clientId: 'engineId',
           clean: true,
           eventHandlers: {},
           eventNames: expect.any(Function),
@@ -89,11 +90,11 @@ describe('Native-MQTT', () => {
 
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
-        '{"username":"test-user","password":"password123"}',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
-      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883']).toBe(
+      expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883-engineId']).toBe(
         firstConnection
       );
     });
@@ -101,14 +102,15 @@ describe('Native-MQTT', () => {
     it('will open a new connection when a different address is requested', async () => {
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
-        '{"username":"test-user","password":"password123"}',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
       expect(nativeMQTT.connections).toStrictEqual({
-        'mqtt://test-user:password123@localhost:1883': {
+        'mqtt://test-user:password123@localhost:1883-engineId': {
           username: 'test-user',
           password: 'password123',
+          clientId: 'engineId',
           clean: true,
           eventHandlers: {},
           eventNames: expect.any(Function),
@@ -127,15 +129,72 @@ describe('Native-MQTT', () => {
 
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://other-address:1883',
-        '{"username":"test-user","password":"password123"}',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(2);
       expect(nativeMQTT.connections).toStrictEqual({
-        'mqtt://test-user:password123@localhost:1883': firstConnection,
-        'mqtt://test-user:password123@other-address:1883': {
+        'mqtt://test-user:password123@localhost:1883-engineId': firstConnection,
+        'mqtt://test-user:password123@other-address:1883-engineId': {
           username: 'test-user',
           password: 'password123',
+          clientId: 'engineId',
+          clean: true,
+          eventHandlers: {},
+          eventNames: expect.any(Function),
+          on: expect.any(Function),
+          off: expect.any(Function),
+          end: expect.any(Function),
+          publish: expect.any(Function),
+          subscribe: expect.any(Function),
+          unsubscribe: expect.any(Function),
+          receiveMessage: expect.any(Function),
+          keepOpen: true,
+          subscriptionCallbacks: {},
+        },
+      });
+    });
+
+    it('will open a new connection when a different client id is used', async () => {
+      await nativeMQTT.executeCommand('messaging_connect', [
+        'mqtt://localhost:1883',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
+      ]);
+
+      expect(Object.keys(nativeMQTT.connections).length).toBe(1);
+      expect(nativeMQTT.connections).toStrictEqual({
+        'mqtt://test-user:password123@localhost:1883-engineId': {
+          username: 'test-user',
+          password: 'password123',
+          clientId: 'engineId',
+          clean: true,
+          eventHandlers: {},
+          eventNames: expect.any(Function),
+          on: expect.any(Function),
+          off: expect.any(Function),
+          end: expect.any(Function),
+          publish: expect.any(Function),
+          subscribe: expect.any(Function),
+          unsubscribe: expect.any(Function),
+          receiveMessage: expect.any(Function),
+          keepOpen: true,
+          subscriptionCallbacks: {},
+        },
+      });
+      const [firstConnection] = Object.values(nativeMQTT.connections);
+
+      await nativeMQTT.executeCommand('messaging_connect', [
+        'mqtt://localhost:1883',
+        '{"username":"test-user","password":"password123","clientId":"otherId"}',
+      ]);
+
+      expect(Object.keys(nativeMQTT.connections).length).toBe(2);
+      expect(nativeMQTT.connections).toStrictEqual({
+        'mqtt://test-user:password123@localhost:1883-engineId': firstConnection,
+        'mqtt://test-user:password123@localhost:1883-otherId': {
+          username: 'test-user',
+          password: 'password123',
+          clientId: 'otherId',
           clean: true,
           eventHandlers: {},
           eventNames: expect.any(Function),
@@ -155,14 +214,15 @@ describe('Native-MQTT', () => {
     it('will open a new connection when different log-in info is used', async () => {
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
-        '{"username":"test-user","password":"password123"}',
+        '{"username":"test-user","password":"password123","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
       expect(nativeMQTT.connections).toStrictEqual({
-        'mqtt://test-user:password123@localhost:1883': {
+        'mqtt://test-user:password123@localhost:1883-engineId': {
           username: 'test-user',
           password: 'password123',
+          clientId: 'engineId',
           clean: true,
           eventHandlers: {},
           eventNames: expect.any(Function),
@@ -181,15 +241,16 @@ describe('Native-MQTT', () => {
 
       await nativeMQTT.executeCommand('messaging_connect', [
         'mqtt://localhost:1883',
-        '{"username":"other-user","password":"password456"}',
+        '{"username":"other-user","password":"password456","clientId":"engineId"}',
       ]);
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(2);
       expect(nativeMQTT.connections).toStrictEqual({
-        'mqtt://test-user:password123@localhost:1883': firstConnection,
-        'mqtt://other-user:password456@localhost:1883': {
+        'mqtt://test-user:password123@localhost:1883-engineId': firstConnection,
+        'mqtt://other-user:password456@localhost:1883-engineId': {
           username: 'other-user',
           password: 'password456',
+          clientId: 'engineId',
           clean: true,
           eventHandlers: {},
           eventNames: expect.any(Function),

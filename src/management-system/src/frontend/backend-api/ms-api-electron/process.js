@@ -73,6 +73,7 @@ export default {
   getUserTasksHTML: backendProcesses.getProcessUserTasksHtml,
   saveUserTaskHTML: backendProcesses.saveProcessUserTask,
   deleteUserTaskHTML: backendProcesses.deleteProcessUserTask,
+  getImages: backendProcesses.getProcessImages,
   getImage: backendProcesses.getProcessImage,
   saveImage: backendProcesses.saveProcessImage,
   saveScriptTaskJS,

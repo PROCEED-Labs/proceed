@@ -1,11 +1,8 @@
 import { processEndpoint, _5thIndustryEndpoint } from '../ms-engine-communication/module.js';
 
-import {
-  getDeployments,
-  getInstances,
-  getActiveUserTasks,
-  removeActiveUserTask,
-} from '../../data/deployment.js';
+import { getDeployments, getInstances, getActiveUserTasks } from '../../data/deployment.js';
+
+import { getProcesses } from '../../data/process.js';
 
 import { immediateDeploymentInfoRequest, immediateInstanceInfoRequest } from './polling.js';
 
@@ -14,6 +11,7 @@ import {
   stop5thIndustryPlan,
   get5thIndustryServiceAccountData,
   get5thIndustryAuthorization,
+  listenFor5thIndustryContractInformation,
 } from '../5thIndustry/5thIndustry.js';
 
 import { logger, getProcessVersionBpmn } from './helpers.js';
@@ -154,6 +152,21 @@ export async function startInstance(processDefinitionsId, version) {
           }
         }
 
+        // check if the process is a project and references 5thIndustry in its optional mqtt data
+        const localProcess = getProcesses().find((p) => p.id === processDefinitionsId);
+        if (
+          enable5thIndustryIntegration &&
+          localProcess &&
+          localProcess.type === 'project' &&
+          metaData['mqttServer'] &&
+          metaData['mqttServer'].topic === '2/5I-DI5App/event/Projektposting'
+        ) {
+          await listenFor5thIndustryContractInformation(
+            processDefinitionsId,
+            metaData['mqttServer']
+          );
+        }
+
         const instanceId = await processEndpoint.startProcessInstance(
           startMachine,
           processDefinitionsId,
@@ -209,7 +222,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
         await stop5thIndustryPlan(metaData['_5i-Inspection-Plan-ID']);
       }
 
-      activelyExecutingMachines.forEach((machineId) => {
+      await asyncForEach(activelyExecutingMachines, async (machineId) => {
         const machine = deployment.machines.find((m) => m.id === machineId);
 
         if (!machine) {
@@ -220,7 +233,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
         }
 
         try {
-          processEndpoint.stopProcessInstance(machine, processDefinitionsId, instanceId);
+          await processEndpoint.stopProcessInstance(machine, processDefinitionsId, instanceId);
         } catch (err) {
           if (logger) {
             logger.error(`Failed to stop instance on ${machine.name}: ${err}.`);

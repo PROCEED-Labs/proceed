@@ -71,8 +71,18 @@ class TaskListTab extends DisplayItem {
       }
 
       definitionId = engine.definitionId;
-      variables = userTask.processInstance.getVariables(userTask.tokenId);
-      milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+
+      if (userTask.state === 'READY' || userTask.state === 'ACTIVE') {
+        // get the data from the instance (will merge the instance and token data)
+        variables = userTask.processInstance.getVariables(userTask.tokenId);
+        // get the data from the instance (will look at the data of the token that currently resides on this user task)
+        milestonesData = engine.getMilestones(query.instanceID, query.userTaskID);
+      } else {
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        variables = userTask.variableChanges || {};
+        // use the data in the user task if it exists (this is the case when the user task has already ended)
+        milestonesData = userTask.milestones || {};
+      }
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
       userTask = inactiveTasks.find(
@@ -81,8 +91,10 @@ class TaskListTab extends DisplayItem {
           task.id === query.userTaskID &&
           parseInt(task.startTime) === parseInt(query.startTime)
       );
-      const allInstances = await distribution.db.getArchivedInstances(userTask.definitionId);
-      const userTaskInstance = allInstances[query.instanceID];
+      const allArchivedUserTaskInstances = await distribution.db.getArchivedInstances(
+        userTask.definitionId
+      );
+      const userTaskInstance = allArchivedUserTaskInstances[query.instanceID];
       const userTaskToken = userTaskInstance.tokens.find(
         (token) => token.currentFlowElementId === query.userTaskID
       );

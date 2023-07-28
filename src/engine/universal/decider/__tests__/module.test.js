@@ -1,5 +1,14 @@
 /* eslint-disable import/no-dynamic-require */
 jest.mock('@proceed/machine', () => ({
+  logging: {
+    getLogger: jest.fn().mockReturnValue({
+      info: jest.fn(),
+      debug: jest.fn,
+      error: jest.fn(),
+      warn: jest.fn(),
+      trace: jest.fn(),
+    }),
+  },
   information: {
     getMachineInformation: jest.fn(),
   },

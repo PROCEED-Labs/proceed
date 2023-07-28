@@ -64,10 +64,12 @@ async function init() {
 
   backendServer.use(cookieParser());
   backendServer.use(
-    cors({
-      origin,
-      credentials: true,
-    })
+    process.env.NODE_ENV === 'development'
+      ? cors()
+      : cors({
+          origin,
+          credentials: true,
+        })
   );
 
   backendServer.use(helmet.hsts());
@@ -163,6 +165,10 @@ async function init() {
       `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`
     );
   });
+
+  if (process.env.API_ONLY) {
+    return;
+  }
 
   // WebSocket Endpoint for Collaborative Editing
   const websocketServer = https.createServer(options);

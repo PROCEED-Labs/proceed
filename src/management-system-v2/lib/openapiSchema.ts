@@ -3,83 +3,86 @@
  * Do not make direct changes to the file.
  */
 
-
 /** WithRequired type helpers */
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 /** OneOf type helpers */
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends any[]> = T extends [infer Only] ? Only : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]> : never;
+type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+type OneOf<T extends any[]> = T extends [infer Only]
+  ? Only
+  : T extends [infer A, infer B, ...infer Rest]
+  ? OneOf<[XOR<A, B>, ...Rest]>
+  : never;
 
 export interface paths {
-  "/process": {
+  '/process': {
     /** @description Get all processes you can view. */
-    get: operations["getProcess"];
+    get: operations['getProcess'];
     /** @description Post a process. */
-    post: operations["postProcess"];
+    post: operations['postProcess'];
   };
-  "/process/{definitionId}": {
+  '/process/{definitionId}': {
     /** @description Get a porcess by it's id. */
-    get: operations["getProcessById"];
+    get: operations['getProcessById'];
     /** @description Updates a **partial** set of properties (this means, that arbitrarily many properties can be left out). */
-    put: operations["updateProcessById"];
+    put: operations['updateProcessById'];
     /** @description Delete a process. */
-    delete: operations["deleteProcessById"];
+    delete: operations['deleteProcessById'];
   };
-  "/process/{definitionId}/versions": {
+  '/process/{definitionId}/versions': {
     /** @description Get all the versions of a process. */
-    get: operations["getProcessVersionsById"];
+    get: operations['getProcessVersionsById'];
     /** @description Post a new version of a process. */
-    post: operations["postProcessVersionById"];
+    post: operations['postProcessVersionById'];
   };
-  "/process/{definitionId}/versions/{version}": {
+  '/process/{definitionId}/versions/{version}': {
     /** @description Get a specific version of a process. */
-    get: operations["getVersionById"];
+    get: operations['getVersionById'];
   };
-  "/process/{definitionId}/images": {
+  '/process/{definitionId}/images': {
     /** @description Get all images used in a process. */
-    get: operations["getImageOfProcessById"];
+    get: operations['getImageOfProcessById'];
   };
-  "/process/{definitionId}/images/{imageFileName}": {
+  '/process/{definitionId}/images/{imageFileName}': {
     /** @description Get a specific image og a process. */
-    get: operations["getImagesByProcessId"];
+    get: operations['getImagesByProcessId'];
   };
-  "/process/{definitionId}/user-tasks": {
+  '/process/{definitionId}/user-tasks': {
     /** @description Get all user tasks used in a process. */
-    get: operations["getUserTasksByProcessId"];
+    get: operations['getUserTasksByProcessId'];
   };
-  "/process/{definitionId}/user-tasks/{userTaskFileName}": {
+  '/process/{definitionId}/user-tasks/{userTaskFileName}': {
     /** @description Get a specific user task of a process. */
-    get: operations["getUserTaskByFilename"];
+    get: operations['getUserTaskByFilename'];
     /**
      * @description Update a specific user task of a process.
      * If userTaskFileName exists, then it is updated with the body of the request (200 response), if not, then the user task is created (201 response).
      */
-    put: operations["updateUserTaskByFilename"];
+    put: operations['updateUserTaskByFilename'];
     /** @description Delete a specific user task of a process. */
-    delete: operations["deleteUserTaskByFilename"];
+    delete: operations['deleteUserTaskByFilename'];
   };
-  "/machines": {
+  '/machines': {
     /** @description Get stored machines. */
-    get: operations["getMachines"];
+    get: operations['getMachines'];
     /**
      * @description Store a machine.
-     * 
+     *
      * One of the following criteria has to be met in order for the machine to be posted:
      * - machine.ip and machine.port have to be set
      * - machine.hostname has to be set
      * - machine.id has to be set
      */
-    post: operations["postMachine"];
+    post: operations['postMachine'];
   };
-  "/machines/{id}": {
+  '/machines/{id}': {
     /** @description Get a stored machine by it's id. */
-    get: operations["getMachineById"];
+    get: operations['getMachineById'];
     /** @description Update a machine by it's id. */
-    put: operations["updateMachineById"];
+    put: operations['updateMachineById'];
     /** @description Delete a machine by it's id. */
-    delete: operations["deleteMachineById"];
+    delete: operations['deleteMachineById'];
     parameters: {
       path: {
         /** @description Id of a machine */
@@ -87,19 +90,19 @@ export interface paths {
       };
     };
   };
-  "/users": {
+  '/users': {
     /** @description Get all users. */
-    get: operations["getUsers"];
+    get: operations['getUsers'];
     /** @description Create a user. */
-    post: operations["postUser"];
+    post: operations['postUser'];
   };
-  "/users/{id}": {
+  '/users/{id}': {
     /** @description Get a specific user. */
-    get: operations["getUserById"];
+    get: operations['getUserById'];
     /** @description Update a specific user. */
-    put: operations["updateUserById"];
+    put: operations['updateUserById'];
     /** @description Delete a specific user. */
-    delete: operations["deleteUserById"];
+    delete: operations['deleteUserById'];
     parameters: {
       path: {
         /** @description Id of a user */
@@ -107,52 +110,52 @@ export interface paths {
       };
     };
   };
-  "/users/{id}/update-password": {
+  '/users/{id}/update-password': {
     /** @description Update the password of a user. */
-    put: operations["updateUserPasswordById"];
+    put: operations['updateUserPasswordById'];
     parameters: {
       path: {
         id: string;
       };
     };
   };
-  "/roles": {
+  '/roles': {
     /** @description Get all roles of the authorization system. */
-    get: operations["getRole"];
+    get: operations['getRole'];
     /** @description Post a new role. */
-    post: operations["postRole"];
+    post: operations['postRole'];
   };
-  "/roles/{id}": {
+  '/roles/{id}': {
     /** @description Get a specific role. */
-    get: operations["getRoleById"];
+    get: operations['getRoleById'];
     /** @description Update a specific role. */
-    put: operations["updateRoleById"];
+    put: operations['updateRoleById'];
     /** @description Delete a specific role. */
-    delete: operations["deleteRoleById"];
+    delete: operations['deleteRoleById'];
     parameters: {
       path: {
         id: string;
       };
     };
   };
-  "/role-mappings": {
+  '/role-mappings': {
     /** @description Get all role mappings between users and roles. */
-    get: operations["getRoleMappings"];
+    get: operations['getRoleMappings'];
     /** @description Post a new role mapping. */
-    post: operations["postRoleMapping"];
+    post: operations['postRoleMapping'];
   };
-  "/role-mappings/users/{userId}": {
+  '/role-mappings/users/{userId}': {
     /** @description Get all role mappings referencing a specific user. */
-    get: operations["getRoleMappingsByUserId"];
+    get: operations['getRoleMappingsByUserId'];
     parameters: {
       path: {
         userId: string;
       };
     };
   };
-  "/role-mappings/users/{userId}/{roleId}": {
+  '/role-mappings/users/{userId}/{roleId}': {
     /** @description Delete role mapping. */
-    delete: operations["deleteRoleMappingByIdByUserId"];
+    delete: operations['deleteRoleMappingByIdByUserId'];
     parameters: {
       path: {
         userId: string;
@@ -160,13 +163,13 @@ export interface paths {
       };
     };
   };
-  "/resources": {
+  '/resources': {
     /** @description Get all resources available in the system. */
-    get: operations["getResources"];
+    get: operations['getResources'];
   };
-  "/resources/{id}": {
+  '/resources/{id}': {
     /** @description Get a specific resource. */
-    get: operations["getResourceById"];
+    get: operations['getResourceById'];
     parameters: {
       path: {
         id: string;
@@ -188,17 +191,17 @@ export interface components {
       /** @description The description (the content of documentation element of the first process element in the process model) */
       description?: string;
       /** @description The date and time the process was edited the last time */
-      processIds?: (string)[];
+      processIds?: string[];
     };
     /** processData */
     processData: {
-      departments?: (string)[];
+      departments?: string[];
       /** @description The variables supposed to be used in the process */
-      variables?: ({
-          name: string;
-          /** @enum {unknown} */
-          type: "number" | "string" | "boolean" | "array" | "object" | "";
-        })[];
+      variables?: {
+        name: string;
+        /** @enum {unknown} */
+        type: 'number' | 'string' | 'boolean' | 'array' | 'object' | '';
+      }[];
     };
     /** processServerMetaData */
     processMsMetaData: {
@@ -207,23 +210,36 @@ export interface components {
       /** @description The date and time the process was edited the last time */
       lastEdited?: string;
       /** @description The explicit versions of the process that were created by users */
-      versions?: (components["schemas"]["processVersion"])[];
+      versions?: components['schemas']['processVersion'][];
       /** @description Information about the clients that are editing the process, used in the server version for collaborative editing */
-      inEditingBy?: ({
-          /** @description The id of the client editing this process */
-          id: string;
-          /** @description Id of the task this client is editing */
-          task?: string;
-        })[];
+      inEditingBy?: {
+        /** @description The id of the client editing this process */
+        id: string;
+        /** @description Id of the task this client is editing */
+        task?: string;
+      }[];
       /** @description If true, then a share link was created for the process */
       shared?: boolean;
     };
     /** @description BPMN XML of the process */
     bpmn: string;
-    process: components["schemas"]["processBpmnData"] & components["schemas"]["processMsMetaData"] & components["schemas"]["processData"] & {
-      bpmn?: components["schemas"]["bpmn"];
-    };
-    processResponse: WithRequired<components["schemas"]["process"], "definitionId" | "definitionName" | "description" | "departments" | "variables" | "createdOn" | "lastEdited" | "processIds" | "versions">;
+    process: components['schemas']['processBpmnData'] &
+      components['schemas']['processMsMetaData'] &
+      components['schemas']['processData'] & {
+        bpmn?: components['schemas']['bpmn'];
+      };
+    processResponse: WithRequired<
+      components['schemas']['process'],
+      | 'definitionId'
+      | 'definitionName'
+      | 'description'
+      | 'departments'
+      | 'variables'
+      | 'createdOn'
+      | 'lastEdited'
+      | 'processIds'
+      | 'versions'
+    >;
     processVersion: {
       version: string;
       name: string;
@@ -232,8 +248,8 @@ export interface components {
     /** image */
     image: {
       /** @enum {unknown} */
-      type?: "Buffer";
-      data?: (number)[];
+      type?: 'Buffer';
+      data?: number[];
     };
     machine: {
       id?: string;
@@ -243,10 +259,10 @@ export interface components {
       hostname?: string;
       discovered?: boolean;
       /** @enum {unknown} */
-      status?: "DISCONNECTED" | "CONNECTED";
+      status?: 'DISCONNECTED' | 'CONNECTED';
       description?: string;
       machine?: {
-        currentlyConnectedEnvironments: (Record<string, never>)[];
+        currentlyConnectedEnvironments: Record<string, never>[];
         hostname: string;
         name: string;
         description: string;
@@ -266,36 +282,47 @@ export interface components {
         mem: {
           total: number;
         };
-        disk: ({
-            type: string;
-            total: number;
-          })[];
+        disk: {
+          type: string;
+          total: number;
+        }[];
         battery: {
           hasBattery: boolean;
         };
-        display: ({
-            currentResX: string;
-            currentResY: string;
-          })[];
-        network: ({
-            type: string;
-            ip4: string;
-            netmaskv4: string;
-            netmaskv6: string;
-            ip6: string;
-            mac: string;
-          })[];
-        outputs: (string)[];
+        display: {
+          currentResX: string;
+          currentResY: string;
+        }[];
+        network: {
+          type: string;
+          ip4: string;
+          netmaskv4: string;
+          netmaskv6: string;
+          ip6: string;
+          mac: string;
+        }[];
+        outputs: string[];
         port: number;
-        classes: (string)[];
-        domains: (string)[];
-        inputs: (string)[];
-        onlineCheckingAddresses: (string)[];
+        classes: string[];
+        domains: string[];
+        inputs: string[];
+        onlineCheckingAddresses: string[];
         acceptUserTasks: boolean;
         deactivateProcessExecution: boolean;
       };
     };
-    machineResponse: WithRequired<components["schemas"]["machine"], "id" | "ip" | "port" | "name" | "hostname" | "discovered" | "status" | "description" | "machine">;
+    machineResponse: WithRequired<
+      components['schemas']['machine'],
+      | 'id'
+      | 'ip'
+      | 'port'
+      | 'name'
+      | 'hostname'
+      | 'discovered'
+      | 'status'
+      | 'description'
+      | 'machine'
+    >;
     /** user */
     userMetaData: {
       created_at?: string;
@@ -314,9 +341,21 @@ export interface components {
       lastName?: string;
       firstName?: string;
     };
-    userResponse: WithRequired<components["schemas"]["userMetaData"] & components["schemas"]["userData"], "created_at" | "email" | "email_verified" | "name" | "picture" | "updated_at" | "username" | "lastName" | "firstName" | "id">;
+    userResponse: WithRequired<
+      components['schemas']['userMetaData'] & components['schemas']['userData'],
+      | 'created_at'
+      | 'email'
+      | 'email_verified'
+      | 'name'
+      | 'picture'
+      | 'updated_at'
+      | 'username'
+      | 'lastName'
+      | 'firstName'
+      | 'id'
+    >;
     /**
-     * PermissionNumber 
+     * PermissionNumber
      * @description - example
      * - ezample 2
      */
@@ -327,26 +366,26 @@ export interface components {
       description?: string;
       note?: string;
       permissions?: {
-        Process?: components["schemas"]["PermissionNumber"];
-        Project?: components["schemas"]["PermissionNumber"];
-        Template?: components["schemas"]["PermissionNumber"];
-        Task?: components["schemas"]["PermissionNumber"];
-        Machine?: components["schemas"]["PermissionNumber"];
-        Execution?: components["schemas"]["PermissionNumber"];
-        Role?: components["schemas"]["PermissionNumber"];
-        User?: components["schemas"]["PermissionNumber"];
-        Setting?: components["schemas"]["PermissionNumber"];
-        EnvConfig?: components["schemas"]["PermissionNumber"];
-        All?: components["schemas"]["PermissionNumber"];
+        Process?: components['schemas']['PermissionNumber'];
+        Project?: components['schemas']['PermissionNumber'];
+        Template?: components['schemas']['PermissionNumber'];
+        Task?: components['schemas']['PermissionNumber'];
+        Machine?: components['schemas']['PermissionNumber'];
+        Execution?: components['schemas']['PermissionNumber'];
+        Role?: components['schemas']['PermissionNumber'];
+        User?: components['schemas']['PermissionNumber'];
+        Setting?: components['schemas']['PermissionNumber'];
+        EnvConfig?: components['schemas']['PermissionNumber'];
+        All?: components['schemas']['PermissionNumber'];
       };
       expiration?: string;
-      members?: ({
-          userId: string;
-          username: string;
-          fisrtName: string;
-          lastName: string;
-          email: string;
-        })[];
+      members?: {
+        userId: string;
+        username: string;
+        fisrtName: string;
+        lastName: string;
+        email: string;
+      }[];
       default?: boolean;
     };
     /** role */
@@ -356,7 +395,19 @@ export interface components {
       lastEdited?: string;
     };
     /** roleRespnse */
-    roleResponse: WithRequired<components["schemas"]["roleData"] & components["schemas"]["roleMetaData"], "name" | "description" | "note" | "permissions" | "expiration" | "members" | "id" | "default" | "createdOn" | "lastEdited">;
+    roleResponse: WithRequired<
+      components['schemas']['roleData'] & components['schemas']['roleMetaData'],
+      | 'name'
+      | 'description'
+      | 'note'
+      | 'permissions'
+      | 'expiration'
+      | 'members'
+      | 'id'
+      | 'default'
+      | 'createdOn'
+      | 'lastEdited'
+    >;
     /** roleMappingData */
     roleMappingData: {
       roleId?: string;
@@ -369,7 +420,10 @@ export interface components {
       createdOn?: string;
     };
     /** roleMappingResponse */
-    roleMappingResponse: WithRequired<components["schemas"]["roleMappingData"] & components["schemas"]["roleMappingMetaData"], "id" | "roleId" | "userId" | "roleName" | "createdOn">;
+    roleMappingResponse: WithRequired<
+      components['schemas']['roleMappingData'] & components['schemas']['roleMappingMetaData'],
+      'id' | 'roleId' | 'userId' | 'roleName' | 'createdOn'
+    >;
     /** resource */
     resource: {
       name: string;
@@ -377,13 +431,35 @@ export interface components {
       path: string;
       description: string;
       /** @enum {unknown} */
-      type: "Processes" | "Projects" | "Templates" | "Tasks" | "Machines" | "Executions" | "Roles" | "Users" | "Settings" | "Environment" | "Administrator";
-      actions: ({
-          /** @enum {unknown} */
-          name: "none" | "view" | "update" | "create" | "delete" | "manage" | "share" | "manage-roles" | "manage-groups" | "manage-password" | "admin";
-          title: string;
-          description: string;
-        })[];
+      type:
+        | 'Processes'
+        | 'Projects'
+        | 'Templates'
+        | 'Tasks'
+        | 'Machines'
+        | 'Executions'
+        | 'Roles'
+        | 'Users'
+        | 'Settings'
+        | 'Environment'
+        | 'Administrator';
+      actions: {
+        /** @enum {unknown} */
+        name:
+          | 'none'
+          | 'view'
+          | 'update'
+          | 'create'
+          | 'delete'
+          | 'manage'
+          | 'share'
+          | 'manage-roles'
+          | 'manage-groups'
+          | 'manage-password'
+          | 'admin';
+        title: string;
+        description: string;
+      }[];
       id: string;
     };
     /** shateData */
@@ -397,54 +473,58 @@ export interface components {
   };
   responses: {
     /** @description Example response */
-    "400_Error_Json": {
-      headers: {
-      };
+    '400_Error_Json': {
+      headers: {};
       content: {
-        "application/json": string;
-        "text/html": string;
+        'application/json': string;
+        'text/html': string;
       };
     };
     /** @description Example response */
-    "204_empty_array": {
+    '204_empty_array': {
       content: {
-        "application/json": (Record<string, never>)[];
+        'application/json': Record<string, never>[];
       };
     };
     /** @description 400 Error. */
-    "400_error_message": {
+    '400_error_message': {
       content: {
-        "application/json": {
+        'application/json': {
           error: string;
-          ""?: string;
+          ''?: string;
         };
       };
     };
     /** @description 400 Error. */
-    "400_error_string_or_message": {
+    '400_error_string_or_message': {
       content: {
-        "application/json": OneOf<[{
-          error?: string;
-        }, string]>;
+        'application/json': OneOf<
+          [
+            {
+              error?: string;
+            },
+            string
+          ]
+        >;
       };
     };
     /** @description 400 Error. */
-    "400_error_string": {
+    '400_error_string': {
       content: {
-        "application/json": string;
+        'application/json': string;
       };
     };
     /** @description Authentication error. */
-    "401_unauthenticated": {
+    '401_unauthenticated': {
       content: {
-        "text/html": string;
+        'text/html': string;
       };
     };
     /** @description Request validation failed. */
-    "403_validationFailed": {
+    '403_validationFailed': {
       content: {
-        "application/json": Record<string, never>;
-        "text/html": string;
+        'application/json': Record<string, never>;
+        'text/html': string;
       };
     };
   };
@@ -460,7 +540,6 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
-
   /** @description Get all processes you can view. */
   getProcess: {
     parameters: {
@@ -473,11 +552,11 @@ export interface operations {
       /** @description Returns a list of processes */
       200: {
         content: {
-          "application/json": (components["schemas"]["processResponse"])[];
+          'application/json': components['schemas']['processResponse'][];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Failed to get processes */
       500: never;
     };
@@ -486,28 +565,31 @@ export interface operations {
   postProcess: {
     requestBody: {
       content: {
-        "application/json": WithRequired<components["schemas"]["processData"] & {
-          bpmn?: components["schemas"]["bpmn"];
-        }, "departments" | "bpmn">;
+        'application/json': WithRequired<
+          components['schemas']['processData'] & {
+            bpmn?: components['schemas']['bpmn'];
+          },
+          'departments' | 'bpmn'
+        >;
       };
     };
     responses: {
       /** @description Process created succesfuly */
       201: {
         content: {
-          "application/json": components["schemas"]["process"];
+          'application/json': components['schemas']['process'];
         };
       };
       /** @description There already exists a process with the given id */
       303: {
         content: {
-          "application/json": components["schemas"]["process"];
+          'application/json': components['schemas']['process'];
         };
       };
       /** @description The body of the request does not conform to the schma of a process */
       400: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Failed to create the process due an internal error */
       500: never;
     };
@@ -516,19 +598,19 @@ export interface operations {
   getProcessById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": WithRequired<components["schemas"]["processResponse"], "bpmn">;
+          'application/json': WithRequired<components['schemas']['processResponse'], 'bpmn'>;
         };
       };
       /** @description Error getting the bpmn of the process */
       400: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
       404: never;
     };
@@ -537,31 +619,31 @@ export interface operations {
   updateProcessById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     requestBody: {
       content: {
-        "application/json": {
+        'application/json': {
           /** @description The description (the content of documentation element of the first process element in the process model) */
           description?: string;
           /** @description The name as it is in the definitions element of the process */
           definitionName?: string;
-        } & components["schemas"]["processData"] & {
-          bpmn?: components["schemas"]["bpmn"];
-        };
+        } & components['schemas']['processData'] & {
+            bpmn?: components['schemas']['bpmn'];
+          };
       };
     };
     responses: {
       /** @description Process updated succesfuly */
       200: {
         content: {
-          "application/json": components["schemas"]["process"];
+          'application/json': components['schemas']['process'];
         };
       };
       /** @description Request body doesn't contain a partial set of key:value properties of the Process scheme */
       400: never;
-      403: components["responses"]["403_validationFailed"];
+      403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
       404: never;
     };
@@ -570,13 +652,13 @@ export interface operations {
   deleteProcessById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     responses: {
       /** @description Process deleted succesfuly */
       200: never;
-      403: components["responses"]["403_validationFailed"];
+      403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
       404: never;
     };
@@ -585,18 +667,18 @@ export interface operations {
   getProcessVersionsById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     responses: {
       /** @description Returns versions of a process */
       200: {
         content: {
-          "application/json": (components["schemas"]["processVersion"])[];
+          'application/json': components['schemas']['processVersion'][];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
       404: never;
     };
@@ -605,12 +687,12 @@ export interface operations {
   postProcessVersionById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     requestBody?: {
       content: {
-        "application/json": {
+        'application/json': {
           /** @description BPMN XML */
           bpmn: string;
         };
@@ -621,14 +703,14 @@ export interface operations {
       200: never;
       /** @description Bad Request */
       400: never;
-      403: components["responses"]["403_validationFailed"];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific version of a process. */
   getVersionById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
         /** @description version number */
         version: string;
       };
@@ -637,46 +719,46 @@ export interface operations {
       /** @description Returns a process */
       200: {
         content: {
-          "text/plain": string;
+          'text/plain': string;
         };
       };
       /** @description {definitionId} or {version} are wrong */
       400: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get all images used in a process. */
   getImageOfProcessById: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     responses: {
       /** @description OK */
       200: {
         content: {
-          "image/png image/svg+xml image/jpeg": string;
+          'image/png image/svg+xml image/jpeg': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific image og a process. */
   getImagesByProcessId: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
         /** @description Filename of the image */
         imageFileName: string;
       };
     };
     requestBody?: {
       content: {
-        "application/json": {
-          [key: string]: components["schemas"]["image"] | undefined;
+        'application/json': {
+          [key: string]: components['schemas']['image'] | undefined;
         };
       };
     };
@@ -684,13 +766,13 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": {
-            ""?: string;
+          'application/json': {
+            ''?: string;
           };
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Not Found */
       404: never;
     };
@@ -699,25 +781,25 @@ export interface operations {
   getUserTasksByProcessId: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
       };
     };
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": (string)[];
+          'application/json': string[];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific user task of a process. */
   getUserTaskByFilename: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
         /** @description Filename of the user task html file */
         userTaskFileName: string;
       };
@@ -726,11 +808,11 @@ export interface operations {
       /** @description Plain html of the user task */
       200: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /**
@@ -740,7 +822,7 @@ export interface operations {
   updateUserTaskByFilename: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
         /** @description Filename of the user task html file */
         userTaskFileName: string;
       };
@@ -748,8 +830,8 @@ export interface operations {
     /** @description HTML for the userTaskFile in plain text */
     requestBody?: {
       content: {
-        "text/plain": string;
-        "text/html": string;
+        'text/plain': string;
+        'text/html': string;
       };
     };
     responses: {
@@ -757,15 +839,15 @@ export interface operations {
       200: never;
       /** @description User task HTML created in the server */
       201: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Delete a specific user task of a process. */
   deleteUserTaskByFilename: {
     parameters: {
       path: {
-        definitionId: components["parameters"]["definitionId"];
+        definitionId: components['parameters']['definitionId'];
         /** @description Filename of the user task html file */
         userTaskFileName: string;
       };
@@ -773,31 +855,31 @@ export interface operations {
     responses: {
       /** @description The request returns 200 wether the userTaskFile exists or not */
       200: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get stored machines. */
   getMachines: {
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["machine"];
+        'application/json': components['schemas']['machine'];
       };
     };
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": (components["schemas"]["machineResponse"])[];
+          'application/json': components['schemas']['machineResponse'][];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /**
    * @description Store a machine.
-   * 
+   *
    * One of the following criteria has to be met in order for the machine to be posted:
    * - machine.ip and machine.port have to be set
    * - machine.hostname has to be set
@@ -806,7 +888,7 @@ export interface operations {
   postMachine: {
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["machine"];
+        'application/json': components['schemas']['machine'];
       };
     };
     responses: {
@@ -815,10 +897,10 @@ export interface operations {
       /** @description Bad Request */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      403: components["responses"]["403_validationFailed"];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a stored machine by it's id. */
@@ -833,15 +915,15 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["machineResponse"];
+          'application/json': components['schemas']['machineResponse'];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description No machine with {id} known */
       404: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
     };
@@ -856,7 +938,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["machine"];
+        'application/json': components['schemas']['machine'];
       };
     };
     responses: {
@@ -865,15 +947,15 @@ export interface operations {
       /** @description Possible causes: The body of the request is not a JSON object or the machine is not stored and thus can't be changed. */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description No machine with {id} known! */
       404: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
     };
@@ -889,11 +971,11 @@ export interface operations {
     responses: {
       /** @description OK (This is the response, even if the machine is not known) */
       200: never;
-      401: components["responses"]["401_unauthenticated"];
+      401: components['responses']['401_unauthenticated'];
       /** @description The machine is known through the discovery and not stored. It can't be removed! */
       403: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
     };
@@ -904,33 +986,36 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["userResponse"];
+          'application/json': components['schemas']['userResponse'];
         };
       };
       /** @description No Content */
       204: {
         content: {
-          "application/json": (unknown)[];
+          'application/json': unknown[];
         };
       };
       /** @description Bad Request */
       400: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Create a user. */
   postUser: {
     requestBody?: {
       content: {
-        "application/json": WithRequired<components["schemas"]["userData"], "email" | "name" | "picture" | "username" | "lastName" | "firstName">;
+        'application/json': WithRequired<
+          components['schemas']['userData'],
+          'email' | 'name' | 'picture' | 'username' | 'lastName' | 'firstName'
+        >;
       };
     };
     responses: {
       /** @description OK */
       200: never;
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific user. */
@@ -945,17 +1030,17 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["userResponse"];
+          'application/json': components['schemas']['userResponse'];
         };
       };
       /** @description Bad Request (User probably doesn't exist) */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Update a specific user. */
@@ -968,7 +1053,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["userData"];
+        'application/json': components['schemas']['userData'];
       };
     };
     responses: {
@@ -977,11 +1062,11 @@ export interface operations {
       /** @description Bad Request */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Delete a specific user. */
@@ -998,11 +1083,11 @@ export interface operations {
       /** @description Bad Request */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Update the password of a user. */
@@ -1014,7 +1099,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        "application/json": {
+        'application/json': {
           password?: string;
         };
       };
@@ -1023,17 +1108,17 @@ export interface operations {
       /** @description Password changed succesfully */
       201: {
         content: {
-          "application/json": string;
+          'application/json': string;
         };
       };
       /** @description Bad Request */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get all roles of the authorization system. */
@@ -1042,41 +1127,44 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["roleResponse"];
+          'application/json': components['schemas']['roleResponse'];
         };
       };
       /** @description No Content */
       204: {
         content: {
-          "application/json": (unknown)[];
+          'application/json': unknown[];
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Post a new role. */
   postRole: {
     requestBody?: {
       content: {
-        "application/json": WithRequired<components["schemas"]["roleData"], "name" | "description" | "note" | "permissions" | "expiration" | "members" | "default">;
+        'application/json': WithRequired<
+          components['schemas']['roleData'],
+          'name' | 'description' | 'note' | 'permissions' | 'expiration' | 'members' | 'default'
+        >;
       };
     };
     responses: {
       /** @description Created */
       201: {
         content: {
-          "application/json": components["schemas"]["roleResponse"];
+          'application/json': components['schemas']['roleResponse'];
         };
       };
       /** @description Bad Request */
       400: {
         content: {
-          "text/html": string;
+          'text/html': string;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific role. */
@@ -1090,12 +1178,12 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["roleResponse"];
+          'application/json': components['schemas']['roleResponse'];
         };
       };
-      400: components["responses"]["400_error_string_or_message"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      400: components['responses']['400_error_string_or_message'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Update a specific role. */
@@ -1107,24 +1195,24 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["roleData"];
+        'application/json': components['schemas']['roleData'];
       };
     };
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["roleResponse"];
+          'application/json': components['schemas']['roleResponse'];
         };
       };
-      400: components["responses"]["400_error_string_or_message"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      400: components['responses']['400_error_string_or_message'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Not Found */
       404: {
         content: {
-          "application/json": Record<string, never>;
-          "application/xml": {
+          'application/json': Record<string, never>;
+          'application/xml': {
             error: string;
           };
         };
@@ -1141,13 +1229,13 @@ export interface operations {
     responses: {
       /** @description No Content */
       204: never;
-      400: components["responses"]["400_Error_Json"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      400: components['responses']['400_Error_Json'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Not Found */
       404: {
         content: {
-          "application/json": {
+          'application/json': {
             error: string;
           };
         };
@@ -1160,29 +1248,32 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["roleMappingResponse"];
+          'application/json': components['schemas']['roleMappingResponse'];
         };
       };
-      204: components["responses"]["204_empty_array"];
-      400: components["responses"]["400_error_message"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      204: components['responses']['204_empty_array'];
+      400: components['responses']['400_error_message'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Post a new role mapping. */
   postRoleMapping: {
     requestBody?: {
       content: {
-        "application/json": (WithRequired<components["schemas"]["roleMappingData"], "roleId" | "userId">)[];
+        'application/json': WithRequired<
+          components['schemas']['roleMappingData'],
+          'roleId' | 'userId'
+        >[];
       };
     };
     responses: {
       /** @description Created */
       201: never;
-      400: components["responses"]["400_error_message"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
-      404: components["responses"]["400_error_message"];
+      400: components['responses']['400_error_message'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
+      404: components['responses']['400_error_message'];
     };
   };
   /** @description Get all role mappings referencing a specific user. */
@@ -1196,13 +1287,13 @@ export interface operations {
       /** @description All the roles of a user */
       200: {
         content: {
-          "application/json": (components["schemas"]["roleMappingResponse"])[];
+          'application/json': components['schemas']['roleMappingResponse'][];
         };
       };
-      204: components["responses"]["204_empty_array"];
-      400: components["responses"]["400_Error_Json"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      204: components['responses']['204_empty_array'];
+      400: components['responses']['400_Error_Json'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Delete role mapping. */
@@ -1219,28 +1310,27 @@ export interface operations {
       /** @description Bad Request */
       400: {
         content: {
-          "application/json": Record<string, never>;
+          'application/json': Record<string, never>;
         };
       };
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
-      404: components["responses"]["400_error_message"];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
+      404: components['responses']['400_error_message'];
     };
   };
   /** @description Get all resources available in the system. */
   getResources: {
-    requestBody?: "*/*": never;
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": (components["schemas"]["resource"])[];
+          'application/json': components['schemas']['resource'][];
         };
       };
-      204: components["responses"]["204_empty_array"];
-      400: components["responses"]["400_Error_Json"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      204: components['responses']['204_empty_array'];
+      400: components['responses']['400_Error_Json'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get a specific resource. */
@@ -1254,12 +1344,12 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["resource"];
+          'application/json': components['schemas']['resource'];
         };
       };
-      400: components["responses"]["400_error_string"];
-      401: components["responses"]["401_unauthenticated"];
-      403: components["responses"]["403_validationFailed"];
+      400: components['responses']['400_error_string'];
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
       /** @description Not Found */
       404: never;
     };

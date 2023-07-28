@@ -1558,9 +1558,6 @@
           }
         },
         "operationId": "getResources",
-        "requestBody": {
-          "content": {}
-        },
         "description": "Get all resources available in the system."
       }
     },

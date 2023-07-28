@@ -165,59 +165,43 @@ class MDNS extends NativeModule {
    * @param {Array} args contains the ip of the service as its first and the port as its second element
    */
   removeDiscoveredService(args) {
-    // const [ip, port] = args;
+    const [ip, port] = args;
     // const service = this.browser.services.find((s) => s.referer.address === ip && s.port === port);
 
     // if (service) {
     //   this.browser._removeService(service.fqdn);
     // }
-    const newBrowser = bonjour.find({ type: PROCEED_SERVICE_TYPE });
-
-    // this.browser.listeners('up').forEach((cb) => newBrowser.on('up', cb));
-    // this.browser.listeners('down').forEach((cb) => newBrowser.on('down', cb));
     const oldBrowser = this.browser;
+    oldBrowser.stop();
     let knownServices = [...oldBrowser.services];
     let oldUpHandlers = [...this.browser.listeners('up')];
-    oldBrowser.stop();
-    this.browser = newBrowser;
+    let oldDownHandlers = [...this.browser.listeners('down')];
+
+    //  goodbye for non-responded / striked service
+    const toBeRemovedService = knownServices.find(
+      (service) => service.referer.address === ip && service.port === port
+    );
+    oldDownHandlers.forEach((cb) => cb(toBeRemovedService));
 
     const initialUpHandler = function (service) {
       // check if the old browser already knew the service
-      // port & host
+      // port & host  TODO:-> could be not unique
       if (
-        false /** !knownServices.some(s => s.identifier === service.identifier) ->  services not known before */
+        !knownServices.some(
+          (s) => s.host === service.host && s.port === service.port
+        ) /* ->  services not known before */
       ) {
-        // call the callbacks from the old browser#
+        // call the all callbacks from the old browser for new service -> announce them
         oldUpHandlers.forEach((cb) => cb(service));
-      } else {
-        knownServices = knownServices.filter(
-          (s) => true /** s.identifier === service.identifier */
-        );
       }
+      // remove the service from the list of known services
+      // (in case it goes down and up again) -> ensures check is only done ones
+      knownServices = knownServices.filter(
+        (s) => !((s) => s.host === service.host && s.port === service.port)
+      );
     };
 
-    newBrowser.on('up', initialUpHandler);
-
-    newBrowser.on('up', (...args) => {
-      newBrowser.off();
-
-      newBrowser.on('on', cb);
-      // cb(...args);
-      console.log('UP');
-    });
-    setTimeout(() => {
-      console.log('New Browser', newBrowser.services);
-      console.log('Old Browser', this.browser.services);
-
-      const removedServices = oldBrowser.services.filter((service) => newBrowser.some());
-      // this.browser.listeners('up').forEach((cb) =>
-      //   newBrowser.on('up', (...args) => {
-      //     // cb(...args);
-
-      //     console.log('UP');
-      //   })
-      // );
-    }, 2000);
+    this.browser = bonjour.find({ type: PROCEED_SERVICE_TYPE }, initialUpHandler);
   }
 
   /**

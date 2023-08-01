@@ -10,5 +10,7 @@
     "test": "jest",
     "lint": "eslint ."
   },
-  "dependencies": {}
+  "dependencies": {
+    "bpmn-moddle": "^8.0.1"
+  }
 }

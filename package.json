@@ -12,7 +12,9 @@
     ],
     "nohoist": [
       "**/monaco-editor",
-      "**/monaco-editor/**"
+      "**/monaco-editor/**",
+      "**/process-derivation",
+      "**/process-derivation/**"
     ]
   },
   "author": {

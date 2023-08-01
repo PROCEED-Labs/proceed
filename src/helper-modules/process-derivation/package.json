@@ -11,6 +11,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "bpmn-moddle": "^6.0.0"
+    "bpmn-moddle": "^8.0.1"
   }
 }

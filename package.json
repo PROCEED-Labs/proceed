@@ -11,8 +11,8 @@
       "src/engine/native/web/server"
     ],
     "nohoist": [
-      "**/monaco-editor",
-      "**/monaco-editor/**"
+      "**/monaco-editor/**",
+      "**/process-derivation/**"
     ]
   },
   "author": {

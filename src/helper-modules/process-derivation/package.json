@@ -1,0 +1,16 @@
+{
+  "name": "@proceed/process-derivation",
+  "version": "1.0.0",
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "description": "This library provides functions that help import processes and data from SAP BOMs into PROCEED",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "bpmn-moddle": "^8.0.1"
+  }
+}

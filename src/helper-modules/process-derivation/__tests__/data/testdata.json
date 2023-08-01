@@ -1,0 +1,119 @@
+{
+  "processSettings": {
+    "id": "Bike_mr017i5",
+    "name": "Derived process for: Bike (1.8.2023, 13:47:43)",
+    "processType": "Private",
+    "isExecutable": "false",
+    "taskType": "Task",
+    "forceConcurrentTasks": false,
+    "useSubProcesses": false,
+    "concurrentIntermediateEvent": true,
+    "subProcessesMaterials": [],
+    "textAnnotationsContents": [],
+    "concurrentTasks": false,
+    "stopOnMaterialTypes": ["ROH", "HIBE"],
+    "elementAlignment": "Aligned"
+  },
+
+  "processData": {
+    "Bike_BOM": [
+      {
+        "material": "Bike",
+        "materialName": "Bike",
+        "quantity": 1,
+        "unit": "PC",
+        "category": "L",
+        "layer": 0,
+        "materialType": "FERT"
+      },
+      {
+        "material": "A",
+        "materialName": "Handlebars",
+        "layer": 1,
+        "materialType": "HALB",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "AA",
+        "materialName": "Gear",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "AB",
+        "materialName": "Bell",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "AC",
+        "materialName": "Brake",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 2,
+        "unit": "PC"
+      },
+      {
+        "material": "B",
+        "materialName": "Frame",
+        "layer": 1,
+        "materialType": "HALB",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "BA",
+        "materialName": "Pedals",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 2,
+        "unit": "PC"
+      },
+      {
+        "material": "BB",
+        "materialName": "Cables",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 3,
+        "unit": "PC"
+      },
+      {
+        "material": "BC",
+        "materialName": "Chain",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "C",
+        "materialName": "Wheels",
+        "layer": 1,
+        "materialType": "HALB",
+        "quantity": 2,
+        "unit": "PC"
+      },
+      {
+        "material": "CA",
+        "materialName": "Tires",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 1,
+        "unit": "PC"
+      },
+      {
+        "material": "CB",
+        "materialName": "Spokes",
+        "layer": 2,
+        "materialType": "ROH",
+        "quantity": 12,
+        "unit": "PC"
+      }
+    ]
+  }
+}

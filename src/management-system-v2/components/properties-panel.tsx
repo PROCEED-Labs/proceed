@@ -137,15 +137,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
 
   return (
     <>
-      <Card
+      {/* <Card
         title={selectedElement.id}
         style={{ position: 'absolute', top: 150, right: 20, zIndex: 20 }}
         onClick={(event) => event.preventDefault()}
       >
         Name:{' '}
         <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameChange} />
-      </Card>
-      {/* {propPanel} */}
+      </Card> */}
+      {propPanel}
     </>
   );
 };

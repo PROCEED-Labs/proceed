@@ -2,28 +2,92 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
-import { Layout as AntLayout, Menu, MenuProps } from 'antd';
-import { EditOutlined, UnorderedListOutlined, ProfileOutlined } from '@ant-design/icons';
+import { Layout as AntLayout, Menu, MenuProps, Space } from 'antd';
+import {
+  DeploymentUnitOutlined,
+  FundProjectionScreenOutlined,
+  EditOutlined,
+  UnorderedListOutlined,
+  ProfileOutlined,
+  FileAddOutlined,
+  PlaySquareOutlined,
+  SettingOutlined,
+  ApiOutlined,
+} from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
+import Content from './content';
+import HeaderActions from './header-actions';
 
 const items: MenuProps['items'] = [
   {
     key: 'processes',
-    icon: <EditOutlined />,
     label: 'Processes',
+    type: 'group',
   },
   {
-    key: 'projects',
-    icon: <UnorderedListOutlined />,
-    label: 'Projects',
+    key: 'processes',
+    icon: <EditOutlined />,
+    label: 'Process List',
+  },
+  {
+    key: 'newProcess',
+    icon: <FileAddOutlined />,
+    label: 'New Process',
+    disabled: true,
   },
   {
     key: 'templates',
     icon: <ProfileOutlined />,
     label: 'Templates',
+    disabled: true,
+  },
+  {
+    key: 'execution',
+    icon: <PlaySquareOutlined />,
+    label: 'Execution',
+    disabled: true,
+  },
+
+  { type: 'divider' },
+
+  {
+    key: 'projects',
+    icon: <FundProjectionScreenOutlined />,
+    label: 'Projects',
+  },
+  {
+    key: 'tasklist',
+    icon: <UnorderedListOutlined />,
+    label: 'Tasklist',
+    disabled: true,
+  },
+
+  { type: 'divider' },
+
+  {
+    key: 'settings',
+    label: 'Settings',
+    type: 'group',
+  },
+  {
+    key: 'generalSettings',
+    icon: <SettingOutlined />,
+    label: 'General Settings',
+    disabled: true,
+  },
+  {
+    key: 'plugins',
+    icon: <ApiOutlined />,
+    label: 'Plugins',
+    disabled: true,
+  },
+  {
+    key: 'environments',
+    icon: <DeploymentUnitOutlined />,
+    label: 'Environments',
     disabled: true,
   },
 ];
@@ -39,10 +103,13 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   return (
     <AntLayout>
       <AntLayout.Sider
+        style={{ backgroundColor: '#fff' }}
         className={styles.Sider}
         collapsible
         collapsed={collapsed}
         onCollapse={(collapsed) => setCollapsed(collapsed)}
+        trigger={null}
+        breakpoint="md"
       >
         <Image
           src="/proceed.svg"
@@ -53,7 +120,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           priority
         />
         <Menu
-          theme="dark"
+          theme="light"
           mode="inline"
           selectedKeys={[activeSegment]}
           items={items}
@@ -62,7 +129,11 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           }}
         />
       </AntLayout.Sider>
-      <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
+      <Content fixedHeader={true} rightNode={<HeaderActions />}>
+        <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+          <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
+        </Space>
+      </Content>
     </AntLayout>
   );
 };

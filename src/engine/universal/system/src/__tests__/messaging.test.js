@@ -224,11 +224,11 @@ describe('Tests for the message interface of the dispatcher', () => {
       messaging._password = 'password123';
       // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
       messaging._machineId = 'engineId';
-      messaging._baseTopic = 'base-topic/';
+      messaging._baseTopic = 'base-topic';
 
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
-          prependDefaultTopic: true,
+          prependEngineTopic: true,
         })
       ).resolves.not.toThrow();
 
@@ -238,7 +238,32 @@ describe('Tests for the message interface of the dispatcher', () => {
           'mqtt://localhost:1883',
           'base-topic/engine/engineId/test/123',
           'Hello World',
-          '{"prependDefaultTopic":true}',
+          '{}',
+          `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
+        ],
+      ]);
+    });
+
+    it('will prefix "[baseTopic]" to the given topic if requested', async () => {
+      messaging._username = 'user';
+      messaging._password = 'password123';
+      // this is what defines the engine id used in the prefix (will be passed to the messaging module on initialization)
+      messaging._machineId = 'engineId';
+      messaging._baseTopic = 'base-topic';
+
+      await expect(
+        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
+          prependBaseTopic: true,
+        })
+      ).resolves.not.toThrow();
+
+      expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
+        'messaging_publish',
+        [
+          'mqtt://localhost:1883',
+          'base-topic/test/123',
+          'Hello World',
+          '{}',
           `{\"username\":\"user\",\"password\":\"password123\",\"clientId\":\"engineId|user\"}`,
         ],
       ]);

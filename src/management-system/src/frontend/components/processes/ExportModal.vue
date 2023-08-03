@@ -32,10 +32,10 @@
         <v-col>
           <v-container>
             <v-checkbox
-              v-if="isUserTaskVisible"
+              v-if="isArtefactVisible"
               v-model="additionalBpmn"
-              :key="'withUserTasks'"
-              :label="'with User Tasks'"
+              :key="'withArtefacts'"
+              :label="'with Artefacts'"
               :value="!additionalBpmn"
             >
             </v-checkbox>
@@ -141,7 +141,7 @@ export default {
       bpmnOption: null,
       resolutionValue: 2,
       additionalParam: {},
-      isUserTaskVisible: false,
+      isArtefactVisible: false,
       isPDFTitleVisible: false,
       isResolutionVisible: false,
       isCallActivityVisible: false,
@@ -179,7 +179,7 @@ export default {
         switch (this.selectedOption.format) {
           case 'bpmn':
             this.additionalPdf = false;
-            this.isUserTaskVisible = true;
+            this.isArtefactVisible = true;
             this.isPDFTitleVisible = false;
             this.isResolutionVisible = false;
             this.isCallActivityVisible = true;
@@ -187,7 +187,7 @@ export default {
             break;
           case 'pdf':
             this.additionalBpmn = false;
-            this.isUserTaskVisible = false;
+            this.isArtefactVisible = false;
             this.isPDFTitleVisible = true;
             this.isResolutionVisible = true;
             this.isCallActivityVisible = true;
@@ -198,7 +198,7 @@ export default {
             this.additionalBpmn = false;
             this.additionalPdf = false;
             this.additionalParam.resolution = this.resolutionValue;
-            this.isUserTaskVisible = false;
+            this.isArtefactVisible = false;
             this.isPDFTitleVisible = false;
             this.isResolutionVisible = true;
             this.isCallActivityVisible = true;
@@ -207,7 +207,7 @@ export default {
           default:
             this.additionalBpmn = false;
             this.additionalPdf = false;
-            this.isUserTaskVisible = false;
+            this.isArtefactVisible = false;
             this.isPDFTitleVisible = false;
             this.isResolutionVisible = false;
             this.isCallActivityVisible = true;
@@ -218,7 +218,7 @@ export default {
         this.exportOption.additionalParam = this.additionalParam;
 
         if (this.selectedOption.format == 'bpmn' && this.additionalBpmn == true) {
-          this.exportOption.additionalParam.format = 'withUserTasks';
+          this.exportOption.additionalParam.format = 'withArtefacts';
         }
         if (this.selectedOption.format == 'pdf' && this.additionalPdf == true) {
           this.exportOption.additionalParam.format = 'pdfwh';

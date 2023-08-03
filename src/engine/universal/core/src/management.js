@@ -469,7 +469,10 @@ const Management = {
 
   removeProcessEngine(definitionId) {
     const engine = this.getEngineWithDefinitionId(definitionId);
-    this._engines.splice(this._engines.indexOf(engine), 1);
+    if (engine) {
+      engine.destroy();
+      this._engines.splice(this._engines.indexOf(engine), 1);
+    }
   },
 
   removeInstance(instanceId) {

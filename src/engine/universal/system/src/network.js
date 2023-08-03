@@ -13,9 +13,10 @@ const { wrapInFilterResponseMiddleware } = require('./middleware');
  */
 class Network {
   // create instances of
-  constructor(env) {
+  constructor(env, messaging) {
     this._http = new HTTP(env);
     this.environment = env;
+    this._messaging = messaging;
   }
 
   /**
@@ -74,18 +75,22 @@ class Network {
 
   get(path, options, callback) {
     this._http.get(path, options, wrapInFilterResponseMiddleware(callback));
+    this._messaging.get(path, options, wrapInFilterResponseMiddleware(callback));
   }
 
   put(path, options, callback) {
     this._http.put(path, options, wrapInFilterResponseMiddleware(callback));
+    this._messaging.put(path, options, wrapInFilterResponseMiddleware(callback));
   }
 
   post(path, options, callback) {
     this._http.post(path, options, wrapInFilterResponseMiddleware(callback));
+    this._messaging.post(path, options, wrapInFilterResponseMiddleware(callback));
   }
 
   delete(path, options, callback) {
     this._http.delete(path, options, wrapInFilterResponseMiddleware(callback));
+    this._messaging.delete(path, options, wrapInFilterResponseMiddleware(callback));
   }
 }
 

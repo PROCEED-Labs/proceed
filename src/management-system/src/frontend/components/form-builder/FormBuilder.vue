@@ -83,6 +83,44 @@ export default {
     });
     this.autoClose();
     const myNewComponentTypes = (editor) => {
+      editor.DomComponents.addType('button', {
+        isComponent: (el) => el.tagName == 'BUTTON',
+        model: {
+          defaults: {
+            traits: [
+              'id',
+              {
+                type: 'select',
+                label: 'Type',
+                name: 'type',
+                options: [
+                  { id: 'submit', name: 'Submit' },
+                  { id: 'reset', name: 'Reset' },
+                  { id: 'button', name: 'Button' },
+                ],
+              },
+              {
+                type: 'text',
+                label: 'Text',
+                name: 'text',
+                placeholder: 'Insert Text for Button',
+              },
+            ],
+            attributes: { type: 'submit' },
+          },
+          init() {
+            this.on('change:attributes:text', this.onTextChange);
+          },
+          onTextChange() {
+            const attributes = this.getAttributes();
+
+            this.components(attributes.text);
+
+            delete attributes.text;
+            this.setAttributes(attributes);
+          },
+        },
+      });
       editor.DomComponents.addType('input', {
         isComponent: (el) => el.tagName == 'INPUT',
         model: {

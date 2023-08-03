@@ -27,12 +27,18 @@ class Messaging extends System {
     // publish requests that were made before the module was completely initialized (should be done after initializitation was completed)
     this._preInitPublishQueue = [];
 
+    // endpoints that were registered before the module was completely initialized (should be transformed to subsriptions after initialization)
+    this._preInitServeQueue = [];
+
     // if the module has been initialized with the required data
     this._initialized = false;
 
     this.subscriptions = {};
 
     this._logger = null;
+
+    // flag that is used to ensure that a failing rest mapping setup is only logged once
+    this._firstServeHasFailed = false;
   }
 
   /**
@@ -61,7 +67,23 @@ class Messaging extends System {
 
     this._preInitPublishQueue = [];
 
-    logger.debug('Initialized the messaging module');
+    // if there is a default server to connect to => register the mapped rest endpoints
+    if (defaultAddress) {
+      try {
+        for (const { constructTopic, onMessage } of this._preInitServeQueue) {
+          await this.subscribe(constructTopic(baseTopic, machineId), onMessage);
+        }
+      } catch (err) {
+        if (!this._firstServeHasFailed) {
+          this._firstServeHasFailed = true;
+          logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+        }
+      }
+    }
+
+    this._preInitServeQueue = [];
+
+    logger.debug('Initialized the messaging module!');
   }
 
   /**
@@ -279,8 +301,8 @@ class Messaging extends System {
     subscriptionOptions.subscriptionId = taskID; // we need a way to tell the native part which subscription to remove when we unsubscribe from the topic in the future
     subscriptionOptions = JSON.stringify(subscriptionOptions);
     this._completeLoginInfo(connectionOptions);
-    connectionOptions = JSON.stringify(connectionOptions);
     const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
+    connectionOptions = JSON.stringify(connectionOptions);
     // send the subscription request to the native part
     this.commandRequest(taskID, [
       'messaging_subscribe',
@@ -315,8 +337,8 @@ class Messaging extends System {
 
     // adds additional information to the options and serialize them for the ipc call
     this._completeLoginInfo(connectionOptions);
-    connectionOptions = JSON.stringify(connectionOptions);
     const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
+    connectionOptions = JSON.stringify(connectionOptions);
 
     if (
       !this.subscriptions[url] ||
@@ -355,6 +377,147 @@ class Messaging extends System {
     ]);
 
     return listenPromise;
+  }
+
+  /**
+   * Creates a subsription that represents a mapped REST-Endpoint
+   *
+   * @param {String} method the rest method handled by the subscription
+   * @param {String} path the path of the endpoint
+   * @param {Object|undefined} options optional options object that is not used by this function but by the equivalent REST function
+   * @param {Function} callback the function to execute when a request is received on the subscription
+   */
+  async _serve(method, path, options, callback) {
+    // options are optional (we don't use them here but we provide the same signature as the http _serve method)
+    if (typeof options === 'function') {
+      callback = options;
+    }
+
+    // map the REST path to a topic
+    function constructTopic(baseTopic, machineId) {
+      const withTrailingSlash = this;
+
+      // prepend the engine path to differentiate between calls to different engines on the same messaging server
+      let extendedPath = `${baseTopic}/engine/${machineId}/api${path}`;
+
+      // replace express style wildcards with our topic wildcards
+      extendedPath = extendedPath
+        .split('/')
+        .filter((segment) => !!segment)
+        .map((segment) => (segment.startsWith(':') ? '+' : segment))
+        .join('/');
+      // force every topic to end with a slash to ensure consistency for all topics
+      if (withTrailingSlash) extendedPath += '/';
+
+      return extendedPath;
+    }
+    const constructTopicWithTrailingSlash = constructTopic.bind(true);
+    const constructTopicWithoutTrailingSlash = constructTopic.bind(false);
+
+    const onMessage = async (topic, message) => {
+      let requestId;
+      try {
+        if (!message) {
+          return;
+        }
+
+        const request = JSON.parse(message);
+        // we can only answer and therefore handle requests that have an id
+        if (request.type === 'request' && request.id && request.method === method) {
+          requestId = request.id;
+
+          // get the params by comparing the express style path and the incoming topic
+          const params = {};
+          const pathSegments = path.split('/').filter((segment) => !!segment);
+          const topicSegments = topic
+            .split('/')
+            .slice(3)
+            .filter((segment) => !!segment);
+
+          for (let i = 0; i < Math.min(pathSegments.length, topicSegments.length); ++i) {
+            if (pathSegments[i].startsWith(':')) {
+              params[pathSegments[i].substring(1)] = topicSegments[i];
+            }
+          }
+
+          // call the handler for the called "endpoint"
+          const res = await callback({ body: request.body, params, query: request.query || {} });
+
+          // handle the different ways in which the handlers might return their results
+          let sendResponse = res;
+          let statusCode = 200;
+          if (typeof res === 'object') {
+            sendResponse = res.response;
+            statusCode = res.statusCode || 200;
+          }
+
+          if (Buffer.isBuffer(sendResponse)) sendResponse = sendResponse.toString();
+
+          // answer the request on the same topic using the same id
+          await this.publish(topic, {
+            type: 'response',
+            id: request.id,
+            statusCode,
+            body: sendResponse,
+          });
+        }
+      } catch (err) {
+        if (this._logger)
+          this._logger.error(`Messaging (REST Mapping [path: ${path}]): ${err.message}`);
+        // return an error to the caller
+        await this.publish(topic, {
+          type: 'response',
+          id: requestId,
+          error: err.message,
+          statusCode: err.statusCode || 500,
+        });
+      }
+    };
+
+    if (!this._initialized) {
+      // enqueue the subscribe calls so they can be called after the module was initialized
+      this._preInitServeQueue.push({
+        constructTopic: constructTopicWithTrailingSlash,
+        onMessage,
+      });
+      this._preInitServeQueue.push({
+        constructTopic: constructTopicWithoutTrailingSlash,
+        onMessage,
+      });
+      return;
+    }
+
+    // subscribe both to the topic with and without a trailing slash
+    try {
+      await this.subscribe(
+        constructTopicWithTrailingSlash(this._baseTopic, this._machineId),
+        onMessage
+      );
+      await this.subscribe(
+        constructTopicWithoutTrailingSlash(this._baseTopic, this._machineId),
+        onMessage
+      );
+    } catch (err) {
+      if (!this._firstServeHasFailed) {
+        logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+      }
+    }
+  }
+
+  get(path, options, callback) {
+    this._serve('GET', path, options, callback);
+  }
+
+  put(path, options, callback) {
+    this._serve('PUT', path, options, callback);
+  }
+
+  post(path, options, callback) {
+    this._serve('POST', path, options, callback);
+  }
+
+  delete(path, options, callback) {
+    this._serve('DELETE', path, options, callback);
   }
 }
 

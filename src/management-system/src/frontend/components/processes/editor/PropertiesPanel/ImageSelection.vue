@@ -151,6 +151,7 @@ export default {
           this.filename = null;
         }
       },
+      immediate: true,
     },
   },
 };

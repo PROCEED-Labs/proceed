@@ -6,8 +6,6 @@ services:
   management_system:
     image: proceed/ms-server:${MS_TAG:-latest}
     container_name: proceed-ms-server
-    environment:
-      - MS_BIND_MOUNT_DIRECTORY=${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}
     volumes:
       - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/ssl:/opt/proceed-ms-server/ssl
       - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Processes:/opt/proceed-ms-server/Processes

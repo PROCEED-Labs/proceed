@@ -277,6 +277,19 @@ export default {
           });
         }
       });
+
+      if (processData.imageData) {
+        await asyncForEach(
+          Object.entries(processData.imageData),
+          async ([imageFileName, image]) => {
+            await this.$store.dispatch('processStore/saveImage', {
+              processDefinitionsId: processData.id,
+              imageFileName,
+              image,
+            });
+          }
+        );
+      }
     },
   },
 };

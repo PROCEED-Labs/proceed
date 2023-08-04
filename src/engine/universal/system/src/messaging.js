@@ -18,7 +18,7 @@ class Messaging extends System {
     // the password the engine will use for authentication if no other is given
     this._password = undefined;
 
-    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested
+    // topic that is prepended to publish and subscribe calls as the start of a default topic prefix if requested (this consists of the base topic defined in the engine messaging config and the subtopic "proceed-pms" => [config-base-topic]/proceed-pms)
     this._baseTopic = '';
 
     // the machineId that identifies the engine and is used for the default topic prefix ([baseTopic]/engine/[machineId]/[topic])
@@ -27,12 +27,18 @@ class Messaging extends System {
     // publish requests that were made before the module was completely initialized (should be done after initializitation was completed)
     this._preInitPublishQueue = [];
 
+    // endpoints that were registered before the module was completely initialized (should be transformed to subsriptions after initialization)
+    this._preInitServeQueue = [];
+
     // if the module has been initialized with the required data
     this._initialized = false;
 
     this.subscriptions = {};
 
     this._logger = null;
+
+    // flag that is used to ensure that a failing rest mapping setup is only logged once
+    this._firstServeHasFailed = false;
   }
 
   /**
@@ -42,6 +48,7 @@ class Messaging extends System {
    * @param {String} defaultUsername
    * @param {String} defaultPassword
    * @param {String} machineId
+   * @param {String} baseTopic // see the _baseTopic member variable
    */
   async init(defaultAddress, defaultUsername, defaultPassword, machineId, baseTopic, logger) {
     this._defaultMessagingServerAddress = defaultAddress;
@@ -60,7 +67,23 @@ class Messaging extends System {
 
     this._preInitPublishQueue = [];
 
-    logger.debug('Initialized the messaging module');
+    // if there is a default server to connect to => register the mapped rest endpoints
+    if (defaultAddress) {
+      try {
+        for (const { constructTopic, onMessage } of this._preInitServeQueue) {
+          await this.subscribe(constructTopic(baseTopic, machineId), onMessage);
+        }
+      } catch (err) {
+        if (!this._firstServeHasFailed) {
+          this._firstServeHasFailed = true;
+          logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+        }
+      }
+    }
+
+    this._preInitServeQueue = [];
+
+    logger.debug('Initialized the messaging module!');
   }
 
   /**
@@ -92,8 +115,14 @@ class Messaging extends System {
    *
    * @param {String} url the address of the messaging server
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server
-   * @param {String} connectionOptions.username the username to use when connecting
-   * @param {String} connectionOptions.password the password to use when connecting
+   * @param {String} [connectionOptions.username] the username to use when connecting
+   * @param {String} [connectionOptions.password] the password to use when connecting
+   * @param {String} [connectionOptions.clientId] the client identification to use when connecting
+   * @param {Object} [connectionOptions.will] a message that should be sent by the server to subscribers when the connection to the messaging server is closes unexpectedly
+   * @param {String} connectionOptions.will.topic the topic under which the will message should be published
+   * @param {Object} connectionOptions.will.payload the data to publish on disconnect
+   * @param {Number} connectionOptions.will.qos see the description on the publish function
+   * @param {Boolean} connectionOptions.will.retain see the description on the publish function
    */
   async connect(url, connectionOptions = {}) {
     const taskID = generateUniqueTaskID();
@@ -128,9 +157,10 @@ class Messaging extends System {
    * @param {Object} connectionOptions options that were used when connecting to the server
    * @param {String} connectionOptions.username the username that was used when connecting
    * @param {String} connectionOptions.password the password that was used when connecting
+   * @param {String} connectionOptions.clientId the clientId that was used when connecting
    */
   async disconnect(url, connectionOptions = {}) {
-    const taskID = utils.generateUniqueTaskID();
+    const taskID = generateUniqueTaskID();
 
     const listenPromise = new Promise((resolve, reject) => {
       // Listen for the response from the native part
@@ -161,7 +191,8 @@ class Messaging extends System {
    * @param {Object} messageOptions options that should be used when publishing the message
    * @param {Number} [messageOptions.qos] mqtt: defines how the message is sent (0: no checking if it arrived, 1: sent until receiving an acknowledgement but it might arrive mutliple times, 2: sent in a way that ensures that the message arrives exactly once)
    * @param {Boolean} [messageOptions.retain] mqtt: defines if the message should be stored for and be sent to users that might connect or subscribe to the topic after it has been sent
-   * @param {Boolean} [messageOptions.prependDefaultTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
+   * @param {Boolean} [messageOptions.prependBaseTopic] if set to true will prepend [baseTopic] to the given topic so the message is grouped into a topic with others using the base topic
+   * @param {Boolean} [messageOptions.prependEngineTopic] if set to true will prepend [baseTopic]/engine/[engine-id] to the given topic so the message is grouped into a topic with other engine data
    * @param {Boolean} [messageOptions.retain] if the message should be stored for the topic so that new subscribers automatically get the information
    * @param {Object} connectionOptions options that should be used when connecting to the messaging server to send the message
    * @param {String} [connectionOptions.username] the username to use when connecting
@@ -205,10 +236,14 @@ class Messaging extends System {
     });
 
     // prepends the default topic path "[baseTopic]/engine/[engine-id]" to the topic
-    // this way all modules in the engine can just call publish with prependDefaultTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
-    if (messageOptions.prependDefaultTopic) {
-      topic = `${this._baseTopic}engine/${this._machineId}/${topic}`;
+    // this way all modules in the engine can just call publish with prependEngineTopic to publish under one topic instead of having to import the machineInfo and rebuild the topic path themselves
+    if (messageOptions.prependEngineTopic) {
+      topic = `${this._baseTopic}/engine/${this._machineId}/${topic}`;
+    } else if (messageOptions.prependBaseTopic) {
+      topic = `${this._baseTopic}/${topic}`;
     }
+    delete messageOptions.prependEngineTopic;
+    delete messageOptions.prependBaseTopic;
 
     // make sure that everything is in the correct format to be passed to the native part
     if (typeof message !== 'string') message = JSON.stringify(message);
@@ -266,8 +301,8 @@ class Messaging extends System {
     subscriptionOptions.subscriptionId = taskID; // we need a way to tell the native part which subscription to remove when we unsubscribe from the topic in the future
     subscriptionOptions = JSON.stringify(subscriptionOptions);
     this._completeLoginInfo(connectionOptions);
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
     connectionOptions = JSON.stringify(connectionOptions);
-    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
     // send the subscription request to the native part
     this.commandRequest(taskID, [
       'messaging_subscribe',
@@ -289,8 +324,9 @@ class Messaging extends System {
    * @param {Function} callback the callback that was given to the subscribe function
    * @param {String} [overrideUrl] the server address given to the subscribe function (might be left open to default to the address in the config)
    * @param {Object} connectionOptions the log in information that was used for the subscription
-   * @param {Object} connectionOptions.username
-   * @param {Object} connectionOptions.password
+   * @param {String} [connectionOptions.username] the username to use when connecting
+   * @param {String} [connectionOptions.password] the password to use when connecting
+   * @param {String} [connectionOptions.clientIdPrefix] can be used to define a prefix for the final clientId (clientIdPrefix + machineId + '|' + username + ':')
    */
   async unsubscribe(topic, callback, overrideUrl, connectionOptions = {}) {
     // if no url is given use the default url if one was set
@@ -301,8 +337,8 @@ class Messaging extends System {
 
     // adds additional information to the options and serialize them for the ipc call
     this._completeLoginInfo(connectionOptions);
+    const sessionId = `${connectionOptions.username}|${connectionOptions.password}|${connectionOptions.clientId}`;
     connectionOptions = JSON.stringify(connectionOptions);
-    const sessionId = `${connectionOptions.username}|${connectionOptions.password}`;
 
     if (
       !this.subscriptions[url] ||
@@ -341,6 +377,147 @@ class Messaging extends System {
     ]);
 
     return listenPromise;
+  }
+
+  /**
+   * Creates a subsription that represents a mapped REST-Endpoint
+   *
+   * @param {String} method the rest method handled by the subscription
+   * @param {String} path the path of the endpoint
+   * @param {Object|undefined} options optional options object that is not used by this function but by the equivalent REST function
+   * @param {Function} callback the function to execute when a request is received on the subscription
+   */
+  async _serve(method, path, options, callback) {
+    // options are optional (we don't use them here but we provide the same signature as the http _serve method)
+    if (typeof options === 'function') {
+      callback = options;
+    }
+
+    // map the REST path to a topic
+    function constructTopic(baseTopic, machineId) {
+      const withTrailingSlash = this;
+
+      // prepend the engine path to differentiate between calls to different engines on the same messaging server
+      let extendedPath = `${baseTopic}/engine/${machineId}/api${path}`;
+
+      // replace express style wildcards with our topic wildcards
+      extendedPath = extendedPath
+        .split('/')
+        .filter((segment) => !!segment)
+        .map((segment) => (segment.startsWith(':') ? '+' : segment))
+        .join('/');
+      // force every topic to end with a slash to ensure consistency for all topics
+      if (withTrailingSlash) extendedPath += '/';
+
+      return extendedPath;
+    }
+    const constructTopicWithTrailingSlash = constructTopic.bind(true);
+    const constructTopicWithoutTrailingSlash = constructTopic.bind(false);
+
+    const onMessage = async (topic, message) => {
+      let requestId;
+      try {
+        if (!message) {
+          return;
+        }
+
+        const request = JSON.parse(message);
+        // we can only answer and therefore handle requests that have an id
+        if (request.type === 'request' && request.id && request.method === method) {
+          requestId = request.id;
+
+          // get the params by comparing the express style path and the incoming topic
+          const params = {};
+          const pathSegments = path.split('/').filter((segment) => !!segment);
+          const topicSegments = topic
+            .split('/')
+            .slice(3)
+            .filter((segment) => !!segment);
+
+          for (let i = 0; i < Math.min(pathSegments.length, topicSegments.length); ++i) {
+            if (pathSegments[i].startsWith(':')) {
+              params[pathSegments[i].substring(1)] = topicSegments[i];
+            }
+          }
+
+          // call the handler for the called "endpoint"
+          const res = await callback({ body: request.body, params, query: request.query || {} });
+
+          // handle the different ways in which the handlers might return their results
+          let sendResponse = res;
+          let statusCode = 200;
+          if (typeof res === 'object') {
+            sendResponse = res.response;
+            statusCode = res.statusCode || 200;
+          }
+
+          if (Buffer.isBuffer(sendResponse)) sendResponse = sendResponse.toString();
+
+          // answer the request on the same topic using the same id
+          await this.publish(topic, {
+            type: 'response',
+            id: request.id,
+            statusCode,
+            body: sendResponse,
+          });
+        }
+      } catch (err) {
+        if (this._logger)
+          this._logger.error(`Messaging (REST Mapping [path: ${path}]): ${err.message}`);
+        // return an error to the caller
+        await this.publish(topic, {
+          type: 'response',
+          id: requestId,
+          error: err.message,
+          statusCode: err.statusCode || 500,
+        });
+      }
+    };
+
+    if (!this._initialized) {
+      // enqueue the subscribe calls so they can be called after the module was initialized
+      this._preInitServeQueue.push({
+        constructTopic: constructTopicWithTrailingSlash,
+        onMessage,
+      });
+      this._preInitServeQueue.push({
+        constructTopic: constructTopicWithoutTrailingSlash,
+        onMessage,
+      });
+      return;
+    }
+
+    // subscribe both to the topic with and without a trailing slash
+    try {
+      await this.subscribe(
+        constructTopicWithTrailingSlash(this._baseTopic, this._machineId),
+        onMessage
+      );
+      await this.subscribe(
+        constructTopicWithoutTrailingSlash(this._baseTopic, this._machineId),
+        onMessage
+      );
+    } catch (err) {
+      if (!this._firstServeHasFailed) {
+        logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+      }
+    }
+  }
+
+  get(path, options, callback) {
+    this._serve('GET', path, options, callback);
+  }
+
+  put(path, options, callback) {
+    this._serve('PUT', path, options, callback);
+  }
+
+  post(path, options, callback) {
+    this._serve('POST', path, options, callback);
+  }
+
+  delete(path, options, callback) {
+    this._serve('DELETE', path, options, callback);
   }
 }
 

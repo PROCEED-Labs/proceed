@@ -51,6 +51,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       },
       getInstance: jest.fn(),
       archiveInstance: jest.fn(),
+      deleteInstance: jest.fn(),
     };
 
     mockStateStream = {

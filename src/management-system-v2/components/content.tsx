@@ -22,6 +22,8 @@ type ContentProps = PropsWithChildren<{
   headerClass?: string;
   /** Class name for the footer. */
   footerClass?: string;
+  /* Whether the header is fixed or not */
+  fixedHeader?: boolean;
 }>;
 
 const Content: FC<ContentProps> = ({
@@ -33,6 +35,7 @@ const Content: FC<ContentProps> = ({
   wrapperClass,
   headerClass,
   footerClass,
+  fixedHeader = false,
 }) => {
   const {
     token: { colorBgContainer },
@@ -45,6 +48,8 @@ const Content: FC<ContentProps> = ({
           style={{
             background: colorBgContainer,
             borderBottom: '1px solid #eee',
+            // position: fixedHeader ? 'fixed' : 'static',
+            // width: fixedHeader ? '100%' : 'auto',
           }}
           className={cn(styles.Header, headerClass)}
         >
@@ -54,12 +59,19 @@ const Content: FC<ContentProps> = ({
           <div className={styles.Right}>{rightNode}</div>
         </Layout.Header>
       )}
-      <Layout.Content className={cn(styles.Content, { [styles.compact]: compact })}>
+      <Layout.Content
+        className={cn(styles.Content, { [styles.compact]: compact })}
+        style={{
+          background: colorBgContainer,
+        }}
+      >
         {children}
       </Layout.Content>
-      <Layout.Footer className={cn(styles.Footer, footerClass)}>
-        © 2023 PROCEED Labs GmbH
-      </Layout.Footer>
+      {fixedHeader && (
+        <Layout.Footer className={cn(styles.Footer, footerClass)}>
+          © 2023 PROCEED Labs GmbH
+        </Layout.Footer>
+      )}
     </Layout>
   );
 };

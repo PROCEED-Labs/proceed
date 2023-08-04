@@ -68,10 +68,11 @@ class NativeMQTT extends NativeModule {
     // (this will override the auth information in the connectionOptions if there is auth data in the url)
     connectionOptions.username = url.username || connectionOptions.username;
     connectionOptions.password = url.password || connectionOptions.password;
+
     // either keep the auth info in the url or add the info from the options object if there is none in the url
     // (will be used to identify a connection by user if there are mutliple connections to the same address)
-    url.username = url.username || connectionOptions.username;
-    url.password = url.password || connectionOptions.password;
+    url.username = url.username || connectionOptions.username || '';
+    url.password = url.password || connectionOptions.password || '';
     return url.toString();
   }
 
@@ -91,8 +92,8 @@ class NativeMQTT extends NativeModule {
 
     // check if there is already a connection for the given url
     // extendUrlAndConnectionOptions(...) will put the user auth into the url so we can differentiate between connections with different auth data to the same mqtt broker
-    if (this.connections[url]) {
-      return this.connections[url];
+    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
+      return this.connections[`${url}-${connectionOptions.clientId}`];
     }
 
     // if the connectionOptions contains a will message that is a stringified JSON (the mqtt library expect the payload to be a string) the JSON.parse at the start of the function will have transformed it to an object
@@ -111,9 +112,24 @@ class NativeMQTT extends NativeModule {
 
     // used to remember named subscriptions to enable unsubscribing functionality
     client.subscriptionCallbacks = {};
+    // handle incoming messages by calling the correct subscription callbacks
+    client.on('message', (incomingTopic, message) => {
+      Object.entries(client.subscriptionCallbacks).forEach(([topic, callbacks]) => {
+        // filter the incoming messages for the ones this subscription is interested in
+        let topicRegex = `^${topic}$`; // prevent matching of topics that contain our topic string somewhere "in the middle" (e.g. topic = test/topic, incomingTopic = root/test/topic should not be a match)
+        topicRegex = topicRegex.replace(/\+/g, '[^/]+'); // allow matching of one topic level per + symbol
+        topicRegex = topicRegex.replace(/(\/)?#\$/, '(|$1.*)$'); // allow matching of multiple topic levels (including 0) for a # symbol at the end
+
+        if (incomingTopic.match(topicRegex)) {
+          Object.values(callbacks).forEach((callback) =>
+            callback(undefined, [incomingTopic, message.toString()])
+          );
+        }
+      });
+    });
 
     // store the client so we don't try to reconnect for future publish or subscribe calls
-    this.connections[url] = client;
+    this.connections[`${url}-${connectionOptions.clientId}`] = client;
 
     return client;
   }
@@ -130,16 +146,15 @@ class NativeMQTT extends NativeModule {
     url = this._extendUrlAndConnectionOptions(url, connectionOptions);
 
     // get the connection that was stored for this address and login info combination
-    const client = this.connections[url];
+    const client = this.connections[`${url}-${connectionOptions.clientId}`];
 
     if (client) {
-      // eventNames includes message if there are callbacks for the message event which are added by subscriptions
-      const hasSubscriptions = client.eventNames().includes('message');
+      const hasSubscriptions = Object.keys(client.subscriptionCallbacks).length;
 
       if (forceClose || (!client.keepOpen && !hasSubscriptions)) {
         // close the connection and remove it
         await client.end();
-        delete this.connections[url];
+        delete this.connections[`${url}-${connectionOptions.clientId}`];
       }
     }
   }
@@ -175,26 +190,15 @@ class NativeMQTT extends NativeModule {
 
     const connection = await this.connect(url, connectionOptions);
 
-    function subscriptionCallback(incomingTopic, message) {
-      // filter the incoming messages for the ones this subscription is interested in
-      let topicRegex = `^${topic}$`; // prevent matching of topics that contain our topic string somewhere "in the middle" (e.g. topic = test/topic, incomingTopic = root/test/topic should not be a match)
-      topicRegex = topicRegex.replace('+', '[^/]+'); // allow matching of one topic level per + symbol
-      topicRegex = topicRegex.replace(/(\/)?#\$/, '(|$1.*)$'); // allow matching of multiple topic levels (including 0) for a # symbol at the end
-      if (incomingTopic.match(topicRegex)) send(undefined, [incomingTopic, message.toString()]);
-    }
-
     await connection.subscribe(topic, {
       qos: 2, // default to qos 2 (ensures exactly one receival)
       ...subscriptionOptions, // allow user defined options (e.g. qos 0/1)
       subscriptionId: undefined, // the subscriptionId is only for our internal logic and should not be passed to async-mqtt
     });
 
-    connection.on('message', subscriptionCallback);
-
     // remember the subscription so we are able to unsubscribe in the future
     if (!connection.subscriptionCallbacks[topic]) connection.subscriptionCallbacks[topic] = {};
-    connection.subscriptionCallbacks[topic][subscriptionOptions.subscriptionId] =
-      subscriptionCallback;
+    connection.subscriptionCallbacks[topic][subscriptionOptions.subscriptionId] = send;
   }
 
   /**
@@ -203,14 +207,14 @@ class NativeMQTT extends NativeModule {
    * @param {String} originalUrl the url that was given when the subscription was made
    * @param {String} topic the topic that was subscribed to with the subscriptions
    * @param {String} subscriptionId identifier to uniquely identify the original subscription (we might have multiple subscriptions to the same topic on the same broker)
-   * @param {String} originalConnectionOptions the connection options given with the subscription (username and password)
+   * @param {String} originalConnectionOptions the connection options given with the subscription (username, password and clientId)
    */
   async unsubscribe(originalUrl, topic, subscriptionId, originalConnectionOptions) {
     let connectionOptions = JSON.parse(originalConnectionOptions || '{}');
     let url = this._extendUrlAndConnectionOptions(originalUrl, connectionOptions);
 
-    if (this.connections[url]) {
-      const connection = this.connections[url];
+    if (this.connections[`${url}-${connectionOptions.clientId}`]) {
+      const connection = this.connections[`${url}-${connectionOptions.clientId}`];
       if (
         !connection.subscriptionCallbacks[topic] ||
         !connection.subscriptionCallbacks[topic][subscriptionId]
@@ -219,8 +223,6 @@ class NativeMQTT extends NativeModule {
       }
 
       // remove the handler for the incoming messages
-      const subscriptionCallback = connection.subscriptionCallbacks[topic][subscriptionId];
-      connection.off('message', subscriptionCallback);
       delete connection.subscriptionCallbacks[topic][subscriptionId];
 
       // only unsubscribe if all local subscriptions have been removed (there is only one subscription per topic on the connection)

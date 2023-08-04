@@ -92,13 +92,21 @@ export async function publishDeployedVersionInfo(
     bpmnString: bpmn,
   };
 
+  const defaultTopic = `process/${processDefinitionsId}/version/${version}`;
+
   // send the information to the requested messaging server (if one is set )
   if (mqttServer) {
-    const { url, user, password, topic } = mqttServer;
+    let { url, user, password, topic } = mqttServer;
+
+    // We want to handle 3 situations
+    // 1. empty topic => set topic to default process/[definition-id]/versions/[version-id] (without preceding slash)
+    // 2. non-empty topic without trailing slash => append the default topic [user-defined-topic]/process/[definition-id]/versions/[version-id]
+    // 3. non-empty topic with trailing slash => append the default topic without adding another slash [user-defined-topic]/process/[definition-id]/versions/[version-id]
+    if (topic.length && !topic.endsWith('/')) topic += '/';
 
     try {
       await messaging.publish(
-        topic,
+        `${topic}proceed-pms/${defaultTopic}`,
         stepsInfo,
         url,
         { retain: true },
@@ -113,12 +121,15 @@ export async function publishDeployedVersionInfo(
 
   // send the information to the default messaging server
   try {
-    await messaging.publish(
-      `process/${processDefinitionsId}/versions/${version}`,
-      stepsInfo,
-      undefined,
-      { retain: true, prependDefaultTopic: true }
-    );
+    await messaging.publish(defaultTopic, stepsInfo, undefined, {
+      retain: true,
+      prependEngineTopic: true,
+    });
+
+    await messaging.publish(defaultTopic, stepsInfo, undefined, {
+      retain: true,
+      prependBaseTopic: true,
+    });
   } catch (err) {
     logger.warn(
       `Failed on publishing the deployment of version ${version} of the process with id ${processDefinitionsId} to the messaging server defined in the engine config`

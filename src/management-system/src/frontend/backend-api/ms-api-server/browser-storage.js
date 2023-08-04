@@ -329,6 +329,17 @@ export async function deleteUserTaskHTML(processDefinitionsId, taskFileName) {
 }
 
 /**
+ * Returns images in a process
+ *
+ * @param {String} processDefinitionsId
+ * @returns {Object} retrieved images from process
+ */
+export async function getImages(processDefinitionsId) {
+  const process = getProcess(processDefinitionsId);
+  return process.images;
+}
+
+/**
  * Returns image in a process
  *
  * @param {String} processDefinitionsId

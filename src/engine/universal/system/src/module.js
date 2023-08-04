@@ -34,6 +34,8 @@ function detectEnvironment() {
 }
 const environment = detectEnvironment();
 
+const messaging = new Messaging();
+
 /**
  * @module @proceed/system
  */
@@ -42,12 +44,12 @@ const system = {
   /**
    * @returns {module:@proceed/system.Network}
    */
-  network: new Network(environment),
+  network: new Network(environment, messaging),
 
   /**
    * @returns {module:@proceed/system.Messaging}
    */
-  messaging: new Messaging(),
+  messaging: messaging,
 
   /**
    * @returns {module:@proceed/system.HTTP}

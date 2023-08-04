@@ -12,7 +12,10 @@ const {
   enableMessaging,
 } = require('../../../../../../FeatureFlags.js');
 
-const { publishCurrentInstanceState } = require('./publishStateUtils');
+const {
+  publishCurrentInstanceState,
+  setupEngineStatusInformationPublishing,
+} = require('./publishStateUtils');
 
 /**
  * Creates a callback function that can be used to handle calls from the log stream of the neo engine
@@ -50,6 +53,9 @@ function getOnEndedHandler(engine, instance) {
 
     // archive the information for the finalized instance
     await engine.archiveInstance(instance.id);
+
+    // remove the instance data from the engine
+    engine.deleteInstance(instance.id);
 
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);
@@ -392,8 +398,11 @@ module.exports = {
         }
       });
 
-      // register a callback function that handles changes to the instances state
-      newInstance.getState$().subscribe(getStateChangeHandler(engine, newInstance));
+      // establish a publishing connection for the instance (if messaging information is stored in the bpmn) before instance information is sent using that connection
+      setupEngineStatusInformationPublishing(engine, newInstance).finally(() => {
+        // register a callback function that handles changes to the instances state
+        newInstance.getState$().subscribe(getStateChangeHandler(engine, newInstance));
+      });
     };
   },
 };

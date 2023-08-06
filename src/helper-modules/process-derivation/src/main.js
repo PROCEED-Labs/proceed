@@ -157,7 +157,7 @@ function finfColumnNameMappings(sheets) {
       colnameMappings[sheetName][internalName] = foundMaping;
 
       if (foundMaping === undefined)
-        throw error(
+        throw new Error(
           'The provided File does not match the required format. \n Missing Parameter: ' +
             internalName +
             ' in Sheet: ' +

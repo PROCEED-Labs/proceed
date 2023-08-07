@@ -2,7 +2,7 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
-import { Layout as AntLayout, Menu, MenuProps, Space } from 'antd';
+import { Layout as AntLayout, Button, Menu, MenuProps, Space, Tooltip } from 'antd';
 import {
   DeploymentUnitOutlined,
   FundProjectionScreenOutlined,
@@ -13,6 +13,7 @@ import {
   PlaySquareOutlined,
   SettingOutlined,
   ApiOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -102,14 +103,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   // absolute above another page).
   return (
     <AntLayout>
-      <AntLayout.Sider
-        style={{ backgroundColor: '#fff' }}
-        className={styles.Sider}
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(collapsed) => setCollapsed(collapsed)}
-        trigger={null}
-        breakpoint="md"
+      <AntLayout.Header
+        style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee' }}
+        className={styles.Header}
       >
         <Image
           src="/proceed.svg"
@@ -119,21 +115,43 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           height={63}
           priority
         />
-        <Menu
-          theme="light"
-          mode="inline"
-          selectedKeys={[activeSegment]}
-          items={items}
-          onClick={({ key }) => {
-            router.push(`/${key}`);
-          }}
-        />
-      </AntLayout.Sider>
-      <Content fixedHeader={true} rightNode={<HeaderActions />}>
-        <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-          <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
+        <Space style={{ float: 'right' }}>
+          <Button type="text">
+            <u>Logout</u>
+          </Button>
+          <Tooltip title="Account Settings">
+            <Button shape="circle" icon={<UserOutlined />} />
+          </Tooltip>
         </Space>
-      </Content>
+      </AntLayout.Header>
+      <AntLayout>
+        <AntLayout.Sider
+          style={{ backgroundColor: '#fff' }}
+          className={styles.Sider}
+          collapsible
+          collapsed={collapsed}
+          onCollapse={(collapsed) => setCollapsed(collapsed)}
+          trigger={null}
+          breakpoint="md"
+        >
+          <Menu
+            theme="light"
+            mode="inline"
+            selectedKeys={[activeSegment]}
+            items={items}
+            onClick={({ key }) => {
+              router.push(`/${key}`);
+            }}
+          />
+        </AntLayout.Sider>
+        <AntLayout>
+          <Content>
+            <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+              <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
+            </Space>
+          </Content>
+        </AntLayout>
+      </AntLayout>
     </AntLayout>
   );
 };

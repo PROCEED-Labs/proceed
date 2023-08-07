@@ -41,6 +41,7 @@ const Content: FC<ContentProps> = ({
     token: { colorBgContainer },
   } = theme.useToken();
 
+  //TODO: untangle content
   return (
     <Layout className={cn(styles.Main, wrapperClass)}>
       {noHeader ? null : (

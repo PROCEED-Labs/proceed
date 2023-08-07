@@ -12,6 +12,7 @@ import {
   CopyOutlined,
   ExportOutlined,
   DeleteOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
 import { TableRowSelection } from 'antd/es/table/interface';
@@ -79,26 +80,21 @@ const Processes: FC = () => {
 
   const columns: TableColumnsType<Processes[number]> = [
     {
+      title: <StarOutlined />,
+      width: '40px',
+    },
+
+    {
       title: 'Process Name',
       dataIndex: 'definitionName',
       className: styles.Title,
       sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
     },
-    // {
-    //   title: 'Description',
-    //   dataIndex: 'description',
-    //   sorter: (a, b) => a.description.localeCompare(b.description),
-    // },
-    // {
-    //   title: 'Owner',
-    //   dataIndex: 'owner',
-    // },
-    // {
-    //   title: 'Created',
-    //   dataIndex: 'createdOn',
-    //   render: (date: Date) => date.toLocaleString(),
-    //   sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
-    // },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      sorter: (a, b) => a.description.localeCompare(b.description),
+    },
 
     {
       title: 'Last Edited',
@@ -106,17 +102,27 @@ const Processes: FC = () => {
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
     },
+    // {
+    //   title: 'Owner',
+    //   dataIndex: 'owner',
+    // },
     {
-      title: 'Departments',
-      dataIndex: 'departments',
-      render: (dep) => dep.join(', '),
-      sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
+      title: 'Created',
+      dataIndex: 'createdOn',
+      render: (date: Date) => date.toLocaleString(),
+      sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
     },
     {
       title: 'File Size',
       // dataIndex: 'departments',
       // render: (dep) => dep.join(', '),
       sorter: (a, b) => (a < b ? -1 : 1),
+    },
+    {
+      title: 'Departments',
+      dataIndex: 'departments',
+      render: (dep) => dep.join(', '),
+      sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
     },
     /*{
       title: 'Actions',
@@ -179,6 +185,7 @@ const Processes: FC = () => {
         dataSource={data as any}
         loading={isLoading}
         className={styles.Table}
+        size="middle"
       />
     </>
   );

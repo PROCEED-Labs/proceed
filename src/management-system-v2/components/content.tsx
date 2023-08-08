@@ -41,25 +41,23 @@ const Content: FC<ContentProps> = ({
     token: { colorBgContainer },
   } = theme.useToken();
 
-  //TODO: untangle content
   return (
     <Layout className={cn(styles.Main, wrapperClass)}>
-      {noHeader ? null : (
-        <Layout.Header
-          style={{
-            background: colorBgContainer,
-            borderBottom: '1px solid #eee',
-            // position: fixedHeader ? 'fixed' : 'static',
-            // width: fixedHeader ? '100%' : 'auto',
-          }}
-          className={cn(styles.Header, headerClass)}
-        >
-          <Title level={3} className={styles.Title}>
-            {title}
-          </Title>
-          <div className={styles.Right}>{rightNode}</div>
-        </Layout.Header>
-      )}
+      <div
+        style={{
+          background: colorBgContainer,
+          paddingTop: '7px',
+          //borderBottom: '1px solid #eee',
+          // position: fixedHeader ? 'fixed' : 'static',
+          // width: fixedHeader ? '100%' : 'auto',
+        }}
+        className={cn(styles.Header, headerClass)}
+      >
+        <Title level={3} className={styles.Title}>
+          {title}
+        </Title>
+        <div className={styles.Right}>{rightNode}</div>
+      </div>
       <Layout.Content
         className={cn(styles.Content, { [styles.compact]: compact })}
         style={{
@@ -76,5 +74,40 @@ const Content: FC<ContentProps> = ({
     </Layout>
   );
 };
+
+//   return (
+//     <Layout className={cn(styles.Main, wrapperClass)}>
+//       {noHeader ? null : (
+//         <Layout.Header
+//           style={{
+//             background: colorBgContainer,
+//             borderBottom: '1px solid #eee',
+//             // position: fixedHeader ? 'fixed' : 'static',
+//             // width: fixedHeader ? '100%' : 'auto',
+//           }}
+//           className={cn(styles.Header, headerClass)}
+//         >
+//           <Title level={3} className={styles.Title}>
+//             {title}
+//           </Title>
+//           <div className={styles.Right}>{rightNode}</div>
+//         </Layout.Header>
+//       )}
+//       <Layout.Content
+//         className={cn(styles.Content, { [styles.compact]: compact })}
+//         style={{
+//           background: colorBgContainer,
+//         }}
+//       >
+//         {children}
+//       </Layout.Content>
+//       {fixedHeader && (
+//         <Layout.Footer className={cn(styles.Footer, footerClass)}>
+//           © 2023 PROCEED Labs GmbH
+//         </Layout.Footer>
+//       )}
+//     </Layout>
+//   );
+// };
 
 export default Content;

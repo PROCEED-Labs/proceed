@@ -125,8 +125,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
         </Space>
       </AntLayout.Header>
       <AntLayout>
+        {/* //TODO: sider's border is 1 px too far right */}
         <AntLayout.Sider
-          style={{ backgroundColor: '#fff' }}
+          style={{ backgroundColor: '#fff', borderRight: '1px solid #eee' }}
           className={styles.Sider}
           collapsible
           collapsed={collapsed}

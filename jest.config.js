@@ -29,6 +29,14 @@ let projects = [
     ],
     preset: 'ts-jest',
   },
+  {
+    name: 'process-performance-calculator',
+    displayName: 'Process Calculator Tests',
+    testMatch: [
+      '<rootDir>/src/process-performance-calculator/**/*.test.js',
+      '<rootDir>/src/process-performance-calculator/**/__tests__/**/*.js?(x)',
+    ],
+  },
 ];
 
 if (process.env.USE_PROJECTS) {

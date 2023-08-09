@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_dc78e868-006e-4933-a817-7f91025fce19" name="missing_probability" targetNamespace="https://docs.proceed-labs.org/_dc78e868-006e-4933-a817-7f91025fce19" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_0lwvxyr" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <extensionElements>
+      <proceed:meta>
+        <proceed:orderNumber />
+        <proceed:orderName>missing_probability</proceed:orderName>
+        <proceed:orderCode />
+        <proceed:customerId />
+        <proceed:customerName />
+      </proceed:meta>
+    </extensionElements>
+    <startEvent id="StartEvent_1oagf72">
+      <outgoing>Flow_10tkm95</outgoing>
+    </startEvent>
+    <task id="Activity_1og7cfn">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_10tkm95</incoming>
+      <outgoing>Flow_1cm8o5e</outgoing>
+    </task>
+    <sequenceFlow id="Flow_10tkm95" sourceRef="StartEvent_1oagf72" targetRef="Activity_1og7cfn" />
+    <exclusiveGateway id="Gateway_0szhheb">
+      <incoming>Flow_1cm8o5e</incoming>
+      <outgoing>Flow_1mqwlxi</outgoing>
+      <outgoing>Flow_0486nxa</outgoing>
+      <outgoing>Flow_1lr7ldu</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1cm8o5e" sourceRef="Activity_1og7cfn" targetRef="Gateway_0szhheb" />
+    <task id="Activity_173rbhf">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1mqwlxi</incoming>
+      <outgoing>Flow_15lej7s</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1mqwlxi" sourceRef="Gateway_0szhheb" targetRef="Activity_173rbhf">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:occurrenceProbability>40</proceed:occurrenceProbability>
+        </proceed:meta>
+      </extensionElements>
+    </sequenceFlow>
+    <exclusiveGateway id="Gateway_0r9lsy0">
+      <incoming>Flow_15lej7s</incoming>
+      <incoming>Flow_0bzzicq</incoming>
+      <incoming>Flow_1c68qy9</incoming>
+      <outgoing>Flow_0sqpqr7</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_15lej7s" sourceRef="Activity_173rbhf" targetRef="Gateway_0r9lsy0" />
+    <endEvent id="Event_0g87hpv">
+      <incoming>Flow_0sqpqr7</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0sqpqr7" sourceRef="Gateway_0r9lsy0" targetRef="Event_0g87hpv" />
+    <task id="Activity_04taloc">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0486nxa</incoming>
+      <outgoing>Flow_0bzzicq</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0486nxa" sourceRef="Gateway_0szhheb" targetRef="Activity_04taloc" />
+    <sequenceFlow id="Flow_0bzzicq" sourceRef="Activity_04taloc" targetRef="Gateway_0r9lsy0" />
+    <task id="Activity_1st41ja">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1lr7ldu</incoming>
+      <outgoing>Flow_1c68qy9</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1lr7ldu" sourceRef="Gateway_0szhheb" targetRef="Activity_1st41ja">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:occurrenceProbability>50</proceed:occurrenceProbability>
+        </proceed:meta>
+      </extensionElements>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_1c68qy9" sourceRef="Activity_1st41ja" targetRef="Gateway_0r9lsy0" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0lwvxyr">
+      <bpmndi:BPMNShape id="StartEvent_1oagf72_di" bpmnElement="StartEvent_1oagf72">
+        <dc:Bounds x="-98" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1og7cfn_di" bpmnElement="Activity_1og7cfn">
+        <dc:Bounds x="-10" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0szhheb_di" bpmnElement="Gateway_0szhheb" isMarkerVisible="true">
+        <dc:Bounds x="145" y="85" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_173rbhf_di" bpmnElement="Activity_173rbhf">
+        <dc:Bounds x="250" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0r9lsy0_di" bpmnElement="Gateway_0r9lsy0" isMarkerVisible="true">
+        <dc:Bounds x="405" y="85" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0g87hpv_di" bpmnElement="Event_0g87hpv">
+        <dc:Bounds x="512" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04taloc_di" bpmnElement="Activity_04taloc">
+        <dc:Bounds x="250" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1st41ja_di" bpmnElement="Activity_1st41ja">
+        <dc:Bounds x="250" y="-20" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_10tkm95_di" bpmnElement="Flow_10tkm95">
+        <di:waypoint x="-62" y="110" />
+        <di:waypoint x="-10" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1cm8o5e_di" bpmnElement="Flow_1cm8o5e">
+        <di:waypoint x="90" y="110" />
+        <di:waypoint x="145" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mqwlxi_di" bpmnElement="Flow_1mqwlxi">
+        <di:waypoint x="195" y="110" />
+        <di:waypoint x="250" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15lej7s_di" bpmnElement="Flow_15lej7s">
+        <di:waypoint x="350" y="110" />
+        <di:waypoint x="405" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0sqpqr7_di" bpmnElement="Flow_0sqpqr7">
+        <di:waypoint x="455" y="110" />
+        <di:waypoint x="512" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0486nxa_di" bpmnElement="Flow_0486nxa">
+        <di:waypoint x="170" y="135" />
+        <di:waypoint x="170" y="200" />
+        <di:waypoint x="250" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bzzicq_di" bpmnElement="Flow_0bzzicq">
+        <di:waypoint x="350" y="200" />
+        <di:waypoint x="430" y="200" />
+        <di:waypoint x="430" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lr7ldu_di" bpmnElement="Flow_1lr7ldu">
+        <di:waypoint x="170" y="85" />
+        <di:waypoint x="170" y="20" />
+        <di:waypoint x="250" y="20" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1c68qy9_di" bpmnElement="Flow_1c68qy9">
+        <di:waypoint x="350" y="20" />
+        <di:waypoint x="430" y="20" />
+        <di:waypoint x="430" y="85" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

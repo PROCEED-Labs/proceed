@@ -329,64 +329,6 @@ export async function deleteUserTaskHTML(processDefinitionsId, taskFileName) {
 }
 
 /**
- * Returns images in a process
- *
- * @param {String} processDefinitionsId
- * @returns {Object} retrieved images from process
- */
-export async function getImages(processDefinitionsId) {
-  const process = getProcess(processDefinitionsId);
-  return process.images;
-}
-
-/**
- * Returns image in a process
- *
- * @param {String} processDefinitionsId
- * @param {String} imageFileName the images filename that would be used if it was stored on the server
- * @returns {Object} retrieved image from process
- */
-export async function getImage(processDefinitionsId, imageFileName) {
-  const process = getProcess(processDefinitionsId);
-  return process.images[imageFileName];
-}
-
-/**
- * Saves image a specific process
- *
- * @param {String} definitionsId
- * @param {String} imageFileName the images filename that would be used if it was stored on the server
- * @param {String} image the image used
- */
-export async function saveImage(definitionsId, imageFileName, image) {
-  const process = getProcess(definitionsId);
-
-  const reader = new FileReader();
-  reader.readAsDataURL(image);
-  return new Promise((resolve) => {
-    reader.addEventListener('load', () => {
-      process.images[imageFileName] = reader.result;
-      updateProcess(definitionsId, process);
-      resolve();
-    });
-  });
-}
-
-/**
- * Deleted image a specific process
- *
- * @param {String} definitionsId
- * @param {String} imageFileName the images filename that would be used if it was stored on the server
- */
-export async function deleteImage(definitionsId, imageFileName) {
-  const process = getProcess(definitionsId);
-
-  delete process.images[imageFileName];
-
-  updateProcess(definitionsId, process);
-}
-
-/**
  * Saves script task data for a specific task inside a process
  *
  * @param {String} processDefinitionsId

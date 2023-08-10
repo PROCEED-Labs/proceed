@@ -33,11 +33,22 @@
   flex: auto;
   position: relative;
   /* Need this for the absolute editor page to work in non-parallel route. */
-  min-height: 100vh;
+  //min-height: 70vh;
   max-width: calc(100vw - 200px);
 
   &.collapsed {
     margin-left: 80px;
     max-width: calc(100vw - 80px);
   }
+
+  .Footer {
+    text-align: center;
+    color: #9a9a9a;
+    font-weight: 300;
+  }
+}
+
+.Auth {
+  height: calc(100vh - 64px * 2);
+  // width: 80vw;
 }

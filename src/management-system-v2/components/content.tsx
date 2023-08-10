@@ -66,11 +66,6 @@ const Content: FC<ContentProps> = ({
       >
         {children}
       </Layout.Content>
-      {fixedHeader && (
-        <Layout.Footer className={cn(styles.Footer, footerClass)}>
-          © 2023 PROCEED Labs GmbH
-        </Layout.Footer>
-      )}
     </Layout>
   );
 };

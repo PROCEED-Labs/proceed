@@ -42,6 +42,20 @@ export const fetchProcessVersionBpmn = async (definitionId: string, version: num
   return await fetchString(url);
 };
 
+export const fetchUserData = async <User>() => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve({
+        lastName: 'Mustermann',
+        firstName: 'Max',
+        username: 'max.mustermann',
+        email: 'm.mustermann@mustermail.com',
+        picture: 'https://picsum.photos/200',
+      });
+    }, 2_000);
+  });
+};
+
 /**
  * IMPORTANT
  *
@@ -49,6 +63,15 @@ export const fetchProcessVersionBpmn = async (definitionId: string, version: num
  * new NextJS framework. These types should ideally be automatically generated
  * from the database schema (e.g. using Prisma).
  */
+
+export type User = {
+  // id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  picture: string;
+};
 
 export type Process = {
   type: 'process';

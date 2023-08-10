@@ -4,7 +4,7 @@ import styles from './processes.module.scss';
 import { FC, useState } from 'react';
 import { Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProcesses } from '@/lib/fetch-data';
+import { Process, fetchProcesses } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   EllipsisOutlined,
@@ -40,6 +40,7 @@ const actionBar = (
 
 const Processes: FC = () => {
   const [selection, setSelection] = useState<Processes>([]);
+  const [hovered, setHovered] = useState<Process | undefined>(undefined);
 
   // rowSelection object indicates the need for row selection
   const rowSelection = {
@@ -50,14 +51,12 @@ const Processes: FC = () => {
       name: record.definitionId,
     }),
     onSelect: (record, selected, selectedRows, nativeEvent) => {
-      console.log(`Select: ${selected}, \n Record: ${record}`);
       setSelection(selectedRows);
     },
     onSelectNone: () => {
       setSelection([]);
     },
     onSelectAll: (selected, selectedRows, changeRows) => {
-      console.log(`Select: ${selected}, \n Selected Rows: ${selectedRows}`);
       setSelection(selectedRows);
     },
   };
@@ -140,9 +139,15 @@ const Processes: FC = () => {
     {
       fixed: 'right',
       // add title but only if at least one row is selected
-
-      title: selection.length ? actionBar : '',
-      render: () => actionBar,
+      dataIndex: 'definitionId',
+      title: selection.length ? (
+        <>
+          {selection.length} selected {actionBar}
+        </>
+      ) : (
+        ``
+      ),
+      render: (definitionId) => (hovered?.definitionId === definitionId ? actionBar : ''),
     },
   ];
 
@@ -171,10 +176,12 @@ const Processes: FC = () => {
             router.push(`/processes/${record.definitionId}`);
           },
           onMouseEnter: (event) => {
-            console.log('mouse enter row', event);
+            setHovered(record);
+            // console.log('mouse enter row', record);
           }, // mouse enter row
           onMouseLeave: (event) => {
-            console.log('mouse leave row', event);
+            setHovered(undefined);
+            // console.log('mouse leave row', event);
           }, // mouse leave row
         })}
         sticky

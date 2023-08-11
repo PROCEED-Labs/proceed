@@ -94,7 +94,7 @@ const items: MenuProps['items'] = [
   },
 ];
 
-const loggedIn = false;
+const loggedIn = true;
 
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();

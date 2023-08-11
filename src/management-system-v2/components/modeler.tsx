@@ -12,6 +12,7 @@ import ModelerToolbar from './modeler-toolbar';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
+import { updateProcess } from '@/lib/update-data';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -73,10 +74,24 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     });
 
     return () => {
-      modeler.current?.destroy();
+      if (modeler.current?.saveXML) {
+        modeler.current
+          .saveXML({ format: true })
+          .then(({ xml }) => {
+            return updateProcess(processId, { bpmn: xml! });
+          })
+          .catch((error) => {
+            console.log(error);
+          })
+          .finally(() => {
+            modeler.current?.destroy();
+          });
+      } else {
+        modeler.current?.destroy();
+      }
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, editingDisabled]);
+  }, [setModeler, editingDisabled, processId]);
 
   const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
 
@@ -91,8 +106,21 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
         else setSelectedElementId(null);
       });
+
+      let timer: ReturnType<typeof setTimeout>;
+      modeler.current.on('commandStack.changed', async () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          try {
+            const { xml } = await modeler.current!.saveXML({ format: true });
+            await updateProcess(processId, { bpmn: xml! });
+          } catch (err) {
+            console.log(err);
+          }
+        }, 2000);
+      });
     }
-  }, [initialized, setSelectedElementId, processBpmn]);
+  }, [initialized, setSelectedElementId, processBpmn, processId]);
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>

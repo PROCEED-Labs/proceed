@@ -6,8 +6,8 @@ import style from './auth.module.scss';
 import { theme } from 'antd';
 
 const LoginPage: FC = () => {
-  const router = useRouter();
-  const activeSegment = usePathname().split('/')[1] || 'auth';
+  // const router = useRouter();
+  // const activeSegment = usePathname().split('/')[1] || 'auth';
 
   // const {
   //   token: { colorBgContainer },

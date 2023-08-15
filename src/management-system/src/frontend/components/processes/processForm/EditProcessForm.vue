@@ -76,6 +76,7 @@ export default {
             name: process.name,
             bpmn,
             originalStoredProcessId: process.id,
+            shared: process.shared,
           };
           this.setProcessesData([processData]);
         }

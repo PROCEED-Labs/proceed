@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import { FC, useState } from 'react';
-import { Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import { Col, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { Process, fetchProcesses } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
@@ -21,20 +21,18 @@ import { TableRowSelection } from 'antd/es/table/interface';
 
 const actionBar = (
   <>
-    <Row justify="space-evenly">
-      <Tooltip placement="top" title={'Edit Meta Information'}>
-        <EditOutlined />
-      </Tooltip>
-      <Tooltip placement="top" title={'Copy'}>
-        <CopyOutlined />
-      </Tooltip>
-      <Tooltip placement="top" title={'Export'}>
-        <ExportOutlined />
-      </Tooltip>
-      <Tooltip placement="top" title={'Delete'}>
-        <DeleteOutlined />
-      </Tooltip>
-    </Row>
+    <Tooltip placement="top" title={'Edit Meta Information'}>
+      <EditOutlined />
+    </Tooltip>
+    <Tooltip placement="top" title={'Copy'}>
+      <CopyOutlined />
+    </Tooltip>
+    <Tooltip placement="top" title={'Export'}>
+      <ExportOutlined />
+    </Tooltip>
+    <Tooltip placement="top" title={'Delete'}>
+      <DeleteOutlined />
+    </Tooltip>
   </>
 );
 
@@ -142,12 +140,14 @@ const Processes: FC = () => {
       dataIndex: 'definitionId',
       title: selection.length ? (
         <>
-          {selection.length} selected {actionBar}
+          {selection.length} selected
+          {/* {actionBar} */}
         </>
       ) : (
         ``
       ),
-      render: (definitionId) => (hovered?.definitionId === definitionId ? actionBar : ''),
+      render: (definitionId) =>
+        hovered?.definitionId === definitionId ? <Row justify="space-evenly">{actionBar}</Row> : '',
     },
   ];
 
@@ -163,6 +163,21 @@ const Processes: FC = () => {
 
   return (
     <>
+      {selection.length ? (
+        <>
+          <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
+            <Col className="gutter-row" span={4}>
+              <Row justify="space-between">Select action: {actionBar}</Row>
+            </Col>
+          </Row>
+          <br />
+        </>
+      ) : (
+        <>
+          <br />
+          <br />
+        </>
+      )}
       <Table
         rowSelection={{
           type: 'checkbox',

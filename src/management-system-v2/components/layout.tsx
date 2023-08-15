@@ -46,26 +46,26 @@ const items: MenuProps['items'] = [
     label: 'Templates',
     disabled: true,
   },
-  {
-    key: 'execution',
-    icon: <PlaySquareOutlined />,
-    label: 'Execution',
-    disabled: true,
-  },
+  // {
+  //   key: 'execution',
+  //   icon: <PlaySquareOutlined />,
+  //   label: 'Execution',
+  //   disabled: true,
+  // },
 
-  { type: 'divider' },
+  // { type: 'divider' },
 
-  {
-    key: 'projects',
-    icon: <FundProjectionScreenOutlined />,
-    label: 'Projects',
-  },
-  {
-    key: 'tasklist',
-    icon: <UnorderedListOutlined />,
-    label: 'Tasklist',
-    disabled: true,
-  },
+  // {
+  //   key: 'projects',
+  //   icon: <FundProjectionScreenOutlined />,
+  //   label: 'Projects',
+  // },
+  // {
+  //   key: 'tasklist',
+  //   icon: <UnorderedListOutlined />,
+  //   label: 'Tasklist',
+  //   disabled: true,
+  // },
 
   { type: 'divider' },
 
@@ -86,12 +86,12 @@ const items: MenuProps['items'] = [
     label: 'Plugins',
     disabled: true,
   },
-  {
-    key: 'environments',
-    icon: <DeploymentUnitOutlined />,
-    label: 'Environments',
-    disabled: true,
-  },
+  // {
+  //   key: 'environments',
+  //   icon: <DeploymentUnitOutlined />,
+  //   label: 'Environments',
+  //   disabled: true,
+  // },
 ];
 
 const loggedIn = true;

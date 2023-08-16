@@ -1,7 +1,7 @@
 const { getMetaDataFromElement } = require('@proceed/bpmn-helper');
 const { validateInAndOut, validateTimeInfo } = require('./validationHelper');
 
-/**Function that checks wether a flow element is supported/allowed and was modeled "correctly"
+/**Function that checks whether a flow element is supported/allowed and was modeled "correctly"
  *
  * @param {Object} elem bpmn flow element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -54,7 +54,7 @@ function validateElement(elem, settings) {
   return { passed: passed, problems: finalProblems };
 }
 
-/**Function that checks wether a sequenceflow element has all the required information
+/**Function that checks whether a sequenceflow element has all the required information
  *
  * @param {Object} elem sequenceflow element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -87,7 +87,7 @@ function validateSequenceFlow(elem, settings, meta) {
   return { passed: passed, problems: problems };
 }
 
-/**Function that checks wether a task element has all the required information
+/**Function that checks whether a task element has all the required information
  *
  * @param {Object} elem task element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -117,7 +117,7 @@ function validateTask(elem, settings, meta) {
   //technically necessary, but not supported in PROCEED (yet): if standardLoopCharacteristics, the task needs a repetiton probability, if multiInstanceLoopCharacteristics and isSequential, it needs a repetition count
 }
 
-/**Function that checks wether an event element has all the required information
+/**Function that checks whether an event element has all the required information
  *
  * @param {Object} elem event element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -149,7 +149,7 @@ function validateEvent(elem, settings, meta) {
   return { passed: passed, problems: finalProblems };
 }
 
-/**Function that checks wether a subprocess element is supported/allowed and has the required information
+/**Function that checks whether a subprocess element is supported/allowed and has the required information
  *
  * @param {Object} elem sub process element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -184,7 +184,7 @@ function validateSubProcess(elem, settings, meta) {
   return { passed: passed, problems: finalProblems };
 }
 
-/**Function that checks wether a call activity element has the required information
+/**Function that checks whether a call activity element has the required information
  *
  * @param {Object} elem call activity element
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -217,7 +217,7 @@ function validateCallActivity(elem, settings, meta) {
   return { passed: passed, problems: finalProblems };
 }
 
-/**Function that checks wether a gateway element is supported/allowed and whether the related required information is provided
+/**Function that checks whether a gateway element is supported/allowed and whether the related required information is provided
  *
  * @param {Object} elem gateway element
  * @returns {Object} { passed: true or false, problems: [{ id: elem.id, problem: 'problem description' }] }

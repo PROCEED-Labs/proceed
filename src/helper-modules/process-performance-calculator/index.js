@@ -35,10 +35,10 @@ module.exports = {
   analyseProcessPerformance,
 };
 
-/* const settings = {
-  calculations: ['time', 'cost', 'dates'], //dates are not really supported yet
+const settings = {
+  calculations: ['time', 'cost', 'dates'],
   considerPerformanceInSequenceFlows: false,
   overwriteWithParentPerformance: false,
   ignoreMissingBasicPerformance: false,
   ignoreMissingOptionalPerformance: true,
-}; */
+};

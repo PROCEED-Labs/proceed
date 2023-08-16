@@ -1,7 +1,7 @@
 const { getMetaDataFromElement } = require('@proceed/bpmn-helper');
 const { getTimeInfos } = require('../helper/timeHelper');
 
-/**Function that checks wether the element is connected to the right number of previous or following elements
+/**Function that checks whether the element is connected to the right number of previous or following elements
  *
  * @param {Object} elem bpmn flow element
  * @returns {Object} { passed: true or false, problem: { id: elem.id, problem: 'problem description' } }

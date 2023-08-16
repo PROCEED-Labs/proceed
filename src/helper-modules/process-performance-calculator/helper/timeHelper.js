@@ -40,18 +40,6 @@ function getTimeInfos(meta) {
     ? convertISODurationToMiliseconds(meta.timePlannedDuration)
     : 0;
 
-  /* if (meta.timePlannedOccurrence) {
-    start = new Date(meta.timePlannedOccurrence);
-    startTime = start.getTime();
-  }
-  if (meta.timePlannedEnd) {
-    end = new Date(meta.timePlannedEnd);
-    endTime = end.getTime();
-  }
-  if (meta.timePlannedDuration) {
-    duration = convertISODurationToMiliseconds(meta.timePlannedDuration);
-  } */
-
   if (start == 'none' && end != 'none' && duration != 0) {
     start = new Date(endTime - duration);
   } else if (start != 'none' && end == 'none' && duration != 0) {

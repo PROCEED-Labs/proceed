@@ -1,7 +1,7 @@
 const { validateElement } = require('./elementValidations');
 const { validateProcessStructure } = require('./structureValidations');
 
-/**Function that checks wether a process was modeled "correctly" so that it can be extracted for performance calculation (wrapper)
+/**Function that checks whether a process was modeled "correctly" so that it can be extracted for performance calculation (wrapper)
  *
  * @param {Object} processes [mainProcess: bpmn, calledProcesses: [{processes}]] in bpmn moddle object format
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}
@@ -48,7 +48,7 @@ function validateProcess(processes, settings) {
   return validationResult;
 }
 
-/**Function that checks wether an array of flow elements was modeled "correctly" and builds an array of validated elements
+/**Function that checks whether an array of flow elements was modeled "correctly" and builds an array of validated elements
  *
  * @param {Array} flowElements in the main process that is being evaluated
  * @param {Object} settings specifies preferences for customized validation and calculation: {calculations: ['time' | 'cost' | 'dates'], considerPerformanceInSequenceFlows, overwriteWithParentPerformance, ignoreMissingBasicPerformance, ignoreMissingOptionalPerformance}

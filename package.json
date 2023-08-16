@@ -8,8 +8,7 @@
       "src/management-system",
       "src/management-system-v2",
       "src/helper-modules/*",
-      "src/engine/native/web/server",
-      "src/process-performance-calculator"
+      "src/engine/native/web/server"
     ],
     "nohoist": [
       "**/monaco-editor",

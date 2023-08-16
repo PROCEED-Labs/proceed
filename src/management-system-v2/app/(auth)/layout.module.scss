@@ -1,0 +1,54 @@
+.Header {
+  border-bottom: '1px solid #eee';
+  .Logo {
+    margin: -5px -25px 10px;
+    transition: all 0.2s;
+  }
+}
+
+.Sider {
+  overflow: auto;
+  height: 100vh;
+  //position: fixed !important;
+  padding-top: 1vh;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  //backgroundcolor: 'white';
+
+  // .Logo {
+  //   margin: -5px 20px 20px;
+  //   transition: all 0.2s;
+
+  //   &.collapsed {
+  //     margin: -5px 10px 20px;
+  //     width: 60px;
+  //   }
+  // }
+}
+
+.Main {
+  //margin-left: 200px;
+  transition: margin-left 0.2s;
+  flex: auto;
+  position: relative;
+  /* Need this for the absolute editor page to work in non-parallel route. */
+  //min-height: 70vh;
+  max-width: calc(100vw - 200px);
+
+  &.collapsed {
+    margin-left: 80px;
+    max-width: calc(100vw - 80px);
+  }
+
+  .Footer {
+    text-align: center;
+    color: #9a9a9a;
+    font-weight: 300;
+  }
+}
+
+.Auth {
+  height: calc(100vh - 64px * 2);
+  // width: 80vw;
+}

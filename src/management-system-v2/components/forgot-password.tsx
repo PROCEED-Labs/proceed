@@ -41,7 +41,7 @@ const ForgotPassword: FC = () => {
               <a
                 href=""
                 onClick={() => {
-                  router.push('/auth/login');
+                  router.push('/login');
                 }}
               >
                 Login
@@ -50,7 +50,7 @@ const ForgotPassword: FC = () => {
               <a
                 href=""
                 onClick={() => {
-                  router.push('/auth/register');
+                  router.push('/register');
                 }}
               >
                 Register

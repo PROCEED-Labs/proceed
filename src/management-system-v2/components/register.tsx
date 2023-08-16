@@ -189,7 +189,7 @@ const Register: FC = () => {
             <a
               href=""
               onClick={() => {
-                router.push('/auth/login');
+                router.push('/login');
               }}
             >
               sign in here

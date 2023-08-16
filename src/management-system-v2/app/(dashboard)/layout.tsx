@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useEffect, useState } from 'react';
 import { Layout as AntLayout, Button, Menu, MenuProps, Popover, Space, Tooltip } from 'antd';
@@ -19,9 +20,11 @@ import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
-import Content from './content';
-import HeaderActions from './header-actions';
-import Login from './login';
+import Content from '@/components/content';
+
+type AuthLayoutProps = PropsWithChildren<{
+  headerContent: React.ReactNode | undefined;
+}>;
 
 const items: MenuProps['items'] = [
   {
@@ -94,65 +97,11 @@ const items: MenuProps['items'] = [
   // },
 ];
 
-const loggedIn = true;
-
-const Layout: FC<PropsWithChildren> = ({ children }) => {
+const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
 
-  // const [openUserSettings, setOpenUserSettings] = useState(false);
-
-  // const hideUserSettings = () => {
-  //   setOpenUserSettings(false);
-  // };
-
-  // const handleOpenChangeUserSettings = (newOpen: boolean) => {
-  //   setOpenUserSettings(newOpen);
-  // };
-
-  // Note: The page layout is located in the content component because it
-  // sometimes needs to be entirely customized by the page (e.g. position
-  // absolute above another page).
-  return <>{children}</>;
-
-  if (!loggedIn) {
-    router.replace('/login');
-
-    // not logged in view
-    return (
-      <AntLayout>
-        <AntLayout.Header
-          style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee' }}
-          className={styles.Header}
-        >
-          <Image
-            src="/proceed.svg"
-            alt="PROCEED Logo"
-            className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
-            width={160}
-            height={63}
-            priority
-          />
-        </AntLayout.Header>
-        <AntLayout.Content>
-          {/* <Space direction="vertical" align="center" size="large" style={{ display: 'flex' }}> */}
-          {/* <Space direction="horizontal" align="center"> */}
-          <div className={cn(styles.Auth)}>{children}</div>
-          {/* </Space> */}
-          {/* </Space> */}
-        </AntLayout.Content>
-        <AntLayout.Footer className={cn(styles.Footer)}>
-          <Space direction="vertical" align="center" style={{ width: '100%' }}>
-            © 2023 PROCEED Labs GmbH
-          </Space>
-        </AntLayout.Footer>
-      </AntLayout>
-      // <>{children}</>
-    );
-  }
-
-  // logged in view
   return (
     <AntLayout>
       <AntLayout.Header
@@ -231,4 +180,4 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default AuthLayout;

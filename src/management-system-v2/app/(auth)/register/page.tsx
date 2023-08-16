@@ -13,7 +13,7 @@ const registerPage: FC = () => {
   //   const router = useRouter();
   //   const activeSegment = usePathname().split('/')[1] || 'auth';
 
-  //   router.push('/auth/login');
+  //   router.push('/login');
 
   // const {
   //   token: { colorBgContainer },

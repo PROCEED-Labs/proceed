@@ -1,5 +1,5 @@
 const Constants = require('./constants.js');
-const Utils = require('./processUtilities.js');
+const Utils = require('./graphicUtils.js');
 
 /**
  * Function, which derives the graphical representation of the process.

@@ -73,6 +73,12 @@ export default {
       if (typeof image === 'string') {
         imagePath = image;
       } else {
+        if (!this.processIsShared) {
+          await this.$store.dispatch('processStore/update', {
+            id: this.processDefinitionsId,
+            changes: { shared: true },
+          });
+        }
         const imageType = image.type.split('image/').pop();
         const imageFileName = `${
           this.filename || this.selectedElement.id
@@ -85,14 +91,6 @@ export default {
           imageFileName: imageFileName,
           image,
         });
-
-        if (!this.processIsShared) {
-          // show local image as base64
-          this.currentImage = await processInterface.getImage(
-            this.processDefinitionsId,
-            imageFileName
-          );
-        }
       }
       this.customModeling.updateMetaData(this.selectedElement.id, { overviewImage: imagePath });
 
@@ -135,16 +133,7 @@ export default {
         // update the current image when the selected element changes
         if (newSelection) {
           const overviewImage = getMetaData(newSelection).overviewImage;
-          if (overviewImage && !this.processIsShared) {
-            const imageFileName = overviewImage.split('/').pop();
-            const localImage = await processInterface.getImage(
-              this.processDefinitionsId,
-              imageFileName
-            );
-            this.currentImage = localImage;
-          } else {
-            this.currentImage = overviewImage;
-          }
+          this.currentImage = overviewImage;
           this.filename = newSelection.businessObject.fileName;
         } else {
           this.currentImage = null;

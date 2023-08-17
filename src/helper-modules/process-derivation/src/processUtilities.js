@@ -66,18 +66,20 @@ function getTaskType(data, iteration, currentElement) {
     iteration !== 1
   )
     taskType = Constants.Task.subProcess;
+
+  return taskType;
 }
 
 function mergeIntoStartEvent(data, process) {
-  let startEvent = Utils.createElement(data.model, process, Constants.Event.start);
+  let startEvent = createElement(data.model, process, Constants.Event.start);
   if (process.sourcedElements.length > 1) {
-    let startGateway = Utils.createElement(data.model, process, Constants.Gateway.parallel);
-    Utils.createFlow(data.model, process, startEvent, startGateway);
+    let startGateway = createElement(data.model, process, Constants.Gateway.parallel);
+    createFlow(data.model, process, startEvent, startGateway);
     process.sourcedElements.forEach((task) => {
-      Utils.createFlow(data.model, process, startGateway, task);
+      createFlow(data.model, process, startGateway, task);
     });
   } else {
-    Utils.createFlow(data.model, process, startEvent, process.sourcedElements[0]);
+    createFlow(data.model, process, startEvent, process.sourcedElements[0]);
   }
 }
 function createFlow(model, process, startElement, endElement, type = Constants.Other.sequenceFlow) {

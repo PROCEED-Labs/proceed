@@ -36,15 +36,7 @@
       <v-text-field clearable label="Process ID" v-model="processSettings.id"> </v-text-field>
 
       <v-text-field clearable label="Process name" v-model="processSettings.name"></v-text-field>
-      <!--
-        <v-slider
-        label="Task scale factor"
-        min=0
-        max=4
-        step=1
-        v-model="processSettings.taskScale"
-        ></v-slider>
-        -->
+
       <v-spacer />
       <h3>4. Check the derivation settings</h3>
       <v-select
@@ -159,8 +151,6 @@ export default {
         this.mappingMissing = false;
         this.advanced = false;
         this.advanced = this.isMappingMissing();
-
-        //this.processSettings.concurrentTasks = this.sheetNames.find(name => name.includes("_Allocations")) !== undefined
       };
     },
 
@@ -210,9 +200,6 @@ export default {
     materials() {
       let bomSheetName = this.sheetNames.find((name) => name.includes('_BOM'));
       let bomSheet = this.sheets[bomSheetName];
-
-      //console.log(this.colnameMappings)
-
       let materiaNameMapping = this.colnameMappings[bomSheetName].material;
       if (materiaNameMapping == undefined) return [];
       return bomSheet.map((row) => row[materiaNameMapping]);

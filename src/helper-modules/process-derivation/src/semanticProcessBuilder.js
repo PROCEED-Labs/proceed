@@ -3,6 +3,7 @@ let BPMNModdle = require('bpmn-moddle');
 if (typeof BPMNModdle !== 'function') BPMNModdle = BPMNModdle.default;
 const Constants = require('./constants.js');
 const Utils = require('./processUtilities.js');
+const Functions = require('./semanticProcessBuilderFunctions.js');
 
 function build(processSettings, processData) {
   let data = {};
@@ -34,14 +35,13 @@ function build(processSettings, processData) {
   inputSheetNames.forEach((name) => {
     const material = name.substring(0, name.lastIndexOf('_'));
     const sheet = processData[name];
-
     if (name.includes('_Operations')) data.operations[material] = sheet;
     else if (name.includes('_Allocations')) data.allocations[material] = sheet;
   });
-
   createSemanticProcess(data);
   return data;
 }
+
 /**
  * Recursive function, which derives the semantic process completely on all levels. The process is derived starting from the final product of the BOM. From the BPMN point of view, the derived starts at the end event.
  * @param {Array} residualBOM - BOM-Array of the branch, that remains to be derived
@@ -50,7 +50,6 @@ function build(processSettings, processData) {
  * @param {ModdelElement} process - LReference current (sub-)process
  * @returns {} Manipulation of the process-model
  */
-
 function createSemanticProcess(
   data,
   residualBOM,
@@ -60,16 +59,7 @@ function createSemanticProcess(
 ) {
   // on first iteration, add final Product
   if (residualBOM === undefined) {
-    residualBOM = data.bom;
-    residualBOM.unshift({
-      material: data.rootMaterial,
-      materialName: data.rootMaterial,
-      quantity: 1,
-      unit: 'PC',
-      category: 'L',
-      layer: 0,
-      materialType: 'FERT',
-    });
+    residualBOM = Utils.addFinalProductToBOM(data);
   }
   // get materilas on current layer of branch
   let currentElement = residualBOM[0];
@@ -92,18 +82,7 @@ function createSemanticProcess(
     });
   }
   // get task type
-  let taskType = data.processSettings.taskType;
-  if (
-    data.processSettings.useSubProcesses &&
-    data.processSettings.subProcessesMaterials.length === 0 &&
-    iteration % 2 == 0
-  )
-    taskType = Constants.Task.subProcess;
-  else if (
-    data.processSettings.subProcessesMaterials.includes(currentElement.material) &&
-    iteration !== 1
-  )
-    taskType = Constants.Task.subProcess;
+  let taskType = Utils.getTaskType(data, iteration, currentElement);
   // on end of dependency chain, stop
   if (
     nextLayerElements.length === 0 ||
@@ -154,11 +133,9 @@ function createSemanticProcess(
       nextLayerElements.push(residualBOM.length);
       for (let i = 0; i < nextLayerElements.length - 1; i++) {
         let component = residualBOM[nextLayerElements[i]];
-
         let quantityUnit2 = '';
         if (component.quantity !== 1 || !['PC', 'ST'].includes(component.unit))
           quantityUnit2 = ' (' + component.quantity + ' ' + component.unit + ')';
-
         let taskName = Constants.TaskNames.combineXY
           .replace('X', component.materialName + quantityUnit2)
           .replace('Y', currentElement.materialName);
@@ -170,44 +147,21 @@ function createSemanticProcess(
       }
     } else {
       // get materilas on next lower level
-      let components = {};
-      nextLayerElements.push(residualBOM.length);
-      for (let i = 0; i < nextLayerElements.length - 1; i++) {
-        let component = residualBOM[nextLayerElements[i]];
-        component.residualBOM = residualBOM.slice(nextLayerElements[i], nextLayerElements[i + 1]);
-        components[component.material] = component;
-      }
-      // group allocation by requierend materials
-      let groups = [...new Set(allocations.map((alloc) => alloc.operation))].sort((a, b) => b - a);
-      let groupMaterials = {};
-      groups.forEach((operation) => {
-        groupMaterials[operation] = allocations
-          .filter((alloc) => alloc.operation == operation)
-          .map((alloc) => alloc.component);
-      });
-      // group operations by requierend materials
-      let groupOperations = {};
-      if (operations !== undefined) {
-        let groupBounds = [...groups];
-        groupBounds[groupBounds.length - 1] = 0;
-
-        let upperBound = Math.max(...operations.map((op) => op.operation)) + 1;
-        groupBounds.forEach((lowerBound, index) => {
-          groupOperations[groups[index]] = operations.filter(
-            (op) => op.operation < upperBound && op.operation >= lowerBound
-          );
-          upperBound = lowerBound;
-        });
-      }
+      let nextLevelMaterials = Utils.nextLevelMaterials(
+        nextLayerElements,
+        residualBOM,
+        allocations,
+        operations
+      );
       // create "ADD INTO"-task for each group
-      let lastGrop = groups[0] + 1;
-      groups.forEach((group, index) => {
-        let materialIds = groupMaterials[group];
+      let lastGrop = nextLevelMaterials.groups[0] + 1;
+      nextLevelMaterials.groups.forEach((group, index) => {
+        let materialIds = nextLevelMaterials.groupMaterials[group];
         let taskName =
           'ADD ' +
           materialIds
             .map((id) => {
-              let component = components[id];
+              let component = nextLevelMaterials.components[id];
               let quantityUnit2 = '';
               if (component.quantity !== 1 || !['PC', 'ST'].includes(component.unit))
                 quantityUnit2 = ' (' + component.quantity + ' ' + component.unit + ')';
@@ -222,9 +176,15 @@ function createSemanticProcess(
         let subAllocations = allocations.filter(
           (alloc) => alloc.operation < lastGrop && alloc.operation >= group
         );
-        Utils.addAnnotation(data, process, task, groupOperations[group], subAllocations);
+        Utils.addAnnotation(
+          data,
+          process,
+          task,
+          nextLevelMaterials.groupOperations[group],
+          subAllocations
+        );
         // connect via Gateway, except the last one, if last one is single
-        if (index == groups.length - 1 && materialIds.length === 1) {
+        if (index == nextLevelMaterials.groups.length - 1 && materialIds.length === 1) {
           predecessor = task;
         } else {
           let gateway = Utils.createElement(data.model, process, Constants.Gateway.parallel);
@@ -235,7 +195,7 @@ function createSemanticProcess(
         for (let materialId of materialIds) {
           createSemanticProcess(
             data,
-            components[materialId].residualBOM,
+            nextLevelMaterials.components[materialId].residualBOM,
             iteration + 1,
             predecessor,
             process
@@ -273,7 +233,6 @@ function createSemanticProcess(
       nextLayerElements.push(residualBOM.length);
       for (let i = 0; i < nextLayerElements.length - 1; i++) {
         let subTree = residualBOM.slice(nextLayerElements[i], nextLayerElements[i + 1]);
-
         // continue recursive call on next level
         createSemanticProcess(data, subTree, iteration + 1, predecessor, process);
       }
@@ -281,16 +240,7 @@ function createSemanticProcess(
   }
   // at the end of each (sub-)process creation: merge all flows into Gateway / start Event
   if (iteration === 1) {
-    let startEvent = Utils.createElement(data.model, process, Constants.Event.start);
-    if (process.sourcedElements.length > 1) {
-      let startGateway = Utils.createElement(data.model, process, Constants.Gateway.parallel);
-      Utils.createFlow(data.model, process, startEvent, startGateway);
-      process.sourcedElements.forEach((task) => {
-        Utils.createFlow(data.model, process, startGateway, task);
-      });
-    } else {
-      Utils.createFlow(data.model, process, startEvent, process.sourcedElements[0]);
-    }
+    Utils.mergeIntoStartEvent(data, process);
   }
 }
 module.exports = {

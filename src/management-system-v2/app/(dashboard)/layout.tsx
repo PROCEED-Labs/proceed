@@ -15,6 +15,7 @@ import {
   SettingOutlined,
   ApiOutlined,
   UserOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -36,18 +37,51 @@ const items: MenuProps['items'] = [
     key: 'processes',
     icon: <EditOutlined />,
     label: 'Process List',
+    children: [
+      {
+        key: 'processes',
+        icon: <EditOutlined />,
+        label: 'My Processes',
+      },
+      {
+        key: 'newProcess',
+        icon: <FileAddOutlined />,
+        label: 'New Process',
+        disabled: true,
+      },
+      {
+        key: 'favorites',
+        icon: <StarOutlined />,
+        label: 'Favorites',
+        disabled: true,
+      },
+    ],
   },
-  {
-    key: 'newProcess',
-    icon: <FileAddOutlined />,
-    label: 'New Process',
-    disabled: true,
-  },
+  // {
+  //   key: 'newProcess',
+  //   icon: <FileAddOutlined />,
+  //   label: 'New Process',
+  //   disabled: true,
+  // },
   {
     key: 'templates',
     icon: <ProfileOutlined />,
     label: 'Templates',
-    disabled: true,
+    disabled: false,
+    children: [
+      {
+        key: 'newTemplate',
+        icon: <FileAddOutlined />,
+        label: 'New Template',
+        disabled: true,
+      },
+      {
+        key: 'favorites',
+        icon: <StarOutlined />,
+        label: 'Favorites',
+        disabled: true,
+      },
+    ],
   },
   // {
   //   key: 'execution',

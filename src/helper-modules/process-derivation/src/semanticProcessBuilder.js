@@ -3,7 +3,6 @@ let BPMNModdle = require('bpmn-moddle');
 if (typeof BPMNModdle !== 'function') BPMNModdle = BPMNModdle.default;
 const Constants = require('./constants.js');
 const Utils = require('./processUtilities.js');
-const Functions = require('./semanticProcessBuilderFunctions.js');
 
 function build(processSettings, processData) {
   let data = {};

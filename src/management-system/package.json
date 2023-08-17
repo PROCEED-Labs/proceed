@@ -43,6 +43,7 @@
   "dependencies": {
     "@assistant/conversation": "^3.6.0",
     "@casl/ability": "5.4.3",
+    "@casl/ability-v6": "npm:@casl/ability@^6.5.0",
     "@casl/vue": "1.x",
     "@mdi/font": "^6.5.95",
     "@proceed/bpmn-helper": "^1.0.0",

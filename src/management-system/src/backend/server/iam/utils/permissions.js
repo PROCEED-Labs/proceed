@@ -7,13 +7,19 @@ import { roleMappingsMetaObjects } from '../../../shared-electron-server/data/ia
  * @param {String} userId - id of user
  * @return {Object} - object of permissions
  */
-export const buildPermissions = async (userId) => {
+export const buildPermissions = async (userId, takeExpirationIntoAccount = false) => {
   if (userId) {
     let userRoles = [];
     // get all roles of user with userId
     if (roleMappingsMetaObjects.users.hasOwnProperty(userId)) {
       roleMappingsMetaObjects.users[userId].forEach((role) => {
-        userRoles.push(roleMetaObjects[role.roleId]);
+        const roleObject = roleMetaObjects[role.roleId];
+        if (
+          !takeExpirationIntoAccount ||
+          roleObject.expiration === null ||
+          new Date(roleObject.expiration) > new Date()
+        )
+          userRoles.push(roleMetaObjects[role.roleId]);
       });
     }
     // get default role, necessary for permissions for everyone

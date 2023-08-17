@@ -8,7 +8,6 @@
 // it out with the normal __dirname for the production build (which is not in
 // ESM).
 
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-export default dirname(__dirname);
+export default dirname(join(__dirname, 'server'));

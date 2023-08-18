@@ -73,7 +73,7 @@ RUN yarn build
 
 ENV NODE_ENV production
 
-COPY ./.next/standalone ./
+COPY .next/standalone ./
 
 WORKDIR /opt/proceed-ms-server
 

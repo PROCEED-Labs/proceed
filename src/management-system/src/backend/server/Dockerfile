@@ -73,6 +73,8 @@ RUN yarn build
 
 ENV NODE_ENV production
 
+COPY ./.next/standalone ./
+
 WORKDIR /opt/proceed-ms-server
 
 # You should not use VOLUME keyword in a Dockerfile: https://stackoverflow.com/questions/49620300/what-is-the-purpose-of-dockerfile-command-volume

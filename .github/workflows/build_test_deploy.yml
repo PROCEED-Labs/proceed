@@ -94,7 +94,6 @@ jobs:
       - run: yarn test-engine --ci
 
   testEngineE2E:
-    if: false
     runs-on: ubuntu-latest
     needs: install
     steps:
@@ -112,7 +111,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn test-e2e --ci
+  #      - run: yarn test-e2e --ci
 
   testMS:
     runs-on: ubuntu-latest

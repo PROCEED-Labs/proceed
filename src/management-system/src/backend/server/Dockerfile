@@ -69,11 +69,11 @@ RUN npm install \
 # Install the new MS (nextJS App)
 WORKDIR /opt/proceed-ms-server/management-system-v2
 RUN yarn install
-RUN yarn build
+# RUN yarn build
 
 ENV NODE_ENV production
 
-COPY management-system-v2/.next/standalone ./
+# COPY management-system-v2/.next/standalone ./
 
 WORKDIR /opt/proceed-ms-server
 

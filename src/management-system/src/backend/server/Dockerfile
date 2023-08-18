@@ -68,12 +68,7 @@ RUN npm install \
 
 # Install the new MS (nextJS App)
 WORKDIR /opt/proceed-ms-server/management-system-v2
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+RUN yarn install
 RUN yarn build
 
 ENV NODE_ENV production

@@ -67,7 +67,7 @@ RUN npm install \
     && chown -R proceed:proceed /opt/proceed-ms-server
 
 # Install the new MS (nextJS App)
-WORKDIR /management-system-v2
+WORKDIR /opt/proceed-ms-server/management-system-v2
 RUN \
   if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \

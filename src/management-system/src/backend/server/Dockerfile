@@ -66,11 +66,27 @@ RUN npm install \
     && chown -R proceed:proceed /home/proceed \
     && chown -R proceed:proceed /opt/proceed-ms-server
 
+# Install the new MS (nextJS App)
+WORKDIR /management-system-v2
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+RUN yarn build
+
+ENV NODE_ENV production
+
+WORKDIR /opt/proceed-ms-server
+
 # You should not use VOLUME keyword in a Dockerfile: https://stackoverflow.com/questions/49620300/what-is-the-purpose-of-dockerfile-command-volume
 # VOLUME [ "/opt/proceed-ms-server/..." ]
 
 # Run everything after as non-privileged user.
 USER proceed
+
+EXPOSE 3000
 
 # Documentation of Ports:
 # Web (HTTP) and Let's encrypt client (it needs to host a file for identification)

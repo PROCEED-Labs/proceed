@@ -1,19 +1,19 @@
-export const processes = require('../data/authorization/processes.json');
-export const roles = require('../data/authorization/roles.json');
-export const shares = require('../data/authorization/shares.json');
-export const users = require('../data/authorization/users.json');
-import Ability from '../../src/backend/server/iam/authorization/abilityHelper';
+export const processes = require('../../../../data/authorization/processes.json');
+export const roles = require('../../../../data/authorization/roles.json');
+export const shares = require('../../../../data/authorization/shares.json');
+export const users = require('../../../../data/authorization/users.json');
+import Ability from '../../../../../src/backend/server/iam/authorization/abilityHelper';
 import {
   rulesForUser,
   setGlobalRolesForAuthorization,
-} from '../../src/backend/server/iam/authorization/caslRules';
+} from '../../../../../src/backend/server/iam/authorization/caslRules';
 import {
   addRoleMapping,
   deleteRoleMapping,
   getRoleMappings,
-} from '../../src/backend/shared-electron-server/data/iam/role-mappings';
+} from '../../../../../src/backend/shared-electron-server/data/iam/role-mappings';
 
-jest.mock('../../src/backend/shared-electron-server/data/store', () => ({
+jest.mock('../../../../../src/backend/shared-electron-server/data/store', () => ({
   setDictElement(...args) {},
   update(...args) {},
   set(...args) {},
@@ -25,8 +25,8 @@ jest.mock('../../src/backend/shared-electron-server/data/store', () => ({
   },
 }));
 
-jest.mock('../../src/backend/shared-electron-server/data/iam/shares', () => {
-  const mockShares = jest.requireActual('../data/authorization/shares.json');
+jest.mock('../../../../../src/backend/shared-electron-server/data/iam/shares', () => {
+  const mockShares = jest.requireActual('../../../../data/authorization/shares.json');
 
   return {
     __esModule: true,
@@ -39,10 +39,10 @@ jest.mock('../../src/backend/shared-electron-server/data/iam/shares', () => {
   };
 });
 
-jest.mock('../../src/backend/shared-electron-server/data/iam/roles', () => {
+jest.mock('../../../../../src/backend/shared-electron-server/data/iam/roles', () => {
   return {
     __esModule: true,
-    roleMetaObjects: jest.requireActual('../data/authorization/roles.json'),
+    roleMetaObjects: jest.requireActual('../../../../data/authorization/roles.json'),
   };
 });
 

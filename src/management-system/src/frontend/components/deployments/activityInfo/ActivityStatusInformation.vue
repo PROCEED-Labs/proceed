@@ -18,6 +18,14 @@
             <v-icon v-if="elementIsActive" @click="settingState = true" dense>mdi-pencil</v-icon>
           </v-col>
         </v-row>
+        <v-row class="mt-n4" align="center">
+          <v-col cols="6">
+            <span class="text-subtitle-1 font-weight-medium">External:</span>
+          </v-col>
+          <v-col cols="6">
+            <v-simple-checkbox disabled :value="isExternal"></v-simple-checkbox>
+          </v-col>
+        </v-row>
         <v-row class="mt-n4" v-if="instance && !isRootElement && currentProgress">
           <v-col cols="6"><span class="text-subtitle-1 font-weight-medium">Progress:</span></v-col>
           <v-col cols="6">
@@ -187,13 +195,20 @@ export default {
           const tokenInfo = this.instance.tokens.find(
             (l) => l.currentFlowElementId == this.selectedElement.id
           );
-          return tokenInfo ? tokenInfo.state : 'WAITING';
+          return tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
         }
       }
       return null;
     },
     statusType() {
       return statusToType(this.statusText.toUpperCase());
+    },
+    isExternal() {
+      return (
+        this.selectedElement &&
+        this.selectedElement.businessObject &&
+        this.selectedElement.businessObject.external
+      );
     },
     costsCurrency() {
       const environmentConfigSettings = this.$store.getters['environmentConfigStore/settings'];

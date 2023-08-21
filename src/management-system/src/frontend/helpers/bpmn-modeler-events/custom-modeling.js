@@ -16,6 +16,8 @@ const {
   generateUserTaskFileName,
 } = require('@proceed/bpmn-helper/');
 
+const { enable5thIndustryIntegration } = require('../../../../../../FeatureFlags.js');
+
 /**
  * This module provides functionality for different custom use cases for our bpmn js modeler
  */
@@ -270,7 +272,7 @@ class CustomModeling {
     userTasks.forEach((userTask) => {
       const { businessObject } = userTask;
 
-      if (use5thIndustry) {
+      if (enable5thIndustryIntegration && use5thIndustry) {
         // retain old idOrder if there is one
         this.setUserTaskImplementation(userTask.id, '5thIndustry');
       } else {

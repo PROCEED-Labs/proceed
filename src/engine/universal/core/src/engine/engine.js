@@ -7,10 +7,12 @@ const { getNewInstanceHandler } = require('./hookCallbacks.js');
 const { getShouldPassToken } = require('./shouldPassToken.js');
 const { getShouldActivateFlowNode } = require('./shouldActivateFlowNode.js');
 const { getProcessIds } = require('@proceed/bpmn-helper');
-// const Separator = require('./separator.js').default;
 
 const { enableMessaging } = require('../../../../../../FeatureFlags.js');
-const { sendProcessStepsInfoTo5thIndustry } = require('./5thIndustry.js');
+const { publishCurrentInstanceState } = require('./publishStateUtils');
+// const Separator = require('./separator.js').default;
+
+const { teardownEngineStatusInformationPublishing } = require('./publishStateUtils');
 
 setupNeoEngine();
 
@@ -184,15 +186,6 @@ class Engine {
     let resolver;
     const instanceCreatedPromise = new Promise((resolve) => {
       resolver = resolve;
-
-      if (enableMessaging) {
-        sendProcessStepsInfoTo5thIndustry(
-          this.definitionId,
-          version,
-          this._versionBpmnMapping[version],
-          this._log
-        );
-      }
     });
 
     this.originalInstanceState = instance;
@@ -203,6 +196,7 @@ class Engine {
         if (instance && instance.callingInstance) {
           newInstance.callingInstance = instance.callingInstance;
         }
+
         if (typeof onStarted === 'function') {
           onStarted(newInstance);
         }
@@ -352,6 +346,11 @@ class Engine {
         (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
 
+    const token = this.getToken(instanceID, userTask.tokenId);
+    // remember the changes made by this user task invocation
+    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.milestones = { ...token.milestones };
+
     userTask.processInstance.completeActivity(userTask.id, userTask.tokenId, variables);
   }
 
@@ -390,7 +389,9 @@ class Engine {
    * @returns {object} - the requested process instance
    */
   getInstance(instanceID) {
-    return this._instanceIdProcessMapping[instanceID].getInstanceById(instanceID);
+    if (this._instanceIdProcessMapping[instanceID]) {
+      return this._instanceIdProcessMapping[instanceID].getInstanceById(instanceID);
+    }
   }
 
   getInstanceBpmn(instanceId) {
@@ -409,8 +410,10 @@ class Engine {
    * @param {string} instanceID id of the instance to be deleted
    */
   deleteInstance(instanceID) {
+    teardownEngineStatusInformationPublishing(this, this.getInstanceInformation(instanceID));
     this.instanceIDs.splice(this.instanceIDs.indexOf(instanceID), 1);
     const process = this._instanceIdProcessMapping[instanceID];
+    delete this._instanceIdProcessMapping[instanceID];
     process.deleteInstanceById(instanceID);
     this.userTasks = this.userTasks.filter(
       (userTask) => userTask.processInstance.id !== instanceID
@@ -578,7 +581,19 @@ class Engine {
         }
       });
 
+      this.userTasks = this.userTasks.map((uT) => {
+        if (uT.processInstance === instance && (uT.state === 'READY' || uT.state === 'ACTIVE')) {
+          return { ...uT, state: 'STOPPED' };
+        }
+
+        return uT;
+      });
+
       instance.stop();
+
+      if (enableMessaging) {
+        await publishCurrentInstanceState(this, instance);
+      }
 
       // archive the information for the stopped instance
       await this.archiveInstance(instance.id);
@@ -634,6 +649,10 @@ class Engine {
       }
     });
 
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
+
     await this.archiveInstance(instance.id);
     this.deleteInstance(instance.id);
   }
@@ -663,6 +682,10 @@ class Engine {
         instance.endToken(token.tokenId, { state: 'ABORTED', endTime: +new Date() });
       }
     });
+
+    if (enableMessaging) {
+      await publishCurrentInstanceState(this, instance);
+    }
 
     // archive the information for the stopped instance
     await this.archiveInstance(instance.id);
@@ -738,8 +761,13 @@ class Engine {
           }
         });
       })
-        .then(() => {
+        .then(async () => {
           instance.pause();
+
+          if (enableMessaging) {
+            await publishCurrentInstanceState(this, instance);
+          }
+
           this.archiveInstance(instance.id);
           this.deleteInstance(instance.id);
         })
@@ -856,6 +884,15 @@ class Engine {
         break;
       default:
         throw new Error('Invalid state');
+    }
+  }
+
+  /**
+   * Clean up some data when the engine is supposed to be removed
+   */
+  destroy() {
+    for (const instanceId of this.instanceIDs) {
+      this.deleteInstance(instanceId);
     }
   }
 }

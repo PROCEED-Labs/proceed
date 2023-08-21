@@ -7,7 +7,15 @@ const {
 const { abortInstanceOnNetwork } = require('./processForwarding.js');
 const { timer } = require('@proceed/system');
 
-const { enableInterruptedInstanceRecovery } = require('../../../../../../FeatureFlags.js');
+const {
+  enableInterruptedInstanceRecovery,
+  enableMessaging,
+} = require('../../../../../../FeatureFlags.js');
+
+const {
+  publishCurrentInstanceState,
+  setupEngineStatusInformationPublishing,
+} = require('./publishStateUtils');
 
 /**
  * Creates a callback function that can be used to handle calls from the log stream of the neo engine
@@ -32,14 +40,22 @@ function getLogHandler(engine, instance) {
  * @param {Object} instance the process instance that ended
  */
 function getOnEndedHandler(engine, instance) {
-  return () => {
+  return async () => {
     engine._log.info({
       msg: `Process instance ended. Id = ${instance.id}`,
       instanceId: instance.id,
     });
 
+    // send the instance information
+    if (enableMessaging) {
+      await publishCurrentInstanceState(engine, instance);
+    }
+
     // archive the information for the finalized instance
-    engine.archiveInstance(instance.id);
+    await engine.archiveInstance(instance.id);
+
+    // remove the instance data from the engine
+    engine.deleteInstance(instance.id);
 
     if (typeof engine.instanceEventHandlers.onEnded === 'function') {
       engine.instanceEventHandlers.onEnded(instance);
@@ -200,7 +216,15 @@ function getStateChangeHandler(engine, instance) {
   // Debounce to prevent the logic from being triggered for every atomic change (finishing an activity would lead to more than 20 updates)
   return () => {
     timer.clearTimeout(timeout);
-    timeout = timer.setTimeout(() => saveIntermediateInstanceState(engine, instance), 500);
+    timeout = timer.setTimeout(() => {
+      if (enableInterruptedInstanceRecovery) {
+        saveIntermediateInstanceState(engine, instance);
+      }
+      // prevent errors/crashes when the instance was already removed (archived) from the engine (publishing should have been handled by onEnded handler in that case)
+      if (enableMessaging && !instance.isEnded() && engine.getInstance(instance.id)) {
+        publishCurrentInstanceState(engine, instance);
+      }
+    }, 500);
   };
 }
 
@@ -374,10 +398,11 @@ module.exports = {
         }
       });
 
-      // register a callback function that handles changes to the instances state
-      if (enableInterruptedInstanceRecovery) {
+      // establish a publishing connection for the instance (if messaging information is stored in the bpmn) before instance information is sent using that connection
+      setupEngineStatusInformationPublishing(engine, newInstance).finally(() => {
+        // register a callback function that handles changes to the instances state
         newInstance.getState$().subscribe(getStateChangeHandler(engine, newInstance));
-      }
+      });
     };
   },
 };

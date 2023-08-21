@@ -1,5 +1,6 @@
 import { dataInterface, userId } from '@/frontend/backend-api/index.js';
 import { mergeIntoObject } from '@/shared-frontend-backend/helpers/javascriptHelpers.js';
+import { enable5thIndustryIntegration } from '../../../../../FeatureFlags';
 
 async function saveUserPreferences(newState, force) {
   // only save userPreferences if they are supposed to for authenticated user
@@ -66,7 +67,6 @@ export default function createUserPreferencesStore() {
       useUserPreferences: true,
       highlightNonExecutableElements: true,
       nonExecutableElementsColor: 'orange',
-      user5thIndustryAuthorization: '',
     },
     userFavorites: [],
     processView: getDefaultProcessView(),
@@ -75,6 +75,10 @@ export default function createUserPreferencesStore() {
     sidePanelHoverable: false,
     executionColorMode: 'executionColors',
   };
+
+  if (enable5thIndustryIntegration) {
+    initialState.config.user5thIndustryAuthorization = '';
+  }
 
   const mutations = {
     updateUserPreferences(state, newPreferences) {

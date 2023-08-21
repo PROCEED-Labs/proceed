@@ -8,6 +8,8 @@ const {
   getPerformersFromElementById,
 } = require('@proceed/bpmn-helper');
 
+const { enable5thIndustryIntegration } = require('../../../../../../FeatureFlags.js');
+
 /**
  * Creates a callback function that can be used to register to the userTask stream of the neo engine
  *
@@ -62,7 +64,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
       activate,
     };
 
-    if (userTask.implementation === '5thIndustry') {
+    if (enable5thIndustryIntegration && userTask.implementation === '5thIndustry') {
       const success = await handle5thIndustryUserTask(extendedUserTask, engine);
 
       if (!success) {

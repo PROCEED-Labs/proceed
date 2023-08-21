@@ -45,12 +45,20 @@ const startManagementSystem = () => {
 
 // check if start with or without IAM
 if (process.env.MODE === 'iam') {
-  const path = './src/backend/server/environment-configurations/development/config_environment.js';
+  const path = './src/backend/server/environment-configurations/development/config_iam.json';
 
   // if submodule doesn't exist, add environment submodule
   if (!fs.existsSync(path)) {
+    console.log('Cloning dev environment: https://github.com/PROCEED-Labs/environments');
+    console.log(
+      "If you're in a terminal, you're going to need a personal-access-token (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) because passwords are no longer allowed (https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories#cloning-with-https-urls)."
+    );
+    console.log(
+      'You can also run the server in VS Code and let VS Code handle the authentication flow.'
+    );
+
     execSync(
-      'cd ./src/backend/server/ && git submodule add --force https://gitlab.com/dBPMS-PROCEED/environment-configurations.git'
+      'cd ./src/backend/server/ && git submodule add --force https://github.com/PROCEED-Labs/environments environment-configurations'
     );
   }
 

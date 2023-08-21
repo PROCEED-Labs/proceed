@@ -143,6 +143,8 @@ import ConstraintHandling from '@/frontend/components/processes/editor/Constrain
 import ProcessExport from '@/frontend/components/processes/editor/ProcessExport.vue';
 import AlertWindow from '@/frontend/components/universal/Alert.vue';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags';
+
 export default {
   name: 'main-editor-toolbar',
   components: {
@@ -264,6 +266,7 @@ export default {
     },
     editUserTask() {
       if (
+        enable5thIndustryIntegration &&
         this.selectedElement &&
         this.selectedElement.businessObject.implementation === '5thIndustry'
       ) {

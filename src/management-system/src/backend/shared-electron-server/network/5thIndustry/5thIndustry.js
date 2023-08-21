@@ -6,6 +6,8 @@ import { getAppDataPath } from '../../data/fileHandling.js';
 import logger from '../../logging.js';
 import { getBackendConfig } from '../../data/config.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags.js';
+
 import {
   minimalPlansQuery,
   minimalPlanQuery,
@@ -107,7 +109,9 @@ async function authorizeWith5i() {
   }
 }
 
-authorizeWith5i();
+if (enable5thIndustryIntegration) {
+  authorizeWith5i();
+}
 
 export function get5thIndustryServiceAccountData() {
   // Only return something when there was at least one token successfully requested with the service account data

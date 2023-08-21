@@ -6,6 +6,8 @@ import ProceedSelectionModule from './proceed-selection.js';
 import ProceedMetaModule from './proceed-meta.js';
 import CustomModelingModule from '@/frontend/helpers/bpmn-modeler-events/custom-modeling.js';
 
+import { enable5thIndustryIntegration } from '../../../../../../../../FeatureFlags.js';
+
 class ProceedUserTask {
   constructor(
     eventBus,
@@ -45,8 +47,9 @@ class ProceedUserTask {
         if (newShape.type === 'bpmn:UserTask' && !context.isExternalEvent) {
           const rootMetaData = proceedMeta.getRootMetaData();
           if (
-            rootMetaData['_5i-Inspection-Plan-ID'] ||
-            rootMetaData['_5i-Inspection-Plan-Template-ID']
+            enable5thIndustryIntegration &&
+            (rootMetaData['_5i-Inspection-Plan-ID'] ||
+              rootMetaData['_5i-Inspection-Plan-Template-ID'])
           ) {
             customModeling.setUserTaskImplementation(newShape.id, '5thIndustry');
           } else {

@@ -10,6 +10,8 @@ const {
 
 const { getRequiredProcessFragments, getHTMLImagesToKnow } = require('./processFragmentCheck');
 
+const { publishDeployedVersionInfo } = require('./publishDeploymentUtils');
+
 module.exports = {
   /**
    * Checks if the file with process information exists
@@ -76,7 +78,7 @@ module.exports = {
     }
 
     // get all images stored for the process
-    const knownImages = await data.readImages(definitionId);
+    const knownImages = (await data.readImages(definitionId)) || [];
 
     // check if image files are missing
     if (!requirements.images.every((fileName) => knownImages.includes(fileName))) {
@@ -147,6 +149,8 @@ module.exports = {
 
     // save the bpmn
     await data.writeProcessVersionBpmn(bpmnDefinitionId, version, bpmn);
+
+    await publishDeployedVersionInfo(bpmnDefinitionId, version, bpmn);
 
     return {
       definitionId: bpmnDefinitionId,

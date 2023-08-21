@@ -1,6 +1,6 @@
 import express from 'express';
 import { getResource, getResources } from '../../../shared-electron-server/data/iam/resources.js';
-import { isAuthenticated } from '../middleware/authorization.js';
+import { isAuthenticated } from '../middleware/authorization';
 
 const resourcesRouter = express.Router();
 

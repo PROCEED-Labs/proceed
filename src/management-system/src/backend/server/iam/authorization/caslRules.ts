@@ -12,7 +12,7 @@ import { packRules } from '@casl/ability-v6/extra';
 import { AbilityRule, CaslAbility, buildAbility } from './caslAbility';
 import { buildPermissions } from '../utils/permissions';
 
-type PerissionsObject = Partial<Record<ResourceType, PermissionNumber[]>>;
+type PermissionsObject = Partial<Record<ResourceType, PermissionNumber | PermissionNumber[]>>;
 
 const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
@@ -25,6 +25,10 @@ const globalRoles = {
 export function setGlobalRolesForAuthorization(roles: typeof globalRoles) {
   globalRoles.everybodyRole = roles.everybodyRole;
   globalRoles.guestRole = roles.guestRole;
+}
+
+export function adminRules() {
+  return packRules([{ subject: 'All', action: 'admin' }] as AbilityRule[]);
 }
 
 function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
@@ -281,18 +285,24 @@ function rulesForAlteringShares(ability: CaslAbility) {
 }
 
 export async function rulesForUser(userId: string) {
-  const permissions = (await buildPermissions(userId, true)) as PerissionsObject;
+  const permissions = (await buildPermissions(userId, true)) as PermissionsObject;
 
   const translatedRules: AbilityRule[] = []; // order matters
 
   // basic role mappings
   for (const resource of resources) {
-    if (permissions[resource] === undefined) continue;
+    if (!(resource in permissions)) continue;
+    const permissionsForResource = permissions[resource];
 
     const actionsSet = new Set<ResourceActionType>();
 
-    for (const permission of permissions[resource])
-      permissionNumberToIdentifiers(permission).forEach((action) => actionsSet.add(action));
+    if (typeof permissionsForResource === 'number')
+      permissionNumberToIdentifiers(permissionsForResource).forEach((action) =>
+        actionsSet.add(action)
+      );
+    else
+      for (const permission of permissionsForResource)
+        permissionNumberToIdentifiers(permission).forEach((action) => actionsSet.add(action));
 
     if (resource === 'User' && actionsSet.delete('manage-roles')) {
       translatedRules.push({

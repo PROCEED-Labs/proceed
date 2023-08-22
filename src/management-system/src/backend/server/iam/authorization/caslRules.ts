@@ -228,7 +228,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
     conditions: {
       conditions: {
         resourceOwner: { $eq: userId },
-        resourceType: { $eq: resource },
+        resourceType: { $eq_string_case_insensitive: resource },
         $: { $not_expired_value: expiration },
       },
       conditionsOperator: 'and',
@@ -241,7 +241,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
     conditions: {
       conditions: {
         sharedBy: { $eq: userId },
-        resourceType: { $eq: resource },
+        resourceType: { $eq_string_case_insensitive: resource },
         $: { $not_expired_value: expiration },
       },
       conditionsOperator: 'and',
@@ -263,7 +263,7 @@ function rulesForAlteringShares(ability: CaslAbility) {
       action: ['create', 'delete', 'update'],
       conditions: {
         conditions: {
-          resourceType: { $eq: resource },
+          resourceType: { $eq_string_case_insensitive: resource },
           permissions: { $gte: adminPermissions },
         },
       },
@@ -318,7 +318,7 @@ export async function rulesForUser(userId: string) {
           subject: 'Share',
           conditions: {
             conditions: {
-              resourceType: { $eq: resource },
+              resourceType: { $eq_string_case_insensitive: resource },
               $: { $not_expired_value: role.expiration },
             },
           },

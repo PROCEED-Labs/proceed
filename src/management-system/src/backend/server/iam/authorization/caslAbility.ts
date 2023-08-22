@@ -10,6 +10,8 @@ import { ResourceActionType, ResourceType } from './permissionHelpers';
 const conditions = {
   $in: (valueInCondition: any[]) => (inputValue: any) => valueInCondition.includes(inputValue),
   $eq: (valueInCondition: any) => (inputValue: any) => valueInCondition === inputValue,
+  $eq_string_case_insensitive: (valueInCondition: string) => (inputValue: string) =>
+    valueInCondition.toLowerCase() === inputValue.toLowerCase(),
   $gte: (valueInCondition: number) => (inputValue: number) => inputValue >= valueInCondition,
   $expired_property: (_: null) => (date: string) => date === null || new Date(date) < new Date(),
   $not_expired_property: (_: null) => (date: Date) => date === null || new Date(date) > new Date(),

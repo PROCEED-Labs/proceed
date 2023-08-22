@@ -53,23 +53,6 @@ setGlobalRolesForAuthorization({
 
 export const processArray = Object.keys(processes).map((key) => processes[key]);
 
-export function buildPermissionsObject(user) {
-  const permissionsObject = {};
-  const userRoles = [...(user.roles || []), '7cf26d82-b40f-443f-a025-84e149042c33'];
-
-  for (const roleId of userRoles) {
-    const rolePermissions = roles[roleId].permissions;
-
-    for (const resource of Object.keys(rolePermissions)) {
-      permissionsObject[resource] = permissionsObject[resource]
-        ? permissionsObject[resource].push(rolePermissions[resource])
-        : [rolePermissions[resource]];
-    }
-  }
-
-  return permissionsObject;
-}
-
 export async function buildAbility(user) {
   try {
     // clear role mappings for this user

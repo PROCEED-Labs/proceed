@@ -1,4 +1,3 @@
-import { createMongoAbility } from '@casl/ability-v6';
 import { rulesForUser, toCaslResource } from './caslRules';
 import { unpackRules } from '@casl/ability-v6/extra';
 import { CaslAbility, buildAbility } from './caslAbility';
@@ -9,7 +8,7 @@ type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? 
 export default class Ability {
   caslAbility: CaslAbility;
 
-  constructor(packedRules: ReturnOfPromise<typeof rulesForUser>) {
+  constructor(packedRules: ReturnOfPromise<typeof rulesForUser>['rules']) {
     this.caslAbility = buildAbility(unpackRules(packedRules));
   }
 

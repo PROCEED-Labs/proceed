@@ -7,7 +7,7 @@ import { roleMappingsMetaObjects } from '../../../shared-electron-server/data/ia
  * @param {String} userId - id of user
  * @return {Object} - object of permissions
  */
-export const buildPermissions = async (userId, takeExpirationIntoAccount = false) => {
+export const buildPermissions = async (userId, takeExpirationIntoAccount = true) => {
   if (userId) {
     let userRoles = [];
     // get all roles of user with userId

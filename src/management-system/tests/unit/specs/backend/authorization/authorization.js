@@ -84,7 +84,7 @@ export async function buildAbility(user) {
     await addRoleMapping(user.roles.map((roleId) => ({ roleId, userId: user.id })));
   }
   const rules = await rulesForUser(user.id);
-  return new Ability(rules);
+  return new Ability(rules.rules);
 }
 
 async function buildAbilities() {

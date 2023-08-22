@@ -1,6 +1,5 @@
 import { subject } from '@casl/ability-v6';
 import {
-  PermissionNumber,
   ResourceActionType,
   ResourceType,
   adminPermissions,
@@ -10,9 +9,7 @@ import {
 import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability-v6/extra';
 import { AbilityRule, CaslAbility, buildAbility } from './caslAbility';
-import { buildPermissions } from '../utils/permissions';
-
-type PermissionsObject = Partial<Record<ResourceType, PermissionNumber | PermissionNumber[]>>;
+import { getAppliedRolesForUser } from './rolesHelper';
 
 const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
@@ -231,7 +228,7 @@ async function rulesForSharedResources(ability: CaslAbility, userId: string) {
   return rules;
 }
 
-function rulesForShares(resource: ResourceType, userId: string) {
+function rulesForShares(resource: ResourceType, userId: string, expiration: string | null) {
   const rules: AbilityRule[] = [];
 
   // owner of the share
@@ -242,6 +239,7 @@ function rulesForShares(resource: ResourceType, userId: string) {
       conditions: {
         resourceOwner: { $eq: userId },
         resourceType: { $eq: resource },
+        $: { $not_expired_value: expiration },
       },
       conditionsOperator: 'and',
     },
@@ -254,6 +252,7 @@ function rulesForShares(resource: ResourceType, userId: string) {
       conditions: {
         sharedBy: { $eq: userId },
         resourceType: { $eq: resource },
+        $: { $not_expired_value: expiration },
       },
       conditionsOperator: 'and',
     },
@@ -285,56 +284,69 @@ function rulesForAlteringShares(ability: CaslAbility) {
 }
 
 export async function rulesForUser(userId: string) {
-  const permissions = (await buildPermissions(userId, true)) as PermissionsObject;
+  const roles = getAppliedRolesForUser(userId);
+  let firstExpiration: undefined | Date;
 
-  const translatedRules: AbilityRule[] = []; // order matters
+  const translatedRules: AbilityRule[] = [];
 
   // basic role mappings
-  for (const resource of resources) {
-    if (!(resource in permissions)) continue;
-    const permissionsForResource = permissions[resource];
+  for (const role of roles) {
+    if (
+      (!firstExpiration && role.expiration) ||
+      (firstExpiration && role.expiration && new Date(role.expiration) < firstExpiration)
+    )
+      firstExpiration = new Date(role.expiration);
 
-    const actionsSet = new Set<ResourceActionType>();
+    for (const resource of resources) {
+      if (!(resource in role.permissions)) continue;
+      const permissionsForResource = role.permissions[resource];
 
-    if (typeof permissionsForResource === 'number')
+      const actionsSet = new Set<ResourceActionType>();
+
       permissionNumberToIdentifiers(permissionsForResource).forEach((action) =>
         actionsSet.add(action)
       );
-    else
-      for (const permission of permissionsForResource)
-        permissionNumberToIdentifiers(permission).forEach((action) => actionsSet.add(action));
 
-    if (resource === 'User' && actionsSet.delete('manage-roles')) {
+      if (resource === 'User' && actionsSet.delete('manage-roles')) {
+        translatedRules.push({
+          subject: 'RoleMapping',
+          action: 'manage-roles',
+          conditions: {
+            conditions: {
+              $: { $not_expired_value: role.expiration },
+            },
+          },
+        });
+      }
+
+      if (actionsSet.has('share'))
+        translatedRules.push(...rulesForShares(resource, userId, role.expiration));
+
+      if (actionsSet.has('admin'))
+        translatedRules.push({
+          action: 'admin',
+          subject: 'Share',
+          conditions: {
+            conditions: {
+              resourceType: { $eq: resource },
+              $: { $not_expired_value: role.expiration },
+            },
+          },
+        });
+      const ownershipConditions =
+        needOwnership.has(resource) && !actionsSet.has('admin') ? { owner: { $eq: userId } } : {};
+
       translatedRules.push({
-        subject: 'RoleMapping',
-        action: 'manage-roles',
-      });
-    }
-
-    if (actionsSet.has('share')) translatedRules.push(...rulesForShares(resource, userId));
-
-    if (actionsSet.has('admin'))
-      translatedRules.push({
-        action: 'admin',
-        subject: 'Share',
+        subject: resource,
+        action: [...actionsSet.values()],
         conditions: {
           conditions: {
-            resourceType: { $eq: resource },
+            ...ownershipConditions,
+            $: { $not_expired_value: role.expiration },
           },
         },
       });
-    const ownershipConditions =
-      needOwnership.has(resource) && !actionsSet.has('admin') ? { owner: { $eq: userId } } : {};
-
-    translatedRules.push({
-      subject: resource,
-      action: [...actionsSet.values()],
-      conditions: {
-        conditions: {
-          ...ownershipConditions,
-        },
-      },
-    });
+    }
   }
 
   const ability = buildAbility(translatedRules);
@@ -353,7 +365,7 @@ export async function rulesForUser(userId: string) {
   // this way inverted rules allways decide over normal rules
   translatedRules.sort((a, b) => +a.inverted - +b.inverted);
 
-  return packRules(translatedRules);
+  return { rules: packRules(translatedRules), expiration: firstExpiration };
 }
 
 export function toCaslResource(resource: ResourceType, object: any) {

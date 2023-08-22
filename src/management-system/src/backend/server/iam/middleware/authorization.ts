@@ -30,9 +30,15 @@ export async function abilityMiddleware(req: any, res: any, next: any) {
   let ability = abilityCache.get(userId);
 
   if (ability === undefined) {
-    const rules = await rulesForUser(userId);
+    const { rules, expiration } = await rulesForUser(userId);
+
     ability = new Ability(rules);
     abilityCache.set(userId, ability);
+
+    if (expiration)
+      setTimeout(() => {
+        if (abilityCache.has(userId)) abilityCache.delete(userId);
+      }, +expiration - Date.now());
   }
 
   req.userAbility = ability;

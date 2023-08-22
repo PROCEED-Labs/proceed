@@ -84,12 +84,21 @@ rolesRouter.post('/', validateRole, isAllowed('create', 'Role'), async (req, res
 rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, res) => {
   const role = req.body;
   const { id } = req.params;
+
   if (role) {
     try {
       /** @type {Ability} */
       const userAbility = req.userAbility;
 
-      if (!userAbility.can('update', toCaslResource('Role', role)))
+      const targetRole = getRoleById(id);
+
+      // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
+      if (
+        !(
+          userAbility.can('update', toCaslResource('Role', targetRole)) &&
+          userAbility.can('create', toCaslResource('Role', role))
+        )
+      )
         return res.status(403).send('Forbidden.');
 
       const updatedRole = await updateRole(id, role);

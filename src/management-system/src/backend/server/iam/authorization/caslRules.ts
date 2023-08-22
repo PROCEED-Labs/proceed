@@ -130,24 +130,14 @@ function rulesForRoles(ability: CaslAbility) {
     });
 
     // can't add admin permissions to a role of a resource of which you're not an admin yourself
+
+    // missing check when updating -> new permission can't be one we don't have
     for (const resource of resources) {
       if (!ability.can('admin', resource)) {
         rules.push({
           inverted: true,
           subject: 'Role',
-          action: 'update',
-          conditions: {
-            conditions: {
-              permissions: { $gte: adminPermissions },
-            },
-          },
-          fields: [`permissions.${resource}`],
-        });
-
-        rules.push({
-          inverted: true,
-          subject: 'Role',
-          action: ['delete', 'manage'],
+          action: ['manage'],
           conditions: {
             conditions: {
               [`permissions.${resource}`]: { $gte: adminPermissions },

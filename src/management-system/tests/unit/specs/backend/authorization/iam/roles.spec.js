@@ -110,6 +110,27 @@ describe('PUT /api/roles/:id', () => {
     ).toBe(true);
   });
 
+  // test_put_role_includes_admin_not_granted {
+  it('Ensure that updating role is not allowed because it includes admin permissions and has no corresponding admin permissions.', () => {
+    const role = {
+      name: 'user_manager',
+      default: false,
+      permissions: {
+        Process: 9007199254740991,
+        Project: 0,
+      },
+    };
+
+    // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
+    expect(
+      all_role_permissionsAbility.can('create', toCaslResource('Role', role)) &&
+        all_role_permissionsAbility.can(
+          'update',
+          toCaslResource('Role', roles['1943cce1-a88f-4c58-aae6-f74b25730a2c'])
+        )
+    ).toBe(false);
+  });
+
   // test_put_role_includes_admin_granted
   it('Ensure that updating role is allowed because it includes admin permissions and has sufficient admin permissions.', async () => {
     const role = roles['1943cce1-a88f-4c58-aae6-f74b25730a2c'];

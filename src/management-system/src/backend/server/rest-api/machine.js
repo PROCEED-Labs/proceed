@@ -8,11 +8,16 @@ import { v4 } from 'uuid';
 import express from 'express';
 import { isAllowed } from '../iam/middleware/authorization';
 import { toCaslResource } from '../iam/authorization/caslRules';
+import Ability from '../iam/authorization/abilityHelper';
 
 const machinesRouter = express.Router();
 
 machinesRouter.get('/', isAllowed('view', 'Machine'), async (req, res) => {
-  res.status(200).json(getMachines());
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  const machines = userAbility.filter('view', 'Machine', getMachines());
+  res.status(200).json(machines);
 });
 
 machinesRouter.post('/', isAllowed('create', 'Machine'), async (req, res) => {

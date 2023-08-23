@@ -114,7 +114,7 @@ function updateItemName(item) {
     itemName = util.format(
       '%s<span class="signature-attributes">%s</span>',
       itemName,
-      attributes.join(', ')
+      attributes.join(', '),
     );
   }
 
@@ -377,7 +377,7 @@ function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
         // end my changes
         itemsNav += `<li>${linktoFn(
           item.longname,
-          displayName.replace(/\b(module|event):/g, '')
+          displayName.replace(/\b(module|event):/g, ''),
         )}</li>`;
         itemsSeen[item.longname] = true;
       }
@@ -571,7 +571,7 @@ exports.publish = function (taffyData, opts, tutorials) {
   view.layout = conf.default.layoutFile
     ? path.getResourcePath(
         path.dirname(conf.default.layoutFile),
-        path.basename(conf.default.layoutFile)
+        path.basename(conf.default.layoutFile),
       )
     : 'layout.tmpl';
 
@@ -774,7 +774,7 @@ exports.publish = function (taffyData, opts, tutorials) {
         },
       ])
       .concat(files),
-    indexUrl
+    indexUrl,
   );
 
   // set up the lists that we'll use to generate pages

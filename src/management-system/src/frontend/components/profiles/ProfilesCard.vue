@@ -59,7 +59,7 @@ export default {
     },
     notClassProfiles() {
       return this.$store.getters['environmentStore/environmentProfiles'].filter(
-        (pr) => pr.type !== 'Class'
+        (pr) => pr.type !== 'Class',
       );
     },
   }),
@@ -73,7 +73,7 @@ export default {
               const isChild = parent === id;
               resolve([isChild, profile]);
             });
-          })
+          }),
       );
 
       const classProfilesOfProfile = (await Promise.all(promises))

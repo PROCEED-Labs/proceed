@@ -85,7 +85,7 @@ export async function prepareProcesses(allProcesses, processesToExport, options)
         augmentedProcess,
         [],
         options.additionalParam.format === 'withArtefacts',
-        options.additionalParam.includeCollapsedSubprocess
+        options.additionalParam.includeCollapsedSubprocess,
       );
     } else if (options.additionalParam.includeCollapsedSubprocess) {
       // only get all collapsed subprocesses
@@ -140,7 +140,7 @@ export async function getAllSubprocesses(
   currentProcess,
   includedProcesses,
   addArtefacts,
-  includeCollapsed
+  includeCollapsed,
 ) {
   currentProcess.subprocesses = await getProcessHierarchy(currentProcess.bpmn);
 
@@ -177,7 +177,7 @@ export async function getAllSubprocesses(
             callActivityProcess,
             includedProcesses,
             addArtefacts,
-            includeCollapsed
+            includeCollapsed,
           );
         }
       }

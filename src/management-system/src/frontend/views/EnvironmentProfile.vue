@@ -189,7 +189,7 @@ export default {
     /** */
     async editProfile(profile) {
       const profileString = await this.$store.getters['environmentStore/profileJSONById'](
-        profile.id
+        profile.id,
       );
       this.profileToBeEdited = profileString;
       this.typeOfProfileToBeEdited = profile.type;
@@ -220,7 +220,7 @@ export default {
         // modify profile name if it already exists
         profile.name = this.getUniqueProfileName(
           profile.name,
-          this.profiles.map((p) => p.name)
+          this.profiles.map((p) => p.name),
         );
         this.customProfiles.push(profile);
       }

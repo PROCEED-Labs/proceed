@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <head>
   <script text="text/javascript" src="universal.js" charset="UTF-8" defer></script>
   <script text="text/javascript" src="index.js"></script>
@@ -8,7 +8,7 @@
   document.addEventListener('visibilitychange', (event) => {
     if (document.visibilityState === 'hidden')
       console.log(
-        '!!! WebView entered state >hidden<, this may casue issues: https://developers.google.com/web/updates/2018/07/page-lifecycle-api'
+        '!!! WebView entered state >hidden<, this may casue issues: https://developers.google.com/web/updates/2018/07/page-lifecycle-api',
       );
   });
 </script>

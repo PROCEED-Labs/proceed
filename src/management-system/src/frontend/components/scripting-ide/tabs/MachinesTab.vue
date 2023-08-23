@@ -171,7 +171,7 @@ export default {
           (detectedCapability) =>
             (detectedCapability.name === capability.name ||
               detectedCapability.name === capability.schema) &&
-            isCapabilitySuitableForParameters(capability, detectedCapability.parameters)
+            isCapabilitySuitableForParameters(capability, detectedCapability.parameters),
         ).length > 0
       );
     },
@@ -198,7 +198,7 @@ export default {
           name: myMachine ? myMachine.name : 'Not available right now:',
           capabilities: machine.capabilities
             ? machine.capabilities.filter((capability) =>
-                capability.name.includes(self.capabilityFilter)
+                capability.name.includes(self.capabilityFilter),
               )
             : [],
         };
@@ -211,7 +211,7 @@ export default {
     capabilities() {
       return [].concat.apply(
         [],
-        this.machines.map((e) => (e.capabilities ? e.capabilities : []))
+        this.machines.map((e) => (e.capabilities ? e.capabilities : [])),
       );
     },
   },

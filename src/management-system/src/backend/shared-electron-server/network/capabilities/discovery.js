@@ -72,7 +72,7 @@ eventHandler.on('machinesChanged', async ({ machines: known, oldMachines: oldKno
   await Promise.all(
     connects.map(async (machine) => {
       await getCapabilities(machine, newDiscovered);
-    })
+    }),
   );
 
   const oldDiscovered = discovered;
@@ -87,7 +87,7 @@ async function getCapabilities(machine, newDiscovered) {
     (await getLogger()).debug(
       `Sending GET request to ${
         name || hostname || ip
-      } endpoint /capabilities/ to get the machines capabilities.`
+      } endpoint /capabilities/ to get the machines capabilities.`,
     );
     const capabilities = await capabilitiesEndpoint.getCapabilities(machine);
     // TODO: handle capabilities correctly
@@ -95,7 +95,7 @@ async function getCapabilities(machine, newDiscovered) {
 
     convertedCapabilities.forEach((capability) => {
       const knownCapability = newDiscovered.find(
-        (storedCapability) => storedCapability.schema === capability.schema
+        (storedCapability) => storedCapability.schema === capability.schema,
       );
       if (knownCapability) {
         if (!knownCapability.machineIds.includes(machine.id)) {

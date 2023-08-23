@@ -59,7 +59,7 @@ export default {
         (this.selectedElement.type === 'bpmn:IntermediateThrowEvent' &&
           this.selectedElement.businessObject.eventDefinitions &&
           !!this.selectedElement.businessObject.eventDefinitions.find(
-            (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
+            (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition',
           ))
       );
     },
@@ -73,7 +73,7 @@ export default {
           [resourceType]: resources,
         },
         this.selectedElement,
-        false
+        false,
       );
     },
     updateResources(resources, element = this.selectedElement) {

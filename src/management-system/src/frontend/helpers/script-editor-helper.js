@@ -197,7 +197,7 @@ export function isCapabilitySuitableForParameters(capability, parameters) {
   // check if parameters have every single required one
   return requiredParameters.every(
     (requiredParameter) =>
-      parameters.includes(requiredParameter.name) || parameters.includes(requiredParameter.schema)
+      parameters.includes(requiredParameter.name) || parameters.includes(requiredParameter.schema),
   );
 }
 
@@ -242,6 +242,6 @@ export function hasNextCall(code) {
 export function findCapabilitiesByName(capabilities, name) {
   // name can be PhotographAction => capability.name or https://www.schema.org/PhotographAction => capability.schema
   return capabilities.filter(
-    (capability) => capability.name === name || capability.schema === name
+    (capability) => capability.name === name || capability.schema === name,
   );
 }

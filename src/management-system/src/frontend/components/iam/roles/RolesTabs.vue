@@ -133,7 +133,7 @@ export default {
           // if deleted user is detected
           this.$emit('memberRemoved', value);
           const unmodifiedIndex = this.unmodifiedRoleState.findIndex(
-            (role) => role.id === this.selectedRole.id
+            (role) => role.id === this.selectedRole.id,
           );
           if (unmodifiedIndex > -1) {
             this.unmodifiedRoleState[unmodifiedIndex].members = this.copyOfSelectedRole.members;
@@ -144,7 +144,7 @@ export default {
           }
         } else {
           const index = this.changes.findIndex(
-            (changedRole) => changedRole.id === this.selectedRole.id
+            (changedRole) => changedRole.id === this.selectedRole.id,
           );
           if (index < 0) {
             if (!deepEquals(this.copyOfSelectedRole, value)) {
@@ -155,7 +155,7 @@ export default {
             if (deepEquals(this.copyOfSelectedRole, this.changes[index])) {
               this.changes.splice(index, 1);
               const unmodifiedIndex = this.unmodifiedRoleState.findIndex(
-                (unmodifiedRole) => unmodifiedRole.id === this.selectedRole.id
+                (unmodifiedRole) => unmodifiedRole.id === this.selectedRole.id,
               );
               this.unmodifiedRoleState.splice(unmodifiedIndex, 1);
             }

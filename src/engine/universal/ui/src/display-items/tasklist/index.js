@@ -200,8 +200,8 @@ function showTaskList(tasks) {
       (task) =>
         task.id !== cTask.id ||
         task.instanceID !== cTask.instanceID ||
-        parseInt(task.startTime) !== parseInt(cTask.startTime)
-    )
+        parseInt(task.startTime) !== parseInt(cTask.startTime),
+    ),
   );
 
   // Remove tasks
@@ -223,7 +223,7 @@ function showTaskList(tasks) {
   sortTasks(
     currentTasksAfterUpdate,
     selectedSortItem.id,
-    selectedSortItem.classList.contains('ascending')
+    selectedSortItem.classList.contains('ascending'),
   );
 
   currentTasksAfterUpdate.forEach((task, index) => {
@@ -307,7 +307,7 @@ function removeTask(task) {
   const tasksDiv = document.querySelector('.tasks');
   tasksDiv
     .querySelector(
-      `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`
+      `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`,
     )
     .remove();
   removeUserTaskForm(task.id);
@@ -332,7 +332,7 @@ function addTask(task) {
 function updateTask(task) {
   const tasksDiv = document.querySelector('.tasks');
   const taskDiv = tasksDiv.querySelector(
-    `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`
+    `.task[data-instanceid="${task.instanceID}"][data-id="${task.id}"][data-start-time="${task.startTime}"]`,
   );
   taskDiv.classList.remove('new', 'active', 'paused', 'completed');
   taskDiv.classList.add(task.state.toLowerCase());

@@ -263,7 +263,7 @@ function init() {
     await new Promise((resolve) =>
       setTimeout(() => {
         resolve();
-      }, 1000)
+      }, 1000),
     );
     const machines = store.get('machines');
     machines.forEach((machine) => {

@@ -54,7 +54,7 @@ class CustomBehaviour {
             modeling.createShape(
               { type: 'bpmn:StartEvent' },
               { x: newShape.x + newShape.width / 6, y: newShape.y + newShape.height / 2 },
-              subprocessPlane // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
+              subprocessPlane, // add the new start event to the subprocess plane so it is only visible when the subprocess is opened/edited
             );
           } else if (newShape.type === 'bpmn:ScriptTask') {
             // script tasks might contain commands that are not idempotent => let the user handle interruptions as a default

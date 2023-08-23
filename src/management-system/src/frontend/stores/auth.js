@@ -9,7 +9,7 @@ const resolveAction = createAliasResolver(
   {
     manage: ['update', 'create', 'delete'],
   },
-  { anyAction: 'admin', anySubjectType: 'All' }
+  { anyAction: 'admin', anySubjectType: 'All' },
 );
 
 // some userinfo endpoints are not returning standardized fields, so we have to make a standard for the MS

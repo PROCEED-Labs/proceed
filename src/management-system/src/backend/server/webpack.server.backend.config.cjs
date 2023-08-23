@@ -92,8 +92,8 @@ module.exports = {
               const packageJson = JSON.parse(
                 fs.readFileSync(
                   path.join(__dirname, `../../../../../node_modules/${external}/package.json`),
-                  'utf-8'
-                )
+                  'utf-8',
+                ),
               );
 
               dependencies[external] = packageJson.version;
@@ -116,7 +116,7 @@ module.exports = {
 
           fs.writeFileSync(
             path.join(stats.compilation.compiler.outputPath, 'package.json'),
-            JSON.stringify(serverPackageJson, null, 2)
+            JSON.stringify(serverPackageJson, null, 2),
           );
         });
       },

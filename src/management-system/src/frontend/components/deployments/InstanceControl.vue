@@ -210,7 +210,7 @@ export default {
       try {
         await engineNetworkInterface.stopInstance(
           this.deployment.definitionId,
-          this.instance.processInstanceId
+          this.instance.processInstanceId,
         );
         this.popupData.body = this.stopHints.success;
         this.popupData.color = 'primary';
@@ -231,7 +231,7 @@ export default {
       try {
         await engineNetworkInterface.pauseInstance(
           this.deployment.definitionId,
-          this.instance.processInstanceId
+          this.instance.processInstanceId,
         );
         this.popupData.body = this.pauseHints.success;
         this.popupData.color = 'primary';
@@ -252,7 +252,7 @@ export default {
       try {
         await engineNetworkInterface.resumeInstance(
           this.deployment.definitionId,
-          this.instance.processInstanceId
+          this.instance.processInstanceId,
         );
         this.popupData.body = this.resumeHints.success;
         this.popupData.color = 'primary';

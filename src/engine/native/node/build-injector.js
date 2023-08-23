@@ -13,6 +13,6 @@ exec('npm install', { cwd: __dirname }, (err, stdout, stderr) => {
   // Copy to build dir
   fs.copySync(
     path.join(__dirname, './node_modules'),
-    path.join(__dirname, '../../../../build/engine/node_modules')
+    path.join(__dirname, '../../../../build/engine/node_modules'),
   );
 });

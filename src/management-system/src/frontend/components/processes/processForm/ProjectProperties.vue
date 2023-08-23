@@ -125,7 +125,7 @@ export default {
       const existingProjectInfo = { ...currentData, changes };
       return this.getProjectMetaInfoChanges(
         existingProjectInfo,
-        await getMetaData(changes.bpmn, processId)
+        await getMetaData(changes.bpmn, processId),
       );
     },
   },

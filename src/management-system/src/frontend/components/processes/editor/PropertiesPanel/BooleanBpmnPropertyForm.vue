@@ -80,7 +80,7 @@ export default {
 
           eventBus.on(
             'commandStack.element.updateProperties.postExecute',
-            this.watchPropertyChange
+            this.watchPropertyChange,
           );
         }
       },

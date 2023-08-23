@@ -49,7 +49,7 @@ const Modeler: FC<ModelerProps> = (props) => {
           '      </bpmndi:BPMNShape>' +
           '    </bpmndi:BPMNPlane>' +
           '  </bpmndi:BPMNDiagram>' +
-          '</bpmn:definitions>'
+          '</bpmn:definitions>',
       );
     });
 

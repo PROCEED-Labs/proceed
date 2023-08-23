@@ -25,6 +25,6 @@ module.exports = (capabilityList) =>
       return { expanded, identifier: capabilityItem.identifier };
     }
     throw new NotFoundError(
-      "You should ALWAYS include a graph and name your node as '@graph', please have a look to previous examples!"
+      "You should ALWAYS include a graph and name your node as '@graph', please have a look to previous examples!",
     );
   });

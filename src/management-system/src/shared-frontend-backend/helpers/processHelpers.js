@@ -125,7 +125,7 @@ async function createProcess(processInfo, noDefaults = false) {
 
   if (!metaInfo.name) {
     throw new Error(
-      'No name provided (name can be provided in the general information or in the definitions of the given bpmn)'
+      'No name provided (name can be provided in the general information or in the definitions of the given bpmn)',
     );
   }
 

@@ -84,8 +84,8 @@ function isSubset(set, candidate) {
     const typeString = (el) => (Array.isArray(el) ? 'array' : 'object');
     throw new Error(
       `Expected both to be either array or object but got ${typeString(set)} and ${typeString(
-        candidate
-      )}`
+        candidate,
+      )}`,
     );
   }
 

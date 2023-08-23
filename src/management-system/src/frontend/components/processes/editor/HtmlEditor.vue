@@ -82,7 +82,7 @@ export default {
     /** */
     async saveHTML(htmlObject, taskId = this.selectedElement.id, fileName = this.userTaskFileName) {
       const html = await this.addTemplateNotation(
-        `<html><head><style>${htmlObject.css}</style></head> <body>${htmlObject.html}</body> </html>`
+        `<html><head><style>${htmlObject.css}</style></head> <body>${htmlObject.html}</body> </html>`,
       );
 
       if (!fileName) {
@@ -100,7 +100,7 @@ export default {
 
       this.customModeling.addConstraintsToElement(
         this.modeler.get('elementRegistry').get(taskId),
-        getUpdatedTaskConstraintMapping(proceedConstraints.getElementConstraints(taskId), html)
+        getUpdatedTaskConstraintMapping(proceedConstraints.getElementConstraints(taskId), html),
       );
     },
     createMilestonesHtml(milestones) {
@@ -126,13 +126,13 @@ export default {
 
         if (newMilestones.length > 0 && milestonesWrapper.length > 0) {
           milestonesWrapper.forEach(
-            (wrapper) => (wrapper.innerHTML = `${this.createMilestonesHtml(newMilestones)}`)
+            (wrapper) => (wrapper.innerHTML = `${this.createMilestonesHtml(newMilestones)}`),
           );
         } else if (newMilestones.length > 0 && milestonesWrapper.length === 0) {
           const submitButton = document.querySelector('form.form [type=submit]');
           submitButton.insertAdjacentHTML(
             'beforebegin',
-            `<div class="if91m milestones-wrapper">${this.milestonesHtml}</div>`
+            `<div class="if91m milestones-wrapper">${this.milestonesHtml}</div>`,
           );
         } else {
           milestonesWrapper.forEach((wrapper) => wrapper.remove());
@@ -271,7 +271,7 @@ export default {
           // if newHtml is null the task was deleted
           this.taskHtmlMapping = { ...this.taskHtmlMapping, [taskId]: newHtml };
         }
-      }
+      },
     );
   },
   beforeDestroy() {

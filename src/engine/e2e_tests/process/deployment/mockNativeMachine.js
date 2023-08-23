@@ -6,7 +6,7 @@ class MockMachine extends Machine {
   constructor(mockFolderPath) {
     super();
     this.mockMachineInfo = JSON.parse(
-      fs.readFileSync(path.resolve(mockFolderPath, 'machine.json'), 'utf8')
+      fs.readFileSync(path.resolve(mockFolderPath, 'machine.json'), 'utf8'),
     );
   }
 

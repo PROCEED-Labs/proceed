@@ -217,7 +217,7 @@ export async function addProcessVersion(processDefinitionsId, bpmn) {
     (!versionInformation.name || !versionInformation.description)
   ) {
     throw new Error(
-      'A bpmn that should be stored as a version of a process has to contain both a version name and a version description!'
+      'A bpmn that should be stored as a version of a process has to contain both a version name and a version description!',
     );
   }
 

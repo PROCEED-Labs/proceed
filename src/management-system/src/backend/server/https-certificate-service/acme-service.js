@@ -162,7 +162,7 @@ class AcmeService {
   getDomainsToCover(domains = getBackendConfig().domains) {
     // filter out domains that are already covered by the default certificate
     domains = domains.filter((domain) =>
-      this.ignoredDomains.every((ignoreDomain) => ignoreDomain !== domain)
+      this.ignoredDomains.every((ignoreDomain) => ignoreDomain !== domain),
     );
 
     return domains;
@@ -199,8 +199,8 @@ class AcmeService {
 
     logger.info(
       `Loaded an existing Let's Ecrypt certificate for the domains ${domains.join(
-        ' '
-      )} from the file system. It is valid for another ${remainingDays} days and will be renewed in ${daysUntilRenewal} days!`
+        ' ',
+      )} from the file system. It is valid for another ${remainingDays} days and will be renewed in ${daysUntilRenewal} days!`,
     );
 
     if (!fullInfo) {
@@ -263,8 +263,8 @@ class AcmeService {
 
     logger.info(
       `Received a new Let's Ecrypt certificate for domains ${domains.join(
-        ' '
-      )}. It is valid for ${remainingDays} days and will be renewed in ${daysUntilRenewal} days!`
+        ' ',
+      )}. It is valid for ${remainingDays} days and will be renewed in ${daysUntilRenewal} days!`,
     );
 
     return { key: this.privateKeyString, cert: fullchain };
@@ -292,7 +292,7 @@ class AcmeService {
       return await this.getNewCertificate(domains);
     } else {
       logger.info(
-        "Could not get a Let's Encrypt certificate since the domain of the server running the MS is unknown. Add the domains the server is accessible under that are not already covered by the default certificate to the config to get a certificate!"
+        "Could not get a Let's Encrypt certificate since the domain of the server running the MS is unknown. Add the domains the server is accessible under that are not already covered by the default certificate to the config to get a certificate!",
       );
     }
   }
@@ -356,12 +356,12 @@ class AcmeService {
           } catch (err) {
             // Catch and log errors that might occur when getting a certificate for the domains defined by the user is not possible
             logger.error(`Failed to get a certificate for the newly defined domains: ${newFilteredDomains.join(
-              ' '
+              ' ',
             )}.
             Reason: ${err}`);
           }
         }
-      }
+      },
     );
   }
 
@@ -461,7 +461,7 @@ export function getCertificateDomains(pem) {
     // check if there is an extension element that might contain the list of certificates
     if (!cert.extensions) {
       logger.debug(
-        'Could not find extensions in certificate and thus no domains that are covered by it!'
+        'Could not find extensions in certificate and thus no domains that are covered by it!',
       );
       return [];
     }

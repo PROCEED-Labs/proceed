@@ -25,7 +25,7 @@ window.onDeleteUserConfig = onDeleteUserConfig;
  */
 function onWriteUserConfig() {
   PROCEED_DATA.post('/configuration/api/config', currentConfig).then((data) =>
-    initRenderJSON(data)
+    initRenderJSON(data),
   );
 }
 

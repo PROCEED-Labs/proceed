@@ -35,7 +35,7 @@ async function forwardInstance(ip, port, definitionId, instanceId, instanceInfo)
     `/process/${definitionId}/instance/${instanceId}`,
     'PUT',
     'application/json',
-    instanceInfo
+    instanceInfo,
   );
 }
 
@@ -66,7 +66,7 @@ async function forwardHTML(ip, port, definitionId, version) {
         'application/json',
         {
           html,
-        }
+        },
       );
     }
   });
@@ -90,7 +90,7 @@ async function forwardImports(ip, port, definitionId, version) {
   const importsSendRequests = imports.map(
     async ({ definitionId: importDefinitionId, version: importVersion }) => {
       await forwardProcess(ip, port, importDefinitionId, importVersion);
-    }
+    },
   );
 
   await Promise.all(importsSendRequests);
@@ -123,7 +123,7 @@ async function abortInstanceOnNetwork(definitionId, instanceId) {
         `/process/${definitionId}/instance/${instanceId}/instanceState`,
         'PUT',
         'application/json',
-        { instanceState: 'aborted' }
+        { instanceState: 'aborted' },
       );
     } catch (err) {}
   });
@@ -146,7 +146,7 @@ async function stopInstanceOnNetwork(definitionId, instanceId) {
         `/process/${definitionId}/instance/${instanceId}/instanceState`,
         'PUT',
         'application/json',
-        { instanceState: 'stopped' }
+        { instanceState: 'stopped' },
       );
     } catch (err) {}
   });

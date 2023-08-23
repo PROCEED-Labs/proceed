@@ -201,7 +201,7 @@ export default {
       try {
         const inspectionPlanData = await fifthIndustryInterface.getInspectionPlanData(
           this.planId,
-          this.processType === 'template' ? 'template' : 'entity'
+          this.processType === 'template' ? 'template' : 'entity',
         );
 
         if (inspectionPlanData.assemblyGroup) {

@@ -16,7 +16,7 @@
                     name: $event.target.value,
                     type: performer.type,
                   },
-                  performer.name
+                  performer.name,
                 )
               : assignPerformer({ name: $event.target.value, type: performer.type })
           "
@@ -36,7 +36,7 @@
                     name: performer.name,
                     type: $event,
                   },
-                  performer.name
+                  performer.name,
                 )
               : assignPerformer({ name: performer.name, type: $event })
           "
@@ -136,7 +136,7 @@ export default {
         const updatedAssignedPerformers = [...this.assignedPerformers];
 
         const updatedPerformerIndex = updatedAssignedPerformers.findIndex(
-          (performer) => performer.name === (oldPerformerName || updatedPerformerInfo.name)
+          (performer) => performer.name === (oldPerformerName || updatedPerformerInfo.name),
         );
 
         updatedAssignedPerformers.splice(updatedPerformerIndex, 1, {
@@ -149,7 +149,7 @@ export default {
     },
     deletePerformer(performerName) {
       const updatedAssignedPerformers = this.assignedPerformers.filter(
-        (performer) => performer.name !== performerName
+        (performer) => performer.name !== performerName,
       );
       this.emitPerformers(updatedAssignedPerformers);
     },

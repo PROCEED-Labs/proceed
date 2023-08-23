@@ -10,7 +10,7 @@ UpdateCalledProcessHandler.$inject = ['elementRegistry', 'moddle'];
 module.exports = UpdateCalledProcessHandler;
 UpdateCalledProcessHandler.prototype.removeCallActivityReference = function (
   context,
-  callActivity
+  callActivity,
 ) {
   const { businessObject } = callActivity;
 
@@ -30,7 +30,7 @@ UpdateCalledProcessHandler.prototype.removeCallActivityReference = function (
     callActivities.every(
       (callActivity) =>
         !callActivity.businessObject.calledElement ||
-        !callActivity.businessObject.calledElement.startsWith(prefix)
+        !callActivity.businessObject.calledElement.startsWith(prefix),
     )
   ) {
     const definitions = getRootFromElement(businessObject);
@@ -41,14 +41,14 @@ UpdateCalledProcessHandler.prototype.removeCallActivityReference = function (
     delete definitions.$attrs[`xmlns:${prefix}`];
 
     context.oldImport = definitions.imports.find(
-      (importedProcess) => importedProcess.namespace === context.oldImportedNamespace
+      (importedProcess) => importedProcess.namespace === context.oldImportedNamespace,
     );
 
     context.oldCalledProcessDefinitionsVersion = context.oldImport.version;
 
     if (context.oldImport) {
       definitions.imports = definitions.imports.filter(
-        (processImport) => processImport !== context.oldImport
+        (processImport) => processImport !== context.oldImport,
       );
     }
   }
@@ -66,7 +66,7 @@ UpdateCalledProcessHandler.prototype.addCallActivityReference = function (
   processId,
   processName,
   targetNamespace,
-  processLocation
+  processLocation,
 ) {
   // Construct namespace in format p+(last 3 chars from the imported namespace id part and last 3 from the version part), for example 'p3c2324'
   const [idPart, versionPart] = targetNamespace.split('#');
@@ -132,7 +132,7 @@ UpdateCalledProcessHandler.prototype.execute = function (context) {
       calledProcessId,
       calledProcessName,
       calledProcessTargetNamespace,
-      calledProcessLocation
+      calledProcessLocation,
     );
   }
 

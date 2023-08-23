@@ -353,7 +353,7 @@ describe('ProceedEngine', () => {
       () => {
         expect(engine.instanceIDs).toStrictEqual(['0-123']);
       },
-      onEnded
+      onEnded,
     );
 
     await hasEnded;

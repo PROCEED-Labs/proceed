@@ -135,7 +135,7 @@ const Processes: FC = () => {
   // ];
 
   const onCheckboxChange = (e: CheckboxChangeEvent) => {
-    console.log(`checked = ${e.target.checked}`);
+    console.log(e.target);
   };
 
   const items: MenuProps['items'] = [
@@ -317,7 +317,14 @@ const Processes: FC = () => {
     <>
       <>
         <Row justify="space-between" className={styles.Headerrow}>
-          <Col span={5} className={cn({ [styles.SelectedRow]: selection.length })}>
+          <Col
+            xs={24}
+            sm={24}
+            md={24}
+            lg={10}
+            xl={6}
+            className={cn({ [styles.SelectedRow]: selection.length })}
+          >
             {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
             {selection.length ? (
               <>
@@ -328,7 +335,8 @@ const Processes: FC = () => {
               <div></div>
             )}
           </Col>
-          <Col className={styles.Headercol} span={14} offset={1}>
+          <Col md={0} lg={1} xl={2}></Col>
+          <Col className={styles.Headercol} xs={24} sm={24} md={22} lg={9} xl={12}>
             <Search
               size="middle"
               // ref={(ele) => (this.searchText = ele)}
@@ -339,7 +347,7 @@ const Processes: FC = () => {
               // value={this.state.searchText}
             />
           </Col>
-          <Col className={cn(styles.Headercol, styles.Selectview)} span={4}>
+          <Col className={cn(styles.Headercol, styles.Selectview)} xs={24} sm={24} md={2}>
             <Space.Compact>
               <Button>
                 <UnorderedListOutlined />

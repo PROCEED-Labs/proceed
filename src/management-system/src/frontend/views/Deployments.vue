@@ -142,14 +142,14 @@ export default {
   computed: {
     deployedProcesses() {
       const deployedProcesses = Object.values(
-        this.$store.getters['deploymentStore/deployments']
+        this.$store.getters['deploymentStore/deployments'],
       ).map((deployedProcess) => {
         const deployedProcessInformation = { ...deployedProcess };
 
         deployedProcessInformation.runningInstances = Object.keys(deployedProcess.runningInstances);
 
         deployedProcessInformation.endedInstances = Object.keys(deployedProcess.instances).filter(
-          (instance) => !deployedProcessInformation.runningInstances.includes(instance)
+          (instance) => !deployedProcessInformation.runningInstances.includes(instance),
         );
 
         return deployedProcessInformation;
@@ -166,7 +166,7 @@ export default {
        */
       return processes.map((process) => {
         const specificDeployedProcesses = this.deployedProcesses.filter(
-          (deployment) => deployment.definitionId === process.id
+          (deployment) => deployment.definitionId === process.id,
         );
         process.totalDeployments = specificDeployedProcesses.length;
         process.totalInstances = 0;
@@ -188,7 +188,7 @@ export default {
 
       for (const deployment of this.deployedProcesses) {
         const storedDeployedProcess = this.processes.find(
-          (process) => process.id === deployment.definitionId
+          (process) => process.id === deployment.definitionId,
         );
         if (storedDeployedProcess) {
           sortedDeployments.local.push({ ...deployment, type: storedDeployedProcess.type });
@@ -223,7 +223,7 @@ export default {
     /** */
     async navigateToDeployment(deployment) {
       const processIsLocal = !!this.sortedDeployments.local.find(
-        (localDeployment) => localDeployment.definitionId === deployment.definitionId
+        (localDeployment) => localDeployment.definitionId === deployment.definitionId,
       );
 
       if (!processIsLocal) {
@@ -264,7 +264,7 @@ export default {
       const versionAlreadyDeployed = this.deployedProcesses.find(
         (process) =>
           process.definitionId == processToDeploy.id &&
-          process.versions.some((versionInfo) => versionInfo.version == version)
+          process.versions.some((versionInfo) => versionInfo.version == version),
       );
 
       if (versionAlreadyDeployed) {
@@ -318,11 +318,11 @@ export default {
     async openMappingEditor(processToDeploy) {
       this.deployProcess(processToDeploy);
       const process = this.processes.find(
-        (storedProcess) => storedProcess.id === processToDeploy.id
+        (storedProcess) => storedProcess.id === processToDeploy.id,
       );
       this.deployProcessXml = await setDeploymentMethod(
         await this.$store.getters['processStore/xmlById'](process.id),
-        'static'
+        'static',
       );
       this.updateElementMachineMapping = true;
       this.$store.dispatch('processStore/updateWholeXml', {

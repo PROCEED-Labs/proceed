@@ -88,7 +88,7 @@ async function mapUserTasks(newPlan, bpmn) {
         newPlan.assemblyGroup,
         meta['_5i-Assembly-Group-Name'],
         meta['_5i-Manufacturing-Step-Name'],
-        meta['_5i-Inspection-Order-Code']
+        meta['_5i-Inspection-Order-Code'],
       );
 
       await setMetaData(bpmnObj, userTask.id, newMeta);

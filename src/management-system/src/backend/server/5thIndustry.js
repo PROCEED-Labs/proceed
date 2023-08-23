@@ -23,7 +23,7 @@ export function setup5thIndustryHandlers(addListener) {
       } catch (error) {
         socket.emit('5th_Industry_get_inspection_plan_data', id, { error: error.message });
       }
-    }
+    },
   );
 
   addListener(
@@ -35,6 +35,6 @@ export function setup5thIndustryHandlers(addListener) {
       } catch (error) {
         socket.emit('5th_Industry_create_inspection_plan', id, { error: error.message });
       }
-    }
+    },
   );
 }

@@ -36,7 +36,7 @@ function getCoordinates(callback) {
       ipc.server.on('command', function (data) {
         this.stop();
       });
-    }
+    },
   );
 
   ipc.server.on('start', async function () {

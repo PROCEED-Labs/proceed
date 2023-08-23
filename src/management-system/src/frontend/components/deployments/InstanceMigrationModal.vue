@@ -181,7 +181,7 @@ export default {
         const targets = this.flowElementMapping[this.selectedSourceElement.id];
         if (targets.includes(element.id)) {
           this.flowElementMapping[this.selectedSourceElement.id] = targets.filter(
-            (el) => el !== element.id
+            (el) => el !== element.id,
           );
         } else {
           targets.push(element.id);
@@ -194,12 +194,12 @@ export default {
         this.sourceVersion.version,
         this.selectedTargetVersion,
         this.selectedInstances,
-        { flowElementMapping: this.flowElementMapping }
+        { flowElementMapping: this.flowElementMapping },
       );
 
       this.$emit(
         'done',
-        this.selectableVersions.find(({ version }) => version === this.selectedTargetVersion)
+        this.selectableVersions.find(({ version }) => version === this.selectedTargetVersion),
       );
       this.$emit('close');
     },
@@ -225,7 +225,7 @@ export default {
         this.targetXml = newVersionInfo.isLocal
           ? await this.$store.getters['processStore/xmlByVersion'](
               this.deployment.definitionId,
-              newVersionInfo.version
+              newVersionInfo.version,
             )
           : newVersionInfo.bpmn;
 

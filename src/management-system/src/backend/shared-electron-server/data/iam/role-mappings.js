@@ -56,7 +56,7 @@ export async function addRoleMapping(roleMappings) {
       // store new role mapping in local cache
       if (roleMappingsMetaObjects.users && roleMappingsMetaObjects.users[userId]) {
         const index = roleMappingsMetaObjects.users[userId].findIndex(
-          (mapping) => mapping.roleId === roleId
+          (mapping) => mapping.roleId === roleId,
         );
         if (index > -1) throw new Error('Role mapping already exists');
         roleMappingsMetaObjects.users[userId].push(newRoleMapping);
@@ -104,7 +104,7 @@ export async function deleteRoleMapping(userId, roleId) {
     // store new role mapping in local cache
     if (Array.isArray(roleMappingsMetaObjects.users[userId])) {
       const index = roleMappingsMetaObjects.users[userId].findIndex(
-        (mapping) => mapping.roleId === roleId
+        (mapping) => mapping.roleId === roleId,
       );
       if (index < 0) throw new Error('Mapping not found');
       roleMappingsMetaObjects.users[userId].splice(index, 1);

@@ -56,7 +56,7 @@ class CustomModeling {
 
     // remove old constraints
     extensionElements.values = extensionElements.values.filter(
-      (el) => el.$type !== 'proceed:ProcessConstraints'
+      (el) => el.$type !== 'proceed:ProcessConstraints',
     );
 
     if (cons) {
@@ -150,7 +150,7 @@ class CustomModeling {
             return;
           }
           await this.addConstraintsToElement(task, taskConstraintMapping[id]);
-        })
+        }),
       );
     }
 
@@ -279,7 +279,7 @@ class CustomModeling {
         // retain old fileName if there is one or generate new one if there isn't
         this.setUserTaskFileName(
           userTask.id,
-          businessObject.fileName || generateUserTaskFileName()
+          businessObject.fileName || generateUserTaskFileName(),
         );
       }
     });

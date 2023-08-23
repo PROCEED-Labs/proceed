@@ -21,7 +21,7 @@ async function updateShare(shareId, share) {
     undefined,
     'PUT',
     'application/json',
-    share
+    share,
   );
   return updatedShare;
 }

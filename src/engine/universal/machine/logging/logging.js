@@ -115,7 +115,7 @@ class Logging {
     let tableID;
     for (tableID in range) {
       const logTable = await data.read(
-        `${definitionID}/${tableID}_monitoring_${definitionID}.json`
+        `${definitionID}/${tableID}_monitoring_${definitionID}.json`,
       );
       const arr = Object.entries(logTable || {}).map(([key, value]) => ({
         [key]: JSON.parse(value),
@@ -157,7 +157,7 @@ class Logging {
       configDataEntry.map(async (process) => [
         process.definitionId,
         await this.getProcessLogTables(process.definitionId, limit),
-      ])
+      ]),
     );
     processesTables.forEach((processTables) => {
       [, res[processTables[0]]] = processTables;

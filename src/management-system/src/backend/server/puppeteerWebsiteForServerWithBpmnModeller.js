@@ -219,7 +219,7 @@ async function applyModelingEvent(processDefinitionsId, type, context) {
         if (command === 'change_element_constraints') {
           customModeling.addConstraintsToElement(
             elementRegistry.get(info.elementId),
-            info.constraints
+            info.constraints,
           );
         }
       } else {

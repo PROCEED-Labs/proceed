@@ -46,7 +46,7 @@ export async function getDeploymentInfoFromKnownMachines() {
         // get the information about all deployments on the machine (including the instances for each deployment and the active instances)
         let deployedProcesses = await processEndpoint.getDeployedProcesses(
           machine,
-          'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)'
+          'definitionId,versions,instances(processInstanceId,processVersion,instanceState,globalStartTime)',
         );
 
         deployedProcesses.forEach((process) => (deployments[process.definitionId] = process));
@@ -56,7 +56,7 @@ export async function getDeploymentInfoFromKnownMachines() {
       logger.info(
         `Could not request deployment information for machine: ${
           optionalName || name || hostname || id
-        }.`
+        }.`,
       );
     }
 
@@ -81,7 +81,7 @@ function isInstanceStillRunning(instanceState) {
       state === 'READY' ||
       state === 'DEPLOYMENT-WAITING' ||
       state === 'PAUSING' ||
-      state === 'PAUSED'
+      state === 'PAUSED',
   );
 }
 
@@ -118,7 +118,7 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
       // add information about newly found versions if necessary
       machineDeployment.versions.forEach((machineVersionInfo) => {
         const knownVersion = deployment.versions.find(
-          ({ version }) => version == machineVersionInfo.version
+          ({ version }) => version == machineVersionInfo.version,
         );
 
         // check if there is an entry for the version
@@ -194,7 +194,7 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
               }
             }
           }
-        }
+        },
       );
     });
   });
@@ -206,7 +206,7 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
       info.machines = info.machines.filter((machine) => {
         // check if there is current deployment information for this machine but this deployment was removed
         const machineDeployments = machinesDeployments.find(
-          ([dMachine]) => dMachine.id === machine.id
+          ([dMachine]) => dMachine.id === machine.id,
         );
 
         // if there is deployment info for the machine but no info for the specific deployment assume it was removed
@@ -221,7 +221,7 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
       info.versions = info.versions.filter((version) => {
         // remove machine information from version if the version is not deployed to the machine anymore since the deployment was removed
         version.machines = version.machines.filter(({ machineId }) =>
-          info.machines.some((machine) => machine.id === machineId)
+          info.machines.some((machine) => machine.id === machineId),
         );
 
         return version.machines.length;
@@ -231,11 +231,11 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
       info.instances = Object.fromEntries(
         Object.entries(info.instances).filter(([_instanceId, instance]) => {
           instance.machines = instance.machines.filter((machineId) =>
-            info.machines.some((machine) => machine.id === machineId)
+            info.machines.some((machine) => machine.id === machineId),
           );
 
           return instance.machines.length;
-        })
+        }),
       );
 
       // remove entries from runningInstances list if the deployment was removed from a machine that was the last one where the instance was still running
@@ -245,10 +245,10 @@ export function mergeDeployments(storedDeployments = {}, machinesDeployments) {
           .map(([instanceId, machineIds]) => [
             instanceId,
             machineIds.filter((machineId) =>
-              info.machines.some((machine) => machine.id === machineId)
+              info.machines.some((machine) => machine.id === machineId),
             ),
           ])
-          .filter(([_, machineIds]) => machineIds.length)
+          .filter(([_, machineIds]) => machineIds.length),
       );
 
       return !info.machines.length;
@@ -310,7 +310,7 @@ export async function pollDeploymentInfoFromKnownMachines() {
             .filter((key) => key.startsWith(`${definitionId}-instance-`))
             .forEach((key) => removeProcess(key));
         });
-      }
+      },
     );
   }
 }
@@ -333,7 +333,7 @@ export async function stopPollingDeploymentInfo() {
             processMetaObjects[deploymentId].type !== 'project'
           ) {
             logger.debug(
-              `Removing deployment (id: ${deploymentId}) since no client needs information about it.`
+              `Removing deployment (id: ${deploymentId}) since no client needs information about it.`,
             );
             removeStoredDeployment(deploymentId);
             deploymentCleanupHandler = null;
@@ -374,7 +374,7 @@ export async function getActiveUserTasksFromKnownMachines() {
             },
             userTask.instanceID,
             userTask.id,
-            userTask.startTime
+            userTask.startTime,
           );
           return { ...userTask, html, machine };
         });
@@ -384,7 +384,7 @@ export async function getActiveUserTasksFromKnownMachines() {
       logger.info(
         `Could not request active User Tasks for machine: ${
           optionalName || name || hostname || id
-        }.`
+        }.`,
       );
     }
 
@@ -412,7 +412,7 @@ export function mergeActiveUserTasks(storedActiveUserTasks = {}, machinesActiveU
       (uT) =>
         uT.instanceID === activeUserTask.instanceID &&
         uT.id === activeUserTask.id &&
-        uT.startTime === activeUserTask.startTime
+        uT.startTime === activeUserTask.startTime,
     );
 
     if (activeUserTaskStoredIndex !== -1) {
@@ -427,7 +427,7 @@ export function mergeActiveUserTasks(storedActiveUserTasks = {}, machinesActiveU
       (uT) =>
         uT.instanceID === activeUserTask.instanceID &&
         uT.id === activeUserTask.id &&
-        uT.startTime === activeUserTask.startTime
+        uT.startTime === activeUserTask.startTime,
     );
 
     return userTaskStillActive;
@@ -467,7 +467,7 @@ export async function pollActiveUserTasksFromKnownMachines() {
       getBackendConfig().activeUserTasksPollingInterval * 1000,
       (activeUserTasks) => {
         updateActiveUserTasks(activeUserTasks);
-      }
+      },
     );
   }
 }
@@ -485,7 +485,7 @@ export async function stopPollingActiveUserTasks() {
       activeUserTaskCleanupHandler = setTimeout(() => {
         getStoredActiveUserTasks().forEach((activeUserTask) => {
           logger.debug(
-            `Removing active User Task (id: ${activeUserTask.id}, instanceID: ${activeUserTask.instanceID}) since no client needs information about it.`
+            `Removing active User Task (id: ${activeUserTask.id}, instanceID: ${activeUserTask.instanceID}) since no client needs information about it.`,
           );
           removeStoredActiveUserTask(activeUserTask.instanceID, activeUserTask.id);
           activeUserTaskCleanupHandler = null;
@@ -606,7 +606,7 @@ function mergeInstanceTokens(storedInstanceData, machineInstanceData) {
         (storedToken, index) =>
           !(
             knownTokenIndices.includes(index) && storedToken.machineHops <= machineToken.machineHops
-          )
+          ),
       );
 
       // the previously stored information was older => add the new info
@@ -632,7 +632,7 @@ function mergeLogs(storedLog, machineLog, logIdentifiers) {
     // make sure that an entry is only added once (machine might have been polled before, forwarded instances contain logs that exist on the original engine)
     if (
       !curr.some((entry) =>
-        logIdentifiers.every((identifier) => entry[identifier] === newEntry[identifier])
+        logIdentifiers.every((identifier) => entry[identifier] === newEntry[identifier]),
       )
     ) {
       curr.push(newEntry);
@@ -712,7 +712,7 @@ function mergeMachineInstanceDataIntoConsolidatedState(storedInstanceData, machi
   storedInstanceData.adaptationLog.forEach((entry) => {
     if (entry.type === 'TOKEN-REMOVE') {
       storedInstanceData.tokens = storedInstanceData.tokens.filter(
-        (token) => token.tokenId !== entry.tokenId
+        (token) => token.tokenId !== entry.tokenId,
       );
     }
   });
@@ -768,7 +768,7 @@ async function getInstanceInformationFromMachines(definitionId, instanceId, mach
       const machineInstanceInfo = await processEndpoint.getInstanceInformation(
         machine,
         definitionId,
-        instanceId
+        instanceId,
       );
 
       // add machine id so we know which machine this token exists on
@@ -786,7 +786,7 @@ async function getInstanceInformationFromMachines(definitionId, instanceId, mach
       logger.info(
         `Could not request instance information for instance ${instanceId} on machine: ${
           optionalName || name || hostname || id
-        }.`
+        }.`,
       );
 
       return undefined;
@@ -832,25 +832,25 @@ export async function pollInstanceInfoFromKnownMachines(definitionId, instanceId
         const deployment = getStoredDeployments()[definitionId];
         if (deployment) {
           const machines = deployment.machines.filter((machine) =>
-            deployment.instances[instanceId].machines.includes(machine.id)
+            deployment.instances[instanceId].machines.includes(machine.id),
           );
 
           const machinesInstanceInformation = await getInstanceInformationFromMachines(
             definitionId,
             instanceId,
-            machines
+            machines,
           );
 
           return mergeInstanceInformation(
             JSON.parse(JSON.stringify(getStoredInstances()[instanceId] || null)),
-            machinesInstanceInformation
+            machinesInstanceInformation,
           );
         }
       },
       getBackendConfig().instancePollingInterval * 1000,
       (newInstanceInformation) => {
         updateInstance(instanceId, newInstanceInformation);
-      }
+      },
     );
   }
 }
@@ -874,7 +874,7 @@ export async function stopPollingInstanceInfo(instanceId) {
         ) {
           instanceCleanupTimeouts[instanceId] = setTimeout(() => {
             logger.debug(
-              `Removing instance (id: ${instanceId}) since no client needs information about it.`
+              `Removing instance (id: ${instanceId}) since no client needs information about it.`,
             );
             removeStoredInstance(instanceId);
             delete instanceCleanupTimeouts[instanceId];

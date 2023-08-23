@@ -125,8 +125,8 @@ describe('#parseParamRecursively', () => {
         expectedArg,
         parameterMapping,
         parameterDescriptions,
-        args
-      )
+        args,
+      ),
     ).toEqual([{ h: 50 }]);
   });
 
@@ -137,8 +137,8 @@ describe('#parseParamRecursively', () => {
         expectedArg,
         parameterMapping,
         parameterDescriptions,
-        args
-      )
+        args,
+      ),
     ).toEqual([{ w: 10 }]);
   });
 
@@ -149,8 +149,8 @@ describe('#parseParamRecursively', () => {
         expectedArg,
         parameterMapping,
         parameterDescriptions,
-        args
-      )
+        args,
+      ),
     ).toEqual([{ dpi: 50 }]);
   });
 
@@ -161,8 +161,8 @@ describe('#parseParamRecursively', () => {
         expectedArg,
         parameterMapping,
         parameterDescriptions,
-        args
-      )
+        args,
+      ),
     ).toEqual([{ 'options/blackWhite': false }, { 'options/rotation': 40 }]);
   });
 
@@ -265,28 +265,28 @@ describe('#parseParamRecursively', () => {
   it('parses the parameter correctly and returns the mapped values/parameter exemplified with PROCEED use case for nofilesave Parameter', () => {
     const expectedArg = { '@id': '_:nofilesaveParameter' };
     expect(
-      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs)
+      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs),
     ).toEqual([{ nofilesave: true }]);
   });
 
   it('parses the parameter correctly and returns the mapped values/parameter exemplified with PROCEED use case for height Parameter', () => {
     const expectedArg = { '@id': '_:heightParameter' };
     expect(
-      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs)
+      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs),
     ).toEqual([{ height: 10 }]);
   });
 
   it('parses the parameter correctly and returns the mapped values/parameter exemplified with PROCEED use case for width Parameter', () => {
     const expectedArg = { '@id': '_:widthParameter' };
     expect(
-      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs)
+      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs),
     ).toEqual([{ width: 20 }]);
   });
 
   it('parses the parameter correctly and returns the mapped values/parameter exemplified with PROCEED use case for time Parameter', () => {
     const expectedArg = { '@id': '_:durationParameter' };
     expect(
-      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs)
+      parameterAndOutputParser.parseParamRecursively(expectedArg, mapping, desc, givenArgs),
     ).toEqual([{ time: 2 }]);
   });
 });

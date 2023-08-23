@@ -159,7 +159,7 @@ describe('Management', () => {
       {},
       undefined,
       undefined,
-      undefined
+      undefined,
     );
   });
 
@@ -172,7 +172,7 @@ describe('Management', () => {
 
     const firstEngine = management.getEngineWithID(firstInstanceId);
     expect(management.getEngineWithID(firstInstanceId)).toBe(
-      management.getEngineWithID(secondInstanceId)
+      management.getEngineWithID(secondInstanceId),
     );
     expect(firstEngine.instanceIDs).toEqual([firstInstanceId, secondInstanceId]);
   });
@@ -220,7 +220,7 @@ describe('Management', () => {
       789,
       {},
       startingInstanceInfo,
-      expect.any(Function)
+      expect.any(Function),
     );
     expect(management.getEngineWithID(engine.instanceIDs[0])).toBeInstanceOf(Engine);
   });

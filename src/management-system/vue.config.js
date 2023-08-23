@@ -20,7 +20,7 @@ switch (process.env.MODE) {
     break;
   default:
     throw new Error(
-      `Expected process env variable MODE to have one of the values ["electron","frontend","puppeteer"]. Value was ${process.env.MODE}`
+      `Expected process env variable MODE to have one of the values ["electron","frontend","puppeteer"]. Value was ${process.env.MODE}`,
     );
 }
 
@@ -41,7 +41,7 @@ if (process.env.MODE === 'puppeteer') {
     'backend-puppeteer-bpmn-js': {
       entry: path.join(
         __dirname,
-        './src/backend/server/puppeteerWebsiteForServerWithBpmnModeller.js'
+        './src/backend/server/puppeteerWebsiteForServerWithBpmnModeller.js',
       ),
 
       template: path.join(__dirname, './public/puppeteerTemplateWebsiteForServer.html'),
@@ -129,10 +129,10 @@ module.exports = {
         if (result.request) {
           result.request = result.request.replace(
             'interface',
-            process.env.MODE === 'electron' ? 'electron' : 'server' // 'electron' or 'server'
+            process.env.MODE === 'electron' ? 'electron' : 'server', // 'electron' or 'server'
           );
         }
-      })
+      }),
     );
 
     // to enable logging with the backend logger in modules imported by the electron version
@@ -142,7 +142,7 @@ module.exports = {
           if (result.request) {
             result.request = result.request.replace('-node', '-webpack');
           }
-        })
+        }),
       );
     }
 

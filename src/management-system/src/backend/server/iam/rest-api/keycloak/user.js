@@ -27,7 +27,7 @@ userRouter.get('/', isAuthenticated(), async (req, res) => {
       users.map((user) => {
         const { id, username, firstName, lastName, email, attributes } = user;
         return { id, username, firstName, lastName, email, attributes, groups: [], roles: [] };
-      })
+      }),
     );
   } catch (e) {
     return res.status(400).json({ error: e.toString() });
@@ -102,7 +102,7 @@ userRouter.post(
         .status(400)
         .json('Missing parameter user and/or missing temporary password for user');
     }
-  }
+  },
 );
 
 /**
@@ -131,7 +131,7 @@ userRouter.put(
     } else {
       return res.status(400).json('Missing parameter id and/or password');
     }
-  }
+  },
 );
 
 /**
@@ -161,7 +161,7 @@ userRouter.put(
     } else {
       return res.status(400).json('Missing parameter id and/or user');
     }
-  }
+  },
 );
 
 /**
@@ -188,7 +188,7 @@ userRouter.delete(
     } else {
       return res.status(400).json('Missing parameter id');
     }
-  }
+  },
 );
 
 export default userRouter;

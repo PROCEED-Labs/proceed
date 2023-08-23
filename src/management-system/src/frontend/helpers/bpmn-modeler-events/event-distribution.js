@@ -113,7 +113,7 @@ export function activateDistribution() {
         processInterface.broadcastBPMNEvents(
           processDefinitionsId,
           'canvas.updateRoot',
-          preSerialize('canvas.updateRoot', implicitRootChange)
+          preSerialize('canvas.updateRoot', implicitRootChange),
         );
         implicitRootChange = null;
       }
@@ -142,7 +142,7 @@ export function applyExternalEvent(command, context) {
     elementFactory,
     bpmnFactory,
     command,
-    JSON.parse(JSON.stringify(context))
+    JSON.parse(JSON.stringify(context)),
   );
 
   // store root process before changing to collaboration to use it in the first particpant that will be created

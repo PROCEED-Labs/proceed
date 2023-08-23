@@ -110,8 +110,8 @@ export default {
       const filteredLocalVersions = this.localVersions.filter(
         ({ version: localVersion }) =>
           !this.selectableVersions.some(
-            ({ version: selectableVersion }) => selectableVersion === localVersion
-          )
+            ({ version: selectableVersion }) => selectableVersion === localVersion,
+          ),
       );
 
       return this.selectableVersions
@@ -149,7 +149,7 @@ export default {
 
         const instanceId = await engineNetworkInterface.startInstance(
           this.deployment.definitionId,
-          version
+          version,
         );
 
         this.popupData.body = 'Executing process instance';

@@ -207,7 +207,7 @@ var engine = (function (e) {
           },
         };
       f.detectEnvironment(), (e.exports = f);
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     var r = n(1),
@@ -543,7 +543,7 @@ var engine = (function (e) {
           }
         }),
         t.enable(o());
-    }.call(this, n(16)));
+    }).call(this, n(16));
   },
   function (e, t) {
     var n = {}.hasOwnProperty;
@@ -2356,7 +2356,7 @@ var engine = (function (e) {
         for (var i = 0; i < r && !(i + n >= t.length || i >= e.length); ++i) t[i + n] = e[i];
         return i;
       }
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t) {
     'function' == typeof Object.create
@@ -3363,7 +3363,7 @@ var engine = (function (e) {
             e
           );
         });
-    }.call(this, n(99).setImmediate));
+    }).call(this, n(99).setImmediate);
   },
   function (e, t, n) {
     'use strict';
@@ -3649,7 +3649,7 @@ var engine = (function (e) {
           );
         }),
         (t.isBuffer = e.isBuffer);
-    }.call(this, n(38).Buffer));
+    }).call(this, n(38).Buffer);
   },
   function (e, t, n) {
     var r = n(40),
@@ -4405,7 +4405,7 @@ var engine = (function (e) {
             },
           })
         : (e.exports = t);
-    }.call(this, n(16)));
+    }).call(this, n(16));
   },
   function (e, t, n) {
     var r = n(38),
@@ -4483,7 +4483,7 @@ var engine = (function (e) {
           ('undefined' != typeof self && self.clearImmediate) ||
           (void 0 !== e && e.clearImmediate) ||
           (this && this.clearImmediate));
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     function r(e, t, n, r, i, o, a) {
@@ -6204,7 +6204,7 @@ var engine = (function (e) {
         (g.prototype._destroy = function (e, t) {
           this.end(), t(e);
         });
-    }.call(this, n(16), n(99).setImmediate, n(11)));
+    }).call(this, n(16), n(99).setImmediate, n(11));
   },
   function (e, t, n) {
     'use strict';
@@ -7616,7 +7616,7 @@ var engine = (function (e) {
         (t.overrideMimeType = t.fetch || (!!r() && s(r().overrideMimeType))),
         (t.vbArray = s(e.VBArray)),
         (n = null);
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     (function (e, r, i) {
@@ -7775,7 +7775,7 @@ var engine = (function (e) {
           }
           e._xhr.readyState === u.DONE && 'ms-stream' !== e._mode && e.push(null);
         });
-    }.call(this, n(16), n(11), n(38).Buffer));
+    }).call(this, n(16), n(11), n(38).Buffer);
   },
   function (e, t, n) {
     'use strict';
@@ -8322,7 +8322,7 @@ var engine = (function (e) {
           },
         }),
         (b._fromList = k);
-    }.call(this, n(11), n(16)));
+    }).call(this, n(11), n(16));
   },
   function (e, t, n) {
     e.exports = n(55).EventEmitter;
@@ -8809,7 +8809,7 @@ var engine = (function (e) {
   function (e, t) {
     (function (t) {
       e.exports = t;
-    }.call(this, {}));
+    }).call(this, {});
   },
   function (e, t, n) {
     function r(e, t, n, r, i, o, a) {
@@ -10785,7 +10785,7 @@ var engine = (function (e) {
           ? u(t)
           : ((a = [t]),
             void 0 === (s = 'function' == typeof (o = u) ? o.apply(t, a) : o) || (i.exports = s));
-    }.call(this, n(99).setImmediate, n(16), n(11), n(96)(e)));
+    }).call(this, n(99).setImmediate, n(16), n(11), n(96)(e));
   },
   function (e, t, n) {
     'use strict';
@@ -10969,7 +10969,7 @@ var engine = (function (e) {
         (function (e) {
           (this.variables = this.variables || {}),
             (this.variables = Object.assign(this.variables, e.context.variables));
-        }.call(this, e),
+        }).call(this, e),
           this.processes.every(function (e) {
             return e.isEnded;
           }) &&
@@ -10977,7 +10977,7 @@ var engine = (function (e) {
             l.call(this),
             (this.started = !1),
             (this.isEnded = !0),
-            this.emit('end', this)));
+            this.emit('end', this));
       }),
       (c.Definition.prototype.onError = function () {
         var e = Array.prototype.slice.call(arguments);
@@ -11084,8 +11084,8 @@ var engine = (function (e) {
               e.on('end', this._onChildEnd),
               e.on('leave', this._onChildLeave),
               this.context.hasAttachedErrorEvent(e.id) || e.on('error', this._onChildError);
-          }.call(t, n),
-            n.activate());
+          }).call(t, n),
+            n.activate();
         }),
         t.context.messageFlows.forEach(function (t) {
           t.on('message', e._onMessage);
@@ -11093,7 +11093,7 @@ var engine = (function (e) {
         t.context.sequenceFlows.forEach(function (e) {
           (function (e) {
             e.on('taken', this._onFlowTaken), e.on('discarded', this._onFlowDiscarded);
-          }.call(t, e));
+          }).call(t, e);
         });
     }
     function s() {
@@ -11110,15 +11110,15 @@ var engine = (function (e) {
               e.removeListener('end', this._onChildEnd),
               e.removeListener('leave', this._onChildLeave),
               e.removeListener('error', this._onChildError);
-          }.call(e, n),
-            n.deactivate());
+          }).call(e, n),
+            n.deactivate();
         }),
         this.context.sequenceFlows.forEach(function (t) {
           (function (e) {
             e.removeListener('taken', this._onFlowTaken),
               e.removeListener('discarded', this._onFlowDiscarded),
               e.removeListener('message', this._onMessage);
-          }.call(e, t));
+          }).call(e, t);
         }));
     }
     function u(e, t, n) {
@@ -11329,7 +11329,7 @@ var engine = (function (e) {
             a.call(this, 'discarded', e || this);
         }),
         (e.exports = o);
-    }.call(this, n(99).setImmediate));
+    }).call(this, n(99).setImmediate);
   },
   function (e, t, n) {
     'use strict';
@@ -11741,7 +11741,7 @@ var engine = (function (e) {
           .forEach(function (e) {
             [][e] && r(Array, e, Function.call.bind([][e]));
           });
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     n(238),
@@ -15625,7 +15625,7 @@ var engine = (function (e) {
           ? self
           : this,
       );
-    }.call(this, n(11), n(96)(e)));
+    }).call(this, n(11), n(96)(e));
   },
   function (e, t, n) {
     n(436), (e.exports = n(22).RegExp.escape);
@@ -15673,7 +15673,7 @@ var engine = (function (e) {
         IPC: i,
       }),
         'node' === r.environment && void 0 !== t.send && e.exports.init();
-    }.call(this, n(16)));
+    }).call(this, n(16));
   },
   function (e, t, n) {
     function r(e, t) {
@@ -16058,7 +16058,7 @@ var engine = (function (e) {
           );
         })();
       e.exports = f;
-    }.call(this, n(16)));
+    }).call(this, n(16));
   },
   function (e, t, n) {
     function r(e) {
@@ -16599,7 +16599,7 @@ var engine = (function (e) {
           'UNLOCK',
           'UNSUBSCRIBE',
         ]);
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     (function (t, r, i) {
@@ -16829,7 +16829,7 @@ var engine = (function (e) {
         'upgrade',
         'via',
       ];
-    }.call(this, n(38).Buffer, n(11), n(16)));
+    }).call(this, n(38).Buffer, n(11), n(16));
   },
   function (e, t, n) {
     'use strict';
@@ -17142,7 +17142,7 @@ var engine = (function (e) {
           }
         }
       })('undefined' == typeof self ? (void 0 === e ? this : e) : self);
-    }.call(this, n(11), n(16)));
+    }).call(this, n(11), n(16));
   },
   function (e, t, n) {
     (function (t) {
@@ -17166,7 +17166,7 @@ var engine = (function (e) {
           return e.apply(this, arguments);
         };
       };
-    }.call(this, n(11)));
+    }).call(this, n(11));
   },
   function (e, t, n) {
     'use strict';
@@ -17470,7 +17470,7 @@ var engine = (function (e) {
           else for (f in p) p.hasOwnProperty(f) && (s[f] = p[f]);
         else a.punycode = p;
       })(this);
-    }.call(this, n(96)(e), n(11)));
+    }).call(this, n(96)(e), n(11));
   },
   function (e, t, n) {
     'use strict';
@@ -20946,7 +20946,7 @@ var engine = (function (e) {
             } catch (e) {}
           })());
       })('object' == t(e) ? e.exports : (window.whiskers = {}));
-    }.call(this, n(96)(e)));
+    }).call(this, n(96)(e));
   },
   function (e, t, n) {
     function r(e, t, n, r, i, o, a) {
@@ -21612,7 +21612,7 @@ var engine = (function (e) {
           },
         };
       e.exports = d;
-    }.call(this, n(38).Buffer));
+    }).call(this, n(38).Buffer);
   },
   function (e, t, n) {
     function r(e) {
@@ -22237,7 +22237,7 @@ var engine = (function (e) {
               return e.stop();
             });
         });
-    }.call(this, n(16), n(38).Buffer));
+    }).call(this, n(16), n(38).Buffer);
   },
   function (e, t, n) {
     var r;
@@ -22606,7 +22606,7 @@ var engine = (function (e) {
           return o.getActivityErrorEventDefinition(e);
         }),
         (e.exports = c);
-    }.call(this, n(11), '/', n(16)));
+    }).call(this, n(11), '/', n(16));
   },
   function (e, t, n) {
     (function (e) {
@@ -22752,7 +22752,7 @@ var engine = (function (e) {
           : function (e, t, n) {
               return t < 0 && (t = e.length + t), e.substr(t, n);
             };
-    }.call(this, n(16)));
+    }).call(this, n(16));
   },
   function (e, t, n) {
     'use strict';
@@ -26688,7 +26688,7 @@ var engine = (function (e) {
                 })
               : (String.fromCodePoint = _));
       })(t);
-    }.call(this, n(38).Buffer));
+    }).call(this, n(38).Buffer);
   },
   function (e, t, n) {
     e.exports = i;

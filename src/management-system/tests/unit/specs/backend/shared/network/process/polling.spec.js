@@ -32,7 +32,7 @@ describe('Tests for the deployment polling module', () => {
               },
             },
           ],
-        ])
+        ]),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -84,7 +84,7 @@ describe('Tests for the deployment polling module', () => {
               },
             },
           ],
-        ])
+        ]),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -195,7 +195,7 @@ describe('Tests for the deployment polling module', () => {
               },
             },
           ],
-        ])
+        ]),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -352,7 +352,7 @@ describe('Tests for the deployment polling module', () => {
               },
             },
           ],
-        ])
+        ]),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -454,8 +454,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -531,8 +531,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -813,8 +813,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -1140,8 +1140,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -1453,8 +1453,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment1: {
@@ -1664,8 +1664,8 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             ],
-          ]
-        )
+          ],
+        ),
       ).toStrictEqual({
         deployments: {
           deployment2: {
@@ -1733,7 +1733,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -1789,7 +1789,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -1866,8 +1866,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -1923,7 +1923,7 @@ describe('Tests for the deployment polling module', () => {
               ],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -1975,7 +1975,7 @@ describe('Tests for the deployment polling module', () => {
               ],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2056,8 +2056,8 @@ describe('Tests for the deployment polling module', () => {
                 ],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2123,7 +2123,7 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2195,7 +2195,7 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2262,7 +2262,7 @@ describe('Tests for the deployment polling module', () => {
                 },
               },
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2357,8 +2357,8 @@ describe('Tests for the deployment polling module', () => {
                   },
                 },
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2421,7 +2421,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2481,7 +2481,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2536,8 +2536,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2593,8 +2593,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2647,8 +2647,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2726,8 +2726,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2812,8 +2812,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2882,8 +2882,8 @@ describe('Tests for the deployment polling module', () => {
                 ],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -2947,7 +2947,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3015,7 +3015,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3075,7 +3075,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3158,8 +3158,8 @@ describe('Tests for the deployment polling module', () => {
                 adaptationLog: [],
                 variables: {},
               },
-            ]
-          )
+            ],
+          ),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3219,7 +3219,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3279,7 +3279,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3339,7 +3339,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,
@@ -3389,7 +3389,7 @@ describe('Tests for the deployment polling module', () => {
               adaptationLog: [],
               variables: {},
             },
-          ])
+          ]),
         ).toStrictEqual({
           processInstanceId: 'instance1',
           processVersion: 123,

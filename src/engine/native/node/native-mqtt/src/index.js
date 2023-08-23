@@ -122,7 +122,7 @@ class NativeMQTT extends NativeModule {
 
         if (incomingTopic.match(topicRegex)) {
           Object.values(callbacks).forEach((callback) =>
-            callback(undefined, [incomingTopic, message.toString()])
+            callback(undefined, [incomingTopic, message.toString()]),
           );
         }
       });

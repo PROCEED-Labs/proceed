@@ -79,7 +79,7 @@ const Management = {
 
     const { bpmn, deploymentMethod } = await distribution.db.getProcessVersionInfo(
       definitionId,
-      version
+      version,
     );
 
     if (deploymentMethod === 'dynamic') {
@@ -101,7 +101,7 @@ const Management = {
         processInfo,
         null,
         taskConstraints,
-        processConstraints
+        processConstraints,
       );
 
       if (!executionAllowed) {
@@ -147,7 +147,7 @@ const Management = {
       if (!archivedInstance) {
         throw new APIError(
           404,
-          `Cannot find the instance (id: ${instanceId}) of the given process (id: ${definitionId})!`
+          `Cannot find the instance (id: ${instanceId}) of the given process (id: ${definitionId})!`,
         );
       }
 
@@ -164,7 +164,7 @@ const Management = {
             msg: `Loaded an archived process instance back into the engine. Id = ${instanceId}.}`,
             instanceId: instanceId,
           });
-        }
+        },
       );
     }
     return engine;
@@ -184,7 +184,7 @@ const Management = {
 
     const { bpmn, deploymentMethod } = await distribution.db.getProcessVersionInfo(
       definitionId,
-      instance.processVersion
+      instance.processVersion,
     );
 
     if (deploymentMethod === 'dynamic') {
@@ -215,7 +215,7 @@ const Management = {
         processInfo,
         tokenInfo,
         taskConstraints,
-        processConstraints
+        processConstraints,
       );
 
       if (!executionAllowed) {
@@ -266,7 +266,7 @@ const Management = {
             msg: `Continuing process instance. Id = ${startingInstanceInfo.processInstanceId}. TokenId = ${startingInstanceInfo.tokens[0].tokenId}`,
             instanceId: startingInstanceInfo.processInstanceId,
           });
-        }
+        },
       );
     }
 
@@ -330,7 +330,7 @@ const Management = {
           msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
           instanceId: resumedInstanceInformation.instanceId,
         });
-      }
+      },
     );
 
     return engine;
@@ -427,7 +427,7 @@ const Management = {
           msg: `Continuing execution of an interrupted instance (id: ${instance.processInstanceId})`,
           instanceId: instance.processInstanceId,
         });
-      }
+      },
     );
 
     // if the instance was in the process of being paused => make sure that it is paused again
@@ -522,9 +522,8 @@ const Management = {
     // get inactive userTasks of already archived instances
     const allProcesses = await distribution.db.getAllProcesses();
     const allArchivedInstances = await allProcesses.reduce(async (acc, currentDefinitionId) => {
-      const archivedInstancesForDefinitionId = await distribution.db.getArchivedInstances(
-        currentDefinitionId
-      );
+      const archivedInstancesForDefinitionId =
+        await distribution.db.getArchivedInstances(currentDefinitionId);
 
       const nonDuplicateArchivedInstancesForDefinitionId = {};
 
@@ -543,7 +542,7 @@ const Management = {
       if (archivedInstance.userTasks) {
         const instanceUserTasks = archivedInstance.userTasks.map((uT) => {
           const userTaskToken = archivedInstance.tokens.find(
-            (token) => token.tokenId === uT.tokenId && token.currentFlowElementId === uT.id
+            (token) => token.tokenId === uT.tokenId && token.currentFlowElementId === uT.id,
           );
 
           if (userTaskToken) {
@@ -555,7 +554,7 @@ const Management = {
             };
           } else {
             const userTaskLogEntry = archivedInstance.log.find(
-              (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId
+              (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId,
             );
 
             return {

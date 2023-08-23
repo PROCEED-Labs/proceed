@@ -8,7 +8,7 @@
       @click.prevent="
         $emit(
           'roleSelected',
-          roles.find((role) => !!role.default === true)
+          roles.find((role) => !!role.default === true),
         )
       "
     >

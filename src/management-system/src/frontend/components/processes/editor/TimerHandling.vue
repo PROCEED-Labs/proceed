@@ -162,7 +162,7 @@ export default {
                     ) {
                       this.customModeling.updateTimerDuration(
                         elementId,
-                        metaData.timePlannedDuration
+                        metaData.timePlannedDuration,
                       );
                     }
 
@@ -192,7 +192,7 @@ export default {
                   this.timeDate = '';
                 }
               }
-            }
+            },
           );
         }
       },

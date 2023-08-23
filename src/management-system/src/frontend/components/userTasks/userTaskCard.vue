@@ -163,7 +163,7 @@ export default {
     },
     performers() {
       const performers = this.userTask.performers.map(
-        (performer) => performer.meta.name || performer.meta.groupname
+        (performer) => performer.meta.name || performer.meta.groupname,
       );
       return performers.length > 0 ? performers.join(', ') : 'Not specified';
     },

@@ -23,12 +23,12 @@ class Capability extends System {
   executeNativeCapability(
     id: string,
     args: { [param: string]: any }[],
-    callback: IPCListener
+    callback: IPCListener,
   ): void;
   executeNativeCapability(
     id: string,
     args: { [param: string]: any }[] = [],
-    callback: IPCListener | undefined = undefined
+    callback: IPCListener | undefined = undefined,
   ) {
     const taskID = generateUniqueTaskID();
 

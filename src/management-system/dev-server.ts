@@ -51,14 +51,14 @@ if (process.env.MODE === 'iam') {
   if (!fs.existsSync(path)) {
     console.log('Cloning dev environment: https://github.com/PROCEED-Labs/environments');
     console.log(
-      "If you're in a terminal, you're going to need a personal-access-token (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) because passwords are no longer allowed (https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories#cloning-with-https-urls)."
+      "If you're in a terminal, you're going to need a personal-access-token (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) because passwords are no longer allowed (https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories#cloning-with-https-urls).",
     );
     console.log(
-      'You can also run the server in VS Code and let VS Code handle the authentication flow.'
+      'You can also run the server in VS Code and let VS Code handle the authentication flow.',
     );
 
     execSync(
-      'cd ./src/backend/server/ && git submodule add --force https://github.com/PROCEED-Labs/environments environment-configurations'
+      'cd ./src/backend/server/ && git submodule add --force https://github.com/PROCEED-Labs/environments environment-configurations',
     );
   }
 

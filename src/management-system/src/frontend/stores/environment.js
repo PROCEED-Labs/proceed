@@ -55,7 +55,7 @@ export default function createEnvironmentProfileStore() {
         dataInterface.saveEnvProfile(
           environmentProfile.id,
           type,
-          JSON.stringify(environmentProfile)
+          JSON.stringify(environmentProfile),
         );
       }
     },

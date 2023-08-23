@@ -170,7 +170,7 @@ export async function readZipAsync(zipBlob) {
 
   // list all bpmn files inside this zip regardless of the folder depth
   const bpmnFiles = Object.values(zip.files).filter(
-    (file) => file.name.endsWith('.bpmn') && !file.dir
+    (file) => file.name.endsWith('.bpmn') && !file.dir,
   );
 
   const contentContainer = [];
@@ -184,7 +184,7 @@ export async function readZipAsync(zipBlob) {
 
     // list all html files inside the user-tasks folder which is in the same folder like the current bpmn file
     const userTaskFiles = Object.values(zip.files).filter(
-      (file) => file.name.startsWith(userTaskDir) && file.name.endsWith('.html')
+      (file) => file.name.startsWith(userTaskDir) && file.name.endsWith('.html'),
     );
 
     const htmlData = new Map();
@@ -205,7 +205,7 @@ export async function readZipAsync(zipBlob) {
 
     // list all image files inside the images folder which is in the same folder like the current bpmn file
     const imageFiles = Object.values(zip.files).filter(
-      (file) => file.name.startsWith(imageDir) && file.name !== imageDir
+      (file) => file.name.startsWith(imageDir) && file.name !== imageDir,
     );
 
     const imageData = {};

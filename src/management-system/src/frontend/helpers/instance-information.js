@@ -28,7 +28,7 @@ export function calculateProgress(elementMetaData, instanceInfo) {
   return calculateProgressHelper(
     plannedStart || instanceInfo.startTime,
     instanceInfo.endTime,
-    elementMetaData.timePlannedDuration
+    elementMetaData.timePlannedDuration,
   );
 }
 export function calculateProgressHelper(start, end, plannedDuration) {

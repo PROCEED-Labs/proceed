@@ -108,7 +108,7 @@ UpdateProceedElementsHandler.prototype.setResources = function (element, resourc
           element.businessObject,
           getUppercaseType(resourceType),
           undefined,
-          resource
+          resource,
         );
       }
     });
@@ -121,7 +121,7 @@ UpdateProceedElementsHandler.prototype.setResources = function (element, resourc
           element.businessObject,
           getUppercaseType(resourceType),
           null,
-          oldResource
+          oldResource,
         );
       }
     });

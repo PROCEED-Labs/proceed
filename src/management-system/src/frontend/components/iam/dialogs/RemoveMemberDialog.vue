@@ -63,13 +63,13 @@ export default {
       try {
         await api.deleteRoleMapping(this.memberToRemove.userId, this.selectedRole.id);
         let index = this.copyOfSelectedRole.members.findIndex(
-          (member) => member.userId === this.memberToRemove.userId
+          (member) => member.userId === this.memberToRemove.userId,
         );
         if (index > -1) {
           this.copyOfSelectedRole.members.splice(index, 1);
         }
         index = this.selectedRole.members.findIndex(
-          (member) => member.userId === this.memberToRemove.userId
+          (member) => member.userId === this.memberToRemove.userId,
         );
         if (index > -1) {
           this.selectedRole.members.splice(index, 1);

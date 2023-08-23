@@ -105,7 +105,7 @@ export default {
       // otherwise find data object
       if (this.openElement.type === 'scriptTask') {
         scriptElement = R.find(R.propEq('nodeName', 'script'))(
-          this.openElement.xmlObject.childNodes
+          this.openElement.xmlObject.childNodes,
         );
         // if there is no script element, add one (including a cdata section) and return it
         if (!scriptElement) {
@@ -162,7 +162,7 @@ export default {
      */
     processes() {
       return R.reject(R.propEq('id', this.processDefinitionsId))(
-        this.$store.getters['processStore/processes']
+        this.$store.getters['processStore/processes'],
       );
     },
 

@@ -18,7 +18,7 @@ jest.mock('@proceed/bpmn-helper/src/PROCEED-CONSTANTS.js', () => ({
     .mockImplementation(() =>
       jest
         .requireActual('@proceed/bpmn-helper/src/PROCEED-CONSTANTS.js')
-        .initXml('Process_1', 'StartEvent_1')
+        .initXml('Process_1', 'StartEvent_1'),
     ),
 }));
 
@@ -231,7 +231,7 @@ describe('Process store', () => {
         const merge = { ...p2Temp, ...mockProcess };
         expect(ProcessInterface.prototype.updateProcessMetaData).toHaveBeenCalledWith(
           p2Temp.id,
-          merge
+          merge,
         );
       });
     });

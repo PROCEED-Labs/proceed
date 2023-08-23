@@ -26,7 +26,7 @@ export const logout = async (req, res, client, config) => {
         ? await client.endSessionUrl({
             post_logout_redirect_uri: returnUrl || req.headers.referer,
           })
-        : returnUrl || req.headers.referer
+        : returnUrl || req.headers.referer,
     );
   } catch (e) {
     return res.redirect(returnUrl || req.headers.referer);

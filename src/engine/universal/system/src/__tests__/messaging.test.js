@@ -26,7 +26,7 @@ describe('Tests for the message interface of the dispatcher', () => {
   describe('publish', () => {
     it('forwards a request for publishing to the native part', async () => {
       await expect(
-        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
+        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883'),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -65,7 +65,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         'Hello World',
         'mqtt://localhost:1883',
         { retain: true },
-        { username: 'engine', password: 'password123' }
+        { username: 'engine', password: 'password123' },
       );
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -86,7 +86,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       });
 
       await expect(
-        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
+        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883'),
       ).rejects.toMatch('Failed to publish to mqtt://localhost:1883: Error Message');
     });
 
@@ -96,7 +96,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       messaging._machineId = 'engineId';
 
       await expect(
-        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883')
+        messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883'),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -122,8 +122,8 @@ describe('Tests for the message interface of the dispatcher', () => {
           'Hello World',
           'mqtt://localhost:1883',
           {},
-          { username: 'other user', password: 'other password' }
-        )
+          { username: 'other user', password: 'other password' },
+        ),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -149,8 +149,8 @@ describe('Tests for the message interface of the dispatcher', () => {
           'Hello World',
           'mqtt://localhost:1883',
           {},
-          { username: '', password: '' }
-        )
+          { username: '', password: '' },
+        ),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -229,7 +229,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
           prependEngineTopic: true,
-        })
+        }),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -254,7 +254,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       await expect(
         messaging.publish('test/123', 'Hello World', 'mqtt://localhost:1883', {
           prependBaseTopic: true,
-        })
+        }),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -276,7 +276,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         messaging.connect('mqtt://localhost:1883', {
           username: 'test-user',
           password: 'password123',
-        })
+        }),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -291,7 +291,7 @@ describe('Tests for the message interface of the dispatcher', () => {
       });
 
       await expect(messaging.connect('mqtt://localhost:1883')).rejects.toMatch(
-        'Failed to connect to mqtt://localhost:1883: Error Message'
+        'Failed to connect to mqtt://localhost:1883: Error Message',
       );
     });
   });
@@ -309,8 +309,8 @@ describe('Tests for the message interface of the dispatcher', () => {
           () => {},
           'mqtt://some-url',
           { username: 'user', password: 'password456' },
-          { qos: 0 }
-        )
+          { qos: 0 },
+        ),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -354,10 +354,10 @@ describe('Tests for the message interface of the dispatcher', () => {
           () => {},
           'mqtt://some-url',
           { username: 'user', password: 'password456' },
-          { qos: 0 }
-        )
+          { qos: 0 },
+        ),
       ).rejects.toMatch(
-        'Failed to subscribe to mqtt://some-url (Topic: test/topic): Error Message'
+        'Failed to subscribe to mqtt://some-url (Topic: test/topic): Error Message',
       );
     });
 
@@ -373,8 +373,8 @@ describe('Tests for the message interface of the dispatcher', () => {
           callback,
           'mqtt://some-url',
           { username: 'user', password: 'password456' },
-          { qos: 0 }
-        )
+          { qos: 0 },
+        ),
       ).resolves.not.toThrow();
 
       expect(callback).not.toHaveBeenCalled();
@@ -396,7 +396,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         messaging.unsubscribe('test/topic', () => {}, 'mqtt://some-url', {
           username: 'user',
           password: 'password456',
-        })
+        }),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).not.toHaveBeenCalled();
@@ -410,8 +410,8 @@ describe('Tests for the message interface of the dispatcher', () => {
           callback,
           'mqtt://some-url',
           { username: 'user', password: 'password456' },
-          { qos: 0 }
-        )
+          { qos: 0 },
+        ),
       ).resolves.not.toThrow();
 
       const { subscriptionId } = JSON.parse(messaging.commandRequest.mock.calls[0][1][1][3]);
@@ -420,7 +420,7 @@ describe('Tests for the message interface of the dispatcher', () => {
         messaging.unsubscribe('test/topic', callback, 'mqtt://some-url', {
           username: 'user',
           password: 'password456',
-        })
+        }),
       ).resolves.not.toThrow();
 
       expect(messaging.commandRequest).toHaveBeenCalledWith(expect.any(String), [
@@ -450,17 +450,17 @@ describe('Tests for the message interface of the dispatcher', () => {
           callback,
           'mqtt://some-url',
           { username: 'user', password: 'password456' },
-          { qos: 0 }
-        )
+          { qos: 0 },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
         messaging.unsubscribe('test/topic', callback, 'mqtt://some-url', {
           username: 'user',
           password: 'password456',
-        })
+        }),
       ).rejects.toMatch(
-        'Failed to unsubscribe from mqtt://some-url (Topic: test/topic)\nError Message'
+        'Failed to unsubscribe from mqtt://some-url (Topic: test/topic)\nError Message',
       );
     });
   });

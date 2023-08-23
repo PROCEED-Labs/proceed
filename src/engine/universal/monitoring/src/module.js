@@ -9,7 +9,7 @@ const monitoring = {
     network.get(`/monitoring/`, { cors: true }, async () => {
       const engines = management.getAllEngines();
       const instanceInformations = engines.flatMap((engine) =>
-        engine.instanceIDs.map((instanceID) => engine.getInstanceInformation(instanceID))
+        engine.instanceIDs.map((instanceID) => engine.getInstanceInformation(instanceID)),
       );
       return JSON.stringify(instanceInformations);
     });
@@ -24,7 +24,7 @@ const monitoring = {
 
     const engines = _management.getAllEngines();
     const instanceInformations = engines.flatMap((engine) =>
-      engine.instanceIDs.map((instanceID) => engine.getInstanceInformation(instanceID))
+      engine.instanceIDs.map((instanceID) => engine.getInstanceInformation(instanceID)),
     );
     const json = JSON.stringify(instanceInformations);
 

@@ -186,7 +186,7 @@ router.beforeEach((to, from, next) => {
           if (
             store.getters['authStore/ability'].can(
               requiredPermissions.action,
-              requiredPermissions.subject
+              requiredPermissions.subject,
             )
           )
             next();

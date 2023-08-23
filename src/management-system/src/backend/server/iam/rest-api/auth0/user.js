@@ -51,7 +51,7 @@ userRouter.get('/', isAuthenticated(), async (req, res) => {
     const users = await requestResource(
       `/users?q=identities.connection:${config.tenant}`,
       undefined,
-      config
+      config,
     );
     if (users.length === 0) {
       return res.status(204).json([]);
@@ -83,8 +83,8 @@ userRouter.get('/', isAuthenticated(), async (req, res) => {
             user_id,
             username,
             blocked,
-          })
-      )
+          }),
+      ),
     );
   } catch (e) {
     return res.status(400).json({ error: e.toString() });
@@ -161,7 +161,7 @@ userRouter.post(
             method: 'POST',
             body: user,
           },
-          config
+          config,
         );
         if (newUser) {
           return res.status(201).json(newUser);
@@ -176,7 +176,7 @@ userRouter.post(
         .status(400)
         .json('Missing parameter user and/or missing temporary password for user');
     }
-  }
+  },
 );
 
 /**
@@ -200,7 +200,7 @@ userRouter.put(
             method: 'PATCH',
             body: { password },
           },
-          config
+          config,
         );
         return res.status(201).json(id);
       } catch (e) {
@@ -209,7 +209,7 @@ userRouter.put(
     } else {
       return res.status(400).json('Missing parameter id and/or password');
     }
-  }
+  },
 );
 
 /**
@@ -236,7 +236,7 @@ userRouter.put(
             method: 'PATCH',
             body: userWithEmail,
           },
-          config
+          config,
         );
         await requestResource(
           `/users/${id}`,
@@ -244,7 +244,7 @@ userRouter.put(
             method: 'PATCH',
             body: { username },
           },
-          config
+          config,
         );
         return res.status(204).end();
       } catch (e) {
@@ -253,7 +253,7 @@ userRouter.put(
     } else {
       return res.status(400).json('Missing parameter id and/or user');
     }
-  }
+  },
 );
 
 /**
@@ -273,7 +273,7 @@ userRouter.delete(
           {
             method: 'DELETE',
           },
-          config
+          config,
         );
         res.status(204).end();
         await ensureCleanRoleMappings(id);
@@ -283,7 +283,7 @@ userRouter.delete(
     } else {
       return res.status(400).json('Missing parameter id');
     }
-  }
+  },
 );
 
 export default userRouter;

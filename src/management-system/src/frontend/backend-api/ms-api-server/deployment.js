@@ -80,7 +80,7 @@ const instanceSubscriptions = {};
 async function subscribeForInstanceUpdates(definitionId, instanceId) {
   if (!instanceSubscriptions[instanceId]) {
     instanceSubscriptions[instanceId] = io(
-      `https://${window.location.hostname}:33081/deployment/${definitionId}/instances/${instanceId}`
+      `https://${window.location.hostname}:33081/deployment/${definitionId}/instances/${instanceId}`,
     );
 
     instanceSubscriptions[instanceId].on('instance', ({ instanceId, info }) => {

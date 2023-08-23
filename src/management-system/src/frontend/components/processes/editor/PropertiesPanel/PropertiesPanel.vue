@@ -56,68 +56,64 @@
             @blur="applyChange('occurrenceProbability')"
             filled
           />
-          <div v-else>
-            <inspection-plan-selection
-              v-if="show5thIndustryFeature"
-              :locked="true"
-              :processType="processType"
-              v-show="isProcessElement"
-              v-model="metaCopy"
-            />
-            <inspection-order-selection
-              v-if="show5thIndustryFeature"
-              :processType="processType"
-              v-show="
-                isUserTask &&
-                (rootMetaData['_5i-Inspection-Plan-ID'] ||
-                  rootMetaData['_5i-Inspection-Plan-Template-ID'])
-              "
-              v-model="metaCopy"
-              :planId="
-                rootMetaData['_5i-Inspection-Plan-ID'] ||
-                rootMetaData['_5i-Inspection-Plan-Template-ID']
-              "
-              @changed="applyChange"
-            />
-            <v-text-field
-              v-if="isUserTask"
-              label="Priority"
-              ref="defaultPriority"
-              :disabled="editingDisabled"
-              type="number"
-              min="0"
-              max="10"
-              :rules="[inputRules.noNegativeValue, inputRules.valueBetween1And10]"
-              :placeholder="
-                meta.defaultPriority ? meta.defaultPriority : 'Enter value from 1 to 10'
-              "
-              v-model="metaCopy.defaultPriority"
-              background-color="white"
-              @blur="applyChange('defaultPriority')"
-              filled
-            />
-            <v-text-field
-              label="Planned Cost"
-              ref="costsPlanned"
-              :disabled="editingDisabled"
-              :prefix="currency.symbol"
-              type="number"
-              min="0"
-              :rules="[inputRules.noNegativeValue]"
-              :placeholder="meta.costsPlanned ? meta.costsPlanned : 'e.g. 100'"
-              v-model="metaCopy.costsPlanned"
-              background-color="white"
-              @blur="applyCostsPlanned"
-              filled
-            />
-            <time-planned-form
-              :disableEditing="editingDisabled"
-              :processType="processType"
-              :element="element"
-              :meta="metaCopy"
-              @change="applyMetaData($event)"
-            ></time-planned-form>
-          </div>
+          <inspection-plan-selection
+            v-if="show5thIndustryFeature"
+            :locked="true"
+            :processType="processType"
+            v-show="isProcessElement"
+            v-model="metaCopy"
+          />
+          <inspection-order-selection
+            v-if="show5thIndustryFeature"
+            :processType="processType"
+            v-show="
+              isUserTask &&
+              (rootMetaData['_5i-Inspection-Plan-ID'] ||
+                rootMetaData['_5i-Inspection-Plan-Template-ID'])
+            "
+            v-model="metaCopy"
+            :planId="
+              rootMetaData['_5i-Inspection-Plan-ID'] ||
+              rootMetaData['_5i-Inspection-Plan-Template-ID']
+            "
+            @changed="applyChange"
+          />
+          <v-text-field
+            v-if="isUserTask"
+            label="Priority"
+            ref="defaultPriority"
+            :disabled="editingDisabled"
+            type="number"
+            min="0"
+            max="10"
+            :rules="[inputRules.noNegativeValue, inputRules.valueBetween1And10]"
+            :placeholder="meta.defaultPriority ? meta.defaultPriority : 'Enter value from 1 to 10'"
+            v-model="metaCopy.defaultPriority"
+            background-color="white"
+            @blur="applyChange('defaultPriority')"
+            filled
+          />
+          <v-text-field
+            label="Planned Cost"
+            ref="costsPlanned"
+            :disabled="editingDisabled"
+            :prefix="currency.symbol"
+            type="number"
+            min="0"
+            :rules="[inputRules.noNegativeValue]"
+            :placeholder="meta.costsPlanned ? meta.costsPlanned : 'e.g. 100'"
+            v-model="metaCopy.costsPlanned"
+            background-color="white"
+            @blur="applyCostsPlanned"
+            filled
+          />
+          <time-planned-form
+            :disableEditing="editingDisabled"
+            :processType="processType"
+            :element="element"
+            :meta="metaCopy"
+            @change="applyMetaData($event)"
+          ></time-planned-form>
         </v-container>
         <performer-form v-if="isUserTask" @change="applyPerformerChange"></performer-form>
 

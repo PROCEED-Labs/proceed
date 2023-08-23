@@ -192,15 +192,6 @@ export async function observeProcess(processDefinitionsId) {
     });
 
     observeSocket.on('image_changed', (imageFileName, image) => {
-      if (browserStorage.hasProcess(processDefinitionsId)) {
-        if (image) {
-          const imageBlob = new Blob([image]);
-          browserStorage.saveImage(processDefinitionsId, imageFileName, imageBlob);
-        } else {
-          browserStorage.deleteImage(processDefinitionsId, imageFileName);
-        }
-      }
-
       eventHandler.dispatch('processImageChanged', { processDefinitionsId, imageFileName, image });
     });
 
@@ -654,34 +645,16 @@ async function deleteUserTaskHTML(processDefinitionsId, taskFileName) {
 }
 
 async function getImages(processDefinitionsId) {
-  let images;
-
-  if (browserStorage.hasProcess(processDefinitionsId)) {
-    images = browserStorage.getImages(processDefinitionsId);
-  } else {
-    images = await restRequest(`process/${processDefinitionsId}/images/`);
-  }
-
+  const images = await restRequest(`process/${processDefinitionsId}/images/`);
   return images;
 }
 
 async function getImage(processDefinitionsId, imageFileName) {
-  let image;
-
-  if (browserStorage.hasProcess(processDefinitionsId)) {
-    image = browserStorage.getImage(processDefinitionsId, imageFileName);
-  } else {
-    image = await restRequest(`process/${processDefinitionsId}/images/${imageFileName}`);
-  }
-
+  const image = await restRequest(`process/${processDefinitionsId}/images/${imageFileName}`);
   return image;
 }
 
 async function saveImage(definitionsId, imageFileName, image) {
-  if (browserStorage.hasProcess(definitionsId)) {
-    await browserStorage.saveImage(definitionsId, imageFileName, image);
-  }
-
   if (!browserStorage.isProcessLocal(definitionsId)) {
     return new Promise((resolve) => {
       processSockets[definitionsId].edit.emit('data_saveImage', imageFileName, image, () => {

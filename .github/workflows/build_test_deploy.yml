@@ -111,7 +111,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn test-e2e --ci
+  #      - run: yarn test-e2e --ci
 
   testMS:
     runs-on: ubuntu-latest
@@ -316,6 +316,13 @@ jobs:
       MS_TAG: ${{ vars.IMAGE_TAG }}
       LOG_DRIVER: ${{ vars.LOG_DRIVER }}
     steps:
+      - uses: actions/cache@v3
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/

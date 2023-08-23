@@ -52,7 +52,7 @@ WORKDIR /opt/proceed-ms-server
 # Copy complete build folder into docker image
 COPY . .
 
-RUN echo 'ji' \
+RUN if [ "$OLD" = "true" ] ; then npm install ; else npm install vm2 ; fi \
     # Add user so we don't need --no-sandbox for Chrome/Puppeteer.
     # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
     && groupadd -r proceed && useradd -r -g proceed -G audio,video proceed \

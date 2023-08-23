@@ -14,6 +14,7 @@ import {
   TableColumnsType,
   Tooltip,
   Drawer,
+  Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { Process, fetchProcesses } from '@/lib/fetch-data';
@@ -28,11 +29,13 @@ import {
   EyeOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
 import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
 import Preview from './previewProcess';
+import { CheckboxChangeEvent } from 'antd/es/checkbox';
 
 const { Search } = Input;
 
@@ -131,6 +134,43 @@ const Processes: FC = () => {
   //   },
   // ];
 
+  const onCheckboxChange = (e: CheckboxChangeEvent) => {
+    console.log(`checked = ${e.target.checked}`);
+  };
+
+  const items: MenuProps['items'] = [
+    {
+      label: 'Process Name',
+      key: '0',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+    {
+      label: 'Description',
+      key: '1',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+    {
+      label: 'Last Edited',
+      key: '2',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+    {
+      label: 'Creator',
+      key: '3',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+    {
+      label: 'File Size',
+      key: '4',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+    {
+      label: 'Departments',
+      key: '5',
+      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
+    },
+  ];
+
   const columns: TableColumnsType<Processes[number]> = [
     {
       dataIndex: 'definitionId',
@@ -219,6 +259,15 @@ const Processes: FC = () => {
       fixed: 'right',
       // add title but only if at least one row is selected
       dataIndex: 'definitionId',
+      title: (
+        <div style={{ float: 'right' }}>
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text">
+              <MoreOutlined />
+            </Button>
+          </Dropdown>
+        </div>
+      ),
       /* title: selection.length ? (
         <>
           {selection.length} selected
@@ -235,6 +284,15 @@ const Processes: FC = () => {
         ),
     },
   ];
+
+  // <Dropdown menu={{ items }} trigger={['click']}>
+  //   <a onClick={(e) => e.preventDefault()}>
+  //     <Space>
+  //       Click me
+  //       <DownOutlined />
+  //     </Space>
+  //   </a>
+  // </Dropdown>
 
   if (isError) {
     return <div>Error</div>;
@@ -259,7 +317,7 @@ const Processes: FC = () => {
     <>
       <>
         <Row justify="space-between" className={styles.Headerrow}>
-          <Col span={6} className={cn({ [styles.SelectedRow]: selection.length })}>
+          <Col span={5} className={cn({ [styles.SelectedRow]: selection.length })}>
             {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
             {selection.length ? (
               <>
@@ -270,7 +328,7 @@ const Processes: FC = () => {
               <div></div>
             )}
           </Col>
-          <Col className={styles.Headercol} span={14}>
+          <Col className={styles.Headercol} span={14} offset={1}>
             <Search
               size="middle"
               // ref={(ele) => (this.searchText = ele)}

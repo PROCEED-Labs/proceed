@@ -1,4 +1,3 @@
-const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const request = require('supertest')('localhost:33019');
@@ -129,13 +128,14 @@ describe('Test process endpoints', () => {
         expect(response.status).toBe(404);
       });
       it('saves the user task html on PUT request', async () => {
+        const html = '<html><head></head><body><form></form></body></html>';
         const putResponse = await request
           .put('/process/definitionId/user-tasks/userTaskFileName')
-          .send({ html: '<html><head></head><body><form></form></body></html>' });
+          .send({ html });
         expect(putResponse.status).toBe(200);
         const getResponse = await request.get('/process/definitionId/user-tasks/userTaskFileName');
         expect(getResponse.status).toBe(200);
-        expect(getResponse.body).toStrictEqual(expect.any(Object));
+        expect(Buffer.from(JSON.parse(getResponse.text).data).toString()).toMatch(html);
       });
       it('adds an image that is referenced in the html to the dependencies of versions that use the user task', async () => {
         const putResponse = await request
@@ -150,7 +150,6 @@ describe('Test process endpoints', () => {
           '/process/_64552049-90bf-4f5b-96dd-e00747261755/user-tasks/User_Task_1qjpbcl-1671026484009'
         );
         expect(getResponse.status).toBe(200);
-        expect(getResponse.body).toStrictEqual(expect.any(Object));
 
         const response = await request.get('/process/_64552049-90bf-4f5b-96dd-e00747261755');
         expect(response.status).toBe(200);

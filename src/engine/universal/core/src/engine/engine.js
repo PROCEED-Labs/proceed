@@ -314,6 +314,13 @@ class Engine {
    * @param {string} instanceID
    */
   async archiveInstance(instanceID) {
+    if (!this.instanceIDs.includes(instanceID)) {
+      this._log.warn(
+        `Tried to archive an instance that could not be found in the execution environment (id: ${instanceID})`
+      );
+      return;
+    }
+
     const instanceInformation = { ...this.getInstanceInformation(instanceID) };
     const archiveInformation = {
       ...instanceInformation,
@@ -410,6 +417,13 @@ class Engine {
    * @param {string} instanceID id of the instance to be deleted
    */
   deleteInstance(instanceID) {
+    if (!this.instanceIDs.includes(instanceID)) {
+      this._log.warn(
+        `Tried to delete an instance from the execution environment that is not currently being executed (id: ${instanceID})`
+      );
+      return;
+    }
+
     teardownEngineStatusInformationPublishing(this, this.getInstanceInformation(instanceID));
     this.instanceIDs.splice(this.instanceIDs.indexOf(instanceID), 1);
     const process = this._instanceIdProcessMapping[instanceID];
@@ -830,6 +844,7 @@ class Engine {
         uT.id === userTaskID &&
         (uT.state === 'READY' || uT.state === 'ACTIVE')
     );
+    if (!userTask) return;
 
     const token = this.getToken(instanceID, userTask.tokenId);
     const newMilestones = { ...token.milestones, ...milestones };

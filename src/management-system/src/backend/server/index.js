@@ -165,17 +165,19 @@ async function init() {
     );
   });
 
-  if (process.env.API_ONLY) {
-    return;
-  }
-
   // WebSocket Endpoint for Collaborative Editing
+  // Only here for API_ONLY because we need the const in the call below.
   const websocketServer = https.createServer(options);
-  startWebsocketServer(websocketServer, loginSession, config);
 
   if (process.env.NODE_ENV === 'production') {
     handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
   }
+
+  if (process.env.API_ONLY) {
+    return;
+  }
+
+  startWebsocketServer(websocketServer, loginSession, config);
 
   // Load BPMN Modeller for Server after Websocket Endpoint is started
   (await import('./puppeteerStartWebviewWithBpmnModeller.js')).default();

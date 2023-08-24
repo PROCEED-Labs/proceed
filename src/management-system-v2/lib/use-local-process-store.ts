@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Processes } from './fetch-data';
+import type { Processes as ProcessesType, Process as ProcessType } from './fetch-data';
 import { immer } from 'zustand/middleware/immer';
 import { Immutable } from 'immer';
 
@@ -32,6 +33,28 @@ const useLocalProcessStore = create<LocalProcessStore>()(
     reset: () =>
       set((state) => {
         state.processes = [];
+      }),
+  }))
+);
+
+type ProcessesStore = {
+  processes: ProcessesType | [];
+  setProcesses: (processes: ProcessesType | []) => void;
+  selectedProcess: ProcessType | undefined;
+  setSelectedProcess: (process: ProcessType | undefined) => void;
+};
+
+export const useProcessesStore = create<ProcessesStore>()(
+  immer((set) => ({
+    processes: [],
+    setProcesses: (processes: Processes) =>
+      set((state) => {
+        state.processes = processes;
+      }),
+    selectedProcess: undefined,
+    setSelectedProcess: (process: ProcessType | undefined) =>
+      set((state) => {
+        state.selectedProcess = process;
       }),
   }))
 );

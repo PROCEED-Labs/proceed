@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
@@ -50,6 +50,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
+  const versions = useModelerStateStore((state) => state.versions);
+  const setVersions = useModelerStateStore((state) => state.setVersions);
 
   const [index, setIndex] = useState(0);
   const { processId } = useParams();
@@ -71,7 +73,9 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   };
 
   let versionSelection: MenuProps['items'] = [];
+
   if (isSuccess) {
+    setVersions(processData.versions);
     versionSelection = processData.versions.map(({ version, name, description }) => ({
       key: version,
       label: name,

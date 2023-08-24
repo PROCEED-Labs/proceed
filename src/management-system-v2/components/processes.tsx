@@ -30,13 +30,14 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   MoreOutlined,
-  CloseOutlined
+  CloseOutlined,
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
 import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
 import Preview from './previewProcess';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
+import { useProcessesStore } from '@/lib/use-local-process-store';
 
 const { Search } = Input;
 
@@ -48,6 +49,9 @@ const Processes: FC = () => {
     queryKey: ['processes'],
     queryFn: () => fetchProcesses(),
   });
+
+  const setProcesses = useProcessesStore((state) => state.setProcesses);
+  const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
   const [open, setOpen] = useState(false);
 
@@ -196,6 +200,7 @@ const Processes: FC = () => {
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
           // another process. (needs upstream fix)
+          setSelectedProcess(record);
           router.refresh();
           router.push(`/processes/${record.definitionId}`);
         },
@@ -220,16 +225,40 @@ const Processes: FC = () => {
       dataIndex: 'lastEdited',
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
+      onCell: (record, rowIndex) => ({
+        onClick: (event) => {
+          // TODO: This is a hack to clear the parallel route when selecting
+          // another process. (needs upstream fix)
+          router.refresh();
+          router.push(`/processes/${record.definitionId}`);
+        },
+      }),
     },
     {
       title: 'Created',
       dataIndex: 'createdOn',
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
+      onCell: (record, rowIndex) => ({
+        onClick: (event) => {
+          // TODO: This is a hack to clear the parallel route when selecting
+          // another process. (needs upstream fix)
+          router.refresh();
+          router.push(`/processes/${record.definitionId}`);
+        },
+      }),
     },
     {
       title: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
+      onCell: (record, rowIndex) => ({
+        onClick: (event) => {
+          // TODO: This is a hack to clear the parallel route when selecting
+          // another process. (needs upstream fix)
+          router.refresh();
+          router.push(`/processes/${record.definitionId}`);
+        },
+      }),
     },
     // {
     //   title: 'Departments',
@@ -240,7 +269,30 @@ const Processes: FC = () => {
     {
       title: 'Owner',
       dataIndex: 'owner',
+      sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
+      onCell: (record, rowIndex) => ({
+        onClick: (event) => {
+          // TODO: This is a hack to clear the parallel route when selecting
+          // another process. (needs upstream fix)
+          router.refresh();
+          router.push(`/processes/${record.definitionId}`);
+        },
+      }),
     },
+    // {
+    //   title: 'Departments',
+    //   dataIndex: 'departments',
+    //   render: (dep) => dep.join(', '),
+    //   sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
+    //   onCell: (record, rowIndex) => ({
+    //     onClick: (event) => {
+    //       // TODO: This is a hack to clear the parallel route when selecting
+    //       // another process. (needs upstream fix)
+    //       router.refresh();
+    //       router.push(`/processes/${record.definitionId}`);
+    //     },
+    //   }),
+    // },
     /*{
       title: 'Actions',
       fixed: 'right',
@@ -297,6 +349,12 @@ const Processes: FC = () => {
     return <div>Error</div>;
   }
 
+  useEffect(() => {
+    if (data) {
+      setProcesses(data);
+    }
+  }, [data]);
+
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -313,9 +371,9 @@ const Processes: FC = () => {
   }, [data, searchTerm]);
 
   const deselectAll = () => {
-    setSelection([])
-    rowSelection.onSelectNone()
-  }
+    setSelection([]);
+    rowSelection.onSelectNone();
+  };
 
   return (
     <>
@@ -332,7 +390,9 @@ const Processes: FC = () => {
             {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
             {selection.length ? (
               <>
-                <Button type="text"><CloseOutlined onClick={deselectAll}/></Button>
+                <Button type="text">
+                  <CloseOutlined onClick={deselectAll} />
+                </Button>
                 Select action for {selection.length}:{' '}
                 <span className={styles.Icons}>{actionBar}</span>
               </>
@@ -352,7 +412,7 @@ const Processes: FC = () => {
               // value={this.state.searchText}
             />
           </Col>
-          <Col span={1}/>
+          <Col span={1} />
           <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
             <Space.Compact>
               <Button>

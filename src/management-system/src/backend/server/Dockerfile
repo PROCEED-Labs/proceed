@@ -22,12 +22,13 @@
 #  --network host (only linux): the server is able to detect PROCEED Engines in the network -> https is 33080
 #
 
+ARG OLD
 
 # :lts recommended over :lts-slim https://hub.docker.com/_/node?tab=description&page=1&ordering=last_updated&name=lts
 FROM node:lts
 
 # https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md#running-puppeteer-in-docker
-RUN apt-get update \
+RUN if [ "$OLD" = "true" ] ; then apt-get update \
     && apt-get install -y wget gnupg \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
@@ -36,7 +37,7 @@ RUN apt-get update \
 # Apparently it can happen, that some necessary deps are installed with google-chrome-stable 
 # Here is a list of all deps for Puppeteer/Chromium: 
 # https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md#chrome-headless-doesnt-launch-on-unix
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* ; else echo Argument is $OLD ; fi
 
 
 
@@ -51,7 +52,7 @@ WORKDIR /opt/proceed-ms-server
 # Copy complete build folder into docker image
 COPY . .
 
-RUN npm install \
+RUN if [ "$OLD" = "true" ] ; then npm install ; else mv package.json temp.json && npm install vm2 && mv temp.json package.json ; fi \
     # Add user so we don't need --no-sandbox for Chrome/Puppeteer.
     # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
     && groupadd -r proceed && useradd -r -g proceed -G audio,video proceed \

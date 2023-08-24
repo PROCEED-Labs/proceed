@@ -70,7 +70,7 @@ RUN if [ "$OLD" = "true" ] ; then npm install ; else mv package.json temp.json &
 # Install the new MS (nextJS App)
 WORKDIR /opt/proceed-ms-server/management-system-v2
 RUN yarn install
-# RUN yarn build
+RUN yarn build
 
 ENV NODE_ENV production
 

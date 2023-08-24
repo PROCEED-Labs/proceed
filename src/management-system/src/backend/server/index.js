@@ -13,7 +13,6 @@ import __dirname from './dirname-node.js';
 import { startWebsocketServer } from './socket.js';
 import logger from '../shared-electron-server/logging.js';
 import ports from '../../../ports.js';
-import startWebviewWithPuppeteer from './puppeteerStartWebviewWithBpmnModeller.js';
 import crypto from 'crypto';
 import { createSessionStore } from './iam/session/store.js';
 import createApiRouter from './rest-api/index.js';
@@ -179,7 +178,7 @@ async function init() {
   }
 
   // Load BPMN Modeller for Server after Websocket Endpoint is started
-  startWebviewWithPuppeteer();
+  (await import('./puppeteerStartWebviewWithBpmnModeller.js')).default();
 }
 
 init();

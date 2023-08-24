@@ -100,4 +100,4 @@ EXPOSE 33081
 
 
 # Chrome can leave many zombie processes, so it is recommended to use --init for docker run or dumb-init
-ENTRYPOINT [ "/usr/local/bin/dumb-init", "--", "node", "server.js" ]
+ENTRYPOINT [ "npm", "start-new" ]

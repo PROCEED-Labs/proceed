@@ -111,6 +111,9 @@ module.exports = {
             license: projectPackageJson.license,
             repository: projectPackageJson.repository,
             main: 'server.js',
+            scripts: {
+              'start-new': 'API_ONLY=true node server.js',
+            },
             dependencies,
           };
 

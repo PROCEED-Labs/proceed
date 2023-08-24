@@ -32,7 +32,7 @@
     border-radius: 4px;
     padding: 4px;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around
   }
 
   .Headercol {
@@ -41,8 +41,9 @@
   }
 
   .Icons {
+    margin-left: 10px;
     display: inline-flex;
-    width: 50%;
+    width: 40%;
     justify-content: space-around;
     align-items: center;
 

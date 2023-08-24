@@ -30,6 +30,7 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   MoreOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
 import { TableRowSelection } from 'antd/es/table/interface';
@@ -57,9 +58,9 @@ const Processes: FC = () => {
 
   const actionBar = (
     <>
-      <Tooltip placement="top" title={'Preview'}>
+      {/* <Tooltip placement="top" title={'Preview'}>
         <EyeOutlined />
-      </Tooltip>
+      </Tooltip> */}
       <Tooltip placement="top" title={'Copy'}>
         <CopyOutlined />
       </Tooltip>
@@ -220,10 +221,6 @@ const Processes: FC = () => {
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
     },
-    // {
-    //   title: 'Owner',
-    //   dataIndex: 'owner',
-    // },
     {
       title: 'Created',
       dataIndex: 'createdOn',
@@ -232,15 +229,17 @@ const Processes: FC = () => {
     },
     {
       title: 'File Size',
-      // dataIndex: 'departments',
-      // render: (dep) => dep.join(', '),
       sorter: (a, b) => (a < b ? -1 : 1),
     },
+    // {
+    //   title: 'Departments',
+    //   dataIndex: 'departments',
+    //   render: (dep) => dep.join(', '),
+    //   sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
+    // },
     {
-      title: 'Departments',
-      dataIndex: 'departments',
-      render: (dep) => dep.join(', '),
-      sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
+      title: 'Owner',
+      dataIndex: 'owner',
     },
     /*{
       title: 'Actions',
@@ -313,6 +312,11 @@ const Processes: FC = () => {
     }
   }, [data, searchTerm]);
 
+  const deselectAll = () => {
+    setSelection([])
+    rowSelection.onSelectNone()
+  }
+
   return (
     <>
       <>
@@ -328,6 +332,7 @@ const Processes: FC = () => {
             {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
             {selection.length ? (
               <>
+                <Button type="text"><CloseOutlined onClick={deselectAll}/></Button>
                 Select action for {selection.length}:{' '}
                 <span className={styles.Icons}>{actionBar}</span>
               </>
@@ -336,7 +341,7 @@ const Processes: FC = () => {
             )}
           </Col>
           <Col md={0} lg={1} xl={2}></Col>
-          <Col className={styles.Headercol} xs={24} sm={24} md={22} lg={9} xl={12}>
+          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={12}>
             <Search
               size="middle"
               // ref={(ele) => (this.searchText = ele)}
@@ -347,7 +352,8 @@ const Processes: FC = () => {
               // value={this.state.searchText}
             />
           </Col>
-          <Col className={cn(styles.Headercol, styles.Selectview)} xs={24} sm={24} md={2}>
+          <Col span={1}/>
+          <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
             <Space.Compact>
               <Button>
                 <UnorderedListOutlined />

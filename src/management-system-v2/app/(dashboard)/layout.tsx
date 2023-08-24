@@ -61,7 +61,7 @@ const items: MenuProps['items'] = [
         disabled: true,
       },
       {
-        key: 'favorites',
+        key: 'processFavorites',
         icon: <StarOutlined />,
         label: 'Favorites',
         disabled: true,
@@ -87,7 +87,7 @@ const items: MenuProps['items'] = [
         disabled: true,
       },
       {
-        key: 'favorites',
+        key: 'templateFavorites',
         icon: <StarOutlined />,
         label: 'Favorites',
         disabled: true,

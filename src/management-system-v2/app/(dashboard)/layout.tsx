@@ -3,7 +3,17 @@
 import React from 'react';
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Menu, MenuProps, Popover, Space, Tooltip } from 'antd';
+import {
+  Layout as AntLayout,
+  Button,
+  Col,
+  Menu,
+  MenuProps,
+  Popover,
+  Row,
+  Space,
+  Tooltip,
+} from 'antd';
 import {
   DeploymentUnitOutlined,
   FundProjectionScreenOutlined,
@@ -22,6 +32,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
+import HeaderMenu from '@/components/content-based-header';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
@@ -139,7 +150,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   return (
     <AntLayout>
       <AntLayout.Header
-        style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee' }}
+        style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
         className={styles.Header}
       >
         <Image
@@ -150,7 +161,14 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           height={63}
           priority
         />
-        <Space style={{ float: 'right' }}>
+
+        {<HeaderMenu />}
+        <div style={{ flex: '1' }}></div>
+        <Space
+          style={{
+            justifySelf: 'end',
+          }}
+        >
           <Button type="text">
             <u>Logout</u>
           </Button>

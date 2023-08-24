@@ -38,6 +38,25 @@ import cn from 'classnames';
 import Preview from './previewProcess';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useProcessesStore } from '@/lib/use-local-process-store';
+import Fuse from 'fuse.js';
+
+const fuseOptions = {
+  /* https://www.fusejs.io/api/options.html#useextendedsearch */
+  // isCaseSensitive: false,
+  // includeScore: false,
+  // shouldSort: true,
+  // includeMatches: false,
+  findAllMatches: true,
+  // minMatchCharLength: 1,
+  // location: 0,
+  threshold: 0.75,
+  // distance: 100,
+  useExtendedSearch: true,
+  ignoreLocation: true,
+  // ignoreFieldNorm: false,
+  // fieldNormWeight: 1,
+  keys: ['definitionName', 'description'],
+};
 
 const { Search } = Input;
 
@@ -57,6 +76,12 @@ const Processes: FC = () => {
 
   const [selection, setSelection] = useState<Processes>([]);
   const [hovered, setHovered] = useState<Process | undefined>(undefined);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const handleOpenChange = (open) => {
+    setDropdownOpen(open);
+  };
 
   const favourites = [0];
 
@@ -106,9 +131,13 @@ const Processes: FC = () => {
   // rowSelection object indicates the need for row selection
 
   const rowSelection = {
+    selectedRowKeys,
     onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
-      console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+      setSelectedRowKeys(selectedRowKeys);
     },
+    // onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
+    //   console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+    // },
     getCheckboxProps: (record: Processes[number]) => ({
       name: record.definitionId,
     }),
@@ -139,47 +168,58 @@ const Processes: FC = () => {
   //   },
   // ];
 
-  const onCheckboxChange = (e: CheckboxChangeEvent) => {
-    console.log(e.target);
+  const onCheckboxChange = (e) => {
+    e.stopPropagation();
+    const { checked, value } = e.target;
+    if (checked) {
+      setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
+    } else {
+      setSelectedColumns((prevSelectedColumns) =>
+        prevSelectedColumns.filter((column) => column !== value)
+      );
+    }
   };
 
-  const items: MenuProps['items'] = [
-    {
-      label: 'Process Name',
-      key: '0',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
-    {
-      label: 'Description',
-      key: '1',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
-    {
-      label: 'Last Edited',
-      key: '2',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
-    {
-      label: 'Creator',
-      key: '3',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
-    {
-      label: 'File Size',
-      key: '4',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
-    {
-      label: 'Departments',
-      key: '5',
-      icon: <Checkbox onChange={onCheckboxChange}></Checkbox>,
-    },
+  const ColumnHeader = [
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Created On',
+    'File Size',
+    'Owner',
   ];
+
+  type Column = {
+    title: string;
+  };
+  const [selectedColumns, setSelectedColumns] = useState<Column[]>([
+    '',
+    'Process Name',
+    'Description',
+    'Last Edited',
+  ]);
+
+  const items: MenuProps['items'] = ColumnHeader.map((title) => ({
+    label: (
+      <>
+        <Checkbox
+          checked={selectedColumns.includes(title)}
+          onChange={onCheckboxChange}
+          onClick={(e) => e.stopPropagation()}
+          value={title}
+        >
+          {title}
+        </Checkbox>
+      </>
+    ),
+    key: title,
+  }));
 
   const columns: TableColumnsType<Processes[number]> = [
     {
-      dataIndex: 'definitionId',
       title: <StarOutlined />,
+      dataIndex: 'definitionId',
+      key: '',
       width: '40px',
       render: (definitionId, record, index) =>
         favourites?.includes(index) ? (
@@ -194,6 +234,7 @@ const Processes: FC = () => {
     {
       title: 'Process Name',
       dataIndex: 'definitionName',
+      key: 'Process Name',
       className: styles.Title,
       sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
       onCell: (record, rowIndex) => ({
@@ -209,6 +250,7 @@ const Processes: FC = () => {
     {
       title: 'Description',
       dataIndex: 'description',
+      key: 'Description',
       sorter: (a, b) => a.description.localeCompare(b.description),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
@@ -223,6 +265,7 @@ const Processes: FC = () => {
     {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
+      key: 'Last Edited',
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
       onCell: (record, rowIndex) => ({
@@ -235,8 +278,9 @@ const Processes: FC = () => {
       }),
     },
     {
-      title: 'Created',
+      title: 'Created On',
       dataIndex: 'createdOn',
+      key: 'Created On',
       render: (date: Date) => date.toLocaleString(),
       sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
       onCell: (record, rowIndex) => ({
@@ -250,6 +294,7 @@ const Processes: FC = () => {
     },
     {
       title: 'File Size',
+      key: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
@@ -269,6 +314,7 @@ const Processes: FC = () => {
     {
       title: 'Owner',
       dataIndex: 'owner',
+      key: 'Owner',
       sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
@@ -310,9 +356,17 @@ const Processes: FC = () => {
       fixed: 'right',
       // add title but only if at least one row is selected
       dataIndex: 'definitionId',
+      key: '',
       title: (
         <div style={{ float: 'right' }}>
-          <Dropdown menu={{ items }} trigger={['click']}>
+          <Dropdown
+            open={dropdownOpen}
+            onOpenChange={handleOpenChange}
+            menu={{
+              items,
+            }}
+            trigger={['click']}
+          >
             <Button type="text">
               <MoreOutlined />
             </Button>
@@ -335,6 +389,8 @@ const Processes: FC = () => {
         ),
     },
   ];
+
+  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key));
 
   // <Dropdown menu={{ items }} trigger={['click']}>
   //   <a onClick={(e) => e.preventDefault()}>
@@ -360,11 +416,13 @@ const Processes: FC = () => {
 
   useEffect(() => {
     if (data && searchTerm !== '') {
-      setFilteredData(
-        data.filter((item) => {
-          return item.definitionName.toLowerCase().includes(searchTerm.toLowerCase());
-        })
-      );
+      const fuse = new Fuse(data, fuseOptions);
+      setFilteredData(fuse.search(searchTerm).map((item) => item.item));
+      // setFilteredData(
+      //   data.filter((item) => {
+      //     return item.definitionName.toLowerCase().includes(searchTerm.toLowerCase());
+      //   })
+      //);
     } else {
       setFilteredData(data);
     }
@@ -372,7 +430,7 @@ const Processes: FC = () => {
 
   const deselectAll = () => {
     setSelection([]);
-    rowSelection.onSelectNone();
+    setSelectedRowKeys([]);
   };
 
   return (
@@ -450,7 +508,7 @@ const Processes: FC = () => {
         scroll={{ x: 1300 }}
         rowClassName={styles.Row}
         rowKey="definitionId"
-        columns={columns}
+        columns={columnsFiltered}
         dataSource={filteredData as any}
         loading={isLoading}
         className={styles.Table}

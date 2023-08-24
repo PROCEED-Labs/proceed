@@ -22,7 +22,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zustand": "4.3.8",
-    "immer": "10.0.2"
+    "immer": "10.0.2",
+    "fuse.js": "6.6.2"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "4.29.9",

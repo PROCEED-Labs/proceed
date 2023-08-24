@@ -112,7 +112,8 @@ module.exports = {
             repository: projectPackageJson.repository,
             main: 'server.js',
             scripts: {
-              'start-new': 'API_ONLY=true node server.js',
+              'start-new':
+                'API_ONLY=true node server.js & cd management-system-v2 && npm run start',
             },
             dependencies,
           };

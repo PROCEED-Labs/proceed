@@ -273,19 +273,6 @@
               "schema": {
                 "allOf": [
                   {
-                    "type": "object",
-                    "properties": {
-                      "description": {
-                        "type": "string",
-                        "description": "The description (the content of documentation element of the first process element in the process model)"
-                      },
-                      "definitionName": {
-                        "type": "string",
-                        "description": "The name as it is in the definitions element of the process"
-                      }
-                    }
-                  },
-                  {
                     "$ref": "#/components/schemas/processData"
                   },
                   {

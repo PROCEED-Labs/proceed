@@ -24,7 +24,7 @@ async function createInspectionPlan(planInformation, templateId) {
   const [result] = await request(
     '5th_Industry_create_inspection_plan',
     planInformation,
-    templateId
+    templateId,
   );
 
   if (result.error) {

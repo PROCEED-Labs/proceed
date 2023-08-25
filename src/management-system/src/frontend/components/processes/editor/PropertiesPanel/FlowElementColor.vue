@@ -72,7 +72,7 @@ export default {
                   if (fill) this.backgroundColor = fill;
                   if (stroke) this.frameColor = stroke;
                 }
-              }
+              },
             );
         }
       },

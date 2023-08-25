@@ -84,7 +84,7 @@ export default {
         this.logging[logType].forEach((entry) => {
           const ob = entry[Object.keys(entry)[0]];
           const row = `${new Intl.DateTimeFormat('en-GB', this.options).format(
-            new Date(ob.time)
+            new Date(ob.time),
           )} [${ob.level.toUpperCase()}]: ${ob.moduleName} ${ob.msg}`;
           textFile += `${row}\n`;
         });

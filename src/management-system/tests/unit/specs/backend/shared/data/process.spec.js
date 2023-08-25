@@ -101,7 +101,7 @@ describe('Test for the module that controlls changes to processes', () => {
 
     it('throws if not given a bpmn', async () => {
       await expect(processController.addProcess({})).rejects.toThrow(
-        "Can't create a process without a bpmn!"
+        "Can't create a process without a bpmn!",
       );
     });
 
@@ -109,7 +109,7 @@ describe('Test for the module that controlls changes to processes', () => {
       expect(
         processController.addProcess({
           bpmn: await mockBpmn({ id: 'existingId', name: 'existingName' }),
-        })
+        }),
       ).resolves.toBe('existingId');
     });
 
@@ -169,7 +169,7 @@ describe('Test for the module that controlls changes to processes', () => {
 
     it("throws if the referenced process doesn't exist", async () => {
       await expect(processController.updateProcess('nonExistantId')).rejects.toThrow(
-        'Process with id nonExistantId does not exist!'
+        'Process with id nonExistantId does not exist!',
       );
     });
 
@@ -177,7 +177,7 @@ describe('Test for the module that controlls changes to processes', () => {
       await expect(
         processController.updateProcess('existingId', {
           bpmn: await mockBpmn({ id: 'nonexistantId', name: 'someName' }),
-        })
+        }),
       ).rejects.toThrow();
     });
 
@@ -233,7 +233,7 @@ describe('Test for the module that controlls changes to processes', () => {
   describe('getProcessBpmn', () => {
     it("throws if the process doesn't exist", async () => {
       await expect(processController.getProcessBpmn('nonExistantId')).rejects.toThrow(
-        'Process with id nonExistantId does not exist!'
+        'Process with id nonExistantId does not exist!',
       );
     });
 
@@ -242,7 +242,7 @@ describe('Test for the module that controlls changes to processes', () => {
         throw new Error('/complete/path/on/system does not exist');
       });
       await expect(processController.getProcessBpmn('existingId')).rejects.toThrow(
-        'Unable to find process bpmn!'
+        'Unable to find process bpmn!',
       );
     });
   });
@@ -250,7 +250,7 @@ describe('Test for the module that controlls changes to processes', () => {
   describe('getProcessBpmn', () => {
     it("throws if the process doesn't exist", async () => {
       await expect(processController.getProcessBpmn('nonExistantId')).rejects.toThrow(
-        'Process with id nonExistantId does not exist!'
+        'Process with id nonExistantId does not exist!',
       );
     });
 
@@ -259,7 +259,7 @@ describe('Test for the module that controlls changes to processes', () => {
         throw new Error('/complete/path/on/system does not exist');
       });
       await expect(processController.getProcessBpmn('existingId')).rejects.toThrow(
-        'Unable to find process bpmn!'
+        'Unable to find process bpmn!',
       );
     });
   });

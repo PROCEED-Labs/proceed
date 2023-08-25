@@ -19,7 +19,7 @@ function validateParameterDesc(expectedParameters, paraDescriptions, predicateUr
   const reminder = 'please have a look to documentation!';
   if (expectedParameters.length !== paraDescriptions.length) {
     throw new NotFoundError(
-      `You should include a semantic description for EVERY PARAMETER!, ${reminder}`
+      `You should include a semantic description for EVERY PARAMETER!, ${reminder}`,
     );
   }
   const params = paraDescriptions.map((desc) => getPredicateForParam(desc, paramUri, predicateUri));
@@ -40,7 +40,7 @@ function validateParameterDesc(expectedParameters, paraDescriptions, predicateUr
           "@type": ["fno:Parameter", "schema:Integer", "schema:height"],
           "schema:unitText": "px",
           "fno:required": true
-        }`
+        }`,
     );
   }
 }

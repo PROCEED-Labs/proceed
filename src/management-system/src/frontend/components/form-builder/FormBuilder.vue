@@ -373,7 +373,7 @@ export default {
       const changedElement = model.getEl();
 
       const variableInputChanged = !!Array.from(changedElement.classList).find((className) =>
-        className.includes('variable-')
+        className.includes('variable-'),
       );
 
       if (variableInputChanged && changed.attributes && changed.attributes.name) {
@@ -424,32 +424,25 @@ export default {
         imagePath = image;
         selected.set({ src: imagePath });
       } else {
-        if (this.processIsShared) {
-          const imageType = image.type.split('image/').pop();
-          const imageFileName = `${this.filename}_image${v4()}.${imageType}`;
-          imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
-
-          // store image in backend
-          await this.$store.dispatch('processStore/saveImage', {
-            processDefinitionsId: this.processDefinitionsId,
-            imageFileName: imageFileName,
-            image,
-            isUserTaskImage: true,
-          });
-
-          selected.set({ src: imagePath });
-        } else {
-          // set base64 image to src
-          const reader = new FileReader();
-          reader.readAsDataURL(image);
-          return new Promise((resolve) => {
-            reader.addEventListener('load', () => {
-              const selected = this.editor.getSelected();
-              selected.set({ src: reader.result });
-              resolve();
-            });
+        if (!this.processIsShared) {
+          await this.$store.dispatch('processStore/update', {
+            id: this.processDefinitionsId,
+            changes: { shared: true },
           });
         }
+        const imageType = image.type.split('image/').pop();
+        const imageFileName = `${this.filename}_image${v4()}.${imageType}`;
+        imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
+
+        // store image in backend
+        await this.$store.dispatch('processStore/saveImage', {
+          processDefinitionsId: this.processDefinitionsId,
+          imageFileName: imageFileName,
+          image,
+          isUserTaskImage: true,
+        });
+
+        selected.set({ src: imagePath });
       }
 
       const assetManager = this.editor.AssetManager;

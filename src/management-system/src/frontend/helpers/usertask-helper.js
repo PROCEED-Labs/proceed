@@ -67,7 +67,7 @@ function computeHardConstraints(currentHardConstraints, userTaskHTML) {
 
   if (isImageInHtml(userTaskHTML)) {
     const currentMappingHasImageConstraint = hardConstraints.some((constraint) =>
-      constraintsEquals(constraint, connection)
+      constraintsEquals(constraint, connection),
     );
     if (!currentMappingHasImageConstraint) {
       hardConstraints.push(connection);
@@ -75,7 +75,7 @@ function computeHardConstraints(currentHardConstraints, userTaskHTML) {
   } else {
     // remove current hard constraints which only apply if the user task would has images
     hardConstraints = hardConstraints.filter(
-      (constraint) => !constraintsEquals(constraint, connection)
+      (constraint) => !constraintsEquals(constraint, connection),
     );
   }
 

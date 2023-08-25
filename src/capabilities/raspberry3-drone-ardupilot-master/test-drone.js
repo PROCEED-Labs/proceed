@@ -28,7 +28,7 @@ ipc.serveNet(
         [latLongAlt],
         groundspeed + 'm/s',
         bat[bat.length - 1] + '%',
-        data.mode.split(':')[1]
+        data.mode.split(':')[1],
       );
     });
 
@@ -39,7 +39,7 @@ ipc.serveNet(
         handleResponse(data);
       }
     });
-  }
+  },
 );
 
 async function handleResponse(data) {

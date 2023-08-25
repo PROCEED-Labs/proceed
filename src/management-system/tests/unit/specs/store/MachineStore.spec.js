@@ -46,7 +46,7 @@ describe('Machine store', () => {
     test('should give a unique color for each machine', () => {
       const uniqueColors = R.compose(
         R.uniq,
-        R.map(({ id }) => machineStore.getters.color(id))
+        R.map(({ id }) => machineStore.getters.color(id)),
       )(machineStore.getters.machines);
       expect(uniqueColors).toHaveLength(machineStore.getters.machines.length);
     });

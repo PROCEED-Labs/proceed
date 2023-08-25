@@ -213,7 +213,7 @@ export default {
                   this.canHaveCondition = false;
                 }
               }
-            }
+            },
           );
 
           eventBus.on(
@@ -225,7 +225,7 @@ export default {
                   this.editor.setValue(script || '');
                 }
               }
-            }
+            },
           );
         }
       },

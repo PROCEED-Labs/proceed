@@ -89,7 +89,7 @@ export default {
         this.$store,
         this.xml,
         versionName,
-        versionDescription
+        versionDescription,
       );
 
       this.$emit('done', newVersion);

@@ -46,7 +46,7 @@ async function getRequiredProcessFragments(bpmnObj) {
         } else if (machineInfo.machineAddress) {
           const address = machineInfo.machineAddress.replace(
             /\[?((?:(?:\d|\w)|:|\.)*)\]?:(\d*)/g,
-            '$1+$2'
+            '$1+$2',
           );
           const [machineIp] = address.split('+');
           if (machineIp === ip) {
@@ -54,13 +54,13 @@ async function getRequiredProcessFragments(bpmnObj) {
           }
         } else {
           throw new Error(
-            `No usable information about the machine the task ${taskId} is supposed to be executed on.`
+            `No usable information about the machine the task ${taskId} is supposed to be executed on.`,
           );
         }
 
         return newArr;
       },
-      []
+      [],
     );
 
     requiredFragmentInfo.html = getUserTasksToKnow(locallyExecuted);
@@ -92,7 +92,7 @@ function getUserTasksToKnow(flowNodesToKnow) {
       // we can't execute a process
       if (!fileName) {
         throw new Error(
-          `User Task ${fileName.name || flowNode.id} is missing information about the html to use`
+          `User Task ${fileName.name || flowNode.id} is missing information about the html to use`,
         );
       }
       // prevent duplicate references to the same filename
@@ -119,7 +119,7 @@ function getImportsToKnow(bpmnObj, flowNodesToKnow) {
     if (flowNode.$type === 'bpmn:CallActivity') {
       const importInfo = getTargetDefinitionsAndProcessIdForCallActivityByObject(
         bpmnObj,
-        flowNode.id
+        flowNode.id,
       );
       curr.push(importInfo);
     }

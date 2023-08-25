@@ -92,8 +92,8 @@ module.exports = {
               const packageJson = JSON.parse(
                 fs.readFileSync(
                   path.join(__dirname, `../../../../../node_modules/${external}/package.json`),
-                  'utf-8'
-                )
+                  'utf-8',
+                ),
               );
 
               dependencies[external] = packageJson.version;
@@ -111,12 +111,16 @@ module.exports = {
             license: projectPackageJson.license,
             repository: projectPackageJson.repository,
             main: 'server.js',
+            scripts: {
+              'start-new':
+                'API_ONLY=true node server.js & cd management-system-v2 && npm run start -- -p 33081',
+            },
             dependencies,
           };
 
           fs.writeFileSync(
             path.join(stats.compilation.compiler.outputPath, 'package.json'),
-            JSON.stringify(serverPackageJson, null, 2)
+            JSON.stringify(serverPackageJson, null, 2),
           );
         });
       },

@@ -54,10 +54,10 @@ describe('Tests for some general helper functions', () => {
 
     it('compares nested objects', () => {
       expect(
-        deepEquals({ a: { x: 100 }, b: { y: 20, z: 1 } }, { a: { x: 100 }, b: { y: 20, z: 1 } })
+        deepEquals({ a: { x: 100 }, b: { y: 20, z: 1 } }, { a: { x: 100 }, b: { y: 20, z: 1 } }),
       ).toBe(true);
       expect(
-        deepEquals({ a: { x: 100 }, b: { y: 20, z: 1 } }, { a: { x: 100 }, b: { y: 20, z: 2 } })
+        deepEquals({ a: { x: 100 }, b: { y: 20, z: 1 } }, { a: { x: 100 }, b: { y: 20, z: 2 } }),
       ).toBe(false);
 
       expect(deepEquals([{ x: 100 }, { y: 20, z: 1 }], [{ x: 100 }, { y: 20, z: 2 }])).toBe(false);
@@ -77,8 +77,8 @@ describe('Tests for some general helper functions', () => {
           [
             [1, 2],
             ['a', null],
-          ]
-        )
+          ],
+        ),
       ).toBe(true);
       expect(
         deepEquals(
@@ -89,8 +89,8 @@ describe('Tests for some general helper functions', () => {
           [
             [1, 2],
             ['a', 0],
-          ]
-        )
+          ],
+        ),
       ).toBe(false);
     });
   });
@@ -147,13 +147,13 @@ describe('Tests for some general helper functions', () => {
 
     it('can handle nested objects and arrays', () => {
       expect(
-        isSubset({ a: 1, b: [0, 1], c: { x: 2, y: 3 } }, { a: 1, b: [0, 1], c: { x: 2, y: 3 } })
+        isSubset({ a: 1, b: [0, 1], c: { x: 2, y: 3 } }, { a: 1, b: [0, 1], c: { x: 2, y: 3 } }),
       ).toBe(true);
       expect(
-        isSubset({ a: 1, b: [0, 1], c: { x: 2, y: 3 } }, { a: 1, b: [null, 1], c: { x: 2, y: 3 } })
+        isSubset({ a: 1, b: [0, 1], c: { x: 2, y: 3 } }, { a: 1, b: [null, 1], c: { x: 2, y: 3 } }),
       ).toBe(false);
       expect(
-        isSubset({ a: 1, b: [1, 2], c: { x: 2, y: 3 } }, { a: 1, b: [1, 2], c: { x: 2, y: 4 } })
+        isSubset({ a: 1, b: [1, 2], c: { x: 2, y: 3 } }, { a: 1, b: [1, 2], c: { x: 2, y: 4 } }),
       ).toBe(false);
     });
   });

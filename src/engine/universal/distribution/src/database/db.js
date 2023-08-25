@@ -69,7 +69,7 @@ module.exports = {
 
     // get all known user task files for the process
     const knownUserTaskFiles = ((await data.getAllUserTasks(definitionId)) || []).map(
-      (fileName) => fileName.split('.html')[0]
+      (fileName) => fileName.split('.html')[0],
     );
 
     // check if html data is missing
@@ -180,7 +180,7 @@ module.exports = {
   async getProcessVersion(definitionId, version) {
     if (!(await this.isProcessVersionExisting(definitionId, version))) {
       throw new Error(
-        `Process version (${version}) for the process with the given definitionId (${definitionId}) does not exist!`
+        `Process version (${version}) for the process with the given definitionId (${definitionId}) does not exist!`,
       );
     }
 
@@ -239,7 +239,7 @@ module.exports = {
 
     if (!processInfo || !processInfo[version]) {
       throw new Error(
-        `Process version ${version} does not exist for the process (id: ${processDefinitionId}).`
+        `Process version ${version} does not exist for the process (id: ${processDefinitionId}).`,
       );
     }
 
@@ -251,7 +251,7 @@ module.exports = {
 
     if (!bpmn) {
       throw new Error(
-        `There exists no BPMN for the process (id: ${processDefinitionId}) with version ${version}.`
+        `There exists no BPMN for the process (id: ${processDefinitionId}) with version ${version}.`,
       );
     }
 
@@ -291,7 +291,7 @@ module.exports = {
     }
 
     const infoPromises = Object.keys(processInfo).map(
-      async (version) => await this.getProcessVersionInfo(processDefinitionId, version)
+      async (version) => await this.getProcessVersionInfo(processDefinitionId, version),
     );
 
     const versions = await Promise.all(infoPromises);

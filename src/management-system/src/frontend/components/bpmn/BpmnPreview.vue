@@ -91,7 +91,7 @@ export default {
       if (this.version) {
         this.processBpmnFile = await this.$store.getters['processStore/xmlByVersion'](
           this.process.id,
-          this.version.version
+          this.version.version,
         );
       } else {
         this.processBpmnFile = await this.$store.getters['processStore/xmlById'](this.process.id);

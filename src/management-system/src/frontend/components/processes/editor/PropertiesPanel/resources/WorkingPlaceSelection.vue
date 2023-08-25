@@ -145,7 +145,7 @@ export default {
 
         const relatedArea = this.areas.find(
           (area) =>
-            area.id === selectedWorkingPlace.areaId || area.id === selectedWorkingPlace.areaRef
+            area.id === selectedWorkingPlace.areaId || area.id === selectedWorkingPlace.areaRef,
         );
 
         if (relatedArea) {
@@ -156,7 +156,7 @@ export default {
           }
 
           const relatedAreaBuilding = this.buildings.find((building) =>
-            building.areaIds.includes(relatedArea.id)
+            building.areaIds.includes(relatedArea.id),
           );
 
           if (relatedAreaBuilding) {
@@ -169,7 +169,7 @@ export default {
         }
 
         const relatedBuilding = this.buildings.find((building) =>
-          building.workingPlaceIds.includes(selectedWorkingPlace.id)
+          building.workingPlaceIds.includes(selectedWorkingPlace.id),
         );
 
         if (relatedBuilding) {
@@ -180,7 +180,7 @@ export default {
           }
 
           const relatedFactory = this.factories.find((factory) =>
-            factory.buildingIds.includes(relatedBuilding.id)
+            factory.buildingIds.includes(relatedBuilding.id),
           );
 
           if (relatedFactory) {

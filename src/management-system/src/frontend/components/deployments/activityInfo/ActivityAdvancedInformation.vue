@@ -191,7 +191,7 @@ export default {
       let version;
       if (this.instance) {
         version = this.deployment.versions.find(
-          ({ version }) => version == this.instance.processVersion
+          ({ version }) => version == this.instance.processVersion,
         );
       } else if (this.selectedVersion) {
         version = this.selectedVersion;
@@ -227,7 +227,7 @@ export default {
         const tokens = this.isRootElement
           ? this.instance.tokens
           : this.instance.tokens.filter(
-              (token) => token.currentFlowElementId === this.selectedElement.id
+              (token) => token.currentFlowElementId === this.selectedElement.id,
             );
         return tokens;
       }
@@ -242,7 +242,7 @@ export default {
             value: token.tokenId,
             // get every entry of token expect for its tokenID to prevent redundancy
             children: this.transformInfoIntoTreeViewStructure(token, token.tokenId).filter(
-              ({ name }) => name !== 'tokenId'
+              ({ name }) => name !== 'tokenId',
             ),
           };
         });
@@ -302,7 +302,7 @@ export default {
       await this.$nextTick();
       // find the index of the token panel in the element containing all panels
       const tokenPanelIndex = this.$refs['activity-advanced-panels'].$children.findIndex(
-        (child) => child.$attrs.id === 'activity-advanced-token-panel'
+        (child) => child.$attrs.id === 'activity-advanced-token-panel',
       );
       // make sure that the token panel is the one thats opened
       this.panels = [tokenPanelIndex];

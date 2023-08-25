@@ -48,7 +48,7 @@ processRouter.use(
       req.processes = getProcesses().map((process) => toExternalFormat(process));
     }
     next();
-  }
+  },
 );
 
 processRouter.get('/', async (req, res) => {
@@ -63,7 +63,7 @@ processRouter.get('/', async (req, res) => {
           const bpmn = await getProcessBpmn(process.definitionId);
           return { ...process, bpmn };
         }
-      })
+      }),
     );
 
     if (processes.length) {
@@ -104,7 +104,7 @@ processRouter.post(
       logger.debug(`Error on POST request to /process: ${err}`);
       res.status(500).send('Failed to create the process due an internal error');
     }
-  }
+  },
 );
 
 processRouter.use('/:definitionId', async (req, res, next) => {
@@ -157,7 +157,7 @@ processRouter.put(
     } catch (err) {
       res.status(400).send(err.message);
     }
-  }
+  },
 );
 
 processRouter.delete(
@@ -173,7 +173,7 @@ processRouter.delete(
     res.status(200).end();
     await ensureOpaSync(`processes/${definitionsId}`, 'DELETE');
     return;
-  }
+  },
 );
 
 processRouter.get('/:definitionId/versions', async (req, res) => {
@@ -207,7 +207,7 @@ processRouter.post(
     }
 
     res.status(201).send();
-  }
+  },
 );
 
 processRouter.get('/:definitionId/versions/:version', async (req, res) => {
@@ -220,7 +220,7 @@ processRouter.get('/:definitionId/versions/:version', async (req, res) => {
     res
       .status(400)
       .send(
-        `Unable to get version ${version} for the process (id: ${definitionsId})! Reason: ${err.message}.`
+        `Unable to get version ${version} for the process (id: ${definitionsId})! Reason: ${err.message}.`,
       );
   }
 });
@@ -300,7 +300,7 @@ processRouter.put(
     }
 
     res.end();
-  }
+  },
 );
 
 processRouter.delete(
@@ -314,7 +314,7 @@ processRouter.delete(
     }
 
     res.status(200).send();
-  }
+  },
 );
 
 export default processRouter;

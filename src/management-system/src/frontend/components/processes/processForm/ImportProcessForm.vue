@@ -139,11 +139,11 @@ export default {
               imageData,
               this.$store,
               this.type,
-              fileName
+              fileName,
             );
 
             return { ...processData, bpmn: bpmnFileAsXml };
-          }
+          },
         );
 
         this.setProcessesData(processesData);

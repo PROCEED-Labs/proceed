@@ -20,7 +20,7 @@ function validateReturnMapping(
   mappingNode,
   returnMappingUri,
   implementationUri,
-  functionParamMappingUri
+  functionParamMappingUri,
 ) {
   const returnKeys = _.flatten(mappingNode[returnMappingUri].map((i) => i[implementationUri]));
   if (returnKeys.includes(undefined)) {
@@ -40,11 +40,11 @@ function validateReturnMapping(
             "_:geoCoordinatesParameter"
           ],
           "fnom:implementationProperty": "img/gps"
-        }]`
+        }]`,
     );
   }
   const funtionParamMappings = _.flatten(
-    mappingNode[returnMappingUri].map((i) => i[functionParamMappingUri])
+    mappingNode[returnMappingUri].map((i) => i[functionParamMappingUri]),
   );
   if (funtionParamMappings.includes(undefined)) {
     throw new NotFoundError(
@@ -65,7 +65,7 @@ function validateReturnMapping(
             "_:geoCoordinatesParameter"
           ],
           "fnom:implementationProperty": "img/gps"
-        }]`
+        }]`,
     );
   }
 }

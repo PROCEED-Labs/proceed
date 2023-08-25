@@ -75,7 +75,7 @@ async function getProcesses(viaWebsocket = false) {
     await Promise.all(
       backendProcesses.map(async (process) => {
         await observeProcess(process.id);
-      })
+      }),
     );
 
     backendProcesses = backendProcesses.map((p) => ({ ...p, shared: true }));
@@ -140,7 +140,7 @@ export async function observeProcess(processDefinitionsId) {
 
     const observeSocket = io(
       `https://${window.location.hostname}:33081/process/${processDefinitionsId}/view`,
-      { auth: { connectionId } }
+      { auth: { connectionId } },
     );
     processSockets[processDefinitionsId].observe = observeSocket;
 
@@ -192,15 +192,6 @@ export async function observeProcess(processDefinitionsId) {
     });
 
     observeSocket.on('image_changed', (imageFileName, image) => {
-      if (browserStorage.hasProcess(processDefinitionsId)) {
-        if (image) {
-          const imageBlob = new Blob([image]);
-          browserStorage.saveImage(processDefinitionsId, imageFileName, imageBlob);
-        } else {
-          browserStorage.deleteImage(processDefinitionsId, imageFileName);
-        }
-      }
-
       eventHandler.dispatch('processImageChanged', { processDefinitionsId, imageFileName, image });
     });
 
@@ -232,7 +223,7 @@ export async function observeProcess(processDefinitionsId) {
 
     const editSocket = io(
       `https://${window.location.hostname}:33081/process/${processDefinitionsId}/edit`,
-      { auth: { connectionId } }
+      { auth: { connectionId } },
     );
     processSockets[processDefinitionsId].edit = editSocket;
 
@@ -347,7 +338,7 @@ async function pushToBackend(processDefinitionsId) {
         // replace base64 string in userTask image with image path
         imageEl.setAttribute(
           'src',
-          `/resources/process/${processDefinitionsId}/images/${imageFileName}`
+          `/resources/process/${processDefinitionsId}/images/${imageFileName}`,
         );
         updatedHtml = serializer.serializeToString(userTaskDocument);
         images[imageFileName] = file;
@@ -409,7 +400,7 @@ async function updateProcessMetaData(processDefinitionsId, metaDataChanges) {
       processSockets[processDefinitionsId].edit.emit(
         'data_process_meta_update',
         metaDataChanges,
-        () => resolve() // will be called once the server sends acknowledgement
+        () => resolve(), // will be called once the server sends acknowledgement
       );
     });
   }
@@ -468,7 +459,7 @@ async function updateProcessDescription(processDefinitionsId, processId, descrip
     processSockets[processDefinitionsId].edit.emit(
       'bpmn_modeler_event',
       type,
-      JSON.stringify(context)
+      JSON.stringify(context),
     );
   }
 }
@@ -504,7 +495,7 @@ async function addProcessVersion(processDefinitionsId, bpmn) {
       undefined,
       'POST',
       'application/json',
-      { bpmn }
+      { bpmn },
     );
   } else {
     // inform the frontend that the version was succesfully added
@@ -585,7 +576,7 @@ async function broadcastBPMNEvents(processDefinitionsId, type, context) {
     processSockets[processDefinitionsId].edit.emit(
       'bpmn_modeler_event',
       type,
-      JSON.stringify(context)
+      JSON.stringify(context),
     );
   }
 }
@@ -598,7 +589,7 @@ async function broadcastScriptChangeEvent(processDefinitionsId, elId, elType, sc
       elId,
       elType,
       script,
-      JSON.stringify(change)
+      JSON.stringify(change),
     );
   }
 }
@@ -609,7 +600,7 @@ async function updateConstraints(processDefinitionsId, elementId, constraints) {
     processSockets[processDefinitionsId].edit.emit(
       'data_updateConstraints',
       elementId,
-      constraints
+      constraints,
     );
   }
 }
@@ -622,7 +613,7 @@ async function getUserTasksHTML(processDefinitionsId) {
   } else {
     taskIdHTMLMap = await restRequest(
       `process/${processDefinitionsId}/user-tasks`,
-      'withHtml=true'
+      'withHtml=true',
     );
   }
 
@@ -654,34 +645,16 @@ async function deleteUserTaskHTML(processDefinitionsId, taskFileName) {
 }
 
 async function getImages(processDefinitionsId) {
-  let images;
-
-  if (browserStorage.hasProcess(processDefinitionsId)) {
-    images = browserStorage.getImages(processDefinitionsId);
-  } else {
-    images = await restRequest(`process/${processDefinitionsId}/images/`);
-  }
-
+  const images = await restRequest(`process/${processDefinitionsId}/images/`);
   return images;
 }
 
 async function getImage(processDefinitionsId, imageFileName) {
-  let image;
-
-  if (browserStorage.hasProcess(processDefinitionsId)) {
-    image = browserStorage.getImage(processDefinitionsId, imageFileName);
-  } else {
-    image = await restRequest(`process/${processDefinitionsId}/images/${imageFileName}`);
-  }
-
+  const image = await restRequest(`process/${processDefinitionsId}/images/${imageFileName}`);
   return image;
 }
 
 async function saveImage(definitionsId, imageFileName, image) {
-  if (browserStorage.hasProcess(definitionsId)) {
-    await browserStorage.saveImage(definitionsId, imageFileName, image);
-  }
-
   if (!browserStorage.isProcessLocal(definitionsId)) {
     return new Promise((resolve) => {
       processSockets[definitionsId].edit.emit('data_saveImage', imageFileName, image, () => {

@@ -208,7 +208,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
           'someToken',
           {
             some: 'value',
-          }
+          },
         );
       });
     });

@@ -71,7 +71,7 @@ export async function getProcessVersionBpmn(processDefinitionsId, version) {
 
   if (deployment) {
     const versionInfo = deployment.versions.find(
-      ({ version: deployedVersion }) => deployedVersion == version
+      ({ version: deployedVersion }) => deployedVersion == version,
     );
     if (versionInfo) {
       return versionInfo.bpmn;
@@ -79,7 +79,7 @@ export async function getProcessVersionBpmn(processDefinitionsId, version) {
   }
 
   throw new Error(
-    `The requested process version (id: ${processDefinitionsId}, version ${version}) could neither be found locally nor on a known engine.`
+    `The requested process version (id: ${processDefinitionsId}, version ${version}) could neither be found locally nor on a known engine.`,
   );
 }
 
@@ -125,7 +125,7 @@ export async function getProcessUserTasksHtml(processDefinitionsId, bpmn) {
           files[fileName] = await processEndpoint.getUserTaskHTML(
             machine,
             processDefinitionsId,
-            fileName
+            fileName,
           );
           return false;
         }
@@ -140,8 +140,8 @@ export async function getProcessUserTasksHtml(processDefinitionsId, bpmn) {
   if (requiredFileNames.length) {
     throw new Error(
       `Unable to get the html for all User Tasks in the process (id: ${processDefinitionsId}). Could not find User Task files: [${toListString(
-        requiredFileNames
-      )}]`
+        requiredFileNames,
+      )}]`,
     );
   }
 

@@ -230,7 +230,7 @@ export default {
       set(newValue) {
         this.$store.dispatch(
           'userPreferencesStore/setSetGroupByDepartmentsInProcessView',
-          newValue
+          newValue,
         );
       },
     },
@@ -270,7 +270,7 @@ export default {
           // filter to make list unqiue, by the name property of the department
           .filter(
             (value, index, self) =>
-              value.name && self.findIndex((department) => department.name == value.name) === index
+              value.name && self.findIndex((department) => department.name == value.name) === index,
           )
           .sort((dep1, dep2) => (dep1.name < dep2.name ? -1 : 1))
       );
@@ -284,9 +284,9 @@ export default {
           Array.isArray(process.departments) &&
           process.departments.some((department) =>
             this.groupByDepartments.some(
-              (groupedDepartment) => department.name === groupedDepartment.name
-            )
-          )
+              (groupedDepartment) => department.name === groupedDepartment.name,
+            ),
+          ),
       );
     },
   },
@@ -301,7 +301,7 @@ export default {
     },
     handleGroupByDepartments(department) {
       const index = this.groupByDepartments.findIndex(
-        (groupedDepartment) => groupedDepartment.name === department.name
+        (groupedDepartment) => groupedDepartment.name === department.name,
       );
       index !== -1
         ? this.groupByDepartments.splice(index, 1)
@@ -312,7 +312,7 @@ export default {
     handleHeaderSelection(header) {
       if (this.columnSelection.includes(header.text)) {
         this.columnSelection = this.columnSelection.filter(
-          (headerText) => headerText !== header.text
+          (headerText) => headerText !== header.text,
         );
       } else {
         this.columnSelection = [...this.columnSelection, header.text];

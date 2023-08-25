@@ -113,7 +113,7 @@ export async function deleteRole(roleId) {
 
   Object.keys(roleMappingsMetaObjects.users).forEach((userId) => {
     const index = roleMappingsMetaObjects.users[userId].findIndex(
-      (mapping) => mapping.roleId === roleId
+      (mapping) => mapping.roleId === roleId,
     );
     if (index > -1) {
       roleMappingsMetaObjects.users[userId].splice(index, 1);

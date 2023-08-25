@@ -15,7 +15,7 @@ export const getUserinfo = async (req, res, client) => {
     userinfo = await retry(
       () => client.userinfo(req.session.tokenSet.access_token, () => refreshUserToken(req, client)),
       1,
-      0
+      0,
     );
   } catch (e) {
     return res.status(400).json('Unable to retreive userinfo.');

@@ -19,7 +19,7 @@ module.exports = {
 
     const filteredProcessConstraints = this.filterOutDuplicateProcessConstraints(
       flowNodeConstraints,
-      processConstraints
+      processConstraints,
     );
 
     const concatenatedConstraints = [...filteredProcessConstraints, ...flowNodeConstraints];
@@ -69,7 +69,7 @@ module.exports = {
     ];
 
     const remainingConstraints = hardConstraints.filter(
-      (hardConstraint) => !processExecutionConstraintNames.includes(hardConstraint.name)
+      (hardConstraint) => !processExecutionConstraintNames.includes(hardConstraint.name),
     );
 
     return remainingConstraints;

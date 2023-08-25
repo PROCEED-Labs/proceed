@@ -46,7 +46,7 @@
     "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
     "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && node --loader ts-node/esm ./build-injector.js && cd ../../universal && webpack --config webpack.universal.config.js",
     "build-ms-web": "cd src/management-system && yarn web:build-server-frontend",
-    "build-ms-server": "cd src/management-system && yarn web:build-server",
+    "build-ms-server": "cd src/management-system && yarn web:build-server && cd ../.. && cp -r src/management-system-v2 build/management-system/server/management-system-v2",
     "build-web": "yarn build && cd src/engine/native/web/server && yarn build",
     "docker:run": "docker container run --publish 33029:33029 --rm --network host --detach --name engine proceed/engine:latest",
     "docker:stop": "docker container stop engine",
@@ -103,7 +103,7 @@
     "style-loader": "^0.23.1",
     "supertest": "^4.0.2",
     "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.0",
+    "webpack-cli": "^3.3.0",+_
     "webpack-dev-server": "^3.2.1",
     "typescript": "^5.0.4",
     "ts-node": "^10.9.1",

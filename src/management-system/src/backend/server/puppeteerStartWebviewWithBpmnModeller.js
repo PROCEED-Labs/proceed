@@ -26,7 +26,7 @@ export default async function startWebviewWithPuppeteer() {
     await page.goto(`https://localhost:${port}/bpmn-modeller.html`);
   } catch (err) {
     logger.error(
-      'Failed to start client that applies bpmn events for backend. Bpmn changes will not be saved!'
+      'Failed to start client that applies bpmn events for backend. Bpmn changes will not be saved!',
     );
   }
 

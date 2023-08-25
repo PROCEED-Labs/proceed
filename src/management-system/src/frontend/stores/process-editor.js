@@ -83,7 +83,7 @@ export default function createProcessEditorStore() {
       xmlChagedCallback = eventHandler.on('processXmlChanged', async ({ processDefinitionsId }) => {
         if (processDefinitionsId === state.processDefinitionsId && !state.version) {
           const newMetaInfo = await rootGetters['processStore/processById'](
-            state.processDefinitionsId
+            state.processDefinitionsId,
           );
           // TODO: don't kick the user out of a subprocess if the main xml is changed but the subprocess is still there
           dispatch('loadProcessFromStore', { processDefinitionsId });
@@ -142,7 +142,7 @@ export default function createProcessEditorStore() {
       dispatch(
         'processStore/updateBpmn',
         { id: state.processDefinitionsId, bpmn: xml },
-        { root: true }
+        { root: true },
       );
     },
 
@@ -155,7 +155,7 @@ export default function createProcessEditorStore() {
         elId,
         elType,
         script,
-        change
+        change,
       );
     },
     setLibrary({ commit }, { library }) {
@@ -170,7 +170,7 @@ export default function createProcessEditorStore() {
       // TODO: check if this works
       const hasPermissionToEdit = rootGetters['authStore/ability'].can(
         'update',
-        rootGetters['processStore/processById'](state.processDefinitionsId)
+        rootGetters['processStore/processById'](state.processDefinitionsId),
       );
 
       // don't reenable editing until there is a connection, the user has the necessary permissions and the current process is not a version
@@ -188,7 +188,7 @@ export default function createProcessEditorStore() {
         // signal that the client wants to start editing the process in the editor (if the user has the required permission and the process is not a final version)
         const hasPermissionToEdit = rootGetters['authStore/ability'].can(
           'update',
-          rootGetters['processStore/processById'](state.processDefinitionsId)
+          rootGetters['processStore/processById'](state.processDefinitionsId),
         );
         if (hasPermissionToEdit) {
           processInterface.blockProcess(state.processDefinitionsId);
@@ -203,7 +203,7 @@ export default function createProcessEditorStore() {
         // signal that the client wants to stop editing the process in the editor (if the user does not have the required permission or the process is a final version the process could not be edited to begin with)
         const hasPermissionToEdit = rootGetters['authStore/ability'].can(
           'update',
-          rootGetters['processStore/processById'](state.processDefinitionsId)
+          rootGetters['processStore/processById'](state.processDefinitionsId),
         );
         if (hasPermissionToEdit) {
           processInterface.unblockProcess(state.processDefinitionsId);
@@ -269,7 +269,7 @@ export default function createProcessEditorStore() {
         state.elementCapabilityMapping = R.assoc(
           elementId,
           capabilities,
-          state.elementCapabilityMapping
+          state.elementCapabilityMapping,
         );
       } else {
         state.elementCapabilityMapping = {};

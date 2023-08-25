@@ -33,7 +33,7 @@ const useLocalProcessStore = create<LocalProcessStore>()(
       set((state) => {
         state.processes = [];
       }),
-  }))
+  })),
 );
 
 export default useLocalProcessStore;

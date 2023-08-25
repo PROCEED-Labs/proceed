@@ -21,7 +21,7 @@ export default {
     style() {
       if (this.top && this.bottom) {
         throw new Error(
-          'You should only define one of top and bottom offset for hovering toolbars'
+          'You should only define one of top and bottom offset for hovering toolbars',
         );
       }
 

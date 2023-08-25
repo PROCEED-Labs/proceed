@@ -39,7 +39,7 @@ export const isAllowed = (
     includeBody = false,
     context = false,
     decisionStrategy = undefined,
-  } = {}
+  } = {},
 ) => {
   return async (req, res, next) => {
     // skip middleware if authorization disabled
@@ -72,7 +72,7 @@ export const isAllowed = (
         id: req.session.userId,
         roles: roleMappingsMetaObjects.users[req.session.userId]
           ? roleMappingsMetaObjects.users[req.session.userId].map(
-              (roleMapping) => roleMapping.roleId
+              (roleMapping) => roleMapping.roleId,
             )
           : null,
       };

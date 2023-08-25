@@ -16,7 +16,7 @@ class ProceedUserTask {
     customModeling,
     elementRegistry,
     commandStack,
-    canvas
+    canvas,
   ) {
     this.eventBus = eventBus;
 
@@ -62,12 +62,12 @@ class ProceedUserTask {
 
           if (constraints.hardConstraints) {
             constraints.hardConstraints = constraints.hardConstraints.filter(
-              (h) => h.name !== 'machine.online'
+              (h) => h.name !== 'machine.online',
             );
             customModeling.addConstraintsToElement(
               elementRegistry.get(oldShape.id),
               constraints,
-              true
+              true,
             );
           }
         }
@@ -121,7 +121,7 @@ class ProceedUserTask {
       if (context.element === processElement) {
         const rootMetaData = proceedMeta.getRootMetaData();
         customModeling.changeUserTasksImplementation(
-          rootMetaData['_5i-Inspection-Plan-ID'] || rootMetaData['_5i-Inspection-Plan-Template-ID']
+          rootMetaData['_5i-Inspection-Plan-ID'] || rootMetaData['_5i-Inspection-Plan-Template-ID'],
         );
       }
     });

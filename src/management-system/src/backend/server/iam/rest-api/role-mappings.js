@@ -32,7 +32,7 @@ roleMappingsRouter.get(
     } else {
       return res.status(400).json('Missing parameter userId');
     }
-  }
+  },
 );
 
 /**
@@ -72,7 +72,7 @@ roleMappingsRouter.post(
     } else {
       return res.status(400).json('Missing body');
     }
-  }
+  },
 );
 
 /**
@@ -96,7 +96,7 @@ roleMappingsRouter.delete(
     } else {
       return res.status(400).json('Missing parameters userId and/or roleId');
     }
-  }
+  },
 );
 
 export default roleMappingsRouter;

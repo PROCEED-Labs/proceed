@@ -63,7 +63,7 @@ class TaskListTab extends DisplayItem {
         (userTask) =>
           userTask.processInstance.id === instanceId &&
           userTask.id === query.userTaskID &&
-          parseInt(userTask.startTime) === parseInt(query.startTime)
+          parseInt(userTask.startTime) === parseInt(query.startTime),
       );
 
       if (!userTask.processInstance) {
@@ -89,14 +89,14 @@ class TaskListTab extends DisplayItem {
         (task) =>
           task.processInstance.id === query.instanceID &&
           task.id === query.userTaskID &&
-          parseInt(task.startTime) === parseInt(query.startTime)
+          parseInt(task.startTime) === parseInt(query.startTime),
       );
       const allArchivedUserTaskInstances = await distribution.db.getArchivedInstances(
-        userTask.definitionId
+        userTask.definitionId,
       );
       const userTaskInstance = allArchivedUserTaskInstances[query.instanceID];
       const userTaskToken = userTaskInstance.tokens.find(
-        (token) => token.currentFlowElementId === query.userTaskID
+        (token) => token.currentFlowElementId === query.userTaskID,
       );
 
       definitionId = userTask.definitionId;

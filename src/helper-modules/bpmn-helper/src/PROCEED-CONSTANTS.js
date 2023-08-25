@@ -90,7 +90,7 @@ function generateTargetNamespace(id) {
  */
 function initXml(
   processId = `Process_${generateBpmnId()}`,
-  startEventId = `StartEvent_${generateBpmnId()}`
+  startEventId = `StartEvent_${generateBpmnId()}`,
 ) {
   const bpmn = `
   <?xml version="1.0" encoding="UTF-8"?>

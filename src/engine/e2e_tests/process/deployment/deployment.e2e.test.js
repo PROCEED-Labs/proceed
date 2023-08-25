@@ -33,7 +33,7 @@ async function deployProcess(processName, engines) {
 
   const bpmn = fs.readFileSync(
     path.resolve(__dirname, 'testProcesses', processName, `${processName}.xml`),
-    'utf-8'
+    'utf-8',
   );
   const correctNameSpaceBpmn = ensureCorrectProceedNamespace(bpmn);
 
@@ -75,7 +75,7 @@ describe('Test deploying a process', () => {
   afterAll(async () => {
     // kills all processes and their subprocesses
     const killCommands = engineProcesses.map((engineProcess) =>
-      killEngineProcess(engineProcess.process)
+      killEngineProcess(engineProcess.process),
     );
 
     await Promise.all(killCommands);
@@ -121,8 +121,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           // check for instance information
@@ -404,8 +404,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           // check for instance information
@@ -691,7 +691,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['ERROR-CONSTRAINT-UNFULFILLED']);
@@ -808,8 +808,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           engineResponses.forEach((engine) => {
@@ -940,7 +940,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['DEPLOYMENT-WAITING']);
@@ -1018,7 +1018,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['DEPLOYMENT-WAITING']);
@@ -1109,8 +1109,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           engineResponses.forEach((engine) => {
@@ -1308,7 +1308,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['READY', 'ERROR-CONSTRAINT-UNFULFILLED']);
@@ -1437,7 +1437,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['ERROR-CONSTRAINT-UNFULFILLED']);
@@ -1579,7 +1579,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['ERROR-CONSTRAINT-UNFULFILLED']);
@@ -1744,7 +1744,7 @@ describe('Test deploying a process', () => {
           test('wrong tokenId will return error', async () => {
             const engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}wrong/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}wrong/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'ACTIVE' });
 
@@ -1754,7 +1754,7 @@ describe('Test deploying a process', () => {
           test('invalid state will return error', async () => {
             const engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'INVALID STATE' });
 
@@ -1764,7 +1764,7 @@ describe('Test deploying a process', () => {
           test('will set the state to EXTERNAL', async () => {
             let engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'EXTERNAL' });
 
@@ -1798,7 +1798,7 @@ describe('Test deploying a process', () => {
           test('will complete the flow node and set variables', async () => {
             let engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'EXTERNAL-COMPLETED', variables: { test: 42 } });
 
@@ -1858,7 +1858,7 @@ describe('Test deploying a process', () => {
           test('will terminate the activity and the token that activated it', async () => {
             let engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'EXTERNAL-TERMINATED' });
 
@@ -1906,7 +1906,7 @@ describe('Test deploying a process', () => {
           test('will fail the activity and the token that activated it', async () => {
             let engineResponse = await request
               .put(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}/currentFlowNodeState`,
               )
               .send({ currentFlowNodeState: 'EXTERNAL-FAILED' });
 
@@ -1971,9 +1971,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'adaptiveProcess',
-                  `${userTask1FileName}.html`
+                  `${userTask1FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask1FileName}`)
@@ -1987,9 +1987,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'adaptiveProcess',
-                  `${userTask2FileName}.html`
+                  `${userTask2FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask2FileName}`)
@@ -2008,7 +2008,7 @@ describe('Test deploying a process', () => {
               const instanceInfo = await getInstanceInformation(
                 definitionId,
                 instanceId,
-                engineName
+                engineName,
               );
 
               expect(instanceInfo.tokens).toEqual([
@@ -2055,7 +2055,7 @@ describe('Test deploying a process', () => {
               // stop the instance and remove the deployment
               await request
                 .put(
-                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`
+                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`,
                 )
                 .send({ instanceState: 'stopped' });
 
@@ -2069,7 +2069,7 @@ describe('Test deploying a process', () => {
               // check the state after the move to be correct
               await request
                 .put(
-                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`
+                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`,
                 )
                 .send({ currentFlowElementId: 'Flow_0n4onyv' });
 
@@ -2078,7 +2078,7 @@ describe('Test deploying a process', () => {
               const instanceInfo = await getInstanceInformation(
                 definitionId,
                 instanceId,
-                engineName
+                engineName,
               );
 
               expect(instanceInfo.tokens).toEqual([
@@ -2144,7 +2144,7 @@ describe('Test deploying a process', () => {
             it('will allow removing a token from an instance', async () => {
               // check the state after the removal to be correct
               await request.delete(
-                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`
+                `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`,
               );
 
               await new Promise((resolve) => setTimeout(() => resolve(), 1000));
@@ -2152,7 +2152,7 @@ describe('Test deploying a process', () => {
               const instanceInfo = await getInstanceInformation(
                 definitionId,
                 instanceId,
-                engineName
+                engineName,
               );
 
               // TODO: check non ended state
@@ -2217,9 +2217,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'adaptiveProcess',
-                  `${userTask1FileName}.html`
+                  `${userTask1FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask1FileName}`)
@@ -2233,9 +2233,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'adaptiveProcess',
-                  `${userTask2FileName}.html`
+                  `${userTask2FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask2FileName}`)
@@ -2254,7 +2254,7 @@ describe('Test deploying a process', () => {
               const instanceInfo = await getInstanceInformation(
                 definitionId,
                 instanceId,
-                engineName
+                engineName,
               );
 
               expect(instanceInfo.variables).toEqual({});
@@ -2282,7 +2282,7 @@ describe('Test deploying a process', () => {
               // stop the instance and remove the deployment
               await request
                 .put(
-                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`
+                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`,
                 )
                 .send({ instanceState: 'stopped' });
 
@@ -2296,18 +2296,18 @@ describe('Test deploying a process', () => {
               // check the state after the move to be correct
               await request
                 .put(
-                  `:${usedEngine.port}/tasklist/api/variable?instanceID=${instanceId}&userTaskID=Activity_1xguu75`
+                  `:${usedEngine.port}/tasklist/api/variable?instanceID=${instanceId}&userTaskID=Activity_1xguu75`,
                 )
                 .send({ var1: 'some-value' });
               await request
                 .post(
-                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`
+                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`,
                 )
                 .send();
 
               await request
                 .post(
-                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/variables`
+                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/variables`,
                 )
                 .send({
                   var1: 'some-other-value',
@@ -2319,7 +2319,7 @@ describe('Test deploying a process', () => {
               const instanceInfo = await getInstanceInformation(
                 definitionId,
                 instanceId,
-                engineName
+                engineName,
               );
 
               expect(instanceInfo.variables).toEqual({
@@ -2380,7 +2380,7 @@ describe('Test deploying a process', () => {
               // stop the instance and remove the deployment
               await request
                 .put(
-                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`
+                  `:${usedEngine.port}/process/${definitionId}/instance/${instanceId}/instanceState`,
                 )
                 .send({ instanceState: 'stopped' });
 
@@ -2405,9 +2405,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask1FileName}.html`
+                  `${userTask1FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask1FileName}`)
@@ -2421,9 +2421,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask2FileName}.html`
+                  `${userTask2FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask2FileName}`)
@@ -2457,7 +2457,7 @@ describe('Test deploying a process', () => {
 
               await request
                 .post(
-                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`
+                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`,
                 )
                 .send({});
 
@@ -2542,9 +2542,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask1FileName}.html`
+                  `${userTask1FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask1FileName}`)
@@ -2558,9 +2558,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask2FileName}.html`
+                  `${userTask2FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask2FileName}`)
@@ -2602,7 +2602,7 @@ describe('Test deploying a process', () => {
 
               await request
                 .post(
-                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1pgsbor`
+                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1pgsbor`,
                 )
                 .send({});
 
@@ -2720,9 +2720,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask1FileName}.html`
+                  `${userTask1FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask1FileName}`)
@@ -2736,9 +2736,9 @@ describe('Test deploying a process', () => {
                   __dirname,
                   'testProcesses',
                   'migrationExtended',
-                  `${userTask2FileName}.html`
+                  `${userTask2FileName}.html`,
                 ),
-                'utf-8'
+                'utf-8',
               );
               await request
                 .put(`:${usedEngine.port}/process/${definitionId}/user-tasks/${userTask2FileName}`)
@@ -2775,7 +2775,7 @@ describe('Test deploying a process', () => {
 
               await request
                 .post(
-                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1pgsbor`
+                  `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1pgsbor`,
                 )
                 .send({});
 
@@ -2979,8 +2979,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           // check for instance information
@@ -3168,8 +3168,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           // check for instance information
@@ -3500,8 +3500,8 @@ describe('Test deploying a process', () => {
               getInstanceInformation(definitionId, instanceId, engine).then((response) => ({
                 ...engine,
                 response,
-              }))
-            )
+              })),
+            ),
           );
 
           // check for instance information
@@ -3731,7 +3731,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['PAUSED']);
@@ -3820,7 +3820,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['ENDED']);
@@ -3929,7 +3929,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['PAUSED']);
@@ -4006,7 +4006,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['ENDED']);
@@ -4113,7 +4113,7 @@ describe('Test deploying a process', () => {
           const instanceInfo = await getInstanceInformation(
             definitionId,
             instanceId,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(instanceInfo.instanceState).toEqual(['STOPPED']);
@@ -4183,13 +4183,13 @@ describe('Test deploying a process', () => {
               __dirname,
               'testProcesses',
               'adaptiveProcess',
-              `${userTask1FileName}.html`
+              `${userTask1FileName}.html`,
             ),
-            'utf-8'
+            'utf-8',
           );
           await request
             .put(
-              `:${usedEngine.port}/process/${calledProcessDefinitionId}/user-tasks/${userTask1FileName}`
+              `:${usedEngine.port}/process/${calledProcessDefinitionId}/user-tasks/${userTask1FileName}`,
             )
             .send({
               html: userTask1,
@@ -4201,13 +4201,13 @@ describe('Test deploying a process', () => {
               __dirname,
               'testProcesses',
               'adaptiveProcess',
-              `${userTask2FileName}.html`
+              `${userTask2FileName}.html`,
             ),
-            'utf-8'
+            'utf-8',
           );
           await request
             .put(
-              `:${usedEngine.port}/process/${calledProcessDefinitionId}/user-tasks/${userTask2FileName}`
+              `:${usedEngine.port}/process/${calledProcessDefinitionId}/user-tasks/${userTask2FileName}`,
             )
             .send({
               html: userTask2,
@@ -4219,11 +4219,11 @@ describe('Test deploying a process', () => {
           await new Promise((resolve) => setTimeout(() => resolve(), 4000));
 
           let { body: userTasksInformation } = await request.get(
-            `:${usedEngine.port}/tasklist/api`
+            `:${usedEngine.port}/tasklist/api`,
           );
 
           const userTaskInformation = userTasksInformation.find(
-            (userTask) => userTask.id === 'Activity_1xguu75'
+            (userTask) => userTask.id === 'Activity_1xguu75',
           );
 
           // the token in the original instance should hold a reference to the called instance
@@ -4234,14 +4234,14 @@ describe('Test deploying a process', () => {
           const calledInstanceInfo = await getInstanceInformation(
             calledProcessDefinitionId,
             userTaskInformation.instanceID,
-            engineNames[0]
+            engineNames[0],
           );
 
           expect(calledInstanceInfo.callingInstance).toBe(instanceId);
 
           await request
             .post(
-              `:${usedEngine.port}/tasklist/api/userTask?instanceID=${userTaskInformation.instanceID}&userTaskID=${userTaskInformation.id}`
+              `:${usedEngine.port}/tasklist/api/userTask?instanceID=${userTaskInformation.instanceID}&userTaskID=${userTaskInformation.id}`,
             )
             .send({});
 

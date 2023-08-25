@@ -30,7 +30,7 @@ async function createConsolidatedList(capabilityList) {
   const consolidatedGraph = compacted['@graph']
     .filter(
       (graphItem) =>
-        !(typeof graphItem['@type'] === 'string' && graphItem['@type'].includes('Mapping'))
+        !(typeof graphItem['@type'] === 'string' && graphItem['@type'].includes('Mapping')),
     )
     .filter((graphItem) => !graphItem['@id'].includes('Implementation'));
   const consolidatedList = await jsonld.compact(consolidatedGraph, context);

@@ -120,7 +120,7 @@ export default {
         return [this.$store.getters['machineStore/machineById'](ids)];
       }
       return this.$store.getters['machineStore/machines'].filter((machine) =>
-        ids.some((id) => machine.id === id)
+        ids.some((id) => machine.id === id),
       );
     },
     /**

@@ -69,7 +69,7 @@ export default {
           elementInfo = logInfo;
         } else {
           const tokenInfo = this.instance.tokens.find(
-            (l) => l.currentFlowElementId == this.selectedElement.id
+            (l) => l.currentFlowElementId == this.selectedElement.id,
           );
 
           if (tokenInfo) {

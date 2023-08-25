@@ -147,7 +147,7 @@ async function reEvaluateDynamicDeployment(
   processInfo,
   tokenId,
   from,
-  to
+  to,
 ) {
   let dynamicDeploymentResult = {
     engineList: [],
@@ -190,7 +190,7 @@ async function reEvaluateDynamicDeployment(
         processInfo,
         tokenInfo,
         taskConstraints.processConstraints || {},
-        processConstraints.processConstraints || {}
+        processConstraints.processConstraints || {},
       );
       // recursively call reEvaluation again if still no engines found
       if (
@@ -203,7 +203,7 @@ async function reEvaluateDynamicDeployment(
           processInfo,
           tokenId,
           from,
-          to
+          to,
         );
       }
       resolve(reEvaluationResult);
@@ -227,7 +227,7 @@ async function evaluateDynamicDeployment(
   processInfo,
   tokenId,
   from,
-  to
+  to,
 ) {
   let dynamicDeploymentResult = {
     engineList: [],
@@ -251,7 +251,7 @@ async function evaluateDynamicDeployment(
     .filter(
       (execution) =>
         execution.flowElementId === from &&
-        (execution.tokenId.includes(tokenId) || tokenId.includes(execution.tokenId))
+        (execution.tokenId.includes(tokenId) || tokenId.includes(execution.tokenId)),
     )
     .pop();
 
@@ -274,7 +274,7 @@ async function evaluateDynamicDeployment(
         : null,
     },
     previousTaskConstraints.hardConstraints || [],
-    processConstraints.hardConstraints || []
+    processConstraints.hardConstraints || [],
   );
 
   // stop process because previous execution was not valid
@@ -287,7 +287,7 @@ async function evaluateDynamicDeployment(
     processInfo,
     tokenInfo,
     taskConstraints.processConstraints || {},
-    processConstraints.processConstraints || {}
+    processConstraints.processConstraints || {},
   );
 
   // reEvaluation because no fitting engine found
@@ -301,7 +301,7 @@ async function evaluateDynamicDeployment(
       processInfo,
       tokenId,
       from,
-      to
+      to,
     );
   }
 
@@ -395,7 +395,7 @@ module.exports = {
       } else if (deploymentMethod === 'dynamic') {
         const allUserTaskIds = await distribution.db.getAllUserTasks(
           engine.definitionId,
-          undefined
+          undefined,
         );
 
         const processInfo = {
@@ -414,7 +414,7 @@ module.exports = {
           processInfo,
           tokenId,
           from,
-          to
+          to,
         );
 
         // try to forward instance (or continue locally) until token/instance has to be aborted
@@ -434,7 +434,7 @@ module.exports = {
               processInfo,
               tokenId,
               from,
-              to
+              to,
             );
 
             continue;
@@ -446,7 +446,7 @@ module.exports = {
             tokenId,
             from,
             to,
-            nextMachine
+            nextMachine,
           );
 
           if (instanceForwarded) {
@@ -476,7 +476,7 @@ module.exports = {
           // end every token locally with state ERROR-CONSTRAINT-UNFULFILLED
           await engine.stopUnfulfilledInstance(
             processInstanceId,
-            dynamicDeploymentResult.abortCheck.unfulfilledConstraints
+            dynamicDeploymentResult.abortCheck.unfulfilledConstraints,
           );
           return false;
         }
@@ -491,7 +491,7 @@ module.exports = {
             state: 'ERROR-CONSTRAINT-UNFULFILLED',
             endTime: +new Date(),
             errorMessage: `Token stopped execution because of: ${dynamicDeploymentResult.abortCheck.unfulfilledConstraints.join(
-              ', '
+              ', ',
             )}`,
           });
           processInstance.updateLog(currentFlowNodeToken.currentFlowElementId, tokenId, {

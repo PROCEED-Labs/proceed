@@ -40,7 +40,7 @@ function initDrone([timeout = 15], callback) {
           callback([null, data]);
         }
       });
-    }
+    },
   );
 
   ipc.server.on('start', async function () {

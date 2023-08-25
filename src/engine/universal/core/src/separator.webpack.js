@@ -212,7 +212,7 @@ class BPMNSeparator {
       const flowElements = getExecutableProcess(this.definition).get('flowElements');
       const [startEvent, activity, endEvents] = getActivityAndWrapperElements(
         flowElements,
-        endEventID
+        endEventID,
       );
 
       if (activity.$type === 'bpmn:EndEvent') {

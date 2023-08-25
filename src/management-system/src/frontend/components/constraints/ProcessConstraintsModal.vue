@@ -158,8 +158,8 @@ export default {
           constraints.softConstraints &&
           constraints.softConstraints.every((c) =>
             p.processConstraints.softConstraints.some(
-              (pc) => pc.name === c.name && pc.condition === c.condition
-            )
+              (pc) => pc.name === c.name && pc.condition === c.condition,
+            ),
           ) &&
           constraints.softConstraints.length === p.processConstraints.softConstraints.length
         ) {

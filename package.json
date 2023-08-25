@@ -103,7 +103,7 @@
     "style-loader": "^0.23.1",
     "supertest": "^4.0.2",
     "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.0",+_
+    "webpack-cli": "^3.3.0",
     "webpack-dev-server": "^3.2.1",
     "typescript": "^5.0.4",
     "ts-node": "^10.9.1",

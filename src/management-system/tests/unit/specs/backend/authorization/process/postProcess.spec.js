@@ -43,7 +43,7 @@ describe('POST /api/process', () => {
   // test_post_process_has_admin_permissions
   it('Ensure that users can create new PROCEED processes, because user has admin permissions.', () => {
     expect(
-      process_engineer_adminAbility.can(permissionNumberToIdentifiers(4 + 16), 'Process')
+      process_engineer_adminAbility.can(permissionNumberToIdentifiers(4 + 16), 'Process'),
     ).toBe(true);
   });
 

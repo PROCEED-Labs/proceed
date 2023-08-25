@@ -33,7 +33,7 @@ describe('Test casl authorization', () => {
   // test_get_machines_not_granted
   it("Ensure that users can't view PROCEED machines, because user has no sufficient permissions.", () => {
     expect(all_role_permissionsAbility.can(permissionNumberToIdentifiers(1), 'Machine')).toBe(
-      false
+      false,
     );
   });
 
@@ -59,7 +59,7 @@ describe('GET /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(1), toCaslResource('Machine', machine))
+      adminAbility.can(permissionNumberToIdentifiers(1), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -73,7 +73,7 @@ describe('GET /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(ability.can(permissionNumberToIdentifiers(1), toCaslResource('Machine', machine))).toBe(
-      true
+      true,
     );
   });
 
@@ -84,8 +84,8 @@ describe('GET /api/machines/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(1),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
   });
 
@@ -99,7 +99,7 @@ describe('GET /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(ability.can(permissionNumberToIdentifiers(1), toCaslResource('Machine', machine))).toBe(
-      true
+      true,
     );
   });
 
@@ -110,8 +110,8 @@ describe('GET /api/machines/:id', () => {
     expect(
       unauthenticatedAbility.can(
         permissionNumberToIdentifiers(1),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
   });
 });
@@ -136,10 +136,10 @@ describe('POST /api/machines', () => {
   // test_post_machines_not_granted
   it("Ensure that users can't create new PROCEED machines, because user has no sufficient permissions.", () => {
     expect(all_role_permissionsAbility.can(permissionNumberToIdentifiers(4), 'Machine')).toBe(
-      false
+      false,
     );
     expect(all_role_permissionsAbility.can(permissionNumberToIdentifiers(16), 'Machine')).toBe(
-      false
+      false,
     );
   });
 
@@ -166,7 +166,7 @@ describe('PUT /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine))
+      adminAbility.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -180,7 +180,7 @@ describe('PUT /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      ability.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine))
+      ability.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -191,8 +191,8 @@ describe('PUT /api/machines/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(2 + 16),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
   });
 
@@ -206,7 +206,7 @@ describe('PUT /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      ability.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine))
+      ability.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -217,14 +217,14 @@ describe('PUT /api/machines/:id', () => {
     expect(
       unauthenticatedAbility.can(
         permissionNumberToIdentifiers(2),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
     expect(
       unauthenticatedAbility.can(
         permissionNumberToIdentifiers(16),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
   });
 });
@@ -235,7 +235,7 @@ describe('DELETE /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine))
+      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -249,7 +249,7 @@ describe('DELETE /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine))
+      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 
@@ -260,14 +260,14 @@ describe('DELETE /api/machines/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(8),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(16),
-        toCaslResource('Machine', machine)
-      )
+        toCaslResource('Machine', machine),
+      ),
     ).toBe(false);
   });
 
@@ -281,7 +281,7 @@ describe('DELETE /api/machines/:id', () => {
     const machine = { id: '_932350bb-5a00-415c-a4de-90629389a0e1' };
 
     expect(
-      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine))
+      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Machine', machine)),
     ).toBe(true);
   });
 

@@ -294,7 +294,7 @@ export async function rulesForUser(userId: string) {
       const actionsSet = new Set<ResourceActionType>();
 
       permissionNumberToIdentifiers(permissionsForResource).forEach((action) =>
-        actionsSet.add(action)
+        actionsSet.add(action),
       );
 
       if (resource === 'User' && actionsSet.delete('manage-roles')) {

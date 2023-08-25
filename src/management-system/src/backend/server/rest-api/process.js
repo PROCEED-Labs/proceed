@@ -46,8 +46,8 @@ processRouter.get('/', isAllowed('view', 'Process'), async (req, res) => {
         .map(async (process) =>
           noBpmn === 'true'
             ? process
-            : { ...process, bpmn: await getProcessBpmn(process.definitionId) }
-        )
+            : { ...process, bpmn: await getProcessBpmn(process.definitionId) },
+        ),
     );
 
     const userProcesses = userProcessesPromise
@@ -229,10 +229,10 @@ processRouter.get(
       res
         .status(400)
         .send(
-          `Unable to get version ${version} for the process (id: ${definitionsId})! Reason: ${err.message}.`
+          `Unable to get version ${version} for the process (id: ${definitionsId})! Reason: ${err.message}.`,
         );
     }
-  }
+  },
 );
 
 processRouter.use('/:definitionId/images', async (req, res, next) => {
@@ -269,7 +269,7 @@ processRouter.get(
     const image = await getProcessImage(definitionId, imageFileName);
     res.set({ 'Content-Type': 'image/png image/svg+xml image/jpeg' });
     res.status(200).send(image);
-  }
+  },
 );
 
 processRouter.use('/:definitionId/user-tasks', async (req, res, next) => {
@@ -323,7 +323,7 @@ processRouter.get(
     } else {
       res.status(404).send(`Found no html for user task filename ${userTaskFileName}`);
     }
-  }
+  },
 );
 
 processRouter.put(
@@ -348,7 +348,7 @@ processRouter.put(
     }
 
     res.end();
-  }
+  },
 );
 
 processRouter.delete(
@@ -368,7 +368,7 @@ processRouter.delete(
     }
 
     res.status(200).send();
-  }
+  },
 );
 
 export default processRouter;

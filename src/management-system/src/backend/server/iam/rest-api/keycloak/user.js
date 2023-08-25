@@ -22,7 +22,7 @@ userRouter.get('/', isAuthenticated(), async (req, res) => {
       users.map((user) => {
         const { id, username, firstName, lastName, email, attributes } = user;
         return { id, username, firstName, lastName, email, attributes, groups: [], roles: [] };
-      })
+      }),
     );
   } catch (e) {
     return res.status(400).json({ error: e.toString() });

@@ -33,17 +33,17 @@ describe('GET /api/role-mappings', () => {
     };
 
     expect(all_user_permissionsAbility.can(permissionNumberToIdentifiers(64), 'RoleMapping')).toBe(
-      true
+      true,
     );
     expect(all_user_permissionsAbility.can('view', 'RoleMapping')).toBe(true);
     expect(
       all_user_permissionsAbility.can(
         permissionNumberToIdentifiers(64),
-        toCaslResource('RoleMapping', mockRoleMapping)
-      )
+        toCaslResource('RoleMapping', mockRoleMapping),
+      ),
     ).toBe(true);
     expect(
-      all_user_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping))
+      all_user_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping)),
     ).toBe(true);
   });
 
@@ -56,10 +56,10 @@ describe('GET /api/role-mappings', () => {
     };
 
     expect(
-      all_role_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping))
+      all_role_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping)),
     ).toBe(false);
     expect(all_role_permissionsAbility.can(permissionNumberToIdentifiers(64), 'RoleMapping')).toBe(
-      false
+      false,
     );
   });
 
@@ -115,7 +115,7 @@ describe('GET /api/role-mappings/users/:userId', () => {
       id: '0',
     };
     expect(
-      all_user_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping))
+      all_user_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping)),
     ).toBe(true);
   });
 
@@ -127,7 +127,7 @@ describe('GET /api/role-mappings/users/:userId', () => {
       id: '0',
     };
     expect(
-      all_role_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping))
+      all_role_permissionsAbility.can('view', toCaslResource('RoleMapping', mockRoleMapping)),
     ).toBe(false);
   });
 });
@@ -237,8 +237,8 @@ describe('DELETE /api/role-mappings/users/:userId/roles/:roleId', () => {
           roleId: '7cf26d82-b40f-443f-a025-84e149042c33',
           userId: '',
           id: '0',
-        })
-      )
+        }),
+      ),
     ).toBe(false);
 
     expect(adminAbility.can('delete', 'RoleMapping')).toBe(true);
@@ -253,7 +253,7 @@ describe('DELETE /api/role-mappings/users/:userId/roles/:roleId', () => {
       id: '0',
     };
     expect(unauthenticatedAbility.can('delete', toCaslResource('RoleMapping', roleMapping))).toBe(
-      false
+      false,
     );
   });
 
@@ -267,7 +267,7 @@ describe('DELETE /api/role-mappings/users/:userId/roles/:roleId', () => {
 
     expect(all_user_permissionsAbility.can('delete', 'RoleMapping')).toBe(true);
     expect(
-      all_user_permissionsAbility.can('delete', toCaslResource('RoleMapping', mockRoleMapping))
+      all_user_permissionsAbility.can('delete', toCaslResource('RoleMapping', mockRoleMapping)),
     ).toBe(true);
   });
 

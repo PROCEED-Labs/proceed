@@ -17,12 +17,12 @@ export function getAppliedRolesForUser(userId: string): Role[] {
   const userRoles: Role[] = [];
 
   const adminRole = Object.values(roleMetaObjects).find(
-    (role) => role.default && role.name === '@admin'
+    (role) => role.default && role.name === '@admin',
   );
   if (adminRole.members.map((member) => member.userId).includes(userId)) userRoles.push(adminRole);
 
   userRoles.push(
-    Object.values(roleMetaObjects).find((role) => role.default && role.name === '@everyone')
+    Object.values(roleMetaObjects).find((role) => role.default && role.name === '@everyone'),
   );
 
   if (roleMappingsMetaObjects.users.hasOwnProperty(userId)) {

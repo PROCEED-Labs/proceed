@@ -18,7 +18,7 @@ export type Share<Resource = void> = {
   resourceType: Resource extends void ? ResourceType : Resource;
   sharedBy: string;
   sharedWith: string;
-  type: typeof SHARE_TYPE[ShareType];
+  type: (typeof SHARE_TYPE)[ShareType];
   updatedOn: string;
 };
 

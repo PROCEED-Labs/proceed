@@ -16,7 +16,7 @@ export const resources = [
   'Share', // added in, in order to do it "the casl way"
   'All',
 ] as const;
-export type ResourceType = typeof resources[number];
+export type ResourceType = (typeof resources)[number];
 
 export const resourceAction = [
   'none',
@@ -31,7 +31,7 @@ export const resourceAction = [
   'manage-password',
   'admin',
 ] as const;
-export type ResourceActionType = typeof resourceAction[number];
+export type ResourceActionType = (typeof resourceAction)[number];
 
 export type PermissionNumber = number;
 

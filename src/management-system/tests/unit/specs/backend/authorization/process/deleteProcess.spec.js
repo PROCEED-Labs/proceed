@@ -25,7 +25,7 @@ describe('DELETE /api/process/:id', () => {
     const process = processes['_dcc316cc-67a1-4b7a-929b-831e73b06f2a'];
 
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Process', process))
+      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Process', process)),
     ).toBe(true);
   });
 
@@ -36,8 +36,8 @@ describe('DELETE /api/process/:id', () => {
     expect(
       process_engineer_adminAbility.can(
         permissionNumberToIdentifiers(8 + 16),
-        toCaslResource('Process', process)
-      )
+        toCaslResource('Process', process),
+      ),
     ).toBe(true);
   });
 
@@ -48,14 +48,14 @@ describe('DELETE /api/process/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(8),
-        toCaslResource('Process', process)
-      )
+        toCaslResource('Process', process),
+      ),
     ).toBe(false);
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(16),
-        toCaslResource('Process', process)
-      )
+        toCaslResource('Process', process),
+      ),
     ).toBe(false);
   });
 
@@ -71,7 +71,7 @@ describe('DELETE /api/process/:id', () => {
 
     // NOTE orginal tests included 16
     expect(ability.can(permissionNumberToIdentifiers(8), toCaslResource('Process', process))).toBe(
-      true
+      true,
     );
   });
 
@@ -86,10 +86,10 @@ describe('DELETE /api/process/:id', () => {
     const process = processes['_932350bb-5a00-415c-a4de-90629389a0e1'];
 
     expect(ability.can(permissionNumberToIdentifiers(8), toCaslResource('Process', process))).toBe(
-      false
+      false,
     );
     expect(ability.can(permissionNumberToIdentifiers(16), toCaslResource('Process', process))).toBe(
-      false
+      false,
     );
   });
 
@@ -104,7 +104,7 @@ describe('DELETE /api/process/:id', () => {
     const process = processes['_932350bb-5a00-415c-a4de-90629389a0e1'];
 
     expect(
-      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Process', process))
+      ability.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('Process', process)),
     ).toBe(true);
   });
 
@@ -119,10 +119,10 @@ describe('DELETE /api/process/:id', () => {
     const process = processes['_932350bb-5a00-415c-a4de-90629389a0e1'];
 
     expect(ability.can(permissionNumberToIdentifiers(8), toCaslResource('Process', process))).toBe(
-      false
+      false,
     );
     expect(ability.can(permissionNumberToIdentifiers(16), toCaslResource('Process', process))).toBe(
-      false
+      false,
     );
   });
 

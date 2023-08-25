@@ -104,7 +104,7 @@ roleMappingsRouter.delete(
         const userAbility = req.userAbility;
 
         const roleMapping = getRoleMappingByUserId(userId).find(
-          (roleMapping) => roleMapping.roleId === roleId
+          (roleMapping) => roleMapping.roleId === roleId,
         );
 
         if (!userAbility.can('delete', toCaslResource('RoleMapping', roleMapping)))
@@ -122,7 +122,7 @@ roleMappingsRouter.delete(
     } else {
       return res.status(400).json('Missing parameters userId and/or roleId');
     }
-  }
+  },
 );
 
 export default roleMappingsRouter;

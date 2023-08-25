@@ -22,7 +22,7 @@ describe('GET /api/shares', () => {
   it('Ensure that users can view PROCEED shares from resource, because user is admin.', () => {
     const process = processes['_932350bb-5a00-415c-a4de-90629389a0e1'];
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(32), toCaslResource('Process', process))
+      adminAbility.can(permissionNumberToIdentifiers(32), toCaslResource('Process', process)),
     ).toBe(true);
   });
 
@@ -35,7 +35,7 @@ describe('GET /api/shares', () => {
     const ability = await buildAbility(user);
 
     const ownedResourceShares = (await getShares()).filter(
-      (share) => share.resourceOwner === user.id
+      (share) => share.resourceOwner === user.id,
     );
 
     for (const share of ownedResourceShares) {
@@ -53,7 +53,7 @@ describe('GET /api/shares', () => {
 
     for (const share of await getShares()) {
       expect(ability.can(permissionNumberToIdentifiers(32), toCaslResource('Share', share))).toBe(
-        false
+        false,
       );
     }
   });
@@ -94,7 +94,7 @@ describe('GET /api/shares', () => {
     const ability = await buildAbility(user);
 
     const sharedWithUser = (await getShares()).find(
-      (share) => share.sharedWith === 'auth0|6174afb925f203006808dbd6'
+      (share) => share.sharedWith === 'auth0|6174afb925f203006808dbd6',
     );
 
     expect(ability.can('view', toCaslResource('Share', sharedWithUser))).toBe(false);
@@ -117,7 +117,7 @@ describe('GET /api/shares', () => {
         '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
         '22c519d3-71e4-4c41-8ce4-4d444fc5b8c8',
         'b8cad4a9-1892-4da5-8ada-6b6c75237e0f',
-      ].sort()
+      ].sort(),
     );
   });
 
@@ -137,7 +137,7 @@ describe('GET /api/shares', () => {
         '22c519d3-71e4-4c41-8ce4-4d444fc5b8c8',
         '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
         '27c89747-c5ca-4a52-9f29-5fbcfcd38562',
-      ].sort()
+      ].sort(),
     );
   });
 
@@ -152,7 +152,7 @@ describe('GET /api/shares', () => {
       .filter(
         'view',
         'Share',
-        Object.values(shares['Process']['_932350bb-5a00-415c-a4de-90629389a0e1'])
+        Object.values(shares['Process']['_932350bb-5a00-415c-a4de-90629389a0e1']),
       )
       .map((share) => share.id);
 

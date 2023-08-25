@@ -23,7 +23,7 @@ const conditions = {
       resource,
       (secondValue) => secondValue === inputValue,
       'and',
-      false
+      false,
     ),
 } as const;
 
@@ -31,7 +31,7 @@ type ConditionOperator = keyof typeof conditions;
 type ConditionsObject = {
   conditions: {
     [path: string]: {
-      [C in ConditionOperator]?: Parameters<typeof conditions[C]>[0];
+      [C in ConditionOperator]?: Parameters<(typeof conditions)[C]>[0];
     };
   };
   wildcardOperator?: 'or' | 'and';
@@ -54,7 +54,7 @@ function testConidition(
   resource: any,
   condition: (value: any) => boolean,
   strategy: 'or' | 'and',
-  pathNotFound: boolean
+  pathNotFound: boolean,
 ) {
   let value = resource;
   for (let i = 0; i < path.length; i++) {
@@ -69,10 +69,10 @@ function testConidition(
               value,
               condition,
               strategy,
-              pathNotFound
+              pathNotFound,
             );
         }),
-        strategy
+        strategy,
       )(value);
     } else if (key === '$') {
       return condition(value);
@@ -98,8 +98,8 @@ function conditionsMatcher(conditionsObject: ConditionsObject) {
             resource,
             conditions[conditionOperator](valueInCondition, resource),
             conditionsObject.wildcardOperator || 'and',
-            conditionsObject.pathNotFound || false
-          )
+            conditionsObject.pathNotFound || false,
+          ),
         );
       else
         conditionsForResource.push((resource) =>
@@ -108,8 +108,8 @@ function conditionsMatcher(conditionsObject: ConditionsObject) {
             resource,
             conditions[conditionOperator](valueInCondition),
             conditionsObject.wildcardOperator || 'and',
-            conditionsObject.pathNotFound || false
-          )
+            conditionsObject.pathNotFound || false,
+          ),
         );
     }
   }
@@ -128,7 +128,7 @@ const resolveAction = createAliasResolver(
   },
   {
     anyAction: 'admin',
-  }
+  },
 );
 
 export function buildAbility(rules: AbilityRule[]) {

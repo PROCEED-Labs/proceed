@@ -23,7 +23,7 @@ export default class Ability {
 
   filter(action: CanParams[0] | CanParams[0][], resource: CanParams[1], array: any[]) {
     return array.filter((resourceInstance) =>
-      this.can(action, toCaslResource(resource, resourceInstance))
+      this.can(action, toCaslResource(resource, resourceInstance)),
     );
   }
 
@@ -31,7 +31,7 @@ export default class Ability {
     resourceObj: any,
     action: CanParams[0] | CanParams[0][],
     input: any,
-    prefix: string = ''
+    prefix: string = '',
   ) {
     if (typeof input !== 'object') return this.can(action, resourceObj, prefix);
 

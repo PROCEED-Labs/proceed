@@ -41,7 +41,7 @@ describe('GET /api/users/:id', () => {
     const user = { id: 'f0185d7d-b410-4bb5-bf8a-19bdfd0facfe' };
 
     expect(noRolesAbility.can(permissionNumberToIdentifiers(1), toCaslResource('User', user))).toBe(
-      true
+      true,
     );
   });
 
@@ -50,7 +50,7 @@ describe('GET /api/users/:id', () => {
     const user = { id: 'f0185d7d-b410-4bb5-bf8a-19bdfd0facfe' };
 
     expect(
-      unauthenticatedAbility.can(permissionNumberToIdentifiers(1), toCaslResource('User', user))
+      unauthenticatedAbility.can(permissionNumberToIdentifiers(1), toCaslResource('User', user)),
     ).toBe(false);
   });
 });
@@ -59,7 +59,7 @@ describe('POST /api/users', () => {
   // test_post_user_granted_by_role
   it('Ensure that creating new users is granted by a role.', () => {
     expect(all_user_permissionsAbility.can(permissionNumberToIdentifiers(4 + 16), 'User')).toBe(
-      true
+      true,
     );
   });
 
@@ -88,8 +88,8 @@ describe('PUT /api/users/:id', () => {
       selfAbility.can(
         permissionNumberToIdentifiers(2),
         toCaslResource('User', users.self),
-        'password'
-      )
+        'password',
+      ),
     ).toBe(true);
   });
 
@@ -97,7 +97,7 @@ describe('PUT /api/users/:id', () => {
   it('Ensure that updating user is allowed because user is admin.', () => {
     const user = users.self;
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('User', user))
+      adminAbility.can(permissionNumberToIdentifiers(2 + 16), toCaslResource('User', user)),
     ).toBe(true);
   });
 
@@ -105,17 +105,21 @@ describe('PUT /api/users/:id', () => {
   it('Ensure that updating user is allowed because requester updates his own resource.', () => {
     // used to include 16
     expect(
-      selfAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', users.self))
+      selfAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', users.self)),
     ).toBe(true);
 
     for (const field of ['email', 'name', 'picture', 'username', 'lastName', 'firstName']) {
       expect(
-        selfAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', users.self), field)
+        selfAbility.can(
+          permissionNumberToIdentifiers(2),
+          toCaslResource('User', users.self),
+          field,
+        ),
       ).toBe(true);
     }
 
     expect(
-      selfAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', users.self), 'id')
+      selfAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', users.self), 'id'),
     ).toBe(false);
   });
 
@@ -124,8 +128,8 @@ describe('PUT /api/users/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(2),
-        toCaslResource('User', users.self)
-      )
+        toCaslResource('User', users.self),
+      ),
     ).toBe(false);
   });
 
@@ -134,7 +138,7 @@ describe('PUT /api/users/:id', () => {
     const user = { id: '246990cf-8b8c-40c0-b89b-fe8c4e11090a' };
 
     expect(
-      unauthenticatedAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', user))
+      unauthenticatedAbility.can(permissionNumberToIdentifiers(2), toCaslResource('User', user)),
     ).toBe(false);
   });
 });
@@ -143,14 +147,14 @@ describe('DELETE /api/users/:id', () => {
   // test_delete_user_granted_admin
   it('Ensure that deleting a user is allowed because requester is admin.', () => {
     expect(
-      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('User', users.self))
+      adminAbility.can(permissionNumberToIdentifiers(8 + 16), toCaslResource('User', users.self)),
     ).toBe(true);
   });
 
   // test_delete_user_self_granted
   it('Ensure that deleting a user is allowed because requester deletes his own user.', () => {
     expect(
-      selfAbility.can(permissionNumberToIdentifiers(8), toCaslResource('User', users.self))
+      selfAbility.can(permissionNumberToIdentifiers(8), toCaslResource('User', users.self)),
     ).toBe(true);
   });
 
@@ -159,8 +163,8 @@ describe('DELETE /api/users/:id', () => {
     expect(
       all_role_permissionsAbility.can(
         permissionNumberToIdentifiers(8),
-        toCaslResource('User', users.self)
-      )
+        toCaslResource('User', users.self),
+      ),
     ).toBe(false);
   });
 
@@ -169,7 +173,7 @@ describe('DELETE /api/users/:id', () => {
     const user = { id: '246990cf-8b8c-40c0-b89b-fe8c4e11090a' };
 
     expect(
-      unauthenticatedAbility.can(permissionNumberToIdentifiers(8), toCaslResource('User', user))
+      unauthenticatedAbility.can(permissionNumberToIdentifiers(8), toCaslResource('User', user)),
     ).toBe(false);
   });
 });

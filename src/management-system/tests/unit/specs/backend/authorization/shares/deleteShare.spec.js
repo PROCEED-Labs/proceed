@@ -19,7 +19,7 @@ describe('DELETE /api/shares/:id', () => {
   // test_delete_shares_admin
   it('Ensure that users can delete PROCEED shares for resource, because user admin.', async () => {
     const share = (await getShares()).find(
-      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9'
+      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
     );
 
     expect(adminAbility.can('update', toCaslResource('Share', share))).toBe(true);
@@ -33,7 +33,7 @@ describe('DELETE /api/shares/:id', () => {
     };
     const ability = await buildAbility(user);
     const share = (await getShares()).filter(
-      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9'
+      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
     )[0];
 
     expect(ability.can('delete', toCaslResource('Share', share))).toBe(true);
@@ -47,7 +47,7 @@ describe('DELETE /api/shares/:id', () => {
     };
     const ability = await buildAbility(user);
     const share = (await getShares()).filter(
-      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9'
+      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
     )[0];
 
     expect(ability.can('delete', toCaslResource('Share', share))).toBe(false);
@@ -61,7 +61,7 @@ describe('DELETE /api/shares/:id', () => {
     };
     const ability = await buildAbility(user);
     const share = (await getShares()).find(
-      (share) => share.id === '27c89747-c5ca-4a52-9f29-5fbcfcd38562'
+      (share) => share.id === '27c89747-c5ca-4a52-9f29-5fbcfcd38562',
     );
 
     expect(ability.can('delete', toCaslResource('Share', share))).toBe(false);
@@ -75,7 +75,7 @@ describe('DELETE /api/shares/:id', () => {
     };
     const ability = await buildAbility(user);
     const share = (await getShares()).find(
-      (share) => share.id === '27c89747-c5ca-4a52-9f29-5fbcfcd38562'
+      (share) => share.id === '27c89747-c5ca-4a52-9f29-5fbcfcd38562',
     );
 
     expect(ability.can('delete', toCaslResource('Share', share))).toBe(true);
@@ -88,7 +88,7 @@ describe('DELETE /api/shares/:id', () => {
     };
     const ability = await buildAbility(user);
     const share = (await getShares()).find(
-      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9'
+      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
     );
 
     expect(ability.can('delete', toCaslResource('Share', share))).toBe(false);
@@ -97,7 +97,7 @@ describe('DELETE /api/shares/:id', () => {
   // test_delete_shares_unauthenticated
   it("Ensure that unauthenticated users can't delete PROCEED shares for resource.", async () => {
     const share = (await getShares()).find(
-      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9'
+      (share) => share.id === '4cef9860-47ae-4cba-84d4-d8d05a9319a9',
     );
     expect(unauthenticatedAbility.can('delete', 'Share')).toBe(false);
     expect(unauthenticatedAbility.can('delete', toCaslResource('Share', share))).toBe(false);

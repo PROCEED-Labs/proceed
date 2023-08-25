@@ -14,29 +14,29 @@ test('shows the active task with stored information', async ({ tasklistPage }) =
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .user > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('Not specified');
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .priority > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('1/10');
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .status > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('NEW');
   expect(
     (
       await tasklistPage.page
         .locator('.mainInfo > .rightCol > .runningTime > div > span')
         .textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('0min');
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .rightCol > .due > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('Not specified');
 
   await tasklistPage.changePriorityOfTask(3);
@@ -45,7 +45,7 @@ test('shows the active task with stored information', async ({ tasklistPage }) =
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .priority > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('3/10');
 });
 
@@ -79,7 +79,7 @@ test('shows multiple active tasks in tasklist', async ({ tasklistPage }) => {
         .nth(0)
         .locator('.mainInfo > .leftCol > .priority > div > span')
         .textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('1/10');
   expect(
     (
@@ -88,7 +88,7 @@ test('shows multiple active tasks in tasklist', async ({ tasklistPage }) => {
         .nth(1)
         .locator('.mainInfo > .leftCol > .priority > div > span')
         .textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('10/10');
 
   // sort by priority descendingly
@@ -100,7 +100,7 @@ test('shows multiple active tasks in tasklist', async ({ tasklistPage }) => {
         .nth(0)
         .locator('.mainInfo > .leftCol > .priority > div > span')
         .textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('10/10');
   expect(
     (
@@ -109,7 +109,7 @@ test('shows multiple active tasks in tasklist', async ({ tasklistPage }) => {
         .nth(1)
         .locator('.mainInfo > .leftCol > .priority > div > span')
         .textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('1/10');
 });
 
@@ -132,7 +132,7 @@ test('submits task', async ({ tasklistPage }) => {
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .status > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('COMPLETED');
 });
 
@@ -146,7 +146,7 @@ test('pauses task', async ({ tasklistPage }) => {
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .status > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('NEW');
 
   // pause task and wait for tasklist to remove the usertask
@@ -161,6 +161,6 @@ test('pauses task', async ({ tasklistPage }) => {
   expect(
     (
       await tasklistPage.page.locator('.mainInfo > .leftCol > .status > div > span').textContent()
-    ).trim()
+    ).trim(),
   ).toEqual('PAUSED');
 });

@@ -25,18 +25,18 @@ module.exports = (path, management) => {
       definitionId,
       version,
       variables,
-      activityID
+      activityID,
     );
 
     if (!instanceId) {
       throw new APIError(
         406,
-        `Engine not allowed to start the instance for the process (id: ${definitionId}).`
+        `Engine not allowed to start the instance for the process (id: ${definitionId}).`,
       );
     }
 
     log.debug(
-      `New process instance (POST) created via API: (id: ${definitionId}, version: ${version})`
+      `New process instance (POST) created via API: (id: ${definitionId}, version: ${version})`,
     );
     return {
       statusCode: 201,
@@ -56,7 +56,7 @@ module.exports = (path, management) => {
     if (!db.isProcessExisting(definitionId)) {
       throw new APIError(
         404,
-        `List all instances: there is no process for the requested process: ${definitionId}`
+        `List all instances: there is no process for the requested process: ${definitionId}`,
       );
     }
 
@@ -64,7 +64,7 @@ module.exports = (path, management) => {
 
     if (queriedState) {
       allInstances = allInstances.filter((instance) =>
-        instance.instanceState.includes(queriedState)
+        instance.instanceState.includes(queriedState),
       );
     }
 
@@ -92,7 +92,7 @@ module.exports = (path, management) => {
           state === 'RUNNING' ||
           state === 'READY' ||
           state === 'DEPLOYMENT-WAITING' ||
-          state === 'PAUSING'
+          state === 'PAUSING',
       );
 
       instanceInfo = { ...engineInstanceInfo, isCurrentlyExecutedInBpmnEngine };
@@ -104,7 +104,7 @@ module.exports = (path, management) => {
     if (!instanceInfo) {
       throw new APIError(
         404,
-        `For the given process (id: ${definitionId}), there is no instance with the given id: ${instanceID}`
+        `For the given process (id: ${definitionId}), there is no instance with the given id: ${instanceID}`,
       );
     }
 
@@ -123,15 +123,15 @@ module.exports = (path, management) => {
     if (!engine) {
       throw new APIError(
         406,
-        `For the given process (id: ${definitionId}) version (${instance.processVersion}), it is not allowed to continue instance with the given id (body): ${instance.id}`
+        `For the given process (id: ${definitionId}) version (${instance.processVersion}), it is not allowed to continue instance with the given id (body): ${instance.id}`,
       );
     }
 
     log.debug(
-      `Continuing process instance (PUT) via API: DefinitionId = ${definitionId}, Version = ${instance.processVersion}, InstanceId = ${instance.id}`
+      `Continuing process instance (PUT) via API: DefinitionId = ${definitionId}, Version = ${instance.processVersion}, InstanceId = ${instance.id}`,
     );
     log.trace(
-      `Continuing process instance (PUT) via API: DefinitionId = ${definitionId}, Version = ${instance.processVersion}, InstanceId = ${instance.id}, Body: ${instance}`
+      `Continuing process instance (PUT) via API: DefinitionId = ${definitionId}, Version = ${instance.processVersion}, InstanceId = ${instance.id}, Body: ${instance}`,
     );
     return {
       statusCode: 201,
@@ -162,7 +162,7 @@ module.exports = (path, management) => {
         if (!engine) {
           throw new APIError(
             404,
-            `For the given process (id: ${definitionId}), there is no instance with the given id: ${instanceID} to fetch the /instanceState.`
+            `For the given process (id: ${definitionId}), there is no instance with the given id: ${instanceID} to fetch the /instanceState.`,
           );
         }
 
@@ -176,7 +176,7 @@ module.exports = (path, management) => {
       }
 
       return '';
-    }
+    },
   );
 
   /**
@@ -202,7 +202,7 @@ module.exports = (path, management) => {
           throw new Error(404, err.message);
         }
       }
-    }
+    },
   );
 
   network.delete(
@@ -218,7 +218,7 @@ module.exports = (path, management) => {
       } catch (err) {
         throw new APIError(500, err.message);
       }
-    }
+    },
   );
 
   network.post(`${path}/:definitionId/instance/:instanceId/tokens`, { cors: true }, async (req) => {
@@ -232,7 +232,7 @@ module.exports = (path, management) => {
     } catch (err) {
       throw new APIError(
         500,
-        `Inserting the token into the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`
+        `Inserting the token into the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`,
       );
     }
   });
@@ -251,10 +251,10 @@ module.exports = (path, management) => {
       } catch (err) {
         throw new APIError(
           500,
-          `Updating the variables in the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`
+          `Updating the variables in the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`,
         );
       }
-    }
+    },
   );
 
   /**
@@ -270,7 +270,7 @@ module.exports = (path, management) => {
       if (!engine) {
         throw new APIError(
           404,
-          `For the given process (id: ${definitionId}), there is no running instance with the given id: ${instanceId}.`
+          `For the given process (id: ${definitionId}), there is no running instance with the given id: ${instanceId}.`,
         );
       }
 
@@ -278,7 +278,7 @@ module.exports = (path, management) => {
       if (!token) {
         throw new APIError(
           404,
-          `For the given instance (id: ${instanceId}), there is no token with the given id: ${tokenId}.`
+          `For the given instance (id: ${instanceId}), there is no token with the given id: ${tokenId}.`,
         );
       }
 
@@ -313,10 +313,10 @@ module.exports = (path, management) => {
         // newFlowNodeState == false;
         throw new APIError(
           400,
-          `Tried to set the flow node state to invalid value (value: ${currentFlowNodeState}).`
+          `Tried to set the flow node state to invalid value (value: ${currentFlowNodeState}).`,
         );
       }
-    }
+    },
   );
 
   network.post(
@@ -335,7 +335,7 @@ module.exports = (path, management) => {
 
       // make sure that we know all engines to migrate before the migration starts
       const unknownInstanceId = instanceIds.find(
-        (id) => !allInstances.some((instance) => instance.processInstanceId === id)
+        (id) => !allInstances.some((instance) => instance.processInstanceId === id),
       );
       if (unknownInstanceId) {
         throw APIError(400, `Tried to migrate an unknown instance (id: ${unknownInstanceId})`);
@@ -358,6 +358,6 @@ module.exports = (path, management) => {
         tokenMapping,
         flowElementMapping,
       });
-    }
+    },
   );
 };

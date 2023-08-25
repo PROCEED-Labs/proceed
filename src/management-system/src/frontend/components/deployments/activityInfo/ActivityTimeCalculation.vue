@@ -189,7 +189,7 @@ export default {
       if (this.selectedElement && this.metaData) {
         if (this.metaData.timePlannedDuration) {
           const plannedDurationInMs = convertISODurationToMiliseconds(
-            this.metaData.timePlannedDuration
+            this.metaData.timePlannedDuration,
           );
           return plannedDurationInMs;
         } else if (this.metaData.timePlannedOccurrence && this.metaData.timePlannedEnd) {
@@ -204,13 +204,13 @@ export default {
         return new Date(this.instance.globalStartTime);
       } else if (this.selectedElement && this.instance) {
         const elementInfo = this.instance.log.find(
-          (l) => l.flowElementId == this.selectedElement.id
+          (l) => l.flowElementId == this.selectedElement.id,
         );
         if (elementInfo) {
           return new Date(elementInfo.startTime);
         } else {
           const tokenInfo = this.instance.tokens.find(
-            (l) => l.currentFlowElementId == this.selectedElement.id
+            (l) => l.currentFlowElementId == this.selectedElement.id,
           );
           return tokenInfo ? new Date(tokenInfo.currentFlowElementStartTime) : null;
         }
@@ -225,7 +225,7 @@ export default {
             state !== 'READY' &&
             state !== 'DEPLOYMENT-WAITING' &&
             state !== 'PAUSING' &&
-            state !== 'PAUSED'
+            state !== 'PAUSED',
         );
         if (isEnded) {
           const lastLogEntry = this.instance.log[this.instance.log.length - 1];
@@ -233,7 +233,7 @@ export default {
         }
       } else if (this.selectedElement && this.instance) {
         const elementInfo = this.instance.log.find(
-          (l) => l.flowElementId == this.selectedElement.id
+          (l) => l.flowElementId == this.selectedElement.id,
         );
         return elementInfo ? new Date(elementInfo.endTime) : null;
       }

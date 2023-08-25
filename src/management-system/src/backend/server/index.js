@@ -13,7 +13,6 @@ import __dirname from './dirname-node.js';
 import { startWebsocketServer } from './socket.js';
 import logger from '../shared-electron-server/logging.js';
 import ports from '../../../ports.js';
-import startWebviewWithPuppeteer from './puppeteerStartWebviewWithBpmnModeller.js';
 import crypto from 'crypto';
 import { createSessionStore } from './iam/session/store.js';
 import createApiRouter from './rest-api/index.js';
@@ -42,7 +41,7 @@ async function init() {
   if (process.env.NODE_ENV === 'development') {
     origin.push(
       `https://localhost:${ports['dev-server'].frontend}`,
-      `https://localhost:${ports['dev-server'].puppeteer}`
+      `https://localhost:${ports['dev-server'].puppeteer}`,
     );
   }
 
@@ -65,10 +64,12 @@ async function init() {
 
   backendServer.use(cookieParser());
   backendServer.use(
-    cors({
-      origin,
-      credentials: true,
-    })
+    process.env.NODE_ENV === 'development'
+      ? cors()
+      : cors({
+          origin,
+          credentials: true,
+        }),
   );
 
   backendServer.use(helmet.hsts());
@@ -155,27 +156,33 @@ async function init() {
   // Frontend + REST API
   const frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
     logger.info(
-      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`
+      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
     );
   });
 
   // Puppeteer Endpoint
   https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
     logger.debug(
-      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`
+      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
     );
   });
 
   // WebSocket Endpoint for Collaborative Editing
+  // Only here for API_ONLY because we need the const in the call below.
   const websocketServer = https.createServer(options);
-  startWebsocketServer(websocketServer, loginSession, config);
 
   if (process.env.NODE_ENV === 'production') {
     handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
   }
 
+  if (process.env.API_ONLY) {
+    return;
+  }
+
+  startWebsocketServer(websocketServer, loginSession, config);
+
   // Load BPMN Modeller for Server after Websocket Endpoint is started
-  startWebviewWithPuppeteer();
+  (await import('./puppeteerStartWebviewWithBpmnModeller.js')).default();
 }
 
 init();

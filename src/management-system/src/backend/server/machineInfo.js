@@ -34,7 +34,7 @@ function unsubscribeFromMachine(machineId, socket) {
   if (subscriptionMap[machineId]) {
     // remove the subscription from the list
     subscriptionMap[machineId].subscribers = subscriptionMap[machineId].subscribers.filter(
-      (subSocket) => subSocket !== socket
+      (subSocket) => subSocket !== socket,
     );
 
     if (!subscriptionMap[machineId].subscribers.length) {
@@ -81,7 +81,7 @@ function subscribeToMachineLogs(machineId, socket) {
 function unsubscribeFromMachineLogs(machineId, socket) {
   if (subscriptionMap[machineId]) {
     subscriptionMap[machineId].logSubscribers = subscriptionMap[machineId].logSubscribers.filter(
-      (subSocket) => subSocket !== socket
+      (subSocket) => subSocket !== socket,
     );
     if (!subscriptionMap[machineId].logSubscribers.length) {
       // deactivate log request if no client wants the logs anymore
@@ -183,7 +183,7 @@ export function setupMachineInfoRequestHandlers(addListener) {
 
   addListener('machine_info_unsubscribe', (socket, machineId) => {
     logger.debug(
-      `Request to unsubscribe from additional machine info for machine with id ${machineId}.`
+      `Request to unsubscribe from additional machine info for machine with id ${machineId}.`,
     );
     unsubscribeFromMachine(machineId, socket);
   });

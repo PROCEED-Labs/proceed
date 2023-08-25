@@ -2,6 +2,7 @@ import { processInterface } from '@/frontend/backend-api/index.js';
 import { flattenSubprocesses } from '@/shared-frontend-backend/helpers/process-hierarchy.js';
 import { getSubprocessContent } from '@proceed/bpmn-helper';
 import { getProcessHierarchy } from '@/shared-frontend-backend/helpers/process-hierarchy.js';
+import { asyncForEach } from '../../../shared-frontend-backend/helpers/javascriptHelpers';
 /**
  * @param {Object} process
  * @returns - Returns xml for a process from the store
@@ -28,6 +29,28 @@ export async function getUserTasksByProcess(process) {
   return userTasks;
 }
 
+/**
+ * @param {Object} process
+ * @returns - Returns images for a process from the store
+ */
+export async function getImagesByProcess(process) {
+  if (!process.id || !process.name) {
+    console.warn('Try to retrieve images for invalid process: ', process);
+    return null;
+  }
+  const images = await processInterface.getImages(process.id);
+  await asyncForEach(Object.keys(images), async (imageFileName) => {
+    let image = images[imageFileName];
+    if (typeof image === 'string') {
+      const blob = await fetch(image).then((res) => res.blob());
+      const file = new File([blob], { type: blob.type });
+      image = file;
+    }
+    images[imageFileName] = image;
+  });
+  return images;
+}
+
 export function getCleanedUpName(name) {
   return name
     .replace(/[`@^()_={}[\]|;!=&/\\#,+()$~%.'":*?<>{}]/g, '')
@@ -38,7 +61,7 @@ export function getCleanedUpName(name) {
 
 /**
  * Retrieve every subprocess and subprocesses of call activities for the
- * processes to export and their meta information, bpmn and user tasks
+ * processes to export and their meta information, bpmn, user tasks and images
  *
  * @param {Object[]} allProcesses all known processes to search for referenced call activities
  * @param {Object[]} processesToExport - all processes that need to be exported
@@ -50,8 +73,9 @@ export async function prepareProcesses(allProcesses, processesToExport, options)
       ...process,
       bpmn: await getXmlByProcess(process),
     };
-    if (options.additionalParam.format === 'withUserTasks') {
+    if (options.additionalParam.format === 'withArtefacts') {
       augmentedProcess.userTasks = await getUserTasksByProcess(process);
+      augmentedProcess.images = await getImagesByProcess(process);
     }
 
     if (options.additionalParam.includeCallActivityProcess) {
@@ -60,8 +84,8 @@ export async function prepareProcesses(allProcesses, processesToExport, options)
         allProcesses,
         augmentedProcess,
         [],
-        options.additionalParam.format === 'withUserTasks',
-        options.additionalParam.includeCollapsedSubprocess
+        options.additionalParam.format === 'withArtefacts',
+        options.additionalParam.includeCollapsedSubprocess,
       );
     } else if (options.additionalParam.includeCollapsedSubprocess) {
       // only get all collapsed subprocesses
@@ -108,15 +132,15 @@ export async function prepareProcesses(allProcesses, processesToExport, options)
  * @param {Object[]} allProcesses all known processes to search for referenced call activities
  * @param {Object} currentProcess current selected process of the hierarchy
  * @param {Object[]} includedProcesses container containing all (nested) call activities
- * @param {Boolean} [addUserTasks] if we want to get the user tasks of the called processes
+ * @param {Boolean} [addArtefacts] if we want to get the user tasks and images of the called processes
  * @param {Boolean} includeCollapsed - signal if also collapsed subprocesses should be retrieved
  */
 export async function getAllSubprocesses(
   allProcesses,
   currentProcess,
   includedProcesses,
-  addUserTasks,
-  includeCollapsed
+  addArtefacts,
+  includeCollapsed,
 ) {
   currentProcess.subprocesses = await getProcessHierarchy(currentProcess.bpmn);
 
@@ -141,8 +165,9 @@ export async function getAllSubprocesses(
         callActivityProcess = { ...callActivityProcess };
 
         callActivityProcess.bpmn = await getXmlByProcess(callActivityProcess);
-        if (addUserTasks) {
+        if (addArtefacts) {
           callActivityProcess.userTasks = await getUserTasksByProcess(callActivityProcess);
+          callActivityProcess.images = await getImagesByProcess(callActivityProcess);
         }
         // check if process was in recursive loop before
         if (!includedProcesses.some((process) => process.id === callActivityProcess.id)) {
@@ -151,8 +176,8 @@ export async function getAllSubprocesses(
             allProcesses,
             callActivityProcess,
             includedProcesses,
-            addUserTasks,
-            includeCollapsed
+            addArtefacts,
+            includeCollapsed,
           );
         }
       }

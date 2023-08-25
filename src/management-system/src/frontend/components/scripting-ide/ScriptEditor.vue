@@ -220,7 +220,7 @@ export default {
             insertText: createCapabilityFunctionString(capability, this.value),
             detail: createCapabilityParameterString(capability),
             kind: 'Function',
-          }))
+          })),
         );
       });
 
@@ -231,7 +231,7 @@ export default {
           insertText: createVariableGetFunctionString(variable, this.computedCode),
           detail: variable.type,
           kind: 'Variable',
-        }))
+        })),
       );
 
       // todo: get function suggestions from library
@@ -260,7 +260,7 @@ export default {
               if (isCapabilitySuitableForParameters(capability, detectedCapability.parameters)) {
                 cannotFindInstance = false;
               }
-            }
+            },
           );
 
           return cannotFindInstance;

@@ -18,7 +18,7 @@ describe('Test of conversion of smaller parts of a capability object', () => {
         validators: [],
       };
       expect(getParameterInfo(expDefinition[2]['@id'], expDefinition)).toStrictEqual(
-        expectedResult
+        expectedResult,
       );
     });
 
@@ -32,7 +32,7 @@ describe('Test of conversion of smaller parts of a capability object', () => {
         validators: [],
       };
       expect(getParameterInfo(expDefinition[4]['@id'], expDefinition)).toStrictEqual(
-        expectedResult
+        expectedResult,
       );
     });
 
@@ -89,7 +89,7 @@ describe('Test of conversion of smaller parts of a capability object', () => {
         ],
       };
       expect(getParameterInfo(expDefinition[6]['@id'], expDefinition)).toStrictEqual(
-        expectedResult
+        expectedResult,
       );
     });
   });
@@ -99,8 +99,8 @@ describe('Test of conversion of smaller parts of a capability object', () => {
       expect(
         getCapabilityInfo(
           { uri: 'https://schema.org/PhotographAction', id: '_:PhotographActionDefinition' },
-          expDefinition
-        )
+          expDefinition,
+        ),
       ).toStrictEqual(exampleCapability);
     });
   });

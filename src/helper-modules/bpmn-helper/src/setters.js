@@ -67,7 +67,7 @@ async function setDefinitionsName(bpmn, name) {
  */
 async function setDefinitionsVersionInformation(
   bpmn,
-  { version, versionName, versionDescription, versionBasedOn }
+  { version, versionName, versionDescription, versionBasedOn },
 ) {
   if (version && isNaN(version)) {
     throw new Error('The process version has to be a number (time in ms since 1970)');
@@ -80,7 +80,7 @@ async function setDefinitionsVersionInformation(
 
     // make sure that the targetnamespace is unique for the new version
     definitions.targetNamespace = generateTargetNamespace(
-      `${definitions.id}${version ? `#${version}` : ''}`
+      `${definitions.id}${version ? `#${version}` : ''}`,
     );
   });
 }
@@ -214,7 +214,7 @@ async function setUserTaskData(
   bpmn,
   userTaskId,
   newFileName,
-  newImplementation = getUserTaskImplementationString()
+  newImplementation = getUserTaskImplementationString(),
 ) {
   return await manipulateElementById(bpmn, userTaskId, (userTask) => {
     userTask.fileName = newFileName;
@@ -263,7 +263,7 @@ async function addConstraintsToElement(element, cons) {
     }
 
     extensionElements.values = extensionElements.values.filter(
-      (child) => child.$type !== 'proceed:ProcessConstraints'
+      (child) => child.$type !== 'proceed:ProcessConstraints',
     );
 
     if (cons) {
@@ -278,6 +278,55 @@ async function addConstraintsToElement(element, cons) {
       extensionElements.values.push(constraintObj.values[0]);
     }
   }
+}
+
+/**
+ * Update the performer info of an element
+ *
+ * @param {Object} element the element to update
+ * @param {Array} performers the performer data to emplace in the element
+ */
+async function updatePerformersOnElement(element, performers) {
+  if (element) {
+    // create the moddle representation for the performers
+    const formalExpression = moddle.create('bpmn:Expression', {
+      body: JSON.stringify(performers),
+    });
+    const resourceAssignmentExpression = moddle.create('bpmn:ResourceAssignmentExpression', {
+      expression: formalExpression,
+    });
+
+    const potentialOwner = moddle.create('bpmn:PotentialOwner', {
+      resourceAssignmentExpression,
+    });
+
+    // add/update the performers of the element
+    if (!element.resources) {
+      element.resources = [];
+    }
+
+    // remove the current performers and add the new ones (if there are new performers)
+    element.resources = element.resources.filter(
+      (resource) => resource.$type !== 'bpmn:PotentialOwner',
+    );
+
+    if (performers.length) {
+      element.resources = [...element.resources, potentialOwner];
+    }
+  }
+}
+
+/**
+ * Update the performer info of an element in a bpmn file/object
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {String} elementId
+ * @param {Array} performers the performer data to emplace in the element
+ */
+async function updatePerformersOnElementById(bpmn, elementId, performers) {
+  return await manipulateElementById(bpmn, elementId, (element) => {
+    updatePerformersOnElement(element, performers);
+  });
 }
 
 /**
@@ -334,7 +383,7 @@ async function addCallActivityReference(bpmn, callActivityId, calledBpmn, called
 
     // Checks if there is no import element with the same namespace
     const processImport = definitions.imports.find(
-      (element) => element.namespace === targetNamespace
+      (element) => element.namespace === targetNamespace,
     );
 
     if (!processImport) {
@@ -385,7 +434,7 @@ async function removeCallActivityReference(bpmn, callActivityId) {
   });
 
   const callActivities = getElementsByTagName(bpmnObj, 'bpmn:CallActivity').filter(
-    (callActivity) => typeof callActivity.calledElement === 'string'
+    (callActivity) => typeof callActivity.calledElement === 'string',
   );
 
   // remove import and namespace in definitions if there is no other call activity referencing the same process
@@ -396,7 +445,7 @@ async function removeCallActivityReference(bpmn, callActivityId) {
 
       if (Array.isArray(definitions.imports)) {
         definitions.imports = definitions.imports.filter(
-          (element) => element.namespace !== importedNamespace
+          (element) => element.namespace !== importedNamespace,
         );
       }
     });
@@ -413,7 +462,7 @@ async function removeCallActivityReference(bpmn, callActivityId) {
 async function removeUnusedCallActivityReferences(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
   const callActivityElements = getElementsByTagName(bpmnObj, 'bpmn:CallActivity').filter(
-    (element) => element.calledElement
+    (element) => element.calledElement,
   );
 
   await manipulateElementsByTagName(bpmnObj, 'bpmn:Definitions', (definitions) => {
@@ -421,7 +470,7 @@ async function removeUnusedCallActivityReferences(bpmn) {
     if (Array.isArray(definitions.imports)) {
       // will be used for comparison later
       const importedNamespaces = definitions.imports.map(
-        (importElement) => importElement.namespace
+        (importElement) => importElement.namespace,
       );
 
       // iterate over all custom namespaces
@@ -434,12 +483,12 @@ async function removeUnusedCallActivityReferences(bpmn) {
           // checks if there is no actual call activity with this prefix in the calledElement attribute
           if (
             !callActivityElements.some((callActivityElement) =>
-              callActivityElement.calledElement.startsWith(prefix)
+              callActivityElement.calledElement.startsWith(prefix),
             )
           ) {
             // remove the unused import element
             definitions.imports = definitions.imports.filter(
-              (element) => element.namespace !== definitions.$attrs[key]
+              (element) => element.namespace !== definitions.$attrs[key],
             );
             // remove the unused namespace in definitions
             delete definitions.$attrs[key];
@@ -518,4 +567,6 @@ module.exports = {
   removeColorFromAllElements,
   addDocumentation,
   addDocumentationToProcessObject,
+  updatePerformersOnElement,
+  updatePerformersOnElementById,
 };

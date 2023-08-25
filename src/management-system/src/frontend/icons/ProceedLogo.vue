@@ -223,7 +223,7 @@ export default {
           chars[currentChar].setAttribute('fill', 'url(#GreenGradient1)');
           chars[(currentChar - 1 + numChars) % numChars].setAttribute(
             'fill',
-            'url(#GreenGradient2'
+            'url(#GreenGradient2',
           );
           chars[(currentChar - 2 + numChars) % numChars].removeAttribute('fill');
         }

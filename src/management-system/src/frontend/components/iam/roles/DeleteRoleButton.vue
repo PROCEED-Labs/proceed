@@ -27,7 +27,7 @@ export default {
     missingAdminPermissions() {
       return Object.keys(this.role.permissions).some(
         (resource) =>
-          this.role.permissions[resource] === PERMISSION_ADMIN && !this.$can('admin', resource)
+          this.role.permissions[resource] === PERMISSION_ADMIN && !this.$can('admin', resource),
       );
     },
   },

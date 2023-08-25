@@ -16,7 +16,7 @@ jest.doMock('../http', () =>
     post: mockPost,
     delete: mockDelete,
     request: mockRequest,
-  }))
+  })),
 );
 jest.doMock('../console', () => ({
   _getLoggingModule: () => ({

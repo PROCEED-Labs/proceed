@@ -3,8 +3,31 @@ import fse from 'fs-extra';
 import path from 'path';
 import store from '../../data/store.js';
 import { getAppDataPath } from '../../data/fileHandling.js';
+import { updateProcess } from '../../data/process.js';
 import logger from '../../logging.js';
 import { getBackendConfig } from '../../data/config.js';
+
+import { immediateDeploymentInfoRequest } from '../process/polling.js';
+import { migrateInstances } from '../process/instance.js';
+import { getDeployments } from '../../data/deployment.js';
+import ExecutionQueue from '../../../../shared-frontend-backend/helpers/execution-queue.js';
+import { processEndpoint } from '../ms-engine-communication/module.js';
+
+import bpmnEx from '@proceed/bpmn-helper';
+const {
+  toBpmnObject,
+  toBpmnXml,
+  getElementById,
+  setMetaData,
+  setDefinitionsVersionInformation,
+  updatePerformersOnElementById,
+} = bpmnEx;
+
+import versioningHelpers from '../../../../shared-frontend-backend/helpers/processVersioning.js';
+const { convertToEditableBpmn } = versioningHelpers;
+
+import messagingEx from '@proceed/system';
+const { messaging } = messagingEx;
 
 import { enable5thIndustryIntegration } from '../../../../../../../FeatureFlags.js';
 
@@ -35,7 +58,7 @@ function asyncHTTPSRequest(url, options, query) {
           response = JSON.parse(data);
         } catch (err) {
           reject(
-            `Unable to parse response from server. Server responded with status code ${res.statusCode}`
+            `Unable to parse response from server. Server responded with status code ${res.statusCode}`,
           );
         }
 
@@ -56,8 +79,8 @@ async function authorizeWith5i() {
     serviceData = JSON.parse(
       fse.readFileSync(
         path.join(getAppDataPath(), 'Config', '5thIndustry_service_account.json'),
-        'utf-8'
-      )
+        'utf-8',
+      ),
     );
 
     clientId = serviceData.clientId;
@@ -66,7 +89,7 @@ async function authorizeWith5i() {
 
     // base64 encode the account data
     const authorization = Buffer.from(
-      `${serviceData.clientId}:${serviceData.clientSecret}`
+      `${serviceData.clientId}:${serviceData.clientSecret}`,
     ).toString('base64');
 
     const query = {
@@ -87,7 +110,7 @@ async function authorizeWith5i() {
           Authorization: `Basic ${authorization}`,
         },
       },
-      encodedQuery
+      encodedQuery,
     );
 
     if (response.error) {
@@ -190,7 +213,7 @@ export async function getInspectionPlans(type = 'entity') {
 export async function getInspectionPlanData(
   inspectionPlanId,
   type = 'entity',
-  query = minimalPlanQuery
+  query = minimalPlanQuery,
 ) {
   const body = JSON.stringify({
     query,
@@ -336,4 +359,140 @@ export async function stop5thIndustryPlan(inspectionPlanId) {
   await updateInspectionPlan(inspectionPlanId, {
     workStatus: 'open',
   });
+}
+
+// currently existing subscriptions for different projects (we want only one subscription per project)
+const subscriptions = {};
+
+/**
+ * Subscribes for contract information for tasks in the instance of the project with the given id
+ *
+ * Will use incoming information to adapt the bpmn and to migrate the instance to the new bpmn
+ *
+ * @param {String} processDefinitionsId
+ * @param {Object} mqttServerInfo
+ */
+export async function listenFor5thIndustryContractInformation(
+  processDefinitionsId,
+  { url, user: username, password },
+) {
+  // we need to ensure that we only execute one bpmn change at a time
+  const queue = new ExecutionQueue();
+
+  // ensure that there is only a single subscription per project
+  // (the project might be restarted which would lead to the callback being registered (and therefore executed) twice without this)
+  if (subscriptions[processDefinitionsId]) {
+    await messaging.unsubscribe(
+      '2/5I-DI5App/event/contractClosed',
+      subscriptions[processDefinitionsId],
+      url,
+      { username, password, clientIdPrefix: 'MS-' },
+    );
+    subscriptions[processDefinitionsId] = undefined;
+  }
+
+  // the callback that should be called every time new contract information gets published
+  const onMessage = async (_, message) => {
+    try {
+      const contractInfo = JSON.parse(message);
+      // filter out information that is not related to this project
+      if (processDefinitionsId !== contractInfo.processId) return;
+
+      logger.debug(
+        `Received contract information for project ${processDefinitionsId} from 5thIndustry`,
+      );
+
+      // avoid multiple simultaneous adaptations of a project
+      await queue.enqueue(async () => {
+        // get the newest deployment information (for the deployment of the project we are looking at)
+        await immediateDeploymentInfoRequest();
+
+        logger.debug(
+          `Updating the bpmn of project ${processDefinitionsId} with contract information`,
+        );
+
+        const deployment = getDeployments()[processDefinitionsId];
+        // get the data we need to adapt the project
+        const runningInstance = Object.keys(deployment.runningInstances)[0];
+        const currentVersion = deployment.instances[runningInstance].processVersion;
+        const versionInfo = deployment.versions.find((info) => info.version == currentVersion);
+        const { bpmn } = versionInfo;
+
+        const {
+          stepId,
+          supplierCosts,
+          supplierName,
+          supplierTimePlannedOccurrence,
+          supplierTimePlannedEnd,
+        } = contractInfo;
+
+        const bpmnObj = await toBpmnObject(bpmn);
+
+        if (!stepId || !getElementById(bpmnObj, stepId))
+          throw new Error('Could not find an element with the given id in the project');
+
+        // add the data from the matching to the bpmn
+        await setMetaData(bpmnObj, stepId, {
+          costsPlanned: supplierCosts && `${supplierCosts}`, // the function will throw if the given value is not a string
+          timePlannedOccurrence:
+            supplierTimePlannedOccurrence && `${supplierTimePlannedOccurrence}`,
+          timePlannedEnd: supplierTimePlannedEnd && `${supplierTimePlannedEnd}`,
+        });
+
+        // add the supplier as the performer of the task (the supplier is added as a group type performer)
+        await updatePerformersOnElementById(bpmnObj, stepId, [
+          { id: '', meta: { groupname: supplierName } },
+        ]);
+
+        // add version information to the bpmn
+        const newVersion = +new Date();
+        await setDefinitionsVersionInformation(bpmnObj, {
+          version: newVersion,
+          versionName: `Supplier info for ${stepId}`,
+          versionDescription: `Adding supplier info that was provided by 5thIndustry to task ${stepId}.`,
+          versionBasedOn: currentVersion,
+        });
+
+        const element = getElementById(bpmnObj, stepId);
+
+        const flowElementMapping = {};
+
+        if (element && element.incoming && element.incoming.length) {
+          // ensure that the task is restarted with the new performer data for the data to show up in the tasklist
+          // this will only apply should the token have reached the task before the contract was received (otherwise the instance proceeds on the new bpmn as if nothing happened eventually reaching the changed user task)
+          flowElementMapping[stepId] = [element.incoming[0].id];
+        }
+
+        // transfer the project instance to the new bpmn
+        const newVersionBpmn = await toBpmnXml(bpmnObj);
+        await processEndpoint.deployProcess(deployment.machines[0], newVersionBpmn);
+        await migrateInstances(
+          processDefinitionsId,
+          currentVersion,
+          newVersion,
+          [runningInstance],
+          { flowElementMapping },
+        );
+
+        // update the editable version of the project to contain the changes that were made
+        const editableBpmn = await convertToEditableBpmn(newVersionBpmn);
+        await updateProcess(processDefinitionsId, editableBpmn);
+
+        logger.debug(`Updated project ${processDefinitionsId} with contract information`);
+      });
+    } catch (err) {
+      logger.debug(`Failed to apply 5thIndustry contract information: ${message}`);
+    }
+  };
+
+  logger.debug('Subscribing for contract information provided by 5thIndustry');
+
+  // subscribe to the topic that the task supplier matchings are posted to
+  await messaging.subscribe('2/5I-DI5App/event/contractClosed', onMessage, url, {
+    username,
+    password,
+    clientIdPrefix: 'MS-',
+  });
+
+  subscriptions[processDefinitionsId] = onMessage;
 }

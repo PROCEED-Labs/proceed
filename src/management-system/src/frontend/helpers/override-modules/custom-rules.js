@@ -23,7 +23,7 @@ class CustomRules extends RuleProvider {
         } else {
           const processDefinitionsId = store.getters['processEditorStore/id'];
           const blockedTasks = store.getters['processStore/processById'](
-            processDefinitionsId
+            processDefinitionsId,
           ).inEditingBy.map((blocker) => blocker.task);
           return !blockedTasks.includes(e.id);
         }

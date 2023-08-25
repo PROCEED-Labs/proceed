@@ -21,10 +21,10 @@ function validateParameterMapping(
   expanded,
   paramMappingUri,
   functionParameterMappingUri,
-  implementationUri
+  implementationUri,
 ) {
   const paramMapping = expanded.filter(
-    (expandedItem) => expandedItem[paramMappingUri] !== undefined
+    (expandedItem) => expandedItem[paramMappingUri] !== undefined,
   );
   if (paramMapping.length === 0) {
     throw new NotFoundError(
@@ -40,11 +40,11 @@ function validateParameterMapping(
         "@type": "fnom:PropertyParameterMapping",
         "fnom:functionParameter": "_:widthParameter",
         "fnom:implementationProperty": "w"
-      }]`
+      }]`,
     );
   }
   const functionParameterMappings = _.flatMap(paramMapping, (i) => i[paramMappingUri]).map(
-    (i) => i[functionParameterMappingUri]
+    (i) => i[functionParameterMappingUri],
   );
   if (functionParameterMappings.includes(undefined)) {
     throw new NotFoundError(
@@ -61,11 +61,11 @@ function validateParameterMapping(
           "@type": "fnom:PropertyParameterMapping",
           "fnom:functionParameter": "_:widthParameter",
           "fnom:implementationProperty": "w"
-        }]`
+        }]`,
     );
   }
   const implementationPropertyMappings = _.flatMap(paramMapping, (i) => i[paramMappingUri]).map(
-    (i) => i[implementationUri]
+    (i) => i[implementationUri],
   );
   if (implementationPropertyMappings.includes(undefined)) {
     throw new NotFoundError(
@@ -83,7 +83,7 @@ function validateParameterMapping(
           "@type": "fnom:PropertyParameterMapping",
           "fnom:functionParameter": "_:widthParameter",
           "fnom:implementationProperty": "w"
-        }]`
+        }]`,
     );
   }
 }

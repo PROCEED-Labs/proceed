@@ -1,8 +1,8 @@
 <template>
   <v-container>
-    <v-row class="mb-6" :justify="image ? 'center' : 'start'">
-      <v-col :cols="size === 'large' ? 4 : 8" v-if="image">
-        <v-img height="170" style="border-style: solid" :src="image"></v-img>
+    <v-row class="mb-6" :justify="currentImage ? 'center' : 'start'">
+      <v-col :cols="size === 'large' ? 4 : 8" v-if="currentImage">
+        <v-img height="170" style="border-style: solid" :src="currentImage"></v-img>
       </v-col>
       <v-col :cols="size === 'large' ? 8 : 12">
         <v-row class="mt-n4" align="center" v-if="instance">
@@ -18,7 +18,7 @@
             <v-icon v-if="elementIsActive" @click="settingState = true" dense>mdi-pencil</v-icon>
           </v-col>
         </v-row>
-        <v-row class="mt-n4" align="center">
+        <v-row class="mt-n4" align="center" v-if="!isRootElement">
           <v-col cols="6">
             <span class="text-subtitle-1 font-weight-medium">External:</span>
           </v-col>
@@ -124,6 +124,7 @@ import ProgressSetter from '@/frontend/components/deployments/activityInfo/Progr
 import { engineNetworkInterface } from '@/frontend/backend-api/index.js';
 import { statusToType } from '@/frontend/helpers/instance-information';
 import { getDocumentation } from '@/frontend/helpers/bpmn-modeler-events/getters.js';
+import { processInterface } from '@/frontend/backend-api/index.js';
 
 export default {
   components: { ActivityTimeCalculation, ProgressSetter },
@@ -142,6 +143,7 @@ export default {
       settingRealCosts: false,
       settingPriority: false,
       settingState: false,
+      currentImage: null,
       inputRules: {
         valueBetween1And10: (value) =>
           !value || (value >= 1 && value <= 10) || 'Priority must be between 1 and 10',
@@ -149,6 +151,12 @@ export default {
     };
   },
   computed: {
+    processDefinitionsId() {
+      return this.$router.currentRoute.params.id;
+    },
+    processIsShared() {
+      return this.$store.getters['processStore/processById'](this.processDefinitionsId).shared;
+    },
     isRootElement() {
       return this.selectedElement && this.selectedElement.type === 'bpmn:Process';
     },
@@ -158,7 +166,7 @@ export default {
     elementIsActive() {
       if (this.instance) {
         const elementToken = this.instance.tokens.find(
-          (l) => l.currentFlowElementId == this.selectedElement.id
+          (l) => l.currentFlowElementId == this.selectedElement.id,
         );
 
         if (elementToken) {
@@ -176,9 +184,6 @@ export default {
       }
       return false;
     },
-    image() {
-      return this.metaData.overviewImage;
-    },
     documentation() {
       return getDocumentation(this.selectedElement);
     },
@@ -187,13 +192,13 @@ export default {
         return this.instance.instanceState[0];
       } else if (this.selectedElement && this.instance) {
         const elementInfo = this.instance.log.find(
-          (l) => l.flowElementId == this.selectedElement.id
+          (l) => l.flowElementId == this.selectedElement.id,
         );
         if (elementInfo) {
           return elementInfo.executionState;
         } else {
           const tokenInfo = this.instance.tokens.find(
-            (l) => l.currentFlowElementId == this.selectedElement.id
+            (l) => l.currentFlowElementId == this.selectedElement.id,
           );
           return tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
         }
@@ -217,11 +222,11 @@ export default {
     priority() {
       if (this.instance) {
         const token = this.instance.tokens.find(
-          (l) => l.currentFlowElementId == this.selectedElement.id
+          (l) => l.currentFlowElementId == this.selectedElement.id,
         );
 
         const logInfo = this.instance.log.find(
-          (logEntry) => logEntry.flowElementId === this.selectedElement.id
+          (logEntry) => logEntry.flowElementId === this.selectedElement.id,
         );
 
         if (token) {
@@ -244,11 +249,11 @@ export default {
     },
     realCosts() {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       const logInfo = this.instance.log.find(
-        (logEntry) => logEntry.flowElementId === this.selectedElement.id
+        (logEntry) => logEntry.flowElementId === this.selectedElement.id,
       );
 
       if (token) {
@@ -260,11 +265,11 @@ export default {
     },
     currentProgress() {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       const logInfo = this.instance.log.find(
-        (logEntry) => logEntry.flowElementId === this.selectedElement.id
+        (logEntry) => logEntry.flowElementId === this.selectedElement.id,
       );
 
       if (token && token.currentFlowNodeProgress) {
@@ -289,7 +294,7 @@ export default {
   methods: {
     async updateToken(updatedInfoObj) {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       if (token) {
@@ -297,7 +302,7 @@ export default {
           this.deployment.definitionId,
           this.instance.processInstanceId,
           token.tokenId,
-          updatedInfoObj
+          updatedInfoObj,
         );
       }
     },
@@ -314,16 +319,35 @@ export default {
     },
     async setProgress(newProgress) {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       if (token && newProgress.value === 100) {
         await this.updateToken({ currentFlowNodeProgress: newProgress });
         await engineNetworkInterface.completeUserTask(
           this.instance.processInstanceId,
-          token.currentFlowElementId
+          token.currentFlowElementId,
         );
       }
+    },
+  },
+  watch: {
+    metaData: {
+      async handler(newMetaData) {
+        if (newMetaData.overviewImage && !this.processIsShared) {
+          const imageFileName = newMetaData.overviewImage.split('/').pop();
+          const localImage = await processInterface.getImage(
+            this.processDefinitionsId,
+            imageFileName,
+          );
+          this.currentImage = localImage;
+        } else if (newMetaData.overviewImage && this.processIsShared) {
+          this.currentImage = newMetaData.overviewImage;
+        } else {
+          this.currentImage = null;
+        }
+      },
+      immediate: true,
     },
   },
 };

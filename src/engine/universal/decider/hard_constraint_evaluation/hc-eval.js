@@ -41,7 +41,7 @@ class HardConstraintEvaluator {
                 }`;
               }
               return constraintGroupElement;
-            }
+            },
           );
         }
         return hardConstraintsElement;
@@ -103,7 +103,7 @@ class HardConstraintEvaluator {
         if (subConstraint._type === 'constraintGroupRef') {
           // result of evaluation for referenced constraintgroup
           const referencedConstraintGroup = evaluatedConstraintGroupList.find(
-            (group) => group.id === subConstraint._attributes.ref
+            (group) => group.id === subConstraint._attributes.ref,
           );
           referencedConstraintGroupList.push(referencedConstraintGroup.id);
           return referencedConstraintGroup.result;
@@ -116,11 +116,11 @@ class HardConstraintEvaluator {
       // evaluation of constraintgroup based on conjunction
       if (conjunction === 'OR')
         result = evaluatedSubConstraintList.some(
-          (evaluatedSubConstraint) => evaluatedSubConstraint
+          (evaluatedSubConstraint) => evaluatedSubConstraint,
         );
       else {
         result = evaluatedSubConstraintList.every(
-          (evaluatedSubConstraint) => evaluatedSubConstraint
+          (evaluatedSubConstraint) => evaluatedSubConstraint,
         );
       }
       evaluatedConstraintGroupList.push({ id, result }); // evaluated constraintgroup
@@ -142,18 +142,18 @@ class HardConstraintEvaluator {
    */
   static evaluateAllConstraints(constraints, infos) {
     const constraintGroups = constraints.filter(
-      (constraint) => constraint._type === 'constraintGroup'
+      (constraint) => constraint._type === 'constraintGroup',
     );
     const evaluationResultConstraintGroups = this.evaluateAllConstraintGroups(
       constraintGroups,
-      infos
+      infos,
     );
 
     const hardConstraints = constraints.filter(
-      (constraint) => constraint._type === 'hardConstraint'
+      (constraint) => constraint._type === 'hardConstraint',
     );
     const evaluationResultHardConstraints = hardConstraints.every((hardConstraint) =>
-      this.evaluateHardConstraint(hardConstraint, infos)
+      this.evaluateHardConstraint(hardConstraint, infos),
     );
 
     const evaluationResult = evaluationResultConstraintGroups && evaluationResultHardConstraints;
@@ -208,7 +208,7 @@ class HardConstraintEvaluator {
           subConstraintNames.forEach((subConstraintName) => {
             values.forEach((value) => {
               hardConstraintNames.add(
-                `${name + condition + value.value.replace('.', '_')}.${subConstraintName}`
+                `${name + condition + value.value.replace('.', '_')}.${subConstraintName}`,
               );
             });
           });
@@ -249,9 +249,8 @@ class HardConstraintEvaluator {
       return categories;
     }, []);
 
-    const informationCategoriesResult = await information.getMachineInformation(
-      informationCategories
-    );
+    const informationCategoriesResult =
+      await information.getMachineInformation(informationCategories);
 
     const infos = hardConstraintNames.reduce((values, hardConstraintName) => {
       let name = hardConstraintName.replace('machine.', '');

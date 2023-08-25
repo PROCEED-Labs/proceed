@@ -31,7 +31,7 @@ describe('Native-MQTT', () => {
         off: jest.fn().mockImplementation(function (eventName, callback) {
           if (!this.eventHandlers[eventName]) return;
           this.eventHandlers[eventName] = this.eventHandlers[eventName].filter(
-            (el) => el !== callback
+            (el) => el !== callback,
           );
           if (!this.eventHandlers[eventName].length) delete this.eventHandlers[eventName];
         }),
@@ -56,7 +56,7 @@ describe('Native-MQTT', () => {
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         `mqtt://test-user:password123@localhost:1883`,
         // the clean attribute is always set to signal that we don't want to reuse connection info from the last time we were connected
-        { username: 'test-user', password: 'password123', clean: true }
+        { username: 'test-user', password: 'password123', clean: true },
       );
     });
 
@@ -73,7 +73,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -95,7 +95,7 @@ describe('Native-MQTT', () => {
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(1);
       expect(nativeMQTT.connections['mqtt://test-user:password123@localhost:1883-engineId']).toBe(
-        firstConnection
+        firstConnection,
       );
     });
 
@@ -112,7 +112,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -140,7 +140,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -168,7 +168,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -196,7 +196,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'otherId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -224,7 +224,7 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -252,7 +252,7 @@ describe('Native-MQTT', () => {
           password: 'password456',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: {},
+          eventHandlers: { message: [expect.any(Function)] },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -301,7 +301,7 @@ describe('Native-MQTT', () => {
         nativeMQTT.executeCommand('messaging_disconnect', [
           'mqtt://localhost:1883',
           '{"username":"test-user","password":"password123"}',
-        ])
+        ]),
       ).resolves.not.toThrow();
 
       expect(Object.keys(nativeMQTT.connections).length).toBe(2);
@@ -322,7 +322,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and used that connection to send the message
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true }
+        { username: 'test-user', password: 'password123', clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].publish).toHaveBeenCalledWith('test/topic', 'Hello World!', {
@@ -389,7 +389,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and subscribed to the topic on that connection
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true }
+        { username: 'test-user', password: 'password123', clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].subscribe).toHaveBeenCalledWith('test/topic', { qos: 2 });
@@ -407,7 +407,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and subscribed to the topic on that connection
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true }
+        { username: 'test-user', password: 'password123', clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].subscribe).toHaveBeenCalledWith('test/topic', { qos: 2 });
@@ -433,7 +433,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -453,7 +453,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -473,7 +473,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -501,7 +501,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -529,7 +529,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -564,7 +564,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -593,7 +593,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -628,7 +628,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -661,7 +661,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback1
+        callback1,
       );
 
       await nativeMQTT.executeCommand(
@@ -672,7 +672,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 456}',
         ],
-        callback2
+        callback2,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -722,7 +722,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -749,7 +749,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       await nativeMQTT.executeCommand(
@@ -760,7 +760,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 456}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);
@@ -792,7 +792,7 @@ describe('Native-MQTT', () => {
           '{"username":"test-user","password":"password123"}',
           '{"subscriptionId": 123}',
         ],
-        callback
+        callback,
       );
 
       const [connection] = Object.values(nativeMQTT.connections);

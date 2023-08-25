@@ -64,6 +64,10 @@ function needZipExport(processesToExport, options) {
   if (exportProcess.userTasks && Object.keys(exportProcess.userTasks).length) {
     return true;
   }
+  // we need to use a zip if we want to export images along with the process bpmn
+  if (exportProcess.images && Object.keys(exportProcess.images).length) {
+    return true;
+  }
   // we don't import callActivities and subprocesses into the directory of the process containing them on a bpmn export
   // call activities are imported into their own directory and should lead to the first check being true
   if (options.format !== 'bpmn') {
@@ -207,7 +211,7 @@ async function addFile(container, process, viewer, options) {
 }
 
 /**
- * Adds optional content to the pdf/directory (e.g. User Tasks for bpmn export or called processes for image exports)
+ * Adds optional content to the pdf/directory (e.g. User Tasks or Images for bpmn export or called processes for image exports)
  *
  * @param {Object} container a pdf or zip directory
  * @param {*} process
@@ -217,6 +221,7 @@ async function addFile(container, process, viewer, options) {
 async function addAdditionalContent(container, process, viewer, options) {
   if (options.format === 'bpmn') {
     createUserTasks(container, process);
+    createImages(container, process);
   } else {
     // create image files for all subprocesses and callActivities
     if (process.collapsedSubprocesses && Array.isArray(process.collapsedSubprocesses)) {
@@ -305,7 +310,7 @@ export function setPdfPropsAndValues(
   process,
   isHeadingRequested,
   svgWidth,
-  svgHeight
+  svgHeight,
 ) {
   const { name, elementId, description = '', departments = [] } = process;
   let keywords = 'BPMN';
@@ -355,7 +360,7 @@ export function setPdfPropsAndValues(
     pdfWidth,
     pdfHeight,
     undefined,
-    'FAST'
+    'FAST',
   );
 }
 
@@ -498,6 +503,31 @@ export function createUserTasks(processFolder, process) {
     //Combining Process with its supporting files
     for (const userTaskId of userTaskIds) {
       userTaskFolder.file(`${userTaskId}.html`, userTasks[userTaskId]);
+    }
+  }
+}
+
+/**
+ * Creates image directory and files in zip
+ *
+ * @param {Object} processFolder the directory in the zip to write to
+ */
+export function createImages(processFolder, process) {
+  const { images } = process;
+
+  if (!images) {
+    return;
+  }
+
+  const imageFileNames = Object.keys(images);
+  //Combining Process with its supporting files
+  if (imageFileNames.length > 0) {
+    //If its multi download then attach files to its specific folder else direct to zipObject
+    const imagesFolder = processFolder.folder('images');
+
+    //Combining Process with its supporting files
+    for (const imageFileName of imageFileNames) {
+      imagesFolder.file(`${imageFileName}`, images[imageFileName]);
     }
   }
 }

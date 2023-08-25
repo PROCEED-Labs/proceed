@@ -76,7 +76,7 @@ export default {
       if (currentData.originalStoredProcessId) {
         // get the html data from the store
         const userTasksHtml = await this.$store.getters['processStore/htmlMappingById'](
-          currentData.originalStoredProcessId
+          currentData.originalStoredProcessId,
         );
 
         // add html info to form htmlData
@@ -225,7 +225,7 @@ export default {
       // at this point there should only be valid entries inside the userTasks array
       if (conflictTask) {
         throw new Error(
-          `There is no valid user task data for user task with id ${conflictTask.taskId}`
+          `There is no valid user task data for user task with id ${conflictTask.taskId}`,
         );
       }
 
@@ -247,7 +247,7 @@ export default {
         // make sure to add html specific constraints
         const newConstraints = getUpdatedTaskConstraintMapping(
           constraintMapping[userTask.id],
-          userTaskData.html
+          userTaskData.html,
         );
 
         await addConstraintsToElementById(userTask, userTask.id, newConstraints);
@@ -277,6 +277,19 @@ export default {
           });
         }
       });
+
+      if (processData.imageData) {
+        await asyncForEach(
+          Object.entries(processData.imageData),
+          async ([imageFileName, image]) => {
+            await this.$store.dispatch('processStore/saveImage', {
+              processDefinitionsId: processData.id,
+              imageFileName,
+              image,
+            });
+          },
+        );
+      }
     },
   },
 };

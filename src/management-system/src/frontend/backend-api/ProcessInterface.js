@@ -291,6 +291,17 @@ class ProcessInterface {
    * @param {String} processDefinitionsId the id of the process
    * @returns {Object} - an object with the fileName as the keys and the related image as values
    */
+  async getImages(processDefinitionsId) {
+    const images = await api.getImages(processDefinitionsId);
+    return images;
+  }
+
+  /**
+   * Returns image in a process
+   *
+   * @param {String} processDefinitionsId the id of the process
+   * @returns {Object} - searched image
+   */
   async getImage(processDefinitionsId, imageFileName) {
     const image = await api.getImage(processDefinitionsId, imageFileName);
     return image;

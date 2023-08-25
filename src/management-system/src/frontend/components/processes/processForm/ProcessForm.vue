@@ -363,7 +363,7 @@ export default {
     },
     initFromExistingProcess(_, changes) {
       const existingProcess = this.$store.getters['processStore/processById'](
-        changes.originalStoredProcessId
+        changes.originalStoredProcessId,
       );
 
       return {

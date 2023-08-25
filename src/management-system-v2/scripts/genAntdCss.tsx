@@ -66,7 +66,7 @@ export function extractThemedStyle() {
   renderToString(
     <StyleProvider cache={cache}>
       <Theme>{Components}</Theme>
-    </StyleProvider>
+    </StyleProvider>,
   );
 
   // Grab style from cache

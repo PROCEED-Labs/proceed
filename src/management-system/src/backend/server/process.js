@@ -61,14 +61,14 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_observe_modeling', () => {
       logger.debug(
-        `Client wants to observe the editing of the process with id ${processDefinitionsId}.`
+        `Client wants to observe the editing of the process with id ${processDefinitionsId}.`,
       );
       socket.join(`modeling`);
     });
 
     socket.on('data_stop_observing_modeling', () => {
       logger.debug(
-        `Client stopped observing the editing of the process with id ${processDefinitionsId}.`
+        `Client stopped observing the editing of the process with id ${processDefinitionsId}.`,
       );
       socket.leave(`modeling`);
     });
@@ -100,7 +100,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
       io.of(`/process/${processDefinitionsId}/view`)
         .to('modeling')
         .emit('user_task_html_changed', userTaskFileName, html);
-    }
+    },
   );
 
   eventHandler.on(
@@ -109,7 +109,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
       io.of(`/process/${processDefinitionsId}/view`)
         .to('modeling')
         .emit('image_changed', imageFileName, image);
-    }
+    },
   );
 
   const processEditNameSpace = io.of(/^\/process\/(\w|-)*\/edit$/);
@@ -138,14 +138,14 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_edit_process', () => {
       logger.debug(
-        `Client wants to observe the editing of the process with id ${processDefinitionsId}.`
+        `Client wants to observe the editing of the process with id ${processDefinitionsId}.`,
       );
       backendProcesses.blockProcess(socket.id, processDefinitionsId);
     });
 
     socket.on('data_stop_editing_process', () => {
       logger.debug(
-        `Client stopped observing the editing of the process with id ${processDefinitionsId}.`
+        `Client stopped observing the editing of the process with id ${processDefinitionsId}.`,
       );
       backendProcesses.unblockProcess(socket.id, processDefinitionsId);
     });
@@ -166,7 +166,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
       // iterate over all socket in view namespace to find the one matching the client the event came from
       const [socketId] = Array.from(view.sockets).find(
-        ([_, socket]) => socket.handshake.auth.connectionId === connectionId
+        ([_, socket]) => socket.handshake.auth.connectionId === connectionId,
       );
 
       view // send event to sockets in view namespace
@@ -185,14 +185,14 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_blockTask', (taskId) => {
       logger.debug(
-        `Request to lock the task with id ${taskId} in process with id ${processDefinitionsId}.`
+        `Request to lock the task with id ${taskId} in process with id ${processDefinitionsId}.`,
       );
       backendProcesses.blockTask(socket.id, processDefinitionsId, taskId);
     });
 
     socket.on('data_unblockTask', (taskId) => {
       logger.debug(
-        `Request to unlock the task with id ${taskId} in process with id ${processDefinitionsId}.`
+        `Request to unlock the task with id ${taskId} in process with id ${processDefinitionsId}.`,
       );
       backendProcesses.unblockTask(socket.id, processDefinitionsId, taskId);
     });
@@ -208,7 +208,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
       // iterate over all socket in view namespace to find the one matching the client the event came from
       const [socketId] = Array.from(view.sockets).find(
-        ([_, socket]) => socket.handshake.auth.connectionId === connectionId
+        ([_, socket]) => socket.handshake.auth.connectionId === connectionId,
       );
 
       view // send event to sockets in view namespace
@@ -219,7 +219,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('bpmn_modeler_event', async (type, context) => {
       logger.debug(
-        `Request to broadcast modeler event for process with id ${processDefinitionsId}.`
+        `Request to broadcast modeler event for process with id ${processDefinitionsId}.`,
       );
 
       broadcastToModeling('bpmn_modeler_event_broadcast', type, context);
@@ -236,7 +236,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
       // iterate over all socket in view namespace to find the one matching the client the event came from
       const [socketId] = Array.from(view.sockets).find(
-        ([_, socket]) => socket.handshake.auth.connectionId === connectionId
+        ([_, socket]) => socket.handshake.auth.connectionId === connectionId,
       );
 
       view // send event to sockets in view namespace
@@ -246,7 +246,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_saveUserTaskHTML', async (taskId, html, callback) => {
       logger.debug(
-        `Request to save html for user task with id ${taskId} in process with id ${processDefinitionsId}.`
+        `Request to save html for user task with id ${taskId} in process with id ${processDefinitionsId}.`,
       );
       await saveUserTaskHTML(processDefinitionsId, taskId, html);
       callback();
@@ -255,7 +255,7 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_deleteUserTaskHTML', async (taskId) => {
       logger.debug(
-        `Request to delete html of user task with id ${taskId} in process with id ${processDefinitionsId}.`
+        `Request to delete html of user task with id ${taskId} in process with id ${processDefinitionsId}.`,
       );
       await backendProcesses.deleteProcessUserTask(processDefinitionsId, taskId);
       broadcastToView('user_task_html_changed', taskId);
@@ -270,21 +270,21 @@ export function setupProcessRequestHandlers(addListener, broadcast, sendCommand,
 
     socket.on('data_saveScriptTaskJS', async (taskId, js) => {
       logger.debug(
-        `Request to save the JS for the script task with id ${taskId} in process with id ${processDefinitionsId}.`
+        `Request to save the JS for the script task with id ${taskId} in process with id ${processDefinitionsId}.`,
       );
       await saveScriptTaskJS(processDefinitionsId, taskId, js);
     });
 
     socket.on('script_changed_event', async (elId, elType, script, change) => {
       logger.debug(
-        `Request to broadcast a script changed event for element with id ${elId} in process with id ${processDefinitionsId}.`
+        `Request to broadcast a script changed event for element with id ${elId} in process with id ${processDefinitionsId}.`,
       );
       broadcastToModeling('script_changed_event_broadcast', elId, elType, script, change);
     });
 
     socket.on('data_updateConstraints', async (elementId, constraints) => {
       logger.debug(
-        `Request to broadcast update of constraints for element with id ${elementId} in process with id ${processDefinitionsId}.`
+        `Request to broadcast update of constraints for element with id ${elementId} in process with id ${processDefinitionsId}.`,
       );
       broadcastToModeling('element_constraints_changed', elementId, constraints);
     });

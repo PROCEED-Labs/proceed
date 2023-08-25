@@ -68,7 +68,7 @@ describe('Tests for getter functions of this library', () => {
   describe('getDeploymentMethod', () => {
     it('returns the deploymentMethod for the given process', async () => {
       mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(deploymentObj)))
+        callback(undefined, JSON.parse(JSON.stringify(deploymentObj))),
       );
       expect(await getters.getDeploymentMethod(deploymentXML)).toBe('static');
     });
@@ -76,7 +76,7 @@ describe('Tests for getter functions of this library', () => {
   describe('getElementMachineMapping', () => {
     it('returns a mapping from task ids to assigned machineIds or addresses', async () => {
       mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(deploymentObj)))
+        callback(undefined, JSON.parse(JSON.stringify(deploymentObj))),
       );
       expect(await getters.getElementMachineMapping(deploymentXML)).toStrictEqual({
         StartEvent_1: { machineId: '1234', machineAddress: undefined },
@@ -88,7 +88,7 @@ describe('Tests for getter functions of this library', () => {
   describe('getProcessIds', () => {
     it('returns the ids of all processes in the process definition', async () => {
       mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(twoProcessObj)))
+        callback(undefined, JSON.parse(JSON.stringify(twoProcessObj))),
       );
       expect(await getters.getProcessIds(twoProcessXML)).toStrictEqual([
         'Process_02x86ax',

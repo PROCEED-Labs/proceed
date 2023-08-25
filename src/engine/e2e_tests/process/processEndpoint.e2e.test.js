@@ -5,12 +5,12 @@ const request = require('supertest')('localhost:33019');
 
 const bpmn = fs.readFileSync(
   path.resolve(__dirname, './data/processBPMN/basicUserTaskProcess.xml'),
-  'utf8'
+  'utf8',
 );
 
 const bpmnWithImage = fs.readFileSync(
   path.resolve(__dirname, './data/processBPMN/withImage.xml'),
-  'utf8'
+  'utf8',
 );
 
 jest.setTimeout(15000);
@@ -140,14 +140,14 @@ describe('Test process endpoints', () => {
       it('adds an image that is referenced in the html to the dependencies of versions that use the user task', async () => {
         const putResponse = await request
           .put(
-            '/process/_64552049-90bf-4f5b-96dd-e00747261755/user-tasks/User_Task_1qjpbcl-1671026484009'
+            '/process/_64552049-90bf-4f5b-96dd-e00747261755/user-tasks/User_Task_1qjpbcl-1671026484009',
           )
           .send({
             html: '<html><head></head><body><form><img src="/resources/process/_64552049-90bf-4f5b-96dd-e00747261755/images/User_Task_1qjpbcl_image72fe83de-2c44-4d1f-ae71-6b323bee7f1c.png"></img></form></body></html>',
           });
         expect(putResponse.status).toBe(200);
         const getResponse = await request.get(
-          '/process/_64552049-90bf-4f5b-96dd-e00747261755/user-tasks/User_Task_1qjpbcl-1671026484009'
+          '/process/_64552049-90bf-4f5b-96dd-e00747261755/user-tasks/User_Task_1qjpbcl-1671026484009',
         );
         expect(getResponse.status).toBe(200);
         expect(getResponse.body).toStrictEqual(expect.any(Object));

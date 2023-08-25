@@ -76,23 +76,23 @@ jest.doMock('@proceed/decider', () => ({
 
 const staticDeployIdXml = fs.readFileSync(
   path.resolve(__dirname, '../../../../../data/bpmn/staticDeployWithIdBPMN.xml'),
-  'utf8'
+  'utf8',
 );
 const staticDeployAddXml = fs.readFileSync(
   path.resolve(__dirname, '../../../../../data/bpmn/staticDeployWithAddBPMN.xml'),
-  'utf8'
+  'utf8',
 );
 const machineMappingXml = fs.readFileSync(
   path.resolve(__dirname, '../../../../../data/bpmn/machineMappingBPMN.xml'),
-  'utf8'
+  'utf8',
 );
 const dynamicDeployXml = fs.readFileSync(
   path.resolve(__dirname, '../../../../../data/bpmn/dynamicDeploy.xml'),
-  'utf8'
+  'utf8',
 );
 const versionedWithUserTaskXml = fs.readFileSync(
   path.resolve(__dirname, '../../../../../data/bpmn/versionedWithUserTask.xml'),
-  'utf8'
+  'utf8',
 );
 
 const mockNetwork = mockNetworkFactory(jest);
@@ -183,13 +183,13 @@ describe('Backend deployment functions', () => {
         mockDeployments['process1'].machines[0].ip,
         mockDeployments['process1'].machines[0].port,
         '/process/process1/',
-        { method: 'DELETE' }
+        { method: 'DELETE' },
       );
       expect(mockNetwork.sendRequest).toHaveBeenCalledWith(
         mockDeployments['process1'].machines[1].ip,
         mockDeployments['process1'].machines[1].port,
         '/process/process1/',
-        { method: 'DELETE' }
+        { method: 'DELETE' },
       );
     });
   });
@@ -222,7 +222,7 @@ describe('Backend deployment functions', () => {
         '/process/process1/versions/123/instance',
         'POST',
         'application/json',
-        { variables: {} }
+        { variables: {} },
       );
     });
     it('starts an instance on the device mapped to the startProcess machineAddress in case of static deployment', async () => {
@@ -235,7 +235,7 @@ describe('Backend deployment functions', () => {
         '/process/process1/versions/123/instance',
         'POST',
         'application/json',
-        { variables: {} }
+        { variables: {} },
       );
     });
     it('throws when sending fails', async () => {
@@ -286,7 +286,7 @@ describe('Backend deployment functions', () => {
           '/process',
           'POST',
           'application/json',
-          { bpmn: expect.any(String) }
+          { bpmn: expect.any(String) },
         );
         expect(mockNetwork.sendData).toHaveBeenCalledWith(
           '123.456.7.8',
@@ -294,7 +294,7 @@ describe('Backend deployment functions', () => {
           '/process',
           'POST',
           'application/json',
-          { bpmn: expect.any(String) }
+          { bpmn: expect.any(String) },
         );
       });
       // it('reverts all succesful deployments if deploying to one machine fails and throws', async () => {
@@ -326,7 +326,7 @@ describe('Backend deployment functions', () => {
           '/process/xyz789/user-tasks/Task1',
           'PUT',
           'application/json',
-          { html: 'TEST HTML' }
+          { html: 'TEST HTML' },
         );
       });
     });
@@ -350,7 +350,7 @@ describe('Backend deployment functions', () => {
           },
           { hardConstraints: [], softConstraints: [] },
           mockProcesses[0].processConstraints,
-          mockDeployments['process1'].machines.filter((machine) => !machine.discovered)
+          mockDeployments['process1'].machines.filter((machine) => !machine.discovered),
         );
         expect(mockNetwork.sendData).toHaveBeenCalledWith(
           mockDeployments['process1'].machines[0].ip,
@@ -358,7 +358,7 @@ describe('Backend deployment functions', () => {
           '/process',
           'POST',
           'application/json',
-          { bpmn: expect.any(String) }
+          { bpmn: expect.any(String) },
         );
       });
       it('sends user task to startMachine', async () => {
@@ -374,7 +374,7 @@ describe('Backend deployment functions', () => {
           '/process/xyz789/user-tasks/Task1',
           'PUT',
           'application/json',
-          { html: 'TEST HTML' }
+          { html: 'TEST HTML' },
         );
       });
     });
@@ -596,12 +596,12 @@ describe('Backend deployment functions', () => {
       expect(processStore.saveProcessUserTask).toHaveBeenCalledWith(
         '_42e3d9a9-76e4-4bc1-ab04-011ea05e2341',
         'User_Task_08ikh3c',
-        'HTML'
+        'HTML',
       );
       expect(processStore.saveProcessUserTask).toHaveBeenCalledWith(
         '_42e3d9a9-76e4-4bc1-ab04-011ea05e2341',
         'User_Task_08ikh3c-1671114317064',
-        'HTML'
+        'HTML',
       );
     });
 

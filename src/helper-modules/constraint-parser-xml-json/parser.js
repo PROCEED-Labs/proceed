@@ -227,35 +227,35 @@ class ConstraintParser {
     if (!constraintsInJS || !constraintsInJS.hardConstraints) return checkResultObject;
 
     const constraintGroups = constraintsInJS.hardConstraints.filter(
-      (hc) => hc._type === 'constraintGroup'
+      (hc) => hc._type === 'constraintGroup',
     );
 
     constraintsInJS.hardConstraints.forEach((constraint) => {
       if (constraint._type === 'constraintGroup') {
         if (this.searchForCircularDependencies(constraintGroups, constraint._attributes.id, [])) {
           checkResultObject.errors.push(
-            `Circular dependency at constraintGroup ${constraint._attributes.id}`
+            `Circular dependency at constraintGroup ${constraint._attributes.id}`,
           );
         }
         constraint.constraintGroup.forEach((cg) => {
           if (this.checkForCriticalMultipleValues(machineConstraints, cg)) {
             checkResultObject.errors.push(
-              `Multiple values with AND-conjunction for ${cg.name} in constraintGroup ${constraint._attributes.id}`
+              `Multiple values with AND-conjunction for ${cg.name} in constraintGroup ${constraint._attributes.id}`,
             );
           } else if (this.checkForCriticalMultipleValues(networkConstraints, cg)) {
             checkResultObject.warnings.push(
-              `Multiple values with AND-conjunction for ${cg.name} in constraintGroup ${constraint._attributes.id}`
+              `Multiple values with AND-conjunction for ${cg.name} in constraintGroup ${constraint._attributes.id}`,
             );
           }
         });
       } else {
         if (this.checkForCriticalMultipleValues(machineConstraints, constraint)) {
           checkResultObject.errors.push(
-            `Multiple values with AND-conjunction for ${constraint.name}`
+            `Multiple values with AND-conjunction for ${constraint.name}`,
           );
         } else if (this.checkForCriticalMultipleValues(networkConstraints, constraint)) {
           checkResultObject.warnings.push(
-            `Multiple values with AND-conjunction for ${constraint.name}`
+            `Multiple values with AND-conjunction for ${constraint.name}`,
           );
         }
       }
@@ -264,22 +264,22 @@ class ConstraintParser {
     if (
       this.checkForCriticalConstraintComposition(
         machineConstraints,
-        constraintsInJS.hardConstraints
+        constraintsInJS.hardConstraints,
       )
     ) {
       checkResultObject.warnings.push(
-        'Appearance of machine.id, machine.name and machine.hostname with AND-conjunction'
+        'Appearance of machine.id, machine.name and machine.hostname with AND-conjunction',
       );
     }
 
     if (
       this.checkForCriticalConstraintComposition(
         networkConstraints,
-        constraintsInJS.hardConstraints
+        constraintsInJS.hardConstraints,
       )
     ) {
       checkResultObject.warnings.push(
-        'Appearance of machine.network.ip4, machine.network.ip6 and machine.network.mac with AND-conjunction'
+        'Appearance of machine.network.ip4, machine.network.ip6 and machine.network.mac with AND-conjunction',
       );
     }
 
@@ -309,7 +309,7 @@ class ConstraintParser {
         return this.searchForCircularDependencies(
           constraintGroups,
           cgElement._attributes.ref,
-          groupsPath
+          groupsPath,
         );
       }
       return false;

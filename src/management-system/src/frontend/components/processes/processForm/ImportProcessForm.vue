@@ -132,17 +132,18 @@ export default {
         // deduce information needed for import from provided information and existing/stored information
         processesData = await asyncMap(
           processesData,
-          async ({ fileName, bpmnFileAsXml, bpmnFileAsObject, htmlData }) => {
+          async ({ fileName, bpmnFileAsXml, bpmnFileAsObject, htmlData, imageData }) => {
             const processData = await analyseBPMNFile(
               bpmnFileAsObject,
               htmlData,
+              imageData,
               this.$store,
               this.type,
-              fileName
+              fileName,
             );
 
             return { ...processData, bpmn: bpmnFileAsXml };
-          }
+          },
         );
 
         this.setProcessesData(processesData);

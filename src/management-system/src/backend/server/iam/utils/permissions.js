@@ -24,7 +24,7 @@ export const buildPermissions = async (userId, takeExpirationIntoAccount = true)
     }
     // get default role, necessary for permissions for everyone
     const defaultRole = Object.values(roleMetaObjects).find(
-      (role) => role.default && role.name === '@everyone'
+      (role) => role.default && role.name === '@everyone',
     );
     const permissions = {};
     if (defaultRole.permissions) {
@@ -36,7 +36,7 @@ export const buildPermissions = async (userId, takeExpirationIntoAccount = true)
     }
     // get admin role
     const adminRole = Object.values(roleMetaObjects).find(
-      (role) => role.default && role.name === '@admin'
+      (role) => role.default && role.name === '@admin',
     );
     // assign admin role if user is admin
     if (adminRole.members.map((member) => member.userId).includes(userId)) {
@@ -64,7 +64,7 @@ export const buildPermissions = async (userId, takeExpirationIntoAccount = true)
   } else {
     // assign guest role if user is not authenticated
     const guestRole = Object.values(roleMetaObjects).find(
-      (role) => role.default && role.name === '@guest'
+      (role) => role.default && role.name === '@guest',
     );
     const permissions = { ...guestRole.permissions };
     return permissions;

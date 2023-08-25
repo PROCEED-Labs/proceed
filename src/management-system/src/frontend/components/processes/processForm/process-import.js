@@ -97,10 +97,11 @@ export async function getProcessFiles(file) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {(undefined|Map<String, HtmlInfo>)} htmlData - the html data that was provided alongside the bpmn
+ * @param {(undefined|object)} imageData - the image data that was provided alongside the bpmn
  * @param {*} $store - the vuex store to look up processes
- * @returns { Promise.<{ processData: {id: string, name: string, description: string, departments: Array, userTasks: UserTaskInfo, htmlData: HtmlInfo } }>} - the process info needed for an import
+ * @returns { Promise.<{ processData: {id: string, name: string, description: string, departments: Array, userTasks: UserTaskInfo, htmlData: HtmlInfo, imageData: object } }>} - the process info needed for an import
  */
-export async function analyseBPMNFile(bpmn, htmlData, $store, type, defaultName = '') {
+export async function analyseBPMNFile(bpmn, htmlData, imageData, $store, type, defaultName = '') {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
   let definitionsId = await getDefinitionsId(bpmnObj);
   const name = (await getDefinitionsName(bpmnObj)) || defaultName.replace(/(\.bpmn|\.xml)$/gm, '');
@@ -128,6 +129,7 @@ export async function analyseBPMNFile(bpmn, htmlData, $store, type, defaultName 
     id: possibleOverrideProcess || possibleDerivedProcesses.length ? '' : definitionsId,
     name,
     htmlData,
+    imageData,
     possibleOverrideProcess,
     possibleDerivedProcesses,
   };
@@ -161,14 +163,14 @@ function readFileAsText(file) {
  * @summary Read zip files and searches for bpmn files and user tasks for each bpmn file
  *
  * @param {Blob} zipBlob - zip file containing several bpmn files
- * @returns {Promise<Array<{ fileName: string, bpmnFileAsXml: string, htmlData: HtmlInfo }>>} - array containing all the provided information about the contained processes
+ * @returns {Promise<Array<{ fileName: string, bpmnFileAsXml: string, htmlData: HtmlInfo, imageData: object }>>} - array containing all the provided information about the contained processes
  */
 export async function readZipAsync(zipBlob) {
   const zip = await JSZip.loadAsync(zipBlob);
 
   // list all bpmn files inside this zip regardless of the folder depth
   const bpmnFiles = Object.values(zip.files).filter(
-    (file) => file.name.endsWith('.bpmn') && !file.dir
+    (file) => file.name.endsWith('.bpmn') && !file.dir,
   );
 
   const contentContainer = [];
@@ -182,7 +184,7 @@ export async function readZipAsync(zipBlob) {
 
     // list all html files inside the user-tasks folder which is in the same folder like the current bpmn file
     const userTaskFiles = Object.values(zip.files).filter(
-      (file) => file.name.startsWith(userTaskDir) && file.name.endsWith('.html')
+      (file) => file.name.startsWith(userTaskDir) && file.name.endsWith('.html'),
     );
 
     const htmlData = new Map();
@@ -198,6 +200,26 @@ export async function readZipAsync(zipBlob) {
       });
     }
 
+    // generate folder name like 'Delivery-Proces-604fdef1/images/'
+    const imageDir = bpmnFile.name.replace(bpmnFileName, 'images/');
+
+    // list all image files inside the images folder which is in the same folder like the current bpmn file
+    const imageFiles = Object.values(zip.files).filter(
+      (file) => file.name.startsWith(imageDir) && file.name !== imageDir,
+    );
+
+    const imageData = {};
+    for (const imageFile of imageFiles) {
+      const imageFileName = imageFile.name.split('/').pop();
+      const imageFileType = imageFileName.split('.').pop();
+      // resolves the content of the file in buffer and convert to file
+      const imageFileContent = await imageFile.async('arraybuffer');
+      const file = new File([imageFileContent], imageFileName, {
+        type: imageFileType,
+      });
+      imageData[imageFileName] = file;
+    }
+
     // resolves the content of the file in a string
     const bpmnFileContent = await bpmnFile.async('string');
 
@@ -205,6 +227,7 @@ export async function readZipAsync(zipBlob) {
       fileName: bpmnFileName,
       bpmnFileAsXml: bpmnFileContent,
       htmlData,
+      imageData,
     });
   }
 

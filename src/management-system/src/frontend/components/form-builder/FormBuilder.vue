@@ -83,6 +83,44 @@ export default {
     });
     this.autoClose();
     const myNewComponentTypes = (editor) => {
+      editor.DomComponents.addType('button', {
+        isComponent: (el) => el.tagName == 'BUTTON',
+        model: {
+          defaults: {
+            traits: [
+              'id',
+              {
+                type: 'select',
+                label: 'Type',
+                name: 'type',
+                options: [
+                  { id: 'submit', name: 'Submit' },
+                  { id: 'reset', name: 'Reset' },
+                  { id: 'button', name: 'Button' },
+                ],
+              },
+              {
+                type: 'text',
+                label: 'Text',
+                name: 'text',
+                placeholder: 'Insert Text for Button',
+              },
+            ],
+            attributes: { type: 'submit' },
+          },
+          init() {
+            this.on('change:attributes:text', this.onTextChange);
+          },
+          onTextChange() {
+            const attributes = this.getAttributes();
+
+            this.components(attributes.text);
+
+            delete attributes.text;
+            this.setAttributes(attributes);
+          },
+        },
+      });
       editor.DomComponents.addType('input', {
         isComponent: (el) => el.tagName == 'INPUT',
         model: {
@@ -335,7 +373,7 @@ export default {
       const changedElement = model.getEl();
 
       const variableInputChanged = !!Array.from(changedElement.classList).find((className) =>
-        className.includes('variable-')
+        className.includes('variable-'),
       );
 
       if (variableInputChanged && changed.attributes && changed.attributes.name) {
@@ -386,32 +424,25 @@ export default {
         imagePath = image;
         selected.set({ src: imagePath });
       } else {
-        if (this.processIsShared) {
-          const imageType = image.type.split('image/').pop();
-          const imageFileName = `${this.filename}_image${v4()}.${imageType}`;
-          imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
-
-          // store image in backend
-          await this.$store.dispatch('processStore/saveImage', {
-            processDefinitionsId: this.processDefinitionsId,
-            imageFileName: imageFileName,
-            image,
-            isUserTaskImage: true,
-          });
-
-          selected.set({ src: imagePath });
-        } else {
-          // set base64 image to src
-          const reader = new FileReader();
-          reader.readAsDataURL(image);
-          return new Promise((resolve) => {
-            reader.addEventListener('load', () => {
-              const selected = this.editor.getSelected();
-              selected.set({ src: reader.result });
-              resolve();
-            });
+        if (!this.processIsShared) {
+          await this.$store.dispatch('processStore/update', {
+            id: this.processDefinitionsId,
+            changes: { shared: true },
           });
         }
+        const imageType = image.type.split('image/').pop();
+        const imageFileName = `${this.filename}_image${v4()}.${imageType}`;
+        imagePath = `/resources/process/${this.processDefinitionsId}/images/${imageFileName}`;
+
+        // store image in backend
+        await this.$store.dispatch('processStore/saveImage', {
+          processDefinitionsId: this.processDefinitionsId,
+          imageFileName: imageFileName,
+          image,
+          isUserTaskImage: true,
+        });
+
+        selected.set({ src: imagePath });
       }
 
       const assetManager = this.editor.AssetManager;

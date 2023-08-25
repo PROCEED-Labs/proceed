@@ -5,11 +5,11 @@ const mockNetwork = mockNetworkFactory(jest);
 let mockResponse;
 
 mockNetwork.sendRequest.mockImplementation(() =>
-  Promise.resolve({ body: JSON.stringify(mockResponse) })
+  Promise.resolve({ body: JSON.stringify(mockResponse) }),
 );
 
 mockNetwork.sendData.mockImplementation(() =>
-  Promise.resolve({ body: JSON.stringify(mockResponse) })
+  Promise.resolve({ body: JSON.stringify(mockResponse) }),
 );
 
 let RequestFuncs;
@@ -36,7 +36,7 @@ describe('Communication with /process/** endpoints', () => {
       expect(mockNetwork.sendRequest).toHaveBeenCalledWith(
         mockMachine.ip,
         mockMachine.port,
-        '/process'
+        '/process',
       );
     });
   });
@@ -50,7 +50,7 @@ describe('Communication with /process/** endpoints', () => {
         '/process',
         'POST',
         'application/json',
-        { bpmn: 'processBPMN' }
+        { bpmn: 'processBPMN' },
       );
     });
   });
@@ -62,7 +62,7 @@ describe('Communication with /process/** endpoints', () => {
         mockMachine.ip,
         mockMachine.port,
         '/process/processId/',
-        { method: 'DELETE' }
+        { method: 'DELETE' },
       );
     });
   });
@@ -76,7 +76,7 @@ describe('Communication with /process/** endpoints', () => {
         '/process/processId/user-tasks/userTaskId',
         'PUT',
         'application/json',
-        { html: 'HTML' }
+        { html: 'HTML' },
       );
     });
   });
@@ -88,7 +88,7 @@ describe('Communication with /process/** endpoints', () => {
       };
 
       expect(await RequestFuncs.startProcessInstance(mockMachine, 'processId', 123, {})).toEqual(
-        mockResponse.instanceId
+        mockResponse.instanceId,
       );
       expect(mockNetwork.sendData).toHaveBeenCalledWith(
         mockMachine.ip,
@@ -96,7 +96,7 @@ describe('Communication with /process/** endpoints', () => {
         '/process/processId/versions/123/instance',
         'POST',
         'application/json',
-        { variables: {} }
+        { variables: {} },
       );
     });
   });
@@ -109,12 +109,12 @@ describe('Communication with /process/** endpoints', () => {
       };
 
       expect(
-        await RequestFuncs.getInstanceInformation(mockMachine, 'processId', 'instanceId')
+        await RequestFuncs.getInstanceInformation(mockMachine, 'processId', 'instanceId'),
       ).toEqual(mockResponse);
       expect(mockNetwork.sendRequest).toHaveBeenCalledWith(
         mockMachine.ip,
         mockMachine.port,
-        '/process/processId/instance/instanceId'
+        '/process/processId/instance/instanceId',
       );
     });
   });
@@ -128,7 +128,7 @@ describe('Communication with /process/** endpoints', () => {
         '/process/processId/instance/instanceId/instanceState',
         'PUT',
         'application/json',
-        { instanceState: 'stopped' }
+        { instanceState: 'stopped' },
       );
     });
   });

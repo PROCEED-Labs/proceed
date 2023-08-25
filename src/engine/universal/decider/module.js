@@ -39,7 +39,7 @@ const decider = {
   async findOptimalNextMachine(processInfo, token, flowNodeConstraints, processConstraints) {
     if (!processInfo || !token) {
       throw new Error(
-        "Missing input parameter for method 'findOptimalNextMachine' in Decider Module"
+        "Missing input parameter for method 'findOptimalNextMachine' in Decider Module",
       );
     }
     /**
@@ -66,7 +66,7 @@ const decider = {
       processInfo,
       token,
       flowNodeConstraints.hardConstraints || [],
-      processConstraints.hardConstraints || []
+      processConstraints.hardConstraints || [],
     );
 
     if (preCheckAbortResult.stopProcess !== null) {
@@ -76,7 +76,7 @@ const decider = {
 
     const hardConstraints = constraintHelper.concatAllConstraints(
       flowNodeConstraints.hardConstraints,
-      processConstraints.hardConstraints
+      processConstraints.hardConstraints,
     );
 
     const nonProcessExecutionHardConstraints =
@@ -84,11 +84,11 @@ const decider = {
 
     const softConstraints = constraintHelper.concatAllConstraints(
       flowNodeConstraints.softConstraints,
-      processConstraints.softConstraints
+      processConstraints.softConstraints,
     );
 
     const configAllowsToExecuteLocally = await constraintManager.checkExecutionConfig(
-      processInfo.nextFlowNode
+      processInfo.nextFlowNode,
     );
 
     const allowedToExecuteLocally =
@@ -120,9 +120,8 @@ const decider = {
         return machineResultObject;
       }
 
-      const localSoftConstraintValues = await constraintManager.getLocalSoftConstraintValues(
-        softConstraints
-      );
+      const localSoftConstraintValues =
+        await constraintManager.getLocalSoftConstraintValues(softConstraints);
 
       valuesList.push({
         id: 'local-engine',
@@ -133,7 +132,7 @@ const decider = {
     const valuesListExternalMachines = await constraintManager.getExternalSoftConstraintValues(
       nonProcessExecutionHardConstraints,
       softConstraints,
-      processInfo.nextFlowNode
+      processInfo.nextFlowNode,
     ); // get valuesList for external machines
     valuesList.push(...valuesListExternalMachines);
 
@@ -164,7 +163,7 @@ const decider = {
   async allowedToExecuteLocally(processInfo, token, flowNodeConstraints, processConstraints) {
     if (!processInfo) {
       throw new Error(
-        "Missing input parameter for method 'allowedToExecuteLocally' in Decider Module"
+        "Missing input parameter for method 'allowedToExecuteLocally' in Decider Module",
       );
     }
 
@@ -173,7 +172,7 @@ const decider = {
         processInfo,
         token,
         flowNodeConstraints.hardConstraints || [],
-        processConstraints.hardConstraints || []
+        processConstraints.hardConstraints || [],
       );
 
       if (preCheckAbortResult.stopProcess !== null) {
@@ -187,7 +186,7 @@ const decider = {
 
     const hardConstraints = constraintHelper.concatAllConstraints(
       flowNodeConstraints.hardConstraints,
-      processConstraints.hardConstraints
+      processConstraints.hardConstraints,
     );
 
     const nonProcessExecutionHardConstraints =
@@ -211,11 +210,11 @@ const decider = {
     processInfo,
     flowNodeConstraints,
     processConstraints,
-    additionalMachines
+    additionalMachines,
   ) {
     if (!processInfo) {
       throw new Error(
-        "Missing input parameter for method 'findOptimalExternalMachine' in Decider Module"
+        "Missing input parameter for method 'findOptimalExternalMachine' in Decider Module",
       );
     }
 
@@ -226,12 +225,12 @@ const decider = {
 
     const hardConstraints = constraintHelper.concatAllConstraints(
       flowNodeConstraints.hardConstraints,
-      processConstraints.hardConstraints
+      processConstraints.hardConstraints,
     );
 
     const softConstraints = constraintHelper.concatAllConstraints(
       flowNodeConstraints.softConstraints,
-      processConstraints.softConstraints
+      processConstraints.softConstraints,
     );
 
     const nonProcessExecutionHardConstraints =
@@ -242,7 +241,7 @@ const decider = {
       nonProcessExecutionHardConstraints,
       softConstraints,
       undefined,
-      additionalMachines
+      additionalMachines,
     );
 
     // Step 3
@@ -295,7 +294,7 @@ const decider = {
 
     const filteredProcessConstraints = constraintHelper.filterOutDuplicateProcessConstraints(
       flowNodeConstraints,
-      processConstraints
+      processConstraints,
     );
 
     const unfulfilledProcessConstraints = Hceval.evaluateExecutionConstraints(
@@ -306,12 +305,12 @@ const decider = {
         machineHops: token.machineHops,
         storageTime: token.storageTime,
         storageRounds: token.storageRounds,
-      }
+      },
     );
 
     if (unfulfilledProcessConstraints.length > 0) {
       checkAbortResult.unfulfilledConstraints = unfulfilledProcessConstraints.map(
-        (constraint) => constraint.name
+        (constraint) => constraint.name,
       );
       checkAbortResult.stopProcess = 'instance';
       return checkAbortResult;
@@ -330,12 +329,12 @@ const decider = {
         machineHops: token.machineHops,
         storageTime: token.storageTime,
         storageRounds: token.storageRounds,
-      }
+      },
     );
 
     if (unfulfilledFlowNodeConstraints.length > 0) {
       checkAbortResult.unfulfilledConstraints = unfulfilledFlowNodeConstraints.map(
-        (constraint) => constraint.name
+        (constraint) => constraint.name,
       );
       checkAbortResult.stopProcess = 'token';
       return checkAbortResult;

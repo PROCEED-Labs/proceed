@@ -19,7 +19,7 @@ const authRouter = (config, client) => {
     authenticationRouter.get(
       '/login',
       validateRequest(false),
-      async (req, res) => await authHandler.login(req, res, client, config)
+      async (req, res) => await authHandler.login(req, res, client, config),
     );
 
     if (config.allowRegistrations) {
@@ -31,7 +31,7 @@ const authRouter = (config, client) => {
       authenticationRouter.get(
         '/register',
         validateRequest(false),
-        async (req, res) => await authHandler.login(req, res, client, config, true)
+        async (req, res) => await authHandler.login(req, res, client, config, true),
       );
     }
 
@@ -43,7 +43,7 @@ const authRouter = (config, client) => {
     authenticationRouter.get(
       '/logout',
       validateRequest(false),
-      async (req, res) => await authHandler.logout(req, res, client, config)
+      async (req, res) => await authHandler.logout(req, res, client, config),
     );
 
     /**
@@ -54,7 +54,7 @@ const authRouter = (config, client) => {
     authenticationRouter.get(
       '/userinfo',
       validateRequest(),
-      async (req, res) => await authHandler.getUserinfo(req, res, client, config)
+      async (req, res) => await authHandler.getUserinfo(req, res, client, config),
     );
   }
 
@@ -66,7 +66,7 @@ const authRouter = (config, client) => {
   authenticationRouter.post(
     '/callback',
     validateRequest(false),
-    async (req, res) => await authHandler.handleOauthCallback(req, res, client, config)
+    async (req, res) => await authHandler.handleOauthCallback(req, res, client, config),
   );
 
   return authenticationRouter;

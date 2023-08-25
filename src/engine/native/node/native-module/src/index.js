@@ -7,7 +7,7 @@ class NativeModule {
   // eslint-disable-next-line no-unused-vars
   executeCommand(command, args, send) {
     throw new Error(
-      `The NativeModule subclass ${this.constructor.name} doesn't overwrite the required \`executeCommand()\` method!`
+      `The NativeModule subclass ${this.constructor.name} doesn't overwrite the required \`executeCommand()\` method!`,
     );
   }
 }

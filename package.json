@@ -63,9 +63,12 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged",
+      "pre-commit": "lint-staged",
       "pre-push": "yarn test-engine && yarn test-ms"
     }
+  },
+  "lint-staged": {
+    "*": "prettier --check"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",
@@ -97,7 +100,6 @@
     "nodemon": "^2.0.12",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "prettier": "^3.0.2",
-    "pretty-quick": "2.0.1",
     "style-loader": "^0.23.1",
     "supertest": "^4.0.2",
     "webpack": "^4.35.3",
@@ -108,6 +110,7 @@
     "ts-loader": "8.2.0",
     "ts-jest": "^29.1.0",
     "@types/jest": "^29.5.1",
-    "@vue/cli-plugin-typescript": "5.0.8"
+    "@vue/cli-plugin-typescript": "5.0.8",
+    "lint-staged": "^14.0.1"
   }
 }

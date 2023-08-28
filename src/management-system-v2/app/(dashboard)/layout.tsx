@@ -14,6 +14,7 @@ import {
   Space,
   Tooltip,
 } from 'antd';
+const { SubMenu, Item, Divider, ItemGroup } = Menu;
 import {
   DeploymentUnitOutlined,
   FundProjectionScreenOutlined,
@@ -38,114 +39,130 @@ type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
 }>;
 
-const items: MenuProps['items'] = [
-  {
-    key: 'processes',
-    label: 'Processes',
-    type: 'group',
-  },
-  {
-    key: 'processes',
-    icon: <EditOutlined />,
-    label: 'Process List',
-    children: [
-      {
-        key: 'processes',
-        icon: <EditOutlined />,
-        label: 'My Processes',
-      },
-      {
-        key: 'newProcess',
-        icon: <FileAddOutlined />,
-        label: 'New Process',
-        disabled: true,
-      },
-      {
-        key: 'processFavorites',
-        icon: <StarOutlined />,
-        label: 'Favorites',
-        disabled: true,
-      },
-    ],
-  },
-  // {
-  //   key: 'newProcess',
-  //   icon: <FileAddOutlined />,
-  //   label: 'New Process',
-  //   disabled: true,
-  // },
-  {
-    key: 'templates',
-    icon: <ProfileOutlined />,
-    label: 'Templates',
-    disabled: false,
-    children: [
-      {
-        key: 'newTemplate',
-        icon: <FileAddOutlined />,
-        label: 'New Template',
-        disabled: true,
-      },
-      {
-        key: 'templateFavorites',
-        icon: <StarOutlined />,
-        label: 'Favorites',
-        disabled: true,
-      },
-    ],
-  },
-  // {
-  //   key: 'execution',
-  //   icon: <PlaySquareOutlined />,
-  //   label: 'Execution',
-  //   disabled: true,
-  // },
-
-  // { type: 'divider' },
-
-  // {
-  //   key: 'projects',
-  //   icon: <FundProjectionScreenOutlined />,
-  //   label: 'Projects',
-  // },
-  // {
-  //   key: 'tasklist',
-  //   icon: <UnorderedListOutlined />,
-  //   label: 'Tasklist',
-  //   disabled: true,
-  // },
-
-  { type: 'divider' },
-
-  {
-    key: 'settings',
-    label: 'Settings',
-    type: 'group',
-  },
-  {
-    key: 'generalSettings',
-    icon: <SettingOutlined />,
-    label: 'General Settings',
-    disabled: true,
-  },
-  {
-    key: 'plugins',
-    icon: <ApiOutlined />,
-    label: 'Plugins',
-    disabled: true,
-  },
-  // {
-  //   key: 'environments',
-  //   icon: <DeploymentUnitOutlined />,
-  //   label: 'Environments',
-  //   disabled: true,
-  // },
-];
-
 const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
+
+  const items: MenuProps['items'] = [
+    {
+      key: 'processes',
+      label: 'Processes',
+      type: 'group',
+    },
+    {
+      key: 'processes',
+      className:
+        'SelectedSegment' /* `${activeSegment === 'processes' ? 'SelectedSegment' : ''}` */,
+      icon: (
+        <EditOutlined
+          onClick={() => {
+            router.push(`/processes`);
+          }}
+        />
+      ),
+      label: (
+        <span
+          onClick={() => {
+            router.push(`/processes`);
+          }}
+        >
+          Process List
+        </span>
+      ),
+      children: [
+        // {
+        //   key: 'processes',
+        //   icon: <EditOutlined />,
+        //   label: 'My Processes',
+        // },
+        {
+          key: 'newProcess',
+          icon: <FileAddOutlined />,
+          label: 'New Process',
+          disabled: true,
+        },
+        {
+          key: 'processFavorites',
+          icon: <StarOutlined />,
+          label: 'Favorites',
+          disabled: true,
+        },
+      ],
+    },
+    // {
+    //   key: 'newProcess',
+    //   icon: <FileAddOutlined />,
+    //   label: 'New Process',
+    //   disabled: true,
+    // },
+    {
+      key: 'templates',
+      icon: <ProfileOutlined />,
+      label: 'Templates',
+      disabled: false,
+      children: [
+        {
+          key: 'newTemplate',
+          icon: <FileAddOutlined />,
+          label: 'New Template',
+          disabled: true,
+        },
+        {
+          key: 'templateFavorites',
+          icon: <StarOutlined />,
+          label: 'Favorites',
+          disabled: true,
+        },
+      ],
+    },
+    // {
+    //   key: 'execution',
+    //   icon: <PlaySquareOutlined />,
+    //   label: 'Execution',
+    //   disabled: true,
+    // },
+
+    // { type: 'divider' },
+
+    // {
+    //   key: 'projects',
+    //   icon: <FundProjectionScreenOutlined />,
+    //   label: 'Projects',
+    // },
+    // {
+    //   key: 'tasklist',
+    //   icon: <UnorderedListOutlined />,
+    //   label: 'Tasklist',
+    //   disabled: true,
+    // },
+
+    { type: 'divider' },
+
+    {
+      key: 'settings',
+      label: 'Settings',
+      type: 'group',
+    },
+    {
+      key: 'generalSettings',
+      icon: <SettingOutlined />,
+      label: 'General Settings',
+      disabled: true,
+    },
+    {
+      key: 'plugins',
+      icon: <ApiOutlined />,
+      label: 'Plugins',
+      disabled: true,
+    },
+    // {
+    //   key: 'environments',
+    //   icon: <DeploymentUnitOutlined />,
+    //   label: 'Environments',
+    //   disabled: true,
+    // },
+  ];
 
   return (
     <AntLayout>
@@ -209,11 +226,66 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             theme="light"
             mode="inline"
             selectedKeys={[activeSegment]}
+            onClick={({ key }) => {
+              router.push(`/${key}`);
+            }}
+          >
+            <ItemGroup key="processes" title="Processes">
+              <SubMenu
+                key="processes"
+                title={
+                  <span
+                    onClick={() => {
+                      router.push(`/processes`);
+                    }}
+                  >
+                    Process List
+                  </span>
+                }
+                className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
+                icon={
+                  <EditOutlined
+                    onClick={() => {
+                      router.push(`/processes`);
+                    }}
+                  />
+                }
+              >
+                <Item key="newProcess" icon={<FileAddOutlined />}>
+                  New Process
+                </Item>
+                <Item key="processFavorites" icon={<StarOutlined />}>
+                  Favorites
+                </Item>
+              </SubMenu>
+              <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
+                <Item key="newTemplate" icon={<FileAddOutlined />}>
+                  New Template
+                </Item>
+                <Item key="templateFavorites" icon={<StarOutlined />}>
+                  Favorites
+                </Item>
+              </SubMenu>
+            </ItemGroup>
+            <Divider />
+            <ItemGroup key="settings" title="Settings">
+              <Item key="generalSettings" icon={<SettingOutlined />}>
+                General Settings
+              </Item>
+              <Item key="plugins" icon={<ApiOutlined />}>
+                Plugins
+              </Item>
+            </ItemGroup>
+          </Menu>
+          {/* <Menu
+            theme="light"
+            mode="inline"
+            selectedKeys={[activeSegment]}
             items={items}
             onClick={({ key }) => {
               router.push(`/${key}`);
             }}
-          />
+          /> */}
         </AntLayout.Sider>
         <AntLayout>
           <Content>

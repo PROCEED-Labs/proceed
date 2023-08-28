@@ -106,7 +106,9 @@ const HeaderMenu: FC = () => {
   return (
     <>
       <Space>
-        {isProcessPage && <Breadcrumb style={{ fontSize: fontSizeHeading1 }} items={items} />}
+        {isProcessPage && (
+          <Breadcrumb style={{ fontSize: fontSizeHeading1, color: 'black' }} items={items} />
+        )}
       </Space>
     </>
   );

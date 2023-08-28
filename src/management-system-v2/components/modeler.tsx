@@ -96,7 +96,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
 
   useEffect(() => {
-    if (modeler.current?.importXML && processBpmn) {
+    // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
+    if (!initialized && modeler.current?.importXML && processBpmn) {
       // import the diagram that was returned by the request
       modeler.current.importXML(processBpmn);
 
@@ -120,6 +121,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         }, 2000);
       });
     }
+    // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
+    setInitialized(false);
   }, [initialized, setSelectedElementId, processBpmn, processId]);
 
   return (

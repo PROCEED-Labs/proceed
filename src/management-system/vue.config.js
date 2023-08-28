@@ -158,7 +158,7 @@ module.exports = {
       config.target = 'web';
       config.plugins = config.plugins.concat([
         new webpack.DefinePlugin({
-          'process.env.IS_WEB': 'true',
+          'process.env.IS_WEB': JSON.stringify('true'),
         }),
       ]);
     } else {

@@ -41,6 +41,7 @@ import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 
 const fuseOptions = {
+  /* Option for Fuzzy-Search for Processlistfilter */
   /* https://www.fusejs.io/api/options.html#useextendedsearch */
   // isCaseSensitive: false,
   // includeScore: false,

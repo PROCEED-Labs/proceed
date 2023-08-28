@@ -624,9 +624,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['processData'] & {
-          bpmn?: components['schemas']['bpmn'];
-        };
+        'application/json': {
+          /** @description The description (the content of documentation element of the first process element in the process model) */
+          description?: string;
+          /** @description The name as it is in the definitions element of the process */
+          definitionName?: string;
+        } & components['schemas']['processData'] & {
+            bpmn?: components['schemas']['bpmn'];
+          };
       };
     };
     responses: {

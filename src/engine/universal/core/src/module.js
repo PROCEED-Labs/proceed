@@ -48,10 +48,6 @@ module.exports = {
       setup5thIndustryEndpoints();
     }
 
-    // process.on('unhandledRejection', async (reason) => {
-    //   console.log(reason);
-    // });
-
     // Open /status endpoint at last
     distribution.init(management);
 

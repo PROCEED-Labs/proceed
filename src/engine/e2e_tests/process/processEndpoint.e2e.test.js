@@ -188,6 +188,8 @@ describe('Test process endpoints', () => {
         const postResponse = await request.post('/process/definitionId/versions/123/instance');
         expect(postResponse.status).toBe(201);
         ({ instanceId } = postResponse.body);
+        // allow everything to start correctly (the user task should have completely started)
+        await new Promise((res) => setTimeout(res, 500));
       });
       it('responds with statuscode 404 on nonexisting definitionId', async () => {
         const response = await request.get('/process/unknownDefinitionId/instance');

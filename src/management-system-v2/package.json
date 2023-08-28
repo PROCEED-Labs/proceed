@@ -9,7 +9,7 @@
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
     "prebuild": "cross-env NODE_ENV=production ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
-    "openapi:typescript-types": "openapi-typescript ../management-system/src/backend/openapi.json -o lib/openapiSchema.ts"
+    "openapi:typescript-types": "openapi-typescript ../management-system/src/backend/openapi.json -o lib/openapiSchema.ts && prettier --trailing-comma all --write lib/openapiSchema.ts"
   },
   "prettier": {
     "singleQuote": true

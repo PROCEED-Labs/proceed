@@ -19,6 +19,10 @@ import { isAllowed } from '../iam/middleware/authorization.ts';
 import logger from '../../shared-electron-server/logging.js';
 import Ability from '../iam/authorization/abilityHelper';
 import { toCaslResource } from '../iam/authorization/caslRules';
+import bpmnHelper from '@proceed/bpmn-helper';
+const { addDocumentation, setDefinitionsName } = bpmnHelper;
+import processHelpers from '../../../shared-frontend-backend/helpers/processHelpers.js';
+const { getProcessInfo } = processHelpers;
 
 const processRouter = express.Router();
 
@@ -126,6 +130,7 @@ processRouter.get('/:definitionId', isAllowed('view', 'Process'), async (req, re
   }
 });
 
+const allowedInPutBodyInsteadOfBpmn = ['definitionName', 'description'];
 processRouter.put('/:definitionId', isAllowed('update', 'Process'), async (req, res) => {
   const { process, definitionsId, body } = req;
 
@@ -146,6 +151,40 @@ processRouter.put('/:definitionId', isAllowed('update', 'Process'), async (req, 
     return res.status(403).send('Forbidden.');
 
   let { bpmn } = body;
+
+  if (
+    typeof bpmn === 'string' &&
+    bpmn !== '' &&
+    allowedInPutBodyInsteadOfBpmn.some((key) => Object.keys(body).includes(key))
+  ) {
+    const oldBpmn = await getProcessBpmn(definitionsId);
+    const dataInOldBpmn = await getProcessInfo(oldBpmn);
+    const dataInNewBpmn = await getProcessInfo(bpmn);
+
+    if ('definitionName' in body) {
+      if (dataInNewBpmn.name !== dataInOldBpmn.name)
+        return res
+          .status(400)
+          .send(
+            'Key "definitionName" of process being updated in the request body and in the BPMN.',
+          );
+
+      bpmn = await setDefinitionsName(bpmn, body['definitionName']);
+      delete body['definitionName'];
+    }
+
+    if ('description' in body) {
+      if (dataInNewBpmn.description !== dataInOldBpmn.description)
+        return res
+          .status(400)
+          .send('Key "description" of process being updated in the request body and in the BPMN.');
+
+      bpmn = await addDocumentation(bpmn, body['description']);
+      delete body['description'];
+    }
+
+    body.bpmn = bpmn;
+  }
 
   try {
     const newProcessInfo = await updateProcess(definitionsId, body);
@@ -180,6 +219,12 @@ processRouter.get('/:definitionId/versions', isAllowed('view', 'Process'), async
 
   if (!userAbility.can('view', toCaslResource('Process', req.process)))
     return res.status(403).send('Forbidden.');
+
+  const { process, definitionsId } = req;
+  if (!process) {
+    res.status(404).send(`Process with id ${definitionsId} could not be found!`);
+    return;
+  }
 
   res.status(200).send(req.process.versions);
 });

@@ -3,8 +3,7 @@
 import styles from './processes.module.scss';
 import { FC } from 'react';
 import { Dropdown, MenuProps, Table, TableColumnsType } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import { fetchProcesses } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
@@ -80,10 +79,8 @@ const rowSelection = {
 
 const Processes: FC = () => {
   const router = useRouter();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['processes'],
-    queryFn: () => fetchProcesses(),
-  });
+
+  const { data, isLoading, isError } = useGetAsset('/process', {});
 
   if (isError) {
     return <div>Error</div>;

@@ -3,11 +3,18 @@
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
 import { Layout as AntLayout, Menu, MenuProps } from 'antd';
-import { EditOutlined, UnorderedListOutlined, ProfileOutlined } from '@ant-design/icons';
+import {
+  EditOutlined,
+  UnorderedListOutlined,
+  ProfileOutlined,
+  LoginOutlined,
+} from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
+import { Route } from 'next';
+import { login, logout, useAuthStore } from '@/lib/iam';
 
 const items: MenuProps['items'] = [
   {
@@ -28,9 +35,26 @@ const items: MenuProps['items'] = [
   },
 ];
 
+if (process.env.NEXT_PUBLIC_USE_AUTH)
+  items.push({
+    key: 'logout',
+    icon: <LoginOutlined />,
+    label: 'Logout',
+  });
+
+const authItems = [
+  {
+    key: 'login',
+    icon: <LoginOutlined />,
+    label: 'Login',
+    disabled: false,
+  },
+];
+
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
+  const loggedIn = useAuthStore((state) => state.loggedIn);
   const [collapsed, setCollapsed] = useState(false);
 
   // Note: The page layout is located in the content component because it
@@ -56,9 +80,11 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           theme="dark"
           mode="inline"
           selectedKeys={[activeSegment]}
-          items={items}
+          items={!process.env.NEXT_PUBLIC_USE_AUTH || loggedIn ? items : authItems}
           onClick={({ key }) => {
-            router.push(`/${key}`);
+            if (key === 'login') login();
+            else if (key === 'logout') logout();
+            else router.push(`/${key}` as Route);
           }}
         />
       </AntLayout.Sider>

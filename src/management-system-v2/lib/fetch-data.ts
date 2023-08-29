@@ -1,3 +1,5 @@
+import { authFetchJSON } from './iam';
+
 import { UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import createClient from 'openapi-fetch';
 import { paths } from './openapiSchema';
@@ -98,13 +100,18 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
   });
 };
 
-const fetchJSON = async <T>(url: string, options = {}) => {
+const UnauthenticatedfetchJSON = async <T>(
+  url: string,
+  options: Parameters<typeof fetch>[1] = undefined,
+) => {
   const response = await fetch(url, options);
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
   return response.json() as Promise<T>;
 };
+
+const fetchJSON = process.env.NEXT_PUBLIC_USE_AUTH ? authFetchJSON : UnauthenticatedfetchJSON;
 
 // We use distinct types for the
 // if(data){

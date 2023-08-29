@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env API_URL=https://localhost:33080/api next build",
+    "dev-iam": "USE_AUTH=true next dev",
+    "build": "cross-env API_URL=https://localhost:33083/api next build",
     "start": "next start",
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
@@ -24,6 +25,7 @@
     "react-dom": "18.2.0",
     "zustand": "4.3.8",
     "immer": "10.0.2",
+    "@casl/ability": "6.5.0",
     "openapi-fetch": "0.6.1"
   },
   "devDependencies": {

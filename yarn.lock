@@ -1336,7 +1336,8 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
-"@casl/ability-v6@npm:@casl/ability@^6.5.0":
+"@casl/ability-v6@npm:@casl/ability@^6.5.0", "@casl/ability@6.5.0":
+  name "@casl/ability-v6"
   version "6.5.0"
   resolved "https://registry.yarnpkg.com/@casl/ability/-/ability-6.5.0.tgz#a151a7637886099b8ffe52a96601225004a5c157"
   integrity sha512-3guc94ugr5ylZQIpJTLz0CDfwNi0mxKVECj1vJUPAvs+Lwunh/dcuUjwzc4MHM9D8JOYX0XUZMEPedpB3vIbOw==

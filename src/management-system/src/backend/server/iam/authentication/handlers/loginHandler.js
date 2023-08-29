@@ -119,7 +119,7 @@ export const handleOauthCallback = async (req, res, client, config) => {
     };
 
     const tokenSet = await client.callback(
-      req.headers.referer.substring(0, req.headers.referer.indexOf('?')),
+      req.headers.referer.substring(0, req.headers.referer.indexOf('?')) || req.headers.referer,
       params,
       checks,
     );

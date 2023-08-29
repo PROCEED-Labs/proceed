@@ -68,7 +68,7 @@
     }
   },
   "lint-staged": {
-    "*": "prettier --check"
+    "*": "prettier --check --ignore-path .eslintignore"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",

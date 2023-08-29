@@ -214,19 +214,23 @@ processRouter.delete('/:definitionId', isAllowed('delete', 'Process'), async (re
 });
 
 processRouter.get('/:definitionId/versions', isAllowed('view', 'Process'), async (req, res) => {
-  /** @type {Ability} */
-  const userAbility = req.userAbility;
-
-  if (!userAbility.can('view', toCaslResource('Process', req.process)))
-    return res.status(403).send('Forbidden.');
-
   const { process, definitionsId } = req;
+
   if (!process) {
     res.status(404).send(`Process with id ${definitionsId} could not be found!`);
     return;
   }
 
-  res.status(200).send(req.process.versions);
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('view', toCaslResource('Process', process)))
+    return res.status(403).send('Forbidden.');
+
+  if (!userAbility.can('view', toCaslResource('Process', req.process)))
+    return res.status(403).send('Forbidden.');
+
+  res.status(200).send(process.versions);
 });
 
 processRouter.post('/:definitionId/versions', isAllowed('update', 'Process'), async (req, res) => {

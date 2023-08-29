@@ -1,2 +1,4 @@
 src/opa/*
 src/keycloak/*
+src/management-system/src/backend/server/environment-configurations/*
+yarn.lock

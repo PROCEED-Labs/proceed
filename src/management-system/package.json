@@ -43,6 +43,7 @@
   "dependencies": {
     "@assistant/conversation": "^3.6.0",
     "@casl/ability": "5.4.3",
+    "@casl/ability-v6": "npm:@casl/ability@^6.5.0",
     "@casl/vue": "1.x",
     "@mdi/font": "^6.5.95",
     "@proceed/bpmn-helper": "^1.0.0",
@@ -118,7 +119,8 @@
     "vuex": "^3.0.1",
     "vuex-electron": "^1.0.3",
     "winston": "^3.3.3",
-    "yup": "^0.32.9"
+    "yup": "^0.32.9",
+    "lru-cache": "^10.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",

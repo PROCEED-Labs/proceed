@@ -6,47 +6,48 @@ import {
 } from '../../shared-electron-server/data/machines.js';
 import { v4 } from 'uuid';
 import express from 'express';
-import { isAllowed } from '../iam/middleware/authorization.js';
-import {
-  PERMISSION_VIEW,
-  PERMISSION_CREATE,
-  PERMISSION_UPDATE,
-  PERMISSION_DELETE,
-  PERMISSION_MANAGE,
-} from '../../../shared-frontend-backend/constants/index.js';
+import { isAllowed } from '../iam/middleware/authorization';
+import { toCaslResource } from '../iam/authorization/caslRules';
+import Ability from '../iam/authorization/abilityHelper';
 
 const machinesRouter = express.Router();
 
-machinesRouter.get('/', isAllowed(PERMISSION_VIEW, 'Machine'), async (req, res) => {
-  res.status(200).json(getMachines());
+machinesRouter.get('/', isAllowed('view', 'Machine'), async (req, res) => {
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  const machines = userAbility.filter('view', 'Machine', getMachines());
+  res.status(200).json(machines);
 });
 
-machinesRouter.post(
-  '/',
-  isAllowed([PERMISSION_CREATE, PERMISSION_MANAGE], 'Machine'),
-  async (req, res) => {
-    const { body } = req;
+machinesRouter.post('/', isAllowed('create', 'Machine'), async (req, res) => {
+  const { body } = req;
 
-    if (typeof body !== 'object') {
-      res.status(400).send(`Expected JSON data but got ${typeof body}!`);
-      return;
-    }
+  if (typeof body !== 'object') {
+    res.status(400).send(`Expected JSON data but got ${typeof body}!`);
+    return;
+  }
 
-    // we need some kind of identification data like an id, ip+port, hostname
-    if (!(body.ip && body.port) && !body.hostname && !body.id) {
-      res.status(400).send(`At least one of hostname, network info (ip + port) or id needed!`);
-      return;
-    }
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
 
-    if (!body.id) {
-      body.id = v4();
-    }
+  if (!userAbility.can('create', toCaslResource('Machine', body)))
+    return res.status(403).send('Forbidden.');
 
-    addMachine(body);
+  // we need some kind of identification data like an id, ip+port, hostname
+  if (!(body.ip && body.port) && !body.hostname && !body.id) {
+    res.status(400).send(`At least one of hostname, network info (ip + port) or id needed!`);
+    return;
+  }
 
-    res.status(201).end();
-  },
-);
+  if (!body.id) {
+    body.id = v4();
+  }
+
+  addMachine(body);
+
+  res.status(201).end();
+});
 
 // make requested machine directly accessible for requests on this path
 machinesRouter.use('/:id', (req, res, next) => {
@@ -55,8 +56,14 @@ machinesRouter.use('/:id', (req, res, next) => {
   next();
 });
 
-machinesRouter.get('/:id', isAllowed(PERMISSION_VIEW, 'Machine'), async (req, res) => {
+machinesRouter.get('/:id', isAllowed('view', 'Machine'), async (req, res) => {
   const { machine, machineId } = req;
+
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('view', toCaslResource('Machine', machine)))
+    return res.status(403).send('Forbidden.');
 
   if (!machine) {
     res.status(404).send(`No machine with id ${machineId} known!`);
@@ -66,65 +73,69 @@ machinesRouter.get('/:id', isAllowed(PERMISSION_VIEW, 'Machine'), async (req, re
   res.status(200).json(machine);
 });
 
-machinesRouter.delete(
-  '/:id',
-  isAllowed([PERMISSION_DELETE, PERMISSION_MANAGE], 'Machine'),
-  async (req, res) => {
-    const { machine, machineId } = req;
+machinesRouter.delete('/:id', isAllowed('delete', 'Machine'), async (req, res) => {
+  const { machine, machineId } = req;
 
-    if (!machine) {
-      res.status(200).end();
-      return;
-    }
-
-    if (!machine.saved) {
-      res
-        .status(403)
-        .send(`The machine is known through the discovery and not stored. It can't be removed!`);
-      return;
-    }
-
-    removeMachine(machineId);
-
+  if (!machine) {
     res.status(200).end();
-  },
-);
+    return;
+  }
 
-machinesRouter.put(
-  '/:id',
-  isAllowed([PERMISSION_UPDATE, PERMISSION_MANAGE], 'Machine'),
-  async (req, res) => {
-    const { machine, machineId, body } = req;
+  if (!machine.saved) {
+    res
+      .status(403)
+      .send(`The machine is known through the discovery and not stored. It can't be removed!`);
+    return;
+  }
 
-    if (typeof body !== 'object') {
-      res.status(400).send('Expected update object as body');
-      return;
-    }
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
 
-    if (!machine) {
-      res.status(404).send(`No machine with id ${machineId} known!`);
-      return;
-    }
+  if (!userAbility.can('delete', toCaslResource('Machine', machine)))
+    return res.status(403).send('Forbidden.');
 
-    if (!machine.saved) {
-      res.status(400).send("Machine is not stored and thus can't be changed!");
-      return;
-    }
+  removeMachine(machineId);
 
-    // don't allow overwrite of machine info; internally managed variables like saved, discovered and status; the id
-    delete body.machine;
-    delete body.saved;
-    delete body.discovered;
-    delete body.status;
-    delete body.id;
+  res.status(200).end();
+});
 
-    try {
-      await updateMachine(machineId, body);
-      res.status(200).end();
-    } catch (err) {
-      res.status(400).send(err);
-    }
-  },
-);
+machinesRouter.put('/:id', isAllowed('update', 'Machine'), async (req, res) => {
+  const { machine, machineId, body } = req;
+
+  if (typeof body !== 'object') {
+    res.status(400).send('Expected update object as body');
+    return;
+  }
+
+  if (!machine) {
+    res.status(404).send(`No machine with id ${machineId} known!`);
+    return;
+  }
+
+  if (!machine.saved) {
+    res.status(400).send("Machine is not stored and thus can't be changed!");
+    return;
+  }
+
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('update', toCaslResource('Machine', machine)))
+    return res.status(403).send('Forbidden.');
+
+  // don't allow overwrite of machine info; internally managed variables like saved, discovered and status; the id
+  delete body.machine;
+  delete body.saved;
+  delete body.discovered;
+  delete body.status;
+  delete body.id;
+
+  try {
+    await updateMachine(machineId, body);
+    res.status(200).end();
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
 
 export default machinesRouter;

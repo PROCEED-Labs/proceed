@@ -16,25 +16,6 @@ services:
     networks:
       proceed:
 
-  opa:
-    image: openpolicyagent/opa:0.38.0
-    container_name: proceed-opa
-    ports:
-      - 8181:8181
-    command:
-      - 'run'
-      - '--server'
-      - '--watch'
-      - '--log-level=debug'
-      - '--set=default_decision=/main/decision'
-      - './main.rego'
-      - './policies'
-    volumes:
-      - ./opa/policies:/policies
-      - ./opa/main.rego:/main.rego
-    networks:
-      proceed:
-
 volumes:
   session_storage:
     name: session_storage

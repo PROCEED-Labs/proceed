@@ -70,11 +70,11 @@ if (process.env.MODE === 'iam') {
 
   opaProcess.stdout.on('data', (data) => {
     const dataString = data.toString();
-    console.log('Open-Policy-Agent: ', dataString);
+    console.log('Redis', dataString);
   });
   opaProcess.stderr.on('data', (data) => {
     const dataString = data.toString();
-    console.error('Open-Policy-Agent: ', dataString);
+    console.error('Redis', dataString);
   });
 
   // when ctrl + c detected stop docker container
@@ -83,23 +83,7 @@ if (process.env.MODE === 'iam') {
     process.exit(1);
   });
 
-  // check health endpoint for OPA container to know, when to start the Management System
-  const checkOpaHealth = async () => {
-    setTimeout(async function () {
-      try {
-        const health = await axios.get(`http://localhost:8181/health`);
-        if (health.status === 200) {
-          startManagementSystem();
-        } else {
-          checkOpaHealth();
-        }
-      } catch (e) {
-        checkOpaHealth();
-      }
-    }, 1000);
-  };
-
-  checkOpaHealth();
+  startManagementSystem();
 } else {
   startManagementSystem();
 }

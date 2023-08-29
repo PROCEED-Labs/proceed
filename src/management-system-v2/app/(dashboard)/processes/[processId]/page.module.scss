@@ -8,7 +8,7 @@
   height: 100%;
   overflow: hidden;
   /* Make sure the modeler is always above content. */
-  z-index: 99999;
+  z-index: 100;
 
   &.minimized {
     height: 400px;

@@ -1,5 +1,5 @@
 .Main {
-  min-height: 100vh !important;
+  // min-height: 40vh !important;
 
   .Header {
     display: flex;
@@ -22,8 +22,16 @@
 
   .Content {
     overflow: initial;
-    padding: 40px 20px;
+    padding-top: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
     max-width: 100%;
+    // background-color: white;
+
+    @media screen and (max-width: 550px) {
+      padding-left: 0px;
+      padding-right: 0px;
+    }
 
     &.compact {
       padding: 0;

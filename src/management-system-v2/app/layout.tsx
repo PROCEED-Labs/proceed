@@ -1,5 +1,6 @@
 import 'antd/dist/reset.css';
 import '@/public/antd.min.css';
+import './globals.css';
 import { Inter } from 'next/font/google';
 import { FC, PropsWithChildren } from 'react';
 import Layout from '@/components/layout';

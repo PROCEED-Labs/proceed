@@ -47,7 +47,7 @@ const Processes: FC<ProcessProps> = () => {
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
       footerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      <Modeler className={styles.Modeler} />
+      <Modeler className={styles.Modeler} minimized={minimized} />
       {minimized ? <Overlay processId={processId} onClose={() => setClosed(true)} /> : null}
     </Content>
   );

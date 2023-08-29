@@ -111,6 +111,15 @@ const UnauthenticatedfetchJSON = async <T>(
   return response.json() as Promise<T>;
 };
 
+const fetchString = async (url: string, options = {}) => {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  return response.text();
+};
+
 const fetchJSON = process.env.NEXT_PUBLIC_USE_AUTH ? authFetchJSON : UnauthenticatedfetchJSON;
 
 // We use distinct types for the
@@ -131,6 +140,30 @@ export const fetchProcesses = async () => {
   }));
 };
 
+export const fetchProcess = async (definitionId: string) => {
+  const url = `${BASE_URL}/process/${definitionId}`;
+  return await fetchJSON<Process>(url);
+};
+
+export const fetchProcessVersionBpmn = async (definitionId: string, version: number | string) => {
+  const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
+  return await fetchString(url);
+};
+
+export const fetchUserData = async <User>() => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve({
+        lastName: 'Mustermann',
+        firstName: 'Max',
+        username: 'max.mustermann',
+        email: 'm.mustermann@mustermail.com',
+        picture: 'https://picsum.photos/200',
+      });
+    }, 2_000);
+  });
+};
+
 /**
  * IMPORTANT
  *
@@ -139,7 +172,16 @@ export const fetchProcesses = async () => {
  * from the database schema (e.g. using Prisma).
  */
 
-export type Processes = {
+export type User = {
+  // id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  picture: string;
+};
+
+export type Process = {
   type: 'process';
   description: string;
   owner: string | null;
@@ -150,7 +192,10 @@ export type Processes = {
   createdOn: Date;
   lastEdited: Date;
   shared: boolean;
-  versions: [];
+  versions: { version: number | string; name: string; description: string }[];
   definitionId: string;
   definitionName: string;
-}[];
+  bpmn?: string;
+};
+
+export type Processes = Process[];

@@ -22,3 +22,40 @@
     }
   }
 }
+
+.Headerrow {
+  padding: 10px 0;
+
+  .SelectedRow {
+    background-color: #ececec;
+    border-radius: 4px;
+    padding: 4px;
+  }
+
+  .Headercol {
+    padding: 4px;
+    display: flex;
+  }
+
+  .Icons {
+    display: inline-flex;
+    width: 40%;
+    justify-content: space-around;
+    align-items: center;
+
+    .Icon {
+      margin: 0 5px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .Icon:hover {
+      color: #dcdcdc;
+    }
+  }
+
+  .Selectview {
+    justify-self: end;
+    justify-content: end;
+  }
+}

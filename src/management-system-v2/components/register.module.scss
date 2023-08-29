@@ -1,0 +1,23 @@
+.registerForm {
+  max-width: 100%;
+}
+// .loginFormForgot {
+//   float: right;
+// }
+// .ant-col-rtl .loginFormForgot {
+//   float: left;
+// }
+.registerFormButton {
+  width: 100%;
+}
+
+@media screen and (max-width: 600px) {
+  .Card {
+    width: 90vw;
+  }
+}
+@media screen and (min-width: 601px) {
+  .Card {
+    width: 500px;
+  }
+}

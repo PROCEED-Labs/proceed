@@ -1,0 +1,23 @@
+.loginForm {
+  max-width: 300px;
+}
+.loginFormForgot {
+  float: right;
+}
+.ant-col-rtl .loginFormForgot {
+  float: left;
+}
+.loginFormButton {
+  width: 100%;
+}
+
+@media screen and (max-width: 350px) {
+  .Card {
+    width: 90vw;
+  }
+}
+@media screen and (min-width: 351px) {
+  .Card {
+    width: 350px;
+  }
+}

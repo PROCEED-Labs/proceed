@@ -2035,7 +2035,7 @@
           "updated_at": {
             "type": "string"
           },
-          "id": {
+          "user_id": {
             "type": "string"
           }
         }
@@ -2058,10 +2058,10 @@
           "username": {
             "type": "string"
           },
-          "lastName": {
+          "family_name": {
             "type": "string"
           },
-          "firstName": {
+          "given_name": {
             "type": "string"
           }
         }
@@ -2083,9 +2083,9 @@
           "picture",
           "updated_at",
           "username",
-          "lastName",
-          "firstName",
-          "id"
+          "family_name",
+          "given_name",
+          "user_id"
         ]
       },
       "PermissionNumber": {

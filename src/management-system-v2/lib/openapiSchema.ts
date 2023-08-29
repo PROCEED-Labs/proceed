@@ -328,7 +328,7 @@ export interface components {
       created_at?: string;
       email_verified?: boolean;
       updated_at?: string;
-      id?: string;
+      user_id?: string;
     };
     /** user */
     userData: {
@@ -338,8 +338,8 @@ export interface components {
       /** Format: uri */
       picture?: string;
       username?: string;
-      lastName?: string;
-      firstName?: string;
+      family_name?: string;
+      given_name?: string;
     };
     userResponse: WithRequired<
       components['schemas']['userMetaData'] & components['schemas']['userData'],
@@ -350,9 +350,9 @@ export interface components {
       | 'picture'
       | 'updated_at'
       | 'username'
-      | 'lastName'
-      | 'firstName'
-      | 'id'
+      | 'family_name'
+      | 'given_name'
+      | 'user_id'
     >;
     /**
      * PermissionNumber

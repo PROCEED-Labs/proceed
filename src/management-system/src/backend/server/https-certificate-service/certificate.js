@@ -25,7 +25,7 @@ export async function getCertificate(letsencryptPath) {
 
     if (fse.existsSync(certPath) && fse.existsSync(keyPath)) {
       logger.info(
-        'Found user provided certificate in ssl/certificate.pem and user provided private key in ssl/private-key.key!'
+        'Found user provided certificate in ssl/certificate.pem and user provided private key in ssl/private-key.key!',
       );
       const cert = fse.readFileSync(certPath, 'ascii');
       const key = fse.readFileSync(keyPath, 'ascii');
@@ -53,7 +53,7 @@ export async function getCertificate(letsencryptPath) {
   const certificate = fse.readFileSync(path.join(__dirname, 'https-public-dev-certificate.pem'));
   const privateKey = fse.readFileSync(path.join(__dirname, 'https-private-dev-key.key'));
   logger.warn(
-    'Unable to get a certificate. Took development self-signed certificate and private key. These are not secure as they are publicly available and should not be used outside a development environment.'
+    'Unable to get a certificate. Took development self-signed certificate and private key. These are not secure as they are publicly available and should not be used outside a development environment.',
   );
 
   return { key: privateKey, cert: certificate };
@@ -94,7 +94,7 @@ async function initAdditionalLetsEnrypt(letsencryptPath, frontendServers, covere
  */
 function checkForUncoveredDomains(domains, coveredDomains) {
   return domains.some((domain) =>
-    coveredDomains.every((coveredDomain) => domain !== coveredDomain)
+    coveredDomains.every((coveredDomain) => domain !== coveredDomain),
   );
 }
 
@@ -139,12 +139,12 @@ export async function handleLetsEncrypt(letsencryptPath, frontendServers) {
                 initAdditionalLetsEnrypt(letsencryptPath, frontendServers, coveredDomains);
               }, 0);
             }
-          }
+          },
         );
       }
     } catch (err) {
       logger.error(
-        `Failed to set up Let's Encrypt to handle domains that are not covered by the currently used certificate. Reason: ${err}`
+        `Failed to set up Let's Encrypt to handle domains that are not covered by the currently used certificate. Reason: ${err}`,
       );
     }
   }

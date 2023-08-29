@@ -118,7 +118,7 @@ export default {
   computed: {
     hasLinkShare() {
       return this.shares.some(
-        (share) => share.hasOwnProperty('token') || share.hasOwnProperty('url')
+        (share) => share.hasOwnProperty('token') || share.hasOwnProperty('url'),
       );
     },
     ...mapGetters({
@@ -149,7 +149,7 @@ export default {
         const shares = await api.getShares(
           `resourceType=${resource.type[0].toUpperCase() + resource.type.slice(1)}&resourceId=${
             resource.id
-          }`
+          }`,
         );
         if (shares.length > 0) {
           this.shares = shares.sort((a, b) => (a.type < b.type ? 1 : b.type < a.type ? -1 : 0));

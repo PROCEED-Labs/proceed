@@ -200,7 +200,7 @@ export default {
     },
     deleteValidator(validatorToRemove) {
       this.curParameter.validators = this.curParameter.validators.filter(
-        (v) => v !== validatorToRemove
+        (v) => v !== validatorToRemove,
       );
     },
     /**

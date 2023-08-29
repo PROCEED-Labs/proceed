@@ -157,7 +157,7 @@ export default {
         if (this.machineMapping[eid].machineId) {
           fill = hexToRgba(
             this.$store.getters['machineStore/color'](this.machineMapping[eid].machineId),
-            50
+            50,
           );
         } else if (this.machineMapping[eid].machineAddress) {
           const ip = this.machineMapping[eid].machineAddress.split(':')[0];
@@ -213,7 +213,7 @@ export default {
             element.id.includes('Event') ||
             element.id.includes('Gateway') ||
             Object.getPrototypeOf(element).constructor.name === 'Shape' ||
-            Object.getPrototypeOf(element).constructor.name === 'xt'
+            Object.getPrototypeOf(element).constructor.name === 'xt',
         )
         .map((element) => element.id);
     };

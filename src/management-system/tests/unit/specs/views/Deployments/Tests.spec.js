@@ -8,7 +8,7 @@ import DataInterface from '../../../mocks/DataInterface.js';
 
 const baseBPMN = fs.readFileSync(
   path.resolve(__dirname, '../../../../data/bpmn/baseBPMN.xml'),
-  'utf8'
+  'utf8',
 );
 
 jest.mock('@/frontend/main.js', () => ({
@@ -101,7 +101,7 @@ describe('Deployments', () => {
     it('returns object with information about to be deployed process', () => {
       wrapper.vm.deployDefinitionId = 'xyz789';
       const deployProcess = wrapper.vm.processes.find(
-        (process) => process.id === wrapper.vm.deployDefinitionId
+        (process) => process.id === wrapper.vm.deployDefinitionId,
       );
       expect(deployProcess).toEqual(mockProcesses[0]);
     });

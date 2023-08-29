@@ -143,7 +143,7 @@ export default {
           CustomRules,
           DisableKeyboardBinding,
           CustomPopUpMenuProvider,
-          PlaceholderReplacementProvider
+          PlaceholderReplacementProvider,
         );
 
         this.modeler = new Modeler(sharedModelerConfig);
@@ -178,7 +178,7 @@ export default {
               constraints: constraints,
             });
           }
-        }
+        },
       );
 
       // handle a user opening a subprocess through the functionality exposed by bpmn-js
@@ -286,7 +286,7 @@ export default {
         if (this.modeler && this.process.id === processDefinitionsId) {
           eventDistribution.applyExternalEvent(type, context);
         }
-      }
+      },
     );
   },
   beforeDestroy() {

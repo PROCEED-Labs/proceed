@@ -2,7 +2,7 @@
   <v-autocomplete
     :items="
       usersWithoutShare.filter(
-        (user) => user.username !== 'admin' && user.id !== getUser.id && user.id !== process.owner
+        (user) => user.username !== 'admin' && user.id !== getUser.id && user.id !== process.owner,
       )
     "
     ref="autocomplete"

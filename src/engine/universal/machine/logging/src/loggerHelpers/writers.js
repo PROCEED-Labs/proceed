@@ -89,7 +89,7 @@ module.exports = async (definitionId, loggerInitializedPromise) => {
       const time = new Date().getTime();
       data.write(
         `${definitionId}/${currentTableID}_monitoring_${definitionId}.json/${time}_${logNumber}`,
-        JSON.stringify(msg)
+        JSON.stringify(msg),
       );
       logNumber += 1;
       rotationFunctions.addProcessLog(definitionId);

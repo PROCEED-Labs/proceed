@@ -58,7 +58,7 @@ describe(' /process', function () {
           '<camunda:entry key="User-Agent">curl</camunda:entry>\n <camunda:entry key="Accept">application/json</camunda:entry>\n </camunda:map>\n' +
           '</camunda:inputParameter>\n <camunda:outputParameter name="statusCode">\\${result[0].statusCode}</camunda:outputParameter>\n ' +
           '<camunda:outputParameter name="body">\\${result[1]}</camunda:outputParameter>\n ' +
-          ' </camunda:inputOutput>\n </extensionElements>\n</serviceTask>\n </process>\n</definitions>'
+          ' </camunda:inputOutput>\n </extensionElements>\n</serviceTask>\n </process>\n</definitions>',
       )
       .expect('Content-Type', /text/)
       .expect(200);

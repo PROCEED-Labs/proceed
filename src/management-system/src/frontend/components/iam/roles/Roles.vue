@@ -235,13 +235,13 @@ export default {
         this.$set(
           this.permissions,
           resource,
-          await translatePermissionToList(this.selectedRole.permissions[resource])
+          await translatePermissionToList(this.selectedRole.permissions[resource]),
         );
       });
     },
     setCopyOfSelectedRole(role) {
       const index = this.unmodifiedRoleState.findIndex(
-        (unmodifiedRole) => unmodifiedRole.id === role.id
+        (unmodifiedRole) => unmodifiedRole.id === role.id,
       );
       if (index > -1) {
         this.copyOfSelectedRole = JSON.parse(JSON.stringify(this.unmodifiedRoleState[index]));

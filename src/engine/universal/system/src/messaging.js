@@ -491,11 +491,11 @@ class Messaging extends System {
     try {
       await this.subscribe(
         constructTopicWithTrailingSlash(this._baseTopic, this._machineId),
-        onMessage
+        onMessage,
       );
       await this.subscribe(
         constructTopicWithoutTrailingSlash(this._baseTopic, this._machineId),
-        onMessage
+        onMessage,
       );
     } catch (err) {
       if (!this._firstServeHasFailed) {

@@ -159,7 +159,7 @@ export default {
               'proceedConstraints.changed.elementConstraintMapping',
               ({ elementConstraintMapping }) => {
                 this.elementConstraintMapping = { ...elementConstraintMapping };
-              }
+              },
             );
         }
       },
@@ -174,10 +174,10 @@ export default {
           this.addConstraints(
             constraints,
             this.modeler.get('elementRegistry').get(elementId),
-            true
+            true,
           );
         }
-      }
+      },
     );
   },
   beforeDestroy() {

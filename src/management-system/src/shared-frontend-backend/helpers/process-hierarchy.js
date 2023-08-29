@@ -40,7 +40,7 @@ function getNestedSubprocessesAndCallActivities(element, definitions) {
           try {
             ({ definitionId, version } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
               definitions,
-              flowElement.id
+              flowElement.id,
             ));
             subprocessInfo.calledProcessId = definitionId;
             subprocessInfo.version = version;
@@ -49,7 +49,7 @@ function getNestedSubprocessesAndCallActivities(element, definitions) {
         if (flowElement.$type === 'bpmn:SubProcess') {
           subprocessInfo.subprocesses = getNestedSubprocessesAndCallActivities(
             flowElement,
-            definitions
+            definitions,
           );
           const di = getElementDI(flowElement, definitions);
           subprocessInfo.isExpanded = di.isExpanded;

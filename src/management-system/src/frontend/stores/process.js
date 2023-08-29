@@ -213,7 +213,7 @@ export default function createProcessStore() {
       // get the bpmn for all versions of the process (including the latest version) which might include call activities referencing other processes
       const allBpmns = await asyncMap(
         process.versions,
-        async ({ version }) => await getters.xmlByVersion()(process.id, version)
+        async ({ version }) => await getters.xmlByVersion()(process.id, version),
       );
       allBpmns.push(await getters.xmlById()(process.id));
 
@@ -223,7 +223,7 @@ export default function createProcessStore() {
         return Object.values(importInformation).map(({ definitionId }) => definitionId);
       });
       const allUniqueReferencedProcesses = Array.from(new Set(allImportInformations.flat())).filter(
-        (el) => el !== process.id
+        (el) => el !== process.id,
       );
 
       // recursively update all imports to be stored in the backend (if they are not already)
@@ -277,7 +277,7 @@ export default function createProcessStore() {
         await processInterface.updateProcessDescription(
           id,
           foundProcess.processIds[0],
-          description
+          description,
         );
       }
     },
@@ -312,7 +312,7 @@ export default function createProcessStore() {
         await processInterface.saveImage(
           processDefinitionsId,
           imageFileName,
-          await scaleDownImage(image, isUserTaskImage ? 1500 : 500)
+          await scaleDownImage(image, isUserTaskImage ? 1500 : 500),
         );
       }
     },

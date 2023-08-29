@@ -253,7 +253,7 @@ async function getSubprocess(bpmn, subprocessId) {
 
   // Add all plane Elements of the subprocess and nested subprocesses into the diagram - this removes all other Shapes of the original xml
   bpmnObj.diagrams[0].plane.planeElement = bpmnObj.diagrams[0].plane.planeElement.filter(
-    (element) => element.bpmnElement && nestedElementsId.includes(element.bpmnElement.id)
+    (element) => element.bpmnElement && nestedElementsId.includes(element.bpmnElement.id),
   );
 
   const newXml = await toBpmnXml(bpmnObj);
@@ -286,19 +286,19 @@ async function getSubprocessContent(bpmn, subprocessId) {
 
   // Create an Array for all Elements which are nested into the subprocess
   const nestedElements = getAllElements(subprocess).filter(
-    (element) => element.id && element.id !== subprocessId
+    (element) => element.id && element.id !== subprocessId,
   );
 
   // Add all plane Elements of the subprocess and nested subprocesses into the diagram - this removes all other Shapes of the original xml
   bpmnObject.diagrams[0].plane.planeElement = bpmnObject.diagrams[0].plane.planeElement.filter(
     (element) =>
-      element.bpmnElement && nestedElements.map((e) => e.id).includes(element.bpmnElement.id)
+      element.bpmnElement && nestedElements.map((e) => e.id).includes(element.bpmnElement.id),
   );
 
   // Replace flowElements only with flowElements of the subprocess
   // TODO: replace all rootElements, not only index 0
   bpmnObject.rootElements[0].flowElements = getChildren(subprocess).filter(
-    (element) => element.id && element.id !== subprocessId
+    (element) => element.id && element.id !== subprocessId,
   );
   bpmnObject.rootElements[0].id = subprocessId;
   bpmnObject.rootElements[0].extensionElements = subprocess.extensionElements;
@@ -340,7 +340,7 @@ async function getAllBpmnFlowElements(bpmn) {
         element.$type.includes('Gateway') ||
         element.$type.includes('CallActivity') ||
         element.$type.includes('SubProcess') ||
-        element.$type.includes('SequenceFlow'))
+        element.$type.includes('SequenceFlow')),
   );
 
   return allBpmnFlowElements;
@@ -366,7 +366,7 @@ async function getAllBpmnFlowElementIds(bpmn) {
 async function getAllBpmnFlowNodeIds(bpmn) {
   const allBpmnElements = await getAllBpmnFlowElements(bpmn);
   const allBpmnFlowNodes = allBpmnElements.filter(
-    (element) => !element.$type.includes('SequenceFlow')
+    (element) => !element.$type.includes('SequenceFlow'),
   );
   return allBpmnFlowNodes.map((element) => element.id);
 }
@@ -419,14 +419,14 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   const targetNamespace = definitionsElement.$attrs[`xmlns:${prefix}`];
   if (!targetNamespace) {
     throw new Error(
-      `No namespace attribute found for the referenced process in callActivity ${callActivityId}. I.e. the prefix ${prefix} in 'callElement' could not be found inside the namespace declarations of the 'definitions' element.`
+      `No namespace attribute found for the referenced process in callActivity ${callActivityId}. I.e. the prefix ${prefix} in 'callElement' could not be found inside the namespace declarations of the 'definitions' element.`,
     );
   }
 
   const importElement = bpmnObj.imports.find((i) => i.namespace === targetNamespace);
   if (!importElement) {
     throw new Error(
-      `No 'import' element found for the referenced process in callActivity ${callActivityId}. I.e. the targetNamespace ${targetNamespace} could not be found in any 'import' element.`
+      `No 'import' element found for the referenced process in callActivity ${callActivityId}. I.e. the targetNamespace ${targetNamespace} could not be found in any 'import' element.`,
     );
   }
 
@@ -456,7 +456,7 @@ async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = 
     try {
       map[callActivity.id] = getTargetDefinitionsAndProcessIdForCallActivityByObject(
         bpmnObj,
-        callActivity.id
+        callActivity.id,
       );
     } catch (err) {
       if (!dontThrow) {
@@ -504,7 +504,7 @@ async function getTaskConstraintMapping(bpmn) {
     const { extensionElements } = element;
     if (extensionElements && extensionElements.values) {
       const constraints = extensionElements.values.find(
-        (e) => e.$type === 'proceed:ProcessConstraints'
+        (e) => e.$type === 'proceed:ProcessConstraints',
       );
       if (constraints && (constraints.hardConstraints || constraints.softConstraints)) {
         const constraintsXml = await toBpmnXml(constraints);
@@ -543,7 +543,7 @@ async function getProcessConstraints(bpmn) {
   const { extensionElements } = element;
   if (extensionElements && extensionElements.values) {
     const constraints = extensionElements.values.find(
-      (e) => e.$type === 'proceed:ProcessConstraints'
+      (e) => e.$type === 'proceed:ProcessConstraints',
     );
     if (constraints && (constraints.hardConstraints || constraints.softConstraints)) {
       const constraintsXml = await toBpmnXml(constraints);
@@ -668,7 +668,7 @@ function getMilestonesFromElement(element) {
   // check if there is a extensionElements entry that might contain a proceed:milestones element
   if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
     const milestonesElement = element.extensionElements.values.find(
-      (child) => child.$type == 'proceed:Milestones'
+      (child) => child.$type == 'proceed:Milestones',
     );
     if (milestonesElement && milestonesElement.milestone) {
       milestones = milestonesElement.milestone.map(({ id, name, description }) => ({
@@ -726,7 +726,7 @@ function getLocationsFromElement(element) {
   // check if there is a extensionElements entry that might contain a proceed:milestones element
   if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
     const locationsElement = element.extensionElements.values.find(
-      (child) => child.$type == 'proceed:Locations'
+      (child) => child.$type == 'proceed:Locations',
     );
     if (locationsElement && locationsElement.company) {
       company = locationsElement.company.map(({ id, shortName, longName, description }) => ({
@@ -745,7 +745,7 @@ function getLocationsFromElement(element) {
           longName,
           description,
           companyRef,
-        })
+        }),
       );
     }
 
@@ -757,7 +757,7 @@ function getLocationsFromElement(element) {
           longName,
           description,
           factoryRef,
-        })
+        }),
       );
     }
 
@@ -780,7 +780,7 @@ function getLocationsFromElement(element) {
           description,
           buildingRef,
           areaRef,
-        })
+        }),
       );
     }
   }
@@ -801,7 +801,7 @@ function getResourcesFromElement(element) {
   // check if there is a extensionElements entry that might contain a proceed:milestones element
   if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
     const resourcesElement = element.extensionElements.values.find(
-      (child) => child.$type == 'proceed:Resources'
+      (child) => child.$type == 'proceed:Resources',
     );
     if (resourcesElement && resourcesElement.consumableMaterial) {
       consumableMaterial = resourcesElement.consumableMaterial.map(
@@ -823,7 +823,7 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        })
+        }),
       );
     }
 
@@ -847,7 +847,7 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        })
+        }),
       );
     }
 
@@ -871,7 +871,7 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        })
+        }),
       );
     }
   }
@@ -882,7 +882,7 @@ function getResourcesFromElement(element) {
 function getPerformersFromElement(element) {
   if (element.resources) {
     const potentialOwner = element.resources.find(
-      (resource) => resource.$type === 'bpmn:PotentialOwner'
+      (resource) => resource.$type === 'bpmn:PotentialOwner',
     );
 
     if (

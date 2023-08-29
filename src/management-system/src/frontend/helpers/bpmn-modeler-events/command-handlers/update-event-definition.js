@@ -49,7 +49,7 @@ UpdateEventDefinitionHandler.prototype.execute = function (context) {
       'Error',
       refName,
       refId,
-      definitions
+      definitions,
     );
   }
 
@@ -60,7 +60,7 @@ UpdateEventDefinitionHandler.prototype.execute = function (context) {
       'Escalation',
       refName,
       refId,
-      definitions
+      definitions,
     );
   }
 
@@ -83,7 +83,7 @@ UpdateEventDefinitionHandler.prototype.removeTimerEventTime = function (eventDef
 UpdateEventDefinitionHandler.prototype.updateTimerEventDuration = function (
   eventDefinition,
   context,
-  formalExpression
+  formalExpression,
 ) {
   const newTimerDuration = this.moddle.create('bpmn:FormalExpression', {
     'xsi:type': 'bpmn:tFormalExpression',
@@ -97,7 +97,7 @@ UpdateEventDefinitionHandler.prototype.updateTimerEventDuration = function (
 UpdateEventDefinitionHandler.prototype.updateTimerEventDate = function (
   eventDefinition,
   context,
-  formalExpression
+  formalExpression,
 ) {
   const newTimerDate = this.moddle.create('bpmn:FormalExpression', {
     'xsi:type': 'bpmn:tFormalExpression',
@@ -118,7 +118,7 @@ UpdateEventDefinitionHandler.prototype.updateTimerEventDate = function (
 UpdateEventDefinitionHandler.prototype.removeErrorOrEscalationIfUnused = function (
   definitions,
   type,
-  errorOrEscalation
+  errorOrEscalation,
 ) {
   const eventDefinitions = this.elementRegistry
     .filter(({ businessObject }) => {
@@ -133,7 +133,7 @@ UpdateEventDefinitionHandler.prototype.removeErrorOrEscalationIfUnused = functio
   // if there is no event that references the specific error or escalation remove it
   if (
     !eventDefinitions.some(
-      (definition) => definition[`${type.toLowerCase()}Ref`] === errorOrEscalation
+      (definition) => definition[`${type.toLowerCase()}Ref`] === errorOrEscalation,
     )
   ) {
     definitions.rootElements = definitions.rootElements.filter((el) => el !== errorOrEscalation);
@@ -156,7 +156,7 @@ UpdateEventDefinitionHandler.prototype.updateErrorOrEscalationEvent = function (
   type,
   refName,
   refId,
-  definitions
+  definitions,
 ) {
   const refType = `${type.toLowerCase()}Ref`;
 
@@ -169,11 +169,11 @@ UpdateEventDefinitionHandler.prototype.updateErrorOrEscalationEvent = function (
   } else {
     // see if there is already an error/escalation with the name we want to reference
     const errorsOrEscalations = definitions.rootElements.filter(
-      (el) => el.$type === `bpmn:${type}`
+      (el) => el.$type === `bpmn:${type}`,
     );
 
     const suitableErrorOrEscalation = errorsOrEscalations.find(
-      (errorOrEscalation) => errorOrEscalation.name === refName
+      (errorOrEscalation) => errorOrEscalation.name === refName,
     );
 
     if (suitableErrorOrEscalation) {

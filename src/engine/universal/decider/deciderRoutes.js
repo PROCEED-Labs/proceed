@@ -15,9 +15,8 @@ module.exports = () => {
       (hardConstraints.length === 0 ||
         (await Hceval.machineSatisfiesAllHardConstraints(hardConstraints)))
     ) {
-      localSoftConstraintValues = await constraintManager.getLocalSoftConstraintValues(
-        softConstraints
-      );
+      localSoftConstraintValues =
+        await constraintManager.getLocalSoftConstraintValues(softConstraints);
     }
 
     return JSON.stringify(localSoftConstraintValues);

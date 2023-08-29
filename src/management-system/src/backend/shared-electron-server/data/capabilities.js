@@ -18,7 +18,7 @@ function mergeCapabilities() {
   const added = store.get('capabilities');
 
   const onlyDiscovered = discovered.filter(
-    (capability) => !added.some((sCapability) => sCapability.id === capability.id)
+    (capability) => !added.some((sCapability) => sCapability.id === capability.id),
   );
 
   const newKnown = [];

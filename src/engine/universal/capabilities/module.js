@@ -82,7 +82,7 @@ const capabilities = {
     const uniqActions = _.uniq(potentialActions);
     if (potentialActions.length !== uniqActions.length) {
       throw new ConfigurationError(
-        'The engine needs to stop! One machine can have only one capability for the same concept'
+        'The engine needs to stop! One machine can have only one capability for the same concept',
       );
     }
   },
@@ -156,7 +156,7 @@ const capabilities = {
   */
   async isCapabilityLocallyExecutable(processDescription) {
     const executable = await Promise.resolve(
-      this.isCapabilityExecutable(processDescription, this.capabilityList)
+      this.isCapabilityExecutable(processDescription, this.capabilityList),
     );
     return executable;
   },

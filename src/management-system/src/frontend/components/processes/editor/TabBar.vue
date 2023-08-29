@@ -80,7 +80,7 @@ export default {
           tab.processDefinitionsId === processDefinitionsId &&
           tab.subprocessId === subprocessId &&
           tab.version === version &&
-          tab.instanceId === instanceId
+          tab.instanceId === instanceId,
       );
       if (selectedTab) {
         this.currentTabIndex = this.tabs.indexOf(selectedTab);
@@ -98,7 +98,7 @@ export default {
       // to insert the new process tab infront of potential subprocesses tabs
       const subprocessTabIndex = this.tabs.findIndex(
         (tab) =>
-          tab.processDefinitionsId === processDefinitionsId && tab.subprocessId && !subprocessId
+          tab.processDefinitionsId === processDefinitionsId && tab.subprocessId && !subprocessId,
       );
       if (subprocessTabIndex !== -1) {
         this.tabs.splice(subprocessTabIndex, 0, newTab);
@@ -112,7 +112,7 @@ export default {
           tab.processDefinitionsId === processDefinitionsId &&
           tab.subprocessId === subprocessId &&
           tab.version === version &&
-          tab.instanceId === instanceId
+          tab.instanceId === instanceId,
       );
 
       this.showNewTabDialog = false;
@@ -148,7 +148,7 @@ export default {
             !oldTab ||
             !deepEquals(
               { ...newTab, subprocessId: null, instanceId: null },
-              { ...oldTab, subprocessId: null, instanceId: null }
+              { ...oldTab, subprocessId: null, instanceId: null },
             )
           ) {
             // there was a tab change to a new process or to another version of the current process (optional instance and subprocess change possible)
@@ -179,7 +179,7 @@ export default {
     subprocessId(newSubprocessId) {
       // check if there is a tab for this subprocess (or one for the base process if the id is null/undefined)
       const existingTabIndex = this.tabs.findIndex((tab) =>
-        isSubset(tab, { ...this.currentTab, newSubprocessId })
+        isSubset(tab, { ...this.currentTab, newSubprocessId }),
       );
 
       if (existingTabIndex < 0) {
@@ -188,7 +188,7 @@ export default {
           this.currentTab.processDefinitionsId,
           newSubprocessId,
           this.currentTab.version,
-          this.currentTab.instanceId
+          this.currentTab.instanceId,
         );
       } else if (existingTabIndex !== this.currentTabIndex) {
         // open the existing tab if it is not already open

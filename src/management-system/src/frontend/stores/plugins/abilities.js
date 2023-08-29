@@ -5,7 +5,7 @@ const setAbilities = async (ability, store) => {
     ? await defineRules(
         store.getters['authStore/getPermissions'],
         store.getters['authStore/getUser'].id,
-        store.getters['authStore/getConfig'].useAuthorization
+        store.getters['authStore/getConfig'].useAuthorization,
       )
     : [];
   ability.update(rules);

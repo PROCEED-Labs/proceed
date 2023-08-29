@@ -112,7 +112,7 @@ export default {
     async saveSettings() {
       try {
         const roles = this.select.filter(
-          (role) => !this.userRoles.map((role) => role.name).includes(role.name)
+          (role) => !this.userRoles.map((role) => role.name).includes(role.name),
         );
 
         console.log(roles);

@@ -261,7 +261,7 @@ export default {
     engineOnline() {
       // TODO: make sure that the machine that is mentioned in the config is always polled with the other machines and put into the machine store
       const machine = this.$store.getters['machineStore/machines'].find(
-        (machine) => this.engineUrl === `${machine.ip}:${machine.port}`
+        (machine) => this.engineUrl === `${machine.ip}:${machine.port}`,
       );
 
       return machine && machine.status === 'CONNECTED';
@@ -272,7 +272,7 @@ export default {
       async handler(newProject) {
         if (newProject) {
           const newXml = await this.$store.getters['processStore/xmlById'](
-            this.$router.currentRoute.params.id
+            this.$router.currentRoute.params.id,
           );
 
           const [processId] = await getProcessIds(newXml);
@@ -294,7 +294,7 @@ export default {
       if (oldInfo && (!newInfo || newInfo.processInstanceId !== oldInfo.processInstanceId)) {
         this.$store.dispatch(
           'deploymentStore/unsubscribeFromInstanceUpdates',
-          oldInfo.processInstanceId
+          oldInfo.processInstanceId,
         );
       }
 
@@ -309,13 +309,13 @@ export default {
       if (newInstance) {
         if (
           !this.project.versions.some(
-            ({ version }) => this.storedInstance.processVersion == version
+            ({ version }) => this.storedInstance.processVersion == version,
           )
         ) {
           await this.$store.dispatch('processStore/addVersion', {
             id: this.storedInstance.processId,
             bpmn: this.storedDeployment.versions.find(
-              ({ version }) => version == this.storedInstance.processVersion
+              ({ version }) => version == this.storedInstance.processVersion,
             ).bpmn,
           });
         }
@@ -346,7 +346,7 @@ export default {
       if (this.engineUrl) {
         this.startingProject = true;
         const bpmn = await this.$store.getters['processStore/xmlById'](
-          this.$router.currentRoute.params.id
+          this.$router.currentRoute.params.id,
         );
         const elements = await getAllBpmnFlowNodeIds(bpmn);
         const machineMapping = {};
@@ -357,7 +357,7 @@ export default {
         });
         const deployProcessXml = await setDeploymentMethod(
           await setMachineInfo(bpmn, machineMapping),
-          'static'
+          'static',
         );
         await this.$store.dispatch('processStore/updateWholeXml', {
           id: this.project.id,
@@ -464,7 +464,7 @@ export default {
     if (this.storedInstance) {
       this.$store.dispatch(
         'deploymentStore/unsubscribeFromInstanceUpdates',
-        this.storedInstance.processInstanceId
+        this.storedInstance.processInstanceId,
       );
     }
 

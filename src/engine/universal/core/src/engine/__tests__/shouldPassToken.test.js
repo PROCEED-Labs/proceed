@@ -127,7 +127,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
           'from',
           'to',
           'token1',
-          undefined
+          undefined,
         );
         expect(decision).toStrictEqual(true);
       });
@@ -146,7 +146,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
             'from',
             'to',
             'token1',
-            undefined
+            undefined,
           );
 
           expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -185,7 +185,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
             'from',
             'to',
             'token1',
-            undefined
+            undefined,
           );
           expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
             endTime: expect.any(Number),
@@ -226,7 +226,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
             'from',
             'to',
             'token1',
-            undefined
+            undefined,
           );
 
           expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -258,7 +258,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
           'from',
           'to',
           'token1',
-          undefined
+          undefined,
         );
 
         expect(decision).toStrictEqual(true);
@@ -284,7 +284,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
             'from',
             'to',
             'token1',
-            undefined
+            undefined,
           );
 
           expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -314,7 +314,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
             },
           });
           expect(decision).toStrictEqual(false);
-        }
+        },
       );
       it('signals error if the next machnine is not reachable', async () => {
         flowElements[1].machineAddress = '456.123.78.9:54321';
@@ -327,7 +327,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
           'from',
           'to',
           'token1',
-          undefined
+          undefined,
         );
 
         expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -356,7 +356,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
           'from',
           'to',
           'token1',
-          undefined
+          undefined,
         );
 
         expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -386,7 +386,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -438,7 +438,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(decision).toStrictEqual(true);
@@ -472,7 +472,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -518,7 +518,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(engine.stopUnfulfilledInstance).toHaveBeenCalled();
@@ -537,7 +537,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -570,7 +570,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(engine.stopUnfulfilledInstance).toHaveBeenCalled();
@@ -599,7 +599,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         'from',
         'to',
         'token1',
-        undefined
+        undefined,
       );
 
       expect(mockInstance.endToken).toHaveBeenCalledWith('token1', {
@@ -619,7 +619,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
       'from',
       'to',
       'token1',
-      undefined
+      undefined,
     );
 
     expect(decision).toStrictEqual(true);

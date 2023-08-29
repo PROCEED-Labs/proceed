@@ -52,7 +52,7 @@ export function startWebsocketServer(httpsServerObject, loginSession, config) {
 
   io.on('connection', (socket) => {
     logger.info(
-      `User ${socket.id} connected. Time: ${socket.handshake.time}, Address: ${socket.handshake.address}, Secure: ${socket.handshake.secure}, URL: ${socket.handshake.url}, Auth: ${socket.handshake.auth}`
+      `User ${socket.id} connected. Time: ${socket.handshake.time}, Address: ${socket.handshake.address}, Secure: ${socket.handshake.secure}, URL: ${socket.handshake.url}, Auth: ${socket.handshake.auth}`,
     );
 
     Object.entries(listeners).forEach(([event, listener]) => {

@@ -113,7 +113,7 @@ class Engine {
       // validate imports and user tasks on first deploy || assumes validity for imported processes since we expect to have a fully valid main process
       if (!(await distribution.db.isProcessVersionValid(definitionId, version))) {
         throw new Error(
-          `Process version ${version} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`
+          `Process version ${version} for process ${processId} with definitionId ${definitionId} is invalid. It can't be deployed.`,
         );
       }
 
@@ -300,7 +300,7 @@ class Engine {
       `${this.definitionId}-${sourceVersion}`,
       `${this.definitionId}-${targetVersion}`,
       instanceIds,
-      migrationArgs
+      migrationArgs,
     );
 
     instanceIds.forEach((id) => {
@@ -316,7 +316,7 @@ class Engine {
   async archiveInstance(instanceID) {
     if (!this.instanceIDs.includes(instanceID)) {
       this._log.warn(
-        `Tried to archive an instance that could not be found in the execution environment (id: ${instanceID})`
+        `Tried to archive an instance that could not be found in the execution environment (id: ${instanceID})`,
       );
       return;
     }
@@ -350,7 +350,7 @@ class Engine {
       (uT) =>
         uT.processInstance.id === instanceID &&
         uT.id === userTaskID &&
-        (uT.state === 'READY' || uT.state === 'ACTIVE')
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
@@ -372,7 +372,7 @@ class Engine {
       (uT) =>
         uT.processInstance.id === instanceID &&
         uT.id === userTaskID &&
-        (uT.state === 'READY' || uT.state === 'ACTIVE')
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
     );
 
     userTask.processInstance.failActivity(userTask.id, userTask.tokenId);
@@ -419,7 +419,7 @@ class Engine {
   deleteInstance(instanceID) {
     if (!this.instanceIDs.includes(instanceID)) {
       this._log.warn(
-        `Tried to delete an instance from the execution environment that is not currently being executed (id: ${instanceID})`
+        `Tried to delete an instance from the execution environment that is not currently being executed (id: ${instanceID})`,
       );
       return;
     }
@@ -430,7 +430,7 @@ class Engine {
     delete this._instanceIdProcessMapping[instanceID];
     process.deleteInstanceById(instanceID);
     this.userTasks = this.userTasks.filter(
-      (userTask) => userTask.processInstance.id !== instanceID
+      (userTask) => userTask.processInstance.id !== instanceID,
     );
   }
 
@@ -498,7 +498,7 @@ class Engine {
 
     if (!token || !token.currentFlowElementId) {
       throw new Error(
-        'Inserting a token requires a currentFlowElementId to be given in the tokenInformation!'
+        'Inserting a token requires a currentFlowElementId to be given in the tokenInformation!',
       );
     }
 
@@ -638,7 +638,7 @@ class Engine {
         instance.endToken(token.tokenId, {
           state: 'ERROR-CONSTRAINT-UNFULFILLED',
           errorMessage: `Instance stopped execution because of: ${unfulfilledConstraints.join(
-            ', '
+            ', ',
           )}`,
           endTime: +new Date(),
         });
@@ -652,7 +652,7 @@ class Engine {
         instance.endToken(token.tokenId, {
           state: 'ERROR-CONSTRAINT-UNFULFILLED',
           errorMessage: `Instance stopped execution because of: ${unfulfilledConstraints.join(
-            ', '
+            ', ',
           )}`,
           endTime: +new Date(),
         });
@@ -673,7 +673,7 @@ class Engine {
 
   async abortInstance(
     instanceID,
-    msg = `Aborting process instance due to signal from another machine. Id =${instanceID}`
+    msg = `Aborting process instance due to signal from another machine. Id =${instanceID}`,
   ) {
     const instance = this.getInstance(instanceID);
 
@@ -728,7 +728,7 @@ class Engine {
           (uT) =>
             uT.processInstance.id === instanceID &&
             uT.id === token.currentFlowElementId &&
-            uT.startTime === token.currentFlowElementStartTime
+            uT.startTime === token.currentFlowElementStartTime,
         );
         if (token.state === 'DEPLOYMENT-WAITING' || token.state === 'READY') {
           instance.pauseToken(token.tokenId);
@@ -763,7 +763,7 @@ class Engine {
 
         instance.onInstanceStateChange((newInstanceState) => {
           const instanceInactive = newInstanceState.find(
-            (tokenState) => tokenState === 'STOPPED' || tokenState === 'PAUSED'
+            (tokenState) => tokenState === 'STOPPED' || tokenState === 'PAUSED',
           );
           if (instanceInactive) {
             reject();
@@ -791,7 +791,7 @@ class Engine {
 
   getPendingUserTasks() {
     const pendingUserTasks = this.userTasks.filter(
-      (userTask) => userTask.state === 'READY' || userTask.state === 'ACTIVE'
+      (userTask) => userTask.state === 'READY' || userTask.state === 'ACTIVE',
     );
 
     const pendingUserTasksWithTokenInfo = pendingUserTasks.map((uT) => {
@@ -808,14 +808,14 @@ class Engine {
 
   getInactiveUserTasks() {
     const inactiveUserTasks = this.userTasks.filter(
-      (userTask) => userTask.state !== 'READY' && userTask.state !== 'ACTIVE'
+      (userTask) => userTask.state !== 'READY' && userTask.state !== 'ACTIVE',
     );
 
     const inactiveUserTasksWithLogInfo = inactiveUserTasks.map((uT) => {
       const instance = this.getInstance(uT.processInstance.id);
       const logs = instance.getState().log;
       const userTaskLogEntry = logs.find(
-        (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId
+        (logEntry) => logEntry.flowElementId === uT.id && logEntry.tokenId === uT.tokenId,
       );
 
       return {
@@ -830,7 +830,7 @@ class Engine {
 
   getMilestones(instanceID, userTaskID) {
     const userTask = this.userTasks.find(
-      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID
+      (uT) => uT.processInstance.id === instanceID && uT.id === userTaskID,
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
@@ -842,7 +842,7 @@ class Engine {
       (uT) =>
         uT.processInstance.id === instanceID &&
         uT.id === userTaskID &&
-        (uT.state === 'READY' || uT.state === 'ACTIVE')
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
     );
     if (!userTask) return;
 
@@ -856,7 +856,7 @@ class Engine {
     if (!token.currentFlowNodeProgress.manual) {
       const currentProgress = Object.values(newMilestones).reduce(
         (prev, curr, _, array) => prev + curr / array.length,
-        0
+        0,
       );
       this.setFlowNodeProgress(instanceID, token.tokenId, {
         value: currentProgress,
@@ -872,11 +872,11 @@ class Engine {
       (uT) =>
         uT.processInstance.id === instanceID &&
         uT.id === userTaskID &&
-        (uT.state === 'READY' || uT.state === 'ACTIVE')
+        (uT.state === 'READY' || uT.state === 'ACTIVE'),
     );
 
     Object.entries(variables).forEach(([key, value]) =>
-      userTask.processInstance.setVariable(userTask.tokenId, key, value)
+      userTask.processInstance.setVariable(userTask.tokenId, key, value),
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);

@@ -45,32 +45,32 @@ const { toBpmnObject } = require('@proceed/bpmn-helper');
 
 const OneProcessDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneProcess.xml'),
-  'utf-8'
+  'utf-8',
 );
 const TwoProcessesDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/TwoProcesses.xml'),
-  'utf-8'
+  'utf-8',
 );
 const OneUserTaskDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneUserTask.xml'),
-  'utf-8'
+  'utf-8',
 );
 const MissingHtmlDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/MissingHtml.xml'),
-  'utf-8'
+  'utf-8',
 );
 const OneImportDefinition = fs.readFileSync(path.resolve(__dirname, 'data/OneImport.xml'), 'utf-8');
 const OneImportWrongProcessRefDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/OneImportWrongProcessRef.xml'),
-  'utf-8'
+  'utf-8',
 );
 const TwoUserTasksStaticDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data/TwoUserTasksStatic.xml'),
-  'utf-8'
+  'utf-8',
 );
 const OneImageDefinition = fs.readFileSync(
   path.resolve(__dirname, 'data', 'OneImage.xml'),
-  'utf-8'
+  'utf-8',
 );
 
 describe('Tests for the functions in the database module', () => {
@@ -106,7 +106,7 @@ describe('Tests for the functions in the database module', () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
           123: {},
-        })
+        }),
       );
 
       const result = await db.isProcessVersionExisting('testFile', 456);
@@ -118,7 +118,7 @@ describe('Tests for the functions in the database module', () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
           123: {},
-        })
+        }),
       );
 
       const result = await db.isProcessVersionExisting('testFile', 123);
@@ -133,7 +133,7 @@ describe('Tests for the functions in the database module', () => {
 
       expect(data.write).toHaveBeenCalledTimes(2);
       expect(data.write.mock.calls[0][0]).toEqual(
-        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9'
+        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         123: {
@@ -144,7 +144,7 @@ describe('Tests for the functions in the database module', () => {
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn'
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneProcessDefinition);
     });
@@ -152,14 +152,14 @@ describe('Tests for the functions in the database module', () => {
       data.read.mockResolvedValueOnce(
         JSON.stringify({
           456: 'otherVersionInformation',
-        })
+        }),
       );
 
       await db.saveProcessVersionDefinition(OneProcessDefinition);
 
       expect(data.write).toHaveBeenCalledTimes(2);
       expect(data.write.mock.calls[0][0]).toEqual(
-        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9'
+        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         123: {
@@ -171,7 +171,7 @@ describe('Tests for the functions in the database module', () => {
         456: 'otherVersionInformation',
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn'
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneProcessDefinition);
     });
@@ -180,7 +180,7 @@ describe('Tests for the functions in the database module', () => {
 
       expect(data.write).toHaveBeenCalledTimes(2);
       expect(data.write.mock.calls[0][0]).toEqual(
-        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9'
+        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         123: {
@@ -191,7 +191,7 @@ describe('Tests for the functions in the database module', () => {
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn'
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-123.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneUserTaskDefinition);
     });
@@ -200,7 +200,7 @@ describe('Tests for the functions in the database module', () => {
 
       expect(data.write).toHaveBeenCalledTimes(2);
       expect(data.write.mock.calls[0][0]).toEqual(
-        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9'
+        'processes.json/_a04f4854-6e50-408f-8ec5-18f4541c32e9',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         789: {
@@ -221,7 +221,7 @@ describe('Tests for the functions in the database module', () => {
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-789.bpmn'
+        '_a04f4854-6e50-408f-8ec5-18f4541c32e9/_a04f4854-6e50-408f-8ec5-18f4541c32e9-789.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneImportDefinition);
     });
@@ -230,7 +230,7 @@ describe('Tests for the functions in the database module', () => {
 
       expect(data.write).toHaveBeenCalledTimes(2);
       expect(data.write.mock.calls[0][0]).toEqual(
-        'processes.json/_64552049-90bf-4f5b-96dd-e00747261755'
+        'processes.json/_64552049-90bf-4f5b-96dd-e00747261755',
       );
       expect(JSON.parse(data.write.mock.calls[0][1])).toEqual({
         1671024712832: {
@@ -245,7 +245,7 @@ describe('Tests for the functions in the database module', () => {
         },
       });
       expect(data.write.mock.calls[1][0]).toEqual(
-        '_64552049-90bf-4f5b-96dd-e00747261755/_64552049-90bf-4f5b-96dd-e00747261755-1671024712832.bpmn'
+        '_64552049-90bf-4f5b-96dd-e00747261755/_64552049-90bf-4f5b-96dd-e00747261755-1671024712832.bpmn',
       );
       expect(data.write.mock.calls[1][1]).toEqual(OneImageDefinition);
     });
@@ -265,7 +265,7 @@ describe('Tests for the functions in the database module', () => {
             needs: { html: [], imports: [], images: [] },
             validated: false,
           },
-        })
+        }),
       );
       const html = '<html><head></head><body><form></form></body></html>';
       await db.saveHTMLString('processDefinitionId', 'taskFileName', html);
@@ -274,7 +274,7 @@ describe('Tests for the functions in the database module', () => {
       expect(data.write).toHaveBeenCalledWith(
         'processDefinitionId/user-tasks/taskFileName.html',
         html,
-        undefined
+        undefined,
       );
     });
 
@@ -299,7 +299,7 @@ describe('Tests for the functions in the database module', () => {
             needs: { html: ['taskFileName'], imports: [], images: [] },
             validated: false,
           },
-        })
+        }),
       );
 
       const html =
@@ -310,7 +310,7 @@ describe('Tests for the functions in the database module', () => {
       expect(data.write).toHaveBeenCalledWith(
         'processDefinitionId/user-tasks/taskFileName.html',
         html,
-        undefined
+        undefined,
       );
       expect(data.write).toHaveBeenCalledWith(
         'processes.json/processDefinitionId',
@@ -341,7 +341,7 @@ describe('Tests for the functions in the database module', () => {
             },
             validated: false,
           },
-        })
+        }),
       );
     });
 
@@ -450,7 +450,7 @@ describe('Tests for the functions in the database module', () => {
       it('returns information about required html if a user task is using any', async () => {
         const _5thIndustryDefinition = fs.readFileSync(
           path.resolve(__dirname, 'data/5thIndustryDefinition.xml'),
-          'utf-8'
+          'utf-8',
         );
 
         const bpmnObj = await toBpmnObject(_5thIndustryDefinition);
@@ -523,7 +523,7 @@ describe('Tests for the functions in the database module', () => {
             needs: { html: [], imports: [], images: [] },
             processId: 'someId',
           },
-        })
+        }),
       );
     });
     it('returns true immediately when validated flag is set in the process file', async () => {
@@ -771,7 +771,7 @@ describe('Tests for the functions in the database module', () => {
 
       expect(data.write).toHaveBeenCalledWith(
         'processDefinitionId/instance.json/instanceId',
-        '{"info":"interesting instance information"}'
+        '{"info":"interesting instance information"}',
       );
     });
   });

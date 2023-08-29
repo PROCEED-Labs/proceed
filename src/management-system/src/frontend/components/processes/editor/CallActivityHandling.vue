@@ -153,7 +153,7 @@ export default {
       if (process && version) {
         const calledBpmn = await this.$store.getters['processStore/xmlByVersion'](
           process.id,
-          version.version
+          version.version,
         );
         await this.modeler
           .get('customModeling')
@@ -176,11 +176,11 @@ export default {
       if (this.currentElementSelectedProcess && this.currentElementSelectedVersion) {
         // preselect the process currently used in the callActivity if in select mode
         this.selectedProcess = this.selectableProcesses.find(
-          (process) => process.id === this.currentElementSelectedProcess
+          (process) => process.id === this.currentElementSelectedProcess,
         );
         if (this.selectedProcess) {
           this.selectedVersion = this.selectedProcess.versions.find(
-            ({ version }) => version == this.currentElementSelectedVersion
+            ({ version }) => version == this.currentElementSelectedVersion,
           );
         }
       } else {
@@ -220,7 +220,7 @@ export default {
       if (newSelection && newSelection.type === 'bpmn:CallActivity') {
         const { definitionId, version } = getDefinitionsInfoForCallActivity(
           this.modeler,
-          newSelection.id
+          newSelection.id,
         );
         this.currentElementSelectedProcess = definitionId;
         this.currentElementSelectedVersion = version;

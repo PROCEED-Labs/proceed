@@ -22,7 +22,7 @@ module.exports = () => {
         engine: {
           networkRequestTimeout: 10,
         },
-      })
+      }),
     );
 
     let out = '';
@@ -33,7 +33,7 @@ module.exports = () => {
       {
         cwd: __dirname,
         detached: false,
-      }
+      },
     );
     engineProcess.stdout.on('data', (data) => {
       // eslint-disable-next-line no-console
@@ -47,7 +47,7 @@ module.exports = () => {
             resolve();
           },
           // this 10s timeout value is set in the configuration and can even be higher! adapt it to the default!
-          10000
+          10000,
         );
         ready = true; // avoid setting multiple timeouts
       }

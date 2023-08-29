@@ -90,7 +90,7 @@ export function preSerialize(command, context) {
       case 'target':
         if (info.businessObject.properties) {
           preSerializedContext.targetPropertyIds = info.businessObject.properties.map(
-            (property) => property.id
+            (property) => property.id,
           );
         }
       case 'newSource':

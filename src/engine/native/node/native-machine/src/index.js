@@ -119,7 +119,7 @@ class Machine extends NativeModule {
     if (properties.includes('outputs')) {
       const graphics = await si.graphics();
       const outputs = graphics.displays.some(
-        (display) => display.currentResX + display.currentResY > 1
+        (display) => display.currentResX + display.currentResY > 1,
       )
         ? ['Screen']
         : undefined;

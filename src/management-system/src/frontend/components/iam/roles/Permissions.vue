@@ -143,7 +143,7 @@ export default {
         this.permissions[resource].push(action);
         if ((await translateListToPermission(this.permissions[resource])) > PERMISSION_ADMIN) {
           const permission = Object.keys(PERMISSION_MAPPING).find(
-            (key) => PERMISSION_MAPPING[key] === PERMISSION_ADMIN
+            (key) => PERMISSION_MAPPING[key] === PERMISSION_ADMIN,
           );
           this.$set(this.permissions, resource, [permission]);
         }
@@ -155,7 +155,7 @@ export default {
       this.$set(
         this.selectedRole.permissions,
         resource,
-        await translateListToPermission(this.permissions[resource])
+        await translateListToPermission(this.permissions[resource]),
       );
     },
   },

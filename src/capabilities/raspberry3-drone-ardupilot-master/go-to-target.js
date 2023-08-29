@@ -47,7 +47,7 @@ function goToTarget([lat, long, alt = 10, timeout = 180], callback) {
           handleResponse(data, callback);
         }
       });
-    }
+    },
   );
 
   ipc.server.on('start', async function () {

@@ -48,7 +48,7 @@ export async function completeUserTask(instanceId, userTaskId) {
     }
   } else {
     throw new Error(
-      'Could neither find user task or instance info to deduce machine to complete the user task on.'
+      'Could neither find user task or instance info to deduce machine to complete the user task on.',
     );
   }
 
@@ -56,7 +56,7 @@ export async function completeUserTask(instanceId, userTaskId) {
     await processEndpoint.completeUserTask(
       { host: machine.host || machine.ip, port: machine.port },
       instanceId,
-      userTaskId
+      userTaskId,
     );
 
     if (instance) {
@@ -72,7 +72,7 @@ export async function updateUserTaskMilestone(instanceId, userTaskId, milestone)
     { host: machine.host || machine.ip, port: machine.port },
     instanceId,
     userTaskId,
-    milestone
+    milestone,
   );
 }
 export async function updateUserTaskIntermediateVariablesState(instanceId, userTaskId, variable) {
@@ -82,7 +82,7 @@ export async function updateUserTaskIntermediateVariablesState(instanceId, userT
     { host: machine.host || machine.ip, port: machine.port },
     instanceId,
     userTaskId,
-    variable
+    variable,
   );
 }
 
@@ -100,7 +100,7 @@ export async function startInstance(processDefinitionsId, version) {
 
   if (deployment) {
     const deploymentVersion = deployment.versions.find(
-      (versionInfo) => versionInfo.version == version
+      (versionInfo) => versionInfo.version == version,
     );
 
     if (deploymentVersion) {
@@ -140,14 +140,14 @@ export async function startInstance(processDefinitionsId, version) {
             // Pass the currently used service account data
             await _5thIndustryEndpoint.send5thIndustryServiceAccountData(
               startMachine,
-              serviceAccountData
+              serviceAccountData,
             );
           } else {
             // Pass the currently used authorization token
             // Warning: when this token becomes invalid the engine won't be able to communicate with the 5thIndustry Application
             await _5thIndustryEndpoint.send5thIndustryAuthorization(
               startMachine,
-              get5thIndustryAuthorization()
+              get5thIndustryAuthorization(),
             );
           }
         }
@@ -163,7 +163,7 @@ export async function startInstance(processDefinitionsId, version) {
         ) {
           await listenFor5thIndustryContractInformation(
             processDefinitionsId,
-            metaData['mqttServer']
+            metaData['mqttServer'],
           );
         }
 
@@ -171,7 +171,7 @@ export async function startInstance(processDefinitionsId, version) {
           startMachine,
           processDefinitionsId,
           version,
-          {}
+          {},
         );
 
         await immediateDeploymentInfoRequest();
@@ -191,7 +191,7 @@ export async function startInstance(processDefinitionsId, version) {
   }
 
   throw new Error(
-    `Error starting the process instance: Could not find a machine the process (id: ${processDefinitionsId}) version (id: ${version}) is deployed to.`
+    `Error starting the process instance: Could not find a machine the process (id: ${processDefinitionsId}) version (id: ${version}) is deployed to.`,
   );
 }
 
@@ -211,7 +211,7 @@ export async function stopInstance(processDefinitionsId, instanceId) {
       const instance = deployment.instances[instanceId];
 
       const deploymentBpmn = deployment.versions.find(
-        ({ version }) => version == instance.processVersion
+        ({ version }) => version == instance.processVersion,
       ).bpmn;
 
       const bpmnObj = await toBpmnObject(deploymentBpmn);
@@ -366,7 +366,7 @@ export async function updateToken(processDefinitionsId, instanceId, tokenId, att
     processDefinitionsId,
     instanceId,
     tokenId,
-    attributes
+    attributes,
   );
 
   // instantly request instance information so the requesting user sees the result immediately
@@ -419,7 +419,7 @@ export async function updateInstanceTokenState(processDefinitionsId, instanceId,
       processDefinitionsId,
       instanceId,
       token.tokenId,
-      token.currentFlowElementId
+      token.currentFlowElementId,
     );
   });
 
@@ -432,7 +432,7 @@ export async function updateInstanceTokenState(processDefinitionsId, instanceId,
       getTokenMachine(token),
       processDefinitionsId,
       instanceId,
-      token.tokenId
+      token.tokenId,
     );
   });
 
@@ -454,7 +454,7 @@ export async function migrateInstances(
   currentVersion,
   targetVersion,
   instanceIds,
-  migrationArgs
+  migrationArgs,
 ) {
   if (migrationArgs.tokenMapping && instanceIds.length > 1) {
     throw new Error('A tokenMapping is only usable when a single instance is migrated');
@@ -472,13 +472,13 @@ export async function migrateInstances(
     const instance = getInstances()[instanceId];
 
     const machines = deployment.machines.filter((machine) =>
-      deployment.instances[instanceId].machines.includes(machine.id)
+      deployment.instances[instanceId].machines.includes(machine.id),
     );
 
     // make sure the target version is actually deployed on the machines (the version might not be locally available)
     await asyncForEach(machines, async (machine) => {
       const targetVersionDeployment = deployment.versions.find(
-        ({ version }) => version == targetVersion
+        ({ version }) => version == targetVersion,
       );
 
       if (
@@ -507,14 +507,14 @@ export async function migrateInstances(
         // ignore forwarded tokens for a token move (they are active on another machine)
         if (machineTokenMapping.move) {
           machineTokenMapping.move = machineTokenMapping.move.filter((tokenMove) =>
-            machineTokens.some((machineToken) => machineToken.tokenId === tokenMove.tokenId)
+            machineTokens.some((machineToken) => machineToken.tokenId === tokenMove.tokenId),
           );
         }
 
         // only try to remove tokens that are on the machine
         if (machineTokenMapping.remove) {
           machineTokenMapping.remove = machineTokenMapping.remove.filter((tokenId) =>
-            machineTokens.some((token) => token.tokenId === tokenId)
+            machineTokens.some((token) => token.tokenId === tokenId),
           );
         }
 
@@ -532,7 +532,7 @@ export async function migrateInstances(
         currentVersion,
         targetVersion,
         [instanceId],
-        machineMigrationArgs
+        machineMigrationArgs,
       );
     });
   });

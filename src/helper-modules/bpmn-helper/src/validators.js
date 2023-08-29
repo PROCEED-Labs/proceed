@@ -22,12 +22,12 @@ async function validateCalledProcess(xml, processId) {
   const startEvents = getElementsByTagName(process, 'bpmn:StartEvent');
 
   const nonTypedStartEvents = startEvents.filter(
-    (startEvent) => !startEvent.eventDefinitions || !startEvent.eventDefinitions.length
+    (startEvent) => !startEvent.eventDefinitions || !startEvent.eventDefinitions.length,
   );
 
   if (nonTypedStartEvents.length !== 1) {
     throw new Error(
-      `The referenced process ${processId} doesn't contain exactly one non-typed start event`
+      `The referenced process ${processId} doesn't contain exactly one non-typed start event`,
     );
   }
 

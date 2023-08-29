@@ -33,7 +33,7 @@ jest.mock(
         throw new Error();
       }
     }),
-  })
+  }),
 );
 
 jest.mock('@/frontend/backend-api/event-system/EventHandler.js', () => ({
@@ -419,7 +419,7 @@ describe('Tests for the module that merges our discovered and stored machines in
             toInternal({ ...noIp, saved: true, status: 'DISCONNECTED' }),
             toInternal({ ...differentId, saved: true, status: 'DISCONNECTED' }),
             toInternal({ ...discovered, discovered: true, status: 'CONNECTED' }),
-          ].sort(sortById)
+          ].sort(sortById),
         );
         expect(eventHandler.dispatch).toHaveBeenCalledWith('machineUpdated', {
           oldId: noHostname.id,
@@ -455,7 +455,7 @@ describe('Tests for the module that merges our discovered and stored machines in
             updatedMachine,
             toInternal({ ...differentId, saved: true, status: 'DISCONNECTED' }),
             toInternal({ ...discovered, discovered: true, status: 'CONNECTED' }),
-          ].sort(sortById)
+          ].sort(sortById),
         );
         expect(eventHandler.dispatch).toHaveBeenCalledWith('machineUpdated', {
           oldId: noIp.id,
@@ -501,7 +501,7 @@ describe('Tests for the module that merges our discovered and stored machines in
             }),
             updatedMachine,
             toInternal({ ...discovered, discovered: true, status: 'CONNECTED' }),
-          ].sort(sortById)
+          ].sort(sortById),
         );
         expect(eventHandler.dispatch).toHaveBeenCalledWith('machineUpdated', {
           oldId: differentId.id,
@@ -543,7 +543,7 @@ describe('Tests for the module that merges our discovered and stored machines in
               status: 'DISCONNECTED',
             }),
             updatedMachine,
-          ].sort(sortById)
+          ].sort(sortById),
         );
         expect(eventHandler.dispatch).toHaveBeenCalledWith('machineUpdated', {
           oldId: discovered.id,
@@ -584,7 +584,7 @@ describe('Tests for the module that merges our discovered and stored machines in
               status: 'DISCONNECTED',
             }),
             updatedMachine,
-          ].sort(sortById)
+          ].sort(sortById),
         );
         expect(eventHandler.dispatch).toHaveBeenCalledWith('machineUpdated', {
           oldId: discovered.id,

@@ -42,7 +42,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
         (uT) =>
           uT.processInstance.id === instance.id &&
           uT.id === userTask.id &&
-          uT.startTime === token.currentFlowElementStartTime
+          uT.startTime === token.currentFlowElementStartTime,
       );
       // update userTask state if activated
       if (engine.userTasks[userTaskIndex].state === 'READY') {
@@ -84,7 +84,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 
     const initializedMilestones = (await getMilestonesFromElementById(bpmn, userTask.id)).reduce(
       (acc, curr) => ({ ...acc, [curr.id]: 0 }),
-      {}
+      {},
     );
 
     engine.updateMilestones(instance.id, userTask.id, initializedMilestones);
@@ -102,7 +102,7 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
     // get necessary process information about the process referenced by the callActivity
     const { definitionId, version } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
       getRootFromElement(callActivity),
-      callActivity.id
+      callActivity.id,
     );
 
     // start execution of callActivity process with variables from the current instance
@@ -122,7 +122,7 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
         instance.updateToken(tokenId, { calledInstance: callActivityInstance.id });
         callActivityInstance.callingInstance = instance.id;
         resolve(true);
-      }
+      },
     );
   });
 }
@@ -134,7 +134,7 @@ module.exports = {
       processInstanceId,
       tokenId,
       flowNode,
-      state
+      state,
     ) {
       const instance = engine.getInstance(processInstanceId);
 

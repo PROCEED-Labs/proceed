@@ -246,7 +246,7 @@ export default {
             },
           ]);
         }
-      }
+      },
     );
     eventHandler.on('processXmlChanged', async ({ processDefinitionsId, newXml }) => {
       if (processDefinitionsId === this.processDefinitionsId) {

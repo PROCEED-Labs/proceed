@@ -167,11 +167,11 @@ module.exports = (path, management) => {
         }
 
         if (instanceState === 'stopped') {
-          engine.stopInstance(instanceID);
+          await engine.stopInstance(instanceID);
         } else if (instanceState === 'paused') {
-          engine.pauseInstance(instanceID);
+          await engine.pauseInstance(instanceID);
         } else if (instanceState === 'aborted') {
-          engine.abortInstance(instanceID);
+          await engine.abortInstance(instanceID);
         }
       }
 

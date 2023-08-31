@@ -289,7 +289,13 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         </AntLayout.Sider>
         <AntLayout>
           <Content>
-            <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+            <Space
+              direction="vertical"
+              size="large"
+              style={{ display: 'flex' /* , height: '100%' */ }}
+              /* TODO: */
+              className="Content"
+            >
               <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
             </Space>
           </Content>

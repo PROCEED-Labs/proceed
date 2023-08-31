@@ -402,10 +402,6 @@ const Processes: FC = () => {
   //   </a>
   // </Dropdown>
 
-  if (isError) {
-    return <div>Error</div>;
-  }
-
   useEffect(() => {
     if (data) {
       setProcesses(data);
@@ -433,6 +429,10 @@ const Processes: FC = () => {
     setSelection([]);
     setSelectedRowKeys([]);
   };
+
+  if (isError) {
+    return <div>Error</div>;
+  }
 
   return (
     <>

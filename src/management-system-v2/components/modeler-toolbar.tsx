@@ -42,6 +42,7 @@ import { useProcess } from '@/lib/process-queries';
 type ModelerToolbarProps = {};
 
 const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
+  /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
   const svgShare = <Icon component={SvgShare} />;
 
@@ -53,7 +54,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   const versions = useModelerStateStore((state) => state.versions);
   const setVersions = useModelerStateStore((state) => state.setVersions);
 
-  const [index, setIndex] = useState(0);
+  // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
   const { isSuccess, data: processData } = useProcess(processId);
@@ -74,13 +75,19 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
 
   let versionSelection: MenuProps['items'] = [];
 
-  if (isSuccess) {
-    setVersions(processData.versions);
-    versionSelection = processData.versions.map(({ version, name, description }) => ({
-      key: version,
-      label: name,
-    }));
-  }
+  useEffect(() => {
+    if (isSuccess) {
+      setVersions(processData.versions);
+    }
+  }, [isSuccess, processData, setVersions]);
+
+  versionSelection = (
+    versions as { version: number | string; name: string; description: string }[]
+  ).map(({ version, name, description }) => ({
+    key: version,
+    label: name,
+  }));
+
   versionSelection.unshift({ key: -1, label: 'Latest Version' });
   const handleVersionSelectionChange: MenuProps['onClick'] = (e) => {
     setSelectedVersion(+e.key < 0 ? null : +e.key);

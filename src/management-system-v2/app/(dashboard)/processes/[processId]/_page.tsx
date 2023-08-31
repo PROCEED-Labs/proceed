@@ -43,7 +43,7 @@ const Processes: FC<ProcessProps> = () => {
     <Content
       title={process?.definitionName ?? 'Process'}
       compact
-      wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
+      wrapperClass={(cn(styles.Wrapper, { [styles.minimized]: minimized }), 'modeler-page-content')}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
       footerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >

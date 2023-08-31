@@ -14,3 +14,15 @@
   background-color: #ebf8ff;
   color: #1976d2;
 }
+
+.Content,
+.Content > .ant-space-item,
+.Content > .ant-space-item > div {
+  height: 100%;
+}
+
+.modeler-page-content,
+.modeler-page-content .ant-layout-content,
+.modeler-page-content .ant-layout-content div[class^='page_Modeler_'] {
+  height: 100%;
+}

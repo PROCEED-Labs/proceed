@@ -85,14 +85,14 @@ const HeaderMenu: FC = () => {
         menu: {
           items: selectedVersion
             ? [
-                { key: -1, label: <>Latest Version</> },
+                { key: '-1', label: <>Latest Version</> },
                 ...versions.map(({ version, name }) => ({
-                  key: version,
+                  key: `${version}`,
                   label: <>{name}</>,
                 })),
               ]
             : versions.map(({ version, name }) => ({
-                key: version,
+                key: `${version}`,
                 label: <>{name}</>,
               })),
           onClick: ({ key }) => {

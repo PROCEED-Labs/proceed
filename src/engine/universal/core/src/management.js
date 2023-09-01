@@ -562,7 +562,7 @@ const Management = {
               ...uT,
               priority: userTaskLogEntry.priority,
               progress: userTaskLogEntry.progress.value,
-              performers: userTaskToken.performers,
+              performers: userTaskLogEntry.performers,
             };
           }
         });

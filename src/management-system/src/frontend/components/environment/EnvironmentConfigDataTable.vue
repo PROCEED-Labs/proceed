@@ -111,7 +111,7 @@ export default {
     },
     showHeaders() {
       const showHeaders = this.headers.filter((header) =>
-        this.displayedHeaders.includes(header.value)
+        this.displayedHeaders.includes(header.value),
       );
       return [
         ...showHeaders,
@@ -131,7 +131,7 @@ export default {
     handleHeaderSelection(header) {
       if (this.displayedHeaders.includes(header.value)) {
         this.displayedHeaders = this.displayedHeaders.filter(
-          (headerValue) => headerValue !== header.value
+          (headerValue) => headerValue !== header.value,
         );
       } else {
         this.displayedHeaders = [...this.displayedHeaders, header.value];

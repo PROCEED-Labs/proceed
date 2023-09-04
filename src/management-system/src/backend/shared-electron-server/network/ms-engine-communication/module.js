@@ -46,7 +46,7 @@ const machineEndpoint = {
     if (properties) {
       fullRequest = properties.reduce(
         (request, property) => `${request},${property}`,
-        `${fullRequest}${properties.shift()}`
+        `${fullRequest}${properties.shift()}`,
       );
     }
 
@@ -70,7 +70,7 @@ const configurationEndpoint = {
       '/configuration/',
       'PUT',
       'application/json',
-      configuration
+      configuration,
     );
   },
 
@@ -78,7 +78,7 @@ const configurationEndpoint = {
     const { body } = await network.sendRequest(
       machine.ip,
       machine.port,
-      '/configuration/description'
+      '/configuration/description',
     );
 
     return JSON.parse(body).description;
@@ -101,7 +101,7 @@ const _5thIndustryEndpoint = {
       `/5thIndustry/service-account`,
       'PUT',
       'application/json',
-      serviceAccountData
+      serviceAccountData,
     );
   },
   send5thIndustryAuthorization: async (machine, authorization) => {
@@ -111,7 +111,7 @@ const _5thIndustryEndpoint = {
       `/5thIndustry/authorization`,
       'PUT',
       'application/json',
-      { authorization }
+      { authorization },
     );
   },
 };

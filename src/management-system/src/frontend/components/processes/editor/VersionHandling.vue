@@ -103,14 +103,14 @@ export default {
     async selectAsLatestVersion() {
       // make sure that the html is also rolled back
       const processHtmlMapping = await this.$store.getters['processStore/htmlMappingById'](
-        this.process.id
+        this.process.id,
       );
 
       const editableBpmn = await this.$store.getters['processStore/xmlById'](this.process.id);
       const fileNamesinEditableVersion = await this.getUsedFilesNames(editableBpmn);
 
       const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(
-        this.currentProcessXml
+        this.currentProcessXml,
       );
 
       await asyncForEach(fileNamesinEditableVersion, async (taskFileName) => {

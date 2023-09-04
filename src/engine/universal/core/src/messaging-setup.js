@@ -9,9 +9,8 @@ module.exports = {
   async setupMessaging(messaging, configModule, machineModule, logger) {
     // get default values from the config and machine info modules that shall be used when the caller of the publish function does not provide specific data
     // this should prevent that all modules that want to publish data have to import the config and machine info modules and get these values themselves
-    let { serverAddress, username, password, baseTopic } = await configModule.readConfig(
-      'messaging'
-    );
+    let { serverAddress, username, password, baseTopic } =
+      await configModule.readConfig('messaging');
     const { id: machineId } = await machineModule.getMachineInformation(['id']);
 
     if (baseTopic && !baseTopic.endsWith('/')) baseTopic += '/';
@@ -50,11 +49,11 @@ module.exports = {
           undefined,
           {
             retain: true,
-          }
+          },
         );
       } catch (err) {
         logger.debug(
-          `Failed to publish the engine status to the messaging server defined in the config. ${err}`
+          `Failed to publish the engine status to the messaging server defined in the config. ${err}`,
         );
       }
     }

@@ -152,7 +152,7 @@ function getOnUserTaskInterruptedHandler(engine, instance) {
       (uT) =>
         uT.processInstance.id === instance.id &&
         uT.id === execution.flowElementId &&
-        uT.startTime === execution.startTime
+        uT.startTime === execution.startTime,
     );
 
     if (index > -1) {
@@ -174,7 +174,7 @@ function getOnCallActivityInterruptedHandler(engine, instance) {
 
     const { definitionId } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
       engine.getInstanceBpmn(instance.id),
-      callActivityId
+      callActivityId,
     );
 
     const importedProcessEngine = engine._management.getEngineWithDefinitionId(definitionId);
@@ -275,7 +275,7 @@ module.exports = {
       newInstance.onUserTaskInterrupted(getOnUserTaskInterruptedHandler(engine, newInstance));
 
       newInstance.onCallActivityInterrupted(
-        getOnCallActivityInterruptedHandler(engine, newInstance)
+        getOnCallActivityInterruptedHandler(engine, newInstance),
       );
 
       newInstance.onTokenEnded(getOnTokenEndedHandler(engine, newInstance));
@@ -377,7 +377,7 @@ module.exports = {
               (uT) =>
                 uT.processInstance.id === newInstance.id &&
                 uT.id === flowElement.id &&
-                uT.startTime === execution.startTime
+                uT.startTime === execution.startTime,
             );
 
             if (index > -1) {

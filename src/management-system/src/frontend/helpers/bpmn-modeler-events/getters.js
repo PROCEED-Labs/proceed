@@ -51,7 +51,7 @@ export function getDefinitionsInfoForCallActivity(modeler, callActivityId) {
   try {
     const { definitionId, version } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
       definitions,
-      callActivityId
+      callActivityId,
     );
     return { definitionId, version };
   } catch (err) {

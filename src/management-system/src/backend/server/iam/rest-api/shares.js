@@ -53,7 +53,7 @@ sharesRouter.get(
     } catch (e) {
       return res.status(400).json(e.toString());
     }
-  }
+  },
 );
 
 /**
@@ -76,7 +76,7 @@ sharesRouter.get(
     } else {
       return res.status(400).json('Missing parameter id!');
     }
-  }
+  },
 );
 
 /**
@@ -98,7 +98,7 @@ sharesRouter.post(
         await ensureOpaSync(
           `shares/${response.resourceType}/${response.resourceId}/${response.sharedWith}`,
           undefined,
-          response
+          response,
         );
         return;
       } catch (e) {
@@ -107,7 +107,7 @@ sharesRouter.post(
     } else {
       return res.status(400).json('Missing body!');
     }
-  }
+  },
 );
 
 /**
@@ -129,7 +129,7 @@ sharesRouter.put(
         await ensureOpaSync(
           `shares/${share.resourceType}/${share.resourceId}/${share.sharedWith}`,
           undefined,
-          share
+          share,
         );
         return;
       } catch (e) {
@@ -138,7 +138,7 @@ sharesRouter.put(
     } else {
       return res.status(400).json('Missing parameter id and/or missing body!');
     }
-  }
+  },
 );
 
 /**
@@ -157,7 +157,7 @@ sharesRouter.delete(
         res.status(204).end();
         await ensureOpaSync(
           `shares/${share.resourceType}/${share.resourceId}/${share.sharedWith}`,
-          'DELETE'
+          'DELETE',
         );
         return;
       } catch (e) {
@@ -166,7 +166,7 @@ sharesRouter.delete(
     } else {
       return res.status(400).json('Missing parameter id!');
     }
-  }
+  },
 );
 
 export default sharesRouter;

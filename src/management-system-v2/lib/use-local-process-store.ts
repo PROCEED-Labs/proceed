@@ -34,7 +34,7 @@ const useLocalProcessStore = create<LocalProcessStore>()(
       set((state) => {
         state.processes = [];
       }),
-  }))
+  })),
 );
 
 type ProcessesStore = {
@@ -56,7 +56,7 @@ export const useProcessesStore = create<ProcessesStore>()(
       set((state) => {
         state.selectedProcess = process;
       }),
-  }))
+  })),
 );
 
 export default useLocalProcessStore;

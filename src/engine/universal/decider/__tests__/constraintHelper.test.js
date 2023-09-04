@@ -19,19 +19,19 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints1.hardConstraints,
-        undefined
-      )
+        undefined,
+      ),
     ).toStrictEqual([]);
 
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         undefined,
-        processConstraints1.hardConstraints
-      )
+        processConstraints1.hardConstraints,
+      ),
     ).toStrictEqual(processConstraints1.hardConstraints);
 
     expect(
-      constraintHelper.filterOutDuplicateProcessConstraints(undefined, undefined)
+      constraintHelper.filterOutDuplicateProcessConstraints(undefined, undefined),
     ).toStrictEqual([]);
   });
 
@@ -39,8 +39,8 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints1.hardConstraints,
-        processConstraints1.hardConstraints
-      )
+        processConstraints1.hardConstraints,
+      ),
     ).toStrictEqual([]);
   });
 
@@ -48,8 +48,8 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints2.hardConstraints,
-        processConstraints2.hardConstraints
-      )
+        processConstraints2.hardConstraints,
+      ),
     ).toStrictEqual(processConstraints2.hardConstraints);
   });
 
@@ -57,8 +57,8 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints1.softConstraints,
-        processConstraints1.softConstraints
-      )
+        processConstraints1.softConstraints,
+      ),
     ).toStrictEqual([]);
   });
 
@@ -66,8 +66,8 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints2.softConstraints,
-        processConstraints2.softConstraints
-      )
+        processConstraints2.softConstraints,
+      ),
     ).toStrictEqual(processConstraints2.softConstraints);
   });
 
@@ -75,8 +75,8 @@ describe('#filterOutDuplicateProcessConstraints', () => {
     expect(
       constraintHelper.filterOutDuplicateProcessConstraints(
         flowNodeConstraints3.hardConstraints,
-        processConstraints3.hardConstraints
-      )
+        processConstraints3.hardConstraints,
+      ),
     ).toStrictEqual(processConstraints3.hardConstraints);
   });
 });
@@ -84,11 +84,11 @@ describe('#filterOutDuplicateProcessConstraints', () => {
 describe('#concatAllConstraints', () => {
   test('no flowNode and/or process Constraints are given', () => {
     expect(
-      constraintHelper.concatAllConstraints(flowNodeConstraints1.hardConstraints, undefined)
+      constraintHelper.concatAllConstraints(flowNodeConstraints1.hardConstraints, undefined),
     ).toStrictEqual(flowNodeConstraints1.hardConstraints);
 
     expect(
-      constraintHelper.concatAllConstraints(undefined, processConstraints1.hardConstraints)
+      constraintHelper.concatAllConstraints(undefined, processConstraints1.hardConstraints),
     ).toStrictEqual(processConstraints1.hardConstraints);
 
     expect(constraintHelper.concatAllConstraints(undefined, undefined)).toStrictEqual([]);
@@ -98,8 +98,8 @@ describe('#concatAllConstraints', () => {
     expect(
       constraintHelper.concatAllConstraints(
         flowNodeConstraints1.hardConstraints,
-        processConstraints1.hardConstraints
-      )
+        processConstraints1.hardConstraints,
+      ),
     ).toStrictEqual(flowNodeConstraints1.hardConstraints);
   });
 
@@ -107,8 +107,8 @@ describe('#concatAllConstraints', () => {
     expect(
       constraintHelper.concatAllConstraints(
         flowNodeConstraints2.hardConstraints,
-        processConstraints2.hardConstraints
-      )
+        processConstraints2.hardConstraints,
+      ),
     ).toStrictEqual(concatenatedConstraints2.hardConstraints);
   });
 
@@ -116,8 +116,8 @@ describe('#concatAllConstraints', () => {
     expect(
       constraintHelper.concatAllConstraints(
         flowNodeConstraints1.softConstraints,
-        processConstraints1.softConstraints
-      )
+        processConstraints1.softConstraints,
+      ),
     ).toStrictEqual(flowNodeConstraints1.softConstraints);
   });
 
@@ -125,8 +125,8 @@ describe('#concatAllConstraints', () => {
     expect(
       constraintHelper.concatAllConstraints(
         flowNodeConstraints2.softConstraints,
-        processConstraints2.softConstraints
-      )
+        processConstraints2.softConstraints,
+      ),
     ).toStrictEqual(concatenatedConstraints2.softConstraints);
   });
 
@@ -134,8 +134,8 @@ describe('#concatAllConstraints', () => {
     expect(
       constraintHelper.concatAllConstraints(
         flowNodeConstraints3.hardConstraints,
-        processConstraints3.hardConstraints
-      )
+        processConstraints3.hardConstraints,
+      ),
     ).toStrictEqual(concatenatedConstraints3.hardConstraints);
   });
 });

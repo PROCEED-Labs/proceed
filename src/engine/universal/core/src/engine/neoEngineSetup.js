@@ -23,7 +23,7 @@ module.exports = {
         url,
         body,
         contentType = 'text/plain',
-        options = {}
+        options = {},
       ) => {
         return system.http.request.call(system.http, url, {
           ...options,
@@ -42,7 +42,7 @@ module.exports = {
         url,
         body,
         contentType = 'text/plain',
-        options = {}
+        options = {},
       ) => {
         return system.http.request.call(system.http, url, {
           ...options,

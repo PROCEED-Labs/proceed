@@ -347,14 +347,14 @@ export default {
           this.groupedRows
             .find(
               (group) =>
-                group._attributes.id === selectedGroup || group._attributes.name === selectedGroup
+                group._attributes.id === selectedGroup || group._attributes.name === selectedGroup,
             )
             .constraintGroup.push(gr);
         } else {
           this.groupedRows
             .find(
               (group) =>
-                group._attributes.id === selectedGroup || group._attributes.name === selectedGroup
+                group._attributes.id === selectedGroup || group._attributes.name === selectedGroup,
             )
             .constraintGroup.push(constraint);
           this.deleteRow(constraint.name, true);
@@ -369,7 +369,7 @@ export default {
       this.rows = rows.filter((constraint) => constraint._type === 'hardConstraint');
       this.groupedRows = rows.filter((constraint) => constraint._type === 'constraintGroup');
       this.groups = this.groupedRows.map((group) =>
-        group._attributes.name ? group._attributes.name : group._attributes.id
+        group._attributes.name ? group._attributes.name : group._attributes.id,
       );
       this.selected = [];
     },
@@ -409,7 +409,7 @@ export default {
       if (this.groupConstraintEdit.group) {
         this.deleteGroupedConstraint(
           this.groupConstraintEdit.group,
-          this.groupConstraintEdit.constraint
+          this.groupConstraintEdit.constraint,
         );
         this.groupedRows
           .find((group) => group._attributes.id === this.groupConstraintEdit.group._attributes.id)
@@ -455,7 +455,7 @@ export default {
           this.deleteGroup(
             constraint._attributes.name || constraint._attributes.id,
             constraint._attributes.id,
-            true
+            true,
           );
         }
       });

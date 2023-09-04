@@ -238,7 +238,7 @@ export default {
           return `${this.getPlanName(planId)} - ${this.getPlanCreationTime(planId)}`;
         } else {
           return `${this.getPlanName(planId)} - ${this.getPlanJobName(
-            planId
+            planId,
           )} - ${this.getPlanCreationTime(planId)}`;
         }
       }

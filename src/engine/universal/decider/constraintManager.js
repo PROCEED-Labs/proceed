@@ -18,7 +18,7 @@ module.exports = {
     hardConstraints,
     softConstraints,
     flowNodeInformation,
-    additionalMachines
+    additionalMachines,
   ) {
     // get softconstraint values for external machines
 
@@ -26,7 +26,7 @@ module.exports = {
 
     const timeout = Math.min(
       router.waitTimeExternalEvaluations,
-      engine.networkRequestTimeout * 1000
+      engine.networkRequestTimeout * 1000,
     );
 
     return new Promise((resolve) => {
@@ -58,7 +58,7 @@ module.exports = {
           [],
           flowNodeInformation,
           callback,
-          additionalMachines
+          additionalMachines,
         );
       } else {
         this.sendHardConstraints(
@@ -66,7 +66,7 @@ module.exports = {
           softConstraints,
           flowNodeInformation,
           callback,
-          additionalMachines
+          additionalMachines,
         );
       }
     });
@@ -125,7 +125,7 @@ module.exports = {
     softConstraints,
     flowNodeInformation,
     callback,
-    additionalMachines
+    additionalMachines,
   ) {
     const adressConstraintNames = [
       'machine.id',
@@ -139,7 +139,7 @@ module.exports = {
     ];
 
     const addressConstraints = hardConstraints.filter((hardConstraint) =>
-      adressConstraintNames.includes(hardConstraint.name)
+      adressConstraintNames.includes(hardConstraint.name),
     );
     const availableMachines = communication.getAvailableMachines();
 
@@ -150,7 +150,7 @@ module.exports = {
           !availableMachines.some(
             (availableMachine) =>
               availableMachine.id === machine.id ||
-              (availableMachine.ip === machine.ip && availableMachine.port === machine.port)
+              (availableMachine.ip === machine.ip && availableMachine.port === machine.port),
           )
         ) {
           availableMachines.push(machine);
@@ -219,9 +219,9 @@ module.exports = {
                     await network.sendRequest(
                       ip,
                       port,
-                      '/machine/id,name,hostname,currentlyConnectedEnvironments'
+                      '/machine/id,name,hostname,currentlyConnectedEnvironments',
                     )
-                  ).body
+                  ).body,
                 );
                 data = { ...data, ...additionalInformation };
               }
@@ -236,7 +236,7 @@ module.exports = {
           },
           (error) => {
             --remainingRequestsCounter > 0 ? callback(undefined, true) : callback(undefined, false);
-          }
+          },
         );
     });
   },

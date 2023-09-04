@@ -34,13 +34,13 @@ function setup5thIndustryEndpoints() {
 async function update5thIndustryAuthorization() {
   if (!serviceAccountId) {
     throw new Error(
-      'There is no service account data to create a new 5thIndustry authorization token!'
+      'There is no service account data to create a new 5thIndustry authorization token!',
     );
   }
 
   // base64 encode the account data
   const encodedServiceData = Buffer.from(`${serviceAccountId}:${serviceAccountSecret}`).toString(
-    'base64'
+    'base64',
   );
 
   const query = {
@@ -60,7 +60,7 @@ async function update5thIndustryAuthorization() {
     encodedQuery,
     {
       Authorization: `Basic ${encodedServiceData}`,
-    }
+    },
   );
 
   const { token_type, access_token } = JSON.parse(body);
@@ -89,7 +89,7 @@ async function sendGraphQLRequest(engine, data, address) {
       data,
       {
         authorization,
-      }
+      },
     );
 
     return JSON.parse(result.body);
@@ -113,7 +113,7 @@ async function sendGraphQLRequest(engine, data, address) {
           return sendGraphQLRequest(engine, data, address);
         } catch (err) {
           throw new Error(
-            'Unable to communicate with the 5thIndustry Application due to missing authorization. There was also no way provided to obtain an authorization.'
+            'Unable to communicate with the 5thIndustry Application due to missing authorization. There was also no way provided to obtain an authorization.',
           );
         }
       }
@@ -176,7 +176,7 @@ async function setInspectionOrderTokenState(engine, _5iInformation, tokenState) 
         ],
       },
     },
-    _5iInformation.apiAddress
+    _5iInformation.apiAddress,
   );
 }
 
@@ -231,12 +231,12 @@ async function getPlanInspectionOrder(engine, _5iInformation) {
         type: 'entity',
       },
     },
-    _5iInformation.apiAddress
+    _5iInformation.apiAddress,
   );
 
   if (!data.getInspectionPlan) {
     throw new _5IPlanNotRunningError(
-      "Inspection Plan linked to process doesn't seem to exist anymore!"
+      "Inspection Plan linked to process doesn't seem to exist anymore!",
     );
   }
 
@@ -245,7 +245,7 @@ async function getPlanInspectionOrder(engine, _5iInformation) {
   // throw an error if the plan was set back into a non executing state
   if (inspectionPlan.status !== 'released' || inspectionPlan.workStatus === 'open') {
     throw new _5IPlanNotRunningError(
-      'Inspection Plan linked to process is not in an executing state anymore!'
+      'Inspection Plan linked to process is not in an executing state anymore!',
     );
   }
 
@@ -338,7 +338,7 @@ async function activateInspectionOrder(engine, userTask, _5iInformation) {
       // abort the instance if the inspection plan that was linked to from the process is not active anymore
       engine.abortInstance(
         userTask.processInstance.id,
-        `Aborting process instance due to problems with the associated 5thIndustry Plan. Id =${userTask.processInstance.id}`
+        `Aborting process instance due to problems with the associated 5thIndustry Plan. Id =${userTask.processInstance.id}`,
       );
     } else {
       // repeat the request
@@ -395,7 +395,7 @@ async function pollInspectionOrderProgress(engine, userTask, _5iInformation) {
     if (err instanceof _5IPlanNotRunningError) {
       engine.abortInstance(
         userTask.processInstance.id,
-        `Aborting process instance due to problems with the associated 5thIndustry Plan. Id =${userTask.processInstance.id}`
+        `Aborting process instance due to problems with the associated 5thIndustry Plan. Id =${userTask.processInstance.id}`,
       );
       return;
     }

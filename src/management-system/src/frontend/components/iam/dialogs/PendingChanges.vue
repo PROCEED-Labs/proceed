@@ -64,7 +64,7 @@ export default {
           const index = this.changes.findIndex((changedRole) => changedRole.id === role.id);
           if (index > -1) this.changes.splice(index, 1);
           const unmodifiedIndex = this.unmodifiedRoleState.findIndex(
-            (unmodifiedRole) => unmodifiedRole.id === role.id
+            (unmodifiedRole) => unmodifiedRole.id === role.id,
           );
           if (unmodifiedIndex > -1) this.unmodifiedRoleState.splice(index, 1);
         } catch (e) {}

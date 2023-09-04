@@ -23,7 +23,7 @@ const doRequest = async (url, client, options = undefined) => {
     const response = await axios(axiosConfig);
     if (options !== null && typeof options === 'object' && options.returnIdOfLocationHeader) {
       const id = response.headers.location.match(
-        /[A-F\d]{8}-[A-F\d]{4}-4[A-F\d]{3}-[89AB][A-F\d]{3}-[A-F\d]{12}$/i // regex extracts uuid of location header
+        /[A-F\d]{8}-[A-F\d]{4}-4[A-F\d]{3}-[89AB][A-F\d]{3}-[A-F\d]{12}$/i, // regex extracts uuid of location header
       )[0];
       if (id) {
         return id;
@@ -55,7 +55,7 @@ const restRequest = async (path, options = undefined, config) => {
       () => doRequest(adminBaseUrl + path, client, options),
       () => runClientCredentialsFlow(config),
       1,
-      0
+      0,
     );
     return response;
   } catch (e) {

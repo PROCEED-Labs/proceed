@@ -247,13 +247,13 @@ export default {
       // Check if there is a process that might be target for a override
       if (merge.possibleOverrideProcess) {
         const overrideProcess = this.$store.getters['processStore/processById'](
-          merge.possibleOverrideProcess
+          merge.possibleOverrideProcess,
         );
 
         const overrideWarning = new MetaWarning(
           `- You are importing a process that seems to already exist. The following process would be overwritten: ${overrideProcess.name}`,
           'process_override',
-          'error'
+          'error',
         );
 
         overrideWarning.data = merge.possibleOverrideProcess;
@@ -263,7 +263,7 @@ export default {
           if (merge.id === merge.possibleOverrideProcess) {
             overrideWarning.resolve(
               'override_process',
-              `Process ${overrideProcess.name} will be overwritten!`
+              `Process ${overrideProcess.name} will be overwritten!`,
             );
           } else {
             overrideWarning.resolve('make_new_process', 'Process will be imported as new one!');
@@ -286,7 +286,7 @@ export default {
 
         const derrivedWarning = new MetaWarning(
           `- You are importing a process that seems to have been imported before. The following processes might be derived from that process: ${derivedNames}.`,
-          'derived_process_override'
+          'derived_process_override',
         );
 
         derrivedWarning.data = possibleProcesses;
@@ -297,7 +297,7 @@ export default {
           if (overrideProcess) {
             derrivedWarning.resolve(
               'override_process',
-              `Process ${overrideProcess.name} will be overwritten!`
+              `Process ${overrideProcess.name} will be overwritten!`,
             );
           } else {
             derrivedWarning.resolve('make_new_process', 'Process will be imported as new one!');
@@ -314,7 +314,7 @@ export default {
             const conflictWarning = new MetaWarning(
               `There is already existing html as well as imported html for ${fileName}! Which one should be used?`,
               'userTask_conflict',
-              'error'
+              'error',
             );
 
             conflictWarning.data = { provided, existing };
@@ -324,7 +324,7 @@ export default {
             if (provided.chosen || existing.chosen) {
               conflictWarning.resolve(
                 'html_conflict_resolved',
-                `Will use the ${provided.chosen ? 'new' : 'existing'} html!`
+                `Will use the ${provided.chosen ? 'new' : 'existing'} html!`,
               );
             }
 
@@ -341,7 +341,7 @@ export default {
           '- The process references callActivities, which are not present in the PROCEED Management System: "' +
             toListString(merge.callActivitiesNotFound) +
             '". Make sure to add them before you execute this process.',
-          'subprocesses_missing'
+          'subprocesses_missing',
         );
 
         // there is nothing to do; the user is just notified
@@ -357,7 +357,7 @@ export default {
             // Notify the user that some tasks are missing html and that a default html will be added
             const warning = new MetaWarning(
               `No html for user task ${userTask.taskId} provided. Will add default html!`,
-              'userTask_missing_html'
+              'userTask_missing_html',
             );
             warning.resolve('default_html', 'No further actions needed!');
             newWarnings.push(warning);
@@ -372,12 +372,12 @@ export default {
 
               warning = new MetaWarning(
                 `Html for user ${inflection} ${userTaskList} has become obsolete and will be deleted!`,
-                'userTask_obsolete_html'
+                'userTask_obsolete_html',
               );
             } else {
               warning = new MetaWarning(
                 `User task stored in file ${userTask.taskFileName} is not used and will be deleted!`,
-                'userTask_obsolete_html'
+                'userTask_obsolete_html',
               );
             }
 
@@ -398,7 +398,7 @@ export default {
       const callActivitiesNotFound = [];
       const callActivitiesWithDefAndProcId = await getDefinitionsAndProcessIdForEveryCallActivity(
         changes.bpmn,
-        true
+        true,
       );
       Object.values(callActivitiesWithDefAndProcId).forEach(({ definitionId }) => {
         let process = this.processesData.find((p) => p.id === definitionId);
@@ -438,7 +438,7 @@ export default {
       // input to allow usage with v-model
       this.$emit(
         'input',
-        newValues.some((warning) => !warning.resolved)
+        newValues.some((warning) => !warning.resolved),
       );
     },
   },

@@ -45,7 +45,7 @@ machinesRouter.post(
     addMachine(body);
 
     res.status(201).end();
-  }
+  },
 );
 
 // make requested machine directly accessible for requests on this path
@@ -87,7 +87,7 @@ machinesRouter.delete(
     removeMachine(machineId);
 
     res.status(200).end();
-  }
+  },
 );
 
 machinesRouter.put(
@@ -124,7 +124,7 @@ machinesRouter.put(
     } catch (err) {
       res.status(400).send(err);
     }
-  }
+  },
 );
 
 export default machinesRouter;

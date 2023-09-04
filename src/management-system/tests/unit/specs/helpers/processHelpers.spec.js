@@ -51,7 +51,7 @@ describe('Tests for process helpers', () => {
           name: 'example',
           processId: 'Process_0',
           standardDefinitions: true,
-        })
+        }),
       );
       expect(exampleProcess.metaInfo).toHaveProperty('processIds', ['Process_0']);
     });
@@ -67,7 +67,7 @@ describe('Tests for process helpers', () => {
           name: 'someName',
           processId: 'Process_1',
           standardDefinitions: true,
-        })
+        }),
       );
     });
 
@@ -82,7 +82,7 @@ describe('Tests for process helpers', () => {
           name: 'someName',
           processId: 'someUserDefinedId',
           standardDefinitions: true,
-        })
+        }),
       );
     });
 
@@ -96,13 +96,13 @@ describe('Tests for process helpers', () => {
 
     it('throws if no name is provided and none is found in the given bpmn', async () => {
       await expect(
-        processHelpers.createProcess({ bpmn: await getBpmn({ id: 'someId' }) })
+        processHelpers.createProcess({ bpmn: await getBpmn({ id: 'someId' }) }),
       ).rejects.toThrow(expect.any(Error));
     });
 
     it('throws on invalid bpmn', async () => {
       await expect(
-        processHelpers.createProcess({ bpmn: 'something thats not a correct bpmn' })
+        processHelpers.createProcess({ bpmn: 'something thats not a correct bpmn' }),
       ).rejects.toThrow(expect.any(Error));
     });
 
@@ -126,7 +126,7 @@ describe('Tests for process helpers', () => {
           startEventId: 'StartEvent_3',
           processDescription: 'description',
           standardDefinitions: true,
-        })
+        }),
       );
     });
 
@@ -147,16 +147,16 @@ describe('Tests for process helpers', () => {
           name: 'testName',
           processId: 'testProcess',
           processDescription: 'testDescription',
-        })
+        }),
       );
     });
 
     it('throws when given no input or non string input', async () => {
       await expect(processHelpers.getProcessInfo()).rejects.toThrow(
-        'Expected given bpmn to be of type string but got undefined instead!'
+        'Expected given bpmn to be of type string but got undefined instead!',
       );
       await expect(processHelpers.getProcessInfo({})).rejects.toThrow(
-        'Expected given bpmn to be of type string but got object instead!'
+        'Expected given bpmn to be of type string but got object instead!',
       );
     });
 
@@ -167,13 +167,13 @@ describe('Tests for process helpers', () => {
 
     it("throws if process definitions don't contain an id", async () => {
       await expect(processHelpers.getProcessInfo(await getBpmn({}))).rejects.toThrow(
-        'Process definitions do not contain an id.'
+        'Process definitions do not contain an id.',
       );
     });
 
     it("throws if process definitions don't contain a name", async () => {
       await expect(processHelpers.getProcessInfo(await getBpmn({ id: 'testId' }))).rejects.toThrow(
-        'Process definitions do not contain a name.'
+        'Process definitions do not contain a name.',
       );
     });
 

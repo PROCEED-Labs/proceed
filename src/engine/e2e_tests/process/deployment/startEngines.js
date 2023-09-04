@@ -31,11 +31,11 @@ function startMockEngineProcess(mockFilesPath) {
       {
         cwd: __dirname,
         detached: false,
-      }
+      },
     );
 
     const { name, machine } = JSON.parse(
-      fs.readFileSync(path.resolve(mockFilesPath, 'config.json'), 'utf8')
+      fs.readFileSync(path.resolve(mockFilesPath, 'config.json'), 'utf8'),
     );
     const { port } = machine;
     const { id } = JSON.parse(fs.readFileSync(path.resolve(mockFilesPath, 'machine.json'), 'utf8'));
@@ -50,7 +50,7 @@ function startMockEngineProcess(mockFilesPath) {
         checkPromises.push(
           new Promise((checkResolve) => {
             externalResolve = checkResolve;
-          })
+          }),
         );
 
         outputHandlers.push({ regex, resolver: externalResolve });
@@ -134,7 +134,7 @@ async function startMockEngineProcesses(numProcesses) {
 // see if command line args contain a number and use it as number of requested processes
 const processCount = parseInt(
   process.argv.find((arg) => parseInt(arg, 10)),
-  10
+  10,
 );
 if (processCount) {
   startMockEngineProcesses(processCount).catch((err) => console.log(err));

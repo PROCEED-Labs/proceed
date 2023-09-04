@@ -44,26 +44,26 @@ describe('#preCheckLocalExec', () => {
   });
   test('constraint sameMachine as true', async () => {
     expect(
-      await constraintManager.preCheckLocalExec(sameMachineConstraint1.hardConstraints)
+      await constraintManager.preCheckLocalExec(sameMachineConstraint1.hardConstraints),
     ).toEqual(true);
   });
 
   test('constraint sameMachine as false', async () => {
     expect(
-      await constraintManager.preCheckLocalExec(sameMachineConstraint2.hardConstraints)
+      await constraintManager.preCheckLocalExec(sameMachineConstraint2.hardConstraints),
     ).toEqual(false);
   });
 
   test('no constraint sameMachine given', async () => {
     expect(await constraintManager.preCheckLocalExec(exampleConstraints.hardConstraints)).toEqual(
-      false
+      false,
     );
   });
 
   test('softConstraintPolicy is LocalMachineOnly', async () => {
     config.readConfig.mockResolvedValue('LocalMachineOnly');
     expect(await constraintManager.preCheckLocalExec(exampleConstraints.hardConstraints)).toEqual(
-      true
+      true,
     );
   });
 });
@@ -83,7 +83,7 @@ describe('#sendHardConstraints', () => {
       exampleConstraints.hardConstraints,
       exampleConstraints.softConstraints,
       {},
-      callback
+      callback,
     );
 
     setTimeout(() => {
@@ -109,7 +109,7 @@ describe('#sendHardConstraints', () => {
       {},
       callback,
       // we provide a machine that fits the constraint
-      [{ ip: '111.111.111.111', port: '12345', id: 'machine' }]
+      [{ ip: '111.111.111.111', port: '12345', id: 'machine' }],
     );
 
     setTimeout(() => {
@@ -135,7 +135,7 @@ describe('#sendHardConstraints', () => {
       {},
       callback,
       // we provide a machine that fits the constraint
-      [{ ip: '111.111.111.111', port: '12345', id: 'machine' }]
+      [{ ip: '111.111.111.111', port: '12345', id: 'machine' }],
     );
 
     setTimeout(() => {
@@ -161,7 +161,7 @@ describe('#sendHardConstraints', () => {
       exampleConstraints.hardConstraints,
       exampleConstraints.softConstraints,
       {},
-      callback
+      callback,
     );
 
     setTimeout(() => {
@@ -189,7 +189,7 @@ describe('#sendHardConstraints', () => {
       expectedIpConstraint.hardConstraints,
       expectedIpConstraint.softConstraints,
       {},
-      callback
+      callback,
     );
 
     setTimeout(() => {
@@ -204,7 +204,7 @@ describe('#sendHardConstraints', () => {
           name: 'externalMachine',
           softConstraintValues: { 'machine.mem.free': 500 },
         },
-        false
+        false,
       );
       done();
     }, 0);
@@ -224,7 +224,7 @@ describe('#sendHardConstraints', () => {
       exampleConstraints.hardConstraints,
       exampleConstraints.softConstraints,
       {},
-      callback
+      callback,
     );
 
     setTimeout(() => {
@@ -249,7 +249,7 @@ describe('#sendHardConstraints', () => {
       exampleConstraints.hardConstraints,
       exampleConstraints.softConstraints,
       {},
-      callback
+      callback,
     );
 
     setTimeout(() => {
@@ -263,7 +263,7 @@ describe('#sendHardConstraints', () => {
             [machineMemFree]: 500,
           },
         },
-        false
+        false,
       );
       done();
     }, 0);
@@ -307,8 +307,8 @@ describe('#getExternalSoftConstraintValues', () => {
       await constraintManager.getExternalSoftConstraintValues(
         exampleConstraints.hardConstraints,
         exampleConstraints.softConstraints,
-        {}
-      )
+        {},
+      ),
     ).toEqual([
       {
         id: 'machine-1',
@@ -365,8 +365,8 @@ describe('#getExternalSoftConstraintValues', () => {
           { ip: '123.123.123.123', id: 'machine-2' },
           { ip: '101.101.101.101', id: 'machine-3' },
           { ip: '222.222.222.222', id: 'machine-4' },
-        ]
-      )
+        ],
+      ),
     ).toEqual([
       {
         id: 'machine-1',
@@ -415,9 +415,9 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({ [machineMemFree]: 500 }),
                 }),
-              100
-            )
-          )
+              100,
+            ),
+          ),
       )
       .mockImplementationOnce(
         () =>
@@ -427,9 +427,9 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({ [machineMemFree]: 1000 }),
                 }),
-              200
-            )
-          )
+              200,
+            ),
+          ),
       )
       .mockImplementationOnce(
         () =>
@@ -439,16 +439,16 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({ [machineMemFree]: 2000 }),
                 }),
-              2000 // return after 2 seconds, after networkRequestTimeout already expired
-            )
-          )
+              2000, // return after 2 seconds, after networkRequestTimeout already expired
+            ),
+          ),
       );
     expect(
       await constraintManager.getExternalSoftConstraintValues(
         exampleConstraints.hardConstraints,
         exampleConstraints.softConstraints,
-        {}
-      )
+        {},
+      ),
     ).toEqual([
       {
         id: 'machine-1',
@@ -492,9 +492,9 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({}),
                 }),
-              100
-            )
-          )
+              100,
+            ),
+          ),
       )
       .mockImplementationOnce(
         () =>
@@ -504,9 +504,9 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({}),
                 }),
-              200
-            )
-          )
+              200,
+            ),
+          ),
       )
       .mockImplementationOnce(
         () =>
@@ -516,16 +516,16 @@ describe('#getExternalSoftConstraintValues', () => {
                 resolve({
                   body: JSON.stringify({}),
                 }),
-              300
-            )
-          )
+              300,
+            ),
+          ),
       );
     expect(
       await constraintManager.getExternalSoftConstraintValues(
         exampleConstraints.hardConstraints,
         exampleConstraints.softConstraints,
-        {}
-      )
+        {},
+      ),
     ).toEqual([
       {
         id: 'machine-1',

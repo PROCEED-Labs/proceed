@@ -64,7 +64,7 @@ export const login = async (req, res, client, config, register = false) => {
         encodeURIComponent(parData.request_uri);
       return register
         ? res.redirect(
-            authorizationUrl.replace('/openid-connect/auth', '/openid-connect/registrations')
+            authorizationUrl.replace('/openid-connect/auth', '/openid-connect/registrations'),
           )
         : res.redirect(authorizationUrl);
     } else if (url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')) {
@@ -78,7 +78,7 @@ export const login = async (req, res, client, config, register = false) => {
       const authorizationUrl = await client.authorizationUrl(authUrlConfig);
       return register
         ? res.redirect(
-            authorizationUrl.replace('/openid-connect/auth', '/openid-connect/registrations')
+            authorizationUrl.replace('/openid-connect/auth', '/openid-connect/registrations'),
           )
         : res.redirect(authorizationUrl);
     }
@@ -121,7 +121,7 @@ export const handleOauthCallback = async (req, res, client, config) => {
     const tokenSet = await client.callback(
       req.headers.referer.substring(0, req.headers.referer.indexOf('?')),
       params,
-      checks
+      checks,
     );
     if (tokenSet) req.session.tokenSet = tokenSet;
     req.session.save();

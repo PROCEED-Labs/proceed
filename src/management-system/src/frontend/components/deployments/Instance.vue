@@ -117,7 +117,7 @@ export default {
           let timeInfo = { startTime: null, endTime: null };
 
           const token = this.instance.tokens.find(
-            (token) => token.currentFlowElementId === element.id
+            (token) => token.currentFlowElementId === element.id,
           );
 
           if (token) {
@@ -126,7 +126,7 @@ export default {
 
           const logEntry = findLast(
             this.instance.log,
-            (entry) => entry.flowElementId === element.id
+            (entry) => entry.flowElementId === element.id,
           );
 
           // if there is no more up to date token based time info use log info if some exists
@@ -145,7 +145,7 @@ export default {
             case 'executionColors':
               color = `${this.getExecutionColor(
                 logEntry && logEntry.executionState,
-                logEntry && logEntry.executionWasInterrupted
+                logEntry && logEntry.executionWasInterrupted,
               )}`;
               break;
             default:
@@ -166,7 +166,7 @@ export default {
             flowElement.type !== 'bpmn:Process' &&
             flowElement.type !== 'bpmn:TextAnnotation' &&
             flowElement.type !== 'bpmn:Group' &&
-            flowElement.type !== 'label'
+            flowElement.type !== 'label',
         );
     },
     versionToShow() {
@@ -305,7 +305,7 @@ export default {
       // => make sure that the visualisation is updated when the color would change even if the instance information is not explicitly updated
       // (this is necessary since time coloring based on tokens is calculated using the current time which is not reactive in the used computed property)
       const pendingTokenBasedColoringUpdates = newValue.filter(
-        (coloring) => coloring.token && (coloring.color === 'green' || coloring.color === 'orange')
+        (coloring) => coloring.token && (coloring.color === 'green' || coloring.color === 'orange'),
       );
 
       if (pendingTokenBasedColoringUpdates.length) {
@@ -333,7 +333,7 @@ export default {
         // force a recalculation of the flowElementsStyling after the computed time has elapsed
         this.implicitColorChangeTimeout = setTimeout(
           () => (this.instanceFlowElements = [...this.instanceFlowElements]),
-          smallestUpdateTime
+          smallestUpdateTime,
         );
       }
     },

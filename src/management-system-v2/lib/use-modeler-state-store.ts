@@ -42,7 +42,7 @@ const useModelerStateStore = create<ModelerStateStore>()(
       set((state) => {
         state.versions = newVersions;
       }),
-  }))
+  })),
 );
 
 export default useModelerStateStore;

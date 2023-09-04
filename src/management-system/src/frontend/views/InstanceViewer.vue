@@ -15,7 +15,7 @@ export default {
     },
     deployment() {
       return this.deployedProcesses.find(
-        (deployment) => deployment.definitionId === this.processDefinitionsId
+        (deployment) => deployment.definitionId === this.processDefinitionsId,
       );
     },
     instances() {

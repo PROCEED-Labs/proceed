@@ -139,7 +139,7 @@ class MDNS extends NativeModule {
           name: service.name,
           txt: service.txt,
         });
-      }.bind(this)
+      }.bind(this),
     );
   }
 
@@ -153,7 +153,7 @@ class MDNS extends NativeModule {
           name: service.name,
           txt: service.txt,
         });
-      }.bind(this)
+      }.bind(this),
     );
   }
 
@@ -179,7 +179,7 @@ class MDNS extends NativeModule {
 
     //  goodbye for non-responded / striked service
     const toBeRemovedService = knownServices.find(
-      (service) => service.referer.address === ip && service.port === port
+      (service) => service.referer.address === ip && service.port === port,
     );
     oldDownHandlers.forEach((cb) => cb(toBeRemovedService));
 
@@ -188,7 +188,7 @@ class MDNS extends NativeModule {
       // port & host  TODO:-> could be not unique
       if (
         !knownServices.some(
-          (s) => s.host === service.host && s.port === service.port
+          (s) => s.host === service.host && s.port === service.port,
         ) /* ->  services not known before */
       ) {
         // call the all callbacks from the old browser for new service -> announce them
@@ -197,7 +197,7 @@ class MDNS extends NativeModule {
       // remove the service from the list of known services
       // (in case it goes down and up again) -> ensures check is only done ones
       knownServices = knownServices.filter(
-        (s) => !((s) => s.host === service.host && s.port === service.port)
+        (s) => !((s) => s.host === service.host && s.port === service.port),
       );
     };
 

@@ -75,7 +75,7 @@ export default {
             name: customPropertyName,
             value: this.customMetaData[customPropertyName],
           };
-        }
+        },
       );
       return [...assignedCustomProperties, this.newCustomProperty];
     },

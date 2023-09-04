@@ -151,7 +151,7 @@ export default {
         // we are editing the instance of a process in a placeholder process environment => change the information in the bpmn to match the original process
         let { bpmn, userTasks } = await engineNetworkInterface.getFullProcessVersionData(
           this.instanceProcessId,
-          newVersion
+          newVersion,
         );
         // ensure that the old process is not set as the "originalId"
         bpmn = await setDefinitionsId(bpmn, undefined);
@@ -159,7 +159,7 @@ export default {
 
         if (
           !this.$store.getters['processStore/processes'].some(
-            (process) => process.id === this.originalProcessId
+            (process) => process.id === this.originalProcessId,
           )
         ) {
           shouldDeleteAfterMigration = true;
@@ -204,7 +204,7 @@ export default {
             move: Object.values(this.movedTokens),
             remove: Object.values(this.removedTokens).map(({ tokenId }) => tokenId),
           },
-        }
+        },
       );
 
       // Remove the process if it was not stored locally before and only added as a dummy for migration
@@ -232,7 +232,7 @@ export default {
   async beforeDestroy() {
     await this.$store.dispatch(
       'deploymentStore/unsubscribeFromInstanceUpdates',
-      this.process.instanceId
+      this.process.instanceId,
     );
     await this.$store.dispatch('deploymentStore/unsubscribeFromDeploymentUpdates');
   },

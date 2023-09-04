@@ -40,7 +40,7 @@ async function init() {
   if (process.env.NODE_ENV === 'development') {
     origin.push(
       `https://localhost:${ports['dev-server'].frontend}`,
-      `https://localhost:${ports['dev-server'].puppeteer}`
+      `https://localhost:${ports['dev-server'].puppeteer}`,
     );
   }
 
@@ -68,7 +68,7 @@ async function init() {
       : cors({
           origin,
           credentials: true,
-        })
+        }),
   );
 
   backendServer.use(helmet.hsts());
@@ -154,14 +154,14 @@ async function init() {
   // Frontend + REST API
   const frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
     logger.info(
-      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`
+      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
     );
   });
 
   // Puppeteer Endpoint
   https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
     logger.debug(
-      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`
+      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
     );
   });
 

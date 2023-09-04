@@ -257,7 +257,7 @@ export default {
       try {
         await api.deleteShareById(
           this.share.id,
-          `resourceType=${this.share.resourceType}&resourceId=${this.share.resourceId}`
+          `resourceType=${this.share.resourceType}&resourceId=${this.share.resourceId}`,
         );
         this.$refs.sharingItem.$el.classList.remove('v-list-item--active');
         this.$refs.menu.save();

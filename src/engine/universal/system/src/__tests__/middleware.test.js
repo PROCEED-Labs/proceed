@@ -32,7 +32,7 @@ describe('testing the helper functions used for the distribution routes', () => 
               ],
             },
           ],
-        })
+        }),
       );
 
       const result = await wrappedEndpointHandler({ query: { entries: 'definitionId,versions' } });
@@ -45,7 +45,7 @@ describe('testing the helper functions used for the distribution routes', () => 
             { bpmn: 'BPMN1', deploymentDate: 50, version: 1 },
             { bpmn: 'BPMN2', deploymentDate: 60, version: 2 },
           ],
-        })
+        }),
       );
     });
 
@@ -72,13 +72,13 @@ describe('testing the helper functions used for the distribution routes', () => 
               ],
             },
           ],
-        })
+        }),
       );
 
       await expect(
         wrappedEndpointHandler({
           query: { entries: 'definitionId,b(attr1,attr2(child1)),versions' },
-        })
+        }),
       ).resolves.toStrictEqual(
         stringify({
           definitionId: 'process1',
@@ -87,7 +87,7 @@ describe('testing the helper functions used for the distribution routes', () => 
             { bpmn: 'BPMN1', deploymentDate: 50, version: 1 },
             { bpmn: 'BPMN2', deploymentDate: 60, version: 2 },
           ],
-        })
+        }),
       );
     });
 
@@ -116,13 +116,13 @@ describe('testing the helper functions used for the distribution routes', () => 
             versions: [{ bpmn: 'BPMN3', deploymentDate: 50, version: 1 }],
             instances: [],
           },
-        ])
+        ]),
       );
 
       await expect(
         wrappedEndpointHandler({
           query: { entries: 'definitionId,versions' },
-        })
+        }),
       ).resolves.toStrictEqual(
         stringify([
           {
@@ -136,7 +136,7 @@ describe('testing the helper functions used for the distribution routes', () => 
             definitionId: 'process2',
             versions: [{ bpmn: 'BPMN3', deploymentDate: 50, version: 1 }],
           },
-        ])
+        ]),
       );
     });
 
@@ -158,13 +158,13 @@ describe('testing the helper functions used for the distribution routes', () => 
               ],
             },
           ],
-        })
+        }),
       );
 
       await expect(
         wrappedEndpointHandler({
           query: { entries: 'definitionId,instances(processId,tokens(tokenId))' },
-        })
+        }),
       ).resolves.toStrictEqual(
         stringify({
           definitionId: 'process1',
@@ -174,7 +174,7 @@ describe('testing the helper functions used for the distribution routes', () => 
               tokens: [{ tokenId: 'token1' }, { tokenId: 'token2' }],
             },
           ],
-        })
+        }),
       );
     });
 

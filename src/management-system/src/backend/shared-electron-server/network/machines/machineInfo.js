@@ -88,7 +88,7 @@ async function pollMachinesInformation() {
           logger.debug(
             `Requesting up to date information for machine ${
               optionalName || name || hostname || id
-            }.`
+            }.`,
           );
           const properties = await machineEndpoint.getProperties(machine);
 
@@ -132,7 +132,7 @@ async function pollMachinesInformation() {
           logger.info(
             `Established first connection to machine ${
               optionalName || name || hostname || id
-            }. Requesting information.`
+            }. Requesting information.`,
           );
 
           newInfo = await getCompleteMachineInformation(machine);

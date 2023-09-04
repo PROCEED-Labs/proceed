@@ -177,7 +177,7 @@ export async function saveProcessVersion(definitionId, version, bpmn) {
 
   fse.writeFileSync(
     path.join(currentProcessFolder, getVersionFileName(definitionId, version)),
-    bpmn
+    bpmn,
   );
 }
 
@@ -461,7 +461,7 @@ export async function getAllProcessesBpmn() {
       } catch (error) {
         //logger is not yet possible to include here
         console.info(
-          'A BPMN process file does not exists in a process folder. Process is skipped.\n' + error
+          'A BPMN process file does not exists in a process folder. Process is skipped.\n' + error,
         );
       }
     }

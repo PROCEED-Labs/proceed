@@ -41,7 +41,7 @@ export class TasklistPage {
         minutes?: number;
         seconds?: number;
       };
-    } = { processName: 'My Process' }
+    } = { processName: 'My Process' },
   ) {
     const page = this.page;
     const { processName, priority, duration } = options;
@@ -86,12 +86,12 @@ export class TasklistPage {
     await page.getByLabel('ID', { exact: true }).fill('12345');
     await page
       .locator(
-        '.v-dialog .v-input__control > .v-input__slot > .v-text-field__slot > input[for="Name"]'
+        '.v-dialog .v-input__control > .v-input__slot > .v-text-field__slot > input[for="Name"]',
       )
       .click();
     await page
       .locator(
-        '.v-dialog .v-input__control > .v-input__slot > .v-text-field__slot > input[for="Name"]'
+        '.v-dialog .v-input__control > .v-input__slot > .v-text-field__slot > input[for="Name"]',
       )
       .fill('Test');
     await page.getByLabel('Description').click();
@@ -156,7 +156,7 @@ export class TasklistPage {
     await page.getByRole('button', { name: '󰈲 Filter Tasks' }).click();
     await page
       .locator(
-        'div:nth-child(4) > .v-input__control > .v-input__slot > .v-input--selection-controls__input > .v-input--selection-controls__ripple'
+        'div:nth-child(4) > .v-input__control > .v-input__slot > .v-input--selection-controls__input > .v-input--selection-controls__ripple',
       )
       .click();
     await page.getByRole('button', { name: '󰈲 Filter Tasks' }).click();
@@ -168,7 +168,7 @@ export class TasklistPage {
     await page.getByRole('button', { name: '󰈲 Filter Tasks' }).click();
     await page
       .locator(
-        'div:nth-child(3) > .v-input__control > .v-input__slot > .v-input--selection-controls__input > .v-input--selection-controls__ripple'
+        'div:nth-child(3) > .v-input__control > .v-input__slot > .v-input--selection-controls__input > .v-input--selection-controls__ripple',
       )
       .click();
     await page.getByRole('button', { name: '󰈲 Filter Tasks' }).click();
@@ -189,7 +189,7 @@ export class TasklistPage {
     await page
       .frameLocator('iframe')
       .getByLabel(
-        'Milestone ID: 123 | Name: Milestone1 | Description: Beschreibung.Beschreibung.Beschreibung.\n            \n            0%'
+        'Milestone ID: 123 | Name: Milestone1 | Description: Beschreibung.Beschreibung.Beschreibung.\n            \n            0%',
       )
       .click();
   }
@@ -202,7 +202,7 @@ export class TasklistPage {
     await page.locator('g:nth-child(3) > .djs-element > .djs-hit').click();
     await page
       .locator(
-        '#activityCard .container > div.row.mb-6.justify-center > div.col.col-12 > div:nth-child(3) > div.col.col-4 > div'
+        '#activityCard .container > div.row.mb-6.justify-center > div.col.col-12 > div:nth-child(3) > div.col.col-4 > div',
       )
       .getByRole('button', { name: '󰏫' })
       .click();

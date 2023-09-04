@@ -107,7 +107,7 @@ export default {
               jobName: processFormData.orderCode,
             },
             processFormData['_5i-Inspection-Plan-Template-ID'],
-            bpmn
+            bpmn,
           );
           processFormData.bpmn = newBpmn;
           processFormData['_5i-Inspection-Plan-ID'] = newPlanId;

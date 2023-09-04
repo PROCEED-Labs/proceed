@@ -137,7 +137,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       // check if the bpmn analysis and database functions were called correctly
       expect(getTargetDefinitionsAndProcessIdForCallActivityByObject).toHaveBeenCalledWith(
         mockRoot,
-        mockTask.id
+        mockTask.id,
       );
 
       // check if the creation of the instance of the imported process was triggered
@@ -146,7 +146,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
         456,
         { mockVariable: 'mockValue' },
         undefined,
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 

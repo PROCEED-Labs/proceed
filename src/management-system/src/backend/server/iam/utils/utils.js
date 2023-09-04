@@ -59,13 +59,13 @@ export function isOriginTrusted(origin) {
   const { trustedOrigins } = getBackendConfig();
 
   const isTrustedByDefault = defaultTrustedOrigins.some(
-    (defaultTrustedOrigin) => ensureNoBackslash(origin) === ensureNoBackslash(defaultTrustedOrigin)
+    (defaultTrustedOrigin) => ensureNoBackslash(origin) === ensureNoBackslash(defaultTrustedOrigin),
   );
   // allow request with specifically defined origins in the config or for every request when there is no entry (to allow initial setup)
   const isTrustedThroughConfig =
     trustedOrigins.length === 0 ||
     trustedOrigins.some(
-      (trustedOrigin) => ensureNoBackslash(origin) === ensureNoBackslash(trustedOrigin)
+      (trustedOrigin) => ensureNoBackslash(origin) === ensureNoBackslash(trustedOrigin),
     );
 
   return isTrustedByDefault || isTrustedThroughConfig;

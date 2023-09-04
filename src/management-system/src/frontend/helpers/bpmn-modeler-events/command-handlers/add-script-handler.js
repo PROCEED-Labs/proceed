@@ -49,7 +49,7 @@ AddScriptHandler.prototype.execute = function (context) {
   if (element.type === 'bpmn:ScriptTask') {
     ({ script: oldScriptElement, scriptFormat: oldScriptFormat } = getProperties(
       element.businessObject,
-      ['script', 'scriptFormat']
+      ['script', 'scriptFormat'],
     ));
     scriptElement = script;
     scriptFormat = 'application/javascript';

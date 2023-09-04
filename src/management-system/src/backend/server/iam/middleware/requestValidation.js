@@ -4,17 +4,17 @@ import { isOriginTrusted } from '../utils/utils.js';
 import { decrypt } from '../utils/crypto.js';
 
 const validate = (data, req) => {
-  if (req.method !== 'GET' && !data.preflightCsrf) {
-    logger.error('Preflight csrf value missing.');
-    throw 'Forbidden';
-  }
-
   if (req.method !== 'GET' && !isOriginTrusted(data.origin)) {
     logger.error('The call is from an untrusted origin.');
     throw 'Forbidden';
   }
 
   if (data.requireCsrf && config.useAuthorization) {
+    if (req.method !== 'GET' && !data.preflightCsrf) {
+      logger.error('Preflight csrf value missing.');
+      throw 'Forbidden';
+    }
+
     if (data.csrfHeader) {
       const decryptedToken = decrypt(req.session.userId, data.csrfHeader, data.encryptionKey);
 

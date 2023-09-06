@@ -153,9 +153,9 @@ const Management = {
 
       const { processVersion, importedInstance } = this.importInstance(archivedInstance);
 
-      const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
 
-      engine.startProcessVersion(
+      await engine.startProcessVersion(
         processVersion,
         importedInstance.variables,
         importedInstance,
@@ -561,7 +561,7 @@ const Management = {
               ...uT,
               priority: userTaskLogEntry.priority,
               progress: userTaskLogEntry.progress.value,
-              performers: userTaskToken.performers,
+              performers: userTaskLogEntry.performers,
             };
           }
         });

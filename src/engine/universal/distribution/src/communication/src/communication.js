@@ -1,7 +1,13 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable guard-for-in */
 const { network, discovery, timer } = require('@proceed/system');
-const { config, information } = require('@proceed/machine');
+const { config, information, logging } = require('@proceed/machine');
+
+const configObject = {
+  moduleName: 'DISTRIBUTION',
+};
+
+const logger = logging.getLogger(configObject);
 
 let discoveryInterval = 10000;
 
@@ -143,19 +149,24 @@ async function waitForNetworkConnection() {
  */
 async function addMachine(service) {
   // make sure we have all necessary information about the machine
-  const { id, hostname, currentlyConnectedEnvironments } = await getMachineInformation(service);
-  const newMachine = {
-    id,
-    ip: service.ip,
-    port: service.port,
-    name: service.name,
-    hostname,
-    currentlyConnectedEnvironments,
-  };
-  // store machine
-  machines[id] = newMachine;
-  // notify subscribed systems about machine being discovered
-  upCallbacks.forEach((cb) => cb(newMachine));
+  try {
+    const { id, hostname, currentlyConnectedEnvironments } = await getMachineInformation(service);
+    const newMachine = {
+      id,
+      ip: service.ip,
+      port: service.port,
+      name: service.name,
+      hostname,
+      currentlyConnectedEnvironments,
+    };
+    // store machine
+    machines[id] = newMachine;
+    // notify subscribed systems about machine being discovered
+    upCallbacks.forEach((cb) => cb(newMachine));
+  } catch (err) {
+    logger.error(`Could not contact the newly discovered machine (name: ${service.name}).`);
+    discovery.removeDiscoveredService(service.ip, service.port);
+  }
 }
 
 /**

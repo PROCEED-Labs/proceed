@@ -2293,12 +2293,13 @@ describe('Test deploying a process', () => {
               await new Promise((resolve) => setTimeout(() => resolve(), 100));
             });
             it('will allow manually changing variables in a running instance', async () => {
-              // check the state after the move to be correct
+              // set an intermediate value for the variable (will be commited to the instance state when the user task is completed)
               await request
                 .put(
                   `:${usedEngine.port}/tasklist/api/variable?instanceID=${instanceId}&userTaskID=Activity_1xguu75`,
                 )
                 .send({ var1: 'some-value' });
+              // complete the user task
               await request
                 .post(
                   `:${usedEngine.port}/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=Activity_1xguu75`,

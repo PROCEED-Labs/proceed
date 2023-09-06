@@ -39,9 +39,11 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
 
-type ModelerToolbarProps = {};
+type ModelerToolbarProps = {
+  onOpenXmlEditor: () => void;
+};
 
-const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
+const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
   const svgShare = <Icon component={SvgShare} />;
@@ -150,7 +152,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
                 <Button icon={<FormOutlined />}></Button>
               </Tooltip>
               <Tooltip title="Show XML">
-                <Button icon={svgXML}></Button>
+                <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
                 <Button icon={<ExportOutlined />}></Button>

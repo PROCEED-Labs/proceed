@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import { useProcessBpmn } from '@/lib/process-queries';
 
 import ModelerToolbar from './modeler-toolbar';
+import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
@@ -32,6 +33,8 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [initialized, setInitialized] = useState(false);
+  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
+
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
@@ -127,9 +130,39 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     setInitialized(false);
   }, [initialized, setSelectedElementId, processBpmn, processId]);
 
+  const handleOpenXmlEditor = async () => {
+    if (modeler.current) {
+      const { xml } = await modeler.current.saveXML({ format: true });
+      setXmlEditorBpmn(xml);
+    }
+  };
+
+  const handleCloseXmlEditor = () => {
+    setXmlEditorBpmn(undefined);
+  };
+
+  const handleXmlEditorSave = (bpmn: string) => {
+    if (modeler.current) {
+      modeler.current.importXML(bpmn).then(() => {
+        modeler.current!.get('canvas').zoom('fit-viewport', 'auto');
+      });
+      updateProcess(processId, { bpmn });
+    }
+  };
+
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
-      {!minimized && <ModelerToolbar />}
+      {!minimized && (
+        <>
+          <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
+          <XmlEditor
+            bpmn={xmlEditorBpmn}
+            canSave={selectedVersion === null}
+            onClose={handleCloseXmlEditor}
+            onSaveXml={handleXmlEditorSave}
+          />
+        </>
+      )}
       <div className="modeler" {...props} ref={canvas} />;
     </div>
   );

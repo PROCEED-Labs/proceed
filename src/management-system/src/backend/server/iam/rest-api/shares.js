@@ -104,7 +104,7 @@ sharesRouter.post('/', isAllowed('create', 'Share'), async (req, res) => {
       res.status(201).json(response);
 
       // force all abilities to be rebuilt
-      abilityCacheDeleteAll();
+      await abilityCacheDeleteAll();
     } catch (e) {
       return res.status(400).json(e.toString());
     }
@@ -135,7 +135,7 @@ sharesRouter.put('/:id', validateShare, isAllowed('update', 'Share'), async (req
       res.status(200).json(share);
 
       // force all abilities to be rebuilt
-      abilityCacheDeleteAll();
+      await abilityCacheDeleteAll();
     } catch (e) {
       return res.status(400).json(e.toString());
     }
@@ -165,7 +165,7 @@ sharesRouter.delete('/:id', isAllowed('delete', 'Share'), async (req, res) => {
       res.status(204).end();
 
       // force all abilities to be rebuilt
-      abilityCacheDeleteAll();
+      await abilityCacheDeleteAll();
     } catch (e) {
       return res.status(404).json(e.toString());
     }

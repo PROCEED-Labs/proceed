@@ -105,7 +105,7 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
       res.status(200).json(updatedRole);
 
       // force all abilities to be rebuilt
-      abilityCacheDeleteAll();
+      await abilityCacheDeleteAll();
     } catch (e) {
       if (e.message === 'Role not found') return res.status(404).json({ error: e.toString() });
       return res.status(400).json(e.toString());
@@ -139,7 +139,7 @@ rolesRouter.delete('/:id', isAllowed('delete', 'Role'), async (req, res) => {
       res.status(204).end();
 
       // force all abilities to be rebuilt
-      abilityCacheDeleteAll();
+      await abilityCacheDeleteAll();
       return;
     } catch (e) {
       if (e.message === 'Role not found') return res.status(404).json(e.toString());

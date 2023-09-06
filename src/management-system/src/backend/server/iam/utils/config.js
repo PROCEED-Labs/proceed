@@ -113,6 +113,7 @@ const schema = yup.object({
     }),
   redisPassword: yup.string().required().default('password'),
   redisPort: yup.number().optional().default(6379),
+  redisRulesPort: yup.number().optional().default(6380),
   createIdpAdmin: yup.boolean().optional().default(false),
   adminUsername: yup
     .string()

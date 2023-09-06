@@ -452,15 +452,16 @@ const Processes: FC = () => {
                 <Button type="text">
                   <CloseOutlined onClick={deselectAll} />
                 </Button>
-                Select action for {selection.length}:{' '}
-                <span className={styles.Icons}>{actionBar}</span>
+                {/* Select action for {selection.length}:{' '}
+                <span className={styles.Icons}>{actionBar}</span> */}
+                {selection.length} selected: <span className={styles.Icons}>{actionBar}</span>
               </>
             ) : (
               <div></div>
             )}
           </Col>
-          <Col md={0} lg={1} xl={2}></Col>
-          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={12}>
+          <Col md={0} lg={1} xl={1}></Col>
+          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
             <Search
               size="middle"
               // ref={(ele) => (this.searchText = ele)}

@@ -15,8 +15,8 @@ import {
   Tooltip,
   Checkbox,
 } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import { Process, fetchProcesses } from '@/lib/fetch-data';
+import { Process } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   CopyOutlined,
@@ -30,9 +30,11 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
+import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
 import Preview from './previewProcess';
 import ProcessExportModal from './process-export';
+import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 
@@ -61,10 +63,8 @@ const { Search } = Input;
 
 const Processes: FC = () => {
   const router = useRouter();
-  const { data, isLoading, isError, isSuccess } = useQuery({
-    queryKey: ['processes'],
-    queryFn: () => fetchProcesses(),
-  });
+
+  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
@@ -77,13 +77,6 @@ const Processes: FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const handleOpenChange = (open) => {
-    setDropdownOpen(open);
-  };
-
-  const handleProcessExportModalToggle = async () => {
-    setShowProcessExportModal(!showProcessExportModal);
-  };
 
   const favourites = [0];
 
@@ -124,7 +117,7 @@ const Processes: FC = () => {
           <ExportOutlined
             onClick={() => {
               setSelectedColumn(record);
-              handleProcessExportModalToggle();
+              setShowProcessExportModal(!showProcessExportModal);
             }}
           />
         </Tooltip>
@@ -137,7 +130,7 @@ const Processes: FC = () => {
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection = {
+  const rowSelection: TableRowSelection<Process> = {
     selectedRowKeys,
     onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
       setSelectedRowKeys(selectedRowKeys);
@@ -175,7 +168,7 @@ const Processes: FC = () => {
   //   },
   // ];
 
-  const onCheckboxChange = (e) => {
+  const onCheckboxChange = (e: CheckboxChangeEvent) => {
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
@@ -199,7 +192,7 @@ const Processes: FC = () => {
   type Column = {
     title: string;
   };
-  const [selectedColumns, setSelectedColumns] = useState<Column[]>([
+  const [selectedColumns, setSelectedColumns] = useState([
     '',
     'Process Name',
     'Description',
@@ -368,7 +361,7 @@ const Processes: FC = () => {
         <div style={{ float: 'right' }}>
           <Dropdown
             open={dropdownOpen}
-            onOpenChange={handleOpenChange}
+            onOpenChange={(open) => setDropdownOpen(open)}
             menu={{
               items,
             }}
@@ -397,7 +390,7 @@ const Processes: FC = () => {
     },
   ];
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key));
+  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
   // <Dropdown menu={{ items }} trigger={['click']}>
   //   <a onClick={(e) => e.preventDefault()}>
@@ -410,11 +403,11 @@ const Processes: FC = () => {
 
   useEffect(() => {
     if (data) {
-      setProcesses(data);
+      setProcesses(data as any);
     }
   }, [data]);
 
-  const [filteredData, setFilteredData] = useState([]);
+  const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -458,20 +451,21 @@ const Processes: FC = () => {
                 <Button type="text">
                   <CloseOutlined onClick={deselectAll} />
                 </Button>
-                Select action for {selection.length}:{' '}
-                <span className={styles.Icons}>{actionBar}</span>
+                {/* Select action for {selection.length}:{' '}
+                <span className={styles.Icons}>{actionBar}</span> */}
+                {selection.length} selected: <span className={styles.Icons}>{actionBar}</span>
               </>
             ) : (
               <div></div>
             )}
           </Col>
-          <Col md={0} lg={1} xl={2}></Col>
-          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={12}>
+          <Col md={0} lg={1} xl={1}></Col>
+          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
             <Search
               size="middle"
               // ref={(ele) => (this.searchText = ele)}
               onChange={(e) => /* console.log(e.target.value) */ setSearchTerm(e.target.value)}
-              onPressEnter={(e) => setSearchTerm(e.target.value)}
+              onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
               allowClear
               placeholder="Search Processes"
               // value={this.state.searchText}

@@ -1,0 +1,2503 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PROCEED Management System API",
+    "description": "### About us\nPROCEED is a decentralized Business Process Management System (dBPMS) specialized on the creation, execution and monitoring of individual IoT processes. The execution is done decentralized without a controlling instance. Instead there are multiple machines that cooperate with each other to achieve the designed process goal. Thereby, all machines communicate their capabilities to the vicinity and the process is taking the best fitting one for its next execution ##step.\n\n### More resources: \n- [Documentation](https://docs.proceed-labs.org/)\n- [Wiki](https://github.com/PROCEED-Labs/proceed/wiki)",
+    "contact": {
+      "email": "proceed@snet.tu-berlin.de",
+      "url": "mailto:proceed@snet.tu-berlin.de",
+      "name": "proceed"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://github.com/PROCEED-Labs/proceed/blob/main/LICENSE"
+    },
+    "version": "1.0.0"
+  },
+  "externalDocs": {
+    "description": "Find out more about spec",
+    "url": "https://github.com/PROCEED-Labs/proceed/wiki"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:33083/api",
+      "description": "Managent system in development"
+    },
+    {
+      "url": "https://proceed.snet.tu-berlin.de/api",
+      "description": ""
+    }
+  ],
+  "tags": [
+    {
+      "name": "Process",
+      "description": "All endpoints that deal with processes."
+    },
+    {
+      "name": "Machines",
+      "description": "All endpoints that deal with saved machines."
+    },
+    {
+      "name": "Users",
+      "description": "All endpoints that deal with the auth system's users."
+    },
+    {
+      "name": "Roles",
+      "description": "All endpoints that deal with the auth system's roles."
+    },
+    {
+      "name": "RoleMappings",
+      "description": "All endpoints that deal with the auth system's roles mappings."
+    },
+    {
+      "name": "Resources",
+      "description": "All endpoints that deal with system resources as viewed by the authorization system."
+    }
+  ],
+  "security": [
+    {
+      "id": [],
+      "x-csrf-token": [],
+      "x-csrf": []
+    },
+    {}
+  ],
+  "paths": {
+    "/process": {
+      "get": {
+        "operationId": "getProcess",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "noBpmn",
+            "description": "If set to true, no BPM XML is sent back",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a list of processes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/processResponse"
+                  }
+                },
+                "examples": {
+                  "Example 1": {
+                    "value": [
+                      {
+                        "type": "process",
+                        "description": "",
+                        "owner": null,
+                        "processIds": ["Process_1muq5gw"],
+                        "variables": [],
+                        "departments": [],
+                        "inEditingBy": [
+                          {
+                            "id": "SYQoPJlzlV7UMwlkAAA9",
+                            "task": "null"
+                          }
+                        ],
+                        "createdOn": "Fri, 07 Jul 2023 17:34:46 GMT",
+                        "lastEdited": "Fri, 07 Jul 2023 17:36:10 GMT",
+                        "shared": true,
+                        "versions": [],
+                        "definitionId": "_3fb07ee0-9f40-4f3c-91df-860376f9ee11",
+                        "definitionName": "Example 1",
+                        "bpmn": ""
+                      },
+                      {
+                        "type": "process",
+                        "description": "This is an example",
+                        "owner": null,
+                        "processIds": ["Process_1rlrc4d"],
+                        "variables": [
+                          {
+                            "name": "varName",
+                            "type": "object"
+                          }
+                        ],
+                        "departments": [],
+                        "inEditingBy": [],
+                        "createdOn": "Fri, 05 Jun 2023 12:35:07 GMT",
+                        "lastEdited": "Fri, 05 Jun 2023 12:36:09 GMT",
+                        "shared": true,
+                        "versions": [],
+                        "definitionId": "_39d26168-0dee-459f-9d72-066c0aea0e8b",
+                        "definitionName": "Example 2",
+                        "bpmn": ""
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "500": {
+            "description": "Failed to get processes"
+          }
+        },
+        "description": "Get all processes you can view."
+      },
+      "post": {
+        "operationId": "postProcess",
+        "tags": ["Process"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/processData"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "bpmn": {
+                        "$ref": "#/components/schemas/bpmn"
+                      }
+                    }
+                  }
+                ],
+                "required": ["departments", "bpmn"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Process created succesfuly",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/process",
+                  "description": "Created Process"
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "There already exists a process with the given id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/process",
+                  "description": "Already existing process"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body of the request does not conform to the schma of a process"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "500": {
+            "description": "Failed to create the process due an internal error"
+          }
+        },
+        "description": "Post a process."
+      }
+    },
+    "/process/{definitionId}": {
+      "get": {
+        "description": "Get a porcess by it's id.",
+        "operationId": "getProcessById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/processResponse"
+                    }
+                  ],
+                  "required": ["bpmn"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error getting the bpmn of the process"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No Process with the given definitionId was found"
+          }
+        }
+      },
+      "put": {
+        "description": "Updates a **partial** set of properties (this means, that arbitrarily many properties can be left out). ",
+        "operationId": "updateProcessById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "description": "The description (the content of documentation element of the first process element in the process model)"
+                      },
+                      "definitionName": {
+                        "type": "string",
+                        "description": "The name as it is in the definitions element of the process"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/processData"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "bpmn": {
+                        "$ref": "#/components/schemas/bpmn"
+                      }
+                    }
+                  }
+                ],
+                "description": "Partial set of key:value properties of the Process scheme"
+              },
+              "examples": {
+                "example1": {
+                  "value": {
+                    "description": "New description"
+                  }
+                }
+              }
+            }
+          },
+          "description": ""
+        },
+        "responses": {
+          "200": {
+            "description": "Process updated succesfuly",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/process",
+                  "description": "Updated Process"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request body doesn't contain a partial set of key:value properties of the Process scheme"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No Process with the given definitionId was found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProcessById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Process deleted succesfuly"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No Process with the given definitionId was found"
+          }
+        },
+        "description": "Delete a process."
+      }
+    },
+    "/process/{definitionId}/versions": {
+      "get": {
+        "operationId": "getProcessVersionsById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/processVersion"
+                  },
+                  "description": "Array of the versions of the process"
+                }
+              }
+            },
+            "description": "Returns versions of a process"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No Process with the given definitionId was found"
+          }
+        },
+        "description": "Get all the versions of a process."
+      },
+      "post": {
+        "operationId": "postProcessVersionById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bpmn": {
+                    "type": "string",
+                    "description": "BPMN XML"
+                  }
+                },
+                "required": ["bpmn"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Post a new version of a process."
+      }
+    },
+    "/process/{definitionId}/versions/{version}": {
+      "get": {
+        "operationId": "getVersionById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "description": "version number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Returns a process"
+          },
+          "400": {
+            "description": "{definitionId} or {version} are wrong"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Get a specific version of a process."
+      }
+    },
+    "/process/{definitionId}/images": {
+      "get": {
+        "operationId": "getImageOfProcessById",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png image/svg+xml image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "description": "Requested image\n"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Get all images used in a process."
+      }
+    },
+    "/process/{definitionId}/images/{imageFileName}": {
+      "get": {
+        "description": "Get a specific image og a process.",
+        "operationId": "getImagesByProcessId",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "imageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/image"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/process/{definitionId}/user-tasks": {
+      "get": {
+        "description": "Get all user tasks used in a process.",
+        "operationId": "getUserTasksByProcessId",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 0,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        }
+      }
+    },
+    "/process/{definitionId}/user-tasks/{userTaskFileName}": {
+      "get": {
+        "operationId": "getUserTaskByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "userTaskFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the user task html file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plain html of the user task",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Get a specific user task of a process."
+      },
+      "put": {
+        "description": "Update a specific user task of a process.\nIf userTaskFileName exists, then it is updated with the body of the request (200 response), if not, then the user task is created (201 response).",
+        "operationId": "updateUserTaskByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "userTaskFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the user task html file"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/html": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "HTML for the userTaskFile in plain text"
+        },
+        "responses": {
+          "200": {
+            "description": "User task HTML updated"
+          },
+          "201": {
+            "description": "User task HTML created in the server"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUserTaskByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "userTaskFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the user task html file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request returns 200 wether the userTaskFile exists or not"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Delete a specific user task of a process."
+      }
+    },
+    "/machines": {
+      "get": {
+        "tags": ["Process"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/machineResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getMachines",
+        "description": "Get stored machines.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/machine"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Machines"],
+        "operationId": "postMachine",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "Error description."
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Store a machine.\n\nOne of the following criteria has to be met in order for the machine to be posted:\n- machine.ip and machine.port have to be set\n- machine.hostname has to be set\n- machine.id has to be set",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/machine"
+              }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/machines/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Id of a machine"
+        }
+      ],
+      "get": {
+        "tags": ["Machines"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/machineResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No machine with {id} known",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "Error description"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getMachineById",
+        "description": "Get a stored machine by it's id."
+      },
+      "put": {
+        "tags": ["Machines"],
+        "operationId": "updateMachineById",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Possible causes: The body of the request is not a JSON object or the machine is not stored and thus can't be changed.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "Error description."
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "No machine with {id} known!",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "Error description."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/machine"
+              }
+            }
+          }
+        },
+        "description": "Update a machine by it's id."
+      },
+      "delete": {
+        "tags": ["Machines"],
+        "operationId": "deleteMachineById",
+        "responses": {
+          "200": {
+            "description": "OK (This is the response, even if the machine is not known)"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "description": "The machine is known through the discovery and not stored. It can't be removed!",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "Error description."
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete a machine by it's id."
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/userResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 0,
+                  "minItems": 0,
+                  "items": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getUsers",
+        "description": "Get all users."
+      },
+      "post": {
+        "tags": ["Users"],
+        "operationId": "postUser",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/userData"
+                  }
+                ],
+                "required": ["email", "name", "picture", "username", "lastName", "firstName"]
+              }
+            }
+          }
+        },
+        "description": "Create a user."
+      }
+    },
+    "/users/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Id of a user"
+        }
+      ],
+      "get": {
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/userResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (User probably doesn't exist)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getUserById",
+        "description": "Get a specific user."
+      },
+      "put": {
+        "tags": ["Users"],
+        "operationId": "updateUserById",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/userData"
+              }
+            }
+          }
+        },
+        "description": "Update a specific user."
+      },
+      "delete": {
+        "tags": ["Users"],
+        "operationId": "deleteUserById",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Delete a specific user."
+      }
+    },
+    "/users/{id}/update-password": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "put": {
+        "tags": ["Users"],
+        "responses": {
+          "201": {
+            "description": "Password changed succesfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "description": "Id of the user."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "updateUserPasswordById",
+        "description": "Update the password of a user.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": ["Roles"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/roleResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 0,
+                  "maxItems": 0,
+                  "items": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getRole",
+        "description": "Get all roles of the authorization system."
+      },
+      "post": {
+        "tags": ["Roles"],
+        "operationId": "postRole",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/roleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/roleData"
+                  }
+                ],
+                "required": [
+                  "name",
+                  "description",
+                  "note",
+                  "permissions",
+                  "expiration",
+                  "members",
+                  "default"
+                ]
+              }
+            }
+          }
+        },
+        "description": "Post a new role."
+      }
+    },
+    "/roles/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "tags": ["Roles"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/roleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_string_or_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getRoleById",
+        "description": "Get a specific role."
+      },
+      "put": {
+        "tags": ["Roles"],
+        "operationId": "updateRoleById",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/roleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_string_or_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/roleData"
+              }
+            }
+          }
+        },
+        "description": "Update a specific role."
+      },
+      "delete": {
+        "tags": ["Roles"],
+        "operationId": "deleteRoleById",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_Error_Json"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete a specific role."
+      }
+    },
+    "/role-mappings": {
+      "get": {
+        "tags": ["RoleMappings"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/roleMappingResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "$ref": "#/components/responses/204_empty_array"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getRoleMappings",
+        "description": "Get all role mappings between users and roles."
+      },
+      "post": {
+        "tags": ["RoleMappings"],
+        "operationId": "postRoleMapping",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "$ref": "#/components/responses/400_error_message"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/roleMappingData"
+                    }
+                  ],
+                  "required": ["roleId", "userId"]
+                }
+              }
+            }
+          }
+        },
+        "description": "Post a new role mapping."
+      }
+    },
+    "/role-mappings/users/{userId}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "userId",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "tags": ["RoleMappings"],
+        "responses": {
+          "200": {
+            "description": "All the roles of a user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/roleMappingResponse"
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "$ref": "#/components/responses/204_empty_array"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_Error_Json"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getRoleMappingsByUserId",
+        "description": "Get all role mappings referencing a specific user."
+      }
+    },
+    "/role-mappings/users/{userId}/{roleId}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "userId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "roleId",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "delete": {
+        "tags": ["RoleMappings"],
+        "responses": {
+          "204": {
+            "description": "Role deleted"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "$ref": "#/components/responses/400_error_message"
+          }
+        },
+        "operationId": "deleteRoleMappingByIdByUserId",
+        "description": "Delete role mapping."
+      }
+    },
+    "/resources": {
+      "get": {
+        "tags": ["Resources"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/resource"
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "$ref": "#/components/responses/204_empty_array"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_Error_Json"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "operationId": "getResources",
+        "description": "Get all resources available in the system."
+      }
+    },
+    "/resources/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "tags": ["Resources"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/resource"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_string"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "operationId": "getResourceById",
+        "description": "Get a specific resource."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "processBpmnData": {
+        "title": "processBpmnData",
+        "type": "object",
+        "properties": {
+          "definitionId": {
+            "type": "string",
+            "description": "The id as it is in the definitions element of the process"
+          },
+          "definitionName": {
+            "type": "string",
+            "description": "The name as it is in the definitions element of the process"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description (the content of documentation element of the first process element in the process model)"
+          },
+          "processIds": {
+            "type": "array",
+            "description": "The date and time the process was edited the last time",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "processData": {
+        "title": "processData",
+        "type": "object",
+        "properties": {
+          "departments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "type": "array",
+            "description": "The variables supposed to be used in the process",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": ["number", "string", "boolean", "array", "object", null]
+                }
+              },
+              "required": ["name", "type"]
+            }
+          }
+        }
+      },
+      "processMsMetaData": {
+        "title": "processServerMetaData",
+        "type": "object",
+        "properties": {
+          "createdOn": {
+            "type": "string",
+            "description": "The date and time the process was added in the management-system"
+          },
+          "lastEdited": {
+            "type": "string",
+            "description": "The date and time the process was edited the last time"
+          },
+          "versions": {
+            "type": "array",
+            "description": "The explicit versions of the process that were created by users",
+            "items": {
+              "$ref": "#/components/schemas/processVersion"
+            }
+          },
+          "inEditingBy": {
+            "type": "array",
+            "description": "Information about the clients that are editing the process, used in the server version for collaborative editing",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The id of the client editing this process"
+                },
+                "task": {
+                  "type": "string",
+                  "description": "Id of the task this client is editing"
+                }
+              },
+              "required": ["id"]
+            }
+          },
+          "shared": {
+            "type": "boolean",
+            "description": "If true, then a share link was created for the process"
+          }
+        }
+      },
+      "bpmn": {
+        "type": "string",
+        "description": "BPMN XML of the process\n"
+      },
+      "process": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/processBpmnData"
+          },
+          {
+            "$ref": "#/components/schemas/processMsMetaData"
+          },
+          {
+            "$ref": "#/components/schemas/processData"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bpmn": {
+                "$ref": "#/components/schemas/bpmn"
+              }
+            }
+          }
+        ]
+      },
+      "processResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/process"
+          }
+        ],
+        "required": [
+          "definitionId",
+          "definitionName",
+          "description",
+          "departments",
+          "variables",
+          "createdOn",
+          "lastEdited",
+          "processIds",
+          "versions"
+        ]
+      },
+      "processVersion": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": ["version", "name", "description"]
+      },
+      "image": {
+        "title": "image",
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": ["Buffer"]
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
+        "type": "object"
+      },
+      "machine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "port": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "discovered": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": ["DISCONNECTED", "CONNECTED"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "machine": {
+            "type": "object",
+            "required": [
+              "currentlyConnectedEnvironments",
+              "hostname",
+              "name",
+              "description",
+              "id",
+              "online",
+              "os",
+              "cpu",
+              "mem",
+              "disk",
+              "battery",
+              "display",
+              "network",
+              "outputs",
+              "port",
+              "classes",
+              "domains",
+              "inputs",
+              "onlineCheckingAddresses",
+              "acceptUserTasks",
+              "deactivateProcessExecution"
+            ],
+            "properties": {
+              "currentlyConnectedEnvironments": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "hostname": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "online": {
+                "type": "boolean"
+              },
+              "os": {
+                "type": "object",
+                "required": ["platform", "release"],
+                "properties": {
+                  "platform": {
+                    "type": "string"
+                  },
+                  "distro": {
+                    "type": "string"
+                  },
+                  "release": {
+                    "type": "string"
+                  }
+                }
+              },
+              "cpu": {
+                "type": "object",
+                "required": ["cores", "physicalCores", "processors", "speed"],
+                "properties": {
+                  "cores": {
+                    "type": "number"
+                  },
+                  "physicalCores": {
+                    "type": "number"
+                  },
+                  "processors": {
+                    "type": "number"
+                  },
+                  "speed": {
+                    "type": "string"
+                  }
+                }
+              },
+              "mem": {
+                "type": "object",
+                "required": ["total"],
+                "properties": {
+                  "total": {
+                    "type": "number"
+                  }
+                }
+              },
+              "disk": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["type", "total"]
+                }
+              },
+              "battery": {
+                "type": "object",
+                "required": ["hasBattery"],
+                "properties": {
+                  "hasBattery": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "display": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "currentResX": {
+                      "type": "string"
+                    },
+                    "currentResY": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["currentResX", "currentResY"]
+                }
+              },
+              "network": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "ip4": {
+                      "type": "string"
+                    },
+                    "netmaskv4": {
+                      "type": "string"
+                    },
+                    "netmaskv6": {
+                      "type": "string"
+                    },
+                    "ip6": {
+                      "type": "string"
+                    },
+                    "mac": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "ip4", "netmaskv4", "netmaskv6", "ip6", "mac"]
+                }
+              },
+              "outputs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "port": {
+                "type": "number"
+              },
+              "classes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "domains": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "inputs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "onlineCheckingAddresses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "acceptUserTasks": {
+                "type": "boolean"
+              },
+              "deactivateProcessExecution": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "machineResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/machine"
+          }
+        ],
+        "required": [
+          "id",
+          "ip",
+          "port",
+          "name",
+          "hostname",
+          "discovered",
+          "status",
+          "description",
+          "machine"
+        ]
+      },
+      "userMetaData": {
+        "title": "user",
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "email_verified": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "userData": {
+        "title": "user",
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "picture": {
+            "type": "string",
+            "format": "uri"
+          },
+          "username": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          }
+        }
+      },
+      "userResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/userMetaData"
+          },
+          {
+            "$ref": "#/components/schemas/userData"
+          }
+        ],
+        "required": [
+          "created_at",
+          "email",
+          "email_verified",
+          "name",
+          "picture",
+          "updated_at",
+          "username",
+          "lastName",
+          "firstName",
+          "id"
+        ]
+      },
+      "PermissionNumber": {
+        "title": "PermissionNumber",
+        "type": "number",
+        "description": "- example\n- ezample 2"
+      },
+      "roleData": {
+        "title": "role",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "Process": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Project": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Template": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Task": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Machine": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Execution": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Role": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "User": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "Setting": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "EnvConfig": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              },
+              "All": {
+                "$ref": "#/components/schemas/PermissionNumber"
+              }
+            }
+          },
+          "expiration": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "fisrtName": {
+                  "type": "string"
+                },
+                "lastName": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                }
+              },
+              "required": ["userId", "username", "fisrtName", "lastName", "email"]
+            }
+          },
+          "default": {
+            "type": "boolean"
+          }
+        }
+      },
+      "roleMetaData": {
+        "title": "role",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string"
+          },
+          "lastEdited": {
+            "type": "string"
+          }
+        }
+      },
+      "roleResponse": {
+        "title": "roleRespnse",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/roleData"
+          },
+          {
+            "$ref": "#/components/schemas/roleMetaData"
+          }
+        ],
+        "required": [
+          "name",
+          "description",
+          "note",
+          "permissions",
+          "expiration",
+          "members",
+          "id",
+          "default",
+          "createdOn",
+          "lastEdited"
+        ]
+      },
+      "roleMappingData": {
+        "title": "roleMappingData",
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        }
+      },
+      "roleMappingMetaData": {
+        "title": "roleMappingMetaData",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string"
+          }
+        }
+      },
+      "roleMappingResponse": {
+        "title": "roleMappingResponse",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/roleMappingData"
+          },
+          {
+            "$ref": "#/components/schemas/roleMappingMetaData"
+          }
+        ],
+        "required": ["id", "roleId", "userId", "roleName", "createdOn"]
+      },
+      "resource": {
+        "title": "resource",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "Processes",
+              "Projects",
+              "Templates",
+              "Tasks",
+              "Machines",
+              "Executions",
+              "Roles",
+              "Users",
+              "Settings",
+              "Environment",
+              "Administrator"
+            ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "enum": [
+                    "none",
+                    "view",
+                    "update",
+                    "create",
+                    "delete",
+                    "manage",
+                    "share",
+                    "manage-roles",
+                    "manage-groups",
+                    "manage-password",
+                    "admin"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": ["name", "title", "description"]
+            }
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "title", "path", "description", "type", "actions", "id"]
+      },
+      "shateData": {
+        "title": "shateData",
+        "type": "object",
+        "properties": {
+          "resourceType": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "sharedWith": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "string"
+          },
+          "type": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "x-csrf-token": {
+        "name": "Cross-site request forgery token",
+        "type": "apiKey",
+        "in": "header",
+        "description": "Cross-site request forgery token obtained after logging in."
+      },
+      "x-csrf": {
+        "name": "Cross-site request forgery enabled",
+        "type": "apiKey",
+        "in": "header",
+        "description": "Needs to be set to '1' in order for the x-csrf-token to be acknowledged by the server and make authenticated requests."
+      },
+      "id": {
+        "name": "Session id",
+        "type": "apiKey",
+        "in": "cookie",
+        "description": "Session id given by the server after logging in."
+      }
+    },
+    "parameters": {
+      "definitionId": {
+        "name": "definitionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Id of an existing process"
+      }
+    },
+    "responses": {
+      "400_Error_Json": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "string",
+              "description": "Error description."
+            }
+          },
+          "text/html": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "headers": {}
+      },
+      "204_empty_array": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 0,
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "400_error_message": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "": {
+                  "type": "string"
+                }
+              },
+              "required": ["error"]
+            }
+          }
+        }
+      },
+      "400_error_string_or_message": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "400_error_string": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+
+      "401_unauthenticated": {
+        "description": "Authentication error.",
+        "content": {
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "description": "Authentication error."
+            }
+          }
+        }
+      },
+      "403_validationFailed": {
+        "description": "Request validation failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "x-examples": {
+                "Example 1": {
+                  "aditionalProperties": true
+                }
+              },
+              "description": "Request validation error."
+            }
+          },
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "description": "Authorization error."
+            }
+          }
+        }
+      }
+    }
+  }
+}

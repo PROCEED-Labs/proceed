@@ -59,7 +59,7 @@ const restRequest = async (path, options = undefined, config) => {
     );
     return response;
   } catch (e) {
-    throw new Error(e);
+    throw e;
   }
 };
 

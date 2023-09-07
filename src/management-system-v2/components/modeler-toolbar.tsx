@@ -26,6 +26,7 @@ import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
 
 import ProcessExportModal from './process-export';
+import { MenuItemType } from 'antd/es/menu/hooks/useItems';
 
 type ModelerToolbarProps = {};
 
@@ -62,7 +63,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  let versionSelection: MenuProps['items'] = [];
+  let versionSelection: MenuItemType[] = [];
 
   useEffect(() => {
     if (isSuccess) {

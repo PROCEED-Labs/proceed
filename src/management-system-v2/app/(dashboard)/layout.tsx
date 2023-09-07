@@ -27,6 +27,7 @@ import {
   ApiOutlined,
   UserOutlined,
   StarOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -164,8 +165,29 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     // },
   ];
 
+  const getCurrentScreenSize = () => {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+  };
+
+  const [screenSize, setScreenSize] = useState({ width: 1000, height: 800 });
+
+  useEffect(() => {
+    const updateScreenSize = () => {
+      setScreenSize(getCurrentScreenSize);
+    };
+    window.addEventListener('resize', updateScreenSize);
+
+    return () => {
+      window.removeEventListener('resize', updateScreenSize);
+    };
+  }, [screenSize]);
+
   return (
     <AntLayout>
+      {/* TODO: Header change for mobile!! */}
       <AntLayout.Header
         style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
         className={styles.Header}
@@ -186,26 +208,33 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             justifySelf: 'end',
           }}
         >
-          <Button type="text">
-            <u>Logout</u>
-          </Button>
-          <Tooltip title="Account Settings">
-            {/* <Popover
-              content={<a href>User Profile</a>}
-              title="Settings"
-              trigger="click"
-              open={openUserSettings}
-              onOpenChange={handleOpenChangeUserSettings}
-            > */}
-            <Button
-              shape="circle"
-              icon={<UserOutlined />}
-              onClick={() => {
-                router.push('/profile');
-              }}
-            />
-            {/* </Popover> */}
-          </Tooltip>
+          {screenSize.width <= 412 ? (
+            // Hamburger menu for screens <= 412px
+            <>
+              <Button
+                icon={<MenuOutlined />}
+                onClick={() => {
+                  router.push('/profile');
+                }}
+              />
+            </>
+          ) : (
+            // Logout and User Profile in header for screens larger than 412px
+            <>
+              <Button type="text">
+                <u>Logout</u>
+              </Button>
+              <Tooltip title="Account Settings">
+                <Button
+                  shape="circle"
+                  icon={<UserOutlined />}
+                  onClick={() => {
+                    router.push('/profile');
+                  }}
+                />
+              </Tooltip>
+            </>
+          )}
         </Space>
       </AntLayout.Header>
       <AntLayout>

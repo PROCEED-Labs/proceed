@@ -5,19 +5,24 @@ const Hceval = require('../hard_constraint_evaluation/hc-eval.js');
 
 const path = './../../../../helper-modules/constraint-parser-xml-json/__tests__/ConstraintsJSON/';
 
-const fullConstraintsJSON =
-  require(`${path}CompleteEvaluationConstraintsJSON.json`).processConstraints;
+const fullConstraintsJSON = require(
+  `${path}CompleteEvaluationConstraintsJSON.json`,
+).processConstraints;
 const constraintGroupAND = require(`${path}AND-ConstraintGroupJSON.json`).processConstraints;
 const constraintGroupOR = require(`${path}OR-ConstraintGroupJSON.json`).processConstraints;
-const maxMachineHopsConstraint =
-  require(`${path}maxMachineHopsConstraintJSON.json`).processConstraints;
+const maxMachineHopsConstraint = require(
+  `${path}maxMachineHopsConstraintJSON.json`,
+).processConstraints;
 const maxTimeConstraint = require(`${path}maxTimeConstraintJSON.json`).processConstraints;
-const maxTimeGlobalConstraint =
-  require(`${path}maxTimeGlobalConstraintJSON.json`).processConstraints;
-const maxTokenStorageTimeConstraint =
-  require(`${path}maxTokenStorageTimeConstraintJSON.json`).processConstraints;
-const maxTokenStorageRoundsConstraint =
-  require(`${path}maxTokenStorageRoundsConstraintJSON.json`).processConstraints;
+const maxTimeGlobalConstraint = require(
+  `${path}maxTimeGlobalConstraintJSON.json`,
+).processConstraints;
+const maxTokenStorageTimeConstraint = require(
+  `${path}maxTokenStorageTimeConstraintJSON.json`,
+).processConstraints;
+const maxTokenStorageRoundsConstraint = require(
+  `${path}maxTokenStorageRoundsConstraintJSON.json`,
+).processConstraints;
 const networkConstraint =
   require('./data/ConstraintsJSON/networkConstraint.json').processConstraints;
 

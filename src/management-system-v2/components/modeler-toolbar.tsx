@@ -4,31 +4,17 @@ import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import {
-  Select,
-  FloatButton,
-  Row,
-  Col,
-  Space,
-  Tooltip,
-  Button,
-  Dropdown,
-  message,
-  Badge,
-} from 'antd';
+import { Row, Col, Tooltip, Button, Dropdown, message } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
 import type { MenuProps } from 'antd';
 
 import Icon, {
-  QuestionCircleOutlined,
   DownOutlined,
   FormOutlined,
   ExportOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined,
   SettingOutlined,
   PlusOutlined,
-  WarningOutlined,
 } from '@ant-design/icons';
 
 import { SvgXML, SvgShare } from '@/components/svg';
@@ -39,6 +25,8 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
 
+import ProcessExportModal from './process-export';
+
 type ModelerToolbarProps = {};
 
 const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
@@ -47,6 +35,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   const svgShare = <Icon component={SvgShare} />;
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
+  const [showProcessExportModal, setShowProcessExportModal] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -115,6 +104,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
 
   const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
 
+  const handleProcessExportModalToggle = async () => {
+    setShowProcessExportModal(!showProcessExportModal);
+  };
+
   return (
     <>
       <Toolbar>
@@ -153,7 +146,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
                 <Button icon={svgXML}></Button>
               </Tooltip>
               <Tooltip title="Export">
-                <Button icon={<ExportOutlined />}></Button>
+                <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
               </Tooltip>
               <Tooltip title="Hide Non-Executeable Elements">
                 <Button icon={<EyeOutlined />}></Button>
@@ -183,6 +176,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
       {/* {showPropertiesPanel && selectedElement && (
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
+      <ProcessExportModal
+        isOpen={showProcessExportModal}
+        onClose={() => setShowProcessExportModal(false)}
+      />
     </>
   );
 };

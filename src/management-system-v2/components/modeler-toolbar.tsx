@@ -97,7 +97,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
         +e.key < 0
           ? versionSelection![0]?.label
           : versionSelection!.find((item) => item!.key == e?.key)?.label
-      }...`
+      }...`,
     );
     // TODO:
     // const newIndex = versionSelection!.findIndex((item) => item!.key === +e.key);

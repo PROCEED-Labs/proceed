@@ -1,5 +1,7 @@
+import React from 'react';
 import { FC } from 'react';
 import Page from './_page';
+import DashboardLayout from '../../layout';
 
 type ProcessProps = {
   params: { processId: string };

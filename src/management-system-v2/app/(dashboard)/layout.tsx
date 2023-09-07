@@ -27,7 +27,7 @@ import {
   ApiOutlined,
   UserOutlined,
   StarOutlined,
-  MenuOutlined
+  MenuOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -172,7 +172,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     };
   };
 
-  const [screenSize, setScreenSize] = useState({width: 1000, height: 800});
+  const [screenSize, setScreenSize] = useState({ width: 1000, height: 800 });
 
   useEffect(() => {
     const updateScreenSize = () => {
@@ -187,56 +187,56 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
 
   return (
     <AntLayout>
-    {/* TODO: Header change for mobile!! */}
-    <AntLayout.Header
-      style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
-      className={styles.Header}
-    >
-      <Image
-        src="/proceed.svg"
-        alt="PROCEED Logo"
-        className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
-        width={160}
-        height={63}
-        priority
-      />
-
-      {<HeaderMenu />}
-      <div style={{ flex: '1' }}></div>
-      <Space
-        style={{
-          justifySelf: 'end',
-        }}
+      {/* TODO: Header change for mobile!! */}
+      <AntLayout.Header
+        style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
+        className={styles.Header}
       >
-        {screenSize.width <= 412 ? (
-          // Hamburger menu for screens <= 412px
-          <>
-            <Button
-              icon={<MenuOutlined />}
-              onClick={() => {
-                router.push('/profile');
-              }}
-            />
-          </>
-        ) : (
-          // Logout and User Profile in header for screens larger than 412px
-          <>
-            <Button type="text">
-              <u>Logout</u>
-            </Button>
-            <Tooltip title="Account Settings">
+        <Image
+          src="/proceed.svg"
+          alt="PROCEED Logo"
+          className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
+          width={160}
+          height={63}
+          priority
+        />
+
+        {<HeaderMenu />}
+        <div style={{ flex: '1' }}></div>
+        <Space
+          style={{
+            justifySelf: 'end',
+          }}
+        >
+          {screenSize.width <= 412 ? (
+            // Hamburger menu for screens <= 412px
+            <>
               <Button
-                shape="circle"
-                icon={<UserOutlined />}
+                icon={<MenuOutlined />}
                 onClick={() => {
                   router.push('/profile');
                 }}
               />
-            </Tooltip>
-          </>
-        )}
-      </Space>
-    </AntLayout.Header>
+            </>
+          ) : (
+            // Logout and User Profile in header for screens larger than 412px
+            <>
+              <Button type="text">
+                <u>Logout</u>
+              </Button>
+              <Tooltip title="Account Settings">
+                <Button
+                  shape="circle"
+                  icon={<UserOutlined />}
+                  onClick={() => {
+                    router.push('/profile');
+                  }}
+                />
+              </Tooltip>
+            </>
+          )}
+        </Space>
+      </AntLayout.Header>
       <AntLayout>
         {/* //TODO: sider's border is 1 px too far right */}
         <AntLayout.Sider

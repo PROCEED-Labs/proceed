@@ -5,6 +5,10 @@
     transition: all 0.2s;
     // display: inline-block
   }
+
+  .Icon {
+    margin: 15px -10px;
+  }
 }
 
 .Sider {
@@ -16,9 +20,10 @@
   top: 0;
   bottom: 0;
 
-  @media screen and (max-width: 415px) {
-    display: none;
-  }
+  // @media screen and (max-width: 415px) {
+  //   display: none;
+  // }
+
   //backgroundcolor: 'white';
 
   // .Logo {

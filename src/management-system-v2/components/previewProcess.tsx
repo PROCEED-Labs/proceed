@@ -28,7 +28,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
   const [name, setName] = useState('');
   const [initialized, setInitialized] = useState(false);
   const { data: bpmn, isSuccess } = useProcessBpmn(
-    selectedElement ? selectedElement.definitionId : '',
+    selectedElement ? selectedElement.definitionId : ''
   );
   const canvas = useRef<HTMLDivElement>(null);
   const previewer = useRef<ViewerType | null>(null);
@@ -36,7 +36,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
 
   let resizingDrawer = useRef(false);
 
-  const handleMouseMove = useCallback((e) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     const newHeight = document.body.clientHeight - e.clientY;
     const [minHeight, maxHeight] = [150, 850];
     if (newHeight > minHeight && newHeight < maxHeight) {
@@ -44,17 +44,17 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
     }
   }, []);
   const handleMouseUp = useCallback(
-    (e) => {
+    (e: MouseEvent) => {
       if (!resizingDrawer.current) return;
 
       resizingDrawer.current = false;
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       setTimeout(() => {
-        previewer.current!.get('canvas').zoom('fit-viewport', 'auto');
+        (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       }, 1_000);
     },
-    [handleMouseMove],
+    [handleMouseMove]
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -88,7 +88,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
       // console.log('Viewer importXML: ', previewer.current!.importXML);
       // console.log('BPMN: ', bpmn);
       previewer.current!.importXML(bpmn).then(() => {
-        previewer.current!.get('canvas').zoom('fit-viewport', 'auto');
+        (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
     }
   }, [initialized, bpmn, selectedElement]);

@@ -79,9 +79,6 @@ const Processes: FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const handleOpenChange = (open) => {
-    setDropdownOpen(open);
-  };
 
   const favourites = [0];
 
@@ -102,7 +99,7 @@ const Processes: FC = () => {
     </>
   );
 
-  const [selectedColumn, setSelectedColumn] = useState({});
+  const [selectedColumn, setSelectedColumn] = useState<Process>();
 
   const actionBarGenerator = (record: Process) => {
     return (
@@ -130,7 +127,7 @@ const Processes: FC = () => {
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection = {
+  const rowSelection: TableRowSelection<Process> = {
     selectedRowKeys,
     onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
       setSelectedRowKeys(selectedRowKeys);
@@ -168,14 +165,14 @@ const Processes: FC = () => {
   //   },
   // ];
 
-  const onCheckboxChange = (e) => {
+  const onCheckboxChange = (e: CheckboxChangeEvent) => {
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
       setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
     } else {
       setSelectedColumns((prevSelectedColumns) =>
-        prevSelectedColumns.filter((column) => column !== value),
+        prevSelectedColumns.filter((column) => column !== value)
       );
     }
   };
@@ -192,7 +189,7 @@ const Processes: FC = () => {
   type Column = {
     title: string;
   };
-  const [selectedColumns, setSelectedColumns] = useState<Column[]>([
+  const [selectedColumns, setSelectedColumns] = useState([
     '',
     'Process Name',
     'Description',
@@ -361,7 +358,7 @@ const Processes: FC = () => {
         <div style={{ float: 'right' }}>
           <Dropdown
             open={dropdownOpen}
-            onOpenChange={handleOpenChange}
+            onOpenChange={(open) => setDropdownOpen(open)}
             menu={{
               items,
             }}
@@ -390,7 +387,7 @@ const Processes: FC = () => {
     },
   ];
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key));
+  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
   // <Dropdown menu={{ items }} trigger={['click']}>
   //   <a onClick={(e) => e.preventDefault()}>
@@ -403,11 +400,11 @@ const Processes: FC = () => {
 
   useEffect(() => {
     if (data) {
-      setProcesses(data);
+      setProcesses(data as any);
     }
   }, [data]);
 
-  const [filteredData, setFilteredData] = useState([]);
+  const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -465,7 +462,7 @@ const Processes: FC = () => {
               size="middle"
               // ref={(ele) => (this.searchText = ele)}
               onChange={(e) => /* console.log(e.target.value) */ setSearchTerm(e.target.value)}
-              onPressEnter={(e) => setSearchTerm(e.target.value)}
+              onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
               allowClear
               placeholder="Search Processes"
               // value={this.state.searchText}

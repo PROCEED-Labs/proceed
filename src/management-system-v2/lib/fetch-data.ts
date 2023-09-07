@@ -14,11 +14,11 @@ type QueryData<T extends (...args: any) => any> = Prettify<
 
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.get>[0],
-  TSecondParam extends Parameters<typeof apiClient.get<TFirstParam>>[1],
+  TSecondParam extends Parameters<typeof apiClient.get<TFirstParam>>[1]
 >(
   path: TFirstParam,
   params: TSecondParam['params'],
-  reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>,
+  reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>
 ) {
   const keys = useMemo(() => {
     const keys = [path];
@@ -48,7 +48,7 @@ export function useGetAsset<
 }
 
 export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.post>[0]>(
-  path: TFirstParam,
+  path: TFirstParam
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -65,7 +65,7 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.pos
 }
 
 export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>[0]>(
-  path: TFirstParam,
+  path: TFirstParam
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -82,7 +82,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 }
 
 export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.del>[0]>(
-  path: TFirstParam,
+  path: TFirstParam
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -140,7 +140,7 @@ export const fetchProcessVersionBpmn = async (definitionId: string, version: num
   return await fetchString(url);
 };
 
-export const fetchUserData = async <User>() => {
+export const fetchUserData = async () => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve({
@@ -149,9 +149,9 @@ export const fetchUserData = async <User>() => {
         username: 'max.mustermann',
         email: 'm.mustermann@mustermail.com',
         picture: 'https://picsum.photos/200',
-      });
+      } as User);
     }, 2_000);
-  });
+  }) as Promise<User>;
 };
 
 /**

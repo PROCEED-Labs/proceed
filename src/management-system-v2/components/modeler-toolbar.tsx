@@ -38,6 +38,7 @@ import PropertiesPanel from './properties-panel';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
+import { MenuItemType } from 'antd/es/menu/hooks/useItems';
 
 type ModelerToolbarProps = {};
 
@@ -73,7 +74,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  let versionSelection: MenuProps['items'] = [];
+  let versionSelection: MenuItemType[] = [];
 
   useEffect(() => {
     if (isSuccess) {
@@ -96,7 +97,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
         +e.key < 0
           ? versionSelection![0]?.label
           : versionSelection!.find((item) => item!.key == e?.key)?.label
-      }...`,
+      }...`
     );
     // TODO:
     // const newIndex = versionSelection!.findIndex((item) => item!.key === +e.key);

@@ -100,7 +100,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     if (!initialized && modeler.current?.importXML && processBpmn) {
       // import the diagram that was returned by the request
       modeler.current.importXML(processBpmn).then(() => {
-        modeler.current!.get('canvas').zoom('fit-viewport', 'auto');
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
 
       modeler.current.on('selection.changed', (event) => {

@@ -2,10 +2,25 @@ import { v4 } from 'uuid';
 import { jsPDF } from 'jspdf';
 import 'svg2pdf.js';
 
-export function exportBpmn(processName: string, bpmn: string) {
-  const bpmnBlob = new Blob([bpmn], { type: 'application/xml' });
+import { fetchProcessVersionBpmn, fetchProcess } from './fetch-data';
 
-  exportFile(`${processName}.bpmn`, bpmnBlob);
+async function getProcessData(processId: string, processVersion?: string | number) {
+  // TODO: we use the data for the name but it is maybe better to get the name from the bpmn since it might be different in versioned bpmn
+  const data = await fetchProcess(processId);
+
+  if (processVersion) {
+    data.bpmn = await fetchProcessVersionBpmn(processId, processVersion);
+  }
+
+  return data;
+}
+
+export async function exportBpmn(processId: string, processVersion?: string | number) {
+  const process = await getProcessData(processId, processVersion);
+
+  const bpmnBlob = new Blob([process.bpmn!], { type: 'application/xml' });
+
+  exportFile(`${process.definitionName}.bpmn`, bpmnBlob);
 }
 
 async function getSVGFromBPMN(bpmn: string) {
@@ -26,18 +41,22 @@ async function getSVGFromBPMN(bpmn: string) {
   return svg;
 }
 
-export async function exportSVG(processName: string, bpmn: string) {
-  const svg = await getSVGFromBPMN(bpmn);
+export async function exportSVG(processId: string, processVersion?: string | number) {
+  const process = await getProcessData(processId, processVersion);
+
+  const svg = await getSVGFromBPMN(process.bpmn!);
 
   const svgBlob = new Blob([svg], {
     type: 'image/svg+xml',
   });
 
-  exportFile(`${processName}.svg`, svgBlob);
+  exportFile(`${process.definitionName}.svg`, svgBlob);
 }
 
-export async function exportPDF(processName: string, bpmn: string) {
-  const svg = await getSVGFromBPMN(bpmn);
+export async function exportPDF(processId: string, processVersion?: string | number) {
+  const process = await getProcessData(processId, processVersion);
+
+  const svg = await getSVGFromBPMN(process.bpmn!);
 
   const parser = new DOMParser();
   const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
@@ -66,7 +85,7 @@ export async function exportPDF(processName: string, bpmn: string) {
 
   //Adding Header to the Pdf
   // TODO: make sure that the text fits both in landscape as well as in portrait mode
-  doc.text(`Process: ${processName} \n`, 10, 15);
+  doc.text(`Process: ${process.definitionName} \n`, 10, 15);
 
   await doc.svg(svgDOM.children[0], {
     x: 0,
@@ -75,7 +94,7 @@ export async function exportPDF(processName: string, bpmn: string) {
     height: pageHeight,
   });
 
-  await doc.save(`${processName}.pdf`);
+  await doc.save(`${process.definitionName}.pdf`);
 }
 
 function exportFile(processName: string, data: Blob) {

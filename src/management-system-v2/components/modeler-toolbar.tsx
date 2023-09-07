@@ -177,8 +177,9 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
       <ProcessExportModal
-        isOpen={showProcessExportModal}
+        processId={showProcessExportModal ? processId : undefined}
         onClose={() => setShowProcessExportModal(false)}
+        processVersion={selectedVersion || undefined}
       />
     </>
   );

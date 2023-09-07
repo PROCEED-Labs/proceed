@@ -13,15 +13,12 @@ import {
   Table,
   TableColumnsType,
   Tooltip,
-  Drawer,
   Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { Process, fetchProcesses } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
-  EllipsisOutlined,
-  EditOutlined,
   CopyOutlined,
   ExportOutlined,
   DeleteOutlined,
@@ -33,10 +30,9 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { Processes } from '@/lib/fetch-data';
-import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
 import Preview from './previewProcess';
-import { CheckboxChangeEvent } from 'antd/es/checkbox';
+import ProcessExportModal from './process-export';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 
@@ -74,6 +70,7 @@ const Processes: FC = () => {
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
   const [open, setOpen] = useState(false);
+  const [showProcessExportModal, setShowProcessExportModal] = useState(false);
 
   const [selection, setSelection] = useState<Processes>([]);
   const [hovered, setHovered] = useState<Process | undefined>(undefined);
@@ -82,6 +79,10 @@ const Processes: FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const handleOpenChange = (open) => {
     setDropdownOpen(open);
+  };
+
+  const handleProcessExportModalToggle = async () => {
+    setShowProcessExportModal(!showProcessExportModal);
   };
 
   const favourites = [0];
@@ -103,7 +104,7 @@ const Processes: FC = () => {
     </>
   );
 
-  const [selectedColumn, setSelectedColumn] = useState({});
+  const [selectedColumn, setSelectedColumn] = useState<Process>();
 
   const actionBarGenerator = (record: Process) => {
     return (
@@ -120,7 +121,12 @@ const Processes: FC = () => {
           <CopyOutlined />
         </Tooltip>
         <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined />
+          <ExportOutlined
+            onClick={() => {
+              setSelectedColumn(record);
+              handleProcessExportModalToggle();
+            }}
+          />
         </Tooltip>
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined />
@@ -517,6 +523,10 @@ const Processes: FC = () => {
         size="middle"
       />
       {open && <Preview selectedElement={selectedColumn} setOpen={setOpen}></Preview>}
+      <ProcessExportModal
+        processId={showProcessExportModal ? selectedColumn?.definitionId : undefined}
+        onClose={() => setShowProcessExportModal(false)}
+      />
     </>
   );
 };

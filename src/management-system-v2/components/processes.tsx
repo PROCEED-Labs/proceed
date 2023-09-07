@@ -18,6 +18,7 @@ import {
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { Process, fetchProcesses } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   EllipsisOutlined,
@@ -65,10 +66,8 @@ const { Search } = Input;
 
 const Processes: FC = () => {
   const router = useRouter();
-  const { data, isLoading, isError, isSuccess } = useQuery({
-    queryKey: ['processes'],
-    queryFn: () => fetchProcesses(),
-  });
+
+  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);

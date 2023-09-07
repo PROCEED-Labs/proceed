@@ -33,7 +33,9 @@ export const retry = async (fn, beforeNextTry, retriesLeft = 1, interval = 300) 
   } catch (e) {
     logger.error(e.toString());
     if (retriesLeft === 0) {
-      throw new Error('Not able fulfill request after all retries.');
+      const error = new Error('Not able fulfill request after all retries.');
+      if ('status' in e) error.status = e.status;
+      throw error;
     }
     interval *= 2;
     if (beforeNextTry) await beforeNextTry();

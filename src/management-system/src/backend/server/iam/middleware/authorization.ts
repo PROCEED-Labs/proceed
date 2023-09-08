@@ -1,6 +1,6 @@
 import { config } from '../utils/config.js';
 import { LRUCache } from 'lru-cache';
-import { adminRules, rulesForUser } from '../authorization/caslRules';
+import { PackedRulesForUser, adminRules, rulesForUser } from '../authorization/caslRules';
 import Ability from '../authorization/abilityHelper';
 
 const abilityCache = new LRUCache<string, Ability>({
@@ -11,12 +11,20 @@ export function abilityCacheDeleteKey(key: string) {
   abilityCache.delete(key);
 }
 
-export function abilityCacheDeleteAll(key: string) {
+export function abilityCacheDeleteAll() {
   abilityCache.clear();
 }
 
-export function addAbilityForUser(userId: string, ability: Ability) {
+export function addAbilityForUser(userId: string, abilityAndExpiration: PackedRulesForUser) {
+  const ability = new Ability(abilityAndExpiration.rules);
   abilityCache.set(userId, ability);
+
+  if (abilityAndExpiration.expiration)
+    setTimeout(() => {
+      if (abilityCache.has(userId)) abilityCache.delete(userId);
+    }, +abilityAndExpiration.expiration - Date.now());
+
+  return ability;
 }
 
 export async function abilityMiddleware(req: any, res: any, next: any) {
@@ -29,17 +37,7 @@ export async function abilityMiddleware(req: any, res: any, next: any) {
 
   let ability = abilityCache.get(userId);
 
-  if (ability === undefined) {
-    const { rules, expiration } = await rulesForUser(userId);
-
-    ability = new Ability(rules);
-    abilityCache.set(userId, ability);
-
-    if (expiration)
-      setTimeout(() => {
-        if (abilityCache.has(userId)) abilityCache.delete(userId);
-      }, +expiration - Date.now());
-  }
+  if (ability === undefined) ability = addAbilityForUser(userId, await rulesForUser(userId));
 
   req.userAbility = ability;
 

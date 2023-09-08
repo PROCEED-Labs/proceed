@@ -1,14 +1,19 @@
-import { rulesForUser, toCaslResource } from './caslRules';
+import { PackedRulesForUser } from './caslRules';
 import { unpackRules } from '@casl/ability-v6/extra';
 import { CaslAbility, buildAbility } from './caslAbility';
+import { subject } from '@casl/ability-v6';
+import { ResourceType } from './permissionHelpers';
 
 type CanParams = Parameters<CaslAbility['can']>;
-type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
+
+export function toCaslResource(resource: ResourceType, object: any) {
+  return subject(resource, object);
+}
 
 export default class Ability {
   caslAbility: CaslAbility;
 
-  constructor(packedRules: ReturnOfPromise<typeof rulesForUser>['rules']) {
+  constructor(packedRules: PackedRulesForUser['rules']) {
     this.caslAbility = buildAbility(unpackRules(packedRules));
   }
 

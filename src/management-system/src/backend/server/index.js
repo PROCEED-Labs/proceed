@@ -65,7 +65,7 @@ async function init() {
 
   backendServer.use(cookieParser());
   backendServer.use(
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV !== 'development'
       ? cors()
       : cors({
           origin,

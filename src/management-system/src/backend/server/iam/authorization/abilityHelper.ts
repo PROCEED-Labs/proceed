@@ -1,4 +1,4 @@
-import { PackedRules,toCaslResource } from './caslRules';
+import { PackedRules, toCaslResource } from './caslRules';
 import { unpackRules } from '@casl/ability-v6/extra';
 import { CaslAbility, buildAbility } from './caslAbility';
 

@@ -27,18 +27,14 @@ resourcesRouter.get('/', isAuthenticated(), async (req, res) => {
  * @param {String} id - id of resource object
  * @returns {Array} - resource object
  */
-resourcesRouter.get('/:id', isAuthenticated(), async (req, res) => {
+resourcesRouter.get('/:id', isAuthenticated(), (req, res) => {
   const { id } = req.params;
-  if (id) {
-    try {
-      const resource = await getResource(id);
-      return res.status(200).json(resource);
-    } catch (e) {
-      return res.status(400).json({ error: e.toString() });
-    }
-  } else {
-    return res.status(400).json('Missing parameter id');
-  }
+  if (!id) return res.status(400).json('Missing parameter id');
+
+  const resource = getResource(id);
+  if (resource) return res.status(200).json(resource);
+
+  return res.status(404).end();
 });
 
 export default resourcesRouter;

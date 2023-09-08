@@ -103,7 +103,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     if (!initialized && modeler.current?.importXML && processBpmn) {
       // import the diagram that was returned by the request
       modeler.current.importXML(processBpmn).then(() => {
-        modeler.current!.get('canvas').zoom('fit-viewport', 'auto');
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
 
       modeler.current.on('selection.changed', (event) => {
@@ -144,7 +144,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const handleXmlEditorSave = (bpmn: string) => {
     if (modeler.current) {
       modeler.current.importXML(bpmn).then(() => {
-        modeler.current!.get('canvas').zoom('fit-viewport', 'auto');
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
       updateProcess(processId, { bpmn });
     }

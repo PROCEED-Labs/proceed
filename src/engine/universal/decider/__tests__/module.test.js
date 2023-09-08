@@ -27,8 +27,9 @@ const path = './../../../../helper-modules/constraint-parser-xml-json/__tests__/
 const test1Input = require(`${path}AND-ConstraintGroupJSON.json`).processConstraints;
 const test2Input = require(`${path}1-ConstraintsJSON.json`).processConstraints;
 const sameMachineConstraint = require(`${path}sameMachineConstraint1JSON.json`).processConstraints;
-const maxMachineHopsConstraint =
-  require(`${path}maxMachineHopsConstraintJSON.json`).processConstraints;
+const maxMachineHopsConstraint = require(
+  `${path}maxMachineHopsConstraintJSON.json`,
+).processConstraints;
 
 beforeAll(() => {
   Date.now = jest.fn().mockReturnValue(new Date('2020-03-13T11:21:00'));

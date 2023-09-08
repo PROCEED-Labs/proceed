@@ -26,6 +26,10 @@ import {
 import { config } from '../iam/utils/config.js';
 import { ensureOpaSync } from '../iam/opa/opa-client.js';
 import logger from '../../shared-electron-server/logging.js';
+import bpmnHelper from '@proceed/bpmn-helper';
+const { addDocumentation, setDefinitionsName } = bpmnHelper;
+import processHelpers from '../../../shared-frontend-backend/helpers/processHelpers.js';
+const { getProcessInfo } = processHelpers;
 
 const processRouter = express.Router();
 
@@ -130,6 +134,7 @@ processRouter.get('/:definitionId', async (req, res) => {
   }
 });
 
+const allowedInPutBodyInsteadOfBpmn = ['definitionName', 'description'];
 processRouter.put(
   '/:definitionId',
   isAllowed([PERMISSION_UPDATE, PERMISSION_MANAGE], 'Process'),
@@ -147,6 +152,42 @@ processRouter.put(
     }
 
     let { bpmn } = body;
+
+    if (
+      typeof bpmn === 'string' &&
+      bpmn !== '' &&
+      allowedInPutBodyInsteadOfBpmn.some((key) => Object.keys(body).includes(key))
+    ) {
+      const oldBpmn = await getProcessBpmn(definitionsId);
+      const dataInOldBpmn = await getProcessInfo(oldBpmn);
+      const dataInNewBpmn = await getProcessInfo(bpmn);
+
+      if ('definitionName' in body) {
+        if (dataInNewBpmn.name !== dataInOldBpmn.name)
+          return res
+            .status(400)
+            .send(
+              'Key "definitionName" of process being updated in the request body and in the BPMN.',
+            );
+
+        bpmn = await setDefinitionsName(bpmn, body['definitionName']);
+        delete body['definitionName'];
+      }
+
+      if ('description' in body) {
+        if (dataInNewBpmn.description !== dataInOldBpmn.description)
+          return res
+            .status(400)
+            .send(
+              'Key "description" of process being updated in the request body and in the BPMN.',
+            );
+
+        bpmn = await addDocumentation(bpmn, body['description']);
+        delete body['description'];
+      }
+
+      body.bpmn = bpmn;
+    }
 
     try {
       const newProcessInfo = await updateProcess(definitionsId, body);
@@ -177,6 +218,12 @@ processRouter.delete(
 );
 
 processRouter.get('/:definitionId/versions', async (req, res) => {
+  const { process, definitionsId } = req;
+  if (!process) {
+    res.status(404).send(`Process with id ${definitionsId} could not be found!`);
+    return;
+  }
+
   res.status(200).send(req.process.versions);
 });
 

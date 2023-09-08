@@ -38,6 +38,7 @@ import PropertiesPanel from './properties-panel';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
+import { MenuItemType } from 'antd/es/menu/hooks/useItems';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -75,7 +76,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  let versionSelection: MenuProps['items'] = [];
+  let versionSelection: MenuItemType[] = [];
 
   useEffect(() => {
     if (isSuccess) {

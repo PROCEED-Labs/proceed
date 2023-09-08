@@ -236,15 +236,13 @@ const Processes: FC = () => {
     },
   ];
 
-  if (isError) {
-    return <div>Error</div>;
-  }
-
-  const [filteredData, setFilteredData] = useState([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (data && searchTerm !== '') {
+    if (!data) return;
+
+    if (searchTerm !== '') {
       setFilteredData(
         data.filter((item) => {
           return item.definitionName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -254,6 +252,10 @@ const Processes: FC = () => {
       setFilteredData(data);
     }
   }, [data, searchTerm]);
+
+  if (isError) {
+    return <div>Error</div>;
+  }
 
   return (
     <>

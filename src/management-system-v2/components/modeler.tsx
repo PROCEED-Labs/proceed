@@ -81,7 +81,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         modeler.current
           .saveXML({ format: true })
           .then(({ xml }) => {
-            return updateProcess(processId, { bpmn: xml! });
+            return updateProcess(processId as string, { bpmn: xml! });
           })
           .catch((error) => {
             console.log(error);
@@ -96,7 +96,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     // only reset the modeler if we switch between editing being enabled or disabled
   }, [setModeler, editingDisabled, processId]);
 
-  const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
+  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 
   useEffect(() => {
     // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
@@ -119,7 +119,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         timer = setTimeout(async () => {
           try {
             const { xml } = await modeler.current!.saveXML({ format: true });
-            await updateProcess(processId, { bpmn: xml! });
+            await updateProcess(processId as string, { bpmn: xml! });
           } catch (err) {
             console.log(err);
           }

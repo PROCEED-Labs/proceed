@@ -5,7 +5,7 @@ import { Inter } from 'next/font/google';
 import { FC, PropsWithChildren } from 'react';
 import Layout from '@/components/layout';
 import App from '@/components/app';
-import { AuthCallbackListener } from '@/lib/iam';
+import { AuthCallbackListener } from '@/lib/iamComponents';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 

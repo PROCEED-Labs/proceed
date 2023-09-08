@@ -2,55 +2,51 @@
 
 import React from 'react';
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Menu, MenuProps, Popover, Space, Tooltip } from 'antd';
+import { FC, PropsWithChildren, useState } from 'react';
+import { Layout as AntLayout, Menu, MenuProps, Space } from 'antd';
 import {
-  DeploymentUnitOutlined,
-  FundProjectionScreenOutlined,
   EditOutlined,
-  UnorderedListOutlined,
   ProfileOutlined,
   FileAddOutlined,
-  PlaySquareOutlined,
   SettingOutlined,
   ApiOutlined,
-  UserOutlined,
   StarOutlined,
 } from '@ant-design/icons';
-import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
+import HeaderActions from '@/components/header-actions';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
 }>;
 
+// keys need to be unique <identifier>:<path>
 const items: MenuProps['items'] = [
   {
-    key: 'processes',
+    key: 'processLabel:processes',
     label: 'Processes',
     type: 'group',
   },
   {
-    key: 'processes',
+    key: 'processGroup:processes',
     icon: <EditOutlined />,
     label: 'Process List',
     children: [
       {
-        key: 'processes',
+        key: 'editProcesses:processes',
         icon: <EditOutlined />,
         label: 'My Processes',
       },
       {
-        key: 'newProcess',
+        key: 'newProcess:newProcess',
         icon: <FileAddOutlined />,
         label: 'New Process',
         disabled: true,
       },
       {
-        key: 'favorites',
+        key: 'favoriteProcess:favorites',
         icon: <StarOutlined />,
         label: 'Favorites',
         disabled: true,
@@ -64,19 +60,19 @@ const items: MenuProps['items'] = [
   //   disabled: true,
   // },
   {
-    key: 'templates',
+    key: 'templateGroup:templates',
     icon: <ProfileOutlined />,
     label: 'Templates',
     disabled: false,
     children: [
       {
-        key: 'newTemplate',
+        key: 'newTemplate:newTemplate',
         icon: <FileAddOutlined />,
         label: 'New Template',
         disabled: true,
       },
       {
-        key: 'favorites',
+        key: 'favoriteTemplates:favorites',
         icon: <StarOutlined />,
         label: 'Favorites',
         disabled: true,
@@ -150,28 +146,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           height={63}
           priority
         />
-        <Space style={{ float: 'right' }}>
-          <Button type="text">
-            <u>Logout</u>
-          </Button>
-          <Tooltip title="Account Settings">
-            {/* <Popover
-              content={<a href>User Profile</a>}
-              title="Settings"
-              trigger="click"
-              open={openUserSettings}
-              onOpenChange={handleOpenChangeUserSettings}
-            > */}
-            <Button
-              shape="circle"
-              icon={<UserOutlined />}
-              onClick={() => {
-                router.push('/profile');
-              }}
-            />
-            {/* </Popover> */}
-          </Tooltip>
-        </Space>
+        <HeaderActions />
       </AntLayout.Header>
       <AntLayout>
         {/* //TODO: sider's border is 1 px too far right */}
@@ -193,7 +168,8 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             selectedKeys={[activeSegment]}
             items={items}
             onClick={({ key }) => {
-              router.push(`/${key}`);
+              const path = key.split(':').at(-1);
+              router.push(`/${path}`);
             }}
           />
         </AntLayout.Sider>

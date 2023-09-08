@@ -1,52 +1,11 @@
 'use client';
 
 import { create } from 'zustand';
-import { createMongoAbility, MongoAbility, RawRuleOf } from '@casl/ability';
-// @ts-ignore
-import { PERMISSION_MAPPING } from 'proceed-management-system/src/shared-frontend-backend/constants';
-import { FC, PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Route } from 'next';
+import Ability from 'proceed-management-system/src/backend/server/iam/authorization/abilityHelper';
+import { PackedRulesForUser } from 'proceed-management-system/src/backend/server/iam/authorization/caslRules';
+import { ResourceType } from 'proceed-management-system/src/backend/server/iam/authorization/permissionHelpers';
 
 const BACKEND_URL = process.env.BACKEND_URL;
-
-// TYPE DEFINITIONS
-// ----------------------
-
-const resourceAction = [
-  'none',
-  'view',
-  'update',
-  'create',
-  'delete',
-  'manage',
-  'share',
-  'manage-roles',
-  'manage-groups',
-  'manage-password',
-  'admin',
-] as const;
-
-type ResourceActionType = (typeof resourceAction)[number];
-
-type ResourceActionsMappingType = Record<ResourceActionType, number>;
-
-const ResourceActionsMapping = PERMISSION_MAPPING as ResourceActionsMappingType;
-
-const resources = [
-  'Process',
-  'Project',
-  'Template',
-  'Task',
-  'Machine',
-  'Execution',
-  'Role',
-  'User',
-  'Setting',
-  'EnvConfig',
-  'All',
-] as const;
-type ResourceType = (typeof resources)[number];
 
 interface AuthResponse {
   isLoggedIn: boolean;
@@ -55,139 +14,88 @@ interface AuthResponse {
     allowRegistrations: boolean;
     useSessionManagement: boolean;
   };
-  user: any;
+  // NOTE user comes from auth0, thus the structure of it could change when changing providers
+  user: {
+    given_name: string;
+    family_name: string;
+    nickname: string;
+    preferred_username: string;
+    name: string;
+    picture: string;
+    updated_at: string;
+    email: string;
+    email_verified: boolean;
+    iss: string;
+    aud: string;
+    iat: number;
+    exp: number;
+    sub: string;
+    sid: string;
+    nonce: string;
+  };
   handled: boolean;
   permissions: Partial<Record<ResourceType, { actions: number[]; conditions?: any }>>;
   csrfToken: string;
+  userRules: PackedRulesForUser;
 }
 
-type AbilityType = MongoAbility<[ResourceActionType, ResourceType]>;
-type AbilityRuleType = RawRuleOf<AbilityType>;
-
 type AuthStoreType = (
-  | ({
+  | {
       loggedIn: true;
-      ability: AbilityType;
-    } & Pick<AuthResponse, 'user' | 'csrfToken'>)
+    }
   | {
       loggedIn: false;
     }
 ) & {
-  oauthCallback: (obj: AuthResponse) => void;
-};
-
-// AUTH STORE
-// ----------------------
-
-const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
-
-function translatePermissions(authResponse: AuthResponse) {
-  const permissions = authResponse.permissions;
-  const translatedRules: AbilityRuleType[] = [];
-
-  for (const resource of resources) {
-    let resourcePermissions = permissions[resource];
-    if (resourcePermissions === undefined) continue;
-
-    const actionsSet = new Set<ResourceActionType>();
-
-    // go through all permission numbers for resource
-    for (const permission of resourcePermissions.actions) {
-      if (permission === 0) {
-        actionsSet.add('none');
-        continue;
-      }
-
-      // go through all actions and see if they're contained in number
-      for (let actionIndex = 0; actionIndex < resourceAction.length; actionIndex++) {
-        const action = resourceAction[actionIndex];
-        const bit = ResourceActionsMapping[action];
-
-        if ((permission & bit) === bit) {
-          actionsSet.add(action);
-        }
-      }
-    }
-
-    // TODO handle conditions sent from backend in permissions[resource].conditions
-
-    translatedRules.push({
-      action: [...actionsSet.values()],
-      subject: resource,
-      conditions: needOwnership.has(resource)
-        ? {
-            owner: { $eq: authResponse.user.sub },
-          }
-        : undefined,
-    });
-  }
-
-  return translatedRules;
-}
+  ability: Ability;
+  oauthCallbackPerformed: boolean; // Needed so that Auth components don't do anything before we know if the user is logged in or not
+  oauthCallback: (obj: AuthResponse | undefined) => void;
+  logout: () => void;
+} & Pick<AuthResponse, 'user' | 'csrfToken'>;
 
 export const useAuthStore = create<AuthStoreType>((set) => ({
+  oauthCallbackPerformed: false,
   loggedIn: false,
-  oauthCallback(obj: AuthResponse) {
-    if (obj.isLoggedIn) {
+  logout() {
+    set({ loggedIn: false });
+  },
+  user: {
+    given_name: '',
+    family_name: '',
+    nickname: '',
+    preferred_username: '',
+    name: '',
+    picture: '',
+    updated_at: '',
+    email: '',
+    email_verified: false,
+    iss: '',
+    aud: '',
+    iat: 0,
+    exp: 0,
+    sub: '',
+    sid: '',
+    nonce: '',
+  },
+  ability: new Ability([]),
+  csrfToken: '',
+  oauthCallback(obj: AuthResponse | undefined) {
+    if (typeof obj === 'object' && obj.isLoggedIn) {
       set(
         {
           loggedIn: true,
+          oauthCallbackPerformed: true,
           user: obj.user,
           csrfToken: obj.csrfToken,
-          ability: createMongoAbility<AbilityType>(translatePermissions(obj), {
-            // resolveAction: createAliasResolver({
-            //   manage: ['update', 'create', 'delete'],
-            // }),
-            anyAction: 'admin',
-            anySubjectType: 'All',
-          }),
+          ability: new Ability(obj.userRules.rules),
         },
         true,
       );
+    } else {
+      set({ loggedIn: false, oauthCallbackPerformed: true });
     }
   },
 }));
-
-// frontend UTILITIES
-// ----------------------
-type AuthCanProps = PropsWithChildren<{
-  action: ResourceActionType | ResourceActionType[];
-  resource: ResourceType | ResourceType[];
-  fallback?: ReactNode;
-  fallbackRedirect?: Route;
-}>;
-
-export const AuthCan: FC<AuthCanProps> = ({
-  action,
-  resource,
-  children,
-  fallback,
-  fallbackRedirect,
-}) => {
-  const authStore = useAuthStore();
-  const router = useRouter();
-
-  const allow = useMemo(() => {
-    if (!authStore.loggedIn) return false;
-
-    const resources = Array.isArray(resource) ? resource : [resource];
-    const actions = Array.isArray(action) ? action : [action];
-
-    for (const r of resources) {
-      for (const a of actions) {
-        if (!authStore.ability.can(a, r)) return false;
-      }
-    }
-
-    return true;
-  }, [action, resource, authStore]);
-
-  if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
-
-  if (fallbackRedirect) router.push(fallbackRedirect);
-
-  return fallback || null;
-};
 
 export const authFetchJSON = async <T>(url: string, options: Parameters<typeof fetch>[1] = {}) => {
   const state = useAuthStore.getState();
@@ -206,29 +114,6 @@ export const authFetchJSON = async <T>(url: string, options: Parameters<typeof f
     throw new Error('Network response was not ok');
   }
   return response.json() as Promise<T>;
-};
-
-// frontend callback
-// ----------------------
-
-const callbackParamsRegex = /.*?code=.+&state=.+/;
-let oneShot = true;
-
-export const AuthCallbackListener: FC = () => {
-  const authStore = useAuthStore();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (oneShot && process.env.NEXT_PUBLIC_USE_AUTH) {
-      oneShot = false;
-      handleOauthCallback()
-        .then((authRes) => authStore.oauthCallback(authRes))
-        .catch((e: Error) => alert(`Error: ${e.name}`))
-        .finally(() => router.push('/'));
-    }
-  }, [authStore, router]);
-
-  return null;
 };
 
 // SERVER AUTH HELPERS

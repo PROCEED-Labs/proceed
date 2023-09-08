@@ -1,5 +1,4 @@
-import { authFetchJSON } from './iam';
-
+import { authFetchJSON, useAuthStore } from './iam';
 import { UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import createClient from 'openapi-fetch';
 import { paths } from './openapiSchema';
@@ -13,6 +12,27 @@ type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K
 type QueryData<T extends (...args: any) => any> = Prettify<
   Extract<Awaited<ReturnType<T>>, { data: any }>['data']
 >;
+
+type ObjectToUnion<TObj extends Record<any, any>> = TObj[keyof TObj];
+export type ApiRequestBody<
+  KPath extends keyof paths,
+  KMethod extends keyof paths[KPath],
+> = paths[KPath][KMethod] extends { requestBody?: any }
+  ? Exclude<paths[KPath][KMethod]['requestBody'], undefined> extends { content: any }
+    ? Prettify<ObjectToUnion<Exclude<paths[KPath][KMethod]['requestBody'], undefined>['content']>>
+    : unknown
+  : unknown;
+
+export type ApiData<
+  KPath extends keyof paths,
+  KMethod extends keyof paths[KPath],
+> = paths[KPath][KMethod] extends { responses: any }
+  ? paths[KPath][KMethod]['responses'] extends { '200': any }
+    ? paths[KPath][KMethod]['responses']['200'] extends { content: any }
+      ? Prettify<ObjectToUnion<paths[KPath][KMethod]['responses']['200']['content']>>
+      : unknown
+    : unknown
+  : unknown;
 
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.get>[0],
@@ -37,8 +57,20 @@ export function useGetAsset<
     // eslint-disable-next-line
     queryKey: keys,
     queryFn: async () => {
+      const state = useAuthStore.getState();
+
+      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+
+      // @ts-ignore
       const { data, error, response } = await apiClient.get(path, {
         params,
+        headers: process.env.NEXT_PUBLIC_USE_AUTH
+          ? {
+              'x-csrf-token': state.csrfToken,
+              'x-csrf': '1',
+            }
+          : undefined,
+        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
       } as TSecondParam);
 
       if (error || data === undefined) throw new Error(`Error fetching: ${response.statusText}`);
@@ -55,7 +87,20 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.pos
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.post<TFirstParam>>[1]) => {
-      const { response, data, error } = await apiClient.post(path, body);
+      const state = useAuthStore.getState();
+
+      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+
+      const { response, data, error } = await apiClient.post(path, {
+        headers: process.env.NEXT_PUBLIC_USE_AUTH
+          ? {
+              'x-csrf-token': state.csrfToken,
+              'x-csrf': '1',
+            }
+          : undefined,
+        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
+        ...body,
+      });
 
       if (error) throw new Error(`Error calling POST:${path} -> ${response.body}`);
 
@@ -72,9 +117,22 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.put<TFirstParam>>[1]) => {
-      const { response, data, error } = await apiClient.put(path, body);
+      const state = useAuthStore.getState();
 
-      if (error) throw new Error(`Error calling POST:${path} -> ${response.body}`);
+      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+
+      const { response, data, error } = await apiClient.put(path, {
+        headers: process.env.NEXT_PUBLIC_USE_AUTH
+          ? {
+              'x-csrf-token': state.csrfToken,
+              'x-csrf': '1',
+            }
+          : undefined,
+        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
+        ...body,
+      });
+
+      if (error) throw error;
 
       queryClient.invalidateQueries([path, (body as any).params.path]);
 
@@ -89,7 +147,20 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.del<TFirstParam>>[1]) => {
-      const { response, data, error } = await apiClient.del(path, body);
+      const state = useAuthStore.getState();
+
+      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+
+      const { response, data, error } = await apiClient.del(path, {
+        headers: process.env.NEXT_PUBLIC_USE_AUTH
+          ? {
+              'x-csrf-token': state.csrfToken,
+              'x-csrf': '1',
+            }
+          : undefined,
+        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
+        ...body,
+      });
 
       if (error) throw new Error(`Error calling POST:${path} -> ${response.body}`);
 
@@ -148,20 +219,6 @@ export const fetchProcess = async (definitionId: string) => {
 export const fetchProcessVersionBpmn = async (definitionId: string, version: number | string) => {
   const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
   return await fetchString(url);
-};
-
-export const fetchUserData = async <User>() => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve({
-        lastName: 'Mustermann',
-        firstName: 'Max',
-        username: 'max.mustermann',
-        email: 'm.mustermann@mustermail.com',
-        picture: 'https://picsum.photos/200',
-      });
-    }, 2_000);
-  });
 };
 
 /**

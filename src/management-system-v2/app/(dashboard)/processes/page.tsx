@@ -4,7 +4,8 @@ import Processes from '@/components/processes';
 import Content from '@/components/content';
 import Space from '@/components/_space';
 import HeaderActions from './header-actions';
-import { AuthCan, login, useAuthStore } from '@/lib/iam';
+import { login, useAuthStore } from '@/lib/iam';
+import { AuthCan } from '@/lib/iamComponents';
 import { Button, Result } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 

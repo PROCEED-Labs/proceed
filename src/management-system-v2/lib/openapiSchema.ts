@@ -331,6 +331,14 @@ export interface components {
       user_id?: string;
     };
     /** user */
+    userDataPut: {
+      /** Format: email */
+      email: string;
+      username: string;
+      firstName: string;
+      lastName: string;
+    };
+    /** user */
     userData: {
       /** Format: email */
       email?: string;
@@ -1053,7 +1061,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        'application/json': components['schemas']['userData'];
+        'application/json': components['schemas']['userDataPut'];
       };
     };
     responses: {

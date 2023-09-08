@@ -1045,7 +1045,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/userData"
+                "$ref": "#/components/schemas/userDataPut"
               }
             }
           }
@@ -2039,6 +2039,26 @@
             "type": "string"
           }
         }
+      },
+      "userDataPut": {
+        "title": "user",
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName ": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "username", "firstName ", "lastName"]
       },
       "userData": {
         "title": "user",

@@ -52,7 +52,7 @@ export default {
     },
     countProcessInDepartment(department) {
       return this.processes.filter(
-        (process) => process.departments && process.departments.includes(department)
+        (process) => process.departments && process.departments.includes(department),
       ).length;
     },
   },

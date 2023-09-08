@@ -69,7 +69,7 @@ async function versionUserTasks(store, processInfo, newVersion, bpmnObj, dryRun)
 
 export async function processHeadDiffersFromBasedOn(store, definitionId) {
   const processInfo = store.getters['processStore/processes'].find(
-    (process) => process.id === definitionId
+    (process) => process.id === definitionId,
   );
 
   if (!processInfo) {
@@ -106,7 +106,7 @@ export async function createNewProcessVersion(store, bpmn, versionName, versionD
   const definitionId = await getDefinitionsId(bpmnObj);
 
   const processInfo = store.getters['processStore/processes'].find(
-    (process) => process.id === definitionId
+    (process) => process.id === definitionId,
   );
 
   if (!processInfo) {

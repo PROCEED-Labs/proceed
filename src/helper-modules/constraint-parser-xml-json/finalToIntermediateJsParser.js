@@ -204,7 +204,7 @@ const finalToIntermediateJsParser = {
 
     if (softConstraintsArray.length === 1) {
       softConstraintsObj['proceed:softConstraint'] = this.convertSoftConstraint(
-        softConstraintsArray[0]
+        softConstraintsArray[0],
       );
     } else if (softConstraintsArray.length > 1) {
       const constraintArray = [];

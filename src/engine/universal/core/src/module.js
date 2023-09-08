@@ -82,8 +82,8 @@ module.exports = {
     logger.debug('REST endpoints started');
     logger.info(
       `PROCEED Engine started on PORT ${await config.readConfig(
-        'machine.port'
-      )} under the mDNS NAME "${distribution.communication.usedMDNSName}"`
+        'machine.port',
+      )} under the mDNS NAME "${distribution.communication.usedMDNSName}"`,
     );
   },
 

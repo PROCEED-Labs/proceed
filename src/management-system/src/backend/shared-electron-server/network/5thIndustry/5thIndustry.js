@@ -58,7 +58,7 @@ function asyncHTTPSRequest(url, options, query) {
           response = JSON.parse(data);
         } catch (err) {
           reject(
-            `Unable to parse response from server. Server responded with status code ${res.statusCode}`
+            `Unable to parse response from server. Server responded with status code ${res.statusCode}`,
           );
         }
 
@@ -79,8 +79,8 @@ async function authorizeWith5i() {
     serviceData = JSON.parse(
       fse.readFileSync(
         path.join(getAppDataPath(), 'Config', '5thIndustry_service_account.json'),
-        'utf-8'
-      )
+        'utf-8',
+      ),
     );
 
     clientId = serviceData.clientId;
@@ -89,7 +89,7 @@ async function authorizeWith5i() {
 
     // base64 encode the account data
     const authorization = Buffer.from(
-      `${serviceData.clientId}:${serviceData.clientSecret}`
+      `${serviceData.clientId}:${serviceData.clientSecret}`,
     ).toString('base64');
 
     const query = {
@@ -110,7 +110,7 @@ async function authorizeWith5i() {
           Authorization: `Basic ${authorization}`,
         },
       },
-      encodedQuery
+      encodedQuery,
     );
 
     if (response.error) {
@@ -213,7 +213,7 @@ export async function getInspectionPlans(type = 'entity') {
 export async function getInspectionPlanData(
   inspectionPlanId,
   type = 'entity',
-  query = minimalPlanQuery
+  query = minimalPlanQuery,
 ) {
   const body = JSON.stringify({
     query,
@@ -374,7 +374,7 @@ const subscriptions = {};
  */
 export async function listenFor5thIndustryContractInformation(
   processDefinitionsId,
-  { url, user: username, password }
+  { url, user: username, password },
 ) {
   // we need to ensure that we only execute one bpmn change at a time
   const queue = new ExecutionQueue();
@@ -386,7 +386,7 @@ export async function listenFor5thIndustryContractInformation(
       '2/5I-DI5App/event/contractClosed',
       subscriptions[processDefinitionsId],
       url,
-      { username, password, clientIdPrefix: 'MS-' }
+      { username, password, clientIdPrefix: 'MS-' },
     );
     subscriptions[processDefinitionsId] = undefined;
   }
@@ -399,7 +399,7 @@ export async function listenFor5thIndustryContractInformation(
       if (processDefinitionsId !== contractInfo.processId) return;
 
       logger.debug(
-        `Received contract information for project ${processDefinitionsId} from 5thIndustry`
+        `Received contract information for project ${processDefinitionsId} from 5thIndustry`,
       );
 
       // avoid multiple simultaneous adaptations of a project
@@ -408,7 +408,7 @@ export async function listenFor5thIndustryContractInformation(
         await immediateDeploymentInfoRequest();
 
         logger.debug(
-          `Updating the bpmn of project ${processDefinitionsId} with contract information`
+          `Updating the bpmn of project ${processDefinitionsId} with contract information`,
         );
 
         const deployment = getDeployments()[processDefinitionsId];
@@ -471,7 +471,7 @@ export async function listenFor5thIndustryContractInformation(
           currentVersion,
           newVersion,
           [runningInstance],
-          { flowElementMapping }
+          { flowElementMapping },
         );
 
         // update the editable version of the project to contain the changes that were made

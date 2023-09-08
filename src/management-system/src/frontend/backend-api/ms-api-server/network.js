@@ -40,7 +40,7 @@ async function migrateInstances(
   currentVersion,
   targetVersion,
   instanceIds,
-  migrationArgs
+  migrationArgs,
 ) {
   const [response] = await request(
     'instances_migrate_version',
@@ -48,7 +48,7 @@ async function migrateInstances(
     currentVersion,
     targetVersion,
     instanceIds,
-    migrationArgs
+    migrationArgs,
   );
 
   if (response.error) {

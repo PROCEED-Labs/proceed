@@ -54,7 +54,7 @@ async function getMachineInformation(machine) {
   const { body: machineJSON } = await network.sendRequest(
     machine.ip,
     machine.port,
-    '/machine/id,hostname,currentlyConnectedEnvironments'
+    '/machine/id,hostname,currentlyConnectedEnvironments',
   );
 
   return JSON.parse(machineJSON);
@@ -112,7 +112,7 @@ async function pingDiscoveredMachines() {
         // connection not succesful => strike machine and remove it at 3 strikes
         strikeMachine(machine);
       }
-    })
+    }),
   );
 
   timer.setTimeout(() => {
@@ -177,7 +177,7 @@ async function addMachine(service) {
 async function removeMachine(service) {
   // make sure machine wasn't removed already to prevent errors
   const machine = Object.values(machines).find(
-    (m) => m.ip === service.ip && m.port === service.port
+    (m) => m.ip === service.ip && m.port === service.port,
   );
 
   if (machine) {
@@ -225,7 +225,7 @@ module.exports = {
     const port = await config.readConfig('machine.port');
     const { id, hostname } = await information.getMachineInformation(['id', 'hostname']);
     const currentlyConnectedEnvironments = await config.readConfig(
-      'machine.currentlyConnectedEnvironments'
+      'machine.currentlyConnectedEnvironments',
     );
     this.usedMDNSName = name || hostname.split('.')[0];
 

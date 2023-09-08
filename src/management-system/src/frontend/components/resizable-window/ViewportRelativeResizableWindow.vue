@@ -47,22 +47,22 @@ export default {
     calculateWindowMeasurements(changes) {
       const width =
         parseFloat(
-          this.initialMeasurements.width.substring(0, this.initialMeasurements.width.indexOf('vw'))
+          this.initialMeasurements.width.substring(0, this.initialMeasurements.width.indexOf('vw')),
         ) + this.convertPixelToVw(changes.widthChange);
       const height =
         parseFloat(
           this.initialMeasurements.height.substring(
             0,
-            this.initialMeasurements.height.indexOf('vh')
-          )
+            this.initialMeasurements.height.indexOf('vh'),
+          ),
         ) + this.convertPixelToVh(changes.heightChange);
       const top =
         parseFloat(
-          this.initialMeasurements.top.substring(0, this.initialMeasurements.top.indexOf('vh'))
+          this.initialMeasurements.top.substring(0, this.initialMeasurements.top.indexOf('vh')),
         ) + this.convertPixelToVh(changes.verticalOffset);
       const right =
         parseFloat(
-          this.initialMeasurements.right.substring(0, this.initialMeasurements.right.indexOf('vw'))
+          this.initialMeasurements.right.substring(0, this.initialMeasurements.right.indexOf('vw')),
         ) - this.convertPixelToVw(changes.horizontalOffset);
 
       return {

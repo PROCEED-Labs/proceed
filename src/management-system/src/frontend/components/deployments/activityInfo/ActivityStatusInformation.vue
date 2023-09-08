@@ -166,7 +166,7 @@ export default {
     elementIsActive() {
       if (this.instance) {
         const elementToken = this.instance.tokens.find(
-          (l) => l.currentFlowElementId == this.selectedElement.id
+          (l) => l.currentFlowElementId == this.selectedElement.id,
         );
 
         if (elementToken) {
@@ -192,13 +192,13 @@ export default {
         return this.instance.instanceState[0];
       } else if (this.selectedElement && this.instance) {
         const elementInfo = this.instance.log.find(
-          (l) => l.flowElementId == this.selectedElement.id
+          (l) => l.flowElementId == this.selectedElement.id,
         );
         if (elementInfo) {
           return elementInfo.executionState;
         } else {
           const tokenInfo = this.instance.tokens.find(
-            (l) => l.currentFlowElementId == this.selectedElement.id
+            (l) => l.currentFlowElementId == this.selectedElement.id,
           );
           return tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
         }
@@ -222,11 +222,11 @@ export default {
     priority() {
       if (this.instance) {
         const token = this.instance.tokens.find(
-          (l) => l.currentFlowElementId == this.selectedElement.id
+          (l) => l.currentFlowElementId == this.selectedElement.id,
         );
 
         const logInfo = this.instance.log.find(
-          (logEntry) => logEntry.flowElementId === this.selectedElement.id
+          (logEntry) => logEntry.flowElementId === this.selectedElement.id,
         );
 
         if (token) {
@@ -249,11 +249,11 @@ export default {
     },
     realCosts() {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       const logInfo = this.instance.log.find(
-        (logEntry) => logEntry.flowElementId === this.selectedElement.id
+        (logEntry) => logEntry.flowElementId === this.selectedElement.id,
       );
 
       if (token) {
@@ -265,11 +265,11 @@ export default {
     },
     currentProgress() {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       const logInfo = this.instance.log.find(
-        (logEntry) => logEntry.flowElementId === this.selectedElement.id
+        (logEntry) => logEntry.flowElementId === this.selectedElement.id,
       );
 
       if (token && token.currentFlowNodeProgress) {
@@ -294,7 +294,7 @@ export default {
   methods: {
     async updateToken(updatedInfoObj) {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       if (token) {
@@ -302,7 +302,7 @@ export default {
           this.deployment.definitionId,
           this.instance.processInstanceId,
           token.tokenId,
-          updatedInfoObj
+          updatedInfoObj,
         );
       }
     },
@@ -319,14 +319,14 @@ export default {
     },
     async setProgress(newProgress) {
       const token = this.instance.tokens.find(
-        (l) => l.currentFlowElementId == this.selectedElement.id
+        (l) => l.currentFlowElementId == this.selectedElement.id,
       );
 
       if (token && newProgress.value === 100) {
         await this.updateToken({ currentFlowNodeProgress: newProgress });
         await engineNetworkInterface.completeUserTask(
           this.instance.processInstanceId,
-          token.currentFlowElementId
+          token.currentFlowElementId,
         );
       }
     },
@@ -338,7 +338,7 @@ export default {
           const imageFileName = newMetaData.overviewImage.split('/').pop();
           const localImage = await processInterface.getImage(
             this.processDefinitionsId,
-            imageFileName
+            imageFileName,
           );
           this.currentImage = localImage;
         } else if (newMetaData.overviewImage && this.processIsShared) {

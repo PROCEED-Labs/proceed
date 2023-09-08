@@ -66,7 +66,7 @@ module.exports = (logging) => {
     const { entries: limit = 100 } = req.query;
     const { definitionId } = req.params;
     const processInfo = (await config.readConfigData('processLogs')).find(
-      (pd) => pd.definitionId === definitionId
+      (pd) => pd.definitionId === definitionId,
     );
 
     if (!processInfo) {
@@ -83,7 +83,7 @@ module.exports = (logging) => {
   network.delete(`${route}/process/:definitionId`, { cors: true }, async (req) => {
     const { definitionId } = req.params;
     const processInfo = (await config.readConfigData('processLogs')).find(
-      (pd) => pd.definitionId === definitionId
+      (pd) => pd.definitionId === definitionId,
     );
 
     if (!processInfo) {
@@ -101,7 +101,7 @@ module.exports = (logging) => {
       const { entries: limit = 100 } = req.query;
       const { definitionId, instanceId } = req.params;
       const processInfo = (await config.readConfigData('processLogs')).find(
-        (pd) => pd.definitionId === definitionId
+        (pd) => pd.definitionId === definitionId,
       );
 
       if (!processInfo) {
@@ -114,7 +114,7 @@ module.exports = (logging) => {
         ? JSON.stringify(instanceLogs)
         : { response: 'No logs for this instance have been made yet', mimeType: 'html' };
       return instanceLogs;
-    }
+    },
   );
 
   network.delete(
@@ -123,7 +123,7 @@ module.exports = (logging) => {
     async (req) => {
       const { definitionId, instanceId } = req.params;
       const processInfo = (await config.readConfigData('processLogs')).find(
-        (pd) => pd.definitionId === definitionId
+        (pd) => pd.definitionId === definitionId,
       );
 
       if (!processInfo) {
@@ -133,6 +133,6 @@ module.exports = (logging) => {
       logging.deleteInstanceLogs(definitionId, instanceId);
 
       return { statusCode: 200 };
-    }
+    },
   );
 };

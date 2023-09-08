@@ -138,7 +138,7 @@ export default {
         const filtered = this.users.filter(
           ({ id: id1, username }) =>
             !this.selectedRole.members.some(({ userId: id2 }) => id2 === id1) &&
-            username !== 'admin'
+            username !== 'admin',
         );
         if (!this.search) return filtered;
         return filtered.filter((user) => {
@@ -169,7 +169,7 @@ export default {
     addSelectedUser(user) {
       if (user.value === false) {
         const index = this.selectedUsers.findIndex(
-          (selectedUser) => selectedUser.id === user.item.id
+          (selectedUser) => selectedUser.id === user.item.id,
         );
         if (index > -1) this.selectedUsers.splice(index, 1);
       } else {

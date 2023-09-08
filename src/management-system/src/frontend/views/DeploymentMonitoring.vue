@@ -155,7 +155,7 @@ export default {
 
       if (this.selectedVersion) {
         return sortedInstances.filter(
-          (instance) => instance.processVersion == this.selectedVersion.version
+          (instance) => instance.processVersion == this.selectedVersion.version,
         );
       }
 
@@ -174,7 +174,7 @@ export default {
     selectedIsRunning() {
       if (this.selectedInstanceFullInfo) {
         return this.selectedInstanceFullInfo.instanceState.some((state) =>
-          this.activeStates.includes(state)
+          this.activeStates.includes(state),
         );
       } else {
         return false;
@@ -191,7 +191,7 @@ export default {
   methods: {
     selectInstance(instanceId) {
       const newInstance = this.selectableInstances.find(
-        (instance) => instance.processInstanceId === instanceId
+        (instance) => instance.processInstanceId === instanceId,
       );
 
       if (newInstance) {
@@ -208,7 +208,7 @@ export default {
 
         const instanceId = await engineNetworkInterface.startInstance(
           this.deployment.definitionId,
-          version
+          version,
         );
 
         await sleep(0.2);
@@ -241,12 +241,11 @@ export default {
         let { bpmn: originalInstanceBpmn, userTasks: instanceUserTasks } =
           await engineNetworkInterface.getFullProcessVersionData(
             this.deployment.definitionId,
-            instance.processVersion
+            instance.processVersion,
           );
 
-        let { bpmn: instanceBpmn, changedFileNames } = await convertToEditableBpmn(
-          originalInstanceBpmn
-        );
+        let { bpmn: instanceBpmn, changedFileNames } =
+          await convertToEditableBpmn(originalInstanceBpmn);
 
         // ensure that the old process is not set as the "originalId"
         instanceBpmn = await setDefinitionsId(instanceBpmn, undefined);
@@ -323,7 +322,7 @@ export default {
           ) {
             // ensure that the instance that was requested through the query parameter in the url is selected when the first instance information becomes available
             this.selectedInstance = newInstances.find(
-              (instance) => instance.processInstanceId === instanceQuery
+              (instance) => instance.processInstanceId === instanceQuery,
             );
           } else {
             // if there is no request for an instance or the currently selected instance is not among the available ones => display another instance
@@ -347,7 +346,7 @@ export default {
         ) {
           this.$store.dispatch(
             'deploymentStore/unsubscribeFromInstanceUpdates',
-            oldInstance.processInstanceId
+            oldInstance.processInstanceId,
           );
         }
 
@@ -382,7 +381,7 @@ export default {
     if (this.selectedInstance) {
       this.$store.dispatch(
         'deploymentStore/unsubscribeFromInstanceUpdates',
-        this.selectedInstance.processInstanceId
+        this.selectedInstance.processInstanceId,
       );
     }
     next();

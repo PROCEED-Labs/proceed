@@ -99,7 +99,7 @@ function ensureContainerElement(element, containerType) {
 function removeEmptyContainerElement(element, containerType, containerElement) {
   const isEmptyArray = Array.isArray(containerElement) && !containerElement.length;
   const isEmptyObject = !Object.getOwnPropertyNames(containerElement).some(
-    (property) => !property.startsWith('$') && property !== '__ob__'
+    (property) => !property.startsWith('$') && property !== '__ob__',
   );
 
   const isEmpty = isEmptyArray || isEmptyObject;
@@ -166,7 +166,7 @@ function setProceedElement(element, proceedElementType, value, attributes = {}) 
       const { identifier } = proceedExtensionElements[proceedElementType];
       container.splice(
         container.findIndex((el) => el[identifier] === attributes[identifier]),
-        1
+        1,
       );
     } else {
       delete container[proceedElementType];

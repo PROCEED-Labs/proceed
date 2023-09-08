@@ -49,7 +49,7 @@ async function updateUserTaskIntermediateVariablesState(instanceId, userTaskId, 
   await backendInstanceHandling.updateUserTaskIntermediateVariablesState(
     instanceId,
     userTaskId,
-    variable
+    variable,
   );
 }
 

@@ -4,12 +4,12 @@ const request = require('supertest')('localhost:33019');
 
 const bpmn = fs.readFileSync(
   path.resolve(__dirname, './data/processBPMN/basicUserTaskProcess.xml'),
-  'utf8'
+  'utf8',
 );
 
 const bpmnWithImage = fs.readFileSync(
   path.resolve(__dirname, './data/processBPMN/withImage.xml'),
-  'utf8'
+  'utf8',
 );
 
 jest.setTimeout(15000);

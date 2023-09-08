@@ -38,7 +38,7 @@ export default async function request(endpoint, query, method, dataType, data) {
 
   if (!response.ok) {
     throw new Error(
-      `Request failed with status code ${response.status}.\nReason: ${await response.text()}`
+      `Request failed with status code ${response.status}.\nReason: ${await response.text()}`,
     );
   }
 

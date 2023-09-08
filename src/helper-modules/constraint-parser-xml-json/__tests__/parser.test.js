@@ -61,48 +61,48 @@ describe('Parsing Tests for the complete XML/JSON constraints examples', () => {
     processXML2 = fs.readFileSync(`${__dirname}/ConstraintsXML/2-ProcessXML.xml`, 'utf8');
     concatenationXML2 = fs.readFileSync(
       `${__dirname}/ConstraintsXML/2-ConcatenationXML.xml`,
-      'utf8'
+      'utf8',
     );
     concatenationXML3 = fs.readFileSync(
       `${__dirname}/ConstraintsXML/3-ConcatenationXML.xml`,
-      'utf8'
+      'utf8',
     );
     constraintGroupANDXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/AND-ConstraintGroupXML.xml`,
-      'utf8'
+      'utf8',
     );
     constraintGroupORXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/OR-ConstraintGroupXML.xml`,
-      'utf8'
+      'utf8',
     );
 
     maxMachineHopsConstraintXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/maxMachineHopsConstraintXML.xml`,
-      'utf8'
+      'utf8',
     );
     maxTimeConstraintXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/maxTimeConstraintXML.xml`,
-      'utf8'
+      'utf8',
     );
     maxTimeGlobalConstraintXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/maxTimeGlobalConstraintXML.xml`,
-      'utf8'
+      'utf8',
     );
     maxTokenStorageRoundsConstraintXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/maxTokenStorageRoundsConstraintXML.xml`,
-      'utf8'
+      'utf8',
     );
     maxTokenStorageTimeConstraintXML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/maxTokenStorageTimeConstraintXML.xml`,
-      'utf8'
+      'utf8',
     );
     sameMachineConstraint1XML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/sameMachineConstraint1XML.xml`,
-      'utf8'
+      'utf8',
     );
     sameMachineConstraint2XML = fs.readFileSync(
       `${__dirname}/ConstraintsXML/sameMachineConstraint2XML.xml`,
-      'utf8'
+      'utf8',
     );
   });
 
@@ -116,7 +116,7 @@ describe('Parsing Tests for the complete XML/JSON constraints examples', () => {
     expect(parser.fromJsToXml({ test: true })).toBe('');
     expect(customLogger.error).toHaveBeenCalledTimes(1);
     expect(parser.logger.error).toHaveBeenCalledWith(
-      'Root element has no member called processConstraints'
+      'Root element has no member called processConstraints',
     );
   });
 
@@ -128,31 +128,31 @@ describe('Parsing Tests for the complete XML/JSON constraints examples', () => {
     expect(JSON.parse(parser.fromXmlToJson(concatenationXML2))).toStrictEqual(concatenationJSON2);
     expect(JSON.parse(parser.fromXmlToJson(concatenationXML3))).toStrictEqual(concatenationJSON3);
     expect(JSON.parse(parser.fromXmlToJson(constraintGroupANDXML))).toStrictEqual(
-      constraintGroupANDJSON
+      constraintGroupANDJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(constraintGroupORXML))).toStrictEqual(
-      constraintGroupORJSON
+      constraintGroupORJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(maxMachineHopsConstraintXML))).toStrictEqual(
-      maxMachineHopsConstraintJSON
+      maxMachineHopsConstraintJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(maxTimeConstraintXML))).toStrictEqual(
-      maxTimeConstraintJSON
+      maxTimeConstraintJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(maxTimeGlobalConstraintXML))).toStrictEqual(
-      maxTimeGlobalConstraintJSON
+      maxTimeGlobalConstraintJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(maxTokenStorageRoundsConstraintXML))).toStrictEqual(
-      maxTokenStorageRoundsConstraintJSON
+      maxTokenStorageRoundsConstraintJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(maxTokenStorageTimeConstraintXML))).toStrictEqual(
-      maxTokenStorageTimeConstraintJSON
+      maxTokenStorageTimeConstraintJSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(sameMachineConstraint1XML))).toStrictEqual(
-      sameMachineConstraint1JSON
+      sameMachineConstraint1JSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(sameMachineConstraint2XML))).toStrictEqual(
-      sameMachineConstraint2JSON
+      sameMachineConstraint2JSON,
     );
     expect(JSON.parse(parser.fromXmlToJson(concatenationXML3))).toStrictEqual(concatenationJSON3);
   });
@@ -186,23 +186,23 @@ describe('#checkConstraintDefinition', () => {
     test('interdependency between 2 groups', () => {
       // g1->g2->g1
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g1', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g1', []),
       ).toEqual(true);
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g2', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g2', []),
       ).toEqual(true);
     });
 
     test('circular dependency between more than 2 groups', () => {
       // g3->g4->g5->g3
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g3', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g3', []),
       ).toEqual(true);
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g4', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g4', []),
       ).toEqual(true);
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g5', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g5', []),
       ).toEqual(true);
     });
 
@@ -210,10 +210,10 @@ describe('#checkConstraintDefinition', () => {
       // g6->g7
       // g7 doesnt reference other groups
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g6', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g6', []),
       ).toEqual(false);
       expect(
-        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g7', [])
+        parser.searchForCircularDependencies(circularGroupsJSON.hardConstraints, 'g7', []),
       ).toEqual(false);
     });
 
@@ -233,8 +233,8 @@ describe('#checkConstraintDefinition', () => {
     expect(
       parser.checkForCriticalConstraintComposition(
         ['machine.id', 'machine.name', 'machine.hostname'],
-        criticalMachineConstraintsJSON.hardConstraints
-      )
+        criticalMachineConstraintsJSON.hardConstraints,
+      ),
     ).toEqual(true);
 
     expect(parser.checkConstraintDefinition(criticalMachineConstraintsJSON)).toStrictEqual({
@@ -253,8 +253,8 @@ describe('#checkConstraintDefinition', () => {
     expect(
       parser.checkForCriticalConstraintComposition(
         ['machine.network.ip4', 'machine.network.ip6', 'machine.network.mac'],
-        criticalNetworkConstraintsJSON.hardConstraints
-      )
+        criticalNetworkConstraintsJSON.hardConstraints,
+      ),
     ).toEqual(true);
 
     expect(parser.checkConstraintDefinition(criticalNetworkConstraintsJSON)).toStrictEqual({

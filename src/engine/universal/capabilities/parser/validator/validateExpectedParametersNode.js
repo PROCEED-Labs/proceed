@@ -31,11 +31,11 @@ function validateParameterFormat(expectedParametersNode, expectedArgumentUri) {
             ]
           },
 
-          If there is no expected parameter, you should at least provide an empty array, eg: "fno:expects": {"@list": []} ,${reminder}`
+          If there is no expected parameter, you should at least provide an empty array, eg: "fno:expects": {"@list": []} ,${reminder}`,
     );
   }
   const expectedParametersList = expectedParametersNode[expectedArgumentUri].find(
-    (item) => item['@list']
+    (item) => item['@list'],
   );
   if (_.isEmpty(expectedParametersList)) {
     throw new NotFoundError(
@@ -47,7 +47,7 @@ function validateParameterFormat(expectedParametersNode, expectedArgumentUri) {
               { "@id": "_:dpiParameter" },
               { "@id": "_:optionsParameters" }
             ]
-          }, If there is no expected parameter, you should provide an empty array eg: "fno:expects": {"@list": []} ,${reminder}`
+          }, If there is no expected parameter, you should provide an empty array eg: "fno:expects": {"@list": []} ,${reminder}`,
     );
   }
 }

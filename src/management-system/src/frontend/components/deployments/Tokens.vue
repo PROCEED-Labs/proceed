@@ -117,7 +117,7 @@ export default {
       }));
 
       tokens = tokens.filter((token) =>
-        this.visibleFlowElements.some((flowEl) => flowEl.id === token.currentFlowElementId)
+        this.visibleFlowElements.some((flowEl) => flowEl.id === token.currentFlowElementId),
       );
 
       return tokens;
@@ -170,7 +170,7 @@ export default {
           addedTokens,
           movedTokens: this.movedTokens,
           removedTokens: this.removedTokens,
-        }
+        },
       );
       this.stopEditing();
       // trigger update of the instance information in the parent component
@@ -392,7 +392,7 @@ export default {
         targetFlowElement.incoming.some((flow) => flow.id === token.previousFlowElementId)
       ) {
         targetFlowElement = targetFlowElement.incoming.find(
-          (flow) => flow.id === token.previousFlowElementId
+          (flow) => flow.id === token.previousFlowElementId,
         );
       }
 
@@ -565,7 +565,7 @@ export default {
             ({ context: { shape, connection } }) => {
               this.resetIsDroppable(shape || connection);
               this.visibleFlowElements = filterInvisibleElements(elementRegistry.getAll());
-            }
+            },
           );
 
           eventBus.on('commandStack.shape.delete.postExecuted', () => {
@@ -575,7 +575,7 @@ export default {
           eventBus.on('commandStack.shape.replace.postExecuted', ({ context: { newShape } }) => {
             // make sure that a token is still shown on an element after it changed its type
             const tokenOnReplacedElement = this.upToDateTokens.find(
-              ({ currentFlowElementId }) => currentFlowElementId === newShape.id
+              ({ currentFlowElementId }) => currentFlowElementId === newShape.id,
             );
             if (tokenOnReplacedElement) {
               this.addTokenOverlay(tokenOnReplacedElement);

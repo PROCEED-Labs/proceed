@@ -47,7 +47,7 @@ export function updateDeployment(processDefinitionsId, deploymentInformation) {
 eventHandler.on('processRemoved', ({ processDefinitionsId }) => {
   if (store.get('deployments')[processDefinitionsId]) {
     logger.debug(
-      `Removing deployment information for project (id: ${processDefinitionsId}) since it is being removed.`
+      `Removing deployment information for project (id: ${processDefinitionsId}) since it is being removed.`,
     );
     removeDeployment(processDefinitionsId);
   }
@@ -101,12 +101,13 @@ export function updateActiveUserTasks(updatedActiveUserTasks) {
  */
 export function removeActiveUserTask(instanceID, userTaskID) {
   const activeUserTaskFound = !!activeUserTasks.find(
-    (activeUserTask) => activeUserTask.instanceID === instanceID && activeUserTask.id === userTaskID
+    (activeUserTask) =>
+      activeUserTask.instanceID === instanceID && activeUserTask.id === userTaskID,
   );
   if (activeUserTaskFound) {
     activeUserTasks = activeUserTasks.filter(
       (activeUserTask) =>
-        activeUserTask.instanceID !== instanceID || activeUserTask.id !== userTaskID
+        activeUserTask.instanceID !== instanceID || activeUserTask.id !== userTaskID,
     );
     eventHandler.dispatch('activeUserTask_removed', activeUserTaskFound);
   }

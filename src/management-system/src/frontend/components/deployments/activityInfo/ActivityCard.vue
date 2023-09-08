@@ -161,13 +161,13 @@ export default {
     },
     cardSize() {
       const activityCardWidth = this.convertVwToPixel(
-        this.windowMeasurements.width.substring(0, this.windowMeasurements.width.indexOf('vw'))
+        this.windowMeasurements.width.substring(0, this.windowMeasurements.width.indexOf('vw')),
       );
       return activityCardWidth >= 700 ? 'large' : 'small';
     },
     initialMeasurements() {
       const storedTopValueInVh = parseFloat(
-        this.windowMeasurements.top.substring(0, this.windowMeasurements.top.indexOf('vh'))
+        this.windowMeasurements.top.substring(0, this.windowMeasurements.top.indexOf('vh')),
       );
 
       return {

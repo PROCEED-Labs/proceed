@@ -132,7 +132,7 @@ describe('Logging', () => {
       it('returns the logs for the process with the given id', async () => {
         data.read.mockResolvedValueOnce(process1Logs);
         expect(await logging.getProcessLogTables('definitionId')).toStrictEqual(
-          expectedProcess1Logs
+          expectedProcess1Logs,
         );
         expect(data.read).toHaveBeenCalled();
       });
@@ -141,7 +141,7 @@ describe('Logging', () => {
         data.read.mockResolvedValueOnce(process1Logs);
         // expect only the last two entries of the process1 logs
         expect(await logging.getProcessLogTables('definitionId', 2)).toStrictEqual(
-          expectedProcess1Logs.slice(1)
+          expectedProcess1Logs.slice(1),
         );
         expect(data.read).toHaveBeenCalled();
       });
@@ -163,14 +163,14 @@ describe('Logging', () => {
         data.read.mockResolvedValueOnce(process1Logs);
         // expect only the entries that have an instanceId of processId-1
         expect(await logging.getInstanceLogs('definitionId', 'processId-1')).toStrictEqual(
-          expectedProcess1Logs.slice(0, 2)
+          expectedProcess1Logs.slice(0, 2),
         );
       });
 
       it('returns only the last x logs if a limit is given', async () => {
         data.read.mockResolvedValueOnce(process1Logs);
         expect(await logging.getInstanceLogs('definitionId', 'processId-1', 1)).toStrictEqual(
-          expectedProcess1Logs.slice(1, 2)
+          expectedProcess1Logs.slice(1, 2),
         );
       });
 

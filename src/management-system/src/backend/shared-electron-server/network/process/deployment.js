@@ -125,7 +125,7 @@ export async function dynamicDeployment(processDefinitionsId, version, bpmn, for
   const taskConstraintMapping = await getTaskConstraintMapping(bpmnObj);
 
   const addedMachines = getMachines().filter(
-    (machine) => !machine.discovered && machine.status === 'CONNECTED'
+    (machine) => !machine.discovered && machine.status === 'CONNECTED',
   );
 
   let preferredMachine;
@@ -138,7 +138,7 @@ export async function dynamicDeployment(processDefinitionsId, version, bpmn, for
       { id: processDefinitionsId, nextFlowNode: startEventIds[0] },
       taskConstraintMapping[startEventIds[0]] || {},
       processConstraints || {},
-      addedMachines
+      addedMachines,
     );
 
     // try to get the best engine
@@ -149,7 +149,7 @@ export async function dynamicDeployment(processDefinitionsId, version, bpmn, for
   if (!preferredMachine) {
     if (logger) {
       logger.error(
-        `Unable to find machine to deploy the process definitions (id:${processDefinitionsId}, version: ${version}) to.`
+        `Unable to find machine to deploy the process definitions (id:${processDefinitionsId}, version: ${version}) to.`,
       );
     }
 
@@ -168,7 +168,7 @@ export async function dynamicDeployment(processDefinitionsId, version, bpmn, for
 
     if (logger) {
       logger.error(
-        `Failed to send process definitions (id:${processDefinitionsId}, version: ${version}) to selected machine. ${error}`
+        `Failed to send process definitions (id:${processDefinitionsId}, version: ${version}) to selected machine. ${error}`,
       );
     }
     throw error;
@@ -234,7 +234,7 @@ async function staticDeployment(processDefinitionsId, version, bpmn, forceMachin
   if (
     forceMachine &&
     !mappedMachinesAdresses.some(
-      ({ ip, port }) => ip === forceMachine.ip && port == forceMachine.port
+      ({ ip, port }) => ip === forceMachine.ip && port == forceMachine.port,
     )
   ) {
     mappedMachinesAdresses.push(forceMachine);
@@ -268,7 +268,7 @@ async function staticDeployment(processDefinitionsId, version, bpmn, forceMachin
 
     if (logger) {
       logger.info(
-        `Failed to send process definitions (id:${processDefinitionsId}, version: ${version}) to at least one machine.`
+        `Failed to send process definitions (id:${processDefinitionsId}, version: ${version}) to at least one machine.`,
       );
     }
     throw error;
@@ -354,11 +354,10 @@ async function sendImportedProcesses(
   importerProcessDefinitionsId,
   importerBpmn,
   machineInfo,
-  dynamic
+  dynamic,
 ) {
-  const activityDefinitionIdMapping = await getDefinitionsAndProcessIdForEveryCallActivity(
-    importerBpmn
-  );
+  const activityDefinitionIdMapping =
+    await getDefinitionsAndProcessIdForEveryCallActivity(importerBpmn);
   Object.entries(activityDefinitionIdMapping).forEach(
     async ([
       activityId,
@@ -366,20 +365,20 @@ async function sendImportedProcesses(
     ]) => {
       if (!importedDefinitionVersion) {
         throw new Error(
-          `Tried to deploy a process (id: ${importerProcessDefinitionsId}) that contained an unversioned process import (id: ${importedDefinitionId})!`
+          `Tried to deploy a process (id: ${importerProcessDefinitionsId}) that contained an unversioned process import (id: ${importedDefinitionId})!`,
         );
       }
 
       const importedBpmn = await getProcessVersionBpmn(
         importedDefinitionId,
-        importedDefinitionVersion
+        importedDefinitionVersion,
       );
 
       const processIds = await getProcessIds(importedBpmn);
 
       if (!processIds.includes(processId)) {
         throw new Error(
-          `The file (${importedDefinitionId}) doesn't contain the expected process with id ${processId}`
+          `The file (${importedDefinitionId}) doesn't contain the expected process with id ${processId}`,
         );
       }
 
@@ -405,7 +404,7 @@ async function sendImportedProcesses(
       } else {
         dynamicDeployment(importedDefinitionId, importedDefinitionVersion, importedBpmn, machine);
       }
-    }
+    },
   );
 }
 
@@ -414,7 +413,7 @@ export async function deployProcessVersion(processDefinitionsId, version) {
 
   if (!bpmn) {
     throw new Error(
-      `Can't find bpmn for the process with id ${processDefinitionsId} and version ${version}`
+      `Can't find bpmn for the process with id ${processDefinitionsId} and version ${version}`,
     );
   }
 
@@ -447,7 +446,7 @@ export async function importProcess(processDefinitionsId) {
 
     if (!deployment) {
       throw new Error(
-        `Cannot find the process (id: ${processDefinitionsId}) among the known deployments`
+        `Cannot find the process (id: ${processDefinitionsId}) among the known deployments`,
       );
     }
 
@@ -462,8 +461,8 @@ export async function importProcess(processDefinitionsId) {
       unknownVersions = unknownVersions.filter(
         (deployedVersion) =>
           !localProcess.versions.some(
-            (localVersion) => localVersion.version === deployedVersion.version
-          )
+            (localVersion) => localVersion.version === deployedVersion.version,
+          ),
       );
       localUserTasks = await getProcessUserTasks(processDefinitionsId);
       localImages = await getProcessImages(processDefinitionsId);
@@ -525,20 +524,20 @@ export async function importProcess(processDefinitionsId) {
           }
 
           return [fileName, data];
-        })
+        }),
       );
     }
 
     // try to get every html
     const unknownUserTasks = await getDependencies(
       unknownUserTaskMachineMapping,
-      processEndpoint.getUserTaskHTML
+      processEndpoint.getUserTaskHTML,
     );
 
     // try to get every image
     const unknownImages = await getDependencies(
       unknownImageMachineMapping,
-      processEndpoint.getImage
+      processEndpoint.getImage,
     );
 
     // create the editable version of the process from the latest known version if it does not exist locally yet

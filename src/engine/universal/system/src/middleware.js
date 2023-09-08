@@ -23,7 +23,7 @@ function parseRequestedEntriesRecursive(queryEntryString) {
       // we reached the start of a nested list => recursively parse the entries in the nested list
       let skip = 0;
       [skip, entryValue] = parseRequestedEntriesRecursive(
-        queryEntryString.substring(currentChar + 1)
+        queryEntryString.substring(currentChar + 1),
       );
       // forward the pointer to the char at the end of the sublist
       currentChar += skip + 1;
@@ -79,7 +79,7 @@ function filterRequestedEntries(fullInformation, requestedAttributes) {
         }
 
         return final;
-      }, [])
+      }, []),
     );
   }
 }

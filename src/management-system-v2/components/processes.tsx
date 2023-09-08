@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { FC, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import {
   Input,
   Space,
@@ -17,7 +17,7 @@ import {
   Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { Process, fetchProcesses } from '@/lib/fetch-data';
+import { Process, fetchProcesses, usePostAsset } from '@/lib/fetch-data';
 import { useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
@@ -40,6 +40,7 @@ import Preview from './previewProcess';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
+import IconView from './process-icon-list';
 
 const fuseOptions = {
   /* Option for Fuzzy-Search for Processlistfilter */
@@ -69,6 +70,8 @@ const Processes: FC = () => {
 
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
 
+  usePostAsset('/process', {});
+
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
@@ -79,6 +82,8 @@ const Processes: FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const [iconView, setIconView] = useState(false);
 
   const favourites = [0];
 
@@ -165,7 +170,7 @@ const Processes: FC = () => {
   //   },
   // ];
 
-  const onCheckboxChange = (e: CheckboxChangeEvent) => {
+  const onCheckboxChange = useCallback((e: CheckboxChangeEvent) => {
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
@@ -175,7 +180,7 @@ const Processes: FC = () => {
         prevSelectedColumns.filter((column) => column !== value),
       );
     }
-  };
+  }, []);
 
   const ColumnHeader = [
     'Process Name',
@@ -351,6 +356,7 @@ const Processes: FC = () => {
     },*/
     {
       fixed: 'right',
+      width: 160,
       // add title but only if at least one row is selected
       dataIndex: 'definitionId',
       key: '',
@@ -471,48 +477,62 @@ const Processes: FC = () => {
           <Col span={1} />
           <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
             <Space.Compact>
-              <Button>
+              <Button
+                style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                onClick={() => {
+                  setIconView(false);
+                }}
+              >
                 <UnorderedListOutlined />
               </Button>
-              <Button>
+              <Button
+                style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                onClick={() => {
+                  setIconView(true);
+                }}
+              >
                 <AppstoreOutlined />
               </Button>
             </Space.Compact>
           </Col>
         </Row>
       </>
-      <Table
-        rowSelection={{
-          type: 'checkbox',
-          ...rowSelection,
-        }}
-        onRow={(record, rowIndex) => ({
-          onClick: () => {
-            // TODO: This is a hack to clear the parallel route when selecting
-            // another process. (needs upstream fix)
-            // router.refresh();
-            // router.push(`/processes/${record.definitionId}`);
-          },
-          onMouseEnter: (event) => {
-            setHovered(record);
-            // console.log('mouse enter row', record);
-          }, // mouse enter row
-          onMouseLeave: (event) => {
-            setHovered(undefined);
-            // console.log('mouse leave row', event);
-          }, // mouse leave row
-        })}
-        sticky
-        scroll={{ x: 1300 }}
-        rowClassName={styles.Row}
-        rowKey="definitionId"
-        columns={columnsFiltered}
-        dataSource={filteredData as any}
-        loading={isLoading}
-        className={styles.Table}
-        /* Row size rowsize */
-        size="middle"
-      />
+      {!iconView ? (
+        <Table
+          rowSelection={{
+            type: 'checkbox',
+            ...rowSelection,
+          }}
+          onRow={(record, rowIndex) => ({
+            onClick: () => {
+              // TODO: This is a hack to clear the parallel route when selecting
+              // another process. (needs upstream fix)
+              // router.refresh();
+              // router.push(`/processes/${record.definitionId}`);
+            },
+            onMouseEnter: (event) => {
+              setHovered(record);
+              // console.log('mouse enter row', record);
+            }, // mouse enter row
+            onMouseLeave: (event) => {
+              setHovered(undefined);
+              // console.log('mouse leave row', event);
+            }, // mouse leave row
+          })}
+          sticky
+          scroll={{ x: 1300 }}
+          rowClassName={styles.Row}
+          rowKey="definitionId"
+          columns={columnsFiltered}
+          dataSource={filteredData as any}
+          loading={isLoading}
+          className={styles.Table}
+          /* Row size rowsize */
+          size="middle"
+        />
+      ) : (
+        <IconView data={filteredData} />
+      )}
       {open && <Preview selectedElement={selectedColumn} setOpen={setOpen}></Preview>}
     </>
   );

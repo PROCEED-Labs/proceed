@@ -258,7 +258,7 @@ export default {
         }
         if (this.profileType === 'Class') {
           const parentProfile = await this.$store.getters['environmentStore/profileJSONById'](
-            this.envProfile.extends
+            this.envProfile.extends,
           );
           this.parentProfile = parentProfile;
           this.extendsProfile = {
@@ -278,7 +278,7 @@ export default {
         };
         const extendsValue = this.extendsProfile ? this.extendsProfile.value : null;
         const parentProfile = await this.$store.getters['environmentStore/profileJSONById'](
-          extendsValue || this.envProfile.extends
+          extendsValue || this.envProfile.extends,
         );
         this.parentProfile = parentProfile;
         Object.keys(this.basicProfileKeys).forEach((key) => {

@@ -18,7 +18,7 @@ function generateUI(displayItems) {
   ${displayItems
     .map(
       (dI) =>
-        `<li class="item" data-key="${dI.key}"><span>${dI.title}</span><span class="badge">${dI.badge}</span></li>`
+        `<li class="item" data-key="${dI.key}"><span>${dI.title}</span><span class="badge">${dI.badge}</span></li>`,
     )
     .join('\n')}
   </ul>`;
@@ -155,18 +155,18 @@ const ui = {
           if (typeof endpoint === 'function' || typeof endpoint.get === 'function') {
             const cb = typeof endpoint === 'function' ? endpoint : endpoint.get;
             network.get(`/${key + path}`, { cors: true }, (req) =>
-              cb(req.query).then(JSON.stringify)
+              cb(req.query).then(JSON.stringify),
             );
           }
           if (typeof endpoint.post === 'function') {
             network.post(`/${key + path}`, { cors: true }, (req) =>
-              endpoint.post(req.body, req.query).then(JSON.stringify)
+              endpoint.post(req.body, req.query).then(JSON.stringify),
             );
           }
 
           if (typeof endpoint.put === 'function') {
             network.put(`/${key + path}`, { cors: true }, (req) =>
-              endpoint.put(req.body, req.query).then(JSON.stringify)
+              endpoint.put(req.body, req.query).then(JSON.stringify),
             );
           }
         });
@@ -248,7 +248,7 @@ const ui = {
   addDisplayItem(displayItem) {
     if (this._displayed) {
       throw new Error(
-        "Trying to add a display item after the UI module's init() call!\nDynamically adding display items is not yet supported!"
+        "Trying to add a display item after the UI module's init() call!\nDynamically adding display items is not yet supported!",
       );
     }
     if (!displayItem) {
@@ -308,7 +308,7 @@ const ui = {
       (typeof endpoint === 'function' || typeof endpoint[method] !== 'function')
     ) {
       throw new Error(
-        `No function for the requested \`${method}\` endpoint \`${path}\` registered!`
+        `No function for the requested \`${method}\` endpoint \`${path}\` registered!`,
       );
     }
 

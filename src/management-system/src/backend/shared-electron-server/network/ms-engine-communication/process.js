@@ -65,7 +65,7 @@ export async function getImage(machine, definitionId, fileName) {
     `/resources/process/${definitionId}/images/${fileName}`,
     {
       encoding: 'binary',
-    }
+    },
   );
   const image = Buffer.from(body, 'binary');
   return image;
@@ -87,7 +87,7 @@ export async function sendImage(machine, definitionId, fileName, image) {
     `/resources/process/${definitionId}/images/${fileName}`,
     'PUT',
     'image/png image/svg+xml image/jpeg',
-    image
+    image,
   );
 }
 
@@ -107,7 +107,7 @@ export async function sendUserTaskHTML(machine, definitionId, userTaskId, html) 
     `/process/${definitionId}/user-tasks/${userTaskId}`,
     'PUT',
     'application/json',
-    { html }
+    { html },
   );
 }
 
@@ -124,7 +124,7 @@ export async function getUserTasks(machine, definitionId) {
   const { body } = await network.sendRequest(
     machine.ip,
     machine.port,
-    `/process/${definitionId}/user-tasks`
+    `/process/${definitionId}/user-tasks`,
   );
 
   return JSON.parse(body);
@@ -144,7 +144,7 @@ export async function getUserTaskHTML(machine, definitionId, userTaskId) {
   const { body } = await network.sendRequest(
     machine.ip,
     machine.port,
-    `/process/${definitionId}/user-tasks/${userTaskId}`
+    `/process/${definitionId}/user-tasks/${userTaskId}`,
   );
 
   return body;
@@ -168,7 +168,7 @@ export async function startProcessInstance(machine, definitionId, version, varia
     `/process/${definitionId}/versions/${version}/instance`,
     'POST',
     'application/json',
-    { variables }
+    { variables },
   );
 
   return JSON.parse(body).instanceId;
@@ -188,7 +188,7 @@ export async function getInstanceInformation(machine, definitionId, instanceId) 
   const { body } = await network.sendRequest(
     machine.ip,
     machine.port,
-    `/process/${definitionId}/instance/${instanceId}`
+    `/process/${definitionId}/instance/${instanceId}`,
   );
 
   return JSON.parse(body);
@@ -222,7 +222,7 @@ export async function getActiveUserTaskHTML(machine, instanceId, userTaskId, use
   const { body } = await network.sendRequest(
     machine.host,
     machine.port,
-    `/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=${userTaskId}&startTime=${userTaskStartTime}`
+    `/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=${userTaskId}&startTime=${userTaskStartTime}`,
   );
 
   return JSON.parse(body);
@@ -244,7 +244,7 @@ export async function completeUserTask(machine, instanceId, userTaskId) {
     `/tasklist/api/userTask?instanceID=${instanceId}&userTaskID=${userTaskId}`,
     'POST',
     'application/json',
-    {}
+    {},
   );
 }
 
@@ -265,7 +265,7 @@ export async function updateUserTaskMilestone(machine, instanceId, userTaskId, m
     `/tasklist/api/milestone?instanceID=${instanceId}&userTaskID=${userTaskId}`,
     'PUT',
     'application/json',
-    milestone
+    milestone,
   );
 }
 
@@ -283,7 +283,7 @@ export async function updateUserTaskIntermediateVariablesState(
   machine,
   instanceId,
   userTaskId,
-  variable
+  variable,
 ) {
   await network.sendData(
     machine.host,
@@ -291,7 +291,7 @@ export async function updateUserTaskIntermediateVariablesState(
     `/tasklist/api/variable?instanceID=${instanceId}&userTaskID=${userTaskId}`,
     'PUT',
     'application/json',
-    variable
+    variable,
   );
 }
 
@@ -311,7 +311,7 @@ export async function stopProcessInstance(machine, definitionId, instanceId) {
     `/process/${definitionId}/instance/${instanceId}/instanceState`,
     'PUT',
     'application/json',
-    { instanceState: 'stopped' }
+    { instanceState: 'stopped' },
   );
 }
 
@@ -331,7 +331,7 @@ export async function pauseProcessInstance(machine, definitionId, instanceId) {
     `/process/${definitionId}/instance/${instanceId}/instanceState`,
     'PUT',
     'application/json',
-    { instanceState: 'paused' }
+    { instanceState: 'paused' },
   );
 }
 
@@ -351,7 +351,7 @@ export async function resumeProcessInstance(machine, definitionId, instanceId) {
     `/process/${definitionId}/instance/${instanceId}/instanceState`,
     'PUT',
     'application/json',
-    { instanceState: 'resume' }
+    { instanceState: 'resume' },
   );
 }
 
@@ -376,7 +376,7 @@ export async function moveToken(machine, definitionId, instanceId, tokenId, flow
     `/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`,
     'PUT',
     'application/json',
-    { currentFlowElementId: flowElementId }
+    { currentFlowElementId: flowElementId },
   );
 }
 
@@ -395,7 +395,7 @@ export async function removeToken(machine, processDefinitionsId, instanceId, tok
     `/process/${processDefinitionsId}/instance/${instanceId}/tokens/${tokenId}`,
     {
       method: 'DELETE',
-    }
+    },
   );
 }
 
@@ -414,7 +414,7 @@ export async function addToken(machine, processDefinitionsId, instanceId, token)
     `/process/${processDefinitionsId}/instance/${instanceId}/tokens`,
     'POST',
     'application/json',
-    token || {}
+    token || {},
   );
 }
 
@@ -435,7 +435,7 @@ export async function migrateInstances(
   currentVersion,
   targetVersion,
   instanceIds,
-  { tokenMapping, flowElementMapping }
+  { tokenMapping, flowElementMapping },
 ) {
   await network.sendData(
     machine.ip,
@@ -443,7 +443,7 @@ export async function migrateInstances(
     `/process/${processDefinitionsId}/versions/${currentVersion}/instance/migration`,
     'POST',
     'application/json',
-    { targetVersion, instanceIds, tokenMapping, flowElementMapping }
+    { targetVersion, instanceIds, tokenMapping, flowElementMapping },
   );
 }
 
@@ -466,6 +466,6 @@ export async function updateToken(machine, definitionId, instanceId, tokenId, at
     `/process/${definitionId}/instance/${instanceId}/tokens/${tokenId}`,
     'PUT',
     'application/json',
-    { ...attributes }
+    { ...attributes },
   );
 }

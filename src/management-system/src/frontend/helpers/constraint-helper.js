@@ -24,14 +24,14 @@ export const getContradictionsMessage = ({ taskConstraints, processConstraints }
     .filter(
       (pc) =>
         ((pc.unit && pc.unit === 'subIP') || pc.name.startsWith('machine.network')) &&
-        pc.condition === '=='
+        pc.condition === '==',
     )
     .map((pc) => pc.value);
   const taskIPs = taskConstraints
     .filter(
       (tc) =>
         ((tc.unit && tc.unit === 'subIP') || tc.name.startsWith('machine.network')) &&
-        tc.condition === '=='
+        tc.condition === '==',
     )
     .map((tc) => tc.value);
 
@@ -53,7 +53,7 @@ export const getContradictionsMessage = ({ taskConstraints, processConstraints }
               contradictionMessages.push(
                 `The IP addresses of the ${
                   i1 !== i2 ? 'process and task ' : ''
-                }location constraints do not overlap.`
+                }location constraints do not overlap.`,
               );
             }
           }
@@ -94,6 +94,6 @@ export const getConstraintDescription = (profile) => {
     hardConstraints || '',
     ' ',
     softConstraints ? 'soft:' : '',
-    softConstraints || ''
+    softConstraints || '',
   );
 };

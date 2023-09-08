@@ -44,21 +44,21 @@ describe('HardConstraintEvaluator', () => {
         machineHops: 1,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos)
+        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos),
       ).toHaveLength(0);
 
       const infos2 = {
         machineHops: 2,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos2)
+        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos2),
       ).toHaveLength(0);
 
       const infos3 = {
         machineHops: 3,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos3)
+        Hceval.evaluateExecutionConstraints(maxMachineHopsConstraint.hardConstraints, infos3),
       ).toHaveLength(1);
     });
 
@@ -69,7 +69,7 @@ describe('HardConstraintEvaluator', () => {
       };
 
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos)
+        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos),
       ).toHaveLength(0);
 
       const infos2 = {
@@ -77,14 +77,14 @@ describe('HardConstraintEvaluator', () => {
       };
 
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos2)
+        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos2),
       ).toHaveLength(0);
 
       const infos3 = {
         time: 2001,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos3)
+        Hceval.evaluateExecutionConstraints(maxTimeConstraint.hardConstraints, infos3),
       ).toHaveLength(1);
     });
 
@@ -96,21 +96,21 @@ describe('HardConstraintEvaluator', () => {
       };
 
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos)
+        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos),
       ).toHaveLength(0);
 
       const infos2 = {
         timeGlobal: 60000,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos2)
+        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos2),
       ).toHaveLength(0);
 
       const infos3 = {
         timeGlobal: 60001,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos3)
+        Hceval.evaluateExecutionConstraints(maxTimeGlobalConstraint.hardConstraints, infos3),
       ).toHaveLength(1);
     });
 
@@ -119,21 +119,21 @@ describe('HardConstraintEvaluator', () => {
         storageTime: 999,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos)
+        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos),
       ).toHaveLength(0);
 
       const infos2 = {
         storageTime: 1000,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos2)
+        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos2),
       ).toHaveLength(0);
 
       const infos3 = {
         storageTime: 1001,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos3)
+        Hceval.evaluateExecutionConstraints(maxTokenStorageTimeConstraint.hardConstraints, infos3),
       ).toHaveLength(1);
     });
 
@@ -142,21 +142,27 @@ describe('HardConstraintEvaluator', () => {
         storageRounds: 4,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageRoundsConstraint.hardConstraints, infos)
+        Hceval.evaluateExecutionConstraints(maxTokenStorageRoundsConstraint.hardConstraints, infos),
       ).toHaveLength(0);
 
       const infos2 = {
         storageRounds: 5,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageRoundsConstraint.hardConstraints, infos2)
+        Hceval.evaluateExecutionConstraints(
+          maxTokenStorageRoundsConstraint.hardConstraints,
+          infos2,
+        ),
       ).toHaveLength(0);
 
       const infos3 = {
         storageRounds: 6,
       };
       expect(
-        Hceval.evaluateExecutionConstraints(maxTokenStorageRoundsConstraint.hardConstraints, infos3)
+        Hceval.evaluateExecutionConstraints(
+          maxTokenStorageRoundsConstraint.hardConstraints,
+          infos3,
+        ),
       ).toHaveLength(1);
     });
   });
@@ -166,12 +172,12 @@ describe('HardConstraintEvaluator', () => {
       const infos = {};
       infos['machine.os.platform'] = 'linux';
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[0], infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.os.platform'] = 'windows';
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[0], infos)).toEqual(
-        false
+        false,
       );
     });
 
@@ -179,12 +185,12 @@ describe('HardConstraintEvaluator', () => {
       const infos = {};
       infos['machine.inputs'] = ['Keyboard', 'Touch'];
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[1], infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.inputs'] = ['Keyboard', 'Mouse'];
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[1], infos)).toEqual(
-        false
+        false,
       );
     });
 
@@ -192,12 +198,12 @@ describe('HardConstraintEvaluator', () => {
       const infos = {};
       infos['machine.inputs'] = ['Touch'];
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[2], infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.inputs'] = ['Mouse'];
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[2], infos)).toEqual(
-        false
+        false,
       );
     });
 
@@ -205,12 +211,12 @@ describe('HardConstraintEvaluator', () => {
       const infos = {};
       infos['machine.possibleConnectionTo==google_de.latency'] = 49;
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[3], infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.possibleConnectionTo==google_de.latency'] = 51;
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[3], infos)).toEqual(
-        false
+        false,
       );
     });
 
@@ -219,13 +225,13 @@ describe('HardConstraintEvaluator', () => {
       infos['machine.possibleConnectionTo==google_de.latency'] = 49;
       infos['machine.possibleConnectionTo==yahoo_de.latency'] = 49;
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[4], infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.possibleConnectionTo==google_de.latency'] = 51;
       infos['machine.possibleConnectionTo==yahoo_de.latency'] = 51;
       expect(Hceval.evaluateHardConstraint(fullConstraintsJSON.hardConstraints[4], infos)).toEqual(
-        false
+        false,
       );
     });
   });
@@ -236,13 +242,13 @@ describe('HardConstraintEvaluator', () => {
       infos['machine.os.platform'] = 'linux';
       infos['machine.os.distro'] = 'Ubuntu';
       expect(Hceval.evaluateAllConstraintGroups(constraintGroupAND.hardConstraints, infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.os.platform'] = 'linux';
       infos['machine.os.distro'] = 'Kubuntu';
       expect(Hceval.evaluateAllConstraintGroups(constraintGroupAND.hardConstraints, infos)).toEqual(
-        false
+        false,
       );
     });
 
@@ -251,13 +257,13 @@ describe('HardConstraintEvaluator', () => {
       infos['machine.os.platform'] = 'linux';
       infos['machine.os.distro'] = 'Kubuntu';
       expect(Hceval.evaluateAllConstraintGroups(constraintGroupOR.hardConstraints, infos)).toEqual(
-        true
+        true,
       );
 
       infos['machine.os.platform'] = 'windows';
       infos['machine.os.distro'] = 'Windows10';
       expect(Hceval.evaluateAllConstraintGroups(constraintGroupOR.hardConstraints, infos)).toEqual(
-        false
+        false,
       );
     });
   });
@@ -273,7 +279,7 @@ describe('HardConstraintEvaluator', () => {
     infos['machine.possibleConnectionTo==yahoo_de.latency'] = 49;
 
     expect(await Hceval.evaluateAllConstraints(fullConstraintsJSON.hardConstraints, infos)).toEqual(
-      true
+      true,
     );
   });
 
@@ -309,7 +315,7 @@ describe('HardConstraintEvaluator', () => {
     };
     information.getMachineInformation.mockReturnValueOnce(infos);
     expect(
-      await Hceval.machineSatisfiesAllHardConstraints(fullConstraintsJSON.hardConstraints)
+      await Hceval.machineSatisfiesAllHardConstraints(fullConstraintsJSON.hardConstraints),
     ).toEqual(true);
   });
 
@@ -327,7 +333,7 @@ describe('HardConstraintEvaluator', () => {
 
     information.getMachineInformation.mockReturnValueOnce(infos);
     expect(
-      await Hceval.machineSatisfiesAllHardConstraints(networkConstraint.hardConstraints)
+      await Hceval.machineSatisfiesAllHardConstraints(networkConstraint.hardConstraints),
     ).toEqual(true);
   });
 });

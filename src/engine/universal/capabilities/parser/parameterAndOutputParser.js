@@ -85,12 +85,12 @@ function parseParamRecursively(expectedArg, parameterMapping, parameterDescripti
   }
   const mapping = findMapping(parameterMapping, expectedArg);
   const paramDescription = parameterDescriptions.find(
-    (i) => i['@id'] === expectedArg['@id'] || i['@id'] === expectedArg
+    (i) => i['@id'] === expectedArg['@id'] || i['@id'] === expectedArg,
   );
   const predicate = getParameters.getPredicateForParam(
     paramDescription,
     parameterUri,
-    predicateUri
+    predicateUri,
   );
   let value = extractValue(parsedArgs, predicate);
   if (paramDescription[hasPartUri] !== undefined) {
@@ -108,21 +108,21 @@ function parseParamRecursively(expectedArg, parameterMapping, parameterDescripti
     const objectGraph = paramDescription[hasPartUri].find((e) => e['@list'])['@list'];
     for (const childParam of objectGraph) {
       collectedValues = collectedValues.concat(
-        parseParamRecursively(childParam, childParamMappings, objectGraph, value)
+        parseParamRecursively(childParam, childParamMappings, objectGraph, value),
       );
     }
     return collectedValues;
   }
   if (paramDescription[requiredUri][0]['@value'] && value === undefined) {
     throw new NotFoundError(
-      'Required parameters should be included in the startCapability function'
+      'Required parameters should be included in the startCapability function',
     );
   }
   if (value !== undefined) {
     if (paramDescription[unitTextUri] !== undefined && value.unit !== undefined) {
       if (paramDescription[unitTextUri][0]['@value'] !== value.unit) {
         throw new NotFoundError(
-          'The unit of the parameter is not correct, please check the semantic description!'
+          'The unit of the parameter is not correct, please check the semantic description!',
         );
       }
     }
@@ -135,7 +135,7 @@ function parseParamRecursively(expectedArg, parameterMapping, parameterDescripti
     if (paramDescription[encodingFormatUri] !== undefined && value.encodingFormat !== undefined) {
       if (paramDescription[encodingFormatUri][0]['@value'] !== value.encodingFormat) {
         throw new NotFoundError(
-          'The encoding format of the parameter is not correct, please check the semantic description!'
+          'The encoding format of the parameter is not correct, please check the semantic description!',
         );
       }
     }
@@ -149,7 +149,7 @@ function parseParamRecursively(expectedArg, parameterMapping, parameterDescripti
       const minValue = paramDescription[minValueUri][0]['@value'];
       if (value < minValue) {
         throw new NotFoundError(
-          'The value that you provided is smaller then the minimum value, please check the semantic description!'
+          'The value that you provided is smaller then the minimum value, please check the semantic description!',
         );
       }
     }
@@ -160,7 +160,7 @@ function parseParamRecursively(expectedArg, parameterMapping, parameterDescripti
       const maxValue = paramDescription[maxValueUri][0]['@value'];
       if (value > maxValue) {
         throw new NotFoundError(
-          'The value that you provided is bigger then the maximum value, please check the semantic description!'
+          'The value that you provided is bigger then the maximum value, please check the semantic description!',
         );
       }
     }
@@ -183,7 +183,7 @@ function parseArguments(args, expanded) {
   const expectedParametersNode = expanded.find((item) => item[expectedArgumentUri] !== undefined);
   validateExpectedParametersNode(expectedParametersNode, expectedArgumentUri);
   const expectedParameters = _.flatten(
-    expectedParametersNode[expectedArgumentUri].map((item) => item['@list'])
+    expectedParametersNode[expectedArgumentUri].map((item) => item['@list']),
   );
   if (expectedParameters.length === 0) {
     return {};
@@ -191,8 +191,8 @@ function parseArguments(args, expanded) {
   // parameter descriptions in the semantic description
   const parameterDescriptions = _.flatten(
     expectedParameters.map((parameter) =>
-      expanded.filter((expandedItem) => expandedItem['@id'] === parameter['@id'])
-    )
+      expanded.filter((expandedItem) => expandedItem['@id'] === parameter['@id']),
+    ),
   );
   validateParameterDesc(expectedParameters, parameterDescriptions, predicateUri, parameterUri);
   validateParameterMapping(expanded, paramMappingUri, functionParamMappingUri, implementationUri);
@@ -204,7 +204,7 @@ function parseArguments(args, expanded) {
   for (const expectedArg of expectedParameters) {
     // try to translate given args to parameter as described in parameterMapping
     mappedArgs = mappedArgs.concat(
-      parseParamRecursively(expectedArg, paramMapping, parameterDescriptions, args)
+      parseParamRecursively(expectedArg, paramMapping, parameterDescriptions, args),
     );
   }
 
@@ -270,7 +270,7 @@ function getOutputParams(outputDescription) {
   const outputPredicate = getParameters.getPredicateForParam(
     outputDescription,
     outputUri,
-    predicateUri
+    predicateUri,
   );
   params.push(outputPredicate);
   return params;
@@ -285,10 +285,10 @@ function getOutputParams(outputDescription) {
 */
 function checkOutput(expandedProcessDesc, expandedCapObject) {
   const outputProcess = expandedProcessDesc.filter(
-    (i) => i['@type'] && _.head(i['@type']) === outputUri
+    (i) => i['@type'] && _.head(i['@type']) === outputUri,
   );
   const outputMachine = expandedCapObject.filter(
-    (i) => i['@type'] && _.head(i['@type']) === outputUri
+    (i) => i['@type'] && _.head(i['@type']) === outputUri,
   );
   if (outputProcess.length === 0 && outputMachine.length === 0) {
     return true;
@@ -316,15 +316,15 @@ function parseOutput(expanded, outputObject) {
   }
   validateOutputMapping(mappingNode, returnMappingUri, implementationUri, functionParamMappingUri);
   const root = _.flatten(mappingNode[returnMappingUri].map((i) => i[implementationUri])).find(
-    (value) => !value['@value'].includes('/')
+    (value) => !value['@value'].includes('/'),
   )['@value'];
   const prependedKeys = deepKeys.map((key) => `${root}/${key}`);
   const parameters = mappingNode[returnMappingUri];
   const functionParameters = prependedKeys
     .map((param) =>
       parameters.find((returnItem) =>
-        returnItem[implementationUri].find((item) => item['@value'] === param)
-      )
+        returnItem[implementationUri].find((item) => item['@value'] === param),
+      ),
     )
     .map((defaultReturnMapping) => {
       const functionParameter = defaultReturnMapping[functionParamMappingUri].pop()['@value'];
@@ -335,13 +335,13 @@ function parseOutput(expanded, outputObject) {
       return paramCouple;
     });
   const outputNode = expanded.find(
-    (expandedItem) => expandedItem['@type'] && expandedItem['@type'].includes(outputUri)
+    (expandedItem) => expandedItem['@type'] && expandedItem['@type'].includes(outputUri),
   );
   const params = _.flatten(getOutputParams(outputNode));
   if (params.includes(undefined)) {
     throw new NotFoundError(
       `PLEASE CHECK YOUR OUTPUT NODE DESCRIPTION, type of parameter cannot be parsed!
-      The following output node does not have the right format: ${JSON.stringify(outputNode)}`
+      The following output node does not have the right format: ${JSON.stringify(outputNode)}`,
     );
   }
   const mappedReturnParameters = functionParameters.map((functionParameter) => {

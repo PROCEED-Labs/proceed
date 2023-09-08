@@ -83,7 +83,7 @@ describe('Native-FS', () => {
       const res = nfs.read(['table.json/test']);
       expect(fs.readFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
-        expect.any(Function)
+        expect.any(Function),
       );
       await expect(res).resolves.toEqual(['data']);
     });
@@ -98,7 +98,7 @@ describe('Native-FS', () => {
       const res = nfs.read(['table.json/test']);
       expect(fs.readFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
-        expect.any(Function)
+        expect.any(Function),
       );
       await expect(res).resolves.toEqual([null]);
     });
@@ -181,7 +181,7 @@ describe('Native-FS', () => {
       expect(read1).resolves.toBeDefined();
       expect(fs.readFile).toHaveBeenLastCalledWith(
         '/Path/To/Dir/data_files/table.json',
-        expect.any(Function)
+        expect.any(Function),
       );
       // Wait for promise flush
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -192,7 +192,7 @@ describe('Native-FS', () => {
       expect(read2).resolves.toBeDefined();
       expect(fs.readFile).toHaveBeenLastCalledWith(
         '/Path/To/Dir/data_files/table.json',
-        expect.any(Function)
+        expect.any(Function),
       );
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
@@ -249,7 +249,7 @@ describe('Native-FS', () => {
       await expect(writeP).resolves.toBeUndefined();
       expect(fs.readFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
-        expect.any(Function)
+        expect.any(Function),
       );
       expect(fs.writeFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
@@ -257,7 +257,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test: 'data',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -275,7 +275,7 @@ describe('Native-FS', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
         JSON.stringify({ test: 'data' }),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -291,7 +291,7 @@ describe('Native-FS', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
         JSON.stringify({ foo: 'bar' }),
-        expect.any(Function)
+        expect.any(Function),
       );
 
       fs.readFile.mockImplementationOnce((path, cb) => {
@@ -305,7 +305,7 @@ describe('Native-FS', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
         JSON.stringify({}),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -320,7 +320,7 @@ describe('Native-FS', () => {
       expect(fs.rm).toHaveBeenCalledWith(
         '/Path/To/Dir/data_files/table.json',
         { force: true, recursive: true },
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -432,7 +432,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test1: 'data1',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
       // Wait for promise flush
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -447,7 +447,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test1: 'data2',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(fs.readFile).toHaveBeenCalledTimes(3);
@@ -461,7 +461,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test1: 'data3',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -492,7 +492,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test1: 'data1',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
 
       // Resolve second write
@@ -504,7 +504,7 @@ describe('Native-FS', () => {
           otherFoo: 'bar',
           test2: 'data3',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
       // Wait for promise flush
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -519,7 +519,7 @@ describe('Native-FS', () => {
           foo: 'bar',
           test1: 'data2',
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
   });

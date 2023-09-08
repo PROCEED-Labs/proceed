@@ -95,7 +95,7 @@ export default {
     /** */
     async deleteVariable() {
       const newVars = this.process.variables.filter(
-        (variable) => variable.name != this.process.variables[this.editVariableIndex].name
+        (variable) => variable.name != this.process.variables[this.editVariableIndex].name,
       );
       await this.saveVariables(newVars);
       this.closeVariableEditor();

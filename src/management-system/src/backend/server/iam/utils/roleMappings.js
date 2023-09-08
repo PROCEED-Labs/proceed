@@ -13,7 +13,7 @@ export const ensureCleanRoleMappings = async (userId) => {
     delete roleMappingsMetaObjects.users[userId];
     roles.forEach((role) => {
       const index = roleMetaObjects[role.roleId].members.findIndex(
-        (member) => member.userId === userId
+        (member) => member.userId === userId,
       );
       if (index > -1) {
         roleMetaObjects[role.roleId].members.splice(index, 1);

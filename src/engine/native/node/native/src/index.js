@@ -43,7 +43,7 @@ class Native {
         console.error(
           `WARNING: A module was registered with an 'onAfterEngineLoaded' hook but without a necessary id.
           The module was ignored
-          `
+          `,
         );
       } else {
         this._onAfterEngineLoaded.add(module.id);

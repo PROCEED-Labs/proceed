@@ -29,7 +29,7 @@ const logger = logging.getLogger(configObject);
 export async function publishDeployedVersionInfo(
   processDefinitionsId: string,
   version: string | number,
-  bpmn: string
+  bpmn: string,
 ) {
   if (!enableMessaging) return;
 
@@ -110,11 +110,11 @@ export async function publishDeployedVersionInfo(
         stepsInfo,
         url,
         { retain: true },
-        { username: user, password }
+        { username: user, password },
       );
     } catch (err) {
       logger.warn(
-        `Failed on publishing the deployment of version ${version} of the process with id ${processDefinitionsId} to the messaging server defined in the bpmn`
+        `Failed on publishing the deployment of version ${version} of the process with id ${processDefinitionsId} to the messaging server defined in the bpmn`,
       );
     }
   }
@@ -132,7 +132,7 @@ export async function publishDeployedVersionInfo(
     });
   } catch (err) {
     logger.warn(
-      `Failed on publishing the deployment of version ${version} of the process with id ${processDefinitionsId} to the messaging server defined in the engine config`
+      `Failed on publishing the deployment of version ${version} of the process with id ${processDefinitionsId} to the messaging server defined in the engine config`,
     );
   }
 }

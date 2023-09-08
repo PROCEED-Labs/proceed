@@ -373,7 +373,7 @@ export default {
       const changedElement = model.getEl();
 
       const variableInputChanged = !!Array.from(changedElement.classList).find((className) =>
-        className.includes('variable-')
+        className.includes('variable-'),
       );
 
       if (variableInputChanged && changed.attributes && changed.attributes.name) {

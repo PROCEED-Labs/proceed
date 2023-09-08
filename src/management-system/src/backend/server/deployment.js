@@ -105,7 +105,7 @@ export function setupDeploymentInfoRequestHandlers(io) {
     const [_1, processDefinitionsId, _2, instanceId] = namespaceName.slice(1).split('/');
 
     logger.debug(
-      `Client registered for updates to the information of an instance (processDefinitionsId: ${processDefinitionsId}; instanceId: ${instanceId}).`
+      `Client registered for updates to the information of an instance (processDefinitionsId: ${processDefinitionsId}; instanceId: ${instanceId}).`,
     );
 
     // send the current information known about the instance to the subscribing client
@@ -120,7 +120,7 @@ export function setupDeploymentInfoRequestHandlers(io) {
 
     socket.on('disconnect', async () => {
       logger.debug(
-        `Client unregistered from updates to the information of an instance (processDefinitionsId: ${processDefinitionsId}; instanceId: ${instanceId}).`
+        `Client unregistered from updates to the information of an instance (processDefinitionsId: ${processDefinitionsId}; instanceId: ${instanceId}).`,
       );
 
       // stop polling the information about the specific instance when the last client unsubscribes
@@ -143,7 +143,7 @@ export function setupDeploymentInfoRequestHandlers(io) {
   eventHandler.on('instance_removed', ({ definitionId, instanceId }) => {
     io.of(`/deployment/${definitionId}/instances/${instanceId}`).emit(
       'instance.removed',
-      instanceId
+      instanceId,
     );
   });
 }

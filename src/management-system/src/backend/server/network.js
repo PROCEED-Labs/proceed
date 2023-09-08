@@ -26,7 +26,7 @@ export function setupNetworkRequestHandlers(addListener) {
     logger.debug(
       `Request to ${
         dynamic ? 'dynamically' : 'statically'
-      } deploy process with id ${processDefinitionsId} and version ${version}.`
+      } deploy process with id ${processDefinitionsId} and version ${version}.`,
     );
     let response = {};
 
@@ -56,7 +56,7 @@ export function setupNetworkRequestHandlers(addListener) {
     'user_task_milestone_update',
     async (socket, id, instanceId, userTaskId, milestone) => {
       logger.debug(
-        `Update milestone on userTask (id: ${userTaskId}) in instance (id: ${instanceId}).`
+        `Update milestone on userTask (id: ${userTaskId}) in instance (id: ${instanceId}).`,
       );
       let response = {};
 
@@ -67,12 +67,12 @@ export function setupNetworkRequestHandlers(addListener) {
       }
 
       socket.emit('user_task_milestone_update', id, response);
-    }
+    },
   );
 
   addListener('version_data_get', async (socket, id, processDefinitionsId, version) => {
     logger.debug(
-      `Request to get the data for a version (id:${version}) of a process (id: ${processDefinitionsId}).`
+      `Request to get the data for a version (id:${version}) of a process (id: ${processDefinitionsId}).`,
     );
     let response = {};
 
@@ -87,7 +87,7 @@ export function setupNetworkRequestHandlers(addListener) {
 
   addListener('user_task_variable_update', async (socket, id, instanceId, userTaskId, variable) => {
     logger.debug(
-      `Update intermediate variable on userTask (id: ${userTaskId}) in instance (id: ${instanceId}).`
+      `Update intermediate variable on userTask (id: ${userTaskId}) in instance (id: ${instanceId}).`,
     );
     let response = {};
 
@@ -95,7 +95,7 @@ export function setupNetworkRequestHandlers(addListener) {
       response = await instance.updateUserTaskIntermediateVariablesState(
         instanceId,
         userTaskId,
-        variable
+        variable,
       );
     } catch (err) {
       response.error = err.message;
@@ -106,7 +106,7 @@ export function setupNetworkRequestHandlers(addListener) {
 
   addListener('instance_start', async (socket, id, processDefinitionsId, version) => {
     logger.debug(
-      `Request to start instance for process with id ${processDefinitionsId} and version ${version}.`
+      `Request to start instance for process with id ${processDefinitionsId} and version ${version}.`,
     );
     let response = {};
 
@@ -121,7 +121,7 @@ export function setupNetworkRequestHandlers(addListener) {
 
   addListener('instance_stop', async (socket, id, processDefinitionsId, instanceId) => {
     logger.debug(
-      `Request to stop instance with id ${instanceId} of process with id ${processDefinitionsId}.`
+      `Request to stop instance with id ${instanceId} of process with id ${processDefinitionsId}.`,
     );
 
     let response = {};
@@ -138,7 +138,7 @@ export function setupNetworkRequestHandlers(addListener) {
 
   addListener('instance_pause', async (socket, id, processDefinitionsId, instanceId) => {
     logger.debug(
-      `Request to pause instance with id ${instanceId} of process with id ${processDefinitionsId}.`
+      `Request to pause instance with id ${instanceId} of process with id ${processDefinitionsId}.`,
     );
     let response = {};
 
@@ -153,7 +153,7 @@ export function setupNetworkRequestHandlers(addListener) {
 
   addListener('instance_resume', async (socket, id, processDefinitionsId, instanceId) => {
     logger.debug(
-      `Request to resume instance with id ${instanceId} of process with id ${processDefinitionsId}.`
+      `Request to resume instance with id ${instanceId} of process with id ${processDefinitionsId}.`,
     );
     let response = {};
 
@@ -170,7 +170,7 @@ export function setupNetworkRequestHandlers(addListener) {
     'instance_tokens_update',
     async (socket, id, processDefinitionsId, instanceId, tokenChanges) => {
       logger.debug(
-        `Request to change the tokens of the instance with id ${instanceId} of process with id ${processDefinitionsId}.`
+        `Request to change the tokens of the instance with id ${instanceId} of process with id ${processDefinitionsId}.`,
       );
       let response = {};
 
@@ -182,7 +182,7 @@ export function setupNetworkRequestHandlers(addListener) {
       }
 
       socket.emit('instance_tokens_update', id, response);
-    }
+    },
   );
 
   addListener(
@@ -190,8 +190,8 @@ export function setupNetworkRequestHandlers(addListener) {
     async (socket, id, definitionId, currentVersion, targetVersion, instanceIds, migrationArgs) => {
       logger.debug(
         `Request to migrate instances [${toListString(
-          instanceIds
-        )}] of process (id: ${definitionId}) from version ${currentVersion} to version ${targetVersion}.`
+          instanceIds,
+        )}] of process (id: ${definitionId}) from version ${currentVersion} to version ${targetVersion}.`,
       );
 
       let response = {};
@@ -202,7 +202,7 @@ export function setupNetworkRequestHandlers(addListener) {
           currentVersion,
           targetVersion,
           instanceIds,
-          migrationArgs
+          migrationArgs,
         );
       } catch (err) {
         console.debug(err);
@@ -210,7 +210,7 @@ export function setupNetworkRequestHandlers(addListener) {
       }
 
       socket.emit('instances_migrate_version', id, response);
-    }
+    },
   );
 
   addListener(
@@ -227,7 +227,7 @@ export function setupNetworkRequestHandlers(addListener) {
       }
 
       socket.emit('instance_token_update', id, response);
-    }
+    },
   );
 
   addListener('machine_status_get', async (socket, id, machineId) => {
@@ -245,7 +245,7 @@ export function setupNetworkRequestHandlers(addListener) {
       socket.emit(
         'machine_properties_get',
         id,
-        await requests.getMachineProperties(machineId, properties)
+        await requests.getMachineProperties(machineId, properties),
       );
     } catch (err) {
       socket.emit('machine_properties_get', id, { error: err });
@@ -267,7 +267,7 @@ export function setupNetworkRequestHandlers(addListener) {
       socket.emit(
         'machine_configuration_set',
         id,
-        await requests.sendConfiguration(machineId, configuration)
+        await requests.sendConfiguration(machineId, configuration),
       );
     } catch (err) {
       socket.emit('machine_configuration_set', id, { error: err });

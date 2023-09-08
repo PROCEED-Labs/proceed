@@ -35,7 +35,7 @@ export default {
             return this.receivePostMessage(message);
           }
         },
-        false
+        false,
       );
       await this.checkSessionStatus();
       setInterval(async () => await this.checkSessionStatus(), 1000 * 60);

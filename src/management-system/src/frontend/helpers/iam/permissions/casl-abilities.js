@@ -29,7 +29,7 @@ export const defineRules = async (permissions, userId, useAuthorization) => {
         const uniquePermissions = [...new Set(Object.values(permissions[resource].conditions))];
         uniquePermissions.forEach(async (permission) => {
           const ids = Object.keys(permissions[resource].conditions).filter(
-            (key) => permissions[resource].conditions[key] === permission
+            (key) => permissions[resource].conditions[key] === permission,
           );
           const permissionsList = [
             ...new Set(['view', ...(await translatePermissionToList(permission))]),

@@ -130,7 +130,7 @@ describe('Native-Config', () => {
         `{
   "name": "Test"
 }`,
-        expect.any(Function)
+        expect.any(Function),
       );
 
       await nConf.writeConfig([{ logs: { enabled: false } }]);
@@ -142,7 +142,7 @@ describe('Native-Config', () => {
     "enabled": false
   }
 }`,
-        expect.any(Function)
+        expect.any(Function),
       );
 
       await nConf.writeConfig([{ machine: { outputs: ['screen'] } }]);
@@ -159,7 +159,7 @@ describe('Native-Config', () => {
     ]
   }
 }`,
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 

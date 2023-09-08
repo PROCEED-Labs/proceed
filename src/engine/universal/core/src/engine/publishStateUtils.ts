@@ -29,7 +29,7 @@ export async function publishCurrentInstanceState(engine, instance) {
     } catch (err) {
       if (engine._log) {
         engine._log.warn(
-          `Failed to publish the state of the instance (id: ${instance.id}) to the messaging server defined in the engine config.`
+          `Failed to publish the state of the instance (id: ${instance.id}) to the messaging server defined in the engine config.`,
         );
       }
     }
@@ -59,19 +59,19 @@ export async function publishCurrentInstanceState(engine, instance) {
             instanceInformation,
             url,
             { retain: true },
-            { username: user, password, clientIdPrefix: `${instance.id}-` }
+            { username: user, password, clientIdPrefix: `${instance.id}-` },
           );
           await messaging.publish(
             `${bpmnTopic}proceed-pms/${instanceTopic}/engine/${machineId}/instance/${instance.id}`,
             instanceInformation,
             url,
             { retain: true },
-            { username: user, password, clientIdPrefix: `${instance.id}-` }
+            { username: user, password, clientIdPrefix: `${instance.id}-` },
           );
         } catch (err) {
           if (engine._log) {
             engine._log.warn(
-              `Failed to publish the state of the instance (id: ${instance.id}) to the messaging server defined in the bpmn.`
+              `Failed to publish the state of the instance (id: ${instance.id}) to the messaging server defined in the bpmn.`,
             );
           }
         }
@@ -137,12 +137,12 @@ export async function setupEngineStatusInformationPublishing(engine, instance) {
           username: user,
           password,
           clientIdPrefix: `${instance.id}-`,
-        }
+        },
       );
     }
   } catch (err) {
     engine._log.warn(
-      `Failed to set up engine status publishing for the instance (id: ${instance.id}) on the messaging server defined in the bpmn.`
+      `Failed to set up engine status publishing for the instance (id: ${instance.id}) on the messaging server defined in the bpmn.`,
     );
   }
 }
@@ -184,7 +184,7 @@ export async function teardownEngineStatusInformationPublishing(engine, instance
           username: user,
           password,
           clientIdPrefix: `${instanceInformation.processInstanceId}-`,
-        }
+        },
       );
 
       // close the connection since it is not needed anymore
@@ -196,7 +196,7 @@ export async function teardownEngineStatusInformationPublishing(engine, instance
     }
   } catch (err) {
     engine._log.warn(
-      `Failed to stop engine status publishing for the instance (id: ${instanceInformation.processInstanceId}) on the messaging server defined in the bpmn.`
+      `Failed to stop engine status publishing for the instance (id: ${instanceInformation.processInstanceId}) on the messaging server defined in the bpmn.`,
     );
   }
 }

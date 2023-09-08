@@ -18,7 +18,7 @@ const put = async (url: string, data = {}) => {
 // TODO: use schema for process to only allow updating valid properties (e.g. definitionName, description etc)
 export const updateProcess = async (
   definitionId: string,
-  updateProperties: { bpmn?: string; [key: string]: any }
+  updateProperties: { bpmn?: string; [key: string]: any },
 ) => {
   const url = `${BASE_URL}/process/${definitionId}`;
   const responseData = await put(url, updateProperties);

@@ -239,11 +239,11 @@ describe('#allowedtoexecuteLocally', () => {
     };
     // maxMachineHops = 2
     expect(await decider.allowedToExecuteLocally({}, token, maxMachineHopsConstraint, {})).toEqual(
-      false
+      false,
     );
     const machineSatisfiesAllHardConstraints = jest.spyOn(
       Hceval,
-      'machineSatisfiesAllHardConstraints'
+      'machineSatisfiesAllHardConstraints',
     );
     expect(machineSatisfiesAllHardConstraints).not.toHaveBeenCalled();
   });
@@ -369,7 +369,7 @@ describe('#findOptimalNextMachine', () => {
           stopProcess: null,
           unfulfilledConstraints: [],
         },
-      }
+      },
     );
   });
 
@@ -397,7 +397,7 @@ describe('#findOptimalNextMachine', () => {
           stopProcess: null,
           unfulfilledConstraints: [],
         },
-      }
+      },
     );
   });
 

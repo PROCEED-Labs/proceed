@@ -175,7 +175,7 @@ const Processes: FC = () => {
       setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
     } else {
       setSelectedColumns((prevSelectedColumns) =>
-        prevSelectedColumns.filter((column) => column !== value)
+        prevSelectedColumns.filter((column) => column !== value),
       );
     }
   };

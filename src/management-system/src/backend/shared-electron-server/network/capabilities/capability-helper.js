@@ -20,7 +20,7 @@ export function getParameterInfo(id, list) {
   [parameterObject.schema] = getPredicateForParam(
     parameterNode,
     'https://w3id.org/function/ontology#Parameter',
-    'https://w3id.org/function/ontology#predicate'
+    'https://w3id.org/function/ontology#predicate',
   );
   parameterObject.name = parameterObject.schema.split('/').pop();
 
@@ -136,13 +136,13 @@ export async function convertSemanticDescription(semanticObject) {
     //get key and uri from these elements
     .map((el) => {
       const potentialActionInformationKey = Object.keys(el).find((key) =>
-        key.includes('potentialAction')
+        key.includes('potentialAction'),
       );
       const [potentialActionInformation] = el[potentialActionInformationKey];
       const potentialAction = { id: potentialActionInformation['@id'] };
 
       potentialAction.uri = potentialActionInformation['@type'].find((uri) =>
-        potentialActionURIs.includes(uri)
+        potentialActionURIs.includes(uri),
       );
 
       return potentialAction;

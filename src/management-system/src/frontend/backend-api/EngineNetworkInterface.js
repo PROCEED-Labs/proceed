@@ -90,7 +90,7 @@ class EngineNetworkInterface {
       currentVersion,
       targetVersion,
       instanceIds,
-      migrationArgs
+      migrationArgs,
     );
   }
 

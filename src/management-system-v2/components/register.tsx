@@ -135,7 +135,7 @@ const Register: FC = () => {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error('The password should be at least 8 characters long.')
+                    new Error('The password should be at least 8 characters long.'),
                   );
                 },
               }),

@@ -71,7 +71,7 @@ export default {
     availableResources() {
       return this.resources.filter((resource) => {
         return !this.assignedResources.find(
-          (assignedResource) => assignedResource.id === resource.id
+          (assignedResource) => assignedResource.id === resource.id,
         );
       });
     },
@@ -118,7 +118,7 @@ export default {
         const updatedAssignedRessources = [...this.assignedResources];
 
         const updatedResourceIndex = updatedAssignedRessources.findIndex(
-          (resource) => resource.id === (oldResourceId || updatedResourceInfo.id)
+          (resource) => resource.id === (oldResourceId || updatedResourceInfo.id),
         );
 
         updatedAssignedRessources.splice(updatedResourceIndex, 1, {
@@ -132,7 +132,7 @@ export default {
     },
     deleteResource(oldResourceId) {
       const updatedAssignedRessources = this.assignedResources.filter(
-        (resource) => resource.id !== oldResourceId
+        (resource) => resource.id !== oldResourceId,
       );
       this.$emit('change', [...updatedAssignedRessources]);
     },

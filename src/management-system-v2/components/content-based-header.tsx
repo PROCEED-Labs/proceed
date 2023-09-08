@@ -66,9 +66,8 @@ const HeaderMenu: FC = () => {
             setSelectedProcess(processes.find(({ definitionId }) => definitionId === key));
             router.refresh();
             router.push(
-              `/processes/${
-                processes.find(({ definitionId }) => definitionId === key)?.definitionId
-              }`
+              `/processes/${processes.find(({ definitionId }) => definitionId === key)
+                ?.definitionId}`,
             );
           },
         },

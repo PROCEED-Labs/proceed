@@ -32,11 +32,11 @@ describe('Conversion tests for smaller parts of our JS representation to fast-xm
     expect(finalToIntermediate.filterAttributes(finalAttr)).toStrictEqual(fastXMLAttr);
     expect(finalToIntermediate.logger.debug).toHaveBeenNthCalledWith(
       1,
-      'Found attribute conjunction with value null. Omitting from output.'
+      'Found attribute conjunction with value null. Omitting from output.',
     );
     expect(finalToIntermediate.logger.debug).toHaveBeenNthCalledWith(
       2,
-      'Found attribute unit with value null. Omitting from output.'
+      'Found attribute unit with value null. Omitting from output.',
     );
   });
 

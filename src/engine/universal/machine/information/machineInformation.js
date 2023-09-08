@@ -333,8 +333,8 @@ class MachineInformation {
                 .sendRequest(address, undefined, '/', undefined, false)
                 .then(() => resolve(true))
                 .catch((err) => resolve(err === 'Status Code was: 301'));
-            })
-        )
+            }),
+        ),
       )
     ).includes(true);
     return online;

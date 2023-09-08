@@ -28,7 +28,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
   const [name, setName] = useState('');
   const [initialized, setInitialized] = useState(false);
   const { data: bpmn, isSuccess } = useProcessBpmn(
-    selectedElement ? selectedElement.definitionId : ''
+    selectedElement ? selectedElement.definitionId : '',
   );
   const canvas = useRef<HTMLDivElement>(null);
   const previewer = useRef<ViewerType | null>(null);
@@ -54,7 +54,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
         (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       }, 1_000);
     },
-    [handleMouseMove]
+    [handleMouseMove],
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {

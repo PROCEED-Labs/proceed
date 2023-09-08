@@ -31,7 +31,7 @@ async function addRoleForUser(userId, roles) {
     undefined,
     'POST',
     'application/json',
-    roles
+    roles,
   );
   return user;
 }
@@ -47,7 +47,7 @@ async function updatePassword(userId, password) {
     undefined,
     'PUT',
     'application/json',
-    { password }
+    { password },
   );
   return id;
 }
@@ -58,7 +58,7 @@ async function deleteRoleFromUser(userId, roles) {
     undefined,
     'DELETE',
     'application/json',
-    roles
+    roles,
   );
   return user;
 }

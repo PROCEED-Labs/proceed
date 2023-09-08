@@ -27,13 +27,13 @@ describe('Capabilities', () => {
     */
     it('returns true with a matching process description', async () => {
       await expect(
-        capabilities.isCapabilityExecutable(processDescriptionExecutable, list)
+        capabilities.isCapabilityExecutable(processDescriptionExecutable, list),
       ).resolves.toEqual(true);
     });
 
     it('returns false when not all the required params are included in the capability list', async () => {
       await expect(
-        capabilities.isCapabilityExecutable(processDescriptionNotExecutable, list)
+        capabilities.isCapabilityExecutable(processDescriptionNotExecutable, list),
       ).resolves.toEqual(false);
     });
   });

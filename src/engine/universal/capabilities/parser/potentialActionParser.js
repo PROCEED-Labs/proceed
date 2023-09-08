@@ -31,7 +31,7 @@ function removeFunctionUri(potentialActionsArray) {
 function getPotentialActions(expandedList) {
   const potentialActionsArray = _.flatMap(
     _.flatMap(expandedList, potentialActionUri).filter((e) => e),
-    '@type'
+    '@type',
   );
   return removeFunctionUri(potentialActionsArray);
 }
@@ -50,7 +50,7 @@ function validatePotentialActions(capabilityList, expandedList) {
         potentialActionNode.push(expandedItem[potentialActionUri]);
       }
       return potentialActionNode;
-    })
+    }),
   );
   if (potentialActionNode.length !== capabilityList.length) {
     const reminder = 'please have a look to documentation!';
@@ -65,7 +65,7 @@ function validatePotentialActions(capabilityList, expandedList) {
           "@id": "_:TurnOnDefinition"
         }
       }
-      ${reminder}`
+      ${reminder}`,
     );
   }
 }
@@ -93,11 +93,11 @@ async function findIdAndDesc(capabilityName, capabilityList) {
               capabilityObject.expanded = item.expanded;
             }
             return potentialActionType;
-          })
+          }),
         );
       }
       return expandedItem;
-    })
+    }),
   );
   return capabilityObject;
 }

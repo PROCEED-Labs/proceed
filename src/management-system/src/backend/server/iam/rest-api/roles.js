@@ -87,7 +87,7 @@ rolesRouter.post(
     } else {
       return res.status(400).json('Missing body');
     }
-  }
+  },
 );
 
 /**
@@ -124,7 +124,7 @@ rolesRouter.put(
     } else {
       return res.status(400).json('Missing body');
     }
-  }
+  },
 );
 
 /**
@@ -151,7 +151,7 @@ rolesRouter.delete(
     } else {
       return res.status(400).json('Missing parameter id');
     }
-  }
+  },
 );
 
 export default rolesRouter;

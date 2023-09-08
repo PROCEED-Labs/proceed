@@ -109,7 +109,7 @@ class HTTP extends System {
       const query = JSON.stringify(req.query);
       const senderIp = req.ip.substr(req.ip.lastIndexOf(':') + 1);
       this._getLogger().trace(
-        `Received ${req.method} on '${req.path}' from ${senderIp} with params: ${params}, query: ${query} and ${bodyInfo}`
+        `Received ${req.method} on '${req.path}' from ${senderIp} with params: ${params}, query: ${query} and ${bodyInfo}`,
       );
       this._getLogger().trace(`Received ${req.method} request: ${JSON.stringify(req)}`);
 

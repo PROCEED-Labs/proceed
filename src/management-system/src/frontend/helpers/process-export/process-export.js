@@ -310,7 +310,7 @@ export function setPdfPropsAndValues(
   process,
   isHeadingRequested,
   svgWidth,
-  svgHeight
+  svgHeight,
 ) {
   const { name, elementId, description = '', departments = [] } = process;
   let keywords = 'BPMN';
@@ -360,7 +360,7 @@ export function setPdfPropsAndValues(
     pdfWidth,
     pdfHeight,
     undefined,
-    'FAST'
+    'FAST',
   );
 }
 

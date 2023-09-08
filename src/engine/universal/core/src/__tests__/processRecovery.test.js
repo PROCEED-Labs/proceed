@@ -14,22 +14,22 @@ const { enableInterruptedInstanceRecovery } = require('../../../../../../Feature
 const taskBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'task.bpmn'), 'utf-8');
 const manualInterruptionHandlingBpmn = fs.readFileSync(
   path.resolve(__dirname, 'bpmn', 'manualInterruptionHandling.bpmn'),
-  'utf-8'
+  'utf-8',
 );
 const parallelBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'parallel.bpmn'), 'utf-8');
 const parallelMergeBpmn = fs.readFileSync(
   path.resolve(__dirname, 'bpmn', 'parallelMerge.bpmn'),
-  'utf-8'
+  'utf-8',
 );
 const subprocessBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'subprocess.bpmn'), 'utf-8');
 const manualSubprocessInterruptionHandlingBpmn = fs.readFileSync(
   path.resolve(__dirname, 'bpmn', 'manualSubprocessInterruptionHandling.bpmn'),
-  'utf-8'
+  'utf-8',
 );
 const importerBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'importer.bpmn'), 'utf-8');
 const manualCallActivityInterruptionHandlingBpmn = fs.readFileSync(
   path.resolve(__dirname, 'bpmn', 'manualCallActivityInterruption.bpmn'),
-  'utf-8'
+  'utf-8',
 );
 const importBpmn = fs.readFileSync(path.resolve(__dirname, 'bpmn', 'import.bpmn'), 'utf-8');
 
@@ -208,7 +208,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           processId: 'Process1#1677505265559',
           processVersion: undefined,
         },
-        expect.any(Function)
+        expect.any(Function),
       );
 
       startInstance.mockRestore();
@@ -525,7 +525,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           ],
           userTasks: [],
           isCurrentlyExecutedInBpmnEngine: undefined,
-        }
+        },
       );
     });
 
@@ -1155,7 +1155,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           ],
           userTasks: [],
           isCurrentlyExecutedInBpmnEngine: undefined,
-        }
+        },
       );
     });
 

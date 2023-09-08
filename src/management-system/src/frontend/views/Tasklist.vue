@@ -237,7 +237,7 @@ export default {
       if (userTask) {
         const processes = this.$store.getters['processStore/processes'];
         const storedProcess = processes.find((process) =>
-          userTask.instanceID.startsWith(process.id)
+          userTask.instanceID.startsWith(process.id),
         );
         return storedProcess;
       }
@@ -287,7 +287,7 @@ export default {
       switch (this.selectedSorting.value) {
         case 'Start Time':
           showingUserTasks.sort((a, b) =>
-            this.selectedSorting.ascending ? a.startTime - b.startTime : b.startTime - a.startTime
+            this.selectedSorting.ascending ? a.startTime - b.startTime : b.startTime - a.startTime,
           );
           break;
         case 'Deadline':
@@ -420,7 +420,7 @@ export default {
             engineNetworkInterface.updateUserTaskIntermediateVariablesState(
               instanceID,
               userTaskID,
-              body
+              body,
             );
           }
         },
@@ -463,7 +463,7 @@ export default {
         const selectedUserTaskRemoved = !newShowingUserTasks.find(
           (userTask) =>
             userTask.instanceID === this.selectedUserTask.instanceID &&
-            userTask.id === this.selectedUserTask.id
+            userTask.id === this.selectedUserTask.id,
         );
 
         if (selectedUserTaskRemoved) {

@@ -187,7 +187,7 @@ export default {
     },
     init() {
       const { years, months, days, hours, minutes, seconds } = parseISODuration(
-        this.formalExpression
+        this.formalExpression,
       );
       this.years = years;
       this.months = months;

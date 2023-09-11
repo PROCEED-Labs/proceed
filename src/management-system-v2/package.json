@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev-iam": "cross-env USE_AUTH=true next dev",
     "build": "cross-env API_URL=https://localhost:33083/api next build",
     "start": "next start",
     "lint": "next lint",

@@ -6,7 +6,7 @@ const nextConfig = {
     API_URL:
       process.env.NODE_ENV === 'development' ? 'https://localhost:33080/api' : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'https://localhost:33080' : 'FIXME',
-    NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTH === 'true',
+    NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true',
   },
   async redirects() {
     return [

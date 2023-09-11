@@ -65,7 +65,7 @@ async function versionUserTasks(
   processInfo: Process,
   newVersion: number,
   bpmnObj: object,
-  dryRun = false
+  dryRun = false,
 ) {
   const htmlMapping = await getUserTaskFileNameMapping(bpmnObj);
 
@@ -76,7 +76,7 @@ async function versionUserTasks(
     if (htmlMapping[userTaskId].implementation === getUserTaskImplementationString()) {
       const html = await fetchUserTaskHTML(
         processInfo.definitionId,
-        htmlMapping[userTaskId].fileName
+        htmlMapping[userTaskId].fileName,
       );
 
       let fileName = `${htmlMapping[userTaskId].fileName}-${newVersion}`;
@@ -93,7 +93,7 @@ async function versionUserTasks(
         const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
         const basedOnVersionUserTaskHTML = await fetchUserTaskHTML(
           processInfo.definitionId,
-          basedOnVersionFileInfo.fileName
+          basedOnVersionFileInfo.fileName,
         );
         if (basedOnVersionFileInfo && basedOnVersionUserTaskHTML === html) {
           // reuse the html of the previous version
@@ -116,7 +116,7 @@ async function versionUserTasks(
 export async function createNewProcessVersion(
   bpmn: string,
   versionName: string,
-  versionDescription: string
+  versionDescription: string,
 ) {
   const bpmnObj = await toBpmnObject(bpmn);
   const definitionId = await getDefinitionsId(bpmnObj);

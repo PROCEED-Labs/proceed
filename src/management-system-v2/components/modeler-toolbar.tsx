@@ -38,7 +38,7 @@ const VersionSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit:
       },
       () => {
         setSubmittable(false);
-      }
+      },
     );
   }, [form, values]);
 
@@ -98,7 +98,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
       await createNewProcessVersion(
         saveXMLResult.xml,
         values.versionName,
-        values.versionDescription
+        values.versionDescription,
       );
       refetchProcess();
     }

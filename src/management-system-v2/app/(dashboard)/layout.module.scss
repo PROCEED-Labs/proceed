@@ -1,8 +1,9 @@
 .Header {
   border-bottom: '1px solid #eee';
   .Logo {
-    margin: -5px -25px 10px;
+    margin: -5px 40px 10px -25px;
     transition: all 0.2s;
+    // display: inline-block
   }
 }
 
@@ -14,6 +15,10 @@
   left: 0;
   top: 0;
   bottom: 0;
+
+  @media screen and (max-width: 415px) {
+    display: none;
+  }
   //backgroundcolor: 'white';
 
   // .Logo {
@@ -40,11 +45,15 @@
     margin-left: 25px;
     max-width: calc(100vw - 80px);
   }
+}
 
-  .Footer {
-    text-align: center;
-    color: #9a9a9a;
-    font-weight: 300;
+.Footer {
+  text-align: center;
+  color: #9a9a9a;
+  font-weight: 300;
+
+  @media screen and (max-width: 415px) {
+    display: none;
   }
 }
 

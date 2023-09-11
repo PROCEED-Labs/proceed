@@ -330,7 +330,7 @@ jobs:
       - run: ssh $ENV "sudo docker run --rm -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull $SERVICE_NAME"
 
       # Restart the engine container with the new image
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="443" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans $SERVICE_NAME"
+      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="${{ inputs.environment == 'Production' && '443' || '33080' }}" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans $SERVICE_NAME"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"
@@ -383,4 +383,4 @@ jobs:
 
       # start MS services and the engine (escaped $ to prevent gitlab CI from trying to interpret PWD which can only be determined when the command is run in the compute engine)
       # TODO: restart when the compute engine restarts
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="443" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans"
+      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="${{ inputs.environment == 'Production' && '443' || '33080' }}" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans"

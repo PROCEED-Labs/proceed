@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
@@ -38,10 +38,12 @@ import PropertiesPanel from './properties-panel';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
 import { useProcess } from '@/lib/process-queries';
+import { MenuItemType } from 'antd/es/menu/hooks/useItems';
 
 type ModelerToolbarProps = {};
 
 const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
+  /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
   const svgShare = <Icon component={SvgShare} />;
 
@@ -50,11 +52,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
+  const versions = useModelerStateStore((state) => state.versions);
+  const setVersions = useModelerStateStore((state) => state.setVersions);
 
-  const [index, setIndex] = useState(0);
+  // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
-  const { isSuccess, data: processData } = useProcess(processId);
+  const { isSuccess, data: processData } = useProcess(processId as string);
 
   let selectedElement;
 
@@ -70,13 +74,21 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  let versionSelection: MenuProps['items'] = [];
-  if (isSuccess) {
-    versionSelection = processData.versions.map(({ version, name, description }) => ({
-      key: version,
-      label: name,
-    }));
-  }
+  let versionSelection: MenuItemType[] = [];
+
+  useEffect(() => {
+    if (isSuccess) {
+      setVersions(processData.versions);
+    }
+  }, [isSuccess, processData, setVersions]);
+
+  versionSelection = (
+    versions as { version: number | string; name: string; description: string }[]
+  ).map(({ version, name, description }) => ({
+    key: version,
+    label: name,
+  }));
+
   versionSelection.unshift({ key: -1, label: 'Latest Version' });
   const handleVersionSelectionChange: MenuProps['onClick'] = (e) => {
     setSelectedVersion(+e.key < 0 ? null : +e.key);

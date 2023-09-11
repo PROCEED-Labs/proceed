@@ -43,12 +43,14 @@ const Processes: FC<ProcessProps> = () => {
     <Content
       title={process?.definitionName ?? 'Process'}
       compact
-      wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
+      wrapperClass={(cn(styles.Wrapper, { [styles.minimized]: minimized }), 'modeler-page-content')}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
       footerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
       <Modeler className={styles.Modeler} minimized={minimized} />
-      {minimized ? <Overlay processId={processId} onClose={() => setClosed(true)} /> : null}
+      {minimized ? (
+        <Overlay processId={processId as string} onClose={() => setClosed(true)} />
+      ) : null}
     </Content>
   );
 };

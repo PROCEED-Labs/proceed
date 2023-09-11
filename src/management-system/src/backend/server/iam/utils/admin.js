@@ -41,10 +41,14 @@ export const createAdminUser = async () => {
 
     // create user
     try {
-      let newUser = await requestResource(`/users`, {
-        method: 'POST',
-        body: user,
-      });
+      let newUser = await requestResource(
+        `/users`,
+        {
+          method: 'POST',
+          body: user,
+        },
+        config,
+      );
 
       if (newUser) {
         // request user from keycloak before adding role mapping, because keycloak only returns user id

@@ -2,19 +2,27 @@
   top: 80px;
 }
 
-.ant-menu-vertical .ant-menu-item::after,
-.ant-menu-vertical-left .ant-menu-item::after,
-.ant-menu-vertical-right .ant-menu-item::after,
-.ant-menu-inline .ant-menu-item::after {
-  border-right: 0px;
+/* TODO: Move to module */
+.ant-menu-light.ant-menu-root.ant-menu-inline,
+.ant-menu-light > .ant-menu.ant-menu-root.ant-menu-inline,
+.ant-menu-light.ant-menu-root.ant-menu-vertical,
+.ant-menu-light > .ant-menu.ant-menu-root.ant-menu-vertical {
+  border-inline-end: 0px !important;
 }
 
-/* Dev-Mode CSS Override */
-:where(.css-dev-only-do-not-override-1afvvrg).ant-menu-light.ant-menu-root.ant-menu-inline,
-:where(.css-dev-only-do-not-override-1afvvrg).ant-menu-light
-  > .ant-menu.ant-menu-root.ant-menu-inline,
-:where(.css-dev-only-do-not-override-1afvvrg).ant-menu-light.ant-menu-root.ant-menu-vertical,
-:where(.css-dev-only-do-not-override-1afvvrg).ant-menu-light
-  > .ant-menu.ant-menu-root.ant-menu-vertical {
-  border-inline-end: 0px !important;
+.SelectedSegment > .ant-menu-submenu-title {
+  background-color: #ebf8ff;
+  color: #1976d2;
+}
+
+.Content,
+.Content > .ant-space-item,
+.Content > .ant-space-item > div {
+  height: 100%;
+}
+
+.modeler-page-content,
+.modeler-page-content .ant-layout-content,
+.modeler-page-content .ant-layout-content div[class^='page_Modeler_'] {
+  height: 100%;
 }

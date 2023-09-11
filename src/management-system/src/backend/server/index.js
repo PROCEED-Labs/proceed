@@ -55,7 +55,7 @@ async function init() {
     const file = await fse.readFile(configPath);
     if (file) {
       config = await createConfig(JSON.parse(file));
-      store = await createSessionStore(config);
+      if (config.useAuthorization) store = await createSessionStore(config);
     }
   } catch (e) {
     config = await createConfig();

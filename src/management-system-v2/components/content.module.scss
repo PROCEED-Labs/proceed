@@ -17,6 +17,9 @@
 
     .Right {
       margin-right: 20px;
+      @media screen and (max-width: 415px) {
+        display: none;
+      }
     }
   }
 

@@ -51,7 +51,7 @@ export function useGetAsset<
     return keys;
   }, [path, params]);
 
-  type Data = QueryData<typeof apiClient.get<TFirstParam>>;
+  type Data = QueryData<typeof apiClient.get<TFirstParam>> | null;
 
   return useQuery({
     // eslint-disable-next-line
@@ -63,18 +63,25 @@ export function useGetAsset<
 
       // @ts-ignore
       const { data, error, response } = await apiClient.get(path, {
-        params,
         headers: process.env.NEXT_PUBLIC_USE_AUTH
           ? {
               'x-csrf-token': state.csrfToken,
               'x-csrf': '1',
             }
           : undefined,
-        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
+        credentials: process.env.NEXT_PUBLIC_USE_AUTH
+          ? process.env.NODE_ENV === 'production'
+            ? 'same-origin'
+            : 'include'
+          : undefined,
+        params,
       } as TSecondParam);
 
       if (error || data === undefined) throw new Error(`Error fetching: ${response.statusText}`);
 
+      if (response.status === 204) return null;
+
+      // in case of 'no content' just return undefined if (response.status === 204) return null;
       return data as Data;
     },
     ...(reactQueryOptions as UseQueryOptions<Data, Error>),

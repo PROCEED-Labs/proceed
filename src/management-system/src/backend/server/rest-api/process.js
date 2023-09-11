@@ -61,7 +61,7 @@ processRouter.get('/', isAllowed('view', 'Process'), async (req, res) => {
     if (userProcesses.length) {
       return res.status(200).json(userProcesses);
     } else {
-      return res.status(204).end();
+      return res.status(204).json([]);
     }
   } catch (err) {
     res.status(500).send('Failed to get process info');

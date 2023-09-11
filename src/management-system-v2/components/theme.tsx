@@ -26,6 +26,8 @@ const Theme: FC<PropsWithChildren> = ({ children }) => {
           colorPrimary: '#1976D2',
           fontFamily: 'var(--inter)',
           colorBgContainer: '#fff',
+          fontSize: 14,
+          fontSizeHeading1: 16,
         },
       }}
     >

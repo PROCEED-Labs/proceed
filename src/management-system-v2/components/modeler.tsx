@@ -78,7 +78,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         modeler.current
           .saveXML({ format: true })
           .then(({ xml }) => {
-            return updateProcess(processId, { bpmn: xml! });
+            return updateProcess(processId as string, { bpmn: xml! });
           })
           .catch((error) => {
             console.log(error);
@@ -93,12 +93,15 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     // only reset the modeler if we switch between editing being enabled or disabled
   }, [setModeler, editingDisabled, processId]);
 
-  const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
+  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 
   useEffect(() => {
-    if (modeler.current?.importXML && processBpmn) {
+    // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
+    if (!initialized && modeler.current?.importXML && processBpmn) {
       // import the diagram that was returned by the request
-      modeler.current.importXML(processBpmn);
+      modeler.current.importXML(processBpmn).then(() => {
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+      });
 
       modeler.current.on('selection.changed', (event) => {
         const { newSelection } = event as unknown as { newSelection: any[] };
@@ -113,13 +116,15 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         timer = setTimeout(async () => {
           try {
             const { xml } = await modeler.current!.saveXML({ format: true });
-            await updateProcess(processId, { bpmn: xml! });
+            await updateProcess(processId as string, { bpmn: xml! });
           } catch (err) {
             console.log(err);
           }
         }, 2000);
       });
     }
+    // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
+    setInitialized(false);
   }, [initialized, setSelectedElementId, processBpmn, processId]);
 
   return (

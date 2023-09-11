@@ -93,7 +93,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     // only reset the modeler if we switch between editing being enabled or disabled
   }, [setModeler, editingDisabled, processId]);
 
-  const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
+  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 
   useEffect(() => {
     // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)

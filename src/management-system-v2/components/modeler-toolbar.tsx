@@ -75,7 +75,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
-  const { isSuccess, data: processData, refetch: refetchProcess } = useProcess(processId);
+  const { isSuccess, data: processData, refetch: refetchProcess } = useProcess(processId as string);
 
   let selectedElement;
 

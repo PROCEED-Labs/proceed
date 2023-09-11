@@ -21,10 +21,16 @@ export const AuthCallbackListener: FC = () => {
       oneShot = false;
       handleOauthCallback()
         .then((authRes) => oauthCallback(authRes))
+        .then(() => {
+          const params = new URLSearchParams(window.location.search);
+          params.delete('code');
+          params.delete('state');
+          router.replace(`${window.location.origin}?${params.toString()}`);
+        })
         .catch(() => {
           oauthCallback(undefined);
 
-          const searchParamas = new URLSearchParams(window.location.href.split('?')[1]);
+          const searchParamas = new URLSearchParams(window.location.search);
           if (searchParamas.has('code'))
             // if the url params have 'code' in them, it means the user succesfully logged in and was
             // redirected to the frontend, but something failed with the Oauth callback

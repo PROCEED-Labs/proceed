@@ -75,7 +75,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
           timer = setTimeout(async () => {
             try {
               const { xml } = await modeler.current!.saveXML({ format: true });
-              await updateProcess(processId, { bpmn: xml! });
+              await updateProcess(processId as string, { bpmn: xml! });
             } catch (err) {
               console.log(err);
             }

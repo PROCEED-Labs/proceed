@@ -1,4 +1,4 @@
-import {
+const {
   toBpmnObject,
   toBpmnXml,
   getDefinitionsId,
@@ -7,7 +7,7 @@ import {
   getUserTaskImplementationString,
   getUserTaskFileNameMapping,
   setUserTaskData,
-} from '@proceed/bpmn-helper';
+} = require('@proceed/bpmn-helper');
 
 import { createVersion, saveUserTask, updateProcess } from './update-data';
 import { Process, fetchProcess, fetchProcessVersion, fetchUserTaskHTML } from './fetch-data';

@@ -21,7 +21,7 @@ jest.mock('@proceed/machine', () => ({
   },
 }));
 
-jest.mock('@/backend/server/iam/middleware/authorization.js', () => ({
+jest.mock('@/backend/server/iam/middleware/authorization', () => ({
   isAllowed: () => true,
 }));
 

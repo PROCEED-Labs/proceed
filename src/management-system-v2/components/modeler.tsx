@@ -67,6 +67,20 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             proceed: schema,
           },
         });
+
+        // update process after change with 2 second debounce
+        let timer: ReturnType<typeof setTimeout>;
+        modeler.current.on('commandStack.changed', async () => {
+          clearTimeout(timer);
+          timer = setTimeout(async () => {
+            try {
+              const { xml } = await modeler.current!.saveXML({ format: true });
+              await updateProcess(processId, { bpmn: xml! });
+            } catch (err) {
+              console.log(err);
+            }
+          }, 2000);
+        });
       }
 
       setModeler(modeler.current);
@@ -74,21 +88,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     });
 
     return () => {
-      if (modeler.current?.saveXML) {
-        modeler.current
-          .saveXML({ format: true })
-          .then(({ xml }) => {
-            return updateProcess(processId as string, { bpmn: xml! });
-          })
-          .catch((error) => {
-            console.log(error);
-          })
-          .finally(() => {
-            modeler.current?.destroy();
-          });
-      } else {
-        modeler.current?.destroy();
-      }
+      modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
   }, [setModeler, editingDisabled, processId]);
@@ -109,23 +109,10 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
         else setSelectedElementId(null);
       });
-
-      let timer: ReturnType<typeof setTimeout>;
-      modeler.current.on('commandStack.changed', async () => {
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          try {
-            const { xml } = await modeler.current!.saveXML({ format: true });
-            await updateProcess(processId as string, { bpmn: xml! });
-          } catch (err) {
-            console.log(err);
-          }
-        }, 2000);
-      });
     }
     // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
     setInitialized(false);
-  }, [initialized, setSelectedElementId, processBpmn, processId]);
+  }, [initialized, setSelectedElementId, processBpmn]);
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>

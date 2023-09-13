@@ -70,7 +70,6 @@ const Processes: FC = () => {
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
-  const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
   const [open, setOpen] = useState(false);
 
@@ -238,7 +237,6 @@ const Processes: FC = () => {
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
           // another process. (needs upstream fix)
-          setSelectedProcess(record);
           router.refresh();
           router.push(`/processes/${record.definitionId}`);
         },

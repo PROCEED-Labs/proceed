@@ -40,8 +40,6 @@ const useLocalProcessStore = create<LocalProcessStore>()(
 type ProcessesStore = {
   processes: ProcessesType | [];
   setProcesses: (processes: ProcessesType | []) => void;
-  selectedProcess: ProcessType | undefined;
-  setSelectedProcess: (process: ProcessType | undefined) => void;
 };
 
 export const useProcessesStore = create<ProcessesStore>()(
@@ -50,11 +48,6 @@ export const useProcessesStore = create<ProcessesStore>()(
     setProcesses: (processes: Processes) =>
       set((state) => {
         state.processes = processes;
-      }),
-    selectedProcess: undefined,
-    setSelectedProcess: (process: ProcessType | undefined) =>
-      set((state) => {
-        state.selectedProcess = process;
       }),
   })),
 );

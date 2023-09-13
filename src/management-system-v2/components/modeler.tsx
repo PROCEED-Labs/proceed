@@ -13,6 +13,7 @@ import ModelerToolbar from './modeler-toolbar';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
 import { updateProcess } from '@/lib/update-data';
+import { useProcessesStore } from '@/lib/use-local-process-store';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -35,12 +36,22 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
-  const { processId } = useParams();
-
+  const processes = useProcessesStore((state) => state.processes);
+  const setSelectedProcess = useModelerStateStore((state) => state.setSelectedProcess);
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
+  const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
   const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
+
+  const { processId } = useParams();
+
+  useEffect(() => {
+    const process = processes?.find(({ definitionId }) => definitionId === processId);
+    if (process) {
+      setSelectedProcess(process);
+    }
+  }, [processId]);
 
   useEffect(() => {
     if (!canvas.current) return;

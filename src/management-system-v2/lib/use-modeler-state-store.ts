@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import type { Process as ProcessType } from './fetch-data';
 import type Modeler from 'bpmn-js/lib/Modeler';
 import type Viewer from 'bpmn-js/lib/NavigatedViewer';
 
@@ -8,12 +9,14 @@ type id = { version: string | number; name: string; description: string };
 
 type ModelerStateStore = {
   modeler: Modeler | Viewer | null;
-  selectedVersion: number | null;
+  selectedProcess: ProcessType | null;
+  selectedVersion: number | string | null;
   selectedElementId: null | string;
   editingDisabled: boolean;
   versions: id[];
   setModeler: (newModeler: Modeler | Viewer | null) => void;
-  setSelectedVersion: (newVersion: number | null) => void;
+  setSelectedProcess: (process: ProcessType | null) => void;
+  setSelectedVersion: (newVersion: number | string | null) => void;
   setSelectedElementId: (newId: null | string) => void;
   setVersions: (newVersions: id[]) => void;
 };
@@ -21,6 +24,7 @@ type ModelerStateStore = {
 const useModelerStateStore = create<ModelerStateStore>()(
   immer((set) => ({
     modeler: null,
+    selectedProcess: null,
     selectedVersion: null,
     selectedElementId: null,
     editingDisabled: false,
@@ -29,7 +33,11 @@ const useModelerStateStore = create<ModelerStateStore>()(
       set((state) => {
         state.modeler = newModeler;
       }),
-    setSelectedVersion: (newVersion: number | null) =>
+    setSelectedProcess: (process: ProcessType | null) =>
+      set((state) => {
+        state.selectedProcess = process;
+      }),
+    setSelectedVersion: (newVersion: number | string | null) =>
       set((state) => {
         state.selectedVersion = newVersion;
         state.editingDisabled = newVersion !== null;
@@ -42,7 +50,7 @@ const useModelerStateStore = create<ModelerStateStore>()(
       set((state) => {
         state.versions = newVersions;
       }),
-  })),
+  }))
 );
 
 export default useModelerStateStore;

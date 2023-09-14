@@ -4,9 +4,14 @@ import Ability from '../authorization/abilityHelper';
 
 import Redis from 'ioredis';
 
-const abilityCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
-  password: config.redisPassword || 'password',
-});
+let abilityCache: Redis;
+
+export function initialiazeRulesCache(msConfig: typeof config) {
+  if (msConfig.useAuthorization)
+    abilityCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
+      password: config.redisPassword || 'password',
+    });
+}
 
 /* const abilityCache = new LRUCache<string, Ability>({
   max: 500,

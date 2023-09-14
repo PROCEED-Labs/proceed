@@ -21,7 +21,7 @@ import { getCertificate, handleLetsEncrypt } from './https-certificate-service/c
 import createConfig from './iam/utils/config.js';
 import getClient from './iam/authentication/client.js';
 import { getStorePath } from '../shared-electron-server/data/store.js';
-import { abilityMiddleware } from './iam/middleware/authorization';
+import { abilityMiddleware, initialiazeRulesCache } from './iam/middleware/authorization';
 
 const configPath =
   process.env.NODE_ENV === 'development'
@@ -54,7 +54,7 @@ async function init() {
     const file = await fse.readFile(configPath);
     if (file) {
       config = await createConfig(JSON.parse(file));
-      store = await createSessionStore(config);
+      if (config.useAuthorization) store = await createSessionStore(config);
     }
   } catch (e) {
     config = await createConfig();
@@ -128,6 +128,8 @@ async function init() {
     backendServer.use(loginSession);
   }
   backendServer.use(authRouter(config, client)); // separate authentication routes
+
+  initialiazeRulesCache(config);
   backendServer.use(abilityMiddleware);
 
   // allow requests for Let's Encrypt

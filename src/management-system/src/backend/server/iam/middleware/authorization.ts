@@ -4,13 +4,14 @@ import Ability from '../authorization/abilityHelper';
 
 import Redis from 'ioredis';
 
-const rulesCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
-  password: config.redisPassword || 'password',
-});
+let rulesCache: Redis;
 
-/* const abilityCache = new LRUCache<string, Ability>({
-  max: 500,
-}); */
+export function initialiazeRulesCache(msConfig: typeof config) {
+  if (msConfig.useAuthorization)
+    rulesCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
+      password: config.redisPassword || 'password',
+    });
+}
 
 export async function deleteRulesForUsers(userId: string) {
   await rulesCache.del(userId);

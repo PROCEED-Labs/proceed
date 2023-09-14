@@ -16,9 +16,22 @@ services:
     networks:
       proceed:
 
+  rules_redis:
+    image: 'redis:alpine'
+    container_name: proceed-redis-rules
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD:-password}
+    ports:
+      - 6380:6379
+    volumes:
+      - rules_storage:/data
+    networks:
+      proceed:
+
 volumes:
   session_storage:
     name: session_storage
+  rules_storage:
+    name: rules_storage
 
 networks:
   proceed:

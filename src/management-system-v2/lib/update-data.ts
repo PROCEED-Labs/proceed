@@ -15,6 +15,19 @@ const put = async (url: string, data = {}) => {
   return resData;
 };
 
+const post = async (url: string, data = {}) => {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+      'x-csrf': String(1),
+    },
+    body: JSON.stringify(data),
+  });
+
+  return response;
+};
+
 // TODO: use schema for process to only allow updating valid properties (e.g. definitionName, description etc)
 export const updateProcess = async (
   definitionId: string,
@@ -25,8 +38,14 @@ export const updateProcess = async (
   return responseData;
 };
 
+export const saveUserTask = async (definitionId: string, fileName: string, html: string) => {
+  const url = `${BASE_URL}/process/${definitionId}/user-tasks/${fileName}`;
+  const responseData = await put(url, html);
+  return responseData;
+};
+
 export const createVersion = async (definitionId: string, versionProperties: { bpmn: string }) => {
   const url = `${BASE_URL}/process/${definitionId}/versions`;
-  const responseData = await put(url, versionProperties);
+  const responseData = await post(url, versionProperties);
   return responseData;
 };

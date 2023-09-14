@@ -1,30 +1,48 @@
 import { config } from '../utils/config.js';
-import { LRUCache } from 'lru-cache';
 import { PackedRulesForUser, adminRules, rulesForUser } from '../authorization/caslRules';
 import Ability from '../authorization/abilityHelper';
 
-const abilityCache = new LRUCache<string, Ability>({
-  max: 500,
+import Redis from 'ioredis';
+
+const rulesCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
+  password: config.redisPassword || 'password',
 });
 
-export function abilityCacheDeleteKey(key: string) {
-  abilityCache.delete(key);
+/* const abilityCache = new LRUCache<string, Ability>({
+  max: 500,
+}); */
+
+export async function deleteRulesForUsers(userId: string) {
+  await rulesCache.del(userId);
 }
 
-export function abilityCacheDeleteAll() {
-  abilityCache.clear();
+export async function abilityCacheDeleteAll() {
+  await rulesCache.flushdb();
 }
 
-export function addAbilityForUser(userId: string, abilityAndExpiration: PackedRulesForUser) {
-  const ability = new Ability(abilityAndExpiration.rules);
-  abilityCache.set(userId, ability);
+export async function setRulesForUser(
+  userId: string,
+  rules: PackedRulesForUser['rules'],
+  expiration?: PackedRulesForUser['expiration'],
+) {
+  if (expiration) {
+    const secondsToExpiration = Math.round((+expiration - Date.now()) / 1000);
+    await rulesCache.set(userId, JSON.stringify(rules), 'EX', secondsToExpiration);
+  } else {
+    await rulesCache.set(userId, JSON.stringify(rules));
+  }
+}
 
-  if (abilityAndExpiration.expiration)
-    setTimeout(() => {
-      if (abilityCache.has(userId)) abilityCache.delete(userId);
-    }, +abilityAndExpiration.expiration - Date.now());
-
-  return ability;
+export async function getRulesForUser(
+  userId: string,
+): Promise<PackedRulesForUser['rules'] | undefined> {
+  try {
+    const rulesJson = await rulesCache.get(userId);
+    if (rulesJson === null) return undefined;
+    return JSON.parse(rulesJson);
+  } catch (e) {
+    return undefined;
+  }
 }
 
 export async function abilityMiddleware(req: any, res: any, next: any) {
@@ -35,11 +53,15 @@ export async function abilityMiddleware(req: any, res: any, next: any) {
 
   const userId = req.session.userId || '';
 
-  let ability = abilityCache.get(userId);
+  let userRules = await getRulesForUser(userId);
 
-  if (ability === undefined) ability = addAbilityForUser(userId, await rulesForUser(userId));
+  if (userRules === undefined) {
+    const { rules, expiration } = await rulesForUser(userId);
+    setRulesForUser(userId, rules, expiration);
+    userRules = rules;
+  }
 
-  req.userAbility = ability;
+  req.userAbility = new Ability(userRules);
 
   return next();
 }

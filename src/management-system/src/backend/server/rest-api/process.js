@@ -19,10 +19,6 @@ import { isAllowed } from '../iam/middleware/authorization.ts';
 import logger from '../../shared-electron-server/logging.js';
 import Ability from '../iam/authorization/abilityHelper';
 import { toCaslResource } from '../iam/authorization/caslRules';
-import bpmnHelper from '@proceed/bpmn-helper';
-const { addDocumentation, setDefinitionsName } = bpmnHelper;
-import processHelpers from '../../../shared-frontend-backend/helpers/processHelpers.js';
-const { getProcessInfo } = processHelpers;
 
 const processRouter = express.Router();
 

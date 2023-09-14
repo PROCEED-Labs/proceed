@@ -223,6 +223,21 @@ export const fetchProcess = async (definitionId: string) => {
   return await fetchJSON<Process>(url);
 };
 
+export const fetchUserTaskFileNames = async (definitionId: string) => {
+  const url = `${BASE_URL}/process/${definitionId}/user-tasks/`;
+  return await fetchJSON<string[]>(url);
+};
+
+export const fetchUserTaskHTML = async (definitionId: string, fileName: string) => {
+  const url = `${BASE_URL}/process/${definitionId}/user-tasks/${fileName}`;
+  return await fetchString(url);
+};
+
+export const fetchProcessVersion = async (definitionId: string, version: number) => {
+  const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
+  return await fetchString(url);
+};
+
 export const fetchProcessVersionBpmn = async (definitionId: string, version: number | string) => {
   const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
   return await fetchString(url);

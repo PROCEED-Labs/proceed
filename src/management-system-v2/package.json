@@ -2,6 +2,11 @@
   "name": "proceed-v2",
   "version": "0.1.0",
   "private": true,
+  "workspaces": {
+    "packages": [
+      "helper-modules/*"
+    ]
+  },
   "scripts": {
     "dev": "next dev",
     "build": "cross-env API_URL=https://localhost:33080/api next build",
@@ -26,7 +31,8 @@
     "zustand": "4.4.1",
     "immer": "10.0.2",
     "fuse.js": "6.6.2",
-    "openapi-fetch": "0.6.1"
+    "openapi-fetch": "0.6.1",
+    "@proceed/bpmn-helper": "1.0.0"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "4.34.1",

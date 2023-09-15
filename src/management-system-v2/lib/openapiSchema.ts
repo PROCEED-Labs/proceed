@@ -205,6 +205,8 @@ export interface components {
     };
     /** processServerMetaData */
     processMsMetaData: {
+      /** @enum {unknown} */
+      type?: 'process';
       /** @description The date and time the process was added in the management-system */
       createdOn?: string;
       /** @description The date and time the process was edited the last time */
@@ -220,6 +222,7 @@ export interface components {
       }[];
       /** @description If true, then a share link was created for the process */
       shared?: boolean;
+      owner?: string;
     };
     /** @description BPMN XML of the process */
     bpmn: string;
@@ -238,13 +241,14 @@ export interface components {
       | 'createdOn'
       | 'lastEdited'
       | 'processIds'
+      | 'type'
       | 'versions'
     >;
     processVersion: {
       version: string;
       name: string;
       description: string;
-    } | null;
+    };
     /** image */
     image: {
       /** @enum {unknown} */
@@ -1015,7 +1019,7 @@ export interface operations {
       content: {
         'application/json': WithRequired<
           components['schemas']['userData'],
-          'email' | 'name' | 'picture' | 'username' | 'lastName' | 'firstName'
+          'email' | 'name' | 'picture' | 'username' | 'family_name' | 'given_name'
         >;
       };
     };

@@ -114,7 +114,7 @@ processRouter.get('/:definitionId', isAllowed('view', 'Process'), async (req, re
 
   try {
     const bpmn = await getProcessBpmn(definitionsId);
-    res.status(200).json({ ...process, bpmn });
+    res.status(200).json(toExternalFormat({ ...process, bpmn }));
   } catch (err) {
     res.status(400).send(err.message);
   }

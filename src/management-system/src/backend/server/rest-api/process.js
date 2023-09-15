@@ -44,9 +44,7 @@ processRouter.get('/', isAllowed('view', 'Process'), async (req, res) => {
       userAbility
         .filter('view', 'Process', processes)
         .map(async (process) =>
-          noBpmn === 'true'
-            ? process
-            : { ...process, bpmn: await getProcessBpmn(process.definitionId) },
+          noBpmn === 'true' ? process : { ...process, bpmn: await getProcessBpmn(process.id) },
         ),
     );
 
@@ -269,11 +267,14 @@ processRouter.get(
       return res.status(403).send('Forbidden.');
 
     try {
-      res.status(200).send(await getProcessVersionBpmn(definitionsId, version));
+      res
+        .status(200)
+        .type('text/plain')
+        .end(await getProcessVersionBpmn(definitionsId, version));
     } catch (err) {
       res
         .status(400)
-        .send(
+        .end(
           `Unable to get version ${version} for the process (id: ${definitionsId})! Reason: ${err.message}.`,
         );
     }

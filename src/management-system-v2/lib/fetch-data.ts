@@ -1,4 +1,4 @@
-import { authFetchJSON, useAuthStore } from './iam';
+import { useAuthStore } from './iam';
 import { UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import createClient from 'openapi-fetch';
 import { paths } from './openapiSchema';

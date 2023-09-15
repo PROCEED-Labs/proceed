@@ -97,25 +97,6 @@ export const useAuthStore = create<AuthStoreType>((set) => ({
   },
 }));
 
-export const authFetchJSON = async <T>(url: string, options: Parameters<typeof fetch>[1] = {}) => {
-  const state = useAuthStore.getState();
-
-  if (!state.loggedIn) throw new Error('Not logged in');
-
-  options.headers = options.headers || new Headers();
-  (options.headers as Headers).set('x-csrf-token', state.csrfToken);
-  (options.headers as Headers).set('x-csrf', '1');
-
-  options.credentials = process.env.NODE_ENV === 'production' ? 'same-origin' : 'include';
-
-  const response = await fetch(url, { ...options });
-
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json() as Promise<T>;
-};
-
 // SERVER AUTH HELPERS
 // ----------------------
 

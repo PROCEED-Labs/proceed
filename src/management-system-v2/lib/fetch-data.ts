@@ -17,12 +17,10 @@ function wrapCall<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(c
 
     // @ts-ignore
     const response = await (call as (...args: any[]) => Promise<any>)(args[0], {
-      headers: process.env.NEXT_PUBLIC_USE_AUTH
-        ? {
-            'x-csrf-token': state.csrfToken,
-            'x-csrf': '1',
-          }
-        : undefined,
+      headers: {
+        'x-csrf-token': process.env.NEXT_PUBLIC_USE_AUTH ? state.csrfToken : undefined,
+        'x-csrf': '1',
+      },
       credentials: process.env.NEXT_PUBLIC_USE_AUTH
         ? process.env.NODE_ENV === 'production'
           ? 'same-origin'

@@ -52,7 +52,9 @@ const UserDataModal: FC<{
 
   const user = useAuthStore((store) => store.user);
   const { data: userData, isLoading } = useGetAsset('/users/{id}', {
-    path: { id: user.sub },
+    params: {
+      path: { id: user.sub },
+    },
   });
 
   const { mutateAsync: changeUserData } = usePutAsset('/users/{id}');
@@ -226,7 +228,7 @@ const UserProfile: FC = () => {
     error,
     data: userData,
     isLoading,
-  } = useGetAsset('/users/{id}', { path: { id: (user && user.sub) || '' } });
+  } = useGetAsset('/users/{id}', { params: { path: { id: (user && user.sub) || '' } } });
 
   async function deleteUser() {
     try {

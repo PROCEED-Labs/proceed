@@ -25,7 +25,10 @@ export const AuthCallbackListener: FC = () => {
           const params = new URLSearchParams(window.location.search);
           params.delete('code');
           params.delete('state');
-          router.replace(`${window.location.origin}?${params.toString()}`);
+
+          router.replace(
+            `${new URL(window.location.pathname, window.location.origin)}?${params.toString()}`,
+          );
         })
         .catch(() => {
           oauthCallback(undefined);

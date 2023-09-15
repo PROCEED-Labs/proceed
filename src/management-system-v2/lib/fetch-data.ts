@@ -8,6 +8,45 @@ const BASE_URL = process.env.API_URL;
 
 const apiClient = createClient<paths>({ baseUrl: BASE_URL });
 
+function wrapCall<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(call: TApiCall) {
+  // @ts-ignore
+  const wrappedFunction: typeof call = async (...args) => {
+    const state = useAuthStore.getState();
+
+    if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+
+    // @ts-ignore
+    const response = await (call as (...args: any[]) => Promise<any>)(args[0], {
+      headers: process.env.NEXT_PUBLIC_USE_AUTH
+        ? {
+            'x-csrf-token': state.csrfToken,
+            'x-csrf': '1',
+          }
+        : undefined,
+      credentials: process.env.NEXT_PUBLIC_USE_AUTH
+        ? process.env.NODE_ENV === 'production'
+          ? 'same-origin'
+          : 'include'
+        : undefined,
+      ...args[1],
+    });
+
+    if (response.error) throw response.error;
+
+    if (response.data === undefined)
+      throw new Error(`Error fetching: ${response.response.statusText}`);
+
+    return response;
+  };
+
+  return wrappedFunction as TApiCall;
+}
+
+export const get = wrapCall(apiClient.get);
+export const post = wrapCall(apiClient.post);
+export const put = wrapCall(apiClient.put);
+export const del = wrapCall(apiClient.del);
+
 type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K] } & {};
 type QueryData<T extends (...args: any) => any> = Prettify<
   Extract<Awaited<ReturnType<T>>, { data: any }>['data']
@@ -37,15 +76,16 @@ export type ApiData<
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.get>[0],
   TSecondParam extends Parameters<typeof apiClient.get<TFirstParam>>[1],
->(
-  path: TFirstParam,
-  params: TSecondParam['params'],
-  reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>,
-) {
+>(path: TFirstParam, params: TSecondParam, reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>) {
   const keys = useMemo(() => {
     const keys = [path];
-    if (params && (params as any).path) {
-      keys.push((params as any).path);
+    if (
+      typeof params === 'object' &&
+      'params' in params &&
+      typeof params.params === 'object' &&
+      'path' in params.params
+    ) {
+      keys.push(params.params.path as any);
     }
 
     return keys;
@@ -57,31 +97,7 @@ export function useGetAsset<
     // eslint-disable-next-line
     queryKey: keys,
     queryFn: async () => {
-      const state = useAuthStore.getState();
-
-      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
-
-      // @ts-ignore
-      const { data, error, response } = await apiClient.get(path, {
-        headers: process.env.NEXT_PUBLIC_USE_AUTH
-          ? {
-              'x-csrf-token': state.csrfToken,
-              'x-csrf': '1',
-            }
-          : undefined,
-        credentials: process.env.NEXT_PUBLIC_USE_AUTH
-          ? process.env.NODE_ENV === 'production'
-            ? 'same-origin'
-            : 'include'
-          : undefined,
-        params,
-      } as TSecondParam);
-
-      if (error || data === undefined) throw new Error(`Error fetching: ${response.statusText}`);
-
-      if (response.status === 204) return null;
-
-      // in case of 'no content' just return undefined if (response.status === 204) return null;
+      const { data } = await get(path, params);
       return data as Data;
     },
     ...(reactQueryOptions as UseQueryOptions<Data, Error>),
@@ -94,22 +110,7 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.pos
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.post<TFirstParam>>[1]) => {
-      const state = useAuthStore.getState();
-
-      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
-
-      const { response, data, error } = await apiClient.post(path, {
-        headers: process.env.NEXT_PUBLIC_USE_AUTH
-          ? {
-              'x-csrf-token': state.csrfToken,
-              'x-csrf': '1',
-            }
-          : undefined,
-        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
-        ...body,
-      });
-
-      if (error) throw new Error(`Error calling POST:${path} -> ${response.body}`);
+      const { data } = await post(path, body);
 
       queryClient.invalidateQueries([path, (body as any).params.path]);
 
@@ -128,18 +129,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 
       if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
 
-      const { response, data, error } = await apiClient.put(path, {
-        headers: process.env.NEXT_PUBLIC_USE_AUTH
-          ? {
-              'x-csrf-token': state.csrfToken,
-              'x-csrf': '1',
-            }
-          : undefined,
-        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
-        ...body,
-      });
-
-      if (error) throw error;
+      const { data } = await put(path, body);
 
       queryClient.invalidateQueries([path, (body as any).params.path]);
 
@@ -154,94 +144,18 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.del<TFirstParam>>[1]) => {
-      const state = useAuthStore.getState();
-
-      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
-
-      const { response, data, error } = await apiClient.del(path, {
-        headers: process.env.NEXT_PUBLIC_USE_AUTH
-          ? {
-              'x-csrf-token': state.csrfToken,
-              'x-csrf': '1',
-            }
-          : undefined,
-        credentials: process.env.NODE_ENV === 'production' ? 'same-origin' : 'include',
-        ...body,
-      });
-
-      if (error) throw new Error(`Error calling POST:${path} -> ${response.body}`);
-
-      queryClient.invalidateQueries([path, (body as any).params.path]);
+      const { data } = await del(path, body);
 
       return data as QueryData<typeof apiClient.del<TFirstParam>>;
     },
   });
 };
 
-const UnauthenticatedfetchJSON = async <T>(
-  url: string,
-  options: Parameters<typeof fetch>[1] = undefined,
-) => {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json() as Promise<T>;
-};
-
-const fetchString = async (url: string, options = {}) => {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-
-  return response.text();
-};
-
-const fetchJSON = process.env.NEXT_PUBLIC_USE_AUTH ? authFetchJSON : UnauthenticatedfetchJSON;
-
 // We use distinct types for the
 // if(data){
 //   data[0].
 // }collection and individual resource responses
 // instead of `Item[]` because they might differ in what data they contain.
-
-export const fetchProcesses = async () => {
-  const url = `${BASE_URL}/process?noBpmn=true`;
-  const data = await fetchJSON<Processes>(url);
-
-  return data.map((process) => ({
-    ...process,
-    // Convert JSON dates to Date objects.
-    createdOn: new Date(process.createdOn),
-    lastEdited: new Date(process.lastEdited),
-  }));
-};
-
-export const fetchProcess = async (definitionId: string) => {
-  const url = `${BASE_URL}/process/${definitionId}`;
-  return await fetchJSON<Process>(url);
-};
-
-export const fetchUserTaskFileNames = async (definitionId: string) => {
-  const url = `${BASE_URL}/process/${definitionId}/user-tasks/`;
-  return await fetchJSON<string[]>(url);
-};
-
-export const fetchUserTaskHTML = async (definitionId: string, fileName: string) => {
-  const url = `${BASE_URL}/process/${definitionId}/user-tasks/${fileName}`;
-  return await fetchString(url);
-};
-
-export const fetchProcessVersion = async (definitionId: string, version: number) => {
-  const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
-  return await fetchString(url);
-};
-
-export const fetchProcessVersionBpmn = async (definitionId: string, version: number | string) => {
-  const url = `${BASE_URL}/process/${definitionId}/versions/${version}`;
-  return await fetchString(url);
-};
 
 /**
  * IMPORTANT
@@ -250,31 +164,3 @@ export const fetchProcessVersionBpmn = async (definitionId: string, version: num
  * new NextJS framework. These types should ideally be automatically generated
  * from the database schema (e.g. using Prisma).
  */
-
-export type User = {
-  // id: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  picture: string;
-};
-
-export type Process = {
-  type: 'process';
-  description: string;
-  owner: string | null;
-  processIds: string[];
-  variables: [];
-  departments: [];
-  inEditingBy: [];
-  createdOn: Date;
-  lastEdited: Date;
-  shared: boolean;
-  versions: { version: number | string; name: string; description: string }[];
-  definitionId: string;
-  definitionName: string;
-  bpmn?: string;
-};
-
-export type Processes = Process[];

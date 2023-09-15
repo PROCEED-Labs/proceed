@@ -17,7 +17,7 @@ import {
   Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { Process, useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   EllipsisOutlined,
@@ -67,7 +67,9 @@ const Processes: FC = () => {
   const router = useRouter();
 
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
-    query: { noBpmn: true },
+    params: {
+      query: { noBpmn: true },
+    },
   });
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
@@ -76,7 +78,7 @@ const Processes: FC = () => {
   const [open, setOpen] = useState(false);
 
   const [selection, setSelection] = useState<Processes>([]);
-  const [hovered, setHovered] = useState<Process | undefined>(undefined);
+  const [hovered, setHovered] = useState<ApiData<'/process', 'get'>[number] | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -100,9 +102,9 @@ const Processes: FC = () => {
     </>
   );
 
-  const [selectedColumn, setSelectedColumn] = useState<Process>();
+  const [selectedColumn, setSelectedColumn] = useState<ApiData<'/process', 'get'>[number]>();
 
-  const actionBarGenerator = (record: Process) => {
+  const actionBarGenerator = (record: ApiData<'/process', 'get'>[number]) => {
     return (
       <>
         <Tooltip placement="top" title={'Preview'}>
@@ -128,7 +130,7 @@ const Processes: FC = () => {
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection: TableRowSelection<Process> = {
+  const rowSelection: TableRowSelection<ApiData<'/process', 'get'>[number]> = {
     selectedRowKeys,
     onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
       setSelectedRowKeys(selectedRowKeys);

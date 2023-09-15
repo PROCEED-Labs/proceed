@@ -52,11 +52,7 @@ processRouter.get('/', isAllowed('view', 'Process'), async (req, res) => {
       .filter((promise) => promise.status === 'fulfilled')
       .map((promise) => toExternalFormat(promise.value));
 
-    if (userProcesses.length) {
-      return res.status(200).json(userProcesses);
-    } else {
-      return res.status(204).end();
-    }
+    return res.status(200).json(userProcesses);
   } catch (err) {
     res.status(500).send('Failed to get process info');
   }

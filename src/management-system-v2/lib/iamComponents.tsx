@@ -54,6 +54,7 @@ type AuthCanProps = PropsWithChildren<{
   resource: ResourceType | ResourceType[];
   fallback?: ReactNode;
   fallbackRedirect?: Route;
+  loading?: ReactNode;
 }>;
 
 export const AuthCan: FC<AuthCanProps> = ({
@@ -62,6 +63,7 @@ export const AuthCan: FC<AuthCanProps> = ({
   children,
   fallback,
   fallbackRedirect,
+  loading: loadingAuth,
 }) => {
   const loggedIn = useAuthStore((store) => store.loggedIn);
   const oauthCallbackPerformed = useAuthStore((store) => store.oauthCallbackPerformed);
@@ -83,11 +85,18 @@ export const AuthCan: FC<AuthCanProps> = ({
     return true;
   }, [action, resource, loggedIn, oauthCallbackPerformed, ability]);
 
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_USE_AUTH) return;
+
+    if (fallbackRedirect && oauthCallbackPerformed && !allow) {
+      /* TODO: fix this, push dosn't work without the timeout */
+      setTimeout(() => router.push(fallbackRedirect), 0);
+    }
+  }, [fallbackRedirect, oauthCallbackPerformed, allow, router]);
+
+  if (!oauthCallbackPerformed) return loadingAuth || null;
+
   if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
-
-  if (fallbackRedirect && oauthCallbackPerformed) router.push(fallbackRedirect);
-
-  if (!oauthCallbackPerformed) return null;
 
   return fallback || null;
 };

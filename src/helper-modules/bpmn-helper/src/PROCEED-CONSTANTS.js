@@ -7,7 +7,10 @@ if (IdsImport.default) {
 }
 
 const uuid = require('uuid');
-const msPackageJSON = require('../../../management-system/package.json');
+// KR: I took this out because it is a relative import of the
+// old management-system package.json, which is not available
+// for the build version of v2.
+//const msPackageJSON = require('../../../management-system/package.json');
 
 /**
  * @module @proceed/bpmn-helper
@@ -19,7 +22,8 @@ const msPackageJSON = require('../../../management-system/package.json');
  * @returns {string} static exporter name
  */
 function getExporterName() {
-  return msPackageJSON.fullname;
+  return 'PROCEED Management System';
+  // return msPackageJSON.fullname;
 }
 
 /**
@@ -31,7 +35,8 @@ function getExporterName() {
  * @returns {string} static exporter version
  */
 function getExporterVersion() {
-  return msPackageJSON.version;
+  return '1.0.0';
+  //return msPackageJSON.version;
 }
 
 /**

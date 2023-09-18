@@ -404,10 +404,8 @@ const Processes: FC = () => {
   useEffect(() => {
     if (data) {
       setProcesses(data as any);
-    } else if (isSuccess) {
-      setProcesses([]);
     }
-  }, [data]);
+  }, [data, setProcesses]);
 
   const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');

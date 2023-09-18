@@ -8,7 +8,9 @@ const BASE_URL = process.env.API_URL;
 
 const apiClient = createClient<paths>({ baseUrl: BASE_URL });
 
-function wrapCall<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(call: TApiCall) {
+function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(
+  call: TApiCall,
+) {
   // @ts-ignore
   const wrappedFunction: typeof call = async (...args) => {
     const state = useAuthStore.getState();
@@ -40,10 +42,10 @@ function wrapCall<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(c
   return wrappedFunction as TApiCall;
 }
 
-export const get = wrapCall(apiClient.get);
-export const post = wrapCall(apiClient.post);
-export const put = wrapCall(apiClient.put);
-export const del = wrapCall(apiClient.del);
+export const get = addAuthHeaders(apiClient.get);
+export const post = addAuthHeaders(apiClient.post);
+export const put = addAuthHeaders(apiClient.put);
+export const del = addAuthHeaders(apiClient.del);
 
 type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K] } & {};
 type QueryData<T extends (...args: any) => any> = Prettify<

@@ -69,7 +69,7 @@ const UserDataModal: FC<{
     return form.resetFields();
   }, [form, modalOpen]);
 
-  const submitData = async () => {
+  const submitData = async (values: Record<string, any>) => {
     if (!userData) return;
 
     setLoading(true);
@@ -86,11 +86,8 @@ const UserDataModal: FC<{
           firstName: userData.given_name,
           lastName: userData.family_name,
           username: userData.username,
+          ...values,
         };
-
-        for (const input of structure.inputFields) {
-          body[input.submitField] = form.getFieldValue(input.submitField);
-        }
 
         await changeUserData({
           params: { path: { id: user.sub } },

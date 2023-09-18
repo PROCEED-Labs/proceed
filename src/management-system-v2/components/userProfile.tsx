@@ -56,22 +56,18 @@ const UserDataModal: FC<{
       path: { id: user.sub },
     },
   });
+  const defaultValues: Record<string, any> = {};
+
+  if (!structure.password && userData)
+    for (const input of structure.inputFields)
+      defaultValues[input.submitField] = userData[input.userDataField];
 
   const { mutateAsync: changeUserData } = usePutAsset('/users/{id}');
   const { mutateAsync: changePassword } = usePutAsset('/users/{id}/update-password');
 
   useEffect(() => {
-    if (structure.password) {
-      form.setFieldValue('password', '');
-      form.setFieldValue('confirm_password', '');
-      return;
-    }
-
-    if (!userData) return;
-
-    for (const input of structure.inputFields)
-      form.setFieldValue(input.submitField, userData[input.userDataField]);
-  }, [userData, form, structure, modalOpen]);
+    return form.resetFields();
+  }, [form, modalOpen]);
 
   const submitData = async () => {
     if (!userData) return;
@@ -115,7 +111,7 @@ const UserDataModal: FC<{
     <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title}>
       <Skeleton loading={isLoading}>
         <br />
-        <Form form={form} layout="vertical" onFinish={submitData}>
+        <Form form={form} layout="vertical" onFinish={submitData} initialValues={defaultValues}>
           {structure.password ? (
             <>
               <Form.Item

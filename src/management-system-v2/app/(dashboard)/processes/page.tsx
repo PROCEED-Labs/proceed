@@ -4,15 +4,29 @@ import Processes from '@/components/processes';
 import Content from '@/components/content';
 import Space from '@/components/_space';
 import HeaderActions from './header-actions';
-import { login, useAuthStore } from '@/lib/iam';
-import { AuthCan } from '@/lib/iamComponents';
+import { login } from '@/lib/iam';
+import { Auth } from '@/lib/iamComponents';
 import { Button, Result } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 
 const ProcessesPage: FC = () => {
-  const loggedIn = useAuthStore((state) => state.loggedIn);
-  if (process.env.NEXT_PUBLIC_USE_AUTH && !loggedIn)
-    return (
+  return (
+    <Content title="Processes" rightNode={<HeaderActions />}>
+      <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+        <Processes />
+      </Space>
+    </Content>
+  );
+};
+
+export default Auth(
+  {
+    action: 'view',
+    resource: 'Process',
+    fallback: (
+      <Result status="403" title="Not allowed" subTitle="You're not allowed to view processes" />
+    ),
+    notLoggedIn: (
       <Result
         status="403"
         title="You're not logged in"
@@ -23,23 +37,7 @@ const ProcessesPage: FC = () => {
           </Button>
         }
       />
-    );
-
-  return (
-    <AuthCan
-      action="view"
-      resource="Process"
-      fallback={
-        <Result status="403" title="Not allowed" subTitle="You're not allowed to view processes" />
-      }
-    >
-      <Content title="Processes" rightNode={<HeaderActions />}>
-        <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-          <Processes />
-        </Space>
-      </Content>
-    </AuthCan>
-  );
-};
-
-export default ProcessesPage;
+    ),
+  },
+  ProcessesPage,
+);

@@ -52,6 +52,7 @@ export const AuthCallbackListener: FC = () => {
 type AuthCanProps = PropsWithChildren<{
   action: ResourceActionType | ResourceActionType[];
   resource: ResourceType | ResourceType[];
+  notLoggedIn?: ReactNode;
   fallback?: ReactNode;
   fallbackRedirect?: Route;
   loading?: ReactNode;
@@ -64,6 +65,7 @@ export const AuthCan: FC<AuthCanProps> = ({
   fallback,
   fallbackRedirect,
   loading: loadingAuth,
+  notLoggedIn,
 }) => {
   const loggedIn = useAuthStore((store) => store.loggedIn);
   const oauthCallbackPerformed = useAuthStore((store) => store.oauthCallbackPerformed);
@@ -97,6 +99,8 @@ export const AuthCan: FC<AuthCanProps> = ({
   if (!oauthCallbackPerformed) return loadingAuth || null;
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
+
+  if (!loggedIn && notLoggedIn) return notLoggedIn;
 
   return fallback || null;
 };

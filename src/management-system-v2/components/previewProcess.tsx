@@ -11,7 +11,7 @@ import React, { FocusEvent, useCallback, useEffect, useRef, useState } from 'rea
 import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { Process } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
@@ -20,7 +20,7 @@ const BPMNViewer =
   typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;
 
 type PropertiesPanelProperties = {
-  selectedElement?: Process | undefined;
+  selectedElement?: ApiData<'/process', 'get'>[number];
   setOpen: (open: boolean) => void;
 };
 

@@ -7,5 +7,6 @@ module.exports = {
     frontend: 33083,
     puppeteer: 33084,
     electron: 9000,
+    nextjs: 3000,
   },
 };

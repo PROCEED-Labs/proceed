@@ -22,8 +22,8 @@ import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
-import { useProcess } from '@/lib/process-queries';
 import { createNewProcessVersion } from '@/lib/helpers';
+import { useGetAsset } from '@/lib/fetch-data';
 
 const VersionSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit: Function }) => {
   const [submittable, setSubmittable] = useState(false);
@@ -75,7 +75,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
-  const { isSuccess, data: processData, refetch: refetchProcess } = useProcess(processId as string);
+  const {
+    isSuccess,
+    data: processData,
+    refetch: refetchProcess,
+  } = useGetAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
 
   let selectedElement;
 

@@ -35,6 +35,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
 import HeaderMenu from '@/components/content-based-header';
+import HeaderActions from '@/components/header-actions';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
@@ -45,14 +46,16 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
 
+  // keys need to be unique <identifier>:<path>
+  // identifier can be left out if the path is unique
   const items: MenuProps['items'] = [
     {
-      key: 'processes',
+      key: 'processLabel:processes',
       label: 'Processes',
       type: 'group',
     },
     {
-      key: 'processes',
+      key: 'processGroup:processes',
       className:
         'SelectedSegment' /* `${activeSegment === 'processes' ? 'SelectedSegment' : ''}` */,
       icon: (
@@ -78,7 +81,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         //   label: 'My Processes',
         // },
         {
-          key: 'newProcess',
+          key: 'newProcess:newProcess',
           icon: <FileAddOutlined />,
           label: 'New Process',
           disabled: true,
@@ -221,18 +224,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           ) : (
             // Logout and User Profile in header for screens larger than 412px
             <>
-              <Button type="text">
-                <u>Logout</u>
-              </Button>
-              <Tooltip title="Account Settings">
-                <Button
-                  shape="circle"
-                  icon={<UserOutlined />}
-                  onClick={() => {
-                    router.push('/profile');
-                  }}
-                />
-              </Tooltip>
+              <HeaderActions />
             </>
           )}
         </Space>
@@ -256,7 +248,8 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             mode="inline"
             selectedKeys={[activeSegment]}
             onClick={({ key }) => {
-              router.push(`/${key}`);
+              const path = key.split(':').at(-1);
+              router.push(`/${path}`);
             }}
           >
             <ItemGroup key="processes" title="Processes">

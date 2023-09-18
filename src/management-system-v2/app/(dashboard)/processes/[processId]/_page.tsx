@@ -7,8 +7,7 @@ import Modeler from '@/components/modeler';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
-import { useQuery } from '@tanstack/react-query';
-import { fetchProcesses } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 
 type ProcessProps = {
   params: { processId: string };
@@ -22,10 +21,9 @@ const Processes: FC<ProcessProps> = () => {
   const minimized = pathname !== `/processes/${processId}`;
   const [closed, setClosed] = useState(false);
   const router = useRouter();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['processes'],
-    queryFn: fetchProcesses,
-  });
+
+  const { data } = useGetAsset('/process', { params: { query: { noBpmn: true } } });
+
   const process = data?.find((p) => p.definitionId === processId);
 
   useEffect(() => {

@@ -1,42 +1,44 @@
 import { config } from '../utils/config.js';
-import { PackedRules, adminRules, rulesForUser } from '../authorization/caslRules';
+import { PackedRulesForUser, adminRules, rulesForUser } from '../authorization/caslRules';
 import Ability from '../authorization/abilityHelper';
 
 import Redis from 'ioredis';
 
-let abilityCache: Redis;
+let rulesCache: Redis;
 
 export function initialiazeRulesCache(msConfig: typeof config) {
   if (msConfig.useAuthorization)
-    abilityCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
+    rulesCache = new Redis(config.redisRulesPort || 6380, config.redisHost || 'localhost', {
       password: config.redisPassword || 'password',
     });
 }
 
-/* const abilityCache = new LRUCache<string, Ability>({
-  max: 500,
-}); */
-
 export async function deleteRulesForUsers(userId: string) {
-  await abilityCache.del(userId);
+  await rulesCache.del(userId);
 }
 
 export async function abilityCacheDeleteAll() {
-  await abilityCache.flushdb();
+  await rulesCache.flushdb();
 }
 
-export async function setRulesForUser(userId: string, rules: PackedRules, expiration?: Date) {
+export async function setRulesForUser(
+  userId: string,
+  rules: PackedRulesForUser['rules'],
+  expiration?: PackedRulesForUser['expiration'],
+) {
   if (expiration) {
     const secondsToExpiration = Math.round((+expiration - Date.now()) / 1000);
-    await abilityCache.set(userId, JSON.stringify(rules), 'EX', secondsToExpiration);
+    await rulesCache.set(userId, JSON.stringify(rules), 'EX', secondsToExpiration);
   } else {
-    await abilityCache.set(userId, JSON.stringify(rules));
+    await rulesCache.set(userId, JSON.stringify(rules));
   }
 }
 
-export async function getRulesForUser(userId: string): Promise<PackedRules | undefined> {
+export async function getRulesForUser(
+  userId: string,
+): Promise<PackedRulesForUser['rules'] | undefined> {
   try {
-    const rulesJson = await abilityCache.get(userId);
+    const rulesJson = await rulesCache.get(userId);
     if (rulesJson === null) return undefined;
     return JSON.parse(rulesJson);
   } catch (e) {

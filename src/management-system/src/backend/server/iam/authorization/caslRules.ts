@@ -274,7 +274,7 @@ function rulesForAlteringShares(ability: CaslAbility) {
 }
 
 type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
-export type PackedRules = ReturnOfPromise<typeof rulesForUser>['rules'];
+export type PackedRulesForUser = ReturnOfPromise<typeof rulesForUser>;
 
 export async function rulesForUser(userId: string) {
   const roles = getAppliedRolesForUser(userId);

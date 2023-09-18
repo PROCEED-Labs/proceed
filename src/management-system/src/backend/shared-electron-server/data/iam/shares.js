@@ -75,7 +75,7 @@ function shareExists(share) {
  * @returns {Promise<Array>} - array containing shares
  */
 export async function getShares() {
-  return Object.values(Object.values(Object.values(sharesMetaObjects)[0]))
+  return Object.values(Object.values(Object.values(sharesMetaObjects)[0] || {}))
     .map((obj) => Object.values(obj))
     .flat();
 }

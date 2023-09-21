@@ -60,7 +60,7 @@ export const AuthCallbackListener: FC = () => {
   return null;
 };
 
-type AuthCanProps = PropsWithChildren<{
+export type AuthCanProps = PropsWithChildren<{
   action: ResourceActionType | ResourceActionType[];
   resource: ResourceType | ResourceType[];
   notLoggedIn?: ReactNode;
@@ -115,15 +115,3 @@ export const AuthCan: FC<AuthCanProps> = ({
 
   return fallback || null;
 };
-
-export function Auth(authOptions: AuthCanProps, Component: FC) {
-  function wrappedComponent(props: ComponentProps<typeof Component>) {
-    return (
-      <AuthCan {...authOptions}>
-        <Component {...props} />
-      </AuthCan>
-    );
-  }
-
-  return wrappedComponent;
-}

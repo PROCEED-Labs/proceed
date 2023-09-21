@@ -13,7 +13,7 @@
 
 .Sider {
   overflow: auto;
-  height: 100vh;
+  // height: 100vh;
   //position: fixed !important;
   padding-top: 1vh;
   left: 0;
@@ -39,6 +39,7 @@
 
 .Main {
   //margin-left: 200px;
+
   transition: margin-left 0.2s;
   flex: auto;
   position: relative;
@@ -65,4 +66,8 @@
 .Auth {
   height: calc(100vh - 64px * 2);
   // width: 80vw;
+}
+
+.Content {
+  height: calc(100vh - 64px * 2);
 }

@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "4.29.14",
-    "antd": "5.6.1",
+    "antd": "5.8.6",
     "bpmn-js": "13.2.0",
     "classnames": "2.3.2",
     "next": "13.4.6",

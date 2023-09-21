@@ -2,7 +2,7 @@
 
 import { Process } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
 import classNames from 'classnames';
@@ -23,6 +23,7 @@ const Viewer: FC<ViewerProps> = ({ selectedElement, rerenderTrigger, reduceLogo 
   );
   const canvas = useRef<HTMLDivElement>(null);
   const previewer = useRef<ViewerType | null>(null);
+
   useEffect(() => {
     if (!canvas.current) return;
     BPMNViewer!.then((Viewer) => {

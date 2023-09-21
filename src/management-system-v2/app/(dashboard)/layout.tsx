@@ -247,7 +247,13 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           {screenSize.width <= 412 ? (
             // Hamburger menu for screens <= 412px
             <>
-              <Button type="text" size="large" style={{marginTop: '20px', marginLeft: '15px'}} icon={<MenuOutlined style={{fontSize: '170%'}}/>} onClick={changeSiderOpened} />
+              <Button
+                type="text"
+                size="large"
+                style={{ marginTop: '20px', marginLeft: '15px' }}
+                icon={<MenuOutlined style={{ fontSize: '170%' }} />}
+                onClick={changeSiderOpened}
+              />
             </>
           ) : (
             // Logout and User Profile in header for screens larger than 412px
@@ -272,13 +278,14 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         {screenSize.width <= 412 ? (
           siderOpened ? (
             <Menu
-            theme="light"
-            mode="inline"
-            selectedKeys={[activeSegment]}
-            onClick={({key}) => {
-              router.push(`/${key}`);
-              setSiderOpened(false);
-            }}>
+              theme="light"
+              mode="inline"
+              selectedKeys={[activeSegment]}
+              onClick={({ key }) => {
+                router.push(`/${key}`);
+                setSiderOpened(false);
+              }}
+            >
               <ItemGroup key="menu" title="Menu">
                 <Item key="processes" icon={<EditOutlined />}>
                   Process List
@@ -297,71 +304,6 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
                 </Item>
               </ItemGroup>
             </Menu>
-            // <Menu
-            //   theme="light"
-            //   mode="inline"
-            //   selectedKeys={[activeSegment]}
-            //   onClick={({ key }) => {
-            //     router.push(`/${key}`);
-            //     setSiderOpened(false);
-            //   }}
-            // >
-            //   <ItemGroup key="processes" title="Processes">
-            //     <SubMenu
-            //       key="processes"
-            //       title={
-            //         <span
-            //           onClick={() => {
-            //             router.push(`/processes`);
-            //           }}
-            //         >
-            //           Process List
-            //         </span>
-            //       }
-            //       className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
-            //       icon={
-            //         <EditOutlined
-            //           onClick={() => {
-            //             router.push(`/processes`);
-            //           }}
-            //         />
-            //       }
-            //     >
-            //       <Item key="newProcess" icon={<FileAddOutlined />}>
-            //         New Process
-            //       </Item>
-            //       <Item key="processFavorites" icon={<StarOutlined />}>
-            //         Favorites
-            //       </Item>
-            //     </SubMenu>
-            //     <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-            //       <Item key="newTemplate" icon={<FileAddOutlined />}>
-            //         New Template
-            //       </Item>
-            //       <Item key="templateFavorites" icon={<StarOutlined />}>
-            //         Favorites
-            //       </Item>
-            //     </SubMenu>
-            //   </ItemGroup>
-            //   <Divider />
-            //   <ItemGroup key="settings" title="Settings">
-            //     <Item key="generalSettings" icon={<SettingOutlined />}>
-            //       General Settings
-            //     </Item>
-            //     <Item key="plugins" icon={<ApiOutlined />}>
-            //       Plugins
-            //     </Item>
-            //   </ItemGroup>
-            //   <Divider />
-            //   <ItemGroup key="userSettings" title="User Settings">
-            //     <Item key="profile" icon={<UserOutlined />}>
-            //       Profile
-            //     </Item>
-            //     <Item key="logout" icon={<LogoutOutlined />}>
-            //       Logout
-            //     </Item>
-            //   </ItemGroup>
-            // </Menu>
           ) : (
             <></>
           )
@@ -449,7 +391,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         {screenSize.width <= 412 && siderOpened ? (
           <></>
         ) : (
-          <AntLayout>
+          <AntLayout className={cn(styles.Content)}>
             <Content>
               <Space
                 direction="vertical"

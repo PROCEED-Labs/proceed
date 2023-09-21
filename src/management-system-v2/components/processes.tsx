@@ -77,7 +77,7 @@ const Processes: FC = () => {
 
   const [open, setOpen] = useState(false);
 
-  const [selection, setSelection] = useState<Processes>([]);
+  // const [selection, setSelection] = useState<Processes>([]);
   const [hovered, setHovered] = useState<Process | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
@@ -144,31 +144,18 @@ const Processes: FC = () => {
       name: record.definitionId,
     }),
     onSelect: (record, selected, selectedRows, nativeEvent) => {
-      setSelection(selectedRows);
+      // setSelection(selectedRows);
+      setSelectedRowKeys(selectedRows.map((row) => row.definitionId));
     },
     onSelectNone: () => {
-      setSelection([]);
+      // setSelection([]);
+      setSelectedRowKeys([]);
     },
     onSelectAll: (selected, selectedRows, changeRows) => {
-      setSelection(selectedRows);
+      // setSelection(selectedRows);
+      setSelectedRowKeys(selectedRows.map((row) => row.definitionId));
     },
   };
-
-  // const processActions: MenuProps['items'] = [
-  //   {
-  //     key: '1',
-  //     label: 'Edit Metadata',
-  //   },
-  //   {
-  //     key: '2',
-  //     label: 'Export',
-  //   },
-  //   {
-  //     key: '3',
-  //     label: 'Delete',
-  //     danger: true,
-  //   },
-  // ];
 
   const onCheckboxChange = useCallback((e: CheckboxChangeEvent) => {
     e.stopPropagation();
@@ -307,12 +294,6 @@ const Processes: FC = () => {
         },
       }),
     },
-    // {
-    //   title: 'Departments',
-    //   dataIndex: 'departments',
-    //   render: (dep) => dep.join(', '),
-    //   sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
-    // },
     {
       title: 'Owner',
       dataIndex: 'owner',
@@ -327,33 +308,6 @@ const Processes: FC = () => {
         },
       }),
     },
-    // {
-    //   title: 'Departments',
-    //   dataIndex: 'departments',
-    //   render: (dep) => dep.join(', '),
-    //   sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
-    //   onCell: (record, rowIndex) => ({
-    //     onClick: (event) => {
-    //       // TODO: This is a hack to clear the parallel route when selecting
-    //       // another process. (needs upstream fix)
-    //       router.refresh();
-    //       router.push(`/processes/${record.definitionId}`);
-    //     },
-    //   }),
-    // },
-    /*{
-      title: 'Actions',
-      fixed: 'right',
-      width: 100,
-      className: styles.ActionCell,
-      render: () => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Dropdown menu={{ items: processActions }} arrow>
-            <EllipsisOutlined rotate={90} className={styles.Action} />
-          </Dropdown>
-        </div>
-      ),
-    },*/
     {
       fixed: 'right',
       width: 160,
@@ -376,14 +330,6 @@ const Processes: FC = () => {
           </Dropdown>
         </div>
       ),
-      /* title: selection.length ? (
-        <>
-          {selection.length} selected
-          {actionBar}
-        </>
-      ) : (
-        ``
-      ), */
       render: (definitionId, record, index) =>
         hovered?.definitionId === definitionId ? (
           <Row justify="space-evenly">{actionBarGenerator(record)}</Row>
@@ -394,15 +340,6 @@ const Processes: FC = () => {
   ];
 
   const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
-
-  // <Dropdown menu={{ items }} trigger={['click']}>
-  //   <a onClick={(e) => e.preventDefault()}>
-  //     <Space>
-  //       Click me
-  //       <DownOutlined />
-  //     </Space>
-  //   </a>
-  // </Dropdown>
 
   useEffect(() => {
     if (data) {
@@ -417,18 +354,13 @@ const Processes: FC = () => {
     if (data && searchTerm !== '') {
       const fuse = new Fuse(data, fuseOptions);
       setFilteredData(fuse.search(searchTerm).map((item) => item.item));
-      // setFilteredData(
-      //   data.filter((item) => {
-      //     return item.definitionName.toLowerCase().includes(searchTerm.toLowerCase());
-      //   })
-      //);
     } else {
       setFilteredData(data);
     }
   }, [data, searchTerm]);
 
   const deselectAll = () => {
-    setSelection([]);
+    // setSelection([]);
     setSelectedRowKeys([]);
   };
 
@@ -446,21 +378,24 @@ const Processes: FC = () => {
             md={24}
             lg={10}
             xl={6}
-            className={cn({ [styles.SelectedRow]: selection.length })}
+            className={cn({ [styles.SelectedRow]: /* selection */ selectedRowKeys.length })}
           >
             {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
-            {selection.length ? (
-              <>
-                <Button type="text">
-                  <CloseOutlined onClick={deselectAll} />
-                </Button>
-                {/* Select action for {selection.length}:{' '}
+            {
+              /* selection */ selectedRowKeys.length ? (
+                <>
+                  <Button onClick={deselectAll} type="text">
+                    <CloseOutlined />
+                  </Button>
+                  {/* Select action for {selection.length}:{' '}
                 <span className={styles.Icons}>{actionBar}</span> */}
-                {selection.length} selected: <span className={styles.Icons}>{actionBar}</span>
-              </>
-            ) : (
-              <div></div>
-            )}
+                  {/* selection */ selectedRowKeys.length} selected:{' '}
+                  <span className={styles.Icons}>{actionBar}</span>
+                </>
+              ) : (
+                <div></div>
+              )
+            }
           </Col>
           <Col md={0} lg={1} xl={1}></Col>
           <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
@@ -520,7 +455,7 @@ const Processes: FC = () => {
             }, // mouse leave row
           })}
           sticky
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1300, y: 450 }}
           rowClassName={styles.Row}
           rowKey="definitionId"
           columns={columnsFiltered}
@@ -531,7 +466,7 @@ const Processes: FC = () => {
           size="middle"
         />
       ) : (
-        <IconView data={filteredData} />
+        <IconView data={filteredData} selection={selectedRowKeys} setSelection={setSelectedRowKeys}/>
       )}
       {open && <Preview selectedElement={selectedColumn} setOpen={setOpen}></Preview>}
     </>

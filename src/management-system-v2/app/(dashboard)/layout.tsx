@@ -296,7 +296,11 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
 
                     {ability.can('view', 'Template') ? (
                       <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-                        <Item key="newTemplate" icon={<FileAddOutlined />}>
+                        <Item
+                          key="newTemplate"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Template')}
+                        >
                           New Template
                         </Item>
                         <Item key="templateFavorites" icon={<StarOutlined />}>

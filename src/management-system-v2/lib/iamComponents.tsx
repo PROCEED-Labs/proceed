@@ -107,9 +107,11 @@ export const AuthCan: FC<AuthCanProps> = ({
     }
   }, [fallbackRedirect, oauthCallbackPerformed, allow, router]);
 
+  if (!process.env.NEXT_PUBLIC_USE_AUTH) return children;
+
   if (!oauthCallbackPerformed) return loadingAuth || null;
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
+  if (allow) return children;
 
   if (!loggedIn && notLoggedIn) return notLoggedIn;
 

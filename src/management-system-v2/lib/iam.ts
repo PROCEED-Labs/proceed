@@ -2,8 +2,13 @@
 
 import { create } from 'zustand';
 import Ability from 'proceed-management-system/src/backend/server/iam/authorization/abilityHelper';
-import { PackedRulesForUser } from 'proceed-management-system/src/backend/server/iam/authorization/caslRules';
+import {
+  PackedRulesForUser,
+  adminRules,
+} from 'proceed-management-system/src/backend/server/iam/authorization/caslRules';
 import { ResourceType } from 'proceed-management-system/src/backend/server/iam/authorization/permissionHelpers';
+import { packRules } from '@casl/ability/extra';
+import { AbilityRule } from 'proceed-management-system/src/backend/server/iam/authorization/caslAbility';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
@@ -54,8 +59,8 @@ type AuthStoreType = (
 } & Pick<AuthResponse, 'user' | 'csrfToken'>;
 
 export const useAuthStore = create<AuthStoreType>((set) => ({
-  oauthCallbackPerformed: false,
-  loggedIn: false,
+  oauthCallbackPerformed: false || !process.env.NEXT_PUBLIC_USE_AUTH,
+  loggedIn: false || !process.env.NEXT_PUBLIC_USE_AUTH,
   logout() {
     set({ loggedIn: false });
   },
@@ -77,7 +82,11 @@ export const useAuthStore = create<AuthStoreType>((set) => ({
     sid: '',
     nonce: '',
   },
-  ability: new Ability([]),
+  ability: new Ability(
+    process.env.NEXT_PUBLIC_USE_AUTH
+      ? []
+      : packRules([{ action: 'admin', subject: 'All' }] as AbilityRule),
+  ),
   csrfToken: '',
   oauthCallback(obj: AuthResponse | undefined) {
     if (typeof obj === 'object' && obj.isLoggedIn) {

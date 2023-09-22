@@ -8,7 +8,7 @@ let rulesCache: Redis;
 
 export function initialiazeRulesCache(msConfig: typeof config) {
   if (msConfig.useAuthorization)
-    rulesCache = new Redis(config.redisRulesPort || 6379, config.redisHost || 'localhost', {
+    rulesCache = new Redis(config.redisPort || 6379, config.redisHost || 'localhost', {
       password: config.redisPassword || 'password',
       db: 1,
     });

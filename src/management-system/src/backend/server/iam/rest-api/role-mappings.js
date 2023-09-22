@@ -5,7 +5,7 @@ import {
   getRoleMappings,
   getRoleMappingByUserId,
 } from '../../../shared-electron-server/data/iam/role-mappings.js';
-import { abilityCacheDeleteKey, isAllowed } from '../middleware/authorization';
+import { deleteRulesForUsers, isAllowed } from '../middleware/authorization';
 import Ability from '../authorization/abilityHelper';
 import { toCaslResource } from '../authorization/caslRules';
 
@@ -75,7 +75,7 @@ roleMappingsRouter.post('/', isAllowed('create', 'RoleMapping'), async (req, res
       await addRoleMapping(allowedRoleMappings);
 
       for (const roleMapping of allowedRoleMappings) {
-        abilityCacheDeleteKey(roleMapping.userId);
+        deleteRulesForUsers(roleMapping.userId);
       }
 
       res.status(201).end();
@@ -112,7 +112,7 @@ roleMappingsRouter.delete(
 
         await deleteRoleMapping(userId, roleId);
 
-        abilityCacheDeleteKey(userId);
+        deleteRulesForUsers(userId);
 
         return res.status(204).end();
       } catch (e) {

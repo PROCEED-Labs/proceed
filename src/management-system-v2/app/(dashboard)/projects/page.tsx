@@ -4,6 +4,7 @@ import ProjectStats from './project-stats';
 import Space from '@/components/_space';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
+import Auth from '@/lib/AuthCanWrapper';
 
 const Projects: FC = () => {
   return (
@@ -16,4 +17,4 @@ const Projects: FC = () => {
   );
 };
 
-export default Projects;
+export default Auth({ action: 'view', resource: 'Project', fallbackRedirect: '/' }, Projects);

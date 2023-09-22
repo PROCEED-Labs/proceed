@@ -36,6 +36,8 @@ import cn from 'classnames';
 import Content from '@/components/content';
 import HeaderMenu from '@/components/content-based-header';
 import HeaderActions from '@/components/header-actions';
+import { useAuthStore } from '@/lib/iam';
+import { AuthCan } from '@/lib/iamComponents';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
@@ -45,6 +47,8 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
+  const ability = useAuthStore((state) => state.ability);
+  const loggedIn = useAuthStore((state) => state.loggedIn);
 
   // keys need to be unique <identifier>:<path>
   // identifier can be left out if the path is unique
@@ -243,62 +247,83 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           trigger={null}
           breakpoint="md"
         >
-          <Menu
-            theme="light"
-            mode="inline"
-            selectedKeys={[activeSegment]}
-            onClick={({ key }) => {
-              const path = key.split(':').at(-1);
-              router.push(`/${path}`);
-            }}
-          >
-            <ItemGroup key="processes" title="Processes">
-              <SubMenu
-                key="processes"
-                title={
-                  <span
-                    onClick={() => {
-                      router.push(`/processes`);
-                    }}
-                  >
-                    Process List
-                  </span>
-                }
-                className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
-                icon={
-                  <EditOutlined
-                    onClick={() => {
-                      router.push(`/processes`);
-                    }}
-                  />
-                }
-              >
-                <Item key="newProcess" icon={<FileAddOutlined />}>
-                  New Process
+          {loggedIn ? (
+            <Menu
+              theme="light"
+              mode="inline"
+              selectedKeys={[activeSegment]}
+              onClick={({ key }) => {
+                const path = key.split(':').at(-1);
+                router.push(`/${path}`);
+              }}
+            >
+              {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
+                <>
+                  <ItemGroup key="processes" title="Processes">
+                    {ability.can('view', 'Process') ? (
+                      <SubMenu
+                        key="processes"
+                        title={
+                          <span
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          >
+                            Process List
+                          </span>
+                        }
+                        className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
+                        icon={
+                          <EditOutlined
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          />
+                        }
+                      >
+                        <Item
+                          key="newProcess"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Process')}
+                        >
+                          New Process
+                        </Item>
+                        <Item key="processFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+
+                    {ability.can('view', 'Template') ? (
+                      <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
+                        <Item
+                          key="newTemplate"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Template')}
+                        >
+                          New Template
+                        </Item>
+                        <Item key="templateFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+                  </ItemGroup>
+
+                  <Divider />
+                </>
+              ) : null}
+
+              <ItemGroup key="settings" title="Settings">
+                <Item key="generalSettings" icon={<SettingOutlined />}>
+                  General Settings
                 </Item>
-                <Item key="processFavorites" icon={<StarOutlined />}>
-                  Favorites
+                <Item key="plugins" icon={<ApiOutlined />}>
+                  Plugins
                 </Item>
-              </SubMenu>
-              <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-                <Item key="newTemplate" icon={<FileAddOutlined />}>
-                  New Template
-                </Item>
-                <Item key="templateFavorites" icon={<StarOutlined />}>
-                  Favorites
-                </Item>
-              </SubMenu>
-            </ItemGroup>
-            <Divider />
-            <ItemGroup key="settings" title="Settings">
-              <Item key="generalSettings" icon={<SettingOutlined />}>
-                General Settings
-              </Item>
-              <Item key="plugins" icon={<ApiOutlined />}>
-                Plugins
-              </Item>
-            </ItemGroup>
-          </Menu>
+              </ItemGroup>
+            </Menu>
+          ) : null}
           {/* <Menu
             theme="light"
             mode="inline"

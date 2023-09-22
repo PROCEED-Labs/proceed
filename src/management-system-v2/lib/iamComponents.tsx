@@ -60,7 +60,7 @@ export const AuthCallbackListener: FC = () => {
   return null;
 };
 
-type AuthCanProps = PropsWithChildren<{
+export type AuthCanProps = PropsWithChildren<{
   action: ResourceActionType | ResourceActionType[];
   resource: ResourceType | ResourceType[];
   notLoggedIn?: ReactNode;
@@ -107,23 +107,13 @@ export const AuthCan: FC<AuthCanProps> = ({
     }
   }, [fallbackRedirect, oauthCallbackPerformed, allow, router]);
 
+  if (!process.env.NEXT_PUBLIC_USE_AUTH) return children;
+
   if (!oauthCallbackPerformed) return loadingAuth || null;
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH || allow) return children;
+  if (allow) return children;
 
   if (!loggedIn && notLoggedIn) return notLoggedIn;
 
   return fallback || null;
 };
-
-export function Auth(authOptions: AuthCanProps, Component: FC) {
-  function wrappedComponent(props: ComponentProps<typeof Component>) {
-    return (
-      <AuthCan {...authOptions}>
-        <Component {...props} />
-      </AuthCan>
-    );
-  }
-
-  return wrappedComponent;
-}

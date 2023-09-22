@@ -28,7 +28,7 @@ import {
   useDeleteAsset,
 } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
-import { Auth } from '@/lib/iamComponents';
+import Auth from '@/lib/AuthCanWrapper';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;

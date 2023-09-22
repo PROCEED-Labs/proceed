@@ -5,9 +5,9 @@ import Content from '@/components/content';
 import Space from '@/components/_space';
 import HeaderActions from './header-actions';
 import { login } from '@/lib/iam';
-import { Auth } from '@/lib/iamComponents';
 import { Button, Result } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
+import Auth from '@/lib/AuthCanWrapper';
 
 const ProcessesPage: FC = () => {
   return (

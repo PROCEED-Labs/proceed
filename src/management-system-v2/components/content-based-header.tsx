@@ -71,7 +71,7 @@ const HeaderMenu: FC = () => {
         title: (
           <Select
             bordered={false}
-            listHeight={160}
+            style={{ maxHeight: '20vh' }}
             popupMatchSelectWidth={false}
             placeholder="Select process"
             showSearch
@@ -111,7 +111,7 @@ const HeaderMenu: FC = () => {
         title: (
           <Select
             bordered={false}
-            listHeight={160}
+            style={{ maxHeight: '20vh' }}
             popupMatchSelectWidth={false}
             placeholder="Select version"
             showSearch

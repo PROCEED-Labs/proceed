@@ -145,8 +145,8 @@ const HeaderMenu: FC = () => {
               </>
             )}
           >
-            <Select.Option key="latest" value="latest" label="Latest Version" class="ok">
-              <span style={{ color: 'lightgrey', fontStyle: 'italic' }}>Latest Version</span>
+            <Select.Option key="latest" value="latest" label="Latest Version">
+              <span style={{ fontStyle: 'italic' }}>Latest Version</span>
             </Select.Option>
             {versions.map((item) => (
               <Select.Option key={item.version} value={`${item.version}`} label={item.name}>

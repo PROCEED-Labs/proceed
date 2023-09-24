@@ -9,8 +9,6 @@ import { useProcessesStore } from '@/lib/use-local-process-store';
 import { useRouter } from 'next/navigation';
 import VersionCreationButton from './version-creation-button';
 import { createNewProcessVersion } from '@/lib/helpers';
-import { useProcess } from '@/lib/process-queries';
-import { fetchProcess } from '@/lib/fetch-data';
 
 const HeaderMenu: FC = () => {
   const router = useRouter();
@@ -57,7 +55,6 @@ const HeaderMenu: FC = () => {
         values.versionDescription,
       );
       const [process, processId] = pathname.split('/').slice(1);
-      await fetchProcess(processId);
     }
   };
 

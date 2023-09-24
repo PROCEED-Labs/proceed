@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import type { Process as ProcessType } from './fetch-data';
+import type { ApiData } from './fetch-data';
 import type Modeler from 'bpmn-js/lib/Modeler';
 import type Viewer from 'bpmn-js/lib/NavigatedViewer';
 
@@ -9,13 +9,13 @@ type id = { version: string | number; name: string; description: string };
 
 type ModelerStateStore = {
   modeler: Modeler | Viewer | null;
-  selectedProcess: ProcessType | null;
+  selectedProcess: ApiData<'/process', 'get'>[number] | undefined;
   selectedVersion: number | string | null;
   selectedElementId: null | string;
   editingDisabled: boolean;
   versions: id[];
   setModeler: (newModeler: Modeler | Viewer | null) => void;
-  setSelectedProcess: (process: ProcessType | null) => void;
+  setSelectedProcess: (process: ApiData<'/process', 'get'>[number] | undefined) => void;
   setSelectedVersion: (newVersion: number | string | null) => void;
   setSelectedElementId: (newId: null | string) => void;
   setVersions: (newVersions: id[]) => void;
@@ -24,7 +24,7 @@ type ModelerStateStore = {
 const useModelerStateStore = create<ModelerStateStore>()(
   immer((set) => ({
     modeler: null,
-    selectedProcess: null,
+    selectedProcess: undefined,
     selectedVersion: null,
     selectedElementId: null,
     editingDisabled: false,
@@ -33,7 +33,7 @@ const useModelerStateStore = create<ModelerStateStore>()(
       set((state) => {
         state.modeler = newModeler;
       }),
-    setSelectedProcess: (process: ProcessType | null) =>
+    setSelectedProcess: (process: ApiData<'/process', 'get'>[number] | undefined) =>
       set((state) => {
         state.selectedProcess = process;
       }),

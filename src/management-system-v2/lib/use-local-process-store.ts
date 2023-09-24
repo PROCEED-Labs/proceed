@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { Processes } from './fetch-data';
 import type { ApiData } from './fetch-data';
 import { immer } from 'zustand/middleware/immer';
 import { Immutable } from 'immer';

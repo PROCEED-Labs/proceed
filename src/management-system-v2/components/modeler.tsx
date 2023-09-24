@@ -14,6 +14,7 @@ import schema from '@/lib/schema';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
+import VersionToolbar from './version-toolbar';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -134,6 +135,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
       {!minimized && <ModelerToolbar />}
+      {!minimized && selectedVersion && <VersionToolbar />}
       <div className="modeler" {...props} ref={canvas} />;
     </div>
   );

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env API_URL=https://localhost:33080/api next build",
+    "build": "cross-env API_URL=https://localhost:33083/api next build",
     "start": "next start",
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
@@ -31,6 +31,7 @@
     "zustand": "4.4.1",
     "immer": "10.0.2",
     "fuse.js": "6.6.2",
+    "@casl/ability": "6.5.0",
     "openapi-fetch": "0.6.1",
     "@proceed/bpmn-helper": "1.0.0"
   },

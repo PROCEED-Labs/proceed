@@ -6,14 +6,14 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import { useParams } from 'next/navigation';
-import { useProcessBpmn } from '@/lib/process-queries';
 
 import ModelerToolbar from './modeler-toolbar';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { updateProcess } from '@/lib/update-data';
 import { useProcessesStore } from '@/lib/use-local-process-store';
+import { usePutAsset } from '@/lib/fetch-data';
+import { useProcessBpmn } from '@/lib/process-queries';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -38,6 +38,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
 
   const processes = useProcessesStore((state) => state.processes);
   const setSelectedProcess = useModelerStateStore((state) => state.setSelectedProcess);
+  const { mutateAsync: updateProcessMutation } = usePutAsset('/process/{definitionId}');
+
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
@@ -86,7 +88,11 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
           timer = setTimeout(async () => {
             try {
               const { xml } = await modeler.current!.saveXML({ format: true });
-              await updateProcess(processId as string, { bpmn: xml! });
+              /* await updateProcess(processId as string, { bpmn: xml! }); */
+              await updateProcessMutation({
+                params: { path: { definitionId: processId as string } },
+                body: { bpmn: xml },
+              });
             } catch (err) {
               console.log(err);
             }
@@ -102,7 +108,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, editingDisabled, processId]);
+  }, [setModeler, editingDisabled, processId, updateProcessMutation]);
 
   const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 

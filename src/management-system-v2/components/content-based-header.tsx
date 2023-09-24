@@ -54,7 +54,7 @@ const HeaderMenu: FC = () => {
       await createNewProcessVersion(
         saveXMLResult.xml,
         values.versionName,
-        values.versionDescription
+        values.versionDescription,
       );
       const [process, processId] = pathname.split('/').slice(1);
       await fetchProcess(processId);

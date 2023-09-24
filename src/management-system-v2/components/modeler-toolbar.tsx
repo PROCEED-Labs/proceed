@@ -21,9 +21,9 @@ import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
-import { useProcess } from '@/lib/process-queries';
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from './version-creation-button';
+import { useGetAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {};
 const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
@@ -40,7 +40,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
-  const { isSuccess, data: processData, refetch: refetchProcess } = useProcess(processId as string);
+  const {
+    isSuccess,
+    data: processData,
+    refetch: refetchProcess,
+  } = useGetAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
 
   let selectedElement;
 
@@ -62,7 +68,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
       await createNewProcessVersion(
         saveXMLResult.xml,
         values.versionName,
-        values.versionDescription
+        values.versionDescription,
       );
       refetchProcess();
     }

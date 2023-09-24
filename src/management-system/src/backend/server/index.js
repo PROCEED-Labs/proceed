@@ -42,6 +42,7 @@ async function init() {
     origin.push(
       `https://localhost:${ports['dev-server'].frontend}`,
       `https://localhost:${ports['dev-server'].puppeteer}`,
+      `http://localhost:${ports['dev-server'].nextjs}`,
     );
   }
 
@@ -64,7 +65,7 @@ async function init() {
 
   backendServer.use(cookieParser());
   backendServer.use(
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV !== 'development'
       ? cors()
       : cors({
           origin,

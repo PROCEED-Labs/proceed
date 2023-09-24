@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { FC, useEffect, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import {
   Input,
   Space,
@@ -17,8 +17,7 @@ import {
   Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { Process, fetchProcesses } from '@/lib/fetch-data';
-import { useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   EllipsisOutlined,
@@ -67,14 +66,18 @@ const { Search } = Input;
 const Processes: FC = () => {
   const router = useRouter();
 
-  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
+  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
+    params: {
+      query: { noBpmn: true },
+    },
+  });
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
 
   const [open, setOpen] = useState(false);
 
   const [selection, setSelection] = useState<Processes>([]);
-  const [hovered, setHovered] = useState<Process | undefined>(undefined);
+  const [hovered, setHovered] = useState<ApiData<'/process', 'get'>[number] | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -98,9 +101,9 @@ const Processes: FC = () => {
     </>
   );
 
-  const [selectedColumn, setSelectedColumn] = useState<Process>();
+  const [selectedColumn, setSelectedColumn] = useState<ApiData<'/process', 'get'>[number]>();
 
-  const actionBarGenerator = (record: Process) => {
+  const actionBarGenerator = (record: ApiData<'/process', 'get'>[number]) => {
     return (
       <>
         <Tooltip placement="top" title={'Preview'}>
@@ -126,7 +129,7 @@ const Processes: FC = () => {
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection: TableRowSelection<Process> = {
+  const rowSelection: TableRowSelection<ApiData<'/process', 'get'>[number]> = {
     selectedRowKeys,
     onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
       setSelectedRowKeys(selectedRowKeys);
@@ -400,7 +403,7 @@ const Processes: FC = () => {
     if (data) {
       setProcesses(data as any);
     }
-  }, [data]);
+  }, [data, setProcesses]);
 
   const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');

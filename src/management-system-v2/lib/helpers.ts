@@ -1,3 +1,5 @@
+import { ApiData, get, put, post } from './fetch-data';
+
 const {
   toBpmnObject,
   toBpmnXml,
@@ -8,9 +10,6 @@ const {
   getUserTaskFileNameMapping,
   setUserTaskData,
 } = require('@proceed/bpmn-helper');
-
-import { createVersion, saveUserTask, updateProcess } from './update-data';
-import { Process, fetchProcess, fetchProcessVersion, fetchUserTaskHTML } from './fetch-data';
 
 const { diff } = require('bpmn-js-differ');
 
@@ -51,18 +50,25 @@ async function areVersionsEqual(bpmn: string, otherBpmn: string) {
   return !hasChanges;
 }
 
-async function getLocalVersionBpmn(process: Process, localVersion: number) {
+async function getLocalVersionBpmn(
+  process: ApiData<'/process', 'get'>[number],
+  localVersion: number,
+) {
   // early exit if there are no known versions for the process locally
   if (!Array.isArray(process.versions) || !process.versions.length) return;
 
   // check if the specific version exists locally and get its bpmn if it does
-  if (process.versions.some(({ version }) => version == localVersion)) {
-    return fetchProcessVersion(process.definitionId, localVersion);
+  if (process.versions.some(({ version }) => +version == localVersion)) {
+    const { data: bpmn } = await get('/process/{definitionId}/versions/{version}', {
+      params: { path: { definitionId: process.definitionId, version: localVersion.toString() } },
+      parseAs: 'text',
+    });
+    return bpmn;
   }
 }
 
 async function versionUserTasks(
-  processInfo: Process,
+  processInfo: ApiData<'/process', 'get'>[number],
   newVersion: number,
   bpmnObj: object,
   dryRun = false,
@@ -74,10 +80,15 @@ async function versionUserTasks(
   for (let userTaskId in htmlMapping) {
     // only version user tasks that use html
     if (htmlMapping[userTaskId].implementation === getUserTaskImplementationString()) {
-      const html = await fetchUserTaskHTML(
-        processInfo.definitionId,
-        htmlMapping[userTaskId].fileName,
-      );
+      const { data: html } = await get('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+        params: {
+          path: {
+            definitionId: processInfo.definitionId,
+            userTaskFileName: htmlMapping[userTaskId].fileName,
+          },
+        },
+        parseAs: 'text',
+      });
 
       let fileName = `${htmlMapping[userTaskId].fileName}-${newVersion}`;
 
@@ -91,10 +102,19 @@ async function versionUserTasks(
 
         // check if the user task existed and if it had the same html
         const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
-        const basedOnVersionUserTaskHTML = await fetchUserTaskHTML(
-          processInfo.definitionId,
-          basedOnVersionFileInfo.fileName,
+        const { data: basedOnVersionUserTaskHTML } = await get(
+          '/process/{definitionId}/user-tasks/{userTaskFileName}',
+          {
+            params: {
+              path: {
+                definitionId: processInfo.definitionId,
+                userTaskFileName: basedOnVersionFileInfo.fileName,
+              },
+            },
+            parseAs: 'text',
+          },
         );
+
         if (basedOnVersionFileInfo && basedOnVersionUserTaskHTML === html) {
           // reuse the html of the previous version
           userTaskHtmlAlreadyExisting = true;
@@ -107,7 +127,10 @@ async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskHtmlAlreadyExisting) {
-        await saveUserTask(processInfo.definitionId, fileName, html);
+        await put('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+          params: { path: { definitionId: processInfo.definitionId, userTaskFileName: fileName } },
+          body: html,
+        });
       }
     }
   }
@@ -121,7 +144,11 @@ export async function createNewProcessVersion(
   const bpmnObj = await toBpmnObject(bpmn);
   const definitionId = await getDefinitionsId(bpmnObj);
 
-  const processInfo = await fetchProcess(definitionId);
+  const processInfo = (
+    await get('/process/{definitionId}', {
+      params: { path: { definitionId: definitionId } },
+    })
+  ).data;
 
   if (!processInfo) {
     throw new Error("Can't create a new version for an unknown process");
@@ -149,7 +176,11 @@ export async function createNewProcessVersion(
   }
 
   // send final process version bpmn to the backend
-  const response = await createVersion(definitionId, { bpmn: versionedBpmn });
+  const response = await post('/process/{definitionId}/versions', {
+    body: { bpmn: versionedBpmn },
+    params: { path: { definitionId } },
+    parseAs: 'text',
+  });
 
   // update versionBasedOn property on original process
   await updateProcessVersionBasedOn(definitionId, epochTime);
@@ -158,14 +189,19 @@ export async function createNewProcessVersion(
 }
 
 async function updateProcessVersionBasedOn(processDefinitionsId: string, versionBasedOn: number) {
-  const processInfo = await fetchProcess(processDefinitionsId);
+  const { data: processInfo } = await get('/process/{definitionId}', {
+    params: { path: { definitionId: processDefinitionsId } },
+  });
 
-  if (processInfo.bpmn) {
+  if (processInfo?.bpmn) {
     const versionInformation = await getDefinitionsVersionInformation(processInfo.bpmn);
     const bpmn = await setDefinitionsVersionInformation(processInfo.bpmn, {
       ...versionInformation,
       versionBasedOn,
     });
-    updateProcess(processDefinitionsId, { bpmn });
+    await put('/process/{definitionId}', {
+      params: { path: { definitionId: processDefinitionsId } },
+      body: { bpmn },
+    });
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import {
   Input,
   Space,
@@ -17,8 +17,7 @@ import {
   Checkbox,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { Process, fetchProcesses, usePostAsset } from '@/lib/fetch-data';
-import { useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 import {
   EllipsisOutlined,
@@ -68,12 +67,18 @@ const { Search } = Input;
 const Processes: FC = () => {
   const router = useRouter();
 
-  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
+  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
+    params: {
+      query: { noBpmn: true },
+    },
+  });
 
   // usePostAsset('/process', {});
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
 
+  const [selection, setSelection] = useState<Processes>([]);
+  const [hovered, setHovered] = useState<ApiData<'/process', 'get'>[number] | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const prefs: Preferences = getPreferences();

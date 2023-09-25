@@ -6,13 +6,13 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import { useParams } from 'next/navigation';
-import { useProcessBpmn } from '@/lib/process-queries';
 
 import ModelerToolbar from './modeler-toolbar';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { updateProcess } from '@/lib/update-data';
+import { usePutAsset } from '@/lib/fetch-data';
+import { useProcessBpmn } from '@/lib/process-queries';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -34,6 +34,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [initialized, setInitialized] = useState(false);
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
+
+  const { mutateAsync: updateProcessMutation } = usePutAsset('/process/{definitionId}');
 
   const { processId } = useParams();
 
@@ -67,6 +69,24 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             proceed: schema,
           },
         });
+
+        // update process after change with 2 second debounce
+        let timer: ReturnType<typeof setTimeout>;
+        modeler.current.on('commandStack.changed', async () => {
+          clearTimeout(timer);
+          timer = setTimeout(async () => {
+            try {
+              const { xml } = await modeler.current!.saveXML({ format: true });
+              /* await updateProcess(processId as string, { bpmn: xml! }); */
+              await updateProcessMutation({
+                params: { path: { definitionId: processId as string } },
+                body: { bpmn: xml },
+              });
+            } catch (err) {
+              console.log(err);
+            }
+          }, 2000);
+        });
       }
 
       setModeler(modeler.current);
@@ -74,26 +94,12 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     });
 
     return () => {
-      if (modeler.current?.saveXML) {
-        modeler.current
-          .saveXML({ format: true })
-          .then(({ xml }) => {
-            return updateProcess(processId, { bpmn: xml! });
-          })
-          .catch((error) => {
-            console.log(error);
-          })
-          .finally(() => {
-            modeler.current?.destroy();
-          });
-      } else {
-        modeler.current?.destroy();
-      }
+      modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, editingDisabled, processId]);
+  }, [setModeler, editingDisabled, processId, updateProcessMutation]);
 
-  const { data: processBpmn } = useProcessBpmn(processId, selectedVersion);
+  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 
   useEffect(() => {
     // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
@@ -109,23 +115,10 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
         else setSelectedElementId(null);
       });
-
-      let timer: ReturnType<typeof setTimeout>;
-      modeler.current.on('commandStack.changed', async () => {
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          try {
-            const { xml } = await modeler.current!.saveXML({ format: true });
-            await updateProcess(processId, { bpmn: xml! });
-          } catch (err) {
-            console.log(err);
-          }
-        }, 2000);
-      });
     }
     // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
     setInitialized(false);
-  }, [initialized, setSelectedElementId, processBpmn, processId]);
+  }, [initialized, setSelectedElementId, processBpmn]);
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>

@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { Processes } from './fetch-data';
-import type { Processes as ProcessesType, Process as ProcessType } from './fetch-data';
+import type { ApiData } from './fetch-data';
 import { immer } from 'zustand/middleware/immer';
 import { Immutable } from 'immer';
 
 // Define local store deviations from the API response here.
-export type LocalProcess = Processes[number];
+export type LocalProcess = ApiData<'/process', 'get'>[number];
 
 type LocalProcessStore = {
   processes: Immutable<LocalProcess[]>;
@@ -38,21 +38,21 @@ const useLocalProcessStore = create<LocalProcessStore>()(
 );
 
 type ProcessesStore = {
-  processes: ProcessesType | [];
-  setProcesses: (processes: ProcessesType | []) => void;
-  selectedProcess: ProcessType | undefined;
-  setSelectedProcess: (process: ProcessType | undefined) => void;
+  processes: ApiData<'/process', 'get'> | [];
+  setProcesses: (processes: ApiData<'/process', 'get'> | []) => void;
+  selectedProcess: ApiData<'/process', 'get'>[number] | undefined;
+  setSelectedProcess: (process: ApiData<'/process', 'get'>[number] | undefined) => void;
 };
 
 export const useProcessesStore = create<ProcessesStore>()(
   immer((set) => ({
     processes: [],
-    setProcesses: (processes: Processes) =>
+    setProcesses: (processes: ApiData<'/process', 'get'>) =>
       set((state) => {
         state.processes = processes;
       }),
     selectedProcess: undefined,
-    setSelectedProcess: (process: ProcessType | undefined) =>
+    setSelectedProcess: (process: ApiData<'/process', 'get'>[number] | undefined) =>
       set((state) => {
         state.selectedProcess = process;
       }),

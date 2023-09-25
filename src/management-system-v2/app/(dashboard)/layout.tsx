@@ -36,6 +36,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
 import HeaderMenu from '@/components/content-based-header';
+import HeaderActions from '@/components/header-actions';
+import { useAuthStore } from '@/lib/iam';
+import { AuthCan } from '@/lib/iamComponents';
 import Link from 'next/link';
 
 type AuthLayoutProps = PropsWithChildren<{
@@ -53,15 +56,19 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
+  const ability = useAuthStore((state) => state.ability);
+  const loggedIn = useAuthStore((state) => state.loggedIn);
 
+  // keys need to be unique <identifier>:<path>
+  // identifier can be left out if the path is unique
   const items: MenuProps['items'] = [
     {
-      key: 'processes',
+      key: 'processLabel:processes',
       label: 'Processes',
       type: 'group',
     },
     {
-      key: 'processes',
+      key: 'processGroup:processes',
       className:
         'SelectedSegment' /* `${activeSegment === 'processes' ? 'SelectedSegment' : ''}` */,
       icon: (
@@ -87,7 +94,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         //   label: 'My Processes',
         // },
         {
-          key: 'newProcess',
+          key: 'newProcess:newProcess',
           icon: <FileAddOutlined />,
           label: 'New Process',
           disabled: true,
@@ -263,142 +270,128 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
               />
             </>
           ) : (
-            // Logout and User Profile for desktop view
+            // Logout and User Profile in header for screens larger than 412px
             <>
-              <Button type="text">
-                <u>Logout</u>
-              </Button>
-              <Tooltip title="Account Settings">
-                <Button
-                  shape="circle"
-                  icon={<UserOutlined />}
-                  onClick={() => {
-                    router.push('/profile');
-                  }}
-                />
-              </Tooltip>
+              <HeaderActions />
             </>
           )}
         </Space>
       </AntLayout.Header>
 
       <AntLayout>
-        {screenSize.width <= 412 ? (
-          <Menu
-            //don't display menu if sider is closed
-            className={siderOpened ? '' : styles.NoDisplay}
-            theme="light"
-            mode="inline"
-            selectedKeys={[activeSegment]}
-            onClick={({ key }) => {
-              router.push(`/${key}`);
-              setSiderOpened(false);
-            }}
-          >
-            <ItemGroup key="menu" title="Menu">
-              <Item key="processes" icon={<EditOutlined />}>
-                Process List
-              </Item>
-              <Item key="templates" icon={<ProfileOutlined />}>
-                Templates
-              </Item>
-              <Item key="profile" icon={<UserOutlined />}>
-                Profile
-              </Item>
-              <Item key="generalSettings" icon={<SettingOutlined />}>
-                Settings (Admin)
-              </Item>
-              <Item key="logout" icon={<LogoutOutlined />}>
-                Lougout
-              </Item>
-            </ItemGroup>
-          </Menu>
-        ) : (
-          <AntLayout.Sider
-            style={{
-              backgroundColor: '#fff',
-              borderRight: '1px solid #eee',
-            }}
-            className={styles.Sider}
-            collapsible
-            collapsed={collapsed}
-            onCollapse={(collapsed) => setCollapsed(collapsed)}
-            trigger={null}
-            breakpoint="md"
-          >
+        {/* //TODO: sider's border is 1 px too far right */}
+        <AntLayout.Sider
+          style={{
+            backgroundColor: '#fff',
+            borderRight: '1px solid #eee',
+          }}
+          className={styles.Sider}
+          collapsible
+          collapsed={collapsed}
+          onCollapse={(collapsed) => setCollapsed(collapsed)}
+          trigger={null}
+          breakpoint="md"
+        >
+          {loggedIn ? (
             <Menu
               theme="light"
               mode="inline"
               selectedKeys={[activeSegment]}
               onClick={({ key }) => {
-                router.push(`/${key}`);
+                const path = key.split(':').at(-1);
+                router.push(`/${path}`);
               }}
             >
-              <ItemGroup key="processes" title="Processes">
-                <SubMenu
-                  key="processes"
-                  title={
-                    <span
-                      onClick={() => {
-                        router.push(`/processes`);
-                      }}
-                    >
-                      Process List
-                    </span>
-                  }
-                  className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
-                  icon={
-                    <EditOutlined
-                      onClick={() => {
-                        router.push(`/processes`);
-                      }}
-                    />
-                  }
-                >
-                  <Item key="newProcess" icon={<FileAddOutlined />}>
-                    New Process
-                  </Item>
-                  <Item key="processFavorites" icon={<StarOutlined />}>
-                    Favorites
-                  </Item>
-                </SubMenu>
-                <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-                  <Item key="newTemplate" icon={<FileAddOutlined />}>
-                    New Template
-                  </Item>
-                  <Item key="templateFavorites" icon={<StarOutlined />}>
-                    Favorites
-                  </Item>
-                </SubMenu>
-              </ItemGroup>
-              <Divider />
+              {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
+                <>
+                  <ItemGroup key="processes" title="Processes">
+                    {ability.can('view', 'Process') ? (
+                      <SubMenu
+                        key="processes"
+                        title={
+                          <span
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          >
+                            Process List
+                          </span>
+                        }
+                        className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
+                        icon={
+                          <EditOutlined
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          />
+                        }
+                      >
+                        <Item
+                          key="newProcess"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Process')}
+                        >
+                          New Process
+                        </Item>
+                        <Item key="processFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+
+                    {ability.can('view', 'Template') ? (
+                      <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
+                        <Item
+                          key="newTemplate"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Template')}
+                        >
+                          New Template
+                        </Item>
+                        <Item key="templateFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+                  </ItemGroup>
+
+                  <Divider />
+                </>
+              ) : null}
+
               <ItemGroup key="settings" title="Settings">
                 <Item key="generalSettings" icon={<SettingOutlined />}>
                   General Settings
                 </Item>
-                {/* <Item key="plugins" icon={<ApiOutlined />}>
+                <Item key="plugins" icon={<ApiOutlined />}>
                   Plugins
-                </Item> */}
+                </Item>
               </ItemGroup>
             </Menu>
-          </AntLayout.Sider>
-        )}
-
-        {/* TODO: instead of un-rendering, make menu overlap the content */}
-        <div className={screenSize.width <= 412 && siderOpened ? styles.NoDisplay : ''}>
-          <AntLayout className={cn(styles.Content)}>
-            <Content>
-              <Space
-                direction="vertical"
-                size="large"
-                style={{ display: 'flex' /* , height: '100%' */ }}
-                className="Content"
-              >
-                <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
-              </Space>
-            </Content>
-          </AntLayout>
-        </div>
+          ) : null}
+          {/* <Menu
+            theme="light"
+            mode="inline"
+            selectedKeys={[activeSegment]}
+            items={items}
+            onClick={({ key }) => {
+              router.push(`/${key}`);
+            }}
+          /> */}
+        </AntLayout.Sider>
+        <AntLayout>
+          <Content>
+            <Space
+              direction="vertical"
+              size="large"
+              style={{ display: 'flex' /* , height: '100%' */ }}
+              /* TODO: */
+              className="Content"
+            >
+              <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
+            </Space>
+          </Content>
+        </AntLayout>
       </AntLayout>
       <AntLayout.Footer className={cn(styles.Footer)}>
         <Space direction="vertical" align="center" style={{ width: '100%' }}>

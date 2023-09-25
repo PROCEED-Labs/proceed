@@ -94,7 +94,7 @@
                       {
                         "type": "process",
                         "description": "",
-                        "owner": null,
+                        "owner": "id",
                         "processIds": ["Process_1muq5gw"],
                         "variables": [],
                         "departments": [],
@@ -964,7 +964,7 @@
                     "$ref": "#/components/schemas/userData"
                   }
                 ],
-                "required": ["email", "name", "picture", "username", "lastName", "firstName"]
+                "required": ["email", "name", "picture", "username", "family_name", "given_name"]
               }
             }
           }
@@ -1045,7 +1045,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/userData"
+                "$ref": "#/components/schemas/userDataPut"
               }
             }
           }
@@ -1059,9 +1059,6 @@
           "204": {
             "description": "No Content"
           },
-          "401": {
-            "$ref": "#/components/responses/401_unauthenticated"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1071,6 +1068,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
           },
           "403": {
             "$ref": "#/components/responses/403_validationFailed"
@@ -1405,7 +1405,6 @@
           "401": {
             "$ref": "#/components/responses/401_unauthenticated"
           },
-
           "403": {
             "$ref": "#/components/responses/403_validationFailed"
           },
@@ -1662,6 +1661,9 @@
         "title": "processServerMetaData",
         "type": "object",
         "properties": {
+          "type": {
+            "enum": ["process"]
+          },
           "createdOn": {
             "type": "string",
             "description": "The date and time the process was added in the management-system"
@@ -1698,6 +1700,9 @@
           "shared": {
             "type": "boolean",
             "description": "If true, then a share link was created for the process"
+          },
+          "owner": {
+            "type": "string"
           }
         }
       },
@@ -1741,12 +1746,12 @@
           "createdOn",
           "lastEdited",
           "processIds",
+          "type",
           "versions"
         ]
       },
       "processVersion": {
         "type": "object",
-        "nullable": true,
         "properties": {
           "version": {
             "type": "string"
@@ -2035,10 +2040,30 @@
           "updated_at": {
             "type": "string"
           },
-          "id": {
+          "user_id": {
             "type": "string"
           }
         }
+      },
+      "userDataPut": {
+        "title": "user",
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName ": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "username", "firstName ", "lastName"]
       },
       "userData": {
         "title": "user",
@@ -2058,10 +2083,10 @@
           "username": {
             "type": "string"
           },
-          "lastName": {
+          "family_name": {
             "type": "string"
           },
-          "firstName": {
+          "given_name": {
             "type": "string"
           }
         }
@@ -2083,9 +2108,9 @@
           "picture",
           "updated_at",
           "username",
-          "lastName",
-          "firstName",
-          "id"
+          "family_name",
+          "given_name",
+          "user_id"
         ]
       },
       "PermissionNumber": {
@@ -2464,7 +2489,6 @@
           }
         }
       },
-
       "401_unauthenticated": {
         "description": "Authentication error.",
         "content": {

@@ -2,9 +2,14 @@
   "name": "proceed-v2",
   "version": "0.1.0",
   "private": true,
+  "workspaces": {
+    "packages": [
+      "helper-modules/*"
+    ]
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env API_URL=https://localhost:33080/api next build",
+    "build": "cross-env API_URL=https://localhost:33083/api next build",
     "start": "next start",
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",
@@ -15,32 +20,35 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@tanstack/react-query": "4.29.14",
+    "@tanstack/react-query": "4.35.0",
     "antd": "5.8.6",
     "bpmn-js": "13.2.0",
+    "bpmn-js-differ": "^2.0.2",
     "classnames": "2.3.2",
-    "next": "13.4.6",
+    "next": "13.4.19",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zustand": "4.3.8",
+    "zustand": "4.4.1",
     "immer": "10.0.2",
     "fuse.js": "6.6.2",
-    "openapi-fetch": "0.6.1"
+    "@casl/ability": "6.5.0",
+    "openapi-fetch": "0.6.1",
+    "@proceed/bpmn-helper": "1.0.0"
   },
   "devDependencies": {
-    "@tanstack/eslint-plugin-query": "4.29.9",
-    "@tanstack/react-query-devtools": "4.29.14",
-    "@types/node": "20.3.1",
-    "@types/react": "18.2.12",
-    "@types/react-dom": "18.2.5",
+    "@tanstack/eslint-plugin-query": "4.34.1",
+    "@tanstack/react-query-devtools": "4.35.0",
+    "@types/node": "20.5.9",
+    "@types/react": "18.2.21",
+    "@types/react-dom": "18.2.7",
     "cross-env": "7.0.3",
-    "eslint": "8.42.0",
-    "eslint-config-next": "13.4.6",
-    "eslint-config-prettier": "8.8.0",
+    "eslint": "8.48.0",
+    "eslint-config-next": "13.4.19",
+    "eslint-config-prettier": "9.0.0",
     "prettier": "3.0.3",
     "ts-node": "10.9.1",
     "typescript": "5.2.2",
     "openapi-typescript": "6.3.2",
-    "sass": "1.63.4"
+    "sass": "1.66.1"
   }
 }

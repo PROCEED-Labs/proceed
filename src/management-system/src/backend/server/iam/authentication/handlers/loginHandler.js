@@ -6,6 +6,7 @@ import { sortSpaceDelimitedString, getUrlParts } from '../../utils/utils.js';
 import { buildPermissions } from '../../utils/permissions.js';
 import logger from '../../../../shared-electron-server/logging.js';
 import { encrypt, decrypt } from '../../utils/crypto.js';
+import { rulesForUser } from '../../authorization/caslRules';
 
 /**
  * builds authorization url for authorization code flow with pkce
@@ -119,7 +120,7 @@ export const handleOauthCallback = async (req, res, client, config) => {
     };
 
     const tokenSet = await client.callback(
-      req.headers.referer.substring(0, req.headers.referer.indexOf('?')),
+      req.headers.referer.substring(0, req.headers.referer.indexOf('?')) || req.headers.referer,
       params,
       checks,
     );
@@ -184,6 +185,8 @@ export const handleOauthCallback = async (req, res, client, config) => {
     if (req.session) req.session.destroy();
     res.clearCookie('id', { path: '/' });
     return res.status(200).json(resBody);
+  } else {
+    resBody.userRules = await rulesForUser(req.session.userId);
   }
 
   const tempSession = req.session;

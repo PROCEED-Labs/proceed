@@ -49,11 +49,9 @@ const HeaderMenu: FC = () => {
       /* Processes: */
       {
         title: (
-          <>
-            <Tooltip placement="rightBottom" title={`Select a process`}>
-              {selectedProcess?.definitionName}
-            </Tooltip>
-          </>
+          <Tooltip placement="rightBottom" title={`Select a process`}>
+            {selectedProcess?.definitionName}
+          </Tooltip>
         ),
         menu: {
           items: processes
@@ -84,20 +82,15 @@ const HeaderMenu: FC = () => {
           </>
         ),
         menu: {
-          items: selectedVersion
-            ? [
-                { key: '-1', label: <>Latest Version</> },
-                ...versions.map(({ version, name }) => ({
-                  key: `${version}`,
-                  label: <>{name}</>,
-                })),
-              ]
-            : versions.map(({ version, name }) => ({
-                key: `${version}`,
-                label: <>{name}</>,
-              })),
+          items: [
+            { key: 'latest', label: <>Latest Version</> },
+            ...versions.map(({ version, name }) => ({
+              key: `${version}`,
+              label: <>{name}</>,
+            })),
+          ],
           onClick: ({ key }) => {
-            setSelectedVersion(key);
+            key === 'latest' ? setSelectedVersion(null) : setSelectedVersion(key);
           },
         },
       },

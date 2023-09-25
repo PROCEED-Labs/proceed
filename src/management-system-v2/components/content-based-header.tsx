@@ -57,11 +57,13 @@ const HeaderMenu: FC = () => {
         ),
         menu: {
           items: processes
-            .map(({ definitionId, definitionName }) => ({
-              key: definitionId,
-              label: <>{definitionName}</>,
-            }))
-            .filter(({ key }) => key !== processId),
+            ? processes
+                .map(({ definitionId, definitionName }) => ({
+                  key: definitionId,
+                  label: <>{definitionName}</>,
+                }))
+                .filter(({ key }) => key !== processId)
+            : [],
           onClick: ({ key }) => {
             setSelectedProcess(processes.find(({ definitionId }) => definitionId === key));
             router.refresh();

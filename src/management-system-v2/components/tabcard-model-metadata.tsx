@@ -2,12 +2,13 @@ import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
 import React, { Dispatch, FC, Key, SetStateAction, useState } from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
-import { Process } from '@/lib/fetch-data';
+import { Process, Processes } from '@/lib/fetch-data';
 import Viewer from './bpmn-viewer';
 import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
 
 import { generateDateString } from '@/lib/utils';
+import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 
 type TabCardProps = {
   item:
@@ -28,6 +29,8 @@ type TabCardProps = {
     | undefined;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
+  tabcard?: boolean;
+  completeList: Processes;
 };
 
 const tabList = [
@@ -73,43 +76,40 @@ const generateDescription = (data: Process) => {
   return desc;
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection }) => {
+const generateContentList = (data: Process) => {
+  const contentList: Record<string, React.ReactNode> = {
+    viewer: (
+      <div
+        style={{
+          height: '200px',
+          width: '100%',
+          backgroundColor: '#ffffff',
+          borderRadius: '8px',
+        }}
+      >
+        <Viewer selectedElement={data} reduceLogo={true} />
+      </div>
+    ),
+    meta: (
+      <Descriptions
+        // title="User Info"
+        bordered
+        size="small"
+        column={1}
+        items={generateDescription(data)}
+      />
+    ),
+  };
+
+  return contentList;
+};
+
+const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<string>('viewer');
 
-  const generateContentList = (data: Process) => {
-    const contentList: Record<string, React.ReactNode> = {
-      viewer: (
-        <div
-          style={{
-            height: '200px',
-            width: '100%',
-            backgroundColor: '#ffffff',
-            borderRadius: '8px',
-          }}
-          onDoubleClick={() => {
-            router.push(`/processes/${data.definitionId}`);
-          }}
-        >
-          <Viewer selectedElement={data} reduceLogo={true} />
-        </div>
-      ),
-      meta: (
-        <Descriptions
-          // title="User Info"
-          bordered
-          size="small"
-          column={1}
-          items={
-            generateDescription(data)
-            // testdesc
-          }
-        />
-      ),
-    };
-
-    return contentList;
-  };
+  const lastProcessId = useLastClickedStore((state) => state.processId);
+  const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
   const onTabChange = (key: string) => {
     setActiveTabKey(key);
@@ -129,28 +129,63 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection }) => {
       }
       style={{
         cursor: 'pointer',
-        minHeight: '340px',
+        minHeight: tabcard ? '340px' : '300px',
         maxWidth: 'calc(100vw / 5)',
-        /* backgroundColor: '#ebf8ff',
-        border: '1px solid #1976D2', */
       }}
       className={classNames({
         'small-tabs': true,
         'card-selected': selection.includes(item?.definitionId),
+        'no-select': true,
       })}
-      tabList={tabList}
-      activeTabKey={activeTabKey}
-      onTabChange={onTabChange}
+      {...(tabcard ? { tabList, activeTabKey, onTabChange } : {})}
       onClick={(event) => {
+        /* CTRL */
         if (event.ctrlKey) {
+          /* Not selected yet -> Add to selection */
           if (!selection.includes(item?.definitionId)) {
             setSelection([item?.definitionId, ...selection]);
+            /* Already in selection -> deselect */
           } else {
             setSelection(selection.filter((id) => id !== item?.definitionId));
           }
+          /* SHIFT */
+        } else if (event.shiftKey) {
+          /* At least one element selected */
+          if (selection.length) {
+            const iLast = completeList.findIndex(
+              (process) => process.definitionId === lastProcessId,
+            );
+            const iCurr = completeList.findIndex(
+              (process) => process.definitionId === item?.definitionId,
+            );
+            /* Identical to last clicked */
+            if (iLast === iCurr) {
+              setSelection([item?.definitionId]);
+            } else if (iLast < iCurr) {
+              /* Clicked comes after last slected */
+              setSelection(
+                completeList.slice(iLast, iCurr + 1).map((process) => process.definitionId),
+              );
+            } else if (iLast > iCurr) {
+              /* Clicked comes before last slected */
+              setSelection(
+                completeList.slice(iCurr, iLast + 1).map((process) => process.definitionId),
+              );
+            }
+          } else {
+            /* Nothing selected */
+            setSelection([item?.definitionId]);
+          }
+          /* Normal Click */
         } else {
           setSelection([item?.definitionId]);
         }
+
+        /* Always */
+        setLastProcessId(item?.definitionId);
+      }}
+      onDoubleClick={() => {
+        router.push(`/processes/${item.definitionId}`);
       }}
     >
       {generateContentList(item)[activeTabKey]}

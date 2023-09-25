@@ -36,6 +36,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
 import HeaderMenu from '@/components/content-based-header';
+import Link from 'next/link';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
@@ -218,26 +219,32 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         className={styles.Header}
       >
         {screenSize.width <= 412 ? (
-          <Image
-            src="/proceed-icon.png"
-            alt="PROCEED Logo"
-            className={cn(styles.Icon, { [styles.collapsed]: collapsed })}
-            width={85}
-            height={35}
-            priority
-          />
+          //PROCEED Icon for mobile view
+          <Link href="/processes">
+            <Image
+              src="/proceed-icon.png"
+              alt="PROCEED Logo"
+              className={cn(styles.Icon, { [styles.collapsed]: collapsed })}
+              width={85}
+              height={35}
+              priority
+            />
+          </Link>
         ) : (
-          <Image
-            src="/proceed.svg"
-            alt="PROCEED Logo"
-            className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
-            width={160}
-            height={63}
-            priority
-          />
+          //PROCEED Logo for desktop view
+          <Link href="/processes">
+            <Image
+              src="/proceed.svg"
+              alt="PROCEED Logo"
+              className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
+              width={160}
+              height={63}
+              priority
+            />
+          </Link>
         )}
 
-        {<HeaderMenu />}
+        <HeaderMenu />
         <div style={{ flex: '1' }}></div>
         <Space
           style={{
@@ -245,7 +252,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           }}
         >
           {screenSize.width <= 412 ? (
-            // Hamburger menu for screens <= 412px
+            // Hamburger menu for mobile view
             <>
               <Button
                 type="text"
@@ -256,7 +263,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
               />
             </>
           ) : (
-            // Logout and User Profile in header for screens larger than 412px
+            // Logout and User Profile for desktop view
             <>
               <Button type="text">
                 <u>Logout</u>
@@ -274,39 +281,38 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           )}
         </Space>
       </AntLayout.Header>
+
       <AntLayout>
         {screenSize.width <= 412 ? (
-          siderOpened ? (
-            <Menu
-              theme="light"
-              mode="inline"
-              selectedKeys={[activeSegment]}
-              onClick={({ key }) => {
-                router.push(`/${key}`);
-                setSiderOpened(false);
-              }}
-            >
-              <ItemGroup key="menu" title="Menu">
-                <Item key="processes" icon={<EditOutlined />}>
-                  Process List
-                </Item>
-                <Item key="templates" icon={<ProfileOutlined />}>
-                  Templates
-                </Item>
-                <Item key="profile" icon={<UserOutlined />}>
-                  Profile
-                </Item>
-                <Item key="generalSettings" icon={<SettingOutlined />}>
-                  Settings (Admin)
-                </Item>
-                <Item key="logout" icon={<LogoutOutlined />}>
-                  Lougout
-                </Item>
-              </ItemGroup>
-            </Menu>
-          ) : (
-            <></>
-          )
+          <Menu
+            //don't display menu if sider is closed
+            className={siderOpened ? '' : styles.NoDisplay}
+            theme="light"
+            mode="inline"
+            selectedKeys={[activeSegment]}
+            onClick={({ key }) => {
+              router.push(`/${key}`);
+              setSiderOpened(false);
+            }}
+          >
+            <ItemGroup key="menu" title="Menu">
+              <Item key="processes" icon={<EditOutlined />}>
+                Process List
+              </Item>
+              <Item key="templates" icon={<ProfileOutlined />}>
+                Templates
+              </Item>
+              <Item key="profile" icon={<UserOutlined />}>
+                Profile
+              </Item>
+              <Item key="generalSettings" icon={<SettingOutlined />}>
+                Settings (Admin)
+              </Item>
+              <Item key="logout" icon={<LogoutOutlined />}>
+                Lougout
+              </Item>
+            </ItemGroup>
+          </Menu>
         ) : (
           <AntLayout.Sider
             style={{
@@ -375,22 +381,11 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
                 </Item> */}
               </ItemGroup>
             </Menu>
-            {/* <Menu
-            theme="light"
-            mode="inline"
-            selectedKeys={[activeSegment]}
-            items={items}
-            onClick={({ key }) => {
-              router.push(`/${key}`);
-            }}
-          /> */}
           </AntLayout.Sider>
         )}
 
         {/* TODO: instead of un-rendering, make menu overlap the content */}
-        {screenSize.width <= 412 && siderOpened ? (
-          <></>
-        ) : (
+        <div className={screenSize.width <= 412 && siderOpened ? styles.NoDisplay : ''}>
           <AntLayout className={cn(styles.Content)}>
             <Content>
               <Space
@@ -403,7 +398,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
               </Space>
             </Content>
           </AntLayout>
-        )}
+        </div>
       </AntLayout>
       <AntLayout.Footer className={cn(styles.Footer)}>
         <Space direction="vertical" align="center" style={{ width: '100%' }}>

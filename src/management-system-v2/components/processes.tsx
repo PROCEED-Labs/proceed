@@ -33,7 +33,7 @@ import {
   MoreOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { Processes } from '@/lib/fetch-data';
+import { Processes as ProcessType } from '@/lib/fetch-data';
 import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
 import Preview from './previewProcess';
@@ -41,6 +41,8 @@ import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
+import ProcessList from './process-list';
+import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 
 const fuseOptions = {
   /* Option for Fuzzy-Search for Processlistfilter */
@@ -63,29 +65,21 @@ const fuseOptions = {
 
 const { Search } = Input;
 
-// const [rowSelection, setRowSelection] = useState<TableRowSelection<DataType> | undefined>({});
-
 const Processes: FC = () => {
   const router = useRouter();
 
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {});
 
-  usePostAsset('/process', {});
+  // usePostAsset('/process', {});
 
   const setProcesses = useProcessesStore((state) => state.setProcesses);
-  const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
-  const [open, setOpen] = useState(false);
-
-  // const [selection, setSelection] = useState<Processes>([]);
-  const [hovered, setHovered] = useState<Process | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const prefs: Preferences = getPreferences();
+  if (!prefs['icon-view-in-process-list']) prefs['icon-view-in-process-list'] = false;
 
-  const [iconView, setIconView] = useState(false);
-
-  const favourites = [0];
+  const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
   const actionBar = (
     <>
@@ -104,248 +98,9 @@ const Processes: FC = () => {
     </>
   );
 
-  const [selectedColumn, setSelectedColumn] = useState<Process>();
-
-  const actionBarGenerator = (record: Process) => {
-    return (
-      <>
-        <Tooltip placement="top" title={'Preview'}>
-          <EyeOutlined
-            onClick={() => {
-              setSelectedColumn(record);
-              setOpen(true);
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Copy'}>
-          <CopyOutlined />
-        </Tooltip>
-        <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined />
-        </Tooltip>
-        <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined />
-        </Tooltip>
-      </>
-    );
-  };
-
-  // rowSelection object indicates the need for row selection
-
-  const rowSelection: TableRowSelection<Process> = {
-    selectedRowKeys,
-    onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
-      setSelectedRowKeys(selectedRowKeys);
-    },
-    // onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
-    //   console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
-    // },
-    getCheckboxProps: (record: Processes[number]) => ({
-      name: record.definitionId,
-    }),
-    onSelect: (record, selected, selectedRows, nativeEvent) => {
-      // setSelection(selectedRows);
-      setSelectedRowKeys(selectedRows.map((row) => row.definitionId));
-    },
-    onSelectNone: () => {
-      // setSelection([]);
-      setSelectedRowKeys([]);
-    },
-    onSelectAll: (selected, selectedRows, changeRows) => {
-      // setSelection(selectedRows);
-      setSelectedRowKeys(selectedRows.map((row) => row.definitionId));
-    },
-  };
-
-  const onCheckboxChange = useCallback((e: CheckboxChangeEvent) => {
-    e.stopPropagation();
-    const { checked, value } = e.target;
-    if (checked) {
-      setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
-    } else {
-      setSelectedColumns((prevSelectedColumns) =>
-        prevSelectedColumns.filter((column) => column !== value),
-      );
-    }
-  }, []);
-
-  const ColumnHeader = [
-    'Process Name',
-    'Description',
-    'Last Edited',
-    'Created On',
-    'File Size',
-    'Owner',
-  ];
-
-  type Column = {
-    title: string;
-  };
-  const [selectedColumns, setSelectedColumns] = useState([
-    '',
-    'Process Name',
-    'Description',
-    'Last Edited',
-  ]);
-
-  const items: MenuProps['items'] = ColumnHeader.map((title) => ({
-    label: (
-      <>
-        <Checkbox
-          checked={selectedColumns.includes(title)}
-          onChange={onCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-          value={title}
-        >
-          {title}
-        </Checkbox>
-      </>
-    ),
-    key: title,
-  }));
-
-  const columns: TableColumnsType<Processes[number]> = [
-    {
-      title: <StarOutlined />,
-      dataIndex: 'definitionId',
-      key: '',
-      width: '40px',
-      render: (definitionId, record, index) =>
-        favourites?.includes(index) ? (
-          <StarOutlined style={{ color: '#FFD700' }} />
-        ) : hovered?.definitionId === definitionId ? (
-          <StarOutlined />
-        ) : (
-          ''
-        ),
-    },
-
-    {
-      title: 'Process Name',
-      dataIndex: 'definitionName',
-      key: 'Process Name',
-      className: styles.Title,
-      sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          setSelectedProcess(record);
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'Description',
-      sorter: (a, b) => a.description.localeCompare(b.description),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-
-    {
-      title: 'Last Edited',
-      dataIndex: 'lastEdited',
-      key: 'Last Edited',
-      render: (date: Date) => date.toLocaleString(),
-      sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-    {
-      title: 'Created On',
-      dataIndex: 'createdOn',
-      key: 'Created On',
-      render: (date: Date) => date.toLocaleString(),
-      sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-    {
-      title: 'File Size',
-      key: 'File Size',
-      sorter: (a, b) => (a < b ? -1 : 1),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-    {
-      title: 'Owner',
-      dataIndex: 'owner',
-      key: 'Owner',
-      sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          router.refresh();
-          router.push(`/processes/${record.definitionId}`);
-        },
-      }),
-    },
-    {
-      fixed: 'right',
-      width: 160,
-      // add title but only if at least one row is selected
-      dataIndex: 'definitionId',
-      key: '',
-      title: (
-        <div style={{ float: 'right' }}>
-          <Dropdown
-            open={dropdownOpen}
-            onOpenChange={(open) => setDropdownOpen(open)}
-            menu={{
-              items,
-            }}
-            trigger={['click']}
-          >
-            <Button type="text">
-              <MoreOutlined />
-            </Button>
-          </Dropdown>
-        </div>
-      ),
-      render: (definitionId, record, index) =>
-        hovered?.definitionId === definitionId ? (
-          <Row justify="space-evenly">{actionBarGenerator(record)}</Row>
-        ) : (
-          ''
-        ),
-    },
-  ];
-
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
-
   useEffect(() => {
-    if (data) {
-      setProcesses(data as any);
-    }
-  }, [data]);
+    setProcesses(data as any);
+  }, [data, setProcesses]);
 
   const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -360,9 +115,27 @@ const Processes: FC = () => {
   }, [data, searchTerm]);
 
   const deselectAll = () => {
-    // setSelection([]);
     setSelectedRowKeys([]);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      /* CTRL + A */
+      if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
+      }
+      /* TODO: */
+      /* CTRL + C */
+      /* CTRL + V */
+      /* DEL */
+    };
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredData]);
 
   if (isError) {
     return <div>Error</div>;
@@ -380,33 +153,25 @@ const Processes: FC = () => {
             xl={6}
             className={cn({ [styles.SelectedRow]: /* selection */ selectedRowKeys.length })}
           >
-            {/* <Row justify="space-between">Select action: {actionBar}</Row> */}
-            {
-              /* selection */ selectedRowKeys.length ? (
-                <>
-                  <Button onClick={deselectAll} type="text">
-                    <CloseOutlined />
-                  </Button>
-                  {/* Select action for {selection.length}:{' '}
-                <span className={styles.Icons}>{actionBar}</span> */}
-                  {/* selection */ selectedRowKeys.length} selected:{' '}
-                  <span className={styles.Icons}>{actionBar}</span>
-                </>
-              ) : (
-                <div></div>
-              )
-            }
+            {selectedRowKeys.length ? (
+              <>
+                <Button onClick={deselectAll} type="text">
+                  <CloseOutlined />
+                </Button>
+                {selectedRowKeys.length} selected: <span className={styles.Icons}>{actionBar}</span>
+              </>
+            ) : (
+              <div></div>
+            )}
           </Col>
           <Col md={0} lg={1} xl={1}></Col>
           <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
             <Search
               size="middle"
-              // ref={(ele) => (this.searchText = ele)}
-              onChange={(e) => /* console.log(e.target.value) */ setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
               allowClear
               placeholder="Search Processes"
-              // value={this.state.searchText}
             />
           </Col>
           <Col span={1} />
@@ -415,6 +180,7 @@ const Processes: FC = () => {
               <Button
                 style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
                 onClick={() => {
+                  addUserPreference({ 'icon-view-in-process-list': false });
                   setIconView(false);
                 }}
               >
@@ -423,6 +189,7 @@ const Processes: FC = () => {
               <Button
                 style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
                 onClick={() => {
+                  addUserPreference({ 'icon-view-in-process-list': true });
                   setIconView(true);
                 }}
               >
@@ -433,42 +200,19 @@ const Processes: FC = () => {
         </Row>
       </>
       {!iconView ? (
-        <Table
-          rowSelection={{
-            type: 'checkbox',
-            ...rowSelection,
-          }}
-          onRow={(record, rowIndex) => ({
-            onClick: () => {
-              // TODO: This is a hack to clear the parallel route when selecting
-              // another process. (needs upstream fix)
-              // router.refresh();
-              // router.push(`/processes/${record.definitionId}`);
-            },
-            onMouseEnter: (event) => {
-              setHovered(record);
-              // console.log('mouse enter row', record);
-            }, // mouse enter row
-            onMouseLeave: (event) => {
-              setHovered(undefined);
-              // console.log('mouse leave row', event);
-            }, // mouse leave row
-          })}
-          sticky
-          scroll={{ x: 1300, y: 450 }}
-          rowClassName={styles.Row}
-          rowKey="definitionId"
-          columns={columnsFiltered}
-          dataSource={filteredData as any}
-          loading={isLoading}
-          className={styles.Table}
-          /* Row size rowsize */
-          size="middle"
+        <ProcessList
+          data={filteredData}
+          selection={selectedRowKeys}
+          setSelection={setSelectedRowKeys}
+          isLoading={isLoading}
         />
       ) : (
-        <IconView data={filteredData} selection={selectedRowKeys} setSelection={setSelectedRowKeys}/>
+        <IconView
+          data={filteredData}
+          selection={selectedRowKeys}
+          setSelection={setSelectedRowKeys}
+        />
       )}
-      {open && <Preview selectedElement={selectedColumn} setOpen={setOpen}></Preview>}
     </>
   );
 };

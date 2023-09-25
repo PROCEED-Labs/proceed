@@ -53,3 +53,10 @@
   background-color: #ebf8ff;
   border: 1px solid #1976d2;
 }
+
+.no-select {
+  user-select: none; /* Standard syntax */
+  -webkit-user-select: none; /* Chrome, Safari, and Opera */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+}

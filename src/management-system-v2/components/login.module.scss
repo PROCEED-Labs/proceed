@@ -11,11 +11,10 @@
   width: 100%;
 }
 
-@media screen and (max-width: 350px) {
-  .Card {
-    width: 90vw;
-  }
+.Card {
+  width: 90vw;
 }
+
 @media screen and (min-width: 351px) {
   .Card {
     width: 350px;

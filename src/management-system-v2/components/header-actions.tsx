@@ -13,7 +13,7 @@ const HeaderActions: FC = () => {
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) return null;
 
-  if (!loggedIn)
+  if (!loggedIn) {
     return (
       <Space style={{ float: 'right' }}>
         <Button type="text" onClick={login}>
@@ -25,6 +25,7 @@ const HeaderActions: FC = () => {
         </Tooltip>
       </Space>
     );
+  }
 
   return (
     <Space style={{ float: 'right' }}>

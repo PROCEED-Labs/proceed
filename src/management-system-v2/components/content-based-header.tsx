@@ -6,12 +6,15 @@ import React, { FC, use, useEffect, useState } from 'react';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import { useRouter } from 'next/navigation';
+import classNames from 'classnames';
+import styles from './content-based-header.module.scss';
 
 const HeaderMenu: FC = () => {
   const router = useRouter();
 
   const pathname = usePathname();
-  const isProcessPage = /^\/processes\/[^/]+$/.test(pathname);
+  const ModelerOpen = /^\/processes\/[^/]+$/.test(pathname);
+  const ProcessListOpen = !ModelerOpen && pathname === '/processes';
   const [process, processId] = pathname.split('/').slice(1);
 
   const versions = useModelerStateStore((state) => state.versions);
@@ -24,11 +27,10 @@ const HeaderMenu: FC = () => {
   const selectedProcess = useProcessesStore((state) => state.selectedProcess);
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
-  if (isProcessPage) {
-    if (!selectedProcess) {
+  useEffect(() => {
+    if (!selectedProcess)
       setSelectedProcess(processes?.find(({ definitionId }) => definitionId === processId));
-    }
-  }
+  }, [ModelerOpen]);
 
   const {
     token: { fontSizeHeading1 },
@@ -42,10 +44,11 @@ const HeaderMenu: FC = () => {
     };
   };
 
-  const [items, setItems] = useState<BreadcrumbItem[]>([]);
+  // const [items, setItems] = useState<BreadcrumbItem[]>([]);
+  let items;
 
   useEffect(() => {
-    setItems([
+    items = [
       /* Processes: */
       {
         title: (
@@ -94,15 +97,16 @@ const HeaderMenu: FC = () => {
           },
         },
       },
-    ]);
+    ];
   }, [processes, versions, selectedProcess, selectedVersion]);
 
   return (
     <>
       <Space>
-        {isProcessPage && (
+        {ModelerOpen && (
           <Breadcrumb style={{ fontSize: fontSizeHeading1, color: 'black' }} items={items} />
         )}
+        {ProcessListOpen && <div className={classNames(styles.Title)}>Processes</div>}
       </Space>
     </>
   );

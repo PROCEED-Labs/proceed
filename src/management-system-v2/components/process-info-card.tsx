@@ -23,10 +23,12 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
     <>
       <div
         style={{
+          justifySelf: 'flex-end',
           position: 'relative',
           flex: !showInfo ? 'none' : 1,
           transition: 'flex 0.3s ease-in-out',
           width: 30,
+          marginRight: '15px',
         }}
       >
         {!showInfo && (

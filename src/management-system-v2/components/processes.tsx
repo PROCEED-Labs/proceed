@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import {
   Input,
   Space,
@@ -42,6 +42,7 @@ import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
+import MetaData from './process-info-card';
 
 const fuseOptions = {
   /* Option for Fuzzy-Search for Processlistfilter */
@@ -110,6 +111,11 @@ const Processes: FC = () => {
   const [filteredData, setFilteredData] = useState<typeof data>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const rerenderLists = () => {
+    console.log(filteredData);
+    setFilteredData(filteredData);
+  };
+
   useEffect(() => {
     if (data && searchTerm !== '') {
       const fuse = new Fuse(data, fuseOptions);
@@ -148,76 +154,85 @@ const Processes: FC = () => {
 
   return (
     <>
-      <>
-        <Row justify="space-between" className={styles.Headerrow}>
-          <Col
-            xs={24}
-            sm={24}
-            md={24}
-            lg={10}
-            xl={6}
-            className={cn({ [styles.SelectedRow]: /* selection */ selectedRowKeys.length })}
-          >
-            {selectedRowKeys.length ? (
-              <>
-                <Button onClick={deselectAll} type="text">
-                  <CloseOutlined />
+      <div style={{ display: 'flex' }}>
+        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
+        <div style={{ /* width: '75%', */ flex: 3 }}>
+          <Row justify="space-between" className={styles.Headerrow}>
+            <Col
+              // xs={24}
+              // sm={24}
+              // md={24}
+              // lg={10}
+              // xl={6}
+              span={10}
+              className={cn({ [styles.SelectedRow]: /* selection */ selectedRowKeys.length })}
+            >
+              {selectedRowKeys.length ? (
+                <>
+                  <Button onClick={deselectAll} type="text">
+                    <CloseOutlined />
+                  </Button>
+                  {selectedRowKeys.length} selected:{' '}
+                  <span className={styles.Icons}>{actionBar}</span>
+                </>
+              ) : (
+                <div style={{ height: '40px' }}></div>
+              )}
+            </Col>
+          </Row>
+          <Row className={styles.Row}>
+            {/* <Col md={0} lg={1} xl={1}></Col> */}
+            <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={21} xl={21}>
+              <Search
+                size="middle"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
+                allowClear
+                placeholder="Search Processes"
+              />
+            </Col>
+            <Col span={1} />
+            <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
+              <Space.Compact>
+                <Button
+                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                  onClick={() => {
+                    addUserPreference({ 'icon-view-in-process-list': false });
+                    setIconView(false);
+                  }}
+                >
+                  <UnorderedListOutlined />
                 </Button>
-                {selectedRowKeys.length} selected: <span className={styles.Icons}>{actionBar}</span>
-              </>
-            ) : (
-              <div></div>
-            )}
-          </Col>
-          <Col md={0} lg={1} xl={1}></Col>
-          <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
-            <Search
-              size="middle"
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
-              allowClear
-              placeholder="Search Processes"
+                <Button
+                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                  onClick={() => {
+                    addUserPreference({ 'icon-view-in-process-list': true });
+                    setIconView(true);
+                  }}
+                >
+                  <AppstoreOutlined />
+                </Button>
+              </Space.Compact>
+            </Col>
+          </Row>
+          {!iconView ? (
+            <ProcessList
+              data={filteredData}
+              selection={selectedRowKeys}
+              setSelection={setSelectedRowKeys}
+              isLoading={isLoading}
             />
-          </Col>
-          <Col span={1} />
-          <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
-            <Space.Compact>
-              <Button
-                style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                onClick={() => {
-                  addUserPreference({ 'icon-view-in-process-list': false });
-                  setIconView(false);
-                }}
-              >
-                <UnorderedListOutlined />
-              </Button>
-              <Button
-                style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                onClick={() => {
-                  addUserPreference({ 'icon-view-in-process-list': true });
-                  setIconView(true);
-                }}
-              >
-                <AppstoreOutlined />
-              </Button>
-            </Space.Compact>
-          </Col>
-        </Row>
-      </>
-      {!iconView ? (
-        <ProcessList
-          data={filteredData}
-          selection={selectedRowKeys}
-          setSelection={setSelectedRowKeys}
-          isLoading={isLoading}
-        />
-      ) : (
-        <IconView
-          data={filteredData}
-          selection={selectedRowKeys}
-          setSelection={setSelectedRowKeys}
-        />
-      )}
+          ) : (
+            <IconView
+              data={filteredData}
+              selection={selectedRowKeys}
+              setSelection={setSelectedRowKeys}
+            />
+          )}
+        </div>
+        {/* Meta Data Panel */}
+        <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
+      </div>
     </>
   );
 };

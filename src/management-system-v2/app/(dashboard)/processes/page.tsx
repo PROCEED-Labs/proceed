@@ -11,11 +11,11 @@ import Auth from '@/lib/AuthCanWrapper';
 
 const ProcessesPage: FC = () => {
   return (
-    <Content title="Processes" rightNode={<HeaderActions />}>
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes />
-      </Space>
-    </Content>
+    //<Content title="Processes" rightNode={<HeaderActions />}>
+    //<Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+    <Processes />
+    //</Space>
+    //</Content>
   );
 };
 

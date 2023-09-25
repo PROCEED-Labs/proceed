@@ -70,39 +70,4 @@ const Content: FC<ContentProps> = ({
   );
 };
 
-//   return (
-//     <Layout className={cn(styles.Main, wrapperClass)}>
-//       {noHeader ? null : (
-//         <Layout.Header
-//           style={{
-//             background: colorBgContainer,
-//             borderBottom: '1px solid #eee',
-//             // position: fixedHeader ? 'fixed' : 'static',
-//             // width: fixedHeader ? '100%' : 'auto',
-//           }}
-//           className={cn(styles.Header, headerClass)}
-//         >
-//           <Title level={3} className={styles.Title}>
-//             {title}
-//           </Title>
-//           <div className={styles.Right}>{rightNode}</div>
-//         </Layout.Header>
-//       )}
-//       <Layout.Content
-//         className={cn(styles.Content, { [styles.compact]: compact })}
-//         style={{
-//           background: colorBgContainer,
-//         }}
-//       >
-//         {children}
-//       </Layout.Content>
-//       {fixedHeader && (
-//         <Layout.Footer className={cn(styles.Footer, footerClass)}>
-//           © 2023 PROCEED Labs GmbH
-//         </Layout.Footer>
-//       )}
-//     </Layout>
-//   );
-// };
-
 export default Content;

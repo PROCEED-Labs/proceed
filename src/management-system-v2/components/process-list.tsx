@@ -317,7 +317,11 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
 
   return (
     <>
-      <div className="test" style={{ display: 'flex', width: '100%' }}>
+      <div
+      // style={{
+      //   width: '80%', //display: 'flex',
+      // }}
+      >
         <div style={{ flex: 3 }} key={1 + Number(rerender)}>
           <Table
             rowSelection={{
@@ -412,9 +416,9 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
             size="middle"
           />
         </div>
-
-        <MetaData data={data} selection={selection} triggerRerender={triggerRerender} />
       </div>
+
+      {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}

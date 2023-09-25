@@ -68,7 +68,8 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
       style={{
         display: 'inline-flex',
         justifyContent: 'space-between',
-        height: 'calc(100% - 80px)',
+        /* 100vh - Header - Footer - Menu - Extra for looks  */
+        height: 'calc(100vh - 64px - 70px - 150px - 40px)',
       }}
     >
       <List
@@ -102,7 +103,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
           </List.Item>
         )}
       />
-      <MetaData data={data} selection={selection} triggerRerender={triggerRerender} />
+      {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
     </div>
   );
 };

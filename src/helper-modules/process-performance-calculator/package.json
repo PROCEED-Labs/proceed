@@ -1,0 +1,14 @@
+{
+  "name": "process-performance-calculator",
+  "version": "1.0.0",
+  "description": "Provides functionality to calculate process performance using BPMN process diagrams",
+  "author": "Luisa Wittig",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "bpmn-moddle": "^6.0.0"
+  }
+}

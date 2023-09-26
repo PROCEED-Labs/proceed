@@ -78,7 +78,7 @@ test('Allowed Process: total duration of first included main process', async () 
       mainProcess: allowedProcess,
       calledProcesses: [{ mainProcess: calledProcess, calledProcesses: [] }],
     },
-    settings
+    settings,
   );
   let total = result[0].processPerformance.totalPerformance.duration;
   expect(total).toEqual({
@@ -94,7 +94,7 @@ test('Allowed Process: total cost of first included main process', async () => {
       mainProcess: allowedProcess,
       calledProcesses: [{ mainProcess: calledProcess, calledProcesses: [] }],
     },
-    settings
+    settings,
   );
   let total = result[0].processPerformance.totalPerformance.cost;
   expect(total).toEqual({ average: '173.00 €', min: '125.00 €', max: '207.50 €' });
@@ -106,7 +106,7 @@ test('Allowed Process: total duration of second included main process', async ()
       mainProcess: allowedProcess,
       calledProcesses: [{ mainProcess: calledProcess, calledProcesses: [] }],
     },
-    settings
+    settings,
   );
   let total = result[1].processPerformance.totalPerformance.duration;
   expect(total).toEqual({
@@ -122,7 +122,7 @@ test('Allowed Process: total cost of second included main process', async () => 
       mainProcess: allowedProcess,
       calledProcesses: [{ mainProcess: calledProcess, calledProcesses: [] }],
     },
-    settings
+    settings,
   );
   let total = result[1].processPerformance.totalPerformance.cost;
   expect(total).toEqual({ average: '66.33 €', min: '40.00 €', max: '105.00 €' });
@@ -149,7 +149,7 @@ test('Allowed Process: total cost of second included main process', async () => 
 test('Boundary Event', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: boundaryEvent, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Boundary events are not supported.');
@@ -158,7 +158,7 @@ test('Boundary Event', async () => {
 test('Complex and/or inclusive Gateway', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: complexInclusiveGateway, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Inclusive or complex gateways are not supported.');
@@ -167,7 +167,7 @@ test('Complex and/or inclusive Gateway', async () => {
 test('Crisscrossed Gateways', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: crisscrossGateway, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Process elements could not be extracted for calculation.');
@@ -176,10 +176,10 @@ test('Crisscrossed Gateways', async () => {
 test('Event-Subprocess', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: eventSubprocess, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems.find(
-    (elem) => elem.problem == 'Event-Sub-Processes are not supported.'
+    (elem) => elem.problem == 'Event-Sub-Processes are not supported.',
   ).problem;
   expect(problem).toBe('Event-Sub-Processes are not supported.');
 });
@@ -187,7 +187,7 @@ test('Event-Subprocess', async () => {
 test('Missing probabilities', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingProbabilities, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('All outgoing paths need probabilities.');
@@ -196,7 +196,7 @@ test('Missing probabilities', async () => {
 test('Wrong probabilities', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongProbabilities, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('The outgoing path probabilities need to add up to 100%.');
@@ -205,7 +205,7 @@ test('Wrong probabilities', async () => {
 test('Missing call reference ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingCallRef, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Element is missing reference to called process.');
@@ -214,11 +214,11 @@ test('Missing call reference ...', async () => {
 test('Missing information in subprocess ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingSubprocessInfo, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems.find(
     (elem) =>
-      elem.problem == 'The subprocess has incorrect content, specifics are provided separately.'
+      elem.problem == 'The subprocess has incorrect content, specifics are provided separately.',
   ).problem;
   expect(problem).toBe('The subprocess has incorrect content, specifics are provided separately.');
 });
@@ -226,7 +226,7 @@ test('Missing information in subprocess ...', async () => {
 test('Missing time after an eventbased gateway ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingTimeAfterEventbased, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Intermediate events after event based gateways need time information.');
@@ -235,7 +235,7 @@ test('Missing time after an eventbased gateway ...', async () => {
 test('Multiple Start Events', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: multiStarts, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Only one start event is allowed.');
@@ -244,22 +244,22 @@ test('Multiple Start Events', async () => {
 test('Mismatched gateway pathcounts ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: pathcountMismatch, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'All paths that were created by an exclusive splitting gateway need to lead into a matching exclusive joining gateway.'
+    'All paths that were created by an exclusive splitting gateway need to lead into a matching exclusive joining gateway.',
   );
 });
 
 test('Mismatched Splits and Joins (Exclusive version)', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: splitJoinMismatch, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'The number of exclusive splitting and exclusive joining gateways needs to be equal.'
+    'The number of exclusive splitting and exclusive joining gateways needs to be equal.',
   );
 });
 
@@ -269,18 +269,18 @@ test('Wrong Called Process', async () => {
       mainProcess: wrongCall,
       calledProcesses: [{ mainProcess: wrongCalledProcess, calledProcesses: [] }],
     },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'The called process has incorrect content or structure, specifics are provided separately.'
+    'The called process has incorrect content or structure, specifics are provided separately.',
   );
 });
 
 test('Missing Called Process', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongCall, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Could not find a matching called process.');
@@ -289,18 +289,18 @@ test('Missing Called Process', async () => {
 test('Wrong date order ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongDateOrder, calledProcesses: [] },
-    dateSettings
+    dateSettings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'The start or end date of this element is later than the start or end date of the next element that is not a gateway or sequence flow.'
+    'The start or end date of this element is later than the start or end date of the next element that is not a gateway or sequence flow.',
   );
 });
 
 test('Wrong element start and end date ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongElementDates, calledProcesses: [] },
-    dateSettings
+    dateSettings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('The start date of this element is later than the end date.');
@@ -309,18 +309,18 @@ test('Wrong element start and end date ...', async () => {
 test('Wrong gateway sequence flows ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongGatewayFlows, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'Gateways need 1 incoming and >1 outgoing or >1 incoming and 1 outgoing sequence flows.'
+    'Gateways need 1 incoming and >1 outgoing or >1 incoming and 1 outgoing sequence flows.',
   );
 });
 
 test('Multiple Incoming Sequence Flows (not a Gateway Element)', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: multipleIncoming, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Wrong number of incoming or outgoing sequence flows.');
@@ -329,21 +329,22 @@ test('Multiple Incoming Sequence Flows (not a Gateway Element)', async () => {
 test('Wrong subprocess structure ...', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongSubprocessStructure, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems.find(
     (elem) =>
-      elem.problem == 'The subprocess is structured incorrectly, specifics are provided separately.'
+      elem.problem ==
+      'The subprocess is structured incorrectly, specifics are provided separately.',
   ).problem;
   expect(problem).toBe(
-    'The subprocess is structured incorrectly, specifics are provided separately.'
+    'The subprocess is structured incorrectly, specifics are provided separately.',
   );
 });
 
 test('Missing Cost', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingCost, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Element is missing cost information.');
@@ -352,7 +353,7 @@ test('Missing Cost', async () => {
 test('Missing Time', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingTime, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Element is missing time information.');
@@ -361,7 +362,7 @@ test('Missing Time', async () => {
 test('Missing End Event', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingEnd, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('End event is required.');
@@ -370,7 +371,7 @@ test('Missing End Event', async () => {
 test('Missing Start Event', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: missingStart, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Start event is required.');
@@ -379,7 +380,7 @@ test('Missing Start Event', async () => {
 test('Transaction', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: transaction, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Transactions are not supported.');
@@ -388,7 +389,7 @@ test('Transaction', async () => {
 test('Multiple End Events', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: multiEnds, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe('Only one end event is allowed.');
@@ -397,11 +398,11 @@ test('Multiple End Events', async () => {
 test('Forbidden Loop', async () => {
   const result = await analyseProcessPerformance(
     { mainProcess: wrongLoop, calledProcesses: [] },
-    settings
+    settings,
   );
   let problem = result[0].problems[0].problem;
   expect(problem).toBe(
-    'The element is part of a loop that does not fulfill the requirements. Loops can only consist of a join, an outgoing path with sequential elements that eventually leads to a split and a direct sequence flow from the split to the join.'
+    'The element is part of a loop that does not fulfill the requirements. Loops can only consist of a join, an outgoing path with sequential elements that eventually leads to a split and a direct sequence flow from the split to the join.',
   );
 });
 

@@ -94,7 +94,7 @@ function validateProcessStructure(flowElements) {
           (el) =>
             el.exclusiveOrParallel == tempExclusiveOrParallel &&
             el.pattern == 'split' &&
-            el.pathCount == tempPathCount
+            el.pathCount == tempPathCount,
         );
 
         //all joins with this path count and this exclusivity/parallelism
@@ -102,7 +102,7 @@ function validateProcessStructure(flowElements) {
           (el) =>
             el.exclusiveOrParallel == elem.exclusiveOrParallel &&
             el.pattern == 'join' &&
-            el.pathCount == tempPathCount
+            el.pathCount == tempPathCount,
         );
 
         //check if the respective path counts match
@@ -230,7 +230,7 @@ function findLoops(element, originalGateway, gatewayMemory, allGateways) {
       let allowedLoop = element.incoming.some((elem) => {
         let tempMatchId = elem.sourceRef.id;
         match = gatewayMem.find(
-          (el) => el.id == tempMatchId && originalGateway.potentialMatches.includes(el.id)
+          (el) => el.id == tempMatchId && originalGateway.potentialMatches.includes(el.id),
         );
         if (
           match &&

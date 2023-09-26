@@ -95,7 +95,7 @@ export async function createDevelopmentUsers() {
       name: 'John Doe',
       username: 'johndoe',
       email: 'johndoe@proceed-labs.org',
-      password: 'JohnDoe2023!',
+      password: 'JohnDoe1!',
     },
     processAdminRole,
   );

@@ -17,7 +17,11 @@ export const createAdminUser = async () => {
   if (adminRole.members.length === 0) {
     let user;
 
-    const { adminUsername, adminEmail, adminPassword } = config;
+    const { adminUsername, adminEmail } = config;
+
+    const adminPassword =
+      process.env.NODE_ENV === 'development' ? 'ProceedAdm1n!' : config.adminPassword;
+
     // different user representations for identity providers
     if (url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')) {
       user = {

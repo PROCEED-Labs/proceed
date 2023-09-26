@@ -61,6 +61,8 @@ For the Engine and the Management System there are _development_ and _build_ com
 
 ## Development
 
+> Please note that you need access to the private Environment Configurations repository, if you want to develop with Authentication & Authorization!
+
 You can start the development modes by running the following commands
 
 **Engine:**
@@ -76,22 +78,40 @@ yarn dev-engine-web
 **Management System:**
 
 ```
-// Desktop
+// NextJS frontend
 yarn dev-ms
 
-// Server (without Authentication & Authorization)
-yarn dev-ms-server
+// API
+yarn dev-ms-api
 
-// Server (with Authentication & Authorization)
-yarn dev-ms-iam
+// NextJS frontend without Authentication & Authorization
+yarn dev-ms-no-iam
+
+// API frontend without Authentication & Authorization
+yarn dev-ms-api-no-iam
 ```
 
-> Please note that you need access to the private Environment Configurations repository, if you want to develop with Authentication & Authorization!
+**Old Vue Management System:**
+
+```
+// Old Vue Management System
+yarn dev-ms-old-iam
+
+// Old Vue Management System without Authentication & Authorization
+yarn dev-ms-old
+```
 
 _Server version:_ If successful, this automatically starts a Chrome/Chromium browser, and afterwards the MS frontend inside the Browser (hot-reloading) on the URL: https://localhost:33083/ For more information, see [the architecture description in the Wiki](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App#ms-server-architecture).
 
 > Beware: We are using HTTPS with a self-signed certificate for development. This will most likely lead to your browser warning you upon the first start of the frontend. You have to accept that warning and create an exception to continue to the site. The self-signed certificate will also lead to errors when the frontend [tries to connect to the other HTTPS endpoints (WebSocket and Puppeteer)](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App). The easiest way to solve this, is to open all endpoints directly inside the browser and add an exception for every enpoint-certificate combination. For the development this is https://localhost:33080 and https://localhost:33081.
 > This should allow the frontend to connect to the other endpoints in subsequent tries.
+
+**Authentication & Authorization**
+
+The API (`yarn dev-ms`) creates two users when it starts:
+
+- Admin: With the username `admin` and the password `ProceedAdm1n`.
+- John Doe: With the username `johndoe` and the password `JohnDoe1!`.
 
 ## Testing
 

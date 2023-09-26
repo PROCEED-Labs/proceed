@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_cf8e019c-ff06-476e-ab31-fe0642d777e4" name="missing_time_test" targetNamespace="https://docs.proceed-labs.org/_cf8e019c-ff06-476e-ab31-fe0642d777e4" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_0tf4ecc" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <extensionElements>
+      <proceed:meta>
+        <proceed:orderNumber />
+        <proceed:orderName>missing_time_test</proceed:orderName>
+        <proceed:orderCode />
+        <proceed:customerId />
+        <proceed:customerName />
+      </proceed:meta>
+    </extensionElements>
+    <startEvent id="StartEvent_0rfw9nk">
+      <outgoing>Flow_05ybqe8</outgoing>
+    </startEvent>
+    <task id="Activity_0b8i4w4">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">10</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT10M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_05ybqe8</incoming>
+      <outgoing>Flow_0ausnt0</outgoing>
+    </task>
+    <sequenceFlow id="Flow_05ybqe8" sourceRef="StartEvent_0rfw9nk" targetRef="Activity_0b8i4w4" />
+    <task id="Activity_0flsvrx">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">10</proceed:costsPlanned>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0ausnt0</incoming>
+      <outgoing>Flow_1mf10x7</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0ausnt0" sourceRef="Activity_0b8i4w4" targetRef="Activity_0flsvrx" />
+    <endEvent id="Event_0mx9pqj">
+      <incoming>Flow_1mf10x7</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1mf10x7" sourceRef="Activity_0flsvrx" targetRef="Event_0mx9pqj" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0tf4ecc">
+      <bpmndi:BPMNShape id="StartEvent_0rfw9nk_di" bpmnElement="StartEvent_0rfw9nk">
+        <dc:Bounds x="-68" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0b8i4w4_di" bpmnElement="Activity_0b8i4w4">
+        <dc:Bounds x="20" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0flsvrx_di" bpmnElement="Activity_0flsvrx">
+        <dc:Bounds x="180" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mx9pqj_di" bpmnElement="Event_0mx9pqj">
+        <dc:Bounds x="342" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_05ybqe8_di" bpmnElement="Flow_05ybqe8">
+        <di:waypoint x="-32" y="110" />
+        <di:waypoint x="20" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ausnt0_di" bpmnElement="Flow_0ausnt0">
+        <di:waypoint x="120" y="110" />
+        <di:waypoint x="180" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mf10x7_di" bpmnElement="Flow_1mf10x7">
+        <di:waypoint x="280" y="110" />
+        <di:waypoint x="342" y="110" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

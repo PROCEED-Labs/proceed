@@ -46,7 +46,7 @@ const Content: FC<ContentProps> = ({
       <div
         style={{
           background: colorBgContainer,
-          paddingTop: '7px',
+          // paddingTop: '7px',
           //borderBottom: '1px solid #eee',
           // position: fixedHeader ? 'fixed' : 'static',
           // width: fixedHeader ? '100%' : 'auto',

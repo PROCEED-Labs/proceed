@@ -33,6 +33,7 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import MetaData from './process-info-card';
+import { generateDateString } from '@/lib/utils';
 
 type ProcessListType = PropsWithChildren & {
   data: Processes;
@@ -49,6 +50,24 @@ const ColumnHeader = [
   'File Size',
   'Owner',
 ];
+
+const clipText = (dataIndexElement, record, index) => {
+  return (
+    <div
+      style={{
+        width: '10vw',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+      }}
+    >
+      {dataIndexElement}
+    </div>
+  );
+};
+
+const numberOfRows = Math.floor((window?.innerHeight - 340) / 47);
+console.log(numberOfRows);
 
 const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoading }) => {
   const router = useRouter();
@@ -204,6 +223,7 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
+      render: clipText,
     },
     {
       title: 'Description',
@@ -219,13 +239,14 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      render: clipText,
     },
 
     {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
-      render: (date: Date) => date.toLocaleString(),
+      render: (date: Date) => generateDateString(date, true),
       sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
@@ -241,7 +262,7 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
       title: 'Created On',
       dataIndex: 'createdOn',
       key: 'Created On',
-      render: (date: Date) => date.toLocaleString(),
+      render: (date: Date) => generateDateString(date, false),
       sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
@@ -315,108 +336,331 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
 
   const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
+  const dataSource2 = [
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address:
+        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+      fix: 'Fixed Content',
+    },
+  ];
+
+  const columns2 = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Age',
+      dataIndex: 'age',
+      key: 'age',
+    },
+    {
+      title: 'Address',
+      dataIndex: 'address',
+      key: 'address',
+      // width: '100px',
+      render: (dataIndexEle, record, index) => {
+        return (
+          <div
+            style={{
+              width: '2vw',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {dataIndexEle}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name' + 1,
+    },
+    {
+      title: 'Age',
+      dataIndex: 'age',
+      key: 'age' + 1,
+    },
+    {
+      title: 'Address',
+      dataIndex: 'address',
+      key: 'address' + 1,
+    },
+    {
+      title: 'Fixed',
+      fixed: 'right',
+      dataIndex: 'fix',
+      key: 'fix',
+    },
+  ];
+
+  // return (
+  //   <>
+  //     <div /* style={{ height: '200px' }} */>
+  //       <Table
+  //         dataSource={dataSource2}
+  //         columns={columns2}
+  //         pagination={{ position: ['bottomCenter'], pageSize: 1 }}
+  //       ></Table>
+  //     </div>
+  //   </>
+  // );
+
   return (
     <>
-      <div
-      // style={{
-      //   width: '80%', //display: 'flex',
-      // }}
-      >
-        <div style={{ flex: 3 }} key={1 + Number(rerender)}>
-          <Table
-            rowSelection={{
-              type: 'checkbox',
-              ...rowSelection,
-            }}
-            onRow={(record, rowIndex) => ({
-              onClick: (event) => {
-                // event.stopPropagation();
-                // event.preventDefault();
-                /* CTRL */
-                if (event.ctrlKey) {
-                  /* Not selected yet -> Add to selection */
-                  if (!selection.includes(record?.definitionId)) {
-                    setSelection([record?.definitionId, ...selection]);
-                    /* Already in selection -> deselect */
-                  } else {
-                    setSelection(selection.filter((id) => id !== record?.definitionId));
-                  }
-                  /* SHIFT */
-                } else if (event.shiftKey) {
-                  /* At least one element selected */
-                  if (selection.length) {
-                    const iLast = data.findIndex(
-                      (process) => process.definitionId === lastProcessId,
-                    );
-                    const iCurr = data.findIndex(
-                      (process) => process.definitionId === record?.definitionId,
-                    );
-                    /* Identical to last clicked */
-                    if (iLast === iCurr) {
-                      setSelection([record?.definitionId]);
-                    } else if (iLast < iCurr) {
-                      /* Clicked comes after last slected */
-                      setSelection(
-                        data.slice(iLast, iCurr + 1).map((process) => process.definitionId),
-                      );
-                    } else if (iLast > iCurr) {
-                      /* Clicked comes before last slected */
-                      setSelection(
-                        data.slice(iCurr, iLast + 1).map((process) => process.definitionId),
-                      );
-                    }
-                  } else {
-                    /* Nothing selected */
-                    setSelection([record?.definitionId]);
-                  }
-                  /* Normal Click */
-                } else {
+      <Table
+        rowSelection={{
+          type: 'checkbox',
+          ...rowSelection,
+        }}
+        onRow={(record, rowIndex) => ({
+          onClick: (event) => {
+            // event.stopPropagation();
+            // event.preventDefault();
+            /* CTRL */
+            if (event.ctrlKey) {
+              /* Not selected yet -> Add to selection */
+              if (!selection.includes(record?.definitionId)) {
+                setSelection([record?.definitionId, ...selection]);
+                /* Already in selection -> deselect */
+              } else {
+                setSelection(selection.filter((id) => id !== record?.definitionId));
+              }
+              /* SHIFT */
+            } else if (event.shiftKey) {
+              /* At least one element selected */
+              if (selection.length) {
+                const iLast = data.findIndex((process) => process.definitionId === lastProcessId);
+                const iCurr = data.findIndex(
+                  (process) => process.definitionId === record?.definitionId,
+                );
+                /* Identical to last clicked */
+                if (iLast === iCurr) {
                   setSelection([record?.definitionId]);
+                } else if (iLast < iCurr) {
+                  /* Clicked comes after last slected */
+                  setSelection(data.slice(iLast, iCurr + 1).map((process) => process.definitionId));
+                } else if (iLast > iCurr) {
+                  /* Clicked comes before last slected */
+                  setSelection(data.slice(iCurr, iLast + 1).map((process) => process.definitionId));
                 }
+              } else {
+                /* Nothing selected */
+                setSelection([record?.definitionId]);
+              }
+              /* Normal Click */
+            } else {
+              setSelection([record?.definitionId]);
+            }
 
-                /* Always */
-                setLastProcessId(record?.definitionId);
-              },
-              // onClick: (event) => {
-              //   if (event.ctrlKey) {
-              //     if (!selection.includes(record.definitionId)) {
-              //       setSelection([record.definitionId, ...selection]);
-              //     } else {
-              //       setSelection(selection.filter((id) => id !== record.definitionId));
-              //     }
-              //   } else {
-              //     setSelection([record.definitionId]);
-              //   }
-              // },
-              onDoubleClick: () => {
-                // TODO: This is a hack to clear the parallel route when selecting
-                // another process. (needs upstream fix)
-                setSelectedProcess(record);
-                router.refresh();
-                router.push(`/processes/${record.definitionId}`);
-              },
-              onMouseEnter: (event) => {
-                setHovered(record);
-                // console.log('mouse enter row', record);
-              }, // mouse enter row
-              onMouseLeave: (event) => {
-                setHovered(undefined);
-                // console.log('mouse leave row', event);
-              }, // mouse leave row
-            })}
-            sticky
-            scroll={{ x: 1200, y: 500 }}
-            rowClassName={styles.Row}
-            rowKey="definitionId"
-            columns={columnsFiltered}
-            dataSource={data}
-            loading={isLoading}
-            className={classNames(styles.ProcessList, 'no-select')}
-            /* Row size rowsize */
-            size="middle"
-          />
-        </div>
-      </div>
+            /* Always */
+            setLastProcessId(record?.definitionId);
+          },
+          // onClick: (event) => {
+          //   if (event.ctrlKey) {
+          //     if (!selection.includes(record.definitionId)) {
+          //       setSelection([record.definitionId, ...selection]);
+          //     } else {
+          //       setSelection(selection.filter((id) => id !== record.definitionId));
+          //     }
+          //   } else {
+          //     setSelection([record.definitionId]);
+          //   }
+          // },
+          onDoubleClick: () => {
+            // TODO: This is a hack to clear the parallel route when selecting
+            // another process. (needs upstream fix)
+            setSelectedProcess(record);
+            router.refresh();
+            router.push(`/processes/${record.definitionId}`);
+          },
+          onMouseEnter: (event) => {
+            setHovered(record);
+            // console.log('mouse enter row', record);
+          }, // mouse enter row
+          onMouseLeave: (event) => {
+            setHovered(undefined);
+            // console.log('mouse leave row', event);
+          }, // mouse leave row
+        })}
+        /* ---- */
+        /* Breaks Side-Panel */
+        // sticky
+        // scroll={{ x: 1200, y: 500 }}
+        /* ---- */
+        pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
+        rowKey="definitionId"
+        columns={columnsFiltered}
+        dataSource={data}
+        loading={isLoading}
+        className={classNames('no-select')}
+        /* Row size rowsize */
+        size="middle"
+      />
 
       {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
       {previewerOpen && (

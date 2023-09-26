@@ -112,7 +112,6 @@ const Processes: FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const rerenderLists = () => {
-    console.log(filteredData);
     setFilteredData(filteredData);
   };
 
@@ -154,7 +153,7 @@ const Processes: FC = () => {
 
   return (
     <>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{ /* width: '75%', */ flex: 3 }}>
           <Row justify="space-between" className={styles.Headerrow}>

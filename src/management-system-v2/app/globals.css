@@ -60,3 +60,7 @@
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
 }
+
+.fit-height {
+  height: calc(100vh - 64px - 70px);
+}

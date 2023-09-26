@@ -79,7 +79,6 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
           left: 0,
           cursor: 'row-resize',
         }}
-        className="Test"
         onMouseDown={handleMouseDown}
       ></div>
       <Viewer selectedElement={selectedElement} rerenderTrigger={drawerHeight} />

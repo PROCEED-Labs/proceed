@@ -379,12 +379,12 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             }}
           /> */}
         </AntLayout.Sider>
-        <AntLayout>
+        <AntLayout className="fit-height">
           <Content>
             <Space
               direction="vertical"
               size="large"
-              style={{ display: 'flex' /* , height: '100%' */ }}
+              style={{ display: 'flex', height: '100%' }}
               /* TODO: */
               className="Content"
             >

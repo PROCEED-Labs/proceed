@@ -48,7 +48,7 @@ const Viewer: FC<ViewerProps> = ({ selectedElement, rerenderTrigger, reduceLogo 
 
   useEffect(() => {
     if (initialized && selectedElement) {
-      (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+      (previewer.current!.get('canvas') as any)?.zoom('fit-viewport', 'auto');
     }
   }, [initialized, rerenderTrigger, selectedElement]);
 

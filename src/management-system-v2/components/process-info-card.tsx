@@ -3,7 +3,7 @@
 import { generateDateString, getPreferences, addUserPreference } from '@/lib/utils';
 import { Card, Divider, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
-import React, { FC, Key, useState } from 'react';
+import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
 import Viewer from './bpmn-viewer';
 import { Processes } from '@/lib/fetch-data';
 import classNames from 'classnames';
@@ -19,6 +19,25 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   const prefs = getPreferences();
   const [showInfo, setShowInfo] = useState(prefs['show-process-meta-data'] || false);
 
+  const [showViewer, setShowViewer] = useState(showInfo);
+
+  /* Fix for firefox: */
+  useEffect(() => {
+    let timeoutId;
+    if (showInfo) {
+      // Delay the rendering of Viewer
+      timeoutId = setTimeout(() => {
+        setShowViewer(true);
+      }, 350); // Transition duration + 50ms
+    } else {
+      setShowViewer(false);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [showInfo]);
+
   return (
     <>
       <div
@@ -33,7 +52,6 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
       >
         {!showInfo && (
           <Button
-            className="Test"
             type="text"
             style={{
               padding: '2px 2px',
@@ -94,10 +112,12 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
           >
             {Boolean(selection.length) && showInfo ? (
               <>
-                <Viewer
-                  selectedElement={data?.find((item) => item.definitionId === selection[0])}
-                  reduceLogo={true}
-                />
+                {showViewer && (
+                  <Viewer
+                    selectedElement={data?.find((item) => item.definitionId === selection[0])}
+                    reduceLogo={true}
+                  />
+                )}
 
                 <Divider style={{ width: '140%', marginLeft: '-20%' }} />
                 <h3>Meta Data</h3>

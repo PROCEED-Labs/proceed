@@ -69,7 +69,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
         display: 'inline-flex',
         justifyContent: 'space-between',
         /* 100vh - Header - Footer - Menu - Extra for looks  */
-        height: 'calc(100vh - 64px - 70px - 150px - 40px)',
+        height: 'calc(100vh - 64px - 70px - 80px - 40px)',
       }}
     >
       <List

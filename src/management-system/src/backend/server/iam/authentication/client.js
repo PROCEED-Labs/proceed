@@ -6,6 +6,7 @@ import logger from '../../../shared-electron-server/logging.js';
 import { ensureNoBackslash, sortSpaceDelimitedString } from '../utils/utils.js';
 import { setGlobalRolesForAuthorization } from '../authorization/caslRules';
 import { getRoles } from '../../../shared-electron-server/data/iam/roles.js';
+import { createDevelopmentUsers } from '../utils/developmentUsers';
 
 export let client;
 
@@ -79,6 +80,8 @@ const getClient = async (config) => {
         await runClientCredentialsFlow(config);
         await createAdminUser();
       }
+
+      if (process.env.NODE_ENV === 'development') await createDevelopmentUsers();
 
       // set global roles for authorization
       const globalRoles = { everybodyRole: '', guestRole: '' };

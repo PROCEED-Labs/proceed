@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_7753a028-31e1-4045-9481-3723744823a9" name="multiple_ends" targetNamespace="https://docs.proceed-labs.org/_7753a028-31e1-4045-9481-3723744823a9" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1bkmnf6" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <extensionElements>
+      <proceed:meta>
+        <proceed:orderNumber />
+        <proceed:orderName>multiple_ends</proceed:orderName>
+        <proceed:orderCode />
+        <proceed:customerId />
+        <proceed:customerName />
+      </proceed:meta>
+    </extensionElements>
+    <startEvent id="StartEvent_1v0dg95">
+      <outgoing>Flow_0k0pvdd</outgoing>
+    </startEvent>
+    <task id="Activity_0icx3si">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0k0pvdd</incoming>
+      <outgoing>Flow_0tu8wsi</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0k0pvdd" sourceRef="StartEvent_1v0dg95" targetRef="Activity_0icx3si" />
+    <exclusiveGateway id="Gateway_0kkmk0l">
+      <incoming>Flow_0tu8wsi</incoming>
+      <outgoing>Flow_0452uk8</outgoing>
+      <outgoing>Flow_13knqv4</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_0tu8wsi" sourceRef="Activity_0icx3si" targetRef="Gateway_0kkmk0l" />
+    <task id="Activity_0jqjps8">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0452uk8</incoming>
+      <outgoing>Flow_1nmv5hh</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0452uk8" sourceRef="Gateway_0kkmk0l" targetRef="Activity_0jqjps8" />
+    <endEvent id="Event_1lgf5ux">
+      <incoming>Flow_1nmv5hh</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1nmv5hh" sourceRef="Activity_0jqjps8" targetRef="Event_1lgf5ux" />
+    <task id="Activity_0sskdm1">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_13knqv4</incoming>
+      <outgoing>Flow_1q84qxp</outgoing>
+    </task>
+    <sequenceFlow id="Flow_13knqv4" sourceRef="Gateway_0kkmk0l" targetRef="Activity_0sskdm1" />
+    <endEvent id="Event_1t5yu85">
+      <incoming>Flow_1q84qxp</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1q84qxp" sourceRef="Activity_0sskdm1" targetRef="Event_1t5yu85" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1bkmnf6">
+      <bpmndi:BPMNShape id="StartEvent_1v0dg95_di" bpmnElement="StartEvent_1v0dg95">
+        <dc:Bounds x="-178" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0icx3si_di" bpmnElement="Activity_0icx3si">
+        <dc:Bounds x="-90" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0kkmk0l_di" bpmnElement="Gateway_0kkmk0l" isMarkerVisible="true">
+        <dc:Bounds x="65" y="45" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jqjps8_di" bpmnElement="Activity_0jqjps8">
+        <dc:Bounds x="170" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1lgf5ux_di" bpmnElement="Event_1lgf5ux">
+        <dc:Bounds x="332" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0sskdm1_di" bpmnElement="Activity_0sskdm1">
+        <dc:Bounds x="170" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1t5yu85_di" bpmnElement="Event_1t5yu85">
+        <dc:Bounds x="332" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0k0pvdd_di" bpmnElement="Flow_0k0pvdd">
+        <di:waypoint x="-142" y="70" />
+        <di:waypoint x="-90" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tu8wsi_di" bpmnElement="Flow_0tu8wsi">
+        <di:waypoint x="10" y="70" />
+        <di:waypoint x="65" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0452uk8_di" bpmnElement="Flow_0452uk8">
+        <di:waypoint x="115" y="70" />
+        <di:waypoint x="170" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nmv5hh_di" bpmnElement="Flow_1nmv5hh">
+        <di:waypoint x="270" y="70" />
+        <di:waypoint x="332" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13knqv4_di" bpmnElement="Flow_13knqv4">
+        <di:waypoint x="90" y="95" />
+        <di:waypoint x="90" y="180" />
+        <di:waypoint x="170" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1q84qxp_di" bpmnElement="Flow_1q84qxp">
+        <di:waypoint x="270" y="180" />
+        <di:waypoint x="332" y="180" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

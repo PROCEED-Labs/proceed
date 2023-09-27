@@ -136,7 +136,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
       {!minimized && <ModelerToolbar />}
       {!minimized && selectedVersion && <VersionToolbar />}
-      <div className="modeler" {...props} ref={canvas} />;
+      <div className="modeler" {...props} ref={canvas} />
     </div>
   );
 };

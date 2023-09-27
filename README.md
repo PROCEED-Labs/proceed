@@ -110,7 +110,7 @@ _Server version:_ If successful, this automatically starts a Chrome/Chromium bro
 
 The API (`yarn dev-ms`) creates two users when it starts:
 
-- Admin: With the username `admin` and the password `ProceedAdm1n`.
+- Admin: With the username `admin` and the password `ProceedAdm1n!`.
 - John Doe: With the username `johndoe` and the password `JohnDoe1!`.
 
 ## Testing

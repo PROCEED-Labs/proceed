@@ -51,8 +51,6 @@ const Processes: FC = () => {
     },
   });
 
-  // usePostAsset('/process', {});
-
   const setProcesses = useProcessesStore((state) => state.setProcesses);
 
   const [selection, setSelection] = useState<Processes>([]);
@@ -80,7 +78,7 @@ const Processes: FC = () => {
       </Tooltip>
     </>
   );
-
+  
   useEffect(() => {
     setProcesses(data as any);
   }, [data, setProcesses]);

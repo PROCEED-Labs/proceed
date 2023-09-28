@@ -78,7 +78,7 @@ const Processes: FC = () => {
       </Tooltip>
     </>
   );
-  
+
   useEffect(() => {
     setProcesses(data as any);
   }, [data, setProcesses]);

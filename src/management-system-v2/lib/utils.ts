@@ -1,4 +1,8 @@
-export function generateDateString(date: Date | string, includeTime: boolean = false): string {
+export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
+  if (!date) {
+    return '';
+  }
+
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'numeric',

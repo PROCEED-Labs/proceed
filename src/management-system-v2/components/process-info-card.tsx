@@ -5,11 +5,13 @@ import { Card, Divider, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
 import Viewer from './bpmn-viewer';
-import { Processes } from '@/lib/fetch-data';
 import classNames from 'classnames';
+import { ApiData } from '@/lib/fetch-data';
+
+type Processes = ApiData<'/process', 'get'>;
 
 type MetaDataType = {
-  data: Processes;
+  data?: Processes;
   selection: Key[];
   triggerRerender?: () => void;
 };
@@ -22,8 +24,9 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   const [showViewer, setShowViewer] = useState(showInfo);
 
   /* Fix for firefox: */
+
   useEffect(() => {
-    let timeoutId;
+    let timeoutId: NodeJS.Timeout;
     if (showInfo) {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {

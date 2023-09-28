@@ -1,41 +1,22 @@
 'use client';
 
 import { List } from 'antd';
-import { useRouter } from 'next/navigation';
 import React, { Dispatch, FC, Key, SetStateAction, useState } from 'react';
 
 import TabCard from './tabcard-model-metadata';
 
 import { Preferences, getPreferences } from '@/lib/utils';
-import MetaData from './process-info-card';
+import { ApiData } from '@/lib/fetch-data';
 
-const BPMNViewer =
-  typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;
+type Processes = ApiData<'/process', 'get'>;
 
 type IconViewProps = {
-  data:
-    | {
-        description: string;
-        processIds: string[];
-        variables: [];
-        departments: [];
-        inEditingBy: [];
-        createdOn: Date;
-        lastEdited: Date;
-        shared: boolean;
-        versions: ({ version: number | string; name: string; description: string } | null)[];
-        definitionId: string;
-        definitionName: string;
-        bpmn?: string;
-      }[]
-    | undefined;
+  data?: Processes;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
 };
 
 const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
-  const router = useRouter();
-
   const [rerender, setRerender] = useState(false);
 
   const triggerRerender = () => {
@@ -94,7 +75,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
             {
               <TabCard
                 item={item}
-                completeList={data}
+                completeList={data!}
                 selection={selection}
                 setSelection={setSelection}
                 tabcard={false}

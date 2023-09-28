@@ -1,48 +1,27 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useCallback, useEffect, useState } from 'react';
-import {
-  Input,
-  Space,
-  Button,
-  Col,
-  Dropdown,
-  MenuProps,
-  Row,
-  Table,
-  TableColumnsType,
-  Tooltip,
-  Drawer,
-  Checkbox,
-} from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import React, { FC, useEffect, useState } from 'react';
+import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
 import { ApiData, useGetAsset } from '@/lib/fetch-data';
-import { useRouter } from 'next/navigation';
 import {
-  EllipsisOutlined,
-  EditOutlined,
   CopyOutlined,
   ExportOutlined,
   DeleteOutlined,
-  StarOutlined,
-  EyeOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  MoreOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { Processes as ProcessType } from '@/lib/fetch-data';
-import { TableRowSelection } from 'antd/es/table/interface';
 import cn from 'classnames';
-import Preview from './previewProcess';
-import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
+
+type Processes = ApiData<'/process', 'get'>;
+type Process = Processes[number];
 
 const fuseOptions = {
   /* Option for Fuzzy-Search for Processlistfilter */
@@ -66,8 +45,6 @@ const fuseOptions = {
 const { Search } = Input;
 
 const Processes: FC = () => {
-  const router = useRouter();
-
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
     params: {
       query: { noBpmn: true },
@@ -79,7 +56,7 @@ const Processes: FC = () => {
   const setProcesses = useProcessesStore((state) => state.setProcesses);
 
   const [selection, setSelection] = useState<Processes>([]);
-  const [hovered, setHovered] = useState<ApiData<'/process', 'get'>[number] | undefined>(undefined);
+  const [hovered, setHovered] = useState<Process | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const prefs: Preferences = getPreferences();
@@ -108,7 +85,7 @@ const Processes: FC = () => {
     setProcesses(data as any);
   }, [data, setProcesses]);
 
-  const [filteredData, setFilteredData] = useState<typeof data>([]);
+  const [filteredData, setFilteredData] = useState<Processes | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
 
   const rerenderLists = () => {

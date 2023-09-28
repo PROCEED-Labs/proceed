@@ -1,32 +1,20 @@
 import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
-import React, { Dispatch, FC, Key, SetStateAction, useState } from 'react';
+import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useState } from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
-import { Process, Processes } from '@/lib/fetch-data';
 import Viewer from './bpmn-viewer';
 import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
 
 import { generateDateString } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
+import { ApiData } from '@/lib/fetch-data';
+
+type Processes = ApiData<'/process', 'get'>;
+type Process = Processes[number];
 
 type TabCardProps = {
-  item:
-    | {
-        description: string;
-        processIds: string[];
-        variables: [];
-        departments: [];
-        inEditingBy: [];
-        createdOn: Date;
-        lastEdited: Date;
-        shared: boolean;
-        versions: ({ version: number | string; name: string; description: string } | null)[];
-        definitionId: string;
-        definitionName: string;
-        bpmn?: string;
-      }[]
-    | undefined;
+  item: Process;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
@@ -44,8 +32,10 @@ const tabList = [
   },
 ];
 
+type Tab = (typeof tabList)[number]['key'];
+
 const generateDescription = (data: Process) => {
-  const { description, createdOn, lastEdited, definitionName, definitionId, owner } = data;
+  const { description, createdOn, lastEdited, owner } = data;
   const desc: DescriptionsProps['items'] = [
     {
       key: `1`,
@@ -77,7 +67,7 @@ const generateDescription = (data: Process) => {
 };
 
 const generateContentList = (data: Process) => {
-  const contentList: Record<string, React.ReactNode> = {
+  return {
     viewer: (
       <div
         style={{
@@ -99,19 +89,17 @@ const generateContentList = (data: Process) => {
         items={generateDescription(data)}
       />
     ),
-  };
-
-  return contentList;
+  } as { [key in Tab]: ReactNode };
 };
 
 const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
   const router = useRouter();
-  const [activeTabKey, setActiveTabKey] = useState<string>('viewer');
+  const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
-  const onTabChange = (key: string) => {
+  const onTabChange = (key: Tab) => {
     setActiveTabKey(key);
   };
 

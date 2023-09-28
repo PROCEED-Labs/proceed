@@ -1,46 +1,41 @@
-import { Process, Processes } from '@/lib/fetch-data';
 import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,
   useState,
   FC,
-  useMemo,
   PropsWithChildren,
   Key,
   Dispatch,
   SetStateAction,
 } from 'react';
 import {
-  EllipsisOutlined,
-  EditOutlined,
   CopyOutlined,
   ExportOutlined,
   DeleteOutlined,
   StarOutlined,
   EyeOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
   MoreOutlined,
-  CloseOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useProcessesStore } from '@/lib/use-local-process-store';
-import { TableRowSelection } from 'antd/es/table/interface';
+import { ColumnType, TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import Preview from './previewProcess';
-
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
-import MetaData from './process-info-card';
 import { generateDateString } from '@/lib/utils';
+import { ApiData } from '@/lib/fetch-data';
 
-type ProcessListType = PropsWithChildren & {
-  data: Processes;
+type Processes = ApiData<'/process', 'get'>;
+type Process = Processes[number];
+
+type ProcessListProps = PropsWithChildren<{
+  data?: Processes;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
-};
+}>;
 
 const ColumnHeader = [
   'Process Name',
@@ -51,7 +46,7 @@ const ColumnHeader = [
   'Owner',
 ];
 
-const clipText = (dataIndexElement, record, index) => {
+const clipText: ColumnType<Process>['render'] = (dataIndexElement, record, index) => {
   return (
     <div
       style={{
@@ -69,7 +64,7 @@ const clipText = (dataIndexElement, record, index) => {
 const numberOfRows = Math.floor((window?.innerHeight - 340) / 47);
 console.log(numberOfRows);
 
-const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoading }) => {
+const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLoading }) => {
   const router = useRouter();
 
   const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
@@ -96,58 +91,53 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
     }, 200);
   };
 
-  const actionBarGenerator = useCallback(
-    (record: Process) => {
-      return (
-        <>
-          <Tooltip placement="top" title={'Preview'}>
-            <EyeOutlined
-              onClick={() => {
-                setPreviewProcess(record);
-                setPreviewerOpen(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip placement="top" title={'Copy'}>
-            <CopyOutlined />
-          </Tooltip>
-          <Tooltip placement="top" title={'Export'}>
-            <ExportOutlined />
-          </Tooltip>
-          <Tooltip placement="top" title={'Delete'}>
-            <DeleteOutlined />
-          </Tooltip>
-        </>
-      );
-    },
-    [setPreviewProcess, setPreviewerOpen],
-  );
+  const actionBarGenerator = useCallback((record: Process) => {
+    return (
+      <>
+        <Tooltip placement="top" title={'Preview'}>
+          <EyeOutlined
+            onClick={() => {
+              setPreviewProcess(record);
+              setPreviewerOpen(true);
+            }}
+          />
+        </Tooltip>
+        <Tooltip placement="top" title={'Copy'}>
+          <CopyOutlined />
+        </Tooltip>
+        <Tooltip placement="top" title={'Export'}>
+          <ExportOutlined />
+        </Tooltip>
+        <Tooltip placement="top" title={'Delete'}>
+          <DeleteOutlined />
+        </Tooltip>
+      </>
+    );
+  }, []);
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection: TableRowSelection<Process> = useMemo(() => {
-    return {
-      selectedRowKeys: selection,
-      onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
-        setSelection(selectedRowKeys);
-      },
-      getCheckboxProps: (record: Processes[number]) => ({
-        name: record.definitionId,
-      }),
-      onSelect: (record, selected, selectedRows, nativeEvent) => {
-        // setSelection(selectedRows);
-        setSelection(selectedRows.map((row) => row.definitionId));
-      },
-      onSelectNone: () => {
-        // setSelection([]);
-        setSelection([]);
-      },
-      onSelectAll: (selected, selectedRows, changeRows) => {
-        // setSelection(selectedRows);
-        setSelection(selectedRows.map((row) => row.definitionId));
-      },
-    };
-  }, [selection, setSelection]);
+  const rowSelection: TableRowSelection<Process> = {
+    selectedRowKeys: selection,
+    onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
+      setSelection(selectedRowKeys);
+    },
+    getCheckboxProps: (record: Processes[number]) => ({
+      name: record.definitionId,
+    }),
+    onSelect: (record, selected, selectedRows, nativeEvent) => {
+      // setSelection(selectedRows);
+      setSelection(selectedRows.map((row) => row.definitionId));
+    },
+    onSelectNone: () => {
+      // setSelection([]);
+      setSelection([]);
+    },
+    onSelectAll: (selected, selectedRows, changeRows) => {
+      // setSelection(selectedRows);
+      setSelection(selectedRows.map((row) => row.definitionId));
+    },
+  };
 
   const [selectedColumns, setSelectedColumns] = useState([
     '',
@@ -156,40 +146,33 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
     'Last Edited',
   ]);
 
-  const onCheckboxChange = useCallback(
-    (e: CheckboxChangeEvent) => {
-      e.stopPropagation();
-      const { checked, value } = e.target;
-      if (checked) {
-        setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
-      } else {
-        setSelectedColumns((prevSelectedColumns) =>
-          prevSelectedColumns.filter((column) => column !== value),
-        );
-      }
-    },
-    [setSelectedColumns],
-  );
+  const onCheckboxChange = (e: CheckboxChangeEvent) => {
+    e.stopPropagation();
+    const { checked, value } = e.target;
+    if (checked) {
+      setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
+    } else {
+      setSelectedColumns((prevSelectedColumns) =>
+        prevSelectedColumns.filter((column) => column !== value),
+      );
+    }
+  };
 
-  const items: MenuProps['items'] = useMemo(
-    () =>
-      ColumnHeader.map((title) => ({
-        label: (
-          <>
-            <Checkbox
-              checked={selectedColumns.includes(title)}
-              onChange={onCheckboxChange}
-              onClick={(e) => e.stopPropagation()}
-              value={title}
-            >
-              {title}
-            </Checkbox>
-          </>
-        ),
-        key: title,
-      })),
-    [onCheckboxChange, selectedColumns],
-  );
+  const items: MenuProps['items'] = ColumnHeader.map((title) => ({
+    label: (
+      <>
+        <Checkbox
+          checked={selectedColumns.includes(title)}
+          onChange={onCheckboxChange}
+          onClick={(e) => e.stopPropagation()}
+          value={title}
+        >
+          {title}
+        </Checkbox>
+      </>
+    ),
+    key: title,
+  }));
 
   const columns: TableColumnsType<Processes[number]> = [
     {
@@ -247,7 +230,7 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => b.lastEdited.getTime() - a.lastEdited.getTime(),
+      sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
         //   // TODO: This is a hack to clear the parallel route when selecting
@@ -263,7 +246,7 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: (a, b) => b.createdOn.getTime() - a.createdOn.getTime(),
+      sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
         //   // TODO: This is a hack to clear the parallel route when selecting
@@ -504,7 +487,7 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
     },
   ];
 
-  const columns2 = [
+  const columns2: TableColumnsType<Processes[number]> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -594,8 +577,8 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
             } else if (event.shiftKey) {
               /* At least one element selected */
               if (selection.length) {
-                const iLast = data.findIndex((process) => process.definitionId === lastProcessId);
-                const iCurr = data.findIndex(
+                const iLast = data!.findIndex((process) => process.definitionId === lastProcessId);
+                const iCurr = data!.findIndex(
                   (process) => process.definitionId === record?.definitionId,
                 );
                 /* Identical to last clicked */
@@ -603,10 +586,14 @@ const ProcessList: FC<ProcessListType> = ({ data, selection, setSelection, isLoa
                   setSelection([record?.definitionId]);
                 } else if (iLast < iCurr) {
                   /* Clicked comes after last slected */
-                  setSelection(data.slice(iLast, iCurr + 1).map((process) => process.definitionId));
+                  setSelection(
+                    data!.slice(iLast, iCurr + 1).map((process) => process.definitionId),
+                  );
                 } else if (iLast > iCurr) {
                   /* Clicked comes before last slected */
-                  setSelection(data.slice(iCurr, iLast + 1).map((process) => process.definitionId));
+                  setSelection(
+                    data!.slice(iCurr, iLast + 1).map((process) => process.definitionId),
+                  );
                 }
               } else {
                 /* Nothing selected */

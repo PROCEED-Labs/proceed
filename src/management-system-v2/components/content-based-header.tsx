@@ -1,6 +1,6 @@
 'use client';
 
-import { Breadcrumb, Select, Space, Tooltip, theme } from 'antd';
+import { Breadcrumb, BreadcrumbProps, Select, Space, Tooltip, theme } from 'antd';
 import { usePathname } from 'next/navigation';
 import React, { FC, use, useEffect, useState } from 'react';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
@@ -45,60 +45,56 @@ const HeaderMenu: FC = () => {
   };
 
   // const [items, setItems] = useState<BreadcrumbItem[]>([]);
-  let items;
-
-  useEffect(() => {
-    items = [
-      /* Processes: */
-      {
-        title: (
-          <Tooltip placement="rightBottom" title={`Select a process`}>
-            {selectedProcess?.definitionName}
+  let items: BreadcrumbProps['items'] = [
+    /* Processes: */
+    {
+      title: (
+        <Tooltip placement="rightBottom" title={`Select a process`}>
+          {selectedProcess?.definitionName}
+        </Tooltip>
+      ),
+      menu: {
+        items: processes
+          ? processes
+              .map(({ definitionId, definitionName }) => ({
+                key: definitionId,
+                label: <>{definitionName}</>,
+              }))
+              .filter(({ key }) => key !== processId)
+          : [],
+        onClick: ({ key }) => {
+          setSelectedProcess(processes.find(({ definitionId }) => definitionId === key));
+          router.refresh();
+          router.push(
+            `/processes/${processes.find(({ definitionId }) => definitionId === key)
+              ?.definitionId}`,
+          );
+        },
+      },
+    },
+    /* Versions: */
+    {
+      title: (
+        <>
+          <Tooltip placement="rightBottom" title={`Select a version`}>
+            {versions.find(({ version }) => version == selectedVersion)?.name || 'Latest Version'}
           </Tooltip>
-        ),
-        menu: {
-          items: processes
-            ? processes
-                .map(({ definitionId, definitionName }) => ({
-                  key: definitionId,
-                  label: <>{definitionName}</>,
-                }))
-                .filter(({ key }) => key !== processId)
-            : [],
-          onClick: ({ key }) => {
-            setSelectedProcess(processes.find(({ definitionId }) => definitionId === key));
-            router.refresh();
-            router.push(
-              `/processes/${processes.find(({ definitionId }) => definitionId === key)
-                ?.definitionId}`,
-            );
-          },
+        </>
+      ),
+      menu: {
+        items: [
+          { key: 'latest', label: <>Latest Version</> },
+          ...versions.map(({ version, name }) => ({
+            key: `${version}`,
+            label: <>{name}</>,
+          })),
+        ],
+        onClick: ({ key }) => {
+          key === 'latest' ? setSelectedVersion(null) : setSelectedVersion(key);
         },
       },
-      /* Versions: */
-      {
-        title: (
-          <>
-            <Tooltip placement="rightBottom" title={`Select a version`}>
-              {versions.find(({ version }) => version == selectedVersion)?.name || 'Latest Version'}
-            </Tooltip>
-          </>
-        ),
-        menu: {
-          items: [
-            { key: 'latest', label: <>Latest Version</> },
-            ...versions.map(({ version, name }) => ({
-              key: `${version}`,
-              label: <>{name}</>,
-            })),
-          ],
-          onClick: ({ key }) => {
-            key === 'latest' ? setSelectedVersion(null) : setSelectedVersion(key);
-          },
-        },
-      },
-    ];
-  }, [processes, versions, selectedProcess, selectedVersion]);
+    },
+  ];
 
   return (
     <>

@@ -5,6 +5,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import cn from 'classnames';
 import styles from './login.module.scss';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const ForgotPassword: FC = () => {
   const onFinish = (values: any) => {
@@ -38,23 +39,7 @@ const ForgotPassword: FC = () => {
             </Button>
 
             <div style={{ marginTop: '15px', marginBottom: '-25px' }}>
-              <a
-                href=""
-                onClick={() => {
-                  router.push('/login');
-                }}
-              >
-                Login
-              </a>{' '}
-              ||{' '}
-              <a
-                href=""
-                onClick={() => {
-                  router.push('/register');
-                }}
-              >
-                Register
-              </a>
+              <Link href="/login">Login</Link> || <Link href="/register">Register</Link>
             </div>
           </Form.Item>
         </Form>

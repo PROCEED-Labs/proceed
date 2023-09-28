@@ -28,6 +28,7 @@ import {
   UserOutlined,
   StarOutlined,
   MenuOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -38,10 +39,18 @@ import HeaderMenu from '@/components/content-based-header';
 import HeaderActions from '@/components/header-actions';
 import { useAuthStore } from '@/lib/iam';
 import { AuthCan } from '@/lib/iamComponents';
+import Link from 'next/link';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
 }>;
+
+const getCurrentScreenSize = () => {
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+};
 
 const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
@@ -171,15 +180,18 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     //   disabled: true,
     // },
   ];
+  // const initialHeight = window!.innerHeight;
+  // const initialWidth = window!.innerWidth;
 
-  const getCurrentScreenSize = () => {
-    return {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-  };
-
-  const [screenSize, setScreenSize] = useState({ width: 1000, height: 800 });
+  const [screenSize, setScreenSize] = useState(
+    {
+      height: 1000,
+      width: 800,
+    } /*
+    { width: initialWidth, height: initialHeight }
+    Does not seem to work properly on initial load (mobile)
+    */,
+  );
 
   useEffect(() => {
     const updateScreenSize = () => {
@@ -192,23 +204,54 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     };
   }, [screenSize]);
 
+  const [siderOpened, setSiderOpened] = useState(false);
+
+  const changeSiderOpened = () => {
+    if (siderOpened) {
+      setSiderOpened(false);
+    } else {
+      setSiderOpened(true);
+    }
+  };
+
+  useEffect(() => {
+    /* This seems to be necessary since mobile does not load properly on initial load / render */
+    window!.dispatchEvent(new Event('resize'));
+  }, []);
+
   return (
     <AntLayout>
-      {/* TODO: Header change for mobile!! */}
       <AntLayout.Header
         style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
         className={styles.Header}
       >
-        <Image
-          src="/proceed.svg"
-          alt="PROCEED Logo"
-          className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
-          width={160}
-          height={63}
-          priority
-        />
+        {screenSize.width <= 412 ? (
+          //PROCEED Icon for mobile view
+          <Link href="/processes">
+            <Image
+              src="/proceed-icon.png"
+              alt="PROCEED Logo"
+              className={cn(styles.Icon, { [styles.collapsed]: collapsed })}
+              width={85}
+              height={35}
+              priority
+            />
+          </Link>
+        ) : (
+          //PROCEED Logo for desktop view
+          <Link href="/processes">
+            <Image
+              src="/proceed.svg"
+              alt="PROCEED Logo"
+              className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
+              width={160}
+              height={63}
+              priority
+            />
+          </Link>
+        )}
 
-        {<HeaderMenu />}
+        <HeaderMenu />
         <div style={{ flex: '1' }}></div>
         <Space
           style={{
@@ -216,13 +259,14 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           }}
         >
           {screenSize.width <= 412 ? (
-            // Hamburger menu for screens <= 412px
+            // Hamburger menu for mobile view
             <>
               <Button
-                icon={<MenuOutlined />}
-                onClick={() => {
-                  router.push('/profile');
-                }}
+                type="text"
+                size="large"
+                style={{ marginTop: '20px', marginLeft: '15px' }}
+                icon={<MenuOutlined style={{ fontSize: '170%' }} />}
+                onClick={changeSiderOpened}
               />
             </>
           ) : (
@@ -233,6 +277,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           )}
         </Space>
       </AntLayout.Header>
+
       <AntLayout>
         {/* //TODO: sider's border is 1 px too far right */}
         <AntLayout.Sider
@@ -334,12 +379,12 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             }}
           /> */}
         </AntLayout.Sider>
-        <AntLayout>
+        <AntLayout className="fit-height">
           <Content>
             <Space
               direction="vertical"
               size="large"
-              style={{ display: 'flex' /* , height: '100%' */ }}
+              style={{ display: 'flex', height: '100%' }}
               /* TODO: */
               className="Content"
             >

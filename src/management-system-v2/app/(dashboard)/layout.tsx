@@ -28,6 +28,7 @@ import {
   UserOutlined,
   StarOutlined,
   MenuOutlined,
+  UnlockOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -308,6 +309,34 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
                         </Item>
                       </SubMenu>
                     ) : null}
+                  </ItemGroup>
+
+                  <Divider />
+                </>
+              ) : null}
+
+              {ability.can('manage', 'User') ||
+              ability.can('manage', 'RoleMapping') ||
+              ability.can('manage', 'Role') ? (
+                <>
+                  <ItemGroup key="IAM" title="IAM">
+                    <Item
+                      key="iam/users"
+                      icon={<UserOutlined />}
+                      hidden={!ability.can('manage', 'User')}
+                    >
+                      Users
+                    </Item>
+
+                    <Item
+                      key="iam/roles"
+                      icon={<UnlockOutlined />}
+                      hidden={
+                        !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
+                      }
+                    >
+                      Roles
+                    </Item>
                   </ItemGroup>
 
                   <Divider />

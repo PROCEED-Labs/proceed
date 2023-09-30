@@ -4,7 +4,6 @@ import React, { FC, useMemo, useState } from 'react';
 import styles from '@/components/processes.module.scss';
 import cn from 'classnames';
 import { DeleteOutlined } from '@ant-design/icons';
-import Fuse from 'fuse.js';
 import {
   Tooltip,
   Space,
@@ -18,13 +17,12 @@ import {
   Popconfirm,
   App,
 } from 'antd';
-import { ApiData, useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
+import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Auth from '@/lib/AuthCanWrapper';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
-
-type User = ApiData<'/users/{id}', 'get'>;
+import useFuzySearch from '@/lib/useFuzySearch';
 
 const UsersPage: FC = () => {
   const { error, data, isLoading, refetch: refetchUsers } = useGetAsset('/users', {});
@@ -34,10 +32,14 @@ const UsersPage: FC = () => {
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
   });
 
-  const users = useMemo(() => {
-    if (!data) return [];
+  const { searchQuery, setSearchQuery, filteredData } = useFuzySearch(
+    data || [],
+    ['firstName', 'lastName', 'username', 'email'],
+    { useSearchParams: false },
+  );
 
-    return data.map((user) => ({
+  const filteredUsers = useMemo(() => {
+    return filteredData.map((user) => ({
       ...user,
       display: (
         <Space size={16}>
@@ -48,30 +50,9 @@ const UsersPage: FC = () => {
         </Space>
       ),
     }));
-  }, [data]);
+  }, [filteredData]);
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const fuse = useMemo(
-    () =>
-      users &&
-      new Fuse(users, {
-        findAllMatches: true,
-        threshold: 0.75,
-        useExtendedSearch: true,
-        ignoreLocation: true,
-        keys: ['firstName', 'lastName', 'username', 'email'] as (keyof User)[],
-      }),
-    [users],
-  );
-
-  const filteredUsers = useMemo(() => {
-    if (!fuse || searchQuery === '') return users;
-
-    const filt = fuse.search(searchQuery).map((result) => result.item);
-    return filt;
-  }, [fuse, searchQuery, users]);
 
   async function deleteUsers(userIds: string[]) {
     setSelectedRowKeys([]);
@@ -154,6 +135,7 @@ const UsersPage: FC = () => {
         <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
           <Input.Search
             size="middle"
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             allowClear
             placeholder="Search Users"

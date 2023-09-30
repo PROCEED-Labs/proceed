@@ -2,20 +2,19 @@
 import { FC } from 'react';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
-import Space from '@/components/_space';
 import HeaderActions from './header-actions';
 import { login } from '@/lib/iam';
-import { Button, Result } from 'antd';
+import { Button, Result, Space } from 'antd';
 import { LoginOutlined } from '@ant-design/icons';
 import Auth from '@/lib/AuthCanWrapper';
 
 const ProcessesPage: FC = () => {
   return (
-    <Content title="Processes" rightNode={<HeaderActions />}>
-      <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-        <Processes />
-      </Space>
-    </Content>
+    //<Content title="Processes" rightNode={<HeaderActions />}>
+    //<Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+    <Processes />
+    //</Space>
+    //</Content>
   );
 };
 

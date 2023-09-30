@@ -13,7 +13,7 @@ function validateProcess(processes, settings) {
 
   const validationResult = main.rootElements
     .filter(
-      (elem) => elem.$type.includes('Process') //not sure if filtering is actually necessary here
+      (elem) => elem.$type.includes('Process'), //not sure if filtering is actually necessary here
     )
     .map((processRoot) => {
       const processVal = {
@@ -106,7 +106,7 @@ function validateProcessElements(flowElements, settings, called) {
         //find called process
         let calledProcessId = elem.calledElement; //this id does not have bpmn in the front, so an exact match is impossible
         const calledProcessObj = called.find((elem) =>
-          calledProcessId.includes(elem.mainProcess.rootElements[0].id)
+          calledProcessId.includes(elem.mainProcess.rootElements[0].id),
         );
         if (!calledProcessObj) {
           passed = false;

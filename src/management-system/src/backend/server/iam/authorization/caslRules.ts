@@ -290,6 +290,10 @@ export async function rulesForUser(userId: string) {
     )
       firstExpiration = new Date(role.expiration);
 
+    if (!role.permissions) {
+      continue;
+    }
+
     for (const resource of resources) {
       if (!(resource in role.permissions)) continue;
       const permissionsForResource = role.permissions[resource];

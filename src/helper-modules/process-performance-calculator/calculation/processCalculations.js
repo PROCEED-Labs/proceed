@@ -27,7 +27,7 @@ function calculatePerformance(processObjects, settings) {
       result.processPerformance = calculateProcessPerformance(
         elem.orderedProcess,
         settings,
-        initialPerformance
+        initialPerformance,
       ); //returns {elementPerformanceArray, totalPerformance}
     }
 
@@ -74,7 +74,7 @@ function calculateProcessPerformance(orderedProcess, settings, cumulativePerform
         const nestedPerformance = calculateProcessPerformance(
           elem.nestedProcess,
           settings,
-          cumulative
+          cumulative,
         );
         const nestedTotal = nestedPerformance.totalPerformance;
         //update cumulative performance:
@@ -243,7 +243,7 @@ function calculateBlockPerformance(elem, settings, cumulativePerformance) {
       //exclusive or event-based gateway blocks
       total.duration.average = pathPerformances.reduce(
         (acc, e) => acc + e.dur.average * e.weight,
-        0
+        0,
       );
       total.duration.max = pathPerformances.reduce((acc, e) => Math.max(acc, e.dur.max), 0);
       total.duration.min = pathPerformances.reduce((acc, e) => Math.min(acc, e.dur.min), Infinity);

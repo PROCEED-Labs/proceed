@@ -195,6 +195,7 @@ export interface components {
     };
     /** processData */
     processData: {
+      description?: string;
       departments?: string[];
       /** @description The variables supposed to be used in the process */
       variables?: {

@@ -1,8 +1,6 @@
-import { PackedRulesForUser } from './caslRules';
-import { unpackRules } from '@casl/ability-v6/extra';
-import { CaslAbility, buildAbility } from './caslAbility';
+import { PackRule, unpackRules } from '@casl/ability-v6/extra';
+import { AbilityRule, CaslAbility, ResourceType, buildAbility } from './caslAbility';
 import { subject } from '@casl/ability-v6';
-import { ResourceType } from './permissionHelpers';
 
 type CanParams = Parameters<CaslAbility['can']>;
 
@@ -13,7 +11,7 @@ export function toCaslResource(resource: ResourceType, object: any) {
 export default class Ability {
   caslAbility: CaslAbility;
 
-  constructor(packedRules: PackedRulesForUser['rules']) {
+  constructor(packedRules: PackRule<AbilityRule>[]) {
     this.caslAbility = buildAbility(unpackRules(packedRules));
   }
 

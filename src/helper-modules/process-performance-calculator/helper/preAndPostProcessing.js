@@ -81,10 +81,10 @@ function editPerformanceResults(processResults, settings) {
 
         elArr.forEach((elem) => {
           elem.elementPerformance.duration = transformMilisecondsToTimeFormat(
-            elem.elementPerformance.duration
+            elem.elementPerformance.duration,
           );
           elem.cumulativePerformance.duration = transformMilisecondsToTimeFormat(
-            elem.cumulativePerformance.duration
+            elem.cumulativePerformance.duration,
           );
         });
       } else {

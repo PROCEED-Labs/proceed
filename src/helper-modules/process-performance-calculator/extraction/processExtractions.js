@@ -102,7 +102,7 @@ function buildOrderedProcess(el, definedEndIds, valElems, gateways, targetArray,
       } else if (!definedEndIds.includes(gateway.id) && gateway.isLoop == false) {
         //if not defined end and not loop: new calls for outgoing paths
         const blockPaths = gateway.outgoing.map((elem) =>
-          buildOrderedProcess(elem, gateway.potentialMatches, valElems, gateways, [], settings)
+          buildOrderedProcess(elem, gateway.potentialMatches, valElems, gateways, [], settings),
         );
         if (blockPaths.includes('unexpected error')) {
           return 'unexpected error';
@@ -145,7 +145,7 @@ function buildOrderedProcess(el, definedEndIds, valElems, gateways, targetArray,
           loopPath.pop(); //split?
           const split = gateways.find((elem) => elem.id == gateway.matchId);
           const loopingSequenceFlow = split.outgoing.find((elem) =>
-            gateway.incoming.some((el) => el.id == elem.id)
+            gateway.incoming.some((el) => el.id == elem.id),
           );
           target.push({
             $type: 'LoopBlock',

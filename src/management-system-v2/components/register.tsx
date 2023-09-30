@@ -6,6 +6,7 @@ import { AutoComplete, Cascader, Col, InputNumber, Row, Select } from 'antd';
 import cn from 'classnames';
 import styles from './register.module.scss';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const { Option } = Select;
 
@@ -185,15 +186,7 @@ const Register: FC = () => {
           </Form.Item>
 
           <div style={{ marginTop: '0px', marginBottom: '2px' }}>
-            Or{' '}
-            <a
-              href=""
-              onClick={() => {
-                router.push('/login');
-              }}
-            >
-              sign in here
-            </a>
+            Or <Link href="/login">sign in here</Link>
           </div>
         </Form>
       </Card>

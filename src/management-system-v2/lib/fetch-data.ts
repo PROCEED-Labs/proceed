@@ -97,7 +97,7 @@ export function useGetAsset<
     return keys;
   }, [path, params]);
 
-  type Data = QueryData<typeof apiClient.get<TFirstParam>> | null;
+  type Data = QueryData<typeof apiClient.get<TFirstParam>> | undefined;
 
   return useQuery({
     // eslint-disable-next-line

@@ -1,3 +1,3 @@
 export default function RolesPage() {
-  return <h2>Comming soon</h2>;
+  return <h2>Coming soon</h2>;
 }

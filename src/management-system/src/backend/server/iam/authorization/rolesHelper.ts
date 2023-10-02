@@ -1,6 +1,9 @@
-import { PermissionNumber, ResourceType } from './permissionHelpers';
 import { roleMetaObjects } from '../../../shared-electron-server/data/iam/roles';
 import { roleMappingsMetaObjects } from '../../../shared-electron-server/data/iam/role-mappings';
+import {
+  PermissionNumber,
+  ResourceType,
+} from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
 type Role = {
   name: string;

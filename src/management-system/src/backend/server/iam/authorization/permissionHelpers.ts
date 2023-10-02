@@ -1,45 +1,15 @@
 // @ts-ignore
 import { PERMISSION_MAPPING } from 'proceed-management-system/src/shared-frontend-backend/constants';
+import {
+  ResourceActionType,
+  resourceAction,
+} from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
-export const resources = [
-  'Process',
-  'Project',
-  'Template',
-  'Task',
-  'Machine',
-  'Execution',
-  'Role',
-  'User',
-  'Setting',
-  'EnvConfig',
-  'RoleMapping', // added in, in order to do it "the casl way"
-  'Share', // added in, in order to do it "the casl way"
-  'All',
-] as const;
-export type ResourceType = (typeof resources)[number];
-
-export const resourceAction = [
-  'none',
-  'view',
-  'update',
-  'create',
-  'delete',
-  'manage',
-  'share',
-  'manage-roles',
-  'manage-groups',
-  'manage-password',
-  'admin',
-] as const;
-export type ResourceActionType = (typeof resourceAction)[number];
-
-export type PermissionNumber = number;
-
-type ResourceActionsMappingType = Record<ResourceActionType, PermissionNumber>;
+type ResourceActionsMappingType = Record<ResourceActionType, number>;
 const ResourceActionsMapping = PERMISSION_MAPPING as ResourceActionsMappingType;
 
 export const adminPermissions = 9007199254740991;
-export function permissionNumberToIdentifiers(permission: PermissionNumber): ResourceActionType[] {
+export function permissionNumberToIdentifiers(permission: number): ResourceActionType[] {
   if (permission === 0) {
     return ['none'];
   }

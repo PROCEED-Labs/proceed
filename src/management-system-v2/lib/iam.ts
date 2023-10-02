@@ -1,14 +1,9 @@
 'use client';
 
 import { create } from 'zustand';
-import Ability from 'proceed-management-system/src/backend/server/iam/authorization/abilityHelper';
-import {
-  PackedRulesForUser,
-  adminRules,
-} from 'proceed-management-system/src/backend/server/iam/authorization/caslRules';
-import { ResourceType } from 'proceed-management-system/src/backend/server/iam/authorization/permissionHelpers';
-import { packRules } from '@casl/ability/extra';
-import { AbilityRule } from 'proceed-management-system/src/backend/server/iam/authorization/caslAbility';
+import { PackRule, packRules } from '@casl/ability/extra';
+import { AbilityRule, ResourceType } from './ability/caslAbility';
+import Ability from './ability/abilityHelper';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
@@ -41,7 +36,7 @@ interface AuthResponse {
   handled: boolean;
   permissions: Partial<Record<ResourceType, { actions: number[]; conditions?: any }>>;
   csrfToken: string;
-  userRules: PackedRulesForUser;
+  userRules: { rules: PackRule<AbilityRule>[]; expiration: Date };
 }
 
 type AuthStoreType = (
@@ -85,7 +80,7 @@ export const useAuthStore = create<AuthStoreType>((set) => ({
   ability: new Ability(
     process.env.NEXT_PUBLIC_USE_AUTH
       ? []
-      : packRules([{ action: 'admin', subject: 'All' }] as AbilityRule),
+      : packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[]),
   ),
   csrfToken: '',
   oauthCallback(obj: AuthResponse | undefined) {

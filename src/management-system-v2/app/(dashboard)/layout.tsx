@@ -190,7 +190,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     } /*
     { width: initialWidth, height: initialHeight }
     Does not seem to work properly on initial load (mobile)
-    */
+    */,
   );
 
   useEffect(() => {

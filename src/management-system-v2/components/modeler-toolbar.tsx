@@ -70,7 +70,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
       await createNewProcessVersion(
         saveXMLResult.xml,
         values.versionName,
-        values.versionDescription
+        values.versionDescription,
       );
       refetchProcess();
     }

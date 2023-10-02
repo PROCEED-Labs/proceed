@@ -46,7 +46,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
       /* Trigger Viewer rerender: */
       setDrawerHeight((prev) => prev + 1);
     },
-    [handleMouseMove]
+    [handleMouseMove],
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {

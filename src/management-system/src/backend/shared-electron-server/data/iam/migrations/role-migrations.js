@@ -7,14 +7,14 @@ export const roleMigrations = [
     default: true,
     description: 'Default role for all authenticated PROCEED users.',
     note: 'This role cannot be removed!',
-    permissions: null,
+    permissions: {},
   },
   {
     name: '@guest',
     default: true,
     description: 'Default role for all unauthenticated PROCEED users.',
     note: 'This role cannot be removed!',
-    permissions: null,
+    permissions: {},
   },
   {
     name: '@admin',

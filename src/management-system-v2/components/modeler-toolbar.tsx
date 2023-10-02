@@ -4,31 +4,15 @@ import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import {
-  Select,
-  FloatButton,
-  Row,
-  Col,
-  Space,
-  Tooltip,
-  Button,
-  Dropdown,
-  message,
-  Badge,
-} from 'antd';
+import { Row, Col, Tooltip, Button } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
-import type { MenuProps } from 'antd';
 
 import Icon, {
-  QuestionCircleOutlined,
-  DownOutlined,
   FormOutlined,
   ExportOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined,
   SettingOutlined,
   PlusOutlined,
-  WarningOutlined,
 } from '@ant-design/icons';
 
 import { SvgXML, SvgShare } from '@/components/svg';
@@ -37,13 +21,13 @@ import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
-import { useProcess } from '@/lib/process-queries';
-import { MenuItemType } from 'antd/es/menu/hooks/useItems';
+import { createNewProcessVersion } from '@/lib/helpers';
+import VersionCreationButton from './version-creation-button';
+import { useGetAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
 };
-
 const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
@@ -53,14 +37,18 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
-  const versions = useModelerStateStore((state) => state.versions);
   const setVersions = useModelerStateStore((state) => state.setVersions);
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
 
-  const { isSuccess, data: processData } = useProcess(processId as string);
+  const {
+    isSuccess,
+    data: processData,
+    refetch: refetchProcess,
+  } = useGetAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
 
   let selectedElement;
 
@@ -72,11 +60,24 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
       : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
   }
 
+  const createProcessVersion = async (values: {
+    versionName: string;
+    versionDescription: string;
+  }) => {
+    const saveXMLResult = await modeler?.saveXML({ format: true });
+
+    if (saveXMLResult?.xml) {
+      await createNewProcessVersion(
+        saveXMLResult.xml,
+        values.versionName,
+        values.versionDescription
+      );
+      refetchProcess();
+    }
+  };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
-
-  let versionSelection: MenuItemType[] = [];
 
   useEffect(() => {
     if (isSuccess) {
@@ -84,64 +85,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     }
   }, [isSuccess, processData, setVersions]);
 
-  versionSelection = (
-    versions as { version: number | string; name: string; description: string }[]
-  ).map(({ version, name, description }) => ({
-    key: version,
-    label: name,
-  }));
-
-  versionSelection.unshift({ key: -1, label: 'Latest Version' });
-  const handleVersionSelectionChange: MenuProps['onClick'] = (e) => {
-    setSelectedVersion(+e.key < 0 ? null : +e.key);
-    message.info(
-      `Loading ${
-        +e.key < 0
-          ? versionSelection![0]?.label
-          : versionSelection!.find((item) => item!.key == e?.key)?.label
-      }...`,
-    );
-    // TODO:
-    // const newIndex = versionSelection!.findIndex((item) => item!.key === +e.key);
-    // setIndex(newIndex);
-  };
-
-  const menuProps = {
-    items: versionSelection.map((e) => {
-      return {
-        key: `${e!.key}`,
-        label: `${e!.label}`,
-      };
-    }),
-    onClick: handleVersionSelectionChange,
-  };
-
-  const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
-
   return (
     <>
       <Toolbar>
-        <Row justify="space-between">
-          <Col>
-            <ToolbarGroup>
-              {/*<Button>Test</Button>
-              <Select
-                defaultValue={-1}
-                options={versionSelection}
-                popupMatchSelectWidth={false}
-                onChange={handleVersionSelectionChange}
-  />*/}
-
-              <Dropdown.Button icon={<DownOutlined />} menu={menuProps}>
-                {/* {versionSelection[index].label} */}
-                {versionSelection &&
-                  (selectedVersion != null
-                    ? versionSelection!.find((item) => item!.key == selectedVersion)?.label
-                    : versionSelection[0].label)}
-                {/* TODO: */}
-              </Dropdown.Button>
-            </ToolbarGroup>
-          </Col>
+        <Row justify="end">
           <Col>
             <ToolbarGroup>
               {/* <Button>Test</Button>
@@ -170,7 +117,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 <Button icon={svgShare}></Button>
               </Tooltip>
               <Tooltip title="Create New Version">
-                <Button icon={<PlusOutlined />}></Button>
+                <VersionCreationButton
+                  icon={<PlusOutlined />}
+                  createVersion={createProcessVersion}
+                ></VersionCreationButton>
               </Tooltip>
             </ToolbarGroup>
             {showPropertiesPanel && <div style={{ width: '650px' }}></div>}

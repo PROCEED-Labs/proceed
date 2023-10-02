@@ -2,14 +2,9 @@ import express from 'express';
 import requestResource from '../index.js';
 import { validateUser } from '../../middleware/inputValidations.js';
 import { ensureCleanRoleMappings } from '../../utils/roleMappings.js';
-import { isAllowed, isAuthenticated } from '../../middleware/authorization.js';
-import {
-  PERMISSION_CREATE,
-  PERMISSION_UPDATE,
-  PERMISSION_DELETE,
-  PERMISSION_MANAGE,
-  PERMISSION_MANAGE_PASSWORD,
-} from '../../../../../shared-frontend-backend/constants/index.js';
+import { isAllowed, isAuthenticated } from '../../middleware/authorization';
+import { toCaslResource } from '../../authorization/caslRules';
+import Ability from '../../authorization/abilityHelper';
 
 const userRouter = express.Router();
 
@@ -68,42 +63,44 @@ userRouter.get('/:id', isAuthenticated(), async (req, res) => {
  * @param {Object} req.body - representation of a user in the request body https://www.keycloak.org/docs-api/5.0/rest-api/index.html#_userrepresentation
  * @returns {String} - id of created user
  */
-userRouter.post(
-  '/',
-  validateUser,
-  isAllowed([PERMISSION_CREATE, PERMISSION_MANAGE], 'User'),
-  async (req, res) => {
-    const user = req.body;
-    const password = user.password;
-    delete user.password;
-    user.firstName = user.firstName[0].toUpperCase() + user.firstName.slice(1); //ensure capital names
-    user.lastName = user.lastName[0].toUpperCase() + user.lastName.slice(1); //ensure capital names
-    if (user && password) {
-      try {
-        const id = await requestResource(`/users`, {
-          method: 'POST',
-          body: user,
-          returnIdOfLocationHeader: true,
+userRouter.post('/', validateUser, isAllowed('create', 'User'), async (req, res) => {
+  const user = req.body;
+  const password = user.password;
+  delete user.password;
+  user.firstName = user.firstName[0].toUpperCase() + user.firstName.slice(1); //ensure capital names
+  user.lastName = user.lastName[0].toUpperCase() + user.lastName.slice(1); //ensure capital names
+
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('create', toCaslResource('User', user)))
+    return res.status(403).send('Forbidden.');
+
+  if (user && password) {
+    try {
+      const id = await requestResource(`/users`, {
+        method: 'POST',
+        body: user,
+        returnIdOfLocationHeader: true,
+      });
+      if (id) {
+        await requestResource(`/users/${id}/reset-password`, {
+          method: 'PUT',
+          body: { value: password },
         });
-        if (id) {
-          await requestResource(`/users/${id}/reset-password`, {
-            method: 'PUT',
-            body: { value: password },
-          });
-          return res.status(201).json(id);
-        } else {
-          return res.status(400).json('Something went wrong');
-        }
-      } catch (e) {
-        return res.status(400).json({ error: e.toString() });
+        return res.status(201).json(id);
+      } else {
+        return res.status(400).json('Something went wrong');
       }
-    } else {
-      return res
-        .status(400)
-        .json('Missing parameter user and/or missing temporary password for user');
+    } catch (e) {
+      return res.status(400).json({ error: e.toString() });
     }
-  },
-);
+  } else {
+    return res
+      .status(400)
+      .json('Missing parameter user and/or missing temporary password for user');
+  }
+});
 
 /**
  * update password for a user from keycloak
@@ -112,27 +109,30 @@ userRouter.post(
  * @param {Object} req.body - contains the new password for the user
  * @returns {String} - id of updated user
  */
-userRouter.put(
-  '/:id/update-password',
-  isAllowed(PERMISSION_MANAGE_PASSWORD, 'User'),
-  async (req, res) => {
-    const { password } = req.body;
-    const { id } = req.params;
-    if (id && password) {
-      try {
-        await requestResource(`/users/${id}/reset-password`, {
-          method: 'PUT',
-          body: { value: password },
-        });
-        return res.status(201).json(id);
-      } catch (e) {
-        return res.status(400).json({ error: e.toString() });
-      }
-    } else {
-      return res.status(400).json('Missing parameter id and/or password');
+userRouter.put('/:id/update-password', isAllowed('update', 'User'), async (req, res) => {
+  const { password } = req.body;
+  const { id } = req.params;
+
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('update', toCaslResource('User', { id }), 'password'))
+    return res.status(403).send('Forbidden.');
+
+  if (id && password) {
+    try {
+      await requestResource(`/users/${id}/reset-password`, {
+        method: 'PUT',
+        body: { value: password },
+      });
+      return res.status(201).json(id);
+    } catch (e) {
+      return res.status(400).json({ error: e.toString() });
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing parameter id and/or password');
+  }
+});
 
 /**
  * update a specific user from keycloak
@@ -141,28 +141,29 @@ userRouter.put(
  * @param {Object} req.body - updated representation of a user from keycloak in the request body https://www.keycloak.org/docs-api/5.0/rest-api/index.html#_userrepresentation
  * @returns {String} - id of updated user
  */
-userRouter.put(
-  '/:id',
-  validateUser,
-  isAllowed([PERMISSION_UPDATE, PERMISSION_MANAGE], 'User'),
-  async (req, res) => {
-    const user = req.body;
-    const { id } = req.params;
-    if (id && user) {
-      try {
-        await requestResource(`/users/${id}`, {
-          method: 'PUT',
-          body: user,
-        });
-        return res.status(204).end();
-      } catch (e) {
-        return res.status(400).json({ error: e.toString() });
-      }
-    } else {
-      return res.status(400).json('Missing parameter id and/or user');
+userRouter.put('/:id', validateUser, isAllowed('update', 'User'), async (req, res) => {
+  const user = req.body;
+  const { id } = req.params;
+  if (id && user) {
+    try {
+      /** @type {Ability} */
+      const userAbility = req.userAbility;
+
+      if (!userAbility.checkInputFields(toCaslResource('User', { id }), 'update', user))
+        return res.status(403).send('Forbidden.');
+
+      await requestResource(`/users/${id}`, {
+        method: 'PUT',
+        body: user,
+      });
+      return res.status(204).end();
+    } catch (e) {
+      return res.status(400).json({ error: e.toString() });
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing parameter id and/or user');
+  }
+});
 
 /**
  * delete a user from keycloak
@@ -170,25 +171,27 @@ userRouter.put(
  * @param {String} id - the id of the user from keycloak in the body
  * @returns {String} - id of deleted user
  */
-userRouter.delete(
-  '/:id',
-  isAllowed([PERMISSION_DELETE, PERMISSION_MANAGE], 'User'),
-  async (req, res) => {
-    const { id } = req.params;
-    if (id) {
-      try {
-        await requestResource(`/users/${id}`, {
-          method: 'DELETE',
-        });
-        res.status(204).end();
-        await ensureCleanRoleMappings(id);
-      } catch (e) {
-        return res.status(400).json({ error: e.toString() });
-      }
-    } else {
-      return res.status(400).json('Missing parameter id');
+userRouter.delete('/:id', isAllowed('delete', 'User'), async (req, res) => {
+  const { id } = req.params;
+  if (id) {
+    try {
+      /** @type {Ability} */
+      const userAbility = req.userAbility;
+
+      if (!userAbility.can('delete', toCaslResource('User', { id })))
+        return res.status(403).send('Forbidden.');
+
+      await requestResource(`/users/${id}`, {
+        method: 'DELETE',
+      });
+      res.status(204).end();
+      await ensureCleanRoleMappings(id);
+    } catch (e) {
+      return res.status(400).json({ error: e.toString() });
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing parameter id');
+  }
+});
 
 export default userRouter;

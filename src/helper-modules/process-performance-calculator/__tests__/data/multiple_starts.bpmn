@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_ef5a6e8f-6873-4a50-af6c-a8b5cd09824e" name="multiple_starts" targetNamespace="https://docs.proceed-labs.org/_ef5a6e8f-6873-4a50-af6c-a8b5cd09824e" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_02xwfjk" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <extensionElements>
+      <proceed:meta>
+        <proceed:orderNumber />
+        <proceed:orderName>multiple_starts</proceed:orderName>
+        <proceed:orderCode />
+        <proceed:customerId />
+        <proceed:customerName />
+      </proceed:meta>
+    </extensionElements>
+    <startEvent id="StartEvent_1ada9v6">
+      <outgoing>Flow_0yt1srv</outgoing>
+    </startEvent>
+    <task id="Activity_1p01r5u">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0yt1srv</incoming>
+      <outgoing>Flow_1f4avby</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0yt1srv" sourceRef="StartEvent_1ada9v6" targetRef="Activity_1p01r5u" />
+    <exclusiveGateway id="Gateway_1ymy927">
+      <incoming>Flow_1f4avby</incoming>
+      <incoming>Flow_11n7cmz</incoming>
+      <outgoing>Flow_1bphvtg</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1f4avby" sourceRef="Activity_1p01r5u" targetRef="Gateway_1ymy927" />
+    <startEvent id="Event_0ev88s1">
+      <outgoing>Flow_1r3ykay</outgoing>
+    </startEvent>
+    <task id="Activity_1c51ih5">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1r3ykay</incoming>
+      <outgoing>Flow_11n7cmz</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1r3ykay" sourceRef="Event_0ev88s1" targetRef="Activity_1c51ih5" />
+    <sequenceFlow id="Flow_11n7cmz" sourceRef="Activity_1c51ih5" targetRef="Gateway_1ymy927" />
+    <task id="Activity_1grhrds">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1bphvtg</incoming>
+      <outgoing>Flow_12ap9wc</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1bphvtg" sourceRef="Gateway_1ymy927" targetRef="Activity_1grhrds" />
+    <endEvent id="Event_1udkixb">
+      <incoming>Flow_12ap9wc</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_12ap9wc" sourceRef="Activity_1grhrds" targetRef="Event_1udkixb" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_02xwfjk">
+      <bpmndi:BPMNShape id="StartEvent_1ada9v6_di" bpmnElement="StartEvent_1ada9v6">
+        <dc:Bounds x="-48" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1p01r5u_di" bpmnElement="Activity_1p01r5u">
+        <dc:Bounds x="40" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ymy927_di" bpmnElement="Gateway_1ymy927" isMarkerVisible="true">
+        <dc:Bounds x="195" y="45" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ev88s1_di" bpmnElement="Event_0ev88s1">
+        <dc:Bounds x="-48" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1c51ih5_di" bpmnElement="Activity_1c51ih5">
+        <dc:Bounds x="40" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1grhrds_di" bpmnElement="Activity_1grhrds">
+        <dc:Bounds x="300" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1udkixb_di" bpmnElement="Event_1udkixb">
+        <dc:Bounds x="462" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0yt1srv_di" bpmnElement="Flow_0yt1srv">
+        <di:waypoint x="-12" y="70" />
+        <di:waypoint x="40" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1f4avby_di" bpmnElement="Flow_1f4avby">
+        <di:waypoint x="140" y="70" />
+        <di:waypoint x="195" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1r3ykay_di" bpmnElement="Flow_1r3ykay">
+        <di:waypoint x="-12" y="170" />
+        <di:waypoint x="40" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11n7cmz_di" bpmnElement="Flow_11n7cmz">
+        <di:waypoint x="140" y="170" />
+        <di:waypoint x="220" y="170" />
+        <di:waypoint x="220" y="95" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bphvtg_di" bpmnElement="Flow_1bphvtg">
+        <di:waypoint x="245" y="70" />
+        <di:waypoint x="300" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12ap9wc_di" bpmnElement="Flow_12ap9wc">
+        <di:waypoint x="400" y="70" />
+        <di:waypoint x="462" y="70" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

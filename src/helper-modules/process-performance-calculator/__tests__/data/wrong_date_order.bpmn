@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_db75d278-689b-4cf1-b1e7-5a166a1dee74" name="wrong_date_order" targetNamespace="https://docs.proceed-labs.org/_db75d278-689b-4cf1-b1e7-5a166a1dee74" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_1e63whr" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <extensionElements>
+      <proceed:meta>
+        <proceed:orderNumber />
+        <proceed:orderName>wrong_date_order</proceed:orderName>
+        <proceed:orderCode />
+        <proceed:customerId />
+        <proceed:customerName />
+      </proceed:meta>
+    </extensionElements>
+    <startEvent id="StartEvent_0m9ll8q">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:timePlannedOccurrence>2023-08-14T06:00:00+02:00</proceed:timePlannedOccurrence>
+        </proceed:meta>
+      </extensionElements>
+      <outgoing>Flow_1ep9yy2</outgoing>
+    </startEvent>
+    <task id="Activity_1pzhcpl">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">5</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT5M</proceed:timePlannedDuration>
+          <proceed:timePlannedOccurrence>2023-08-14T08:00:00+02:00</proceed:timePlannedOccurrence>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1ep9yy2</incoming>
+      <outgoing>Flow_0vszusl</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1ep9yy2" sourceRef="StartEvent_0m9ll8q" targetRef="Activity_1pzhcpl" />
+    <exclusiveGateway id="Gateway_1lfejim">
+      <incoming>Flow_0vszusl</incoming>
+      <outgoing>Flow_1xlcfj6</outgoing>
+      <outgoing>Flow_1wnx2ge</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_0vszusl" sourceRef="Activity_1pzhcpl" targetRef="Gateway_1lfejim" />
+    <task id="Activity_1c1g50l">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">10</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT7M</proceed:timePlannedDuration>
+          <proceed:timePlannedOccurrence>2023-08-14T07:00:00+02:00</proceed:timePlannedOccurrence>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1xlcfj6</incoming>
+      <outgoing>Flow_1s9krfw</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1xlcfj6" sourceRef="Gateway_1lfejim" targetRef="Activity_1c1g50l">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:occurrenceProbability>50</proceed:occurrenceProbability>
+        </proceed:meta>
+      </extensionElements>
+    </sequenceFlow>
+    <task id="Activity_02ucvdv">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:costsPlanned unit="EUR">10</proceed:costsPlanned>
+          <proceed:timePlannedDuration>PT10M</proceed:timePlannedDuration>
+          <proceed:timePlannedEnd>2023-08-14T09:00:00+02:00</proceed:timePlannedEnd>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_1wnx2ge</incoming>
+      <outgoing>Flow_1acbw56</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1wnx2ge" sourceRef="Gateway_1lfejim" targetRef="Activity_02ucvdv">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:occurrenceProbability>50</proceed:occurrenceProbability>
+        </proceed:meta>
+      </extensionElements>
+    </sequenceFlow>
+    <exclusiveGateway id="Gateway_0s7wxj1">
+      <incoming>Flow_1s9krfw</incoming>
+      <incoming>Flow_1acbw56</incoming>
+      <outgoing>Flow_0xvp6k4</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1s9krfw" sourceRef="Activity_1c1g50l" targetRef="Gateway_0s7wxj1" />
+    <sequenceFlow id="Flow_1acbw56" sourceRef="Activity_02ucvdv" targetRef="Gateway_0s7wxj1" />
+    <endEvent id="Event_0do6w9z">
+      <extensionElements>
+        <proceed:meta>
+          <proceed:timePlannedEnd>2023-08-14T09:30:00+02:00</proceed:timePlannedEnd>
+        </proceed:meta>
+      </extensionElements>
+      <incoming>Flow_0xvp6k4</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0xvp6k4" sourceRef="Gateway_0s7wxj1" targetRef="Event_0do6w9z" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1e63whr">
+      <bpmndi:BPMNShape id="StartEvent_0m9ll8q_di" bpmnElement="StartEvent_0m9ll8q">
+        <dc:Bounds x="-88" y="62" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1pzhcpl_di" bpmnElement="Activity_1pzhcpl">
+        <dc:Bounds x="0" y="40" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lfejim_di" bpmnElement="Gateway_1lfejim" isMarkerVisible="true">
+        <dc:Bounds x="155" y="55" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_02ucvdv_di" bpmnElement="Activity_02ucvdv">
+        <dc:Bounds x="220" y="90" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1c1g50l_di" bpmnElement="Activity_1c1g50l">
+        <dc:Bounds x="220" y="-10" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0s7wxj1_di" bpmnElement="Gateway_0s7wxj1" isMarkerVisible="true">
+        <dc:Bounds x="335" y="55" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0do6w9z_di" bpmnElement="Event_0do6w9z">
+        <dc:Bounds x="402" y="62" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1ep9yy2_di" bpmnElement="Flow_1ep9yy2">
+        <di:waypoint x="-52" y="80" />
+        <di:waypoint x="0" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vszusl_di" bpmnElement="Flow_0vszusl">
+        <di:waypoint x="100" y="80" />
+        <di:waypoint x="155" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xlcfj6_di" bpmnElement="Flow_1xlcfj6">
+        <di:waypoint x="180" y="55" />
+        <di:waypoint x="180" y="30" />
+        <di:waypoint x="220" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wnx2ge_di" bpmnElement="Flow_1wnx2ge">
+        <di:waypoint x="180" y="105" />
+        <di:waypoint x="180" y="130" />
+        <di:waypoint x="220" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s9krfw_di" bpmnElement="Flow_1s9krfw">
+        <di:waypoint x="320" y="30" />
+        <di:waypoint x="360" y="30" />
+        <di:waypoint x="360" y="55" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1acbw56_di" bpmnElement="Flow_1acbw56">
+        <di:waypoint x="320" y="130" />
+        <di:waypoint x="360" y="130" />
+        <di:waypoint x="360" y="105" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xvp6k4_di" bpmnElement="Flow_0xvp6k4">
+        <di:waypoint x="385" y="80" />
+        <di:waypoint x="402" y="80" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

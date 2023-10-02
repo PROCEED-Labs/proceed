@@ -7,14 +7,9 @@ import {
   deleteRole,
 } from '../../../shared-electron-server/data/iam/roles.js';
 import { validateRole } from '../middleware/inputValidations.js';
-import { isAllowed, isAuthenticated } from '../middleware/authorization.js';
-import {
-  PERMISSION_CREATE,
-  PERMISSION_UPDATE,
-  PERMISSION_DELETE,
-  PERMISSION_MANAGE,
-} from '../../../../shared-frontend-backend/constants/index.js';
-import { ensureOpaSync } from '../opa/opa-client.js';
+import { abilityCacheDeleteAll, isAllowed, isAuthenticated } from '../middleware/authorization';
+import { toCaslResource } from '../authorization/caslRules';
+import Ability from '../authorization/abilityHelper';
 
 const rolesRouter = express.Router();
 
@@ -59,36 +54,26 @@ rolesRouter.get('/', isAuthenticated(), async (req, res) => {
  * @param {String} req.body - role representation in request body
  * @returns {String} - newly created role
  */
-rolesRouter.post(
-  '/',
-  validateRole,
-  isAllowed([PERMISSION_CREATE, PERMISSION_MANAGE], 'Role'),
-  async (req, res) => {
-    const role = req.body;
-    role.default = false;
-    if (role) {
-      try {
-        const createdRole = await addRole(role);
-        res.status(201).json(createdRole);
-        const { expiration, id, name, permissions } = createdRole;
-        await ensureOpaSync(`roles/${createdRole.id}`, undefined, {
-          expiration,
-          id,
-          name,
-          permissions,
-          ['default']: createdRole.default,
-          admin: createdRole.admin,
-          guest: createdRole.guest,
-        });
-        return;
-      } catch (e) {
-        return res.status(400).json(e.toString());
-      }
-    } else {
-      return res.status(400).json('Missing body');
+rolesRouter.post('/', validateRole, isAllowed('create', 'Role'), async (req, res) => {
+  const role = req.body;
+  role.default = false;
+  if (role) {
+    try {
+      /** @type {Ability} */
+      const userAbility = req.userAbility;
+
+      if (!userAbility.can('create', toCaslResource('Role', role)))
+        return res.status(403).send('Forbidden.');
+
+      const createdRole = await addRole(role);
+      res.status(201).json(createdRole);
+    } catch (e) {
+      return res.status(400).json(e.toString());
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing body');
+  }
+});
 
 /**
  * update a role
@@ -96,36 +81,39 @@ rolesRouter.post(
  * @param {String} req.body - role representation in request body
  * @returns {String} - updated role
  */
-rolesRouter.put(
-  '/:id',
-  validateRole,
-  isAllowed([PERMISSION_UPDATE, PERMISSION_MANAGE], 'Role', { includeBody: true }),
-  async (req, res) => {
-    const role = req.body;
-    const { id } = req.params;
-    if (role) {
-      try {
-        const updatedRole = await updateRole(id, role);
-        res.status(200).json(updatedRole);
-        await ensureOpaSync(`roles/${updatedRole.id}`, undefined, {
-          name: updatedRole.name,
-          id: updatedRole.id,
-          expiration: updatedRole.expiration,
-          permissions: updatedRole.permissions,
-          ['default']: updatedRole.default,
-          admin: updatedRole.admin,
-          guest: updatedRole.guest,
-        });
-        return;
-      } catch (e) {
-        if (e.message === 'Role not found') return res.status(404).json({ error: e.toString() });
-        return res.status(400).json(e.toString());
-      }
-    } else {
-      return res.status(400).json('Missing body');
+rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, res) => {
+  const role = req.body;
+  const { id } = req.params;
+
+  if (role) {
+    try {
+      /** @type {Ability} */
+      const userAbility = req.userAbility;
+
+      const targetRole = getRoleById(id);
+
+      // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
+      if (
+        !(
+          userAbility.can('update', toCaslResource('Role', targetRole)) &&
+          userAbility.can('create', toCaslResource('Role', role))
+        )
+      )
+        return res.status(403).send('Forbidden.');
+
+      const updatedRole = await updateRole(id, role);
+      res.status(200).json(updatedRole);
+
+      // force all abilities to be rebuilt
+      await abilityCacheDeleteAll();
+    } catch (e) {
+      if (e.message === 'Role not found') return res.status(404).json({ error: e.toString() });
+      return res.status(400).json(e.toString());
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing body');
+  }
+});
 
 /**
  * delete an existing role
@@ -133,25 +121,33 @@ rolesRouter.put(
  * @param {String} id - the id of the existing role in the path params
  * @returns {String} - id of deleted role
  */
-rolesRouter.delete(
-  '/:id',
-  isAllowed([PERMISSION_DELETE, PERMISSION_MANAGE], 'Role'),
-  async (req, res) => {
-    const { id } = req.params;
-    if (id) {
-      try {
-        await deleteRole(id);
-        res.status(204).end();
-        await ensureOpaSync(`roles/${id}`, 'DELETE');
-        return;
-      } catch (e) {
-        if (e.message === 'Role not found') return res.status(404).json(e.toString());
-        return res.status(400).json(e.toString());
-      }
-    } else {
-      return res.status(400).json('Missing parameter id');
+rolesRouter.delete('/:id', isAllowed('delete', 'Role'), async (req, res) => {
+  const { id } = req.params;
+  if (id) {
+    try {
+      const role = getRoleById(id);
+
+      if (!role) throw new Error('Role not found');
+
+      /** @type {Ability} */
+      const userAbility = req.userAbility;
+
+      if (!userAbility.can('update', toCaslResource('Role', role)))
+        return res.status(403).send('Forbidden.');
+
+      await deleteRole(id);
+      res.status(204).end();
+
+      // force all abilities to be rebuilt
+      await abilityCacheDeleteAll();
+      return;
+    } catch (e) {
+      if (e.message === 'Role not found') return res.status(404).json(e.toString());
+      return res.status(400).json(e.toString());
     }
-  },
-);
+  } else {
+    return res.status(400).json('Missing parameter id');
+  }
+});
 
 export default rolesRouter;

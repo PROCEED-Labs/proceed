@@ -12,7 +12,8 @@
     ],
     "nohoist": [
       "**/monaco-editor",
-      "**/monaco-editor/**"
+      "**/monaco-editor/**",
+      "**/management-system-v2/**"
     ]
   },
   "author": {

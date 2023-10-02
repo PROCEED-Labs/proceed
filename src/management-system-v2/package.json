@@ -8,7 +8,7 @@
     ],
     "nohoist": [
       "@casl/ability",
-      "@casl/ability/**"
+      "@casl/**"
     ]
   },
   "scripts": {

@@ -5,10 +5,6 @@
   "workspaces": {
     "packages": [
       "helper-modules/*"
-    ],
-    "nohoist": [
-      "@casl/ability",
-      "@casl/**"
     ]
   },
   "scripts": {

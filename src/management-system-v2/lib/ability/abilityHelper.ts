@@ -1,6 +1,6 @@
-import { PackRule, unpackRules } from '@casl/ability-v6/extra';
+import { PackRule, unpackRules } from '@casl/ability/extra';
 import { AbilityRule, CaslAbility, ResourceType, buildAbility } from './caslAbility';
-import { subject } from '@casl/ability-v6';
+import { subject } from '@casl/ability';
 
 type CanParams = Parameters<CaslAbility['can']>;
 

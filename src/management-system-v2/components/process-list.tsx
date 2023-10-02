@@ -61,7 +61,8 @@ const clipText: ColumnType<Process>['render'] = (dataIndexElement, record, index
   );
 };
 
-const numberOfRows = Math.floor((window?.innerHeight - 340) / 47);
+const numberOfRows =
+  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
 console.log(numberOfRows);
 
 const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLoading }) => {

@@ -20,7 +20,10 @@ type JSONArray = JSONValue[];
 export type Preferences = JSONObject;
 
 export const getPreferences = (): Preferences => {
-  const res = document?.cookie.split('; ').find((cookie) => cookie.startsWith('userpreferences='));
+  const res =
+    typeof document !== 'undefined'
+      ? document?.cookie.split('; ').find((cookie) => cookie.startsWith('userpreferences='))
+      : undefined;
   if (!res) return {};
   return JSON.parse(res?.split('=')[1]);
 };

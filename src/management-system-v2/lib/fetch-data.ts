@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import createClient from 'openapi-fetch';
+import createClient, { FetchOptions, FilterKeys } from 'openapi-fetch';
 import { paths } from './openapiSchema';
 import { useMemo } from 'react';
 
@@ -112,14 +112,18 @@ export function useGetAsset<
 
 export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.post>[0]>(
   path: TFirstParam,
-  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
+  mutationParams: Omit<
+    UseMutationOptions<
+      QueryData<typeof apiClient.post<TFirstParam>>,
+      unknown,
+      FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>
+    >,
+    'mutationFn'
+  > = {},
 ) {
-  type FunctionType = typeof apiClient.post<TFirstParam>;
-  type Data = QueryData<FunctionType>;
-
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<FunctionType>[1]) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>) => {
       const { data } = await post(path, body);
 
       const keys: any[] = [path];
@@ -134,19 +138,26 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.pos
 
       queryClient.invalidateQueries(keys);
 
-      return data as Data;
+      return data as QueryData<typeof apiClient.post<TFirstParam>>;
     },
-    ...(mutationParams as Omit<UseMutationOptions<Data, Error>, 'mutationFn'>),
+    ...mutationParams,
   });
 }
 
 export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>[0]>(
   path: TFirstParam,
-  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
+  mutationParams: Omit<
+    UseMutationOptions<
+      QueryData<typeof apiClient.put<TFirstParam>>,
+      unknown,
+      FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>
+    >,
+    'mutationFn'
+  > = {},
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<typeof apiClient.put<TFirstParam>>[1]) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>) => {
       const state = useAuthStore.getState();
 
       if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
@@ -173,11 +184,18 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 
 export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.del>[0]>(
   path: TFirstParam,
-  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
+  mutationParams: Omit<
+    UseMutationOptions<
+      QueryData<typeof apiClient.del<TFirstParam>>,
+      unknown,
+      FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>
+    >,
+    'mutationFn'
+  > = {},
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<typeof apiClient.del<TFirstParam>>[1]) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>) => {
       const { data } = await del(path, body);
 
       const keys: any[] = [path];

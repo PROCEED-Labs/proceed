@@ -129,7 +129,7 @@ function conditionsMatcher(conditionsObject: ConditionsObject) {
           testConidition(
             path.split('.'),
             resource,
-            conditions[conditionOperator](valueInCondition, resource),
+            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
             conditionsObject.wildcardOperator || 'and',
             conditionsObject.pathNotFound || false,
           ),
@@ -139,7 +139,7 @@ function conditionsMatcher(conditionsObject: ConditionsObject) {
           testConidition(
             path.split('.'),
             resource,
-            conditions[conditionOperator](valueInCondition),
+            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
             conditionsObject.wildcardOperator || 'and',
             conditionsObject.pathNotFound || false,
           ),

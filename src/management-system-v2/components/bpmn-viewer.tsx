@@ -1,11 +1,14 @@
 'use client';
 
-import { Process } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
 import classNames from 'classnames';
+import { ApiData } from '@/lib/fetch-data';
+
+type Processes = ApiData<'/process', 'get'>;
+type Process = Processes[number];
 
 const BPMNViewer =
   typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;

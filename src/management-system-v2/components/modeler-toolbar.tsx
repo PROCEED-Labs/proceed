@@ -81,7 +81,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   useEffect(() => {
     if (isSuccess) {
-      setVersions(processData.versions);
+      setVersions(processData!.versions);
     }
   }, [isSuccess, processData, setVersions]);
 

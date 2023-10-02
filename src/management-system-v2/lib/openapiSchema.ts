@@ -333,7 +333,7 @@ export interface components {
       created_at?: string;
       email_verified?: boolean;
       updated_at?: string;
-      user_id?: string;
+      id?: string;
     };
     /** user */
     userDataPut: {
@@ -351,8 +351,8 @@ export interface components {
       /** Format: uri */
       picture?: string;
       username?: string;
-      family_name?: string;
-      given_name?: string;
+      lastName?: string;
+      firstName?: string;
     };
     userResponse: WithRequired<
       components['schemas']['userMetaData'] & components['schemas']['userData'],
@@ -363,9 +363,9 @@ export interface components {
       | 'picture'
       | 'updated_at'
       | 'username'
-      | 'family_name'
-      | 'given_name'
-      | 'user_id'
+      | 'lastName'
+      | 'firstName'
+      | 'id'
     >;
     /**
      * PermissionNumber
@@ -999,13 +999,7 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          'application/json': components['schemas']['userResponse'];
-        };
-      };
-      /** @description No Content */
-      204: {
-        content: {
-          'application/json': unknown[];
+          'application/json': components['schemas']['userResponse'][];
         };
       };
       /** @description Bad Request */
@@ -1016,12 +1010,16 @@ export interface operations {
   };
   /** @description Create a user. */
   postUser: {
-    requestBody?: {
+    requestBody: {
       content: {
-        'application/json': WithRequired<
-          components['schemas']['userData'],
-          'email' | 'name' | 'picture' | 'username' | 'family_name' | 'given_name'
-        >;
+        'application/json': {
+          /** Format: email */
+          email: string;
+          username: string;
+          lastName?: string;
+          firstName: string;
+          password: string;
+        };
       };
     };
     responses: {

@@ -48,9 +48,7 @@ userRouter.get('/', isAuthenticated(), async (req, res) => {
       undefined,
       config,
     );
-    if (users.length === 0) {
-      return res.status(204).json([]);
-    }
+
     return res.status(200).json(
       users.map(
         ({
@@ -109,19 +107,21 @@ userRouter.get('/:id', isAuthenticated(), async (req, res) => {
         username,
         blocked,
       } = await requestResource(`/users/${id}`, undefined, config);
-      return res.status(200).json({
-        created_at,
-        email,
-        email_verified,
-        family_name,
-        given_name,
-        name,
-        picture,
-        updated_at,
-        user_id,
-        username,
-        blocked,
-      });
+      return res.status(200).json(
+        standardizeUser({
+          created_at,
+          email,
+          email_verified,
+          family_name,
+          given_name,
+          name,
+          picture,
+          updated_at,
+          user_id,
+          username,
+          blocked,
+        }),
+      );
     } catch (e) {
       return res.status(400).json({ error: e.toString() });
     }

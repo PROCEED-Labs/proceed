@@ -1,5 +1,11 @@
 import { useAuthStore } from './iam';
-import { UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  UseMutationOptions,
+  UseQueryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import createClient from 'openapi-fetch';
 import { paths } from './openapiSchema';
 import { useMemo } from 'react';
@@ -106,21 +112,37 @@ export function useGetAsset<
 
 export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.post>[0]>(
   path: TFirstParam,
+  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
 ) {
+  type FunctionType = typeof apiClient.post<TFirstParam>;
+  type Data = QueryData<FunctionType>;
+
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<typeof apiClient.post<TFirstParam>>[1]) => {
+    mutationFn: async (body: Parameters<FunctionType>[1]) => {
       const { data } = await post(path, body);
 
-      queryClient.invalidateQueries([path, (body as any).params.path]);
+      const keys: any[] = [path];
+      if (
+        typeof body === 'object' &&
+        'params' in body &&
+        typeof body.params === 'object' &&
+        'path' in body.params
+      ) {
+        keys.push(body.params.path);
+      }
 
-      return data as QueryData<typeof apiClient.post<TFirstParam>>;
+      queryClient.invalidateQueries(keys);
+
+      return data as Data;
     },
+    ...(mutationParams as Omit<UseMutationOptions<Data, Error>, 'mutationFn'>),
   });
 }
 
 export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>[0]>(
   path: TFirstParam,
+  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -131,23 +153,48 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 
       const { data } = await put(path, body);
 
-      queryClient.invalidateQueries([path, (body as any).params.path]);
+      const keys: any[] = [path];
+      if (
+        typeof body === 'object' &&
+        'params' in body &&
+        typeof body.params === 'object' &&
+        'path' in body.params
+      ) {
+        keys.push(body.params.path);
+      }
+
+      queryClient.invalidateQueries(keys);
 
       return data as QueryData<typeof apiClient.put<TFirstParam>>;
     },
+    ...mutationParams,
   });
 }
 
 export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.del>[0]>(
   path: TFirstParam,
+  mutationParams: Omit<UseMutationOptions, 'mutationFn'> = {},
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: Parameters<typeof apiClient.del<TFirstParam>>[1]) => {
       const { data } = await del(path, body);
 
+      const keys: any[] = [path];
+      if (
+        typeof body === 'object' &&
+        'params' in body &&
+        typeof body.params === 'object' &&
+        'path' in body.params
+      ) {
+        keys.push(body.params.path);
+      }
+
+      queryClient.invalidateQueries(keys);
+
       return data as QueryData<typeof apiClient.del<TFirstParam>>;
     },
+    ...mutationParams,
   });
 };
 

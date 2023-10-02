@@ -910,20 +910,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/userResponse"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content",
-            "content": {
-              "application/json": {
-                "schema": {
                   "type": "array",
-                  "maxItems": 0,
-                  "minItems": 0,
-                  "items": {}
+                  "items": {
+                    "$ref": "#/components/schemas/userResponse"
+                  }
                 }
               }
             }
@@ -956,15 +946,30 @@
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/userData"
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "lastName ": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
                   }
-                ],
-                "required": ["email", "name", "picture", "username", "family_name", "given_name"]
+                },
+                "required": ["email", "username", "lastName", "firstName", "password"]
               }
             }
           }
@@ -2040,7 +2045,7 @@
           "updated_at": {
             "type": "string"
           },
-          "user_id": {
+          "id": {
             "type": "string"
           }
         }
@@ -2083,10 +2088,10 @@
           "username": {
             "type": "string"
           },
-          "family_name": {
+          "lastName ": {
             "type": "string"
           },
-          "given_name": {
+          "firstName": {
             "type": "string"
           }
         }
@@ -2108,9 +2113,9 @@
           "picture",
           "updated_at",
           "username",
-          "family_name",
-          "given_name",
-          "user_id"
+          "lastName",
+          "firstName",
+          "id"
         ]
       },
       "PermissionNumber": {

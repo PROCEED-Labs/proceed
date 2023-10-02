@@ -83,8 +83,8 @@ const UserDataModal: FC<{
       } else {
         const body = {
           email: userData.email,
-          firstName: userData.given_name,
-          lastName: userData.family_name,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
           username: userData.username,
           ...values,
         };
@@ -226,7 +226,7 @@ const UserProfile: FC = () => {
   async function deleteUser() {
     try {
       await deleteUserMutation({
-        params: { path: { id: user.sub } },
+        params: { path: { id: user && user.sub } },
       });
       messageApi.success({ content: 'Your account was deleted' });
       logout();
@@ -281,12 +281,12 @@ const UserProfile: FC = () => {
             {
               label: 'First Name',
               submitField: 'firstName',
-              userDataField: 'given_name',
+              userDataField: 'firstName',
             },
             {
               label: 'Last Name',
               submitField: 'lastName',
-              userDataField: 'family_name',
+              userDataField: 'lastName',
             },
             {
               label: 'Username',
@@ -306,8 +306,8 @@ const UserProfile: FC = () => {
               <Divider style={{ marginBottom: '0' }} />
               <UserDataRow
                 title="Name"
-                data={`${(userData && userData.given_name) || ''} ${
-                  (userData && userData.family_name) || ''
+                data={`${(userData && userData.firstName) || ''} ${
+                  (userData && userData.lastName) || ''
                 }`}
                 onClick={() => setChangeNameModalOpen(true)}
               />

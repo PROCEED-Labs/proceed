@@ -28,16 +28,9 @@ function ensureCorrectProceedNamespace(xml) {
  * @throws {Error} if the given string is not an XML
  * @throws {Error} if the given XML can not be converted to a bpmn-moddle object (multiple possible reasons)
  */
-function toBpmnObject(xml, typename) {
-  return new Promise((resolve, reject) => {
-    moddle.fromXML(xml, typename, (err, obj) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(obj);
-      }
-    });
-  });
+async function toBpmnObject(xml, typename) {
+  const { rootElement } = await moddle.fromXML(xml, typename);
+  return rootElement;
 }
 
 /**
@@ -46,15 +39,9 @@ function toBpmnObject(xml, typename) {
  * @param {Object} bpmn traversable object representation
  * @returns {Promise<string>} a xml representation of the given object
  */
-function toBpmnXml(obj) {
-  return new Promise((resolve, reject) => {
-    moddle.toXML(obj, { format: true }, (saveErr, xml) => {
-      if (saveErr) {
-        reject(saveErr);
-      }
-      resolve(xml);
-    });
-  });
+async function toBpmnXml(obj) {
+  const { xml } = await moddle.toXML(obj, { format: true });
+  return xml;
 }
 
 /**

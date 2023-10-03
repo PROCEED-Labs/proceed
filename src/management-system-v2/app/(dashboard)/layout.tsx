@@ -28,6 +28,8 @@ import {
   UserOutlined,
   StarOutlined,
   MenuOutlined,
+  LogoutOutlined,
+  UnlockOutlined,
 } from '@ant-design/icons';
 import Logo from '@/public/proceed.svg';
 import Image from 'next/image';
@@ -35,24 +37,39 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
 import HeaderMenu from '@/components/content-based-header';
+import HeaderActions from '@/components/header-actions';
+import { useAuthStore } from '@/lib/iam';
+import { AuthCan } from '@/lib/iamComponents';
+import Link from 'next/link';
 
 type AuthLayoutProps = PropsWithChildren<{
   headerContent: React.ReactNode | undefined;
 }>;
 
+const getCurrentScreenSize = () => {
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+};
+
 const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
   const activeSegment = usePathname().split('/')[1] || 'processes';
   const [collapsed, setCollapsed] = useState(false);
+  const ability = useAuthStore((state) => state.ability);
+  const loggedIn = useAuthStore((state) => state.loggedIn);
 
+  // keys need to be unique <identifier>:<path>
+  // identifier can be left out if the path is unique
   const items: MenuProps['items'] = [
     {
-      key: 'processes',
+      key: 'processLabel:processes',
       label: 'Processes',
       type: 'group',
     },
     {
-      key: 'processes',
+      key: 'processGroup:processes',
       className:
         'SelectedSegment' /* `${activeSegment === 'processes' ? 'SelectedSegment' : ''}` */,
       icon: (
@@ -78,7 +95,7 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
         //   label: 'My Processes',
         // },
         {
-          key: 'newProcess',
+          key: 'newProcess:newProcess',
           icon: <FileAddOutlined />,
           label: 'New Process',
           disabled: true,
@@ -164,15 +181,18 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     //   disabled: true,
     // },
   ];
+  // const initialHeight = window!.innerHeight;
+  // const initialWidth = window!.innerWidth;
 
-  const getCurrentScreenSize = () => {
-    return {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-  };
-
-  const [screenSize, setScreenSize] = useState({ width: 1000, height: 800 });
+  const [screenSize, setScreenSize] = useState(
+    {
+      height: 1000,
+      width: 800,
+    } /*
+    { width: initialWidth, height: initialHeight }
+    Does not seem to work properly on initial load (mobile)
+    */,
+  );
 
   useEffect(() => {
     const updateScreenSize = () => {
@@ -185,23 +205,54 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
     };
   }, [screenSize]);
 
+  const [siderOpened, setSiderOpened] = useState(false);
+
+  const changeSiderOpened = () => {
+    if (siderOpened) {
+      setSiderOpened(false);
+    } else {
+      setSiderOpened(true);
+    }
+  };
+
+  useEffect(() => {
+    /* This seems to be necessary since mobile does not load properly on initial load / render */
+    window!.dispatchEvent(new Event('resize'));
+  }, []);
+
   return (
     <AntLayout>
-      {/* TODO: Header change for mobile!! */}
       <AntLayout.Header
         style={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', display: 'flex' }}
         className={styles.Header}
       >
-        <Image
-          src="/proceed.svg"
-          alt="PROCEED Logo"
-          className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
-          width={160}
-          height={63}
-          priority
-        />
+        {screenSize.width <= 412 ? (
+          //PROCEED Icon for mobile view
+          <Link href="/processes">
+            <Image
+              src="/proceed-icon.png"
+              alt="PROCEED Logo"
+              className={cn(styles.Icon, { [styles.collapsed]: collapsed })}
+              width={85}
+              height={35}
+              priority
+            />
+          </Link>
+        ) : (
+          //PROCEED Logo for desktop view
+          <Link href="/processes">
+            <Image
+              src="/proceed.svg"
+              alt="PROCEED Logo"
+              className={cn(styles.Logo, { [styles.collapsed]: collapsed })}
+              width={160}
+              height={63}
+              priority
+            />
+          </Link>
+        )}
 
-        {<HeaderMenu />}
+        <HeaderMenu />
         <div style={{ flex: '1' }}></div>
         <Space
           style={{
@@ -209,34 +260,25 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           }}
         >
           {screenSize.width <= 412 ? (
-            // Hamburger menu for screens <= 412px
+            // Hamburger menu for mobile view
             <>
               <Button
-                icon={<MenuOutlined />}
-                onClick={() => {
-                  router.push('/profile');
-                }}
+                type="text"
+                size="large"
+                style={{ marginTop: '20px', marginLeft: '15px' }}
+                icon={<MenuOutlined style={{ fontSize: '170%' }} />}
+                onClick={changeSiderOpened}
               />
             </>
           ) : (
             // Logout and User Profile in header for screens larger than 412px
             <>
-              <Button type="text">
-                <u>Logout</u>
-              </Button>
-              <Tooltip title="Account Settings">
-                <Button
-                  shape="circle"
-                  icon={<UserOutlined />}
-                  onClick={() => {
-                    router.push('/profile');
-                  }}
-                />
-              </Tooltip>
+              <HeaderActions />
             </>
           )}
         </Space>
       </AntLayout.Header>
+
       <AntLayout>
         {/* //TODO: sider's border is 1 px too far right */}
         <AntLayout.Sider
@@ -251,61 +293,111 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
           trigger={null}
           breakpoint="md"
         >
-          <Menu
-            theme="light"
-            mode="inline"
-            selectedKeys={[activeSegment]}
-            onClick={({ key }) => {
-              router.push(`/${key}`);
-            }}
-          >
-            <ItemGroup key="processes" title="Processes">
-              <SubMenu
-                key="processes"
-                title={
-                  <span
-                    onClick={() => {
-                      router.push(`/processes`);
-                    }}
-                  >
-                    Process List
-                  </span>
-                }
-                className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
-                icon={
-                  <EditOutlined
-                    onClick={() => {
-                      router.push(`/processes`);
-                    }}
-                  />
-                }
-              >
-                <Item key="newProcess" icon={<FileAddOutlined />}>
-                  New Process
+          {loggedIn ? (
+            <Menu
+              theme="light"
+              mode="inline"
+              selectedKeys={[activeSegment]}
+              onClick={({ key }) => {
+                const path = key.split(':').at(-1);
+                router.push(`/${path}`);
+              }}
+            >
+              {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
+                <>
+                  <ItemGroup key="processes" title="Processes">
+                    {ability.can('view', 'Process') ? (
+                      <SubMenu
+                        key="processes"
+                        title={
+                          <span
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          >
+                            Process List
+                          </span>
+                        }
+                        className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
+                        icon={
+                          <EditOutlined
+                            onClick={() => {
+                              router.push(`/processes`);
+                            }}
+                          />
+                        }
+                      >
+                        <Item
+                          key="newProcess"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Process')}
+                        >
+                          New Process
+                        </Item>
+                        <Item key="processFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+
+                    {ability.can('view', 'Template') ? (
+                      <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
+                        <Item
+                          key="newTemplate"
+                          icon={<FileAddOutlined />}
+                          hidden={!ability.can('create', 'Template')}
+                        >
+                          New Template
+                        </Item>
+                        <Item key="templateFavorites" icon={<StarOutlined />}>
+                          Favorites
+                        </Item>
+                      </SubMenu>
+                    ) : null}
+                  </ItemGroup>
+
+                  <Divider />
+                </>
+              ) : null}
+
+              {ability.can('manage', 'User') ||
+              ability.can('manage', 'RoleMapping') ||
+              ability.can('manage', 'Role') ? (
+                <>
+                  <ItemGroup key="IAM" title="IAM">
+                    <Item
+                      key="iam/users"
+                      icon={<UserOutlined />}
+                      hidden={!ability.can('manage', 'User')}
+                    >
+                      Users
+                    </Item>
+
+                    <Item
+                      key="iam/roles"
+                      icon={<UnlockOutlined />}
+                      hidden={
+                        !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
+                      }
+                    >
+                      Roles
+                    </Item>
+                  </ItemGroup>
+
+                  <Divider />
+                </>
+              ) : null}
+
+              <ItemGroup key="settings" title="Settings">
+                <Item key="generalSettings" icon={<SettingOutlined />}>
+                  General Settings
                 </Item>
-                <Item key="processFavorites" icon={<StarOutlined />}>
-                  Favorites
+                <Item key="plugins" icon={<ApiOutlined />}>
+                  Plugins
                 </Item>
-              </SubMenu>
-              <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-                <Item key="newTemplate" icon={<FileAddOutlined />}>
-                  New Template
-                </Item>
-                <Item key="templateFavorites" icon={<StarOutlined />}>
-                  Favorites
-                </Item>
-              </SubMenu>
-            </ItemGroup>
-            <Divider />
-            <ItemGroup key="settings" title="Settings">
-              <Item key="generalSettings" icon={<SettingOutlined />}>
-                General Settings
-              </Item>
-              <Item key="plugins" icon={<ApiOutlined />}>
-                Plugins
-              </Item>
-            </ItemGroup>
-          </Menu>
+              </ItemGroup>
+            </Menu>
+          ) : null}
           {/* <Menu
             theme="light"
             mode="inline"
@@ -316,12 +408,12 @@ const AuthLayout: FC<PropsWithChildren> = ({ children }) => {
             }}
           /> */}
         </AntLayout.Sider>
-        <AntLayout>
+        <AntLayout className="fit-height">
           <Content>
             <Space
               direction="vertical"
               size="large"
-              style={{ display: 'flex' /* , height: '100%' */ }}
+              style={{ display: 'flex', height: '100%' }}
               /* TODO: */
               className="Content"
             >

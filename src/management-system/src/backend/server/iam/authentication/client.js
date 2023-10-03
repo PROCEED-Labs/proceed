@@ -3,8 +3,10 @@ import url from 'url';
 import { createAdminUser } from '../utils/admin.js';
 import __dirname from '../../dirname-node.js';
 import logger from '../../../shared-electron-server/logging.js';
-import { initOpaCache } from '../opa/migrations.js';
-import { ensureNoBackslash, sortSpaceDelimitedString, retry } from '../utils/utils.js';
+import { ensureNoBackslash, sortSpaceDelimitedString } from '../utils/utils.js';
+import { setGlobalRolesForAuthorization } from '../authorization/caslRules';
+import { getRoles } from '../../../shared-electron-server/data/iam/roles.js';
+import { createDevelopmentUsers } from '../utils/developmentUsers';
 
 export let client;
 
@@ -78,8 +80,18 @@ const getClient = async (config) => {
         await runClientCredentialsFlow(config);
         await createAdminUser();
       }
-      // initialize opa cache with data from server
-      await retry(() => initOpaCache(), undefined, 3);
+
+      if (process.env.NODE_ENV === 'development') await createDevelopmentUsers();
+
+      // set global roles for authorization
+      const globalRoles = { everybodyRole: '', guestRole: '' };
+      for (const role of getRoles()) {
+        if (role.name === '@guest') globalRoles.guestRole = role.id;
+        else if (role.name === '@everyone') globalRoles.guestRole = role.id;
+      }
+
+      setGlobalRolesForAuthorization(globalRoles);
+
       return client;
     }
   } catch (e) {

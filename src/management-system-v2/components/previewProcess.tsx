@@ -11,27 +11,19 @@ import React, { FocusEvent, useCallback, useEffect, useRef, useState } from 'rea
 import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { Process } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
-
-const BPMNViewer =
-  typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;
+import Viewer from './bpmn-viewer';
 
 type PropertiesPanelProperties = {
-  selectedElement?: Process | undefined;
+  selectedElement?: ApiData<'/process', 'get'>[number];
   setOpen: (open: boolean) => void;
 };
 
 const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen }) => {
   const [name, setName] = useState('');
-  const [initialized, setInitialized] = useState(false);
-  const { data: bpmn, isSuccess } = useProcessBpmn(
-    selectedElement ? selectedElement.definitionId : '',
-  );
-  const canvas = useRef<HTMLDivElement>(null);
-  const previewer = useRef<ViewerType | null>(null);
   const [drawerHeight, setDrawerHeight] = useState(200);
 
   let resizingDrawer = useRef(false);
@@ -50,9 +42,9 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
       resizingDrawer.current = false;
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      setTimeout(() => {
-        (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-      }, 1_000);
+
+      /* Trigger Viewer rerender: */
+      setDrawerHeight((prev) => prev + 1);
     },
     [handleMouseMove],
   );
@@ -64,34 +56,6 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
     document.addEventListener('mouseup', handleMouseUp);
     resizingDrawer.current = true;
   };
-
-  useEffect(() => {
-    console.log('A');
-    if (!canvas.current) return;
-    console.log('B');
-    BPMNViewer!.then((Viewer) => {
-      if (!previewer.current) {
-        const viewer = new Viewer!({
-          container: canvas.current!,
-        });
-
-        previewer.current = viewer;
-        setInitialized(true);
-      }
-    });
-  }, [bpmn]);
-
-  useEffect(() => {
-    if (initialized && bpmn && selectedElement) {
-      setName(selectedElement.definitionName);
-
-      // console.log('Viewer importXML: ', previewer.current!.importXML);
-      // console.log('BPMN: ', bpmn);
-      previewer.current!.importXML(bpmn).then(() => {
-        (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-      });
-    }
-  }, [initialized, bpmn, selectedElement]);
 
   const Panel = (
     <Drawer
@@ -115,10 +79,9 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
           left: 0,
           cursor: 'row-resize',
         }}
-        className="Test"
         onMouseDown={handleMouseDown}
       ></div>
-      <div style={{ height: '100%' }} ref={canvas}></div>
+      <Viewer selectedElement={selectedElement} rerenderTrigger={drawerHeight} />
     </Drawer>
   );
 

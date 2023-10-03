@@ -3,35 +3,37 @@ const axios = require('axios');
 const fs = require('fs');
 
 const startManagementSystem = () => {
-  const frontendDevServerProcess = spawn('yarn', ['web:dev-serve-frontend'], {
-    cwd: __dirname,
-    shell: true,
-  });
+  if (!process.env.API_ONLY) {
+    const frontendDevServerProcess = spawn('yarn', ['web:dev-serve-frontend'], {
+      cwd: __dirname,
+      shell: true,
+    });
 
-  frontendDevServerProcess.stdout.on('data', (data) => {
-    const dataString = data.toString();
-    console.log('Webpack-Dev-Server-Frontend: ', dataString);
-  });
-  frontendDevServerProcess.stderr.on('data', (data) => {
-    const dataString = data.toString();
-    console.error('Webpack-Dev-Server-Frontend: ', dataString);
-  });
+    frontendDevServerProcess.stdout.on('data', (data) => {
+      const dataString = data.toString();
+      console.log('Webpack-Dev-Server-Frontend: ', dataString);
+    });
+    frontendDevServerProcess.stderr.on('data', (data) => {
+      const dataString = data.toString();
+      console.error('Webpack-Dev-Server-Frontend: ', dataString);
+    });
+
+    const backendPuppeteerDevServerProcess = spawn('yarn', ['web:dev-serve-backend-puppeteer'], {
+      cwd: __dirname,
+      shell: true,
+    });
+
+    backendPuppeteerDevServerProcess.stdout.on('data', (data) => {
+      const dataString = data.toString();
+      console.log('Webpack-Dev-Server-Backend-Puppeteer: ', dataString);
+    });
+    backendPuppeteerDevServerProcess.stderr.on('data', (data) => {
+      const dataString = data.toString();
+      console.error('Webpack-Dev-Server-Backend-Puppeteer: ', dataString);
+    });
+  }
 
   const serverProcess = spawn('yarn', ['web:dev-start-backend'], { cwd: __dirname, shell: true });
-
-  const backendPuppeteerDevServerProcess = spawn('yarn', ['web:dev-serve-backend-puppeteer'], {
-    cwd: __dirname,
-    shell: true,
-  });
-
-  backendPuppeteerDevServerProcess.stdout.on('data', (data) => {
-    const dataString = data.toString();
-    console.log('Webpack-Dev-Server-Backend-Puppeteer: ', dataString);
-  });
-  backendPuppeteerDevServerProcess.stderr.on('data', (data) => {
-    const dataString = data.toString();
-    console.error('Webpack-Dev-Server-Backend-Puppeteer: ', dataString);
-  });
 
   serverProcess.stdout.on('data', (data) => {
     const dataString = data.toString();
@@ -70,11 +72,11 @@ if (process.env.MODE === 'iam') {
 
   opaProcess.stdout.on('data', (data) => {
     const dataString = data.toString();
-    console.log('Open-Policy-Agent: ', dataString);
+    console.log('Redis', dataString);
   });
   opaProcess.stderr.on('data', (data) => {
     const dataString = data.toString();
-    console.error('Open-Policy-Agent: ', dataString);
+    console.error('Redis', dataString);
   });
 
   // when ctrl + c detected stop docker container
@@ -83,23 +85,7 @@ if (process.env.MODE === 'iam') {
     process.exit(1);
   });
 
-  // check health endpoint for OPA container to know, when to start the Management System
-  const checkOpaHealth = async () => {
-    setTimeout(async function () {
-      try {
-        const health = await axios.get(`http://localhost:8181/health`);
-        if (health.status === 200) {
-          startManagementSystem();
-        } else {
-          checkOpaHealth();
-        }
-      } catch (e) {
-        checkOpaHealth();
-      }
-    }, 1000);
-  };
-
-  checkOpaHealth();
+  startManagementSystem();
 } else {
   startManagementSystem();
 }

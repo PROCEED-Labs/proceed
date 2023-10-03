@@ -2,14 +2,27 @@ import { v4 } from 'uuid';
 import { jsPDF } from 'jspdf';
 import 'svg2pdf.js';
 
-import { fetchProcessVersionBpmn, fetchProcess } from './fetch-data';
+import { fetchProcessVersionBpmn, fetchProcess } from './process-queries';
 
 async function getProcessData(processId: string, processVersion?: string | number) {
   // TODO: we use the data for the name but it is maybe better to get the name from the bpmn since it might be different in versioned bpmn
   const data = await fetchProcess(processId);
 
+  if (!data) {
+    throw new Error(
+      `Failed to get process info (definitionId: ${processId}) during process export`,
+    );
+  }
+
   if (processVersion) {
-    data.bpmn = await fetchProcessVersionBpmn(processId, processVersion);
+    const versionBpmn = await fetchProcessVersionBpmn(processId, processVersion);
+    if (!versionBpmn) {
+      throw new Error(
+        `Failed to get the bpmn for a version (${processVersion}) of a process (definitionId: ${processId})`,
+      );
+    }
+
+    data.bpmn = versionBpmn;
   }
 
   return data;

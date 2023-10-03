@@ -195,6 +195,7 @@ export interface components {
     };
     /** processData */
     processData: {
+      description?: string;
       departments?: string[];
       /** @description The variables supposed to be used in the process */
       variables?: {
@@ -205,6 +206,8 @@ export interface components {
     };
     /** processServerMetaData */
     processMsMetaData: {
+      /** @enum {unknown} */
+      type?: 'process';
       /** @description The date and time the process was added in the management-system */
       createdOn?: string;
       /** @description The date and time the process was edited the last time */
@@ -220,6 +223,7 @@ export interface components {
       }[];
       /** @description If true, then a share link was created for the process */
       shared?: boolean;
+      owner?: string;
     };
     /** @description BPMN XML of the process */
     bpmn: string;
@@ -238,13 +242,14 @@ export interface components {
       | 'createdOn'
       | 'lastEdited'
       | 'processIds'
+      | 'type'
       | 'versions'
     >;
     processVersion: {
       version: string;
       name: string;
       description: string;
-    } | null;
+    };
     /** image */
     image: {
       /** @enum {unknown} */
@@ -329,6 +334,14 @@ export interface components {
       email_verified?: boolean;
       updated_at?: string;
       id?: string;
+    };
+    /** user */
+    userDataPut: {
+      /** Format: email */
+      email: string;
+      username: string;
+      firstName: string;
+      lastName: string;
     };
     /** user */
     userData: {
@@ -986,13 +999,7 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          'application/json': components['schemas']['userResponse'];
-        };
-      };
-      /** @description No Content */
-      204: {
-        content: {
-          'application/json': unknown[];
+          'application/json': components['schemas']['userResponse'][];
         };
       };
       /** @description Bad Request */
@@ -1003,12 +1010,16 @@ export interface operations {
   };
   /** @description Create a user. */
   postUser: {
-    requestBody?: {
+    requestBody: {
       content: {
-        'application/json': WithRequired<
-          components['schemas']['userData'],
-          'email' | 'name' | 'picture' | 'username' | 'lastName' | 'firstName'
-        >;
+        'application/json': {
+          /** Format: email */
+          email: string;
+          username: string;
+          lastName?: string;
+          firstName: string;
+          password: string;
+        };
       };
     };
     responses: {
@@ -1053,7 +1064,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        'application/json': components['schemas']['userData'];
+        'application/json': components['schemas']['userDataPut'];
       };
     };
     responses: {

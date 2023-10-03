@@ -72,10 +72,10 @@ function shareExists(share) {
 /**
  * Returns shares in form of an array
  *
- * @returns {Array} - array containing shares
+ * @returns {Promise<Array>} - array containing shares
  */
 export async function getShares() {
-  return Object.values(Object.values(Object.values(sharesMetaObjects)[0]))
+  return Object.values(Object.values(Object.values(sharesMetaObjects)[0] || {}))
     .map((obj) => Object.values(obj))
     .flat();
 }
@@ -84,7 +84,7 @@ export async function getShares() {
  * Returns a share based on share id
  *
  * @param {String} shareId - the id of a share
- * @returns {Array} - array containing all shares
+ * @returns {Promise<Array>} - array containing all shares
  */
 export async function getShare(shareId) {
   const shares = await getShares();
@@ -103,7 +103,7 @@ export async function getShare(shareId) {
  * @param {String} share.password - password for a link sharing (only for type link, optional)
  * @param {Date} share.expiredAt - date when a sharing should expire (optional)
  * @param {String} share.note - a note for users that receive the sharing (optional)
- * @returns {Object} - new share object
+ * @returns {Promise<Object>} - new share object
  */
 export async function addShare(share) {
   if (shareExists(share)) {
@@ -161,7 +161,7 @@ export async function addShare(share) {
  * @param {String} updates.password - password for a link sharing (only for type link, optional)
  * @param {Date} updates.expiredAt - date when a sharing should expire (optional)
  * @param {String} updates.note - a note for users that receive the sharing (optional)
- * @returns {Object} - updated share object
+ * @returns {Promise<Object>} - updated share object
  */
 export async function updateShare(shareId, updates) {
   const share = await getShare(shareId);
@@ -199,7 +199,7 @@ export async function updateShare(shareId, updates) {
  * Deletes a share based on share id
  *
  * @param {Object} shareId - id share object
- * @returns {String} - id share object
+ * @returns {Promise<String>} - id share object
  */
 export async function deleteShare(shareId) {
   const share = await getShare(shareId);

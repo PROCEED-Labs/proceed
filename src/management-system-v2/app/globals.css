@@ -26,3 +26,41 @@
 .modeler-page-content .ant-layout-content div[class^='page_Modeler_'] {
   height: 100%;
 }
+
+.reduceLogo .bjs-powered-by svg {
+  width: 30px;
+}
+
+.small-tabs .ant-tabs-nav-wrap {
+  height: 40px;
+}
+
+.ant-space .ant-space-item {
+  height: 100%;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.Hide-Scroll-Bar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+/* Hide scrollbar for Chrome, Safari and Opera */
+.Hide-Scroll-Bar::-webkit-scrollbar {
+  display: none;
+}
+
+.card-selected {
+  background-color: #ebf8ff;
+  border: 1px solid #1976d2;
+}
+
+.no-select {
+  user-select: none; /* Standard syntax */
+  -webkit-user-select: none; /* Chrome, Safari, and Opera */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+}
+
+.fit-height {
+  height: calc(100vh - 64px - 70px);
+}

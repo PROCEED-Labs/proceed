@@ -5,6 +5,7 @@ import store from 'connect-redis';
 export const createSessionStore = async (config) => {
   const redisClient = new Redis(config.redisPort || 6379, config.redisHost || 'localhost', {
     password: config.redisPassword || 'password',
+    db: 0,
   });
 
   const RedisStore = store(session);

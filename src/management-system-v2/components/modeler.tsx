@@ -6,13 +6,16 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import { useParams } from 'next/navigation';
-import { useProcessBpmn } from '@/lib/process-queries';
 
 import ModelerToolbar from './modeler-toolbar';
+import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { updateProcess } from '@/lib/update-data';
+import { useProcessesStore } from '@/lib/use-local-process-store';
+import { usePutAsset } from '@/lib/fetch-data';
+import { useProcessBpmn } from '@/lib/process-queries';
+import VersionToolbar from './version-toolbar';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -32,15 +35,28 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [initialized, setInitialized] = useState(false);
+  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
+
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
-  const { processId } = useParams();
+  const processes = useProcessesStore((state) => state.processes);
+  const setSelectedProcess = useModelerStateStore((state) => state.setSelectedProcess);
+  const { mutateAsync: updateProcessMutation } = usePutAsset('/process/{definitionId}');
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
   const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
+
+  const { processId } = useParams();
+
+  useEffect(() => {
+    const process = processes?.find(({ definitionId }) => definitionId === processId);
+    if (process) {
+      setSelectedProcess(process);
+    }
+  }, [processId]);
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -67,6 +83,24 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             proceed: schema,
           },
         });
+
+        // update process after change with 2 second debounce
+        let timer: ReturnType<typeof setTimeout>;
+        modeler.current.on('commandStack.changed', async () => {
+          clearTimeout(timer);
+          timer = setTimeout(async () => {
+            try {
+              const { xml } = await modeler.current!.saveXML({ format: true });
+              /* await updateProcess(processId as string, { bpmn: xml! }); */
+              await updateProcessMutation({
+                params: { path: { definitionId: processId as string } },
+                body: { bpmn: xml },
+              });
+            } catch (err) {
+              console.log(err);
+            }
+          }, 2000);
+        });
       }
 
       setModeler(modeler.current);
@@ -74,24 +108,10 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     });
 
     return () => {
-      if (modeler.current?.saveXML) {
-        modeler.current
-          .saveXML({ format: true })
-          .then(({ xml }) => {
-            return updateProcess(processId as string, { bpmn: xml! });
-          })
-          .catch((error) => {
-            console.log(error);
-          })
-          .finally(() => {
-            modeler.current?.destroy();
-          });
-      } else {
-        modeler.current?.destroy();
-      }
+      modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, editingDisabled, processId]);
+  }, [setModeler, editingDisabled, processId, updateProcessMutation]);
 
   const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
 
@@ -109,27 +129,48 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
         else setSelectedElementId(null);
       });
-
-      let timer: ReturnType<typeof setTimeout>;
-      modeler.current.on('commandStack.changed', async () => {
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          try {
-            const { xml } = await modeler.current!.saveXML({ format: true });
-            await updateProcess(processId as string, { bpmn: xml! });
-          } catch (err) {
-            console.log(err);
-          }
-        }, 2000);
-      });
     }
     // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
     setInitialized(false);
-  }, [initialized, setSelectedElementId, processBpmn, processId]);
+  }, [initialized, setSelectedElementId, processBpmn]);
+
+  const handleOpenXmlEditor = async () => {
+    if (modeler.current) {
+      const { xml } = await modeler.current.saveXML({ format: true });
+      setXmlEditorBpmn(xml);
+    }
+  };
+
+  const handleCloseXmlEditor = () => {
+    setXmlEditorBpmn(undefined);
+  };
+
+  const handleXmlEditorSave = async (bpmn: string) => {
+    if (modeler.current) {
+      modeler.current.importXML(bpmn).then(() => {
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+      });
+      await updateProcessMutation({
+        params: { path: { definitionId: processId as string } },
+        body: { bpmn },
+      });
+    }
+  };
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
-      {!minimized && <ModelerToolbar />}
+      {!minimized && (
+        <>
+          <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
+          {selectedVersion && <VersionToolbar />}
+          <XmlEditor
+            bpmn={xmlEditorBpmn}
+            canSave={selectedVersion === null}
+            onClose={handleCloseXmlEditor}
+            onSaveXml={handleXmlEditorSave}
+          />
+        </>
+      )}
       <div className="modeler" {...props} ref={canvas} />;
     </div>
   );

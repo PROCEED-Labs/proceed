@@ -56,7 +56,7 @@ class ConstraintParser {
   /**
    * A logger that shall be used by the parser
    *
-   * @param {object} logger
+   * @param {object} [logger]
    */
   constructor(logger) {
     this.setLogger(logger);

@@ -63,7 +63,6 @@ const Processes: FC = () => {
 
   const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
-  const [selectedColumn, setSelectedColumn] = useState<Process>();
   const [exportProcessId, setExportProcessId] = useState<string | undefined>();
 
   const actionBar = (

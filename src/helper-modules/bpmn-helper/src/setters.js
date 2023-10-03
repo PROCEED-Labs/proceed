@@ -28,7 +28,7 @@ const constraintParser = new ConstraintParser();
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} id - the id we want to set the definitions element to
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setDefinitionsId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
@@ -46,7 +46,7 @@ async function setDefinitionsId(bpmn, id) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} name - the id we want to set the definitions element to
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setDefinitionsName(bpmn, name) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
@@ -63,7 +63,7 @@ async function setDefinitionsName(bpmn, name) {
  * @param {string} [versionInformation.versionName] - a human readable name for the version
  * @param {string} [versionInformation.versionDescription] - a longer description of the version
  * @param {(string|number)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setDefinitionsVersionInformation(
   bpmn,
@@ -109,7 +109,7 @@ async function setTemplateId(bpmn, id) {
  *
  * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
  * @param {string} id the id to be used for the targetNamespace
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setTargetNamespace(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
@@ -132,9 +132,9 @@ async function setTargetNamespace(bpmn, id) {
  * stores the previous values of exporter and exporterVersion if there are any
  *
  * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
- * @param {String} exporterName - the exporter name
- * @param {String} exporterVersion - the exporter version
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @param {string} exporterName - the exporter name
+ * @param {string} exporterVersion - the exporter version
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
@@ -193,7 +193,7 @@ async function setStandardDefinitions(bpmn, exporterName, exporterVersion) {
  *
  * @param {(string|object)} bpmn the process definition as XML string or BPMN-Moddle Object
  * @param {string} method the method we want to set (dynamic/static)
- * @returns {(object|Promise<string>)} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setDeploymentMethod(bpmn, method) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Process', (process) => {
@@ -226,7 +226,7 @@ async function setUserTaskData(
  * Function that sets the machineInfo of all elements in the given xml with the given machineIds
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {Object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
+ * @param {object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
  * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function setMachineInfo(bpmn, machineInfo) {
@@ -245,8 +245,8 @@ async function setMachineInfo(bpmn, machineInfo) {
 /**
  * Adds the given constraint to the given bpmn element
  *
- * @param {Object} element the bpmn BPMN-Moddle element
- * @param {Object} cons object containing the hardConstraints and softConstraints
+ * @param {object} element the bpmn BPMN-Moddle element
+ * @param {object} cons object containing the hardConstraints and softConstraints
  */
 async function addConstraintsToElement(element, cons) {
   if (element) {
@@ -283,7 +283,7 @@ async function addConstraintsToElement(element, cons) {
 /**
  * Update the performer info of an element
  *
- * @param {Object} element the element to update
+ * @param {object} element the element to update
  * @param {Array} performers the performer data to emplace in the element
  */
 async function updatePerformersOnElement(element, performers) {
@@ -320,7 +320,7 @@ async function updatePerformersOnElement(element, performers) {
  * Update the performer info of an element in a bpmn file/object
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} elementId
+ * @param {string} elementId
  * @param {Array} performers the performer data to emplace in the element
  */
 async function updatePerformersOnElementById(bpmn, elementId, performers) {
@@ -334,7 +334,7 @@ async function updatePerformersOnElementById(bpmn, elementId, performers) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId
- * @param {Object} constraints object containing the hardConstraints and softConstraints
+ * @param {object} constraints object containing the hardConstraints and softConstraints
  * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addConstraintsToElementById(bpmn, elementId, constraints) {
@@ -348,9 +348,9 @@ async function addConstraintsToElementById(bpmn, elementId, constraints) {
  * an import element as first child of definitions and the calledElement attribute of the call activity bpmn element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} callActivityId The ID of the call activity bpmn element
- * @param {String} calledBpmn The bpmn file of the called process
- * @param {String} calledProcessLocation The DefinitionId of the calledBpmn. Combination of process name and process id
+ * @param {string} callActivityId The ID of the call activity bpmn element
+ * @param {string} calledBpmn The bpmn file of the called process
+ * @param {string} calledProcessLocation The DefinitionId of the calledBpmn. Combination of process name and process id
  * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addCallActivityReference(bpmn, callActivityId, calledBpmn, calledProcessLocation) {
@@ -413,7 +413,7 @@ async function addCallActivityReference(bpmn, callActivityId, calledBpmn, called
  * Remove the reference to the called process added in {@link addCallActivityReference} but remains the actual bpmn element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} callActivityId The ID of the bpmn element for which the meta information should be removed
+ * @param {string} callActivityId The ID of the bpmn element for which the meta information should be removed
  * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function removeCallActivityReference(bpmn, callActivityId) {
@@ -523,8 +523,8 @@ async function addDocumentation(bpmn, description) {
 /**
  * Adds documentation to a given process object
  *
- * @param {Object} processObj
- * @param {String} description
+ * @param {object} processObj
+ * @param {string} description
  */
 async function addDocumentationToProcessObject(processObj, description) {
   const docs = processObj.get('documentation');

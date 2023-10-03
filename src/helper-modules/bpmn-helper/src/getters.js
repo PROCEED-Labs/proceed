@@ -19,7 +19,7 @@ const constraintParser = new ConstraintParser();
  * Function that returns ids of all start events in a bpmn process model
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<String[]>} the ids of all startEvents
+ * @returns {Promise.<string[]>} the ids of all startEvents
  */
 async function getStartEvents(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -42,7 +42,7 @@ async function getDefinitionsId(bpmn) {
  * the originalId is the id the process had before it was imported
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {(Promise.<string>|Promise.<undefined>)} The originalId stored in the definitions field of the given bpmn process
+ * @returns {(Promise.<string|undefined>)} The originalId stored in the definitions field of the given bpmn process
  */
 async function getOriginalDefinitionsId(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -63,8 +63,8 @@ async function getDefinitionsName(bpmn) {
 /**
  * Returns the version information of the given bpmn process definition
  *
- * @param {(string|object)} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {Promise.<{version: number, name: (string|undefined), description: (string|undefined), versionBasedOn: (number|undefined)}|undefined>} - The version information if it exists
+ * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
+ * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 async function getDefinitionsVersionInformation(bpmn) {
@@ -92,7 +92,7 @@ async function getDefinitionsVersionInformation(bpmn) {
  * Get the content of the 'documentation' element of the first process inside a BPMN file.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<String>} the documentation content
+ * @returns {Promise.<string>} the documentation content
  */
 async function getProcessDocumentation(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -107,8 +107,8 @@ async function getProcessDocumentation(bpmn) {
 /**
  * Get the content of the 'documentation' element of the given process object.
  *
- * @param {Object} processObject - a process element as BPMN-Moddle Object
- * @returns {String} the documentation content
+ * @param {object} processObject - a process element as BPMN-Moddle Object
+ * @returns {string} the documentation content
  */
 function getProcessDocumentationByObject(processObject) {
   const docs = processObject.get('documentation');
@@ -187,7 +187,7 @@ async function getElementMachineMapping(bpmn) {
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ '<userTaskId>': { fileName: string, implementation: string }}> } an object (a map) with all userTaskIds as keys
+ * @returns { Promise.<{ [userTaskId: string]: { fileName: string, implementation: string }}> } an object (a map) with all userTaskIds as keys
  */
 async function getUserTaskFileNameMapping(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -276,7 +276,7 @@ async function getSubprocess(bpmn, subprocessId) {
  *
  * @param {string} bpmn - the process definition of the main process as XML string or BPMN-Moddle Object
  * @param {string} subprocessId - id of subprocess you want to show
- * @return {string} - xml with only flowElements and diagram parts inside the subprocess
+ * @return {Promise.<string>} - xml with only flowElements and diagram parts inside the subprocess
  */
 async function getSubprocessContent(bpmn, subprocessId) {
   const bpmnObject = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -314,7 +314,7 @@ async function getSubprocessContent(bpmn, subprocessId) {
  * (A BPMN file can contain multiple 'process' elements inside its 'definitions' element.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<String[]>} An Array with Strings containing all IDs from every 'process' element
+ * @returns {Promise.<string[]>} An Array with Strings containing all IDs from every 'process' element
  */
 async function getProcessIds(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -361,7 +361,7 @@ async function getAllBpmnFlowElementIds(bpmn) {
  * Gets the Id of every Task|Event|Gateway|CallActivity|SubProcess inside a BPMN process
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<String[]>} Ids of every element inside a BPMN process
+ * @returns {Promise.<string[]>} Ids of every element inside a BPMN process
  */
 async function getAllBpmnFlowNodeIds(bpmn) {
   const allBpmnElements = await getAllBpmnFlowElements(bpmn);
@@ -393,7 +393,7 @@ async function getChildrenFlowElements(bpmn, elementId) {
  *
  * @see {@link https://docs.proceed-labs.org/concepts/bpmn/bpmn-subprocesses/}
  *
- * @param {Object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
+ * @param {object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
  * @param {string} callActivityId - The id of the callActivity
  * @returns { { definitionId: string, processId: string, version: number } } An Object with the definition, process id and version
  * @throws An Error if the callActivity id does not exist
@@ -443,6 +443,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
  * Get all definitionIds for all imported Processes used in callActivities
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
  * @returns { Promise.<{ '<callActivityId>': { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
@@ -472,7 +473,7 @@ async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = 
  * Returns an array of import elements for a given bpmn xml
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<Object[]>} - Arry of of import elements inside the given xml
+ * @returns {Promise.<object[]>} - Arry of of import elements inside the given xml
  */
 async function getImports(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -566,7 +567,7 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: String, originalId: String, processIds: String[], name: String, description: String }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId: string, processIds: string[], name: string, description: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -590,7 +591,8 @@ async function getIdentifyingInfos(bpmn) {
 /**
  * Returns the definitions object of the process
  *
- * @param {Object} businessObject the businessObject of a process element
+ * @param {object} businessObject the businessObject of a process element
+ * @returns {object} definitions object of the process
  */
 function getRootFromElement(businessObject) {
   let el = businessObject;
@@ -605,8 +607,8 @@ function getRootFromElement(businessObject) {
 /**
  * Parses the meta data from a bpmn-moddle element
  *
- * @param {Object} element
- * @returns {Object} key value list of meta values
+ * @param {object} element
+ * @returns {object} key value list of meta values
  */
 function getMetaDataFromElement(element) {
   const properties = {};
@@ -647,8 +649,8 @@ function getMetaDataFromElement(element) {
  * Get the meta information of an element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} elId the id of the element to update
- * @returns {object} the meta information
+ * @param {string} elId the id of the element to update
+ * @returns {Promise.<object>} the meta information
  */
 async function getMetaData(bpmn, elId) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -660,7 +662,7 @@ async function getMetaData(bpmn, elId) {
 /**
  * Parses the milestones from a bpmn-moddle element
  *
- * @param {Object} element
+ * @param {object} element
  * @returns {Array} array with all milestones
  */
 function getMilestonesFromElement(element) {
@@ -686,7 +688,7 @@ function getMilestonesFromElement(element) {
  * Get the milestones for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} elementId the id of the element
+ * @param {string} elementId the id of the element
  * @returns {Array} array with all milestones
  */
 async function getMilestonesFromElementById(bpmn, elementId) {
@@ -700,7 +702,7 @@ async function getMilestonesFromElementById(bpmn, elementId) {
  * Get the performers for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} elementId the id of the element
+ * @param {string} elementId the id of the element
  * @returns {Array} array with all performers
  */
 async function getPerformersFromElementById(bpmn, elementId) {
@@ -713,8 +715,8 @@ async function getPerformersFromElementById(bpmn, elementId) {
 /**
  * Parses the locations from a bpmn-moddle element
  *
- * @param {Object} element
- * @returns {Object} object with all locations
+ * @param {object} element
+ * @returns {object} object with all locations
  */
 function getLocationsFromElement(element) {
   let company = [];
@@ -791,8 +793,8 @@ function getLocationsFromElement(element) {
 /**
  * Parses the resources from a bpmn-moddle element
  *
- * @param {Object} element
- * @returns {Object} object with all resources
+ * @param {object} element
+ * @returns {object} object with all resources
  */
 function getResourcesFromElement(element) {
   let consumableMaterial = [];
@@ -879,6 +881,12 @@ function getResourcesFromElement(element) {
   return { consumableMaterial, tool, inspectionInstrument };
 }
 
+/**
+ * Get the performers for given element
+ *
+ * @param {object} element
+ * @returns {Array} performers given for element
+ */
 function getPerformersFromElement(element) {
   if (element.resources) {
     const potentialOwner = element.resources.find(
@@ -899,8 +907,8 @@ function getPerformersFromElement(element) {
 
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
- * @param {String} isoDuration
- * @returns {Object} Object with number of years, months, days, hours, minutes and seconds
+ * @param {string} isoDuration
+ * @returns {object} Object with number of years, months, days, hours, minutes and seconds
  */
 function parseISODuration(isoDuration) {
   let years = null;
@@ -948,6 +956,12 @@ function parseISODuration(isoDuration) {
   return { years, months, days, hours, minutes, seconds };
 }
 
+/**
+ * Convert given ISO Duration in number of miliseconds
+ *
+ * @param {string} isoDuration duration in iso standard
+ * @returns {number} number of miliseconds for duration
+ */
 function convertISODurationToMiliseconds(isoDuration) {
   const { years, months, days, hours, minutes, seconds } = parseISODuration(isoDuration);
 

@@ -13,7 +13,7 @@ const moddle = new BPMNModdle({ proceed: bpmnSchema });
  *
  * This is to make sure that importing the xml with bpmn-moddle will not lead to every proceed element being prefixed with ns0
  *
- * @param {String} xml
+ * @param {string} xml
  */
 function ensureCorrectProceedNamespace(xml) {
   return xml.replace(/(xmlns:proceed=\")([^\"]*)(\")/g, `$1${bpmnSchema.uri}$3`);
@@ -24,7 +24,7 @@ function ensureCorrectProceedNamespace(xml) {
  *
  * @param {string} xml - the BPMN XML that should be converted
  * @param {string} [typename] - name of the root element, optional
- * @returns {Promise<Object>} a traversable object representation of the given XML
+ * @returns {Promise<object>} a traversable object representation of the given XML
  * @throws {Error} if the given string is not an XML
  * @throws {Error} if the given XML can not be converted to a bpmn-moddle object (multiple possible reasons)
  */
@@ -36,7 +36,7 @@ async function toBpmnObject(xml, typename) {
 /**
  * Function that converts the given bpmn object to xml
  *
- * @param {Object} bpmn traversable object representation
+ * @param {object} bpmn traversable object representation
  * @returns {Promise<string>} a xml representation of the given object
  */
 async function toBpmnXml(obj) {
@@ -106,8 +106,8 @@ function getElementsByTagName(travObj, tagname) {
 /**
  * Gets the diagram element for the given model element
  *
- * @param {Object} element the model element
- * @param {Object} [definitions] the definitions object to search in
+ * @param {object} element the model element
+ * @param {object} [definitions] the definitions object to search in
  */
 function getElementDI(element, definitions) {
   if (!definitions) {
@@ -150,7 +150,7 @@ function getElementById(travObj, id) {
 
 /**
  * @callback manipulationFunction
- * @param {object} bpmn-moddle-element - the element return by searching the bpmn-moddle process
+ * @param {object} bpmnModdleElement - the element return by searching the bpmn-moddle process
  */
 
 /**
@@ -159,7 +159,7 @@ function getElementById(travObj, id) {
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} id - the id of the element that should be changed
  * @param {manipulationFunction} manipFunc - the function that will be used to change the element
- * @returns {(object|Promise<string>)} the BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the BPMN process as bpmn-moddle object or XML string based on input
  */
 async function manipulateElementById(bpmn, id, manipFunc) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -176,7 +176,7 @@ async function manipulateElementById(bpmn, id, manipFunc) {
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} tagName - the tagname of the elements we want to change, starts with 'bpmn:', e.g. 'bpmn:Definitions'
  * @param {manipulationFunction} manipFunc - the function that gets called on each element with a forEach-Loop
- * @returns {(object|Promise<string>)} the BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the BPMN process as bpmn-moddle object or XML string based on input
  */
 async function manipulateElementsByTagName(bpmn, tagName, manipFunc) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;

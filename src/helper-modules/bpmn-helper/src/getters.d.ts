@@ -25,6 +25,168 @@ export type DefinitionsInfos = {
   targetNamespace: string;
 };
 /**
+ * An object containing properties from defined companies
+ */
+export type CompanyInfos = {
+  /**
+   * - company id
+   */
+  id: string;
+  /**
+   * - company short name
+   */
+  shortName: string;
+  /**
+   * - company long name
+   */
+  longName: string;
+  /**
+   * - company description
+   */
+  description: string;
+};
+/**
+ * An object containing properties from defined factories
+ */
+export type FactoryInfos = {
+  /**
+   * - factory id
+   */
+  id: string;
+  /**
+   * - factory short name
+   */
+  shortName: string;
+  /**
+   * - factory long name
+   */
+  longName: string;
+  /**
+   * - factory description
+   */
+  description: string;
+  /**
+   * - reference to company linked to factory
+   */
+  companyRef: string;
+};
+/**
+ * An object containing properties from defined buildings
+ */
+export type BuildingInfos = {
+  /**
+   * - building id
+   */
+  id: string;
+  /**
+   * - building short name
+   */
+  shortName: string;
+  /**
+   * - building long name
+   */
+  longName: string;
+  /**
+   * - building description
+   */
+  description: string;
+  /**
+   * - building to factory linked to building
+   */
+  factoryRef: string;
+};
+/**
+ * An object containing properties from defined areas
+ */
+export type AreaInfos = {
+  /**
+   * - area id
+   */
+  id: string;
+  /**
+   * - area short name
+   */
+  shortName: string;
+  /**
+   * - area long name
+   */
+  longName: string;
+  /**
+   * - area description
+   */
+  description: string;
+  /**
+   * - reference to building linked to area
+   */
+  buildingRef: string;
+};
+/**
+ * An object containing properties from defined working places
+ */
+export type WorkingPlaceInfos = {
+  /**
+   * - workingPlace id
+   */
+  id: string;
+  /**
+   * - workingPlace short name
+   */
+  shortName: string;
+  /**
+   * - workingPlace long name
+   */
+  longName: string;
+  /**
+   * - workingPlace description
+   */
+  description: string;
+  /**
+   * - reference to building linked to workingPlace
+   */
+  buildingRef: string;
+  /**
+   * - reference to area linked to workingPlace
+   */
+  areaRef: string;
+};
+/**
+ * An object containing properties from defined resources
+ */
+export type ResourceInfos = {
+  /**
+   * - consumableMaterial id
+   */
+  id: string;
+  /**
+   * - consumableMaterial short name
+   */
+  shortName: string;
+  /**
+   * - consumableMaterial long name
+   */
+  longName: string;
+  /**
+   * - consumableMaterial manufacturer
+   */
+  manufacturer: string;
+  /**
+   * - consumableMaterial manufacturerSerialNumber
+   */
+  manufacturerSerialNumber: string;
+  /**
+   * - consumableMaterial unit
+   */
+  unit: string;
+  /**
+   * - consumableMaterial quantity
+   */
+  quantity: string;
+  /**
+   * - consumableMaterial description
+   */
+  description: string;
+};
+/**
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -146,10 +308,10 @@ export function getUserTaskFileNameMapping(bpmn: string | object): Promise<{
  * for every UserTask in a BPMN process.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ '<UserTask-FileName>': '<UserTask-ID[]>' }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
+ * @returns { Promise.<{ [userTaskFileName: string] : string }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
  */
 export function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn: string | object): Promise<{
-  '<UserTask-FileName>': '<UserTask-ID[]>';
+  [userTaskFileName: string]: string;
 }>;
 /**
  * Returns a xml with Diagram Elements just from the given subprocess and their nested Processes
@@ -213,14 +375,14 @@ export function getTargetDefinitionsAndProcessIdForCallActivityByObject(
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ '<callActivityId>': { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 export function getDefinitionsAndProcessIdForEveryCallActivity(
   bpmn: string | object,
   dontThrow?: boolean,
 ): Promise<{
-  '<callActivityId>': {
+  [callActivityId: string]: {
     definitionId: string;
     processId: string;
     version: number;
@@ -254,7 +416,7 @@ export function getAllBpmnFlowNodeIds(bpmn: string | object): Promise<string[]>;
  * Gets the Id of every Task|Event|Gateway|CallActivity|SubProcess|SequenceFlow inside a BPMN process
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<String[]>} Ids of every element inside a BPMN process
+ * @returns {Promise.<string[]>} Ids of every element inside a BPMN process
  */
 export function getAllBpmnFlowElementIds(bpmn: string | object): Promise<string[]>;
 /**
@@ -268,9 +430,14 @@ export function getChildrenFlowElements(bpmn: string | object, elementId: any): 
  * Returns a mapping of the ids of the process nodes to the machines they are mapped to
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<Object>} the mapping from a node id to information about the machine it is mapped to
+ * @returns {Promise.<{[flowNodeId: string]: {machineAddress: string, machineId: string}}>} the mapping from a node id to information about the machine it is mapped to
  */
-export function getElementMachineMapping(bpmn: string | object): Promise<any>;
+export function getElementMachineMapping(bpmn: string | object): Promise<{
+  [flowNodeId: string]: {
+    machineAddress: string;
+    machineId: string;
+  };
+}>;
 /**
  * Get all Constraints for every BPMN Element.
  * (The Constraint XML elements are defined in the PROCEED XML Schema
@@ -279,10 +446,10 @@ export function getElementMachineMapping(bpmn: string | object): Promise<any>;
  * @see {@link https://docs.proceed-labs.org/concepts/bpmn/bpmn-constraints/}
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ '<bpmnElementIds>': { hardConstraints: Array, softConstraints: Array} }> } An Object (a map) where all keys are the BPMN element ids and the value is an object with the hard and soft Constraint Arrays
+ * @returns { Promise.<{ [bpmnElementIds: string]: { hardConstraints: Array, softConstraints: Array} }> } An Object (a map) where all keys are the BPMN element ids and the value is an object with the hard and soft Constraint Arrays
  */
 export function getTaskConstraintMapping(bpmn: string | object): Promise<{
-  '<bpmnElementIds>': {
+  [bpmnElementIds: string]: {
     hardConstraints: any[];
     softConstraints: any[];
   };
@@ -314,46 +481,143 @@ export function getRootFromElement(businessObject: object): object;
  * Parses the meta data from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {object} key value list of meta values
+ * @returns {{[key: string]: any}} key value list of meta values
  */
-export function getMetaDataFromElement(element: object): object;
+export function getMetaDataFromElement(element: object): {
+  [key: string]: any;
+};
 /**
  * Get the meta information of an element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elId the id of the element to update
- * @returns {Promise.<object>} the meta information
+ * @returns {Promise.<{[key: string]: any}>} the meta information
  */
-export function getMetaData(bpmn: string | object, elId: string): Promise<object>;
+export function getMetaData(
+  bpmn: string | object,
+  elId: string,
+): Promise<{
+  [key: string]: any;
+}>;
 /**
  * Parses the milestones from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {Array} array with all milestones
+ * @returns {{id: string, name: string, description: string}[]} array with all milestones
  */
-export function getMilestonesFromElement(element: object): any[];
+export function getMilestonesFromElement(element: object): {
+  id: string;
+  name: string;
+  description: string;
+}[];
 /**
  * Get the milestones for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Array} array with all milestones
+ * @returns {{id: string, name: string, description: string}[]} array with all milestones
  */
-export function getMilestonesFromElementById(bpmn: string | object, elementId: string): any[];
+export function getMilestonesFromElementById(
+  bpmn: string | object,
+  elementId: string,
+): {
+  id: string;
+  name: string;
+  description: string;
+}[];
+/**
+ * An object containing properties from defined resources
+ *
+ * @typedef ResourceInfos
+ * @type {object}
+ * @property {string} id - consumableMaterial id
+ * @property {string} shortName - consumableMaterial short name
+ * @property {string} longName - consumableMaterial long name
+ * @property {string} manufacturer - consumableMaterial manufacturer
+ * @property {string} manufacturerSerialNumber - consumableMaterial manufacturerSerialNumber
+ * @property {string} unit - consumableMaterial unit
+ * @property {string} quantity - consumableMaterial quantity
+ * @property {string} description - consumableMaterial description
+ */
 /**
  * Parses the resources from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {object} object with all resources
+ * @returns {{consumableMaterial: ResourceInfos[], tool: ResourceInfos[], inspectionInstrument: ResourceInfos[]}} object with all resources
  */
-export function getResourcesFromElement(element: object): object;
+export function getResourcesFromElement(element: object): {
+  consumableMaterial: ResourceInfos[];
+  tool: ResourceInfos[];
+  inspectionInstrument: ResourceInfos[];
+};
+/**
+ * An object containing properties from defined companies
+ *
+ * @typedef CompanyInfos
+ * @type {object}
+ * @property {string} id - company id
+ * @property {string} shortName - company short name
+ * @property {string} longName - company long name
+ * @property {string} description - company description
+ */
+/**
+ * An object containing properties from defined factories
+ *
+ * @typedef FactoryInfos
+ * @type {object}
+ * @property {string} id - factory id
+ * @property {string} shortName - factory short name
+ * @property {string} longName - factory long name
+ * @property {string} description - factory description
+ * @property {string} companyRef - reference to company linked to factory
+ */
+/**
+ * An object containing properties from defined buildings
+ *
+ * @typedef BuildingInfos
+ * @type {object}
+ * @property {string} id - building id
+ * @property {string} shortName - building short name
+ * @property {string} longName - building long name
+ * @property {string} description - building description
+ * @property {string} factoryRef - building to factory linked to building
+ */
+/**
+ * An object containing properties from defined areas
+ *
+ * @typedef AreaInfos
+ * @type {object}
+ * @property {string} id - area id
+ * @property {string} shortName - area short name
+ * @property {string} longName - area long name
+ * @property {string} description - area description
+ * @property {string} buildingRef - reference to building linked to area
+ */
+/**
+ * An object containing properties from defined working places
+ *
+ * @typedef WorkingPlaceInfos
+ * @type {object}
+ * @property {string} id - workingPlace id
+ * @property {string} shortName - workingPlace short name
+ * @property {string} longName - workingPlace long name
+ * @property {string} description - workingPlace description
+ * @property {string} buildingRef - reference to building linked to workingPlace
+ * @property {string} areaRef - reference to area linked to workingPlace
+ */
 /**
  * Parses the locations from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {object} object with all locations
+ * @returns {{company: CompanyInfos[], factory: FactoryInfos[], building: BuildingInfos[], area: AreaInfos[], workingPlace: WorkingPlaceInfos[]}} object with all locations
  */
-export function getLocationsFromElement(element: object): object;
+export function getLocationsFromElement(element: object): {
+  company: CompanyInfos[];
+  factory: FactoryInfos[];
+  building: BuildingInfos[];
+  area: AreaInfos[];
+  workingPlace: WorkingPlaceInfos[];
+};
 /**
  * Get the performers for given element
  *
@@ -372,9 +636,16 @@ export function getPerformersFromElementById(bpmn: string | object, elementId: s
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
- * @returns {object} Object with number of years, months, days, hours, minutes and seconds
+ * @returns {{years: number, months: number, days: number, hours: number, minutes: number, seconds: number}} Object with number of years, months, days, hours, minutes and seconds
  */
-export function parseISODuration(isoDuration: string): object;
+export function parseISODuration(isoDuration: string): {
+  years: number;
+  months: number;
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
 /**
  * Convert given ISO Duration in number of miliseconds
  *

@@ -9,7 +9,7 @@ const { toBpmnObject, getElementsByTagName, getElementById } = require('./util.j
  *
  * @param {string} xml
  * @param {string} processId
- * @returns {boolean} true if called process is valid
+ * @returns {Promise<boolean>} true if called process is valid
  */
 async function validateCalledProcess(xml, processId) {
   const definitions = await toBpmnObject(xml);

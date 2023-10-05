@@ -6,6 +6,6 @@
  *
  * @param {string} xml
  * @param {string} processId
- * @returns {boolean} true if called process is valid
+ * @returns {Promise<boolean>} true if called process is valid
  */
-export function validateCalledProcess(xml: string, processId: string): boolean;
+export function validateCalledProcess(xml: string, processId: string): Promise<boolean>;

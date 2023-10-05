@@ -86,11 +86,11 @@ async function setDefinitionsVersionInformation(
 }
 
 /**
- *  Sets name in definitions element to given name
+ *  Sets process Id in definitions element
  *
  * @param {string} bpmn the xml we want to update
  * @param {string} id the id we want to set for the process inside the bpmn
- * @returns {string} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
 async function setProcessId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Process', (process) => {
@@ -98,6 +98,13 @@ async function setProcessId(bpmn, id) {
   });
 }
 
+/**
+ *  Sets templaseId in definitions element
+ *
+ * @param {string} bpmn the xml we want to update
+ * @param {string} id the id we want to set for the template inside the bpmn
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ */
 async function setTemplateId(bpmn, id) {
   return await manipulateElementsByTagName(bpmn, 'bpmn:Definitions', (definitions) => {
     definitions.templateId = `${id}`;
@@ -208,7 +215,7 @@ async function setDeploymentMethod(bpmn, method) {
  * @param {string} userTaskId - the userTaskId to look for
  * @param {string} newFileName - the new value of 'fileName' attribute
  * @param {string} [newImplementation] - the new value of 'implementation' attribute; will default to html implementation
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function setUserTaskData(
   bpmn,
@@ -227,7 +234,7 @@ async function setUserTaskData(
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function setMachineInfo(bpmn, machineInfo) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -335,7 +342,7 @@ async function updatePerformersOnElementById(bpmn, elementId, performers) {
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId
  * @param {object} constraints object containing the hardConstraints and softConstraints
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addConstraintsToElementById(bpmn, elementId, constraints) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -351,7 +358,7 @@ async function addConstraintsToElementById(bpmn, elementId, constraints) {
  * @param {string} callActivityId The ID of the call activity bpmn element
  * @param {string} calledBpmn The bpmn file of the called process
  * @param {string} calledProcessLocation The DefinitionId of the calledBpmn. Combination of process name and process id
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addCallActivityReference(bpmn, callActivityId, calledBpmn, calledProcessLocation) {
   // checks if there is already a reference for this call activity and remove it with all related informations (namespace definitions/imports)
@@ -414,7 +421,7 @@ async function addCallActivityReference(bpmn, callActivityId, calledBpmn, called
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} callActivityId The ID of the bpmn element for which the meta information should be removed
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function removeCallActivityReference(bpmn, callActivityId) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -457,7 +464,7 @@ async function removeCallActivityReference(bpmn, callActivityId) {
  * Look up the given bpmn document for unused imports/custom namespaces which don't get referenced by a call activity inside this bpmn document.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function removeUnusedCallActivityReferences(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -506,7 +513,7 @@ async function removeUnusedCallActivityReferences(bpmn) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} description the content for the documentation element
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addDocumentation(bpmn, description) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -536,6 +543,12 @@ async function addDocumentationToProcessObject(processObj, description) {
   }
 }
 
+/**
+ * Remove color from all elements of given process
+ *
+ * @param {string|object} bpmn
+ * @returns {Promise<string|object>}
+ */
 async function removeColorFromAllElements(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 

@@ -43,14 +43,21 @@ export function setDefinitionsVersionInformation(
   },
 ): Promise<string | object>;
 /**
- *  Sets name in definitions element to given name
+ *  Sets process Id in definitions element
  *
  * @param {string} bpmn the xml we want to update
  * @param {string} id the id we want to set for the process inside the bpmn
- * @returns {string} the modified BPMN process as bpmn-moddle object or XML string based on input
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
  */
-export function setProcessId(bpmn: string, id: string): string;
-export function setTemplateId(bpmn: any, id: any): Promise<any>;
+export function setProcessId(bpmn: string, id: string): Promise<string | object>;
+/**
+ *  Sets templaseId in definitions element
+ *
+ * @param {string} bpmn the xml we want to update
+ * @param {string} id the id we want to set for the template inside the bpmn
+ * @returns {Promise<string|object>} the modified BPMN process as bpmn-moddle object or XML string based on input
+ */
+export function setTemplateId(bpmn: string, id: string): Promise<string | object>;
 /**
  * Sets targetNamespace in definitions element to https://docs.proceed-labs.org/${id}, keeps existing namespace as originalTargetNamespace
  *
@@ -89,9 +96,12 @@ export function setDeploymentMethod(
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
-export function setMachineInfo(bpmn: string | object, machineInfo: object[]): string | object;
+export function setMachineInfo(
+  bpmn: string | object,
+  machineInfo: object[],
+): Promise<string | object>;
 /**
  * Sets the 'fileName' and 'implementation' attributes of a UserTask with new values.
  *
@@ -99,27 +109,27 @@ export function setMachineInfo(bpmn: string | object, machineInfo: object[]): st
  * @param {string} userTaskId - the userTaskId to look for
  * @param {string} newFileName - the new value of 'fileName' attribute
  * @param {string} [newImplementation] - the new value of 'implementation' attribute; will default to html implementation
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function setUserTaskData(
   bpmn: string | object,
   userTaskId: string,
   newFileName: string,
   newImplementation?: string,
-): string | object;
+): Promise<string | object>;
 /**
  * Adds the given constraints to the bpmn element with the given id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId
  * @param {object} constraints object containing the hardConstraints and softConstraints
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function addConstraintsToElementById(
   bpmn: string | object,
   elementId: string,
   constraints: object,
-): string | object;
+): Promise<string | object>;
 /**
  * Add meta information of the called bpmn process to the bpmn file where it's getting called from. This includes a custom namespace in the definitions part,
  * an import element as first child of definitions and the calledElement attribute of the call activity bpmn element
@@ -128,41 +138,50 @@ export function addConstraintsToElementById(
  * @param {string} callActivityId The ID of the call activity bpmn element
  * @param {string} calledBpmn The bpmn file of the called process
  * @param {string} calledProcessLocation The DefinitionId of the calledBpmn. Combination of process name and process id
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function addCallActivityReference(
   bpmn: string | object,
   callActivityId: string,
   calledBpmn: string,
   calledProcessLocation: string,
-): string | object;
+): Promise<string | object>;
 /**
  * Remove the reference to the called process added in {@link addCallActivityReference} but remains the actual bpmn element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} callActivityId The ID of the bpmn element for which the meta information should be removed
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function removeCallActivityReference(
   bpmn: string | object,
   callActivityId: string,
-): string | object;
+): Promise<string | object>;
 /**
  * Look up the given bpmn document for unused imports/custom namespaces which don't get referenced by a call activity inside this bpmn document.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
-export function removeUnusedCallActivityReferences(bpmn: string | object): string | object;
-export function removeColorFromAllElements(bpmn: any): Promise<any>;
+export function removeUnusedCallActivityReferences(bpmn: string | object): Promise<string | object>;
+/**
+ * Remove color from all elements of given process
+ *
+ * @param {string|object} bpmn
+ * @returns {Promise<string|object>}
+ */
+export function removeColorFromAllElements(bpmn: string | object): Promise<string | object>;
 /**
  * Adds a documentation element to the first process in the process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} description the content for the documentation element
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
-export function addDocumentation(bpmn: string | object, description: string): string | object;
+export function addDocumentation(
+  bpmn: string | object,
+  description: string,
+): Promise<string | object>;
 /**
  * Adds documentation to a given process object
  *

@@ -3,7 +3,7 @@
 import styles from './processes.module.scss';
 import React, { FC, useEffect, useState } from 'react';
 import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
-import { ApiData, useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useDeleteAsset, useGetAsset } from '@/lib/fetch-data';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -19,6 +19,7 @@ import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
+import { QueryClient } from '@tanstack/react-query';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -44,6 +45,8 @@ const fuseOptions = {
 
 const { Search } = Input;
 
+const queryClient = new QueryClient();
+
 const Processes: FC = () => {
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
     params: {
@@ -62,19 +65,36 @@ const Processes: FC = () => {
 
   const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
+
   const actionBar = (
     <>
       {/* <Tooltip placement="top" title={'Preview'}>
         <EyeOutlined />
       </Tooltip> */}
-      <Tooltip placement="top" title={'Copy'}>
+      {/* <Tooltip placement="top" title={'Copy'}>
         <CopyOutlined />
-      </Tooltip>
+      </Tooltip> */}
       <Tooltip placement="top" title={'Export'}>
         <ExportOutlined />
       </Tooltip>
       <Tooltip placement="top" title={'Delete'}>
-        <DeleteOutlined />
+        <DeleteOutlined
+          onClick={() => {
+            selectedRowKeys.forEach((key) => {
+              deleteProcess({
+                params: {
+                  path: {
+                    definitionId: key as string,
+                  },
+                },
+              });
+              /* TODO: Invalidate query for list */
+              const keys = ['/process', { noBpmn: true }];
+              queryClient.invalidateQueries(keys);
+            });
+          }}
+        />
       </Tooltip>
     </>
   );
@@ -102,6 +122,7 @@ const Processes: FC = () => {
   const deselectAll = () => {
     setSelectedRowKeys([]);
   };
+  const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -109,18 +130,45 @@ const Processes: FC = () => {
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
         setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
+        /* DEL */
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        selectedRowKeys.forEach((key) => {
+          deleteProcess({
+            params: {
+              path: {
+                definitionId: key as string,
+              },
+            },
+          });
+        });
+        /* TODO: Invalidate query for list */
+        const keys = ['/process', { noBpmn: true }];
+        queryClient.invalidateQueries(keys);
+        /* TODO: */
+        /* CTRL + C */
+        /* CTRL + V */
+      } else if (e.ctrlKey && e.key === 'c') {
+        e.preventDefault();
+        setCopySelection(selectedRowKeys);
+        console.log(copySelection);
+      } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
+        e.preventDefault();
+        copySelection.forEach((key) => {
+          /* TODO:
+            Post to /process
+            (identical + name with (copy) suffix
+          */
+          console.log(key);
+        });
       }
-      /* TODO: */
-      /* CTRL + C */
-      /* CTRL + V */
-      /* DEL */
     };
     // Add event listener
     window.addEventListener('keydown', handleKeyDown);
 
     // Remove event listener on cleanup
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredData]);
+  }, [deleteProcess, filteredData, selectedRowKeys]);
 
   if (isError) {
     return <div>Error</div>;

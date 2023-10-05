@@ -50,8 +50,8 @@
 }
 
 .card-selected {
-  background-color: #ebf8ff;
-  border: 1px solid #1976d2;
+  background-color: #ebf8ff !important;
+  border: 1px solid #1976d2 !important;
 }
 
 .no-select {

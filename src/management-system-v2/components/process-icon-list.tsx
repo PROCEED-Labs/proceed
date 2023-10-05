@@ -27,6 +27,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
   const layout = prefs['show-process-meta-data']
     ? /* Side-Panel opened: */
       {
+        gutter: 16,
         xs: 1,
         sm: 1,
         md: 1,
@@ -36,6 +37,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
       }
     : /*  Side-Panel closed: */
       {
+        gutter: 16,
         xs: 1,
         sm: 2,
         md: 4,
@@ -64,11 +66,10 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
           height: '100%',
           scrollbarWidth: 'none',
         }}
-        grid={{
-          gutter: 16,
+        grid={
           /* column: 4 */
-          ...layout,
-        }}
+          layout
+        }
         dataSource={data}
         renderItem={(item) => (
           <List.Item>

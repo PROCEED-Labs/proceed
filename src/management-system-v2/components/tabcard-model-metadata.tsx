@@ -164,7 +164,6 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
             /* Nothing selected */
             setSelection([item?.definitionId]);
           }
-          /* Normal Click */
         } else {
           setSelection([item?.definitionId]);
         }

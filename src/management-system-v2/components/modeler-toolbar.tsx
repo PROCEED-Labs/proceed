@@ -25,8 +25,10 @@ import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from './version-creation-button';
 import { useGetAsset } from '@/lib/fetch-data';
 
-type ModelerToolbarProps = {};
-const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
+type ModelerToolbarProps = {
+  onOpenXmlEditor: () => void;
+};
+const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
   const svgShare = <Icon component={SvgShare} />;
@@ -79,7 +81,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
 
   useEffect(() => {
     if (isSuccess) {
-      setVersions(processData.versions);
+      setVersions(processData!.versions);
     }
   }, [isSuccess, processData, setVersions]);
 
@@ -98,7 +100,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = () => {
                 <Button icon={<FormOutlined />}></Button>
               </Tooltip>
               <Tooltip title="Show XML">
-                <Button icon={svgXML}></Button>
+                <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
                 <Button icon={<ExportOutlined />}></Button>

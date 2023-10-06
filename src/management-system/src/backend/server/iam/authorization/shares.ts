@@ -1,5 +1,5 @@
-import { ResourceType } from './permissionHelpers';
 import { getShares } from '../../../shared-electron-server/data/iam/shares';
+import { ResourceType } from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
 export const SHARE_TYPE = {
   USER_TO_USER: 0,

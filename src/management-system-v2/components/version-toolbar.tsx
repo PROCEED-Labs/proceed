@@ -160,7 +160,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
 
   useEffect(() => {
     if (isSuccess) {
-      setVersions(processData.versions);
+      setVersions(processData!.versions);
     }
   }, [isSuccess, processData, setVersions]);
 

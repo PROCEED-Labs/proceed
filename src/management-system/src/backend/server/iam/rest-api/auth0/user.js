@@ -5,7 +5,7 @@ import { ensureCleanRoleMappings } from '../../utils/roleMappings.js';
 import { isAllowed, isAuthenticated } from '../../middleware/authorization';
 import { config } from '../../../iam/utils/config.js';
 import { toCaslResource } from '../../authorization/caslRules';
-import Ability from '../../authorization/abilityHelper';
+import Ability from '../../../../../../../management-system-v2/lib/ability/abilityHelper';
 
 // some userinfo endpoints are not returning standardized fields, so we have to make a standard for the MS
 const standardizeUser = (user) => {

@@ -1,4 +1,4 @@
-import { ComponentProps } from 'react';
+import { ComponentProps, FC } from 'react';
 import { AuthCan, AuthCanProps } from './iamComponents';
 
 export default function Auth(authOptions: AuthCanProps, Component: FC<any>) {

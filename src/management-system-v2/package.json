@@ -20,11 +20,13 @@
     "singleQuote": true
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.5.2",
     "@tanstack/react-query": "4.35.3",
     "antd": "5.9.3",
     "bpmn-js": "13.2.0",
     "bpmn-js-differ": "2.0.2",
     "classnames": "2.3.2",
+    "monaco-editor": "^0.41.0",
     "next": "13.5.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -38,9 +40,9 @@
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "4.34.1",
     "@tanstack/react-query-devtools": "4.35.3",
-    "@types/node": "20.7.0",
-    "@types/react": "18.2.7",
-    "@types/react-dom": "18.2.7",
+    "@types/node": "20.8.0",
+    "@types/react": "18.2.24",
+    "@types/react-dom": "18.2.8",
     "cross-env": "7.0.3",
     "eslint": "8.50.0",
     "eslint-config-next": "13.5.3",

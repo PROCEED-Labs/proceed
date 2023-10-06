@@ -4,7 +4,7 @@ import { validateUser } from '../../middleware/inputValidations.js';
 import { ensureCleanRoleMappings } from '../../utils/roleMappings.js';
 import { isAllowed, isAuthenticated } from '../../middleware/authorization';
 import { toCaslResource } from '../../authorization/caslRules';
-import Ability from '../../authorization/abilityHelper';
+import Ability from '../../../../../../../management-system-v2/lib/ability/abilityHelper';
 
 const userRouter = express.Router();
 

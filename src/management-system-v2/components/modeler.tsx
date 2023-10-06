@@ -8,6 +8,7 @@ import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import { useParams } from 'next/navigation';
 
 import ModelerToolbar from './modeler-toolbar';
+import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
@@ -34,6 +35,8 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [initialized, setInitialized] = useState(false);
+  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
+
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
@@ -44,7 +47,6 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
-  const setSelectedVersion = useModelerStateStore((state) => state.setSelectedVersion);
   const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
 
   const { processId } = useParams();
@@ -132,11 +134,44 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     setInitialized(false);
   }, [initialized, setSelectedElementId, processBpmn]);
 
+  const handleOpenXmlEditor = async () => {
+    if (modeler.current) {
+      const { xml } = await modeler.current.saveXML({ format: true });
+      setXmlEditorBpmn(xml);
+    }
+  };
+
+  const handleCloseXmlEditor = () => {
+    setXmlEditorBpmn(undefined);
+  };
+
+  const handleXmlEditorSave = async (bpmn: string) => {
+    if (modeler.current) {
+      modeler.current.importXML(bpmn).then(() => {
+        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+      });
+      await updateProcessMutation({
+        params: { path: { definitionId: processId as string } },
+        body: { bpmn },
+      });
+    }
+  };
+
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
-      {!minimized && <ModelerToolbar />}
-      {!minimized && selectedVersion && <VersionToolbar />}
-      <div className="modeler" {...props} ref={canvas} />
+      {!minimized && (
+        <>
+          <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
+          {selectedVersion && <VersionToolbar />}
+          <XmlEditor
+            bpmn={xmlEditorBpmn}
+            canSave={selectedVersion === null}
+            onClose={handleCloseXmlEditor}
+            onSaveXml={handleXmlEditorSave}
+          />
+        </>
+      )}
+      <div className="modeler" {...props} ref={canvas} />;
     </div>
   );
 };

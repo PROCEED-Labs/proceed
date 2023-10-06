@@ -9,7 +9,7 @@ import {
 import { validateRole } from '../middleware/inputValidations.js';
 import { abilityCacheDeleteAll, isAllowed, isAuthenticated } from '../middleware/authorization';
 import { toCaslResource } from '../authorization/caslRules';
-import Ability from '../authorization/abilityHelper';
+import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
 
 const rolesRouter = express.Router();
 

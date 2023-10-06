@@ -146,7 +146,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<typeof apiClient.put<TFirstParam>>[1]) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>) => {
       const state = useAuthStore.getState();
 
       if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
@@ -164,9 +164,21 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
       }
 
       queryClient.invalidateQueries(keys);
+      const keys: any[] = [path];
+      if (
+        typeof body === 'object' &&
+        'params' in body &&
+        typeof body.params === 'object' &&
+        'path' in body.params
+      ) {
+        keys.push(body.params.path);
+      }
+
+      queryClient.invalidateQueries(keys);
 
       return data as QueryData<typeof apiClient.put<TFirstParam>>;
     },
+    ...mutationParams,
     ...mutationParams,
   });
 }
@@ -177,8 +189,20 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Parameters<typeof apiClient.del<TFirstParam>>[1]) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>) => {
       const { data } = await del(path, body);
+
+      const keys: any[] = [path];
+      if (
+        typeof body === 'object' &&
+        'params' in body &&
+        typeof body.params === 'object' &&
+        'path' in body.params
+      ) {
+        keys.push(body.params.path);
+      }
+
+      queryClient.invalidateQueries(keys);
 
       const keys: any[] = [path];
       if (
@@ -194,6 +218,7 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
 
       return data as QueryData<typeof apiClient.del<TFirstParam>>;
     },
+    ...mutationParams,
     ...mutationParams,
   });
 };

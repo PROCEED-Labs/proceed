@@ -1,15 +1,16 @@
 import { subject } from '@casl/ability-v6';
-import {
-  ResourceActionType,
-  ResourceType,
-  adminPermissions,
-  permissionNumberToIdentifiers,
-  resources,
-} from './permissionHelpers';
 import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability-v6/extra';
-import { AbilityRule, CaslAbility, buildAbility } from './caslAbility';
+import {
+  AbilityRule,
+  CaslAbility,
+  ResourceActionType,
+  ResourceType,
+  buildAbility,
+  resources,
+} from '../../../../../../management-system-v2/lib/ability/caslAbility';
 import { getAppliedRolesForUser } from './rolesHelper';
+import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
 
 const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);

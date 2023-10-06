@@ -12,10 +12,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { Route } from 'next';
-import {
-  ResourceActionType,
-  ResourceType,
-} from 'proceed-management-system/src/backend/server/iam/authorization/permissionHelpers';
+import { ResourceActionType, ResourceType } from '../lib/ability/caslAbility';
 import { handleOauthCallback, useAuthStore } from './iam';
 import { App } from 'antd';
 

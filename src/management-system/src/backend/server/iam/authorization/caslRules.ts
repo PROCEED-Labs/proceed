@@ -116,6 +116,17 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
 function rulesForRoles(ability: CaslAbility) {
   const rules: AbilityRule[] = [];
 
+  rules.push({
+    inverted: true,
+    subject: 'Role',
+    action: 'delete',
+    conditions: {
+      conditions: {
+        default: { $eq: true },
+      },
+    },
+  });
+
   if (ability.cannot('admin', 'All')) {
     rules.push({
       inverted: true,

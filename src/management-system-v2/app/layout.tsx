@@ -3,7 +3,6 @@ import '@/public/antd.min.css';
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { FC, PropsWithChildren } from 'react';
-import Layout from '@/components/layout';
 import App from '@/components/app';
 import { AuthCallbackListener } from '@/lib/iamComponents';
 
@@ -22,7 +21,7 @@ const RootLayout: FC<RootLayoutProps> = ({ children }) => {
       <body className={inter.variable}>
         <App>
           <AuthCallbackListener />
-          <Layout>{children}</Layout>
+          {children}
         </App>
       </body>
     </html>

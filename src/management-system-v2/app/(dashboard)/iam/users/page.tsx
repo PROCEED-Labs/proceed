@@ -97,11 +97,13 @@ const UsersPage: FC = () => {
 
   if (error)
     return (
-      <Result
-        status="error"
-        title="Failed to fetch your profile"
-        subTitle="An error ocurred while fetching your profile, please try again."
-      />
+      <Content title="Identity and Access Management">
+        <Result
+          status="error"
+          title="Failed to fetch your profile"
+          subTitle="An error ocurred while fetching your profile, please try again."
+        />
+      </Content>
     );
 
   return (

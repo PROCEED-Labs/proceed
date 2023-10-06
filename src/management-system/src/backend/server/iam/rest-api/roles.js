@@ -41,7 +41,6 @@ rolesRouter.get('/:id', isAuthenticated(), async (req, res) => {
 rolesRouter.get('/', isAuthenticated(), async (req, res) => {
   try {
     const roles = await getRoles();
-    if (roles.length === 0) return res.status(204).json([]);
     return res.status(200).json(roles);
   } catch (e) {
     return res.status(400).json(e.toString());

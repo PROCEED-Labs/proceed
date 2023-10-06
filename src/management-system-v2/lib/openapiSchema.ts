@@ -195,7 +195,6 @@ export interface components {
     };
     /** processData */
     processData: {
-      description?: string;
       departments?: string[];
       /** @description The variables supposed to be used in the process */
       variables?: {
@@ -1138,13 +1137,7 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          'application/json': components['schemas']['roleResponse'];
-        };
-      };
-      /** @description No Content */
-      204: {
-        content: {
-          'application/json': unknown[];
+          'application/json': components['schemas']['roleResponse'][];
         };
       };
       401: components['responses']['401_unauthenticated'];

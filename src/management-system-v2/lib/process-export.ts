@@ -1,5 +1,6 @@
 import { v4 } from 'uuid';
 import { jsPDF } from 'jspdf';
+import jsZip from 'jszip';
 import 'svg2pdf.js';
 
 import { fetchProcessVersionBpmn, fetchProcess } from './process-queries';
@@ -28,12 +29,59 @@ async function getProcessData(processId: string, processVersion?: string | numbe
   return data;
 }
 
-export async function exportBpmn(processId: string, processVersion?: string | number) {
+export type exportType = 'bpmn' | 'svg' | 'pdf';
+
+export async function exportProcesses(
+  processes: { definitionId: string; processVersion?: number | string }[],
+  type: exportType,
+) {
+  if (processes.length === 1) {
+    // generate the file and download it
+    switch (type) {
+      case 'bpmn':
+        await exportBpmn(exportFile, processes[0].definitionId, processes[0].processVersion);
+        break;
+      case 'svg':
+        await exportSVG(exportFile, processes[0].definitionId, processes[0].processVersion);
+        break;
+      case 'pdf':
+        await exportPDF(exportFile, processes[0].definitionId, processes[0].processVersion);
+        break;
+    }
+  } else if (processes.length > 1) {
+    const zip = new jsZip();
+
+    for (const { definitionId, processVersion } of processes) {
+      // add the file to the zip archive
+      switch (type) {
+        case 'bpmn':
+          await exportBpmn(zip.file.bind(zip), definitionId, processVersion);
+          break;
+        case 'svg':
+          await exportSVG(zip.file.bind(zip), definitionId, processVersion);
+          break;
+        case 'pdf':
+          await exportPDF(zip.file.bind(zip), definitionId, processVersion);
+          break;
+      }
+    }
+    // download the zip archive to the users device
+    exportFile('PROCEED_Multiple-Processes_bpmn.zip', await zip.generateAsync({ type: 'blob' }));
+  } else {
+    throw new Error('Tried exporting without specifying the processes to export!');
+  }
+}
+
+export async function exportBpmn(
+  dataHandler: (fileName: string, data: Blob) => void,
+  processId: string,
+  processVersion?: string | number,
+) {
   const process = await getProcessData(processId, processVersion);
 
   const bpmnBlob = new Blob([process.bpmn!], { type: 'application/xml' });
 
-  exportFile(`${process.definitionName}.bpmn`, bpmnBlob);
+  dataHandler(`${process.definitionName}.bpmn`, bpmnBlob);
 }
 
 async function getSVGFromBPMN(bpmn: string) {
@@ -54,7 +102,11 @@ async function getSVGFromBPMN(bpmn: string) {
   return svg;
 }
 
-export async function exportSVG(processId: string, processVersion?: string | number) {
+export async function exportSVG(
+  dataHandler: (fileName: string, data: Blob) => void,
+  processId: string,
+  processVersion?: string | number,
+) {
   const process = await getProcessData(processId, processVersion);
 
   const svg = await getSVGFromBPMN(process.bpmn!);
@@ -63,10 +115,14 @@ export async function exportSVG(processId: string, processVersion?: string | num
     type: 'image/svg+xml',
   });
 
-  exportFile(`${process.definitionName}.svg`, svgBlob);
+  dataHandler(`${process.definitionName}.svg`, svgBlob);
 }
 
-export async function exportPDF(processId: string, processVersion?: string | number) {
+export async function exportPDF(
+  dataHandler: (fileName: string, data: Blob) => void,
+  processId: string,
+  processVersion?: string | number,
+) {
   const process = await getProcessData(processId, processVersion);
 
   const svg = await getSVGFromBPMN(process.bpmn!);
@@ -107,10 +163,16 @@ export async function exportPDF(processId: string, processVersion?: string | num
     height: pageHeight,
   });
 
-  await doc.save(`${process.definitionName}.pdf`);
+  dataHandler(`${process.definitionName}.pdf`, await doc.output('blob'));
 }
 
-function exportFile(processName: string, data: Blob) {
+/**
+ * Downloads the file to export on the users device
+ *
+ * @param fileName
+ * @param data
+ */
+function exportFile(fileName: string, data: Blob) {
   const objectURL = URL.createObjectURL(data);
 
   // Creating Anchor Element to trigger download feature
@@ -118,7 +180,7 @@ function exportFile(processName: string, data: Blob) {
 
   // Setting anchor tag properties
   aLink.style.display = 'none';
-  aLink.download = processName;
+  aLink.download = fileName;
   aLink.href = objectURL;
 
   // Setting anchor tag to DOM
@@ -126,6 +188,6 @@ function exportFile(processName: string, data: Blob) {
   aLink.click();
   document.body.removeChild(aLink);
 
-  // Release Object URL, so browser dont keep reference
+  // Release Object URL, so the browser doesn't keep the reference
   URL.revokeObjectURL(objectURL);
 }

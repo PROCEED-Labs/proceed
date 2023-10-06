@@ -147,9 +147,12 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
       <ProcessExportModal
-        processId={showProcessExportModal ? (processId as string) : undefined}
+        processes={
+          showProcessExportModal
+            ? [{ definitionId: processId as string, processVersion: selectedVersion || undefined }]
+            : []
+        }
         onClose={() => setShowProcessExportModal(false)}
-        processVersion={selectedVersion || undefined}
       />
     </>
   );

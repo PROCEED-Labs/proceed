@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Modal, Checkbox } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
-import { exportBpmn, exportPDF, exportSVG } from '@/lib/process-export';
+import { exportProcesses, exportType } from '@/lib/process-export';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -12,16 +12,11 @@ const exportTypeOptions = [
 ];
 
 type ProcessExportModalProps = {
-  processId?: string; // the id of the process to export; also used to decide if the modal should be opened
+  processes: { definitionId: string; processVersion?: number | string }[]; // the processes to export; also used to decide if the modal should be opened
   onClose: () => void;
-  processVersion?: number | string;
 };
 
-const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
-  processId,
-  onClose,
-  processVersion,
-}) => {
+const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
   const [selectedTypes, setSelectedTypes] = useState<CheckboxValueType[]>([]);
 
   const handleTypeSelectionChange = (checkedValues: CheckboxValueType[]) => {
@@ -31,19 +26,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   };
 
   const handleProcessExport = async () => {
-    switch (selectedTypes[0]) {
-      case 'bpmn':
-        await exportBpmn(processId!, processVersion);
-        break;
-      case 'pdf':
-        await exportPDF(processId!, processVersion);
-        break;
-      case 'svg':
-        await exportSVG(processId!, processVersion);
-        break;
-      default:
-        throw 'Unexpected value for process export!';
-    }
+    await exportProcesses(processes, selectedTypes[0] as exportType);
 
     onClose();
   };
@@ -52,7 +35,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     <>
       <Modal
         title="Export selected process"
-        open={!!processId}
+        open={!!processes.length}
         onOk={handleProcessExport}
         onCancel={onClose}
         centered

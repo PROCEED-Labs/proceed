@@ -35,7 +35,7 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
-  onExportProcess: Dispatch<SetStateAction<string | undefined>>;
+  onExportProcess: Dispatch<SetStateAction<string[]>>;
 }>;
 
 const ColumnHeader = [
@@ -116,7 +116,7 @@ const ProcessList: FC<ProcessListProps> = ({
         <Tooltip placement="top" title={'Export'}>
           <ExportOutlined
             onClick={() => {
-              onExportProcess(record.definitionId);
+              onExportProcess([record.definitionId]);
             }}
           />
         </Tooltip>

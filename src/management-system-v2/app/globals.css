@@ -2,6 +2,72 @@
   top: 80px;
 }
 
+/* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */
+.ant-col.ant-col-xs-flex-initial {
+  flex: initial;
+}
+.ant-col.ant-col-xs-flex-auto {
+  flex: auto;
+}
+.ant-col.ant-col-xs-flex-none {
+  flex: none;
+}
+@media (min-width: 576px) {
+  .ant-col.ant-col-sm-flex-initial {
+    flex: initial;
+  }
+  .ant-col.ant-col-sm-flex-auto {
+    flex: auto;
+  }
+  .ant-col.ant-col-sm-flex-none {
+    flex: none;
+  }
+}
+@media (min-width: 768px) {
+  .ant-col.ant-col-md-flex-initial {
+    flex: initial;
+  }
+  .ant-col.ant-col-md-flex-auto {
+    flex: auto;
+  }
+  .ant-col.ant-col-md-flex-none {
+    flex: none;
+  }
+}
+@media (min-width: 992px) {
+  .ant-col.ant-col-lg-flex-initial {
+    flex: initial;
+  }
+  .ant-col.ant-col-lg-flex-auto {
+    flex: auto;
+  }
+  .ant-col.ant-col-lg-flex-none {
+    flex: none;
+  }
+}
+@media (min-width: 1200px) {
+  .ant-col.ant-col-xl-flex-initial {
+    flex: initial;
+  }
+  .ant-col.ant-col-xl-flex-auto {
+    flex: auto;
+  }
+  .ant-col.ant-col-xl-flex-none {
+    flex: none;
+  }
+}
+@media (min-width: 1600px) {
+  .ant-col.ant-col-xxl-flex-initial {
+    flex: initial;
+  }
+  .ant-col.ant-col-xxl-flex-auto {
+    flex: auto;
+  }
+  .ant-col.ant-col-xxl-flex-none {
+    flex: none;
+  }
+}
+
 /* TODO: Move to module */
 .ant-menu-light.ant-menu-root.ant-menu-inline,
 .ant-menu-light > .ant-menu.ant-menu-root.ant-menu-inline,

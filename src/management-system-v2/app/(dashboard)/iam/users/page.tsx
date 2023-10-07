@@ -91,7 +91,7 @@ const UsersPage: FC = () => {
               <Button icon={<DeleteOutlined />} type="text" />
             </Popconfirm>
           </Tooltip>
-        ) : null,
+        ) : undefined,
     },
   ];
 
@@ -107,20 +107,14 @@ const UsersPage: FC = () => {
     );
 
   return (
-    <Content title="Identity and Access Management" rightNode={<HeaderActions />}>
-      <Row className={styles.Headerrow}>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={10}
-          xl={6}
-          className={cn({ [styles.SelectedRow]: selectedRowKeys.length > 0 })}
-          style={{
-            justifyContent: 'start',
-          }}
-        >
-          {selectedRowKeys.length > 0 ? (
+    <Content title="Identity and Access Management">
+      <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
+        {selectedRowKeys.length > 0 ? (
+          <Col
+            xs={24}
+            lg={{ flex: 'none' }}
+            className={cn({ [styles.SelectedRow]: selectedRowKeys.length > 0 })}
+          >
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
               <span>{selectedRowKeys.length} selected: </span>
@@ -132,9 +126,9 @@ const UsersPage: FC = () => {
                 <Button type="text" icon={<DeleteOutlined />} />
               </Popconfirm>
             </Space>
-          ) : null}
-        </Col>
-        <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
+          </Col>
+        ) : undefined}
+        <Col xs={24} lg={{ flex: 'auto' }}>
           <Input.Search
             size="middle"
             value={searchQuery}
@@ -143,8 +137,10 @@ const UsersPage: FC = () => {
             placeholder="Search Users"
           />
         </Col>
+        <Col xs={24} lg={{ flex: 'none' }}>
+          <HeaderActions />
+        </Col>
       </Row>
-
       <Table
         columns={columns}
         dataSource={filteredUsers}
@@ -154,11 +150,6 @@ const UsersPage: FC = () => {
             setSelectedRowKeys(selectedRowKeys as string[]);
           },
         }}
-        /* onRow={(record) => ({
-        onMouseEnter: () => setHovered(record.id),
-        onMouseOut: () => setHovered(''),
-      })} */
-        /* scroll={{ x: 800 }} */
         rowKey="id"
         loading={isLoading || deletingUser}
         size="middle"

@@ -40,10 +40,6 @@ const Content: FC<ContentProps> = ({
   headerClass,
   fixedHeader = false,
 }) => {
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
-
   const breakpoint = Grid.useBreakpoint();
 
   return (

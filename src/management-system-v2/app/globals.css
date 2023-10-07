@@ -87,12 +87,6 @@
   height: 100%;
 }
 
-.modeler-page-content,
-.modeler-page-content .ant-layout-content,
-.modeler-page-content .ant-layout-content div[class^='page_Modeler_'] {
-  height: 100%;
-}
-
 .reduceLogo .bjs-powered-by svg {
   width: 30px;
 }

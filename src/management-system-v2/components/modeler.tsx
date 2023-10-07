@@ -171,7 +171,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
           />
         </>
       )}
-      <div className="modeler" {...props} ref={canvas} />;
+      <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />;
     </div>
   );
 };

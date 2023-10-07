@@ -60,7 +60,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
 
   return (
     <AntLayout>
-      <AntLayout>
+      <AntLayout hasSider>
         <AntLayout.Sider
           style={{
             backgroundColor: '#fff',

@@ -23,6 +23,7 @@ import Auth from '@/lib/AuthCanWrapper';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
 import useFuzySearch from '@/lib/useFuzySearch';
+import Bar from '@/components/bar';
 
 const UsersPage: FC = () => {
   const { error, data, isLoading, refetch: refetchUsers } = useGetAsset('/users', {});
@@ -108,13 +109,9 @@ const UsersPage: FC = () => {
 
   return (
     <Content title="Identity and Access Management">
-      <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
-        {selectedRowKeys.length > 0 ? (
-          <Col
-            xs={24}
-            lg={{ flex: 'none' }}
-            className={cn({ [styles.SelectedRow]: selectedRowKeys.length > 0 })}
-          >
+      <Bar
+        leftNode={
+          selectedRowKeys.length ? (
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
               <span>{selectedRowKeys.length} selected: </span>
@@ -126,21 +123,15 @@ const UsersPage: FC = () => {
                 <Button type="text" icon={<DeleteOutlined />} />
               </Popconfirm>
             </Space>
-          </Col>
-        ) : undefined}
-        <Col xs={24} lg={{ flex: 'auto' }}>
-          <Input.Search
-            size="middle"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-            placeholder="Search Users"
-          />
-        </Col>
-        <Col xs={24} lg={{ flex: 'none' }}>
-          <HeaderActions />
-        </Col>
-      </Row>
+          ) : undefined
+        }
+        searchProps={{
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value),
+          placeholder: 'Search Users ...',
+        }}
+        rightNode={<HeaderActions />}
+      />
       <Table
         columns={columns}
         dataSource={filteredUsers}

@@ -42,7 +42,7 @@
     flex: auto;
   }
   .ant-col.ant-col-lg-flex-none {
-    flex: none;
+    flex: none !important;
   }
 }
 @media (min-width: 1200px) {

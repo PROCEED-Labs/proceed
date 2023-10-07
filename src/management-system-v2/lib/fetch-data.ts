@@ -6,7 +6,8 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import createClient, { FetchOptions, FilterKeys } from 'openapi-fetch';
+import createClient, { FetchOptions } from 'openapi-fetch';
+import { FilterKeys } from 'openapi-typescript-helpers';
 import { paths } from './openapiSchema';
 import { useMemo } from 'react';
 
@@ -48,10 +49,10 @@ function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClie
   return wrappedFunction as TApiCall;
 }
 
-export const get = addAuthHeaders(apiClient.get);
-export const post = addAuthHeaders(apiClient.post);
-export const put = addAuthHeaders(apiClient.put);
-export const del = addAuthHeaders(apiClient.del);
+export const get = addAuthHeaders(apiClient.GET);
+export const post = addAuthHeaders(apiClient.POST);
+export const put = addAuthHeaders(apiClient.PUT);
+export const del = addAuthHeaders(apiClient.DELETE);
 
 type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K] } & {};
 type QueryData<T extends (...args: any) => any> = Prettify<
@@ -80,8 +81,8 @@ export type ApiData<
   : unknown;
 
 export function useGetAsset<
-  TFirstParam extends Parameters<typeof apiClient.get>[0],
-  TSecondParam extends Parameters<typeof apiClient.get<TFirstParam>>[1],
+  TFirstParam extends Parameters<typeof apiClient.GET>[0],
+  TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
 >(path: TFirstParam, params: TSecondParam, reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>) {
   const keys = useMemo(() => {
     const keys = [path];
@@ -97,7 +98,7 @@ export function useGetAsset<
     return keys;
   }, [path, params]);
 
-  type Data = QueryData<typeof apiClient.get<TFirstParam>> | undefined;
+  type Data = QueryData<typeof apiClient.GET<TFirstParam>> | undefined;
 
   return useQuery({
     // eslint-disable-next-line
@@ -110,11 +111,11 @@ export function useGetAsset<
   });
 }
 
-export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.post>[0]>(
+export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.POST>[0]>(
   path: TFirstParam,
   mutationParams: Omit<
     UseMutationOptions<
-      QueryData<typeof apiClient.post<TFirstParam>>,
+      QueryData<typeof apiClient.POST<TFirstParam>>,
       unknown,
       FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>
     >,
@@ -138,17 +139,17 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.pos
 
       queryClient.invalidateQueries(keys);
 
-      return data as QueryData<typeof apiClient.post<TFirstParam>>;
+      return data as QueryData<typeof apiClient.POST<TFirstParam>>;
     },
     ...mutationParams,
   });
 }
 
-export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>[0]>(
+export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.PUT>[0]>(
   path: TFirstParam,
   mutationParams: Omit<
     UseMutationOptions<
-      QueryData<typeof apiClient.put<TFirstParam>>,
+      QueryData<typeof apiClient.PUT<TFirstParam>>,
       unknown,
       FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>
     >,
@@ -176,17 +177,17 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.put>
 
       queryClient.invalidateQueries(keys);
 
-      return data as QueryData<typeof apiClient.put<TFirstParam>>;
+      return data as QueryData<typeof apiClient.PUT<TFirstParam>>;
     },
     ...mutationParams,
   });
 }
 
-export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.del>[0]>(
+export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.DELETE>[0]>(
   path: TFirstParam,
   mutationParams: Omit<
     UseMutationOptions<
-      QueryData<typeof apiClient.del<TFirstParam>>,
+      QueryData<typeof apiClient.DELETE<TFirstParam>>,
       unknown,
       FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>
     >,
@@ -210,7 +211,7 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.d
 
       queryClient.invalidateQueries(keys);
 
-      return data as QueryData<typeof apiClient.del<TFirstParam>>;
+      return data as QueryData<typeof apiClient.DELETE<TFirstParam>>;
     },
     ...mutationParams,
   });

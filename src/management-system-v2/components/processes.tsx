@@ -19,6 +19,7 @@ import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
+import Bar from './bar';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -131,42 +132,24 @@ const Processes: FC = () => {
       <div style={{ display: 'flex', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{ /* width: '75%', */ flex: 3 }}>
-          <Row justify="space-between" className={styles.Headerrow}>
-            <Col
-              // xs={24}
-              // sm={24}
-              // md={24}
-              // lg={10}
-              // xl={6}
-              span={10}
-              className={cn({ [styles.SelectedRow]: /* selection */ selectedRowKeys.length })}
-            >
-              {selectedRowKeys.length ? (
-                <>
+          <Bar
+            leftNode={
+              selectedRowKeys.length ? (
+                <Space size={20}>
                   <Button onClick={deselectAll} type="text">
                     <CloseOutlined />
                   </Button>
                   {selectedRowKeys.length} selected:{' '}
                   <span className={styles.Icons}>{actionBar}</span>
-                </>
-              ) : (
-                <div style={{ height: '40px' }}></div>
-              )}
-            </Col>
-          </Row>
-          <Row className={styles.Row}>
-            {/* <Col md={0} lg={1} xl={1}></Col> */}
-            <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={21} xl={21}>
-              <Search
-                size="middle"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onPressEnter={(e) => setSearchTerm(e.currentTarget.value)}
-                allowClear
-                placeholder="Search Processes"
-              />
-            </Col>
-            <Col span={1} />
-            <Col className={cn(styles.Headercol, styles.Selectview)} span={1}>
+                </Space>
+              ) : undefined
+            }
+            searchProps={{
+              onChange: (e) => setSearchTerm(e.target.value),
+              onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
+              placeholder: 'Search Processes ...',
+            }}
+            rightNode={
               <Space.Compact>
                 <Button
                   style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
@@ -187,8 +170,8 @@ const Processes: FC = () => {
                   <AppstoreOutlined />
                 </Button>
               </Space.Compact>
-            </Col>
-          </Row>
+            }
+          />
           {!iconView ? (
             <ProcessList
               data={filteredData}

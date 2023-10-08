@@ -13,7 +13,6 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import cn from 'classnames';
-import { useProcessesStore } from '@/lib/use-local-process-store';
 import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -52,8 +51,6 @@ const Processes: FC = () => {
     },
   });
 
-  const setProcesses = useProcessesStore((state) => state.setProcesses);
-
   const [selection, setSelection] = useState<Processes>([]);
   const [hovered, setHovered] = useState<Process | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -79,10 +76,6 @@ const Processes: FC = () => {
       </Tooltip>
     </>
   );
-
-  useEffect(() => {
-    setProcesses(data as any);
-  }, [data, setProcesses]);
 
   const [filteredData, setFilteredData] = useState<Processes | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');

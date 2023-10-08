@@ -12,8 +12,7 @@ import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { useProcessesStore } from '@/lib/use-local-process-store';
-import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
+import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 

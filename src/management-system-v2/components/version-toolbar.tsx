@@ -107,18 +107,9 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const setVersions = useModelerStateStore((state) => state.setVersions);
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
-
-  const {
-    isSuccess,
-    data: processData,
-    refetch: refetchProcess,
-  } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
 
   let selectedElement;
 
@@ -157,12 +148,6 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (isSuccess) {
-      setVersions(processData!.versions);
-    }
-  }, [isSuccess, processData, setVersions]);
 
   return (
     <>

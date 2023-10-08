@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './page.module.scss';
-import { FC, useEffect, useMemo, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Modeler from '@/components/modeler';
 import cn from 'classnames';
@@ -16,15 +16,12 @@ import {
   Select,
   SelectProps,
   Space,
-  Tooltip,
   theme,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useProcessesStore } from '@/lib/use-local-process-store';
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from '@/components/version-creation-button';
-import { SelectionSelectFn } from 'antd/es/table/interface';
 
 type ProcessProps = {
   params: { processId: string };

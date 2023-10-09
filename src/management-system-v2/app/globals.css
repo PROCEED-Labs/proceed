@@ -1,5 +1,5 @@
 .bpmn-js-modeler-with-toolbar .djs-palette {
-  top: 80px;
+  top: 125px;
 }
 
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */

@@ -63,7 +63,7 @@ const Processes: FC<ProcessProps> = () => {
   /// Derived State
 
   const minimized = pathname !== `/processes/${processId}`;
-  const selectedVersionId = query.get('version');
+  const selectedVersionId = parseInt(query.get('version') ?? '-1');
   const selectedVersion =
     process?.versions.find((version) => version.version === selectedVersionId) ?? LATEST_VERSION;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useEffect, useMemo, useState } from 'react';
 import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
 import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import {
@@ -42,8 +42,6 @@ const fuseOptions = {
   keys: ['definitionName', 'description'],
 };
 
-const { Search } = Input;
-
 const Processes: FC = () => {
   const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
     params: {
@@ -51,12 +49,12 @@ const Processes: FC = () => {
     },
   });
 
-  const [selection, setSelection] = useState<Processes>([]);
-  const [hovered, setHovered] = useState<Process | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const prefs: Preferences = getPreferences();
-  if (!prefs['icon-view-in-process-list']) prefs['icon-view-in-process-list'] = false;
+  if (!prefs['icon-view-in-process-list']) {
+    prefs['icon-view-in-process-list'] = false;
+  }
 
   const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
@@ -77,20 +75,18 @@ const Processes: FC = () => {
     </>
   );
 
-  const [filteredData, setFilteredData] = useState<Processes | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
 
   const rerenderLists = () => {
-    setFilteredData(filteredData);
+    //setFilteredData(filteredData);
   };
 
-  useEffect(() => {
+  const filteredData = useMemo(() => {
     if (data && searchTerm !== '') {
       const fuse = new Fuse(data, fuseOptions);
-      setFilteredData(fuse.search(searchTerm).map((item) => item.item));
-    } else {
-      setFilteredData(data);
+      return fuse.search(searchTerm).map((item) => item.item);
     }
+    return data;
   }, [data, searchTerm]);
 
   const deselectAll = () => {
@@ -165,18 +161,18 @@ const Processes: FC = () => {
               </Space.Compact>
             }
           />
-          {!iconView ? (
+          {iconView ? (
+            <IconView
+              data={filteredData}
+              selection={selectedRowKeys}
+              setSelection={setSelectedRowKeys}
+            />
+          ) : (
             <ProcessList
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
               isLoading={isLoading}
-            />
-          ) : (
-            <IconView
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
             />
           )}
         </div>

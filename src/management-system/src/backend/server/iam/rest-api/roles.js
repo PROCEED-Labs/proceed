@@ -8,8 +8,8 @@ import {
 } from '../../../shared-electron-server/data/iam/roles.js';
 import { validateRole } from '../middleware/inputValidations.js';
 import { abilityCacheDeleteAll, isAllowed, isAuthenticated } from '../middleware/authorization';
-import { toCaslResource } from '../authorization/caslRules';
 import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
+import { toCaslResource } from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
 const rolesRouter = express.Router();
 

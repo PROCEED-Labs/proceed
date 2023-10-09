@@ -4,6 +4,7 @@ import {
   PureAbility,
   RawRuleOf,
   fieldPatternMatcher,
+  subject,
 } from '@casl/ability';
 
 export const resources = [
@@ -178,4 +179,8 @@ export function buildAbility(rules: AbilityRule[]) {
   ability.update(rules);
 
   return ability;
+}
+
+export function toCaslResource(resource: ResourceType, object: any) {
+  return subject(resource, object);
 }

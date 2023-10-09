@@ -1,12 +1,7 @@
 import { PackRule, unpackRules } from '@casl/ability/extra';
-import { AbilityRule, CaslAbility, ResourceType, buildAbility } from './caslAbility';
-import { subject } from '@casl/ability';
+import { AbilityRule, CaslAbility, buildAbility, toCaslResource } from './caslAbility';
 
 type CanParams = Parameters<CaslAbility['can']>;
-
-export function toCaslResource(resource: ResourceType, object: any) {
-  return subject(resource, object);
-}
 
 export default class Ability {
   caslAbility: CaslAbility;

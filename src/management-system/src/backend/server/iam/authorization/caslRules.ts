@@ -1,4 +1,3 @@
-import { subject } from '@casl/ability-v6';
 import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability-v6/extra';
 import {
@@ -375,8 +374,4 @@ export async function rulesForUser(userId: string) {
   translatedRules.sort((a, b) => +a.inverted - +b.inverted);
 
   return { rules: packRules(translatedRules), expiration: firstExpiration };
-}
-
-export function toCaslResource(resource: ResourceType, object: any) {
-  return subject(resource, object);
 }

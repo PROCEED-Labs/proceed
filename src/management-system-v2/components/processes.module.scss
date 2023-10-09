@@ -24,43 +24,25 @@
   }
 }
 
-.Headerrow {
-  padding-bottom: 10px;
+.Icons {
+  margin-left: 10px;
+  display: inline-flex;
+  width: 40%;
+  justify-content: space-around;
+  align-items: center;
 
-  .SelectedRow {
-    display: flex;
-    background-color: #ececec;
-    border-radius: 4px;
-    padding: 4px;
-    align-items: center;
-    justify-content: space-around;
+  .Icon {
+    margin: 0 5px;
+    cursor: pointer;
+    transition: color 0.2s;
   }
 
-  .Headercol {
-    padding: 4px;
-    display: flex;
+  .Icon:hover {
+    color: #dcdcdc;
   }
+}
 
-  .Icons {
-    margin-left: 10px;
-    display: inline-flex;
-    width: 40%;
-    justify-content: space-around;
-    align-items: center;
-
-    .Icon {
-      margin: 0 5px;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .Icon:hover {
-      color: #dcdcdc;
-    }
-  }
-
-  .Selectview {
-    justify-self: end;
-    justify-content: end;
-  }
+.Selectview {
+  justify-self: end;
+  justify-content: end;
 }

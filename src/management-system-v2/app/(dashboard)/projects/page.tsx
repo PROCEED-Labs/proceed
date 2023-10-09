@@ -2,13 +2,12 @@ import Processes from '@/components/processes';
 import { FC } from 'react';
 import ProjectStats from './project-stats';
 import Content from '@/components/content';
-import HeaderActions from './header-actions';
 import Auth from '@/lib/AuthCanWrapper';
 import { Space } from 'antd';
 
 const Projects: FC = () => {
   return (
-    <Content title="Projects" rightNode={<HeaderActions />}>
+    <Content title="Projects">
       <Space direction="vertical" size="large" style={{ display: 'flex' }}>
         <ProjectStats />
         <Processes />

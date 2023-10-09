@@ -20,6 +20,9 @@
     "singleQuote": true
   },
   "dependencies": {
+    "jspdf": "^2.5.1",
+    "svg2pdf.js": "^2.2.2",
+    "uuid": "^9.0.0",
     "@monaco-editor/react": "4.5.2",
     "@tanstack/react-query": "4.35.7",
     "antd": "5.9.4",

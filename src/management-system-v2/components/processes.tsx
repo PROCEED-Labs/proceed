@@ -18,6 +18,7 @@ import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
+import ProcessExportModal from './process-export';
 import Bar from './bar';
 
 type Processes = ApiData<'/process', 'get'>;
@@ -58,6 +59,8 @@ const Processes: FC = () => {
 
   const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
+  const [exportProcessId, setExportProcessId] = useState<string | undefined>();
+
   const actionBar = (
     <>
       {/* <Tooltip placement="top" title={'Preview'}>
@@ -67,7 +70,11 @@ const Processes: FC = () => {
         <CopyOutlined />
       </Tooltip>
       <Tooltip placement="top" title={'Export'}>
-        <ExportOutlined />
+        <ExportOutlined
+          onClick={() => {
+            setExportProcessId(selectedRowKeys[0].toString());
+          }}
+        />
       </Tooltip>
       <Tooltip placement="top" title={'Delete'}>
         <DeleteOutlined />
@@ -173,12 +180,17 @@ const Processes: FC = () => {
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
               isLoading={isLoading}
+              onExportProcess={setExportProcessId}
             />
           )}
         </div>
         {/* Meta Data Panel */}
         <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
       </div>
+      <ProcessExportModal
+        processId={exportProcessId}
+        onClose={() => setExportProcessId(undefined)}
+      />
     </>
   );
 };

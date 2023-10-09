@@ -34,6 +34,7 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
+  onExportProcess: Dispatch<SetStateAction<string | undefined>>;
 }>;
 
 const ColumnHeader = [
@@ -64,7 +65,13 @@ const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
 console.log(numberOfRows);
 
-const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLoading }) => {
+const ProcessList: FC<ProcessListProps> = ({
+  data,
+  selection,
+  setSelection,
+  isLoading,
+  onExportProcess,
+}) => {
   const router = useRouter();
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
@@ -104,7 +111,11 @@ const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLo
           <CopyOutlined />
         </Tooltip>
         <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined />
+          <ExportOutlined
+            onClick={() => {
+              onExportProcess(record.definitionId);
+            }}
+          />
         </Tooltip>
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined />

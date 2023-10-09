@@ -21,6 +21,9 @@ import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams } from 'next/navigation';
+
+import ProcessExportModal from './process-export';
+
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from './version-creation-button';
 import { useGetAsset } from '@/lib/fetch-data';
@@ -34,6 +37,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const svgShare = <Icon component={SvgShare} />;
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
+  const [showProcessExportModal, setShowProcessExportModal] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -78,6 +82,12 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
+  const handleProcessExportModalToggle = async () => {
+    setShowProcessExportModal(!showProcessExportModal);
+  };
+
+  const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
+
   return (
     <>
       <Toolbar>
@@ -96,7 +106,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
-                <Button icon={<ExportOutlined />}></Button>
+                <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
               </Tooltip>
               <Tooltip title="Hide Non-Executeable Elements">
                 <Button icon={<EyeOutlined />}></Button>
@@ -129,6 +139,11 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
       {/* {showPropertiesPanel && selectedElement && (
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
+      <ProcessExportModal
+        processId={showProcessExportModal ? (processId as string) : undefined}
+        onClose={() => setShowProcessExportModal(false)}
+        processVersion={selectedVersion || undefined}
+      />
     </>
   );
 };

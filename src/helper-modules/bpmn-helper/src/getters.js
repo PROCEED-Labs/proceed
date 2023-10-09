@@ -167,7 +167,7 @@ async function getDeploymentMethod(bpmn) {
  * Returns a mapping of the ids of the process nodes to the machines they are mapped to
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<{[flowNodeId: string]: {machineAddress: string, machineId: string}}>} the mapping from a node id to information about the machine it is mapped to
+ * @returns {Promise.<{[flowNodeId: string]: {machineAddress?: string, machineId?: string}}>} the mapping from a node id to information about the machine it is mapped to
  */
 async function getElementMachineMapping(bpmn) {
   const elementMachineMapping = {};
@@ -187,7 +187,7 @@ async function getElementMachineMapping(bpmn) {
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ [userTaskId: string]: { fileName: string, implementation: string }}> } an object (a map) with all userTaskIds as keys
+ * @returns { Promise.<{ [userTaskId: string]: { fileName?: string, implementation?: string }}> } an object (a map) with all userTaskIds as keys
  */
 async function getUserTaskFileNameMapping(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -207,7 +207,7 @@ async function getUserTaskFileNameMapping(bpmn) {
  * for every UserTask in a BPMN process.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ [userTaskFileName: string] : string }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
+ * @returns { Promise.<{ [userTaskFileName: string] : string[] }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
  */
 async function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -567,7 +567,7 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -663,7 +663,7 @@ async function getMetaData(bpmn, elId) {
  * Parses the milestones from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {{id: string, name: string, description: string}[]} array with all milestones
+ * @returns {{id: string, name: string, description?: string}[]} array with all milestones
  */
 function getMilestonesFromElement(element) {
   let milestones = [];
@@ -689,7 +689,7 @@ function getMilestonesFromElement(element) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {{id: string, name: string, description: string}[]} array with all milestones
+ * @returns {{id: string, name: string, description?: string}[]} array with all milestones
  */
 async function getMilestonesFromElementById(bpmn, elementId) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -720,7 +720,8 @@ async function getPerformersFromElementById(bpmn, elementId) {
  * @property {string} id - company id
  * @property {string} shortName - company short name
  * @property {string} longName - company long name
- * @property {string} description - company description
+ * @property {string} [description] - company description
+ * @property {string} [factoryIds]
  */
 
 /**
@@ -731,8 +732,8 @@ async function getPerformersFromElementById(bpmn, elementId) {
  * @property {string} id - factory id
  * @property {string} shortName - factory short name
  * @property {string} longName - factory long name
- * @property {string} description - factory description
- * @property {string} companyRef - reference to company linked to factory
+ * @property {string} [description] - factory description
+ * @property {string} [companyRef] - reference to company linked to factory
  */
 
 /**
@@ -743,8 +744,8 @@ async function getPerformersFromElementById(bpmn, elementId) {
  * @property {string} id - building id
  * @property {string} shortName - building short name
  * @property {string} longName - building long name
- * @property {string} description - building description
- * @property {string} factoryRef - building to factory linked to building
+ * @property {string} [description] - building description
+ * @property {string} [factoryRef] - building to factory linked to building
  */
 
 /**
@@ -755,8 +756,8 @@ async function getPerformersFromElementById(bpmn, elementId) {
  * @property {string} id - area id
  * @property {string} shortName - area short name
  * @property {string} longName - area long name
- * @property {string} description - area description
- * @property {string} buildingRef - reference to building linked to area
+ * @property {string} [description] - area description
+ * @property {string} [buildingRef] - reference to building linked to area
  */
 
 /**
@@ -767,9 +768,9 @@ async function getPerformersFromElementById(bpmn, elementId) {
  * @property {string} id - workingPlace id
  * @property {string} shortName - workingPlace short name
  * @property {string} longName - workingPlace long name
- * @property {string} description - workingPlace description
- * @property {string} buildingRef - reference to building linked to workingPlace
- * @property {string} areaRef - reference to area linked to workingPlace
+ * @property {string} [description] - workingPlace description
+ * @property {string} [buildingRef] - reference to building linked to workingPlace
+ * @property {string} [areaRef] - reference to area linked to workingPlace
  */
 
 /**
@@ -791,12 +792,15 @@ function getLocationsFromElement(element) {
       (child) => child.$type == 'proceed:Locations',
     );
     if (locationsElement && locationsElement.company) {
-      company = locationsElement.company.map(({ id, shortName, longName, description }) => ({
-        id,
-        shortName,
-        longName,
-        description,
-      }));
+      company = locationsElement.company.map(
+        ({ id, shortName, longName, description, factoryIds }) => ({
+          id,
+          shortName,
+          longName,
+          description,
+          factoryIds,
+        }),
+      );
     }
 
     if (locationsElement && locationsElement.factory) {
@@ -858,11 +862,11 @@ function getLocationsFromElement(element) {
  * @property {string} id - consumableMaterial id
  * @property {string} shortName - consumableMaterial short name
  * @property {string} longName - consumableMaterial long name
- * @property {string} manufacturer - consumableMaterial manufacturer
- * @property {string} manufacturerSerialNumber - consumableMaterial manufacturerSerialNumber
- * @property {string} unit - consumableMaterial unit
+ * @property {string} [manufacturer] - consumableMaterial manufacturer
+ * @property {string} [manufacturerSerialNumber] - consumableMaterial manufacturerSerialNumber
+ * @property {string} [unit] - consumableMaterial unit
  * @property {string} quantity - consumableMaterial quantity
- * @property {string} description - consumableMaterial description
+ * @property {string} [description] - consumableMaterial description
  */
 
 /**
@@ -983,7 +987,7 @@ function getPerformersFromElement(element) {
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
- * @returns {{years: number, months: number, days: number, hours: number, minutes: number, seconds: number}} Object with number of years, months, days, hours, minutes and seconds
+ * @returns {{years?: number, months?: number, days?: number, hours?: number, minutes?: number, seconds?: number}} Object with number of years, months, days, hours, minutes and seconds
  */
 function parseISODuration(isoDuration) {
   let years = null;

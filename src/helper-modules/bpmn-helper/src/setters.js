@@ -59,7 +59,7 @@ async function setDefinitionsName(bpmn, name) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object} versionInformation - the version information to set in the definitions object
- * @param {(string|number)} versionInformation.version - the version number (a time since epoch string or number)
+ * @param {(string|number)} [versionInformation.version] - the version number (a time since epoch string or number)
  * @param {string} [versionInformation.versionName] - a human readable name for the version
  * @param {string} [versionInformation.versionDescription] - a longer description of the version
  * @param {(string|number)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
@@ -233,7 +233,7 @@ async function setUserTaskData(
  * Function that sets the machineInfo of all elements in the given xml with the given machineIds
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
+ * @param {{[elementId: string]: {machineAddress?: string, machineId?: string}}} machineInfo the machineAddresses and machineIps of all the elements we want to set
  * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function setMachineInfo(bpmn, machineInfo) {
@@ -363,7 +363,7 @@ async function addConstraintsToElementById(bpmn, elementId, constraints) {
 async function addCallActivityReference(bpmn, callActivityId, calledBpmn, calledProcessLocation) {
   // checks if there is already a reference for this call activity and remove it with all related informations (namespace definitions/imports)
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
-  const callActivity = await getElementById(bpmnObj, callActivityId);
+  const callActivity = getElementById(bpmnObj, callActivityId);
   if (callActivity.calledElement) {
     await removeCallActivityReference(bpmnObj, callActivityId);
   }
@@ -533,7 +533,7 @@ async function addDocumentation(bpmn, description) {
  * @param {object} processObj
  * @param {string} description
  */
-async function addDocumentationToProcessObject(processObj, description) {
+function addDocumentationToProcessObject(processObj, description) {
   const docs = processObj.get('documentation');
   const documentation = moddle.create('bpmn:Documentation', { text: description || '' });
   if (docs.length > 0) {

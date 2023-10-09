@@ -41,7 +41,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const setVersions = useModelerStateStore((state) => state.setVersions);
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
@@ -82,12 +81,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
-
-  useEffect(() => {
-    if (isSuccess) {
-      setVersions(processData!.versions);
-    }
-  }, [isSuccess, processData, setVersions]);
 
   const handleProcessExportModalToggle = async () => {
     setShowProcessExportModal(!showProcessExportModal);

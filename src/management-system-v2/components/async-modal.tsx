@@ -2,9 +2,7 @@
 
 import { Button } from 'antd';
 import React, { FC, PropsWithChildren, useState } from 'react';
-
 import { Modal as AntModal } from 'antd';
-import { on } from 'events';
 
 type ModalProps = PropsWithChildren & {
   title?: string;

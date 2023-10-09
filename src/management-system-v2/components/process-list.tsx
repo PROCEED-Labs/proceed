@@ -17,7 +17,6 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useProcessesStore } from '@/lib/use-local-process-store';
 import { ColumnType, TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
@@ -74,8 +73,6 @@ const ProcessList: FC<ProcessListProps> = ({
   onExportProcess,
 }) => {
   const router = useRouter();
-
-  const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
@@ -331,240 +328,6 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
-  const dataSource2 = [
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address:
-        '10 Downing Street Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-      fix: 'Fixed Content',
-    },
-  ];
-
-  const columns2: TableColumnsType<Processes[number]> = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age',
-    },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      // width: '100px',
-      render: (dataIndexEle, record, index) => {
-        return (
-          <div
-            style={{
-              width: '2vw',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {dataIndexEle}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name' + 1,
-    },
-    {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age' + 1,
-    },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address' + 1,
-    },
-    {
-      title: 'Fixed',
-      fixed: 'right',
-      dataIndex: 'fix',
-      key: 'fix',
-    },
-  ];
-
-  // return (
-  //   <>
-  //     <div /* style={{ height: '200px' }} */>
-  //       <Table
-  //         dataSource={dataSource2}
-  //         columns={columns2}
-  //         pagination={{ position: ['bottomCenter'], pageSize: 1 }}
-  //       ></Table>
-  //     </div>
-  //   </>
-  // );
-
   return (
     <>
       <Table
@@ -633,7 +396,6 @@ const ProcessList: FC<ProcessListProps> = ({
           onDoubleClick: () => {
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
-            setSelectedProcess(record);
             router.refresh();
             router.push(`/processes/${record.definitionId}`);
           },

@@ -29,6 +29,11 @@ const Theme: FC<PropsWithChildren> = ({ children }) => {
           fontSize: 14,
           fontSizeHeading1: 16,
         },
+        components: {
+          Layout: {
+            headerBg: '#fff',
+          },
+        },
       }}
     >
       {children}

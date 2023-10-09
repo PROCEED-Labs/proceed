@@ -43,7 +43,8 @@ export type CompanyInfos = {
   /**
    * - company description
    */
-  description: string;
+  description?: string;
+  factoryIds?: string;
 };
 /**
  * An object containing properties from defined factories
@@ -64,11 +65,11 @@ export type FactoryInfos = {
   /**
    * - factory description
    */
-  description: string;
+  description?: string;
   /**
    * - reference to company linked to factory
    */
-  companyRef: string;
+  companyRef?: string;
 };
 /**
  * An object containing properties from defined buildings
@@ -89,11 +90,11 @@ export type BuildingInfos = {
   /**
    * - building description
    */
-  description: string;
+  description?: string;
   /**
    * - building to factory linked to building
    */
-  factoryRef: string;
+  factoryRef?: string;
 };
 /**
  * An object containing properties from defined areas
@@ -114,11 +115,11 @@ export type AreaInfos = {
   /**
    * - area description
    */
-  description: string;
+  description?: string;
   /**
    * - reference to building linked to area
    */
-  buildingRef: string;
+  buildingRef?: string;
 };
 /**
  * An object containing properties from defined working places
@@ -139,15 +140,15 @@ export type WorkingPlaceInfos = {
   /**
    * - workingPlace description
    */
-  description: string;
+  description?: string;
   /**
    * - reference to building linked to workingPlace
    */
-  buildingRef: string;
+  buildingRef?: string;
   /**
    * - reference to area linked to workingPlace
    */
-  areaRef: string;
+  areaRef?: string;
 };
 /**
  * An object containing properties from defined resources
@@ -168,15 +169,15 @@ export type ResourceInfos = {
   /**
    * - consumableMaterial manufacturer
    */
-  manufacturer: string;
+  manufacturer?: string;
   /**
    * - consumableMaterial manufacturerSerialNumber
    */
-  manufacturerSerialNumber: string;
+  manufacturerSerialNumber?: string;
   /**
    * - consumableMaterial unit
    */
-  unit: string;
+  unit?: string;
   /**
    * - consumableMaterial quantity
    */
@@ -184,7 +185,7 @@ export type ResourceInfos = {
   /**
    * - consumableMaterial description
    */
-  description: string;
+  description?: string;
 };
 /**
  * Returns id of the given process definition
@@ -295,12 +296,12 @@ export function getProcessDocumentationByObject(processObject: object): string;
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ [userTaskId: string]: { fileName: string, implementation: string }}> } an object (a map) with all userTaskIds as keys
+ * @returns { Promise.<{ [userTaskId: string]: { fileName?: string, implementation?: string }}> } an object (a map) with all userTaskIds as keys
  */
 export function getUserTaskFileNameMapping(bpmn: string | object): Promise<{
   [userTaskId: string]: {
-    fileName: string;
-    implementation: string;
+    fileName?: string;
+    implementation?: string;
   };
 }>;
 /**
@@ -308,10 +309,10 @@ export function getUserTaskFileNameMapping(bpmn: string | object): Promise<{
  * for every UserTask in a BPMN process.
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ [userTaskFileName: string] : string }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
+ * @returns { Promise.<{ [userTaskFileName: string] : string[] }>} A map (object) that returns for every UserTask the 'fileName' (key) and UserTask-IDs (value)
  */
 export function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn: string | object): Promise<{
-  [userTaskFileName: string]: string;
+  [userTaskFileName: string]: string[];
 }>;
 /**
  * Returns a xml with Diagram Elements just from the given subprocess and their nested Processes
@@ -430,12 +431,12 @@ export function getChildrenFlowElements(bpmn: string | object, elementId: any): 
  * Returns a mapping of the ids of the process nodes to the machines they are mapped to
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<{[flowNodeId: string]: {machineAddress: string, machineId: string}}>} the mapping from a node id to information about the machine it is mapped to
+ * @returns {Promise.<{[flowNodeId: string]: {machineAddress?: string, machineId?: string}}>} the mapping from a node id to information about the machine it is mapped to
  */
 export function getElementMachineMapping(bpmn: string | object): Promise<{
   [flowNodeId: string]: {
-    machineAddress: string;
-    machineId: string;
+    machineAddress?: string;
+    machineId?: string;
   };
 }>;
 /**
@@ -461,11 +462,11 @@ export function getTaskConstraintMapping(bpmn: string | object): Promise<{
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
  */
 export function getIdentifyingInfos(bpmn: string | object): Promise<{
   id: string;
-  originalId: string;
+  originalId?: string;
   processIds: string[];
   name: string;
   description: string;
@@ -503,19 +504,19 @@ export function getMetaData(
  * Parses the milestones from a bpmn-moddle element
  *
  * @param {object} element
- * @returns {{id: string, name: string, description: string}[]} array with all milestones
+ * @returns {{id: string, name: string, description?: string}[]} array with all milestones
  */
 export function getMilestonesFromElement(element: object): {
   id: string;
   name: string;
-  description: string;
+  description?: string;
 }[];
 /**
  * Get the milestones for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {{id: string, name: string, description: string}[]} array with all milestones
+ * @returns {{id: string, name: string, description?: string}[]} array with all milestones
  */
 export function getMilestonesFromElementById(
   bpmn: string | object,
@@ -523,7 +524,7 @@ export function getMilestonesFromElementById(
 ): {
   id: string;
   name: string;
-  description: string;
+  description?: string;
 }[];
 /**
  * An object containing properties from defined resources
@@ -533,11 +534,11 @@ export function getMilestonesFromElementById(
  * @property {string} id - consumableMaterial id
  * @property {string} shortName - consumableMaterial short name
  * @property {string} longName - consumableMaterial long name
- * @property {string} manufacturer - consumableMaterial manufacturer
- * @property {string} manufacturerSerialNumber - consumableMaterial manufacturerSerialNumber
- * @property {string} unit - consumableMaterial unit
+ * @property {string} [manufacturer] - consumableMaterial manufacturer
+ * @property {string} [manufacturerSerialNumber] - consumableMaterial manufacturerSerialNumber
+ * @property {string} [unit] - consumableMaterial unit
  * @property {string} quantity - consumableMaterial quantity
- * @property {string} description - consumableMaterial description
+ * @property {string} [description] - consumableMaterial description
  */
 /**
  * Parses the resources from a bpmn-moddle element
@@ -558,7 +559,8 @@ export function getResourcesFromElement(element: object): {
  * @property {string} id - company id
  * @property {string} shortName - company short name
  * @property {string} longName - company long name
- * @property {string} description - company description
+ * @property {string} [description] - company description
+ * @property {string} [factoryIds]
  */
 /**
  * An object containing properties from defined factories
@@ -568,8 +570,8 @@ export function getResourcesFromElement(element: object): {
  * @property {string} id - factory id
  * @property {string} shortName - factory short name
  * @property {string} longName - factory long name
- * @property {string} description - factory description
- * @property {string} companyRef - reference to company linked to factory
+ * @property {string} [description] - factory description
+ * @property {string} [companyRef] - reference to company linked to factory
  */
 /**
  * An object containing properties from defined buildings
@@ -579,8 +581,8 @@ export function getResourcesFromElement(element: object): {
  * @property {string} id - building id
  * @property {string} shortName - building short name
  * @property {string} longName - building long name
- * @property {string} description - building description
- * @property {string} factoryRef - building to factory linked to building
+ * @property {string} [description] - building description
+ * @property {string} [factoryRef] - building to factory linked to building
  */
 /**
  * An object containing properties from defined areas
@@ -590,8 +592,8 @@ export function getResourcesFromElement(element: object): {
  * @property {string} id - area id
  * @property {string} shortName - area short name
  * @property {string} longName - area long name
- * @property {string} description - area description
- * @property {string} buildingRef - reference to building linked to area
+ * @property {string} [description] - area description
+ * @property {string} [buildingRef] - reference to building linked to area
  */
 /**
  * An object containing properties from defined working places
@@ -601,9 +603,9 @@ export function getResourcesFromElement(element: object): {
  * @property {string} id - workingPlace id
  * @property {string} shortName - workingPlace short name
  * @property {string} longName - workingPlace long name
- * @property {string} description - workingPlace description
- * @property {string} buildingRef - reference to building linked to workingPlace
- * @property {string} areaRef - reference to area linked to workingPlace
+ * @property {string} [description] - workingPlace description
+ * @property {string} [buildingRef] - reference to building linked to workingPlace
+ * @property {string} [areaRef] - reference to area linked to workingPlace
  */
 /**
  * Parses the locations from a bpmn-moddle element
@@ -636,15 +638,15 @@ export function getPerformersFromElementById(bpmn: string | object, elementId: s
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
- * @returns {{years: number, months: number, days: number, hours: number, minutes: number, seconds: number}} Object with number of years, months, days, hours, minutes and seconds
+ * @returns {{years?: number, months?: number, days?: number, hours?: number, minutes?: number, seconds?: number}} Object with number of years, months, days, hours, minutes and seconds
  */
 export function parseISODuration(isoDuration: string): {
-  years: number;
-  months: number;
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
+  years?: number;
+  months?: number;
+  days?: number;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
 };
 /**
  * Convert given ISO Duration in number of miliseconds

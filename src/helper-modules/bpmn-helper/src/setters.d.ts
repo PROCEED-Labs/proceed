@@ -22,7 +22,7 @@ export function setDefinitionsName(bpmn: string | object, name: string): Promise
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {object} versionInformation - the version information to set in the definitions object
- * @param {(string|number)} versionInformation.version - the version number (a time since epoch string or number)
+ * @param {(string|number)} [versionInformation.version] - the version number (a time since epoch string or number)
  * @param {string} [versionInformation.versionName] - a human readable name for the version
  * @param {string} [versionInformation.versionDescription] - a longer description of the version
  * @param {(string|number)} [versionInformation.versionBasedOn] - a reference to the version this one is based on
@@ -36,7 +36,7 @@ export function setDefinitionsVersionInformation(
     versionDescription,
     versionBasedOn,
   }: {
-    version: string | number;
+    version?: string | number;
     versionName?: string;
     versionDescription?: string;
     versionBasedOn?: string | number;
@@ -95,12 +95,17 @@ export function setDeploymentMethod(
  * Function that sets the machineInfo of all elements in the given xml with the given machineIds
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {object[]} machineInfo the machineAddresses and machineIps of all the elements we want to set
+ * @param {{[elementId: string]: {machineAddress?: string, machineId?: string}}} machineInfo the machineAddresses and machineIps of all the elements we want to set
  * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function setMachineInfo(
   bpmn: string | object,
-  machineInfo: object[],
+  machineInfo: {
+    [elementId: string]: {
+      machineAddress?: string;
+      machineId?: string;
+    };
+  },
 ): Promise<string | object>;
 /**
  * Sets the 'fileName' and 'implementation' attributes of a UserTask with new values.
@@ -188,10 +193,7 @@ export function addDocumentation(
  * @param {object} processObj
  * @param {string} description
  */
-export function addDocumentationToProcessObject(
-  processObj: object,
-  description: string,
-): Promise<void>;
+export function addDocumentationToProcessObject(processObj: object, description: string): void;
 /**
  * Update the performer info of an element
  *

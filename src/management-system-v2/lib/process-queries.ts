@@ -63,3 +63,23 @@ export const fetchProcessVersionBpmn = async (
     return data?.bpmn;
   }
 };
+
+/**
+ * Fetches the html data for a specific user task file used in some version of a process
+ *
+ * @param definitionId
+ * @param userTaskFileName
+ * @returns the html data (if the user task exists)
+ */
+export const fetchProcessUserTaskHTML = async (definitionId: string, userTaskFileName: string) => {
+  const { data } = await get('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+    params: {
+      path: {
+        definitionId,
+        userTaskFileName,
+      },
+    },
+    parseAs: 'text',
+  });
+  return data;
+};

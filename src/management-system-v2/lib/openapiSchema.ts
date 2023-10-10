@@ -245,7 +245,7 @@ export interface components {
       | 'versions'
     >;
     processVersion: {
-      version: string;
+      version: number;
       name: string;
       description: string;
     };

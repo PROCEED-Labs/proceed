@@ -5,14 +5,13 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { useProcessesStore } from '@/lib/use-local-process-store';
 import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
@@ -34,29 +33,22 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
+  const { processId } = useParams();
   const [initialized, setInitialized] = useState(false);
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
+  const query = useSearchParams();
 
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
-  const processes = useProcessesStore((state) => state.processes);
-  const setSelectedProcess = useModelerStateStore((state) => state.setSelectedProcess);
   const { mutateAsync: updateProcessMutation } = usePutAsset('/process/{definitionId}');
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
-  const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
   const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
 
-  const { processId } = useParams();
-
-  useEffect(() => {
-    const process = processes?.find(({ definitionId }) => definitionId === processId);
-    if (process) {
-      setSelectedProcess(process);
-    }
-  }, [processId]);
+  /// Derived State
+  const selectedVersionId = query.get('version');
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -113,7 +105,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     // only reset the modeler if we switch between editing being enabled or disabled
   }, [setModeler, editingDisabled, processId, updateProcessMutation]);
 
-  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersion);
+  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersionId);
 
   useEffect(() => {
     // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
@@ -162,16 +154,16 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       {!minimized && (
         <>
           <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
-          {selectedVersion && <VersionToolbar />}
+          {selectedVersionId && <VersionToolbar />}
           <XmlEditor
             bpmn={xmlEditorBpmn}
-            canSave={selectedVersion === null}
+            canSave={!selectedVersionId}
             onClose={handleCloseXmlEditor}
             onSaveXml={handleXmlEditorSave}
           />
         </>
       )}
-      <div className="modeler" {...props} ref={canvas} />;
+      <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />
     </div>
   );
 };

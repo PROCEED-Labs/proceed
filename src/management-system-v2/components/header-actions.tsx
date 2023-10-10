@@ -11,7 +11,9 @@ const HeaderActions: FC = () => {
   const loggedIn = useAuthStore((store) => store.loggedIn);
   const user = useAuthStore((store) => store.user);
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) return null;
+  if (!process.env.NEXT_PUBLIC_USE_AUTH) {
+    return null;
+  }
 
   if (!loggedIn) {
     return (

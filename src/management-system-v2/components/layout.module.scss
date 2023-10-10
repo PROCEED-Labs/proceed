@@ -1,30 +1,39 @@
-.Header {
-  border-bottom: '1px solid #eee';
-  .Logo {
-    margin: -5px -25px 10px;
-    transition: all 0.2s;
-  }
-}
-
 .Sider {
   overflow: auto;
   height: 100vh;
   //position: fixed !important;
-  padding-top: 1vh;
   left: 0;
   top: 0;
   bottom: 0;
-  //backgroundcolor: 'white';
 
-  // .Logo {
-  //   margin: -5px 20px 20px;
-  //   transition: all 0.2s;
+  .Icon {
+    margin: 15px -10px;
+  }
 
-  //   &.collapsed {
-  //     margin: -5px 10px 20px;
-  //     width: 60px;
-  //   }
-  // }
+  .LogoContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 64px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s;
+
+    &.collapsed {
+      justify-content: flex-start;
+      padding-left: 20px;
+    }
+  }
+
+  .Logo {
+    margin: -5px 20px 20px;
+    transition: all 0.2s;
+
+    &.collapsed {
+      margin: -5px 10px 20px;
+      width: 60px;
+    }
+  }
 }
 
 .Main {
@@ -33,22 +42,11 @@
   flex: auto;
   position: relative;
   /* Need this for the absolute editor page to work in non-parallel route. */
-  //min-height: 70vh;
-  max-width: calc(100vw - 200px);
-
-  &.collapsed {
-    margin-left: 80px;
-    max-width: calc(100vw - 80px);
-  }
-
-  .Footer {
-    text-align: center;
-    color: #9a9a9a;
-    font-weight: 300;
-  }
+  min-height: 100vh;
 }
 
-.Auth {
-  height: calc(100vh - 64px * 2);
-  // width: 80vw;
+.Footer {
+  text-align: center;
+  color: #9a9a9a;
+  font-weight: 300;
 }

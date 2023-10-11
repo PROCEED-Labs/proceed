@@ -201,17 +201,15 @@ async function updateProcessVersionBasedOn(processDefinitionsId: string, version
   if (processInfo?.bpmn) {
     const { version, description, name } = await getDefinitionsVersionInformation(processInfo.bpmn);
 
-    if (version) {
-      const bpmn = (await setDefinitionsVersionInformation(processInfo.bpmn, {
-        version,
-        versionDescription: description,
-        versionName: name,
-        versionBasedOn,
-      })) as string;
-      await put('/process/{definitionId}', {
-        params: { path: { definitionId: processDefinitionsId } },
-        body: { bpmn },
-      });
-    }
+    const bpmn = (await setDefinitionsVersionInformation(processInfo.bpmn, {
+      version,
+      versionDescription: description,
+      versionName: name,
+      versionBasedOn,
+    })) as string;
+    await put('/process/{definitionId}', {
+      params: { path: { definitionId: processDefinitionsId } },
+      body: { bpmn },
+    });
   }
 }

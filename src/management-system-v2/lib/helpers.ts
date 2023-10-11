@@ -98,7 +98,9 @@ async function versionUserTasks(
 
       // get the html of the user task in the based on version (if there is one and it is locally known)
       const basedOnBPMN =
-        versionBasedOn && (await getLocalVersionBpmn(processInfo, versionBasedOn));
+        versionBasedOn !== undefined
+          ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+          : undefined;
 
       // check if there is a preceding version and if the html of the user task actually changed from that version
       let userTaskHtmlAlreadyExisting = false;
@@ -175,7 +177,11 @@ export async function createNewProcessVersion(
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
-  const basedOnBPMN = versionBasedOn && (await getLocalVersionBpmn(processInfo, versionBasedOn));
+  const basedOnBPMN =
+    versionBasedOn !== undefined
+      ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+      : undefined;
+
   if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
     return versionBasedOn;
   }

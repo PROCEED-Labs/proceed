@@ -30,7 +30,7 @@ async function getStartEvents(bpmn) {
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} The id stored in the definitions field of the given bpmn process
+ * @returns {Promise.<string|undefined>} The id stored in the definitions field of the given bpmn process
  */
 async function getDefinitionsId(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -53,7 +53,7 @@ async function getOriginalDefinitionsId(bpmn) {
  * Returns the name of the given bpmn process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} - The name stored in the definitions field of the given bpmn process
+ * @returns {Promise.<string|undefined>} - The name stored in the definitions field of the given bpmn process
  */
 async function getDefinitionsName(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -127,10 +127,11 @@ function getProcessDocumentationByObject(processObject) {
  * @typedef DefinitionsInfos
  * @type {object}
  * @property {string} id - definitions id
- * @property {string} name - definitions name
- * @property {string} exporter - definitions exporter
- * @property {string} exporterVersion - definitions exporterVersion
- * @property {string} targetNamespace - definitions targetNamespace
+ * @property {string} [originalId] - definitions original id
+ * @property {string} [name] - definitions name
+ * @property {string} [exporter] - definitions exporter
+ * @property {string} [exporterVersion] - definitions exporterVersion
+ * @property {string} [targetNamespace] - definitions targetNamespace
  */
 
 /**
@@ -1064,7 +1065,7 @@ function getPerformersFromElement(element) {
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
- * @returns {{years?: number, months?: number, days?: number, hours?: number, minutes?: number, seconds?: number}} Object with number of years, months, days, hours, minutes and seconds
+ * @returns {{years: number | null, months: number | null, days: number | null, hours: number | null, minutes: number | null, seconds: number | null}} Object with number of years, months, days, hours, minutes and seconds
  */
 function parseISODuration(isoDuration) {
   let years = null;

@@ -8,21 +8,25 @@ export type DefinitionsInfos = {
    */
   id: string;
   /**
+   * - definitions original id
+   */
+  originalId?: string;
+  /**
    * - definitions name
    */
-  name: string;
+  name?: string;
   /**
    * - definitions exporter
    */
-  exporter: string;
+  exporter?: string;
   /**
    * - definitions exporterVersion
    */
-  exporterVersion: string;
+  exporterVersion?: string;
   /**
    * - definitions targetNamespace
    */
-  targetNamespace: string;
+  targetNamespace?: string;
 };
 /**
  * An object containing properties from defined companies
@@ -191,9 +195,9 @@ export type ResourceInfos = {
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} The id stored in the definitions field of the given bpmn process
+ * @returns {Promise.<string|undefined>} The id stored in the definitions field of the given bpmn process
  */
-export function getDefinitionsId(bpmn: string | object): Promise<string>;
+export function getDefinitionsId(bpmn: string | object): Promise<string | undefined>;
 /**
  * Returns the value of the originalId attribute in the given process definition
  * the originalId is the id the process had before it was imported
@@ -206,9 +210,9 @@ export function getOriginalDefinitionsId(bpmn: string | object): Promise<string 
  * Returns the name of the given bpmn process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} - The name stored in the definitions field of the given bpmn process
+ * @returns {Promise.<string|undefined>} - The name stored in the definitions field of the given bpmn process
  */
-export function getDefinitionsName(bpmn: string | object): Promise<string>;
+export function getDefinitionsName(bpmn: string | object): Promise<string | undefined>;
 /**
  * An object containing properties from the
  * definitions element in a BPMN file.
@@ -216,10 +220,11 @@ export function getDefinitionsName(bpmn: string | object): Promise<string>;
  * @typedef DefinitionsInfos
  * @type {object}
  * @property {string} id - definitions id
- * @property {string} name - definitions name
- * @property {string} exporter - definitions exporter
- * @property {string} exporterVersion - definitions exporterVersion
- * @property {string} targetNamespace - definitions targetNamespace
+ * @property {string} [originalId] - definitions original id
+ * @property {string} [name] - definitions name
+ * @property {string} [exporter] - definitions exporter
+ * @property {string} [exporterVersion] - definitions exporterVersion
+ * @property {string} [targetNamespace] - definitions targetNamespace
  */
 /**
  * Gets the 'definitions' root element from the given BPMN XML
@@ -638,15 +643,15 @@ export function getPerformersFromElementById(bpmn: string | object, elementId: s
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
- * @returns {{years?: number, months?: number, days?: number, hours?: number, minutes?: number, seconds?: number}} Object with number of years, months, days, hours, minutes and seconds
+ * @returns {{years: number | null, months: number | null, days: number | null, hours: number | null, minutes: number | null, seconds: number | null}} Object with number of years, months, days, hours, minutes and seconds
  */
 export function parseISODuration(isoDuration: string): {
-  years?: number;
-  months?: number;
-  days?: number;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
+  years: number | null;
+  months: number | null;
+  days: number | null;
+  hours: number | null;
+  minutes: number | null;
+  seconds: number | null;
 };
 /**
  * Convert given ISO Duration in number of miliseconds

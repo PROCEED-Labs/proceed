@@ -99,7 +99,7 @@ async function setProcessId(bpmn, id) {
 }
 
 /**
- *  Sets templaseId in definitions element
+ *  Sets templateId in definitions element
  *
  * @param {string} bpmn the xml we want to update
  * @param {string} id the id we want to set for the template inside the bpmn

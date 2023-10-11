@@ -1,85 +1,39 @@
 declare const _exports: {
-  ensureExtensionElements(element: object): object;
-  removeEmptyExtensionElements(element: any): void;
-  ensureContainerElement(element: object, containerType: string): object;
-  removeEmptyContainerElement(element: any, containerType: any, containerElement: any): void;
-  setMetaData(bpmn: string | object, elId: string, metaValues: object): Promise<string | object>;
-  setProceedElement(element: any, proceedElementType: any, value: any, attributes?: {}): {};
-  getExporterName(): string;
-  getExporterVersion(): string;
-  generateBpmnId(prefix?: string): string;
-  generateDefinitionsId(): string;
-  generateProcessId(): string;
-  generateUserTaskFileName(): string;
-  getUserTaskImplementationString(): string;
-  generateTargetNamespace(id: any): string;
-  initXml(processId?: any, startEventId?: string): string;
-  validateCalledProcess(xml: string, processId: string): Promise<boolean>;
-  setDefinitionsId(bpmn: string | object, id: string): Promise<string | object>;
-  setDefinitionsName(bpmn: string | object, name: string): Promise<string | object>;
-  setDefinitionsVersionInformation(
-    bpmn: string | object,
-    {
-      version,
-      versionName,
-      versionDescription,
-      versionBasedOn,
-    }: {
-      version?: string | number;
-      versionName?: string;
-      versionDescription?: string;
-      versionBasedOn?: string | number;
-    },
-  ): Promise<string | object>;
-  setProcessId(bpmn: string, id: string): Promise<string | object>;
-  setTemplateId(bpmn: string, id: string): Promise<string | object>;
-  setTargetNamespace(bpmn: string | object, id: string): Promise<string | object>;
-  setStandardDefinitions(
-    bpmn: string | object,
-    exporterName: string,
-    exporterVersion: string,
-  ): Promise<string | object>;
-  setDeploymentMethod(bpmn: string | object, method: string): Promise<string | object>;
-  setMachineInfo(
-    bpmn: string | object,
-    machineInfo: {
-      [elementId: string]: {
-        machineAddress?: string;
-        machineId?: string;
-      };
-    },
-  ): Promise<string | object>;
-  setUserTaskData(
-    bpmn: string | object,
-    userTaskId: string,
-    newFileName: string,
-    newImplementation?: string,
-  ): Promise<string | object>;
-  addConstraintsToElementById(
-    bpmn: string | object,
-    elementId: string,
-    constraints: object,
-  ): Promise<string | object>;
-  addCallActivityReference(
-    bpmn: string | object,
-    callActivityId: string,
-    calledBpmn: string,
-    calledProcessLocation: string,
-  ): Promise<string | object>;
-  removeCallActivityReference(
-    bpmn: string | object,
-    callActivityId: string,
-  ): Promise<string | object>;
-  removeUnusedCallActivityReferences(bpmn: string | object): Promise<string | object>;
-  removeColorFromAllElements(bpmn: string | object): Promise<string | object>;
-  addDocumentation(bpmn: string | object, description: string): Promise<string | object>;
-  addDocumentationToProcessObject(processObj: object, description: string): void;
-  updatePerformersOnElement(element: object, performers: any[]): Promise<void>;
-  updatePerformersOnElementById(
-    bpmn: string | object,
-    elementId: string,
-    performers: any[],
-  ): Promise<any>;
+  ensureExtensionElements: typeof proceedExtensions.ensureExtensionElements;
+  removeEmptyExtensionElements: typeof proceedExtensions.removeEmptyExtensionElements;
+  ensureContainerElement: typeof proceedExtensions.ensureContainerElement;
+  removeEmptyContainerElement: typeof proceedExtensions.removeEmptyContainerElement;
+  setMetaData: typeof proceedExtensions.setMetaData;
+  setProceedElement: typeof proceedExtensions.setProceedElement;
+  getExporterName: typeof proceedConstants.getExporterName;
+  getExporterVersion: typeof proceedConstants.getExporterVersion;
+  generateBpmnId: typeof proceedConstants.generateBpmnId;
+  generateDefinitionsId: typeof proceedConstants.generateDefinitionsId;
+  generateProcessId: typeof proceedConstants.generateProcessId;
+  generateUserTaskFileName: typeof proceedConstants.generateUserTaskFileName;
+  getUserTaskImplementationString: typeof proceedConstants.getUserTaskImplementationString;
+  generateTargetNamespace: typeof proceedConstants.generateTargetNamespace;
+  initXml: typeof proceedConstants.initXml;
+  validateCalledProcess: typeof validators.validateCalledProcess;
+  setDefinitionsId: typeof setters.setDefinitionsId;
+  setDefinitionsName: typeof setters.setDefinitionsName;
+  setDefinitionsVersionInformation: typeof setters.setDefinitionsVersionInformation;
+  setProcessId: typeof setters.setProcessId;
+  setTemplateId: typeof setters.setTemplateId;
+  setTargetNamespace: typeof setters.setTargetNamespace;
+  setStandardDefinitions: typeof setters.setStandardDefinitions;
+  setDeploymentMethod: typeof setters.setDeploymentMethod;
+  setMachineInfo: typeof setters.setMachineInfo;
+  setUserTaskData: typeof setters.setUserTaskData;
+  addConstraintsToElementById: typeof setters.addConstraintsToElementById;
+  addCallActivityReference: typeof setters.addCallActivityReference;
+  removeCallActivityReference: typeof setters.removeCallActivityReference;
+  removeUnusedCallActivityReferences: typeof setters.removeUnusedCallActivityReferences;
+  removeColorFromAllElements: typeof setters.removeColorFromAllElements;
+  addDocumentation: typeof setters.addDocumentation;
+  addDocumentationToProcessObject: typeof setters.addDocumentationToProcessObject;
+  updatePerformersOnElement: typeof setters.updatePerformersOnElement;
+  updatePerformersOnElementById: typeof setters.updatePerformersOnElementById;
   getDefinitionsId: typeof getters.getDefinitionsId;
   getOriginalDefinitionsId: typeof getters.getOriginalDefinitionsId;
   getDefinitionsName: typeof getters.getDefinitionsName;
@@ -116,26 +70,22 @@ declare const _exports: {
   getPerformersFromElementById: typeof getters.getPerformersFromElementById;
   parseISODuration: typeof getters.parseISODuration;
   convertISODurationToMiliseconds: typeof getters.convertISODurationToMiliseconds;
-  ensureCorrectProceedNamespace(xml: string): string;
-  toBpmnObject(xml: string, typename?: string): Promise<object>;
-  toBpmnXml(obj: any): Promise<string>;
-  getChildren(travObj: object): any[];
-  getElementsByTagName(travObj: object, tagname: string): any[];
-  getAllElements(travObj: object): any[];
-  getElementById(travObj: object, id: string): object;
-  getElementDI(element: object, definitions?: object): any;
-  manipulateElementById(
-    bpmn: string | object,
-    id: string,
-    manipFunc: util.manipulationFunction,
-  ): Promise<string | object>;
-  manipulateElementsByTagName(
-    bpmn: string | object,
-    tagName: string,
-    manipFunc: util.manipulationFunction,
-  ): Promise<string | object>;
   moddle: any;
+  ensureCorrectProceedNamespace: typeof util.ensureCorrectProceedNamespace;
+  toBpmnObject: typeof util.toBpmnObject;
+  toBpmnXml: typeof util.toBpmnXml;
+  getChildren: typeof util.getChildren;
+  getElementsByTagName: typeof util.getElementsByTagName;
+  getAllElements: typeof util.getAllElements;
+  getElementById: typeof util.getElementById;
+  getElementDI: typeof util.getElementDI;
+  manipulateElementById: typeof util.manipulateElementById;
+  manipulateElementsByTagName: typeof util.manipulateElementsByTagName;
 };
 export = _exports;
+import proceedExtensions = require('./src/proceedExtensions');
+import proceedConstants = require('./src/PROCEED-CONSTANTS.js');
+import validators = require('./src/validators.js');
+import setters = require('./src/setters.js');
 import getters = require('./src/getters.js');
 import util = require('./src/util.js');

@@ -51,7 +51,7 @@ export function setDefinitionsVersionInformation(
  */
 export function setProcessId(bpmn: string, id: string): Promise<string | object>;
 /**
- *  Sets templaseId in definitions element
+ *  Sets templateId in definitions element
  *
  * @param {string} bpmn the xml we want to update
  * @param {string} id the id we want to set for the template inside the bpmn
@@ -180,20 +180,20 @@ export function removeColorFromAllElements(bpmn: string | object): Promise<strin
  * Adds a documentation element to the first process in the process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {string} description the content for the documentation element
+ * @param {string} [description] the content for the documentation element
  * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 export function addDocumentation(
   bpmn: string | object,
-  description: string,
+  description?: string,
 ): Promise<string | object>;
 /**
  * Adds documentation to a given process object
  *
  * @param {object} processObj
- * @param {string} description
+ * @param {string} [description]
  */
-export function addDocumentationToProcessObject(processObj: object, description: string): void;
+export function addDocumentationToProcessObject(processObj: object, description?: string): void;
 /**
  * Update the performer info of an element
  *

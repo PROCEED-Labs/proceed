@@ -59,7 +59,7 @@ const Processes: FC = () => {
 
   const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
-  const [exportProcessId, setExportProcessId] = useState<string | undefined>();
+  const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
 
   const actionBar = (
     <>
@@ -72,7 +72,7 @@ const Processes: FC = () => {
       <Tooltip placement="top" title={'Export'}>
         <ExportOutlined
           onClick={() => {
-            setExportProcessId(selectedRowKeys[0].toString());
+            setExportProcessIds(selectedRowKeys as string[]);
           }}
         />
       </Tooltip>
@@ -180,7 +180,7 @@ const Processes: FC = () => {
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
               isLoading={isLoading}
-              onExportProcess={setExportProcessId}
+              onExportProcess={setExportProcessIds}
             />
           )}
         </div>
@@ -188,8 +188,8 @@ const Processes: FC = () => {
         <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
       </div>
       <ProcessExportModal
-        processId={exportProcessId}
-        onClose={() => setExportProcessId(undefined)}
+        processes={exportProcessIds.map((definitionId) => ({ definitionId }))}
+        onClose={() => setExportProcessIds([])}
       />
     </>
   );

@@ -512,7 +512,7 @@ async function removeUnusedCallActivityReferences(bpmn) {
  * Adds a documentation element to the first process in the process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {string} description the content for the documentation element
+ * @param {string} [description] the content for the documentation element
  * @returns {Promise<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function addDocumentation(bpmn, description) {
@@ -531,7 +531,7 @@ async function addDocumentation(bpmn, description) {
  * Adds documentation to a given process object
  *
  * @param {object} processObj
- * @param {string} description
+ * @param {string} [description]
  */
 function addDocumentationToProcessObject(processObj, description) {
   const docs = processObj.get('documentation');

@@ -24,7 +24,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 
 import ProcessExportModal from './process-export';
 
-import { createNewProcessVersion } from '@/lib/helpers';
+import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
 
 type ModelerToolbarProps = {

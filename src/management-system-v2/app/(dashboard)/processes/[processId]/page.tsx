@@ -20,7 +20,7 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { createNewProcessVersion } from '@/lib/helpers';
+import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import Auth from '@/lib/AuthCanWrapper';
 

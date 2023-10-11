@@ -260,9 +260,9 @@ export function getProcessIds(bpmn: string | object): Promise<string[]>;
  * Gets deployment method of the given process
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} the deployment method used for the given process
+ * @returns {Promise.<string|undefined>} the deployment method used for the given process
  */
-export function getDeploymentMethod(bpmn: string | object): Promise<string>;
+export function getDeploymentMethod(bpmn: string | object): Promise<string | undefined>;
 /**
  * Get the Constraints of the BPMN process.
  * (The Constraint XML elements are defined in the PROCEED XML Schema

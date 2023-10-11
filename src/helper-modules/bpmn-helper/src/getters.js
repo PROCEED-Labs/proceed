@@ -155,7 +155,7 @@ async function getDefinitionsInfos(bpmn) {
  * Gets deployment method of the given process
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns {Promise.<string>} the deployment method used for the given process
+ * @returns {Promise.<string|undefined>} the deployment method used for the given process
  */
 async function getDeploymentMethod(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -414,6 +414,12 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   // deconstruct 'p3c2324:Process_1wqd8fv' to prefix 'p3c2c324'
   const [prefix, processId] = callActivityElement.calledElement.split(':');
 
+  if (!processId) {
+    throw new Error(
+      `No processId found for the referenced process in callActivity ${callActivityId}.`,
+    );
+  }
+
   // find Namespace for prefix, e.g. xmlns:p3c2324="https://docs.proceed-labs.org/_17c6fed0-8a8c-4722-a62f-86ebf13243c2#1655749975324"
   const [definitionsElement] = getElementsByTagName(bpmnObj, 'bpmn:Definitions');
   const targetNamespace = definitionsElement.$attrs[`xmlns:${prefix}`];
@@ -430,7 +436,19 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
+  if (!importElement.location) {
+    throw new Error(
+      `No location in 'import' element found for the referenced process in callActivity ${callActivityId}.`,
+    );
+  }
+
   const version = importElement.version || importElement.$attrs['proceed:version'];
+
+  if (!version) {
+    throw new Error(
+      `No Process Version in 'import' element found for the referenced process in callActivity ${callActivityId}.`,
+    );
+  }
 
   return {
     definitionId: importElement.location,
@@ -673,11 +691,18 @@ function getMilestonesFromElement(element) {
       (child) => child.$type == 'proceed:Milestones',
     );
     if (milestonesElement && milestonesElement.milestone) {
-      milestones = milestonesElement.milestone.map(({ id, name, description }) => ({
-        id,
-        name,
-        description,
-      }));
+      milestones = milestonesElement.milestone.map(({ id, name, description }) => {
+        if (!id || !name) {
+          throw new Error(
+            'Some Milestone Elements are not valid due to missing mandatory attributes',
+          );
+        }
+        return {
+          id,
+          name,
+          description,
+        };
+      });
     }
   }
 
@@ -793,60 +818,93 @@ function getLocationsFromElement(element) {
     );
     if (locationsElement && locationsElement.company) {
       company = locationsElement.company.map(
-        ({ id, shortName, longName, description, factoryIds }) => ({
-          id,
-          shortName,
-          longName,
-          description,
-          factoryIds,
-        }),
+        ({ id, shortName, longName, description, factoryIds }) => {
+          if (!id || !shortName || !longName) {
+            throw new Error(
+              'Some Company Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            description,
+            factoryIds,
+          };
+        },
       );
     }
 
     if (locationsElement && locationsElement.factory) {
       factory = locationsElement.factory.map(
-        ({ id, shortName, longName, description, companyRef }) => ({
-          id,
-          shortName,
-          longName,
-          description,
-          companyRef,
-        }),
+        ({ id, shortName, longName, description, companyRef }) => {
+          if (!id || !shortName || !longName) {
+            throw new Error(
+              'Some Company Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            description,
+            companyRef,
+          };
+        },
       );
     }
 
     if (locationsElement && locationsElement.building) {
       building = locationsElement.building.map(
-        ({ id, shortName, longName, description, factoryRef }) => ({
-          id,
-          shortName,
-          longName,
-          description,
-          factoryRef,
-        }),
+        ({ id, shortName, longName, description, factoryRef }) => {
+          if (!id || !shortName || !longName) {
+            throw new Error(
+              'Some Building Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            description,
+            factoryRef,
+          };
+        },
       );
     }
 
     if (locationsElement && locationsElement.area) {
-      area = locationsElement.area.map(({ id, shortName, longName, description, buildingRef }) => ({
-        id,
-        shortName,
-        longName,
-        description,
-        buildingRef,
-      }));
-    }
-
-    if (locationsElement && locationsElement.workingPlace) {
-      workingPlace = locationsElement.workingPlace.map(
-        ({ id, shortName, longName, description, buildingRef, areaRef }) => ({
+      area = locationsElement.area.map(({ id, shortName, longName, description, buildingRef }) => {
+        if (!id || !shortName || !longName) {
+          throw new Error('Some Area Elements are not valid due to missing mandatory attributes');
+        }
+        return {
           id,
           shortName,
           longName,
           description,
           buildingRef,
-          areaRef,
-        }),
+        };
+      });
+    }
+
+    if (locationsElement && locationsElement.workingPlace) {
+      workingPlace = locationsElement.workingPlace.map(
+        ({ id, shortName, longName, description, buildingRef, areaRef }) => {
+          if (!id || !shortName || !longName) {
+            throw new Error(
+              'Some WorkingPlace Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            description,
+            buildingRef,
+            areaRef,
+          };
+        },
       );
     }
   }
@@ -895,16 +953,23 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        }) => ({
-          id,
-          shortName,
-          longName,
-          manufacturer,
-          manufacturerSerialNumber,
-          unit,
-          quantity,
-          description,
-        }),
+        }) => {
+          if (!id || !shortName || !longName || !quantity) {
+            throw new Error(
+              'Some ConsumableMaterial Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            manufacturer,
+            manufacturerSerialNumber,
+            unit,
+            quantity,
+            description,
+          };
+        },
       );
     }
 
@@ -919,16 +984,21 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        }) => ({
-          id,
-          shortName,
-          longName,
-          manufacturer,
-          manufacturerSerialNumber,
-          unit,
-          quantity,
-          description,
-        }),
+        }) => {
+          if (!id || !shortName || !longName || !quantity) {
+            throw new Error('Some Tool Elements are not valid due to missing mandatory attributes');
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            manufacturer,
+            manufacturerSerialNumber,
+            unit,
+            quantity,
+            description,
+          };
+        },
       );
     }
 
@@ -943,16 +1013,23 @@ function getResourcesFromElement(element) {
           unit,
           quantity,
           description,
-        }) => ({
-          id,
-          shortName,
-          longName,
-          manufacturer,
-          manufacturerSerialNumber,
-          unit,
-          quantity,
-          description,
-        }),
+        }) => {
+          if (!id || !shortName || !longName || !quantity) {
+            throw new Error(
+              'Some InspectionInstrument Elements are not valid due to missing mandatory attributes',
+            );
+          }
+          return {
+            id,
+            shortName,
+            longName,
+            manufacturer,
+            manufacturerSerialNumber,
+            unit,
+            quantity,
+            description,
+          };
+        },
       );
     }
   }

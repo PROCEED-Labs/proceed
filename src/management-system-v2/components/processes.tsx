@@ -177,7 +177,7 @@ const Processes: FC = () => {
     <>
       <div style={{ display: 'flex', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ /* width: '75%', */ flex: 3 }}>
+        <div style={{ /* width: '75%', */ flex: 3, width: '100%' }}>
           <Bar
             leftNode={
               selectedRowKeys.length ? (
@@ -218,21 +218,23 @@ const Processes: FC = () => {
               </Space.Compact>
             }
           />
-          {iconView ? (
-            <IconView
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
-            />
-          ) : (
-            <ProcessList
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
-              isLoading={isLoading}
-              onExportProcess={setExportProcessIds}
-            />
-          )}
+          <div style={{ display: 'flex' }}>
+            {iconView ? (
+              <IconView
+                data={filteredData}
+                selection={selectedRowKeys}
+                setSelection={setSelectedRowKeys}
+              />
+            ) : (
+              <ProcessList
+                data={filteredData}
+                selection={selectedRowKeys}
+                setSelection={setSelectedRowKeys}
+                isLoading={isLoading}
+                onExportProcess={setExportProcessIds}
+              />
+            )}
+          </div>
         </div>
         {/* Meta Data Panel */}
         <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />

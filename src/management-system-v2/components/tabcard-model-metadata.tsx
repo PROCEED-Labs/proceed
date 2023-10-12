@@ -19,6 +19,7 @@ type TabCardProps = {
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
   completeList: Processes;
+  justify?: boolean;
 };
 
 const tabList = [
@@ -92,7 +93,14 @@ const generateContentList = (data: Process) => {
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelection,
+  tabcard,
+  completeList,
+  justify,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
@@ -118,7 +126,8 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
       style={{
         cursor: 'pointer',
         minHeight: tabcard ? '340px' : '300px',
-        maxWidth: 'calc(100vw / 5)',
+        // width: 'calc(100vw / 5)',
+        // marginBottom: '30px',
       }}
       className={classNames({
         'small-tabs': true,

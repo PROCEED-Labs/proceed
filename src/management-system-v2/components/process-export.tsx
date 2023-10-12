@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
-import { Modal, Checkbox } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { ProcessExportOptions, ProcessesExporter } from '@/lib/process-export/ProcessesExporter';
+import { exportProcesses } from '@/lib/process-export';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -23,16 +24,12 @@ type ProcessExportModalProps = {
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
-  const [selectedTypes, setSelectedTypes] = useState<CheckboxValueType[]>([]);
+  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>([]);
-  const [typeSelected, setTypeSelected] = useState(false);
+  const [finishedTypeSelection, setfinishedTypeSelection] = useState(false);
 
-  const handleTypeSelectionChange = (checkedValues: CheckboxValueType[]) => {
-    // allow selection of exactly one element
-    if (!checkedValues.length) return;
-    setSelectedTypes(checkedValues.filter((el) => !selectedTypes.includes(el)));
-    // reset the selected suboptions
-    setSelectedOptions([]);
+  const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
+    setSelectedType(value);
   };
 
   const handleOptionSelectionChange = (checkedValues: CheckboxValueType[]) => {
@@ -40,49 +37,56 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   };
 
   const handleClose = () => {
-    setSelectedTypes([]);
-    setTypeSelected(false);
+    setSelectedType(undefined);
+    setfinishedTypeSelection(false);
     onClose();
   };
 
   const handleOk = async () => {
-    if (!typeSelected) {
-      const subOptions = exportSubOptions[selectedTypes[0] as ProcessExportOptions['type']];
+    if (!finishedTypeSelection) {
+      const subOptions = exportSubOptions[selectedType!];
       if (subOptions && subOptions.length) {
         // there are suboptions that the user might want to select => switch to the other modal view
-        setTypeSelected(true);
+        setfinishedTypeSelection(true);
         return;
       }
     }
 
-    // export the process
-    await new ProcessesExporter(
+    // export the processes
+    // await new ProcessesExporter(
+    // {
+    //   type: selectedTypes[0] as ProcessExportOptions['type'],
+    //   artefacts: selectedOptions.some((el) => el === 'artefacts'),
+    // },
+    // processes,
+    // ).exportProcesses();
+    await exportProcesses(
       {
-        type: selectedTypes[0] as ProcessExportOptions['type'],
+        type: selectedType!,
         artefacts: selectedOptions.some((el) => el === 'artefacts'),
       },
       processes,
-    ).exportProcesses();
+    );
 
     handleClose();
   };
 
-  const modalTitle = typeSelected
-    ? `Select ${selectedTypes[0]} export options`
+  const modalTitle = finishedTypeSelection
+    ? `Select ${selectedType} export options`
     : 'Select the file type';
 
   const typeSelection = (
-    <Checkbox.Group
+    <Radio.Group
       options={exportTypeOptions}
       onChange={handleTypeSelectionChange}
-      value={selectedTypes}
+      value={selectedType}
       style={{ flexDirection: 'column' }}
     />
   );
 
   const optionSelection = (
     <Checkbox.Group
-      options={exportSubOptions[selectedTypes[0] as ProcessExportOptions['type']]}
+      options={exportSubOptions[selectedType!]}
       onChange={handleOptionSelectionChange}
       value={selectedOptions}
       style={{ flexDirection: 'column' }}
@@ -97,9 +101,9 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         onOk={handleOk}
         onCancel={handleClose}
         centered
-        okButtonProps={{ disabled: !selectedTypes.length }}
+        okButtonProps={{ disabled: !selectedType }}
       >
-        {typeSelected ? optionSelection : typeSelection}
+        {finishedTypeSelection ? optionSelection : typeSelection}
       </Modal>
     </>
   );

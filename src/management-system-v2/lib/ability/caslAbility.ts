@@ -151,7 +151,10 @@ function conditionsMatcher(conditionsObject: ConditionsObject) {
   return combineFunctions(conditionsForResource, conditionsObject.conditionsOperator || 'and');
 }
 
-export type CaslAbility = PureAbility<[ResourceActionType, ResourceType], ConditionsObject>;
+export type CaslAbility = PureAbility<
+  [ResourceActionType, ResourceType | Record<PropertyKey, any>],
+  ConditionsObject
+>;
 export type AbilityRule = RawRuleOf<CaslAbility>;
 
 // beware: casl usually uses 'manage' as a wildcard
@@ -181,6 +184,9 @@ export function buildAbility(rules: AbilityRule[]) {
   return ability;
 }
 
-export function toCaslResource(resource: ResourceType, object: any) {
+export function toCaslResource<T extends Record<PropertyKey, any>>(
+  resource: ResourceType,
+  object: T,
+) {
   return subject(resource, object);
 }

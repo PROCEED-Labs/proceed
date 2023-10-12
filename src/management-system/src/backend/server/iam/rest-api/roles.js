@@ -86,15 +86,28 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
 
   if (role) {
     try {
+      // validateRole turns expiration into a Date, in order for the object merge
+      // to work, we need it to be a string (type safe option in mergeIntoObject)
+      if (typeof role.expiration === 'object') {
+        /** @type {Date} */
+        const expirationDate = role.expiration;
+        role.expiration = expirationDate.toISOString();
+      }
+
       /** @type {Ability} */
       const userAbility = req.userAbility;
 
       const targetRole = getRoleById(id);
 
+      for (const [key, value] of Object.entries(role)) {
+        console.log('Key:', key, 'Value:', value, 'Target:', targetRole[key]);
+        if (targetRole[key] === value) delete role[key];
+      }
+
       // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
       if (
         !(
-          userAbility.can('update', toCaslResource('Role', targetRole)) &&
+          userAbility.checkInputFields(toCaslResource('Role', targetRole), 'update', role) &&
           userAbility.can('create', toCaslResource('Role', role))
         )
       )

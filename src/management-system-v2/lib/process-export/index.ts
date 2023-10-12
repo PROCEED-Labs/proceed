@@ -37,12 +37,12 @@ function downloadFile(filename: string, data: Blob) {
 }
 
 /**
- * Converts the bpmn into an svg image of the process
+ * Converts the bpmn into an svg image of the process or of subprocess contained inside the process
  *
  * @param bpmn
  * @returns the svg image as a string
  */
-async function getSVGFromBPMN(bpmn: string) {
+async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
   const Viewer = (await import('bpmn-js/lib/Viewer')).default;
 
   //Creating temporary element for BPMN Viewer
@@ -55,6 +55,16 @@ async function getSVGFromBPMN(bpmn: string) {
   //Create a viewer to transform the bpmn into an svg
   const viewer = new Viewer({ container: '#' + viewerElement.id });
   await viewer.importXML(bpmn);
+
+  const canvas = viewer.get('canvas') as any;
+
+  // target the correct plane (root process or the specified subprocess)
+  if (subprocessId) {
+    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`));
+  }
+
+  canvas.zoom('fit-viewport', 'auto');
+
   const { svg } = await viewer.saveSVG();
 
   return svg;
@@ -69,36 +79,47 @@ async function pdfExport(processData: ProcessExportData, zip?: jsZip | null) {
   });
   doc.deletePage(1);
 
-  for (const versionData of Object.values(processData.versions)) {
-    // get the svg so we can display the process as a vector graphic inside the pdf
-    const svg = await getSVGFromBPMN(versionData.bpmn);
-    const parser = new DOMParser();
-    const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
+  // add all versions of the process into the same pdf
+  for (const [version, versionData] of Object.entries(processData.versions)) {
+    // add all collapsed subprocesses (if requested)
+    for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses
+      .concat([{ id: '', name: 'root process' }]) // handle the root process like another collapsed subprocess
+      // ensure the correct order of elements being added
+      .reverse()) {
+      // get the svg so we can display the process as a vector graphic inside the pdf
+      const svg = await getSVGFromBPMN(versionData.bpmn, subprocessId);
+      const parser = new DOMParser();
+      const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
 
-    // get image dimensions
-    let svgWidth = parseFloat(svg.split('width="')[1].split('"')[0]);
-    let svgHeight = 20 + parseFloat(svg.split('height="')[1].split('"')[0]);
+      // get image dimensions
+      let svgWidth = parseFloat(svg.split('width="')[1].split('"')[0]);
+      let svgHeight = 20 + parseFloat(svg.split('height="')[1].split('"')[0]);
 
-    // adding a new page, second parameter orientation: p - portrait, l - landscape
-    doc.addPage([svgWidth, svgHeight], svgHeight > svgWidth ? 'p' : 'l');
+      // adding a new page, second parameter orientation: p - portrait, l - landscape
+      doc.addPage([svgWidth, svgHeight], svgHeight > svgWidth ? 'p' : 'l');
 
-    //Getting PDF Documents width and height
-    const pageWidth = doc.internal.pageSize.getWidth() - 10;
-    const pageHeight = doc.internal.pageSize.getHeight() - 10;
+      //Getting PDF Documents width and height
+      const pageWidth = doc.internal.pageSize.getWidth() - 10;
+      const pageHeight = doc.internal.pageSize.getHeight() - 10;
 
-    //Setting pdf font size
-    doc.setFontSize(15);
+      //Setting pdf font size
+      doc.setFontSize(15);
 
-    //Adding Header to the Pdf
-    // TODO: make sure that the text fits both in landscape as well as in portrait mode
-    doc.text(`Process: ${processData.definitionName} \n`, 10, 15);
+      //Adding Header to the Pdf
+      // TODO: make sure that the text fits both in landscape as well as in portrait mode
+      if (subprocessId) {
+        doc.text(`Subprocess: ${subprocessName || subprocessId} \n`, 10, 15);
+      } else {
+        doc.text(`Version: ${versionData.name || version} \n`, 10, 15);
+      }
 
-    await doc.svg(svgDOM.children[0], {
-      x: 0,
-      y: 10,
-      width: pageWidth,
-      height: pageHeight,
-    });
+      await doc.svg(svgDOM.children[0], {
+        x: 0,
+        y: 10,
+        width: pageWidth,
+        height: pageHeight,
+      });
+    }
   }
 
   if (zip) {
@@ -109,20 +130,31 @@ async function pdfExport(processData: ProcessExportData, zip?: jsZip | null) {
 }
 
 async function svgExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
+  // export all versions of the process as separate files
   for (const [versionName, versionData] of Object.entries(processData.versions)) {
-    const svg = await getSVGFromBPMN(versionData.bpmn!);
+    // export all collapsed subprocesses as separate files (if requested)
+    for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses.concat([
+      { id: '', name: 'root process' }, // handle the root process like another collapsed subprocess
+    ])) {
+      const svg = await getSVGFromBPMN(versionData.bpmn!, subprocessId);
 
-    const svgBlob = new Blob([svg], {
-      type: 'image/svg+xml',
-    });
+      const svgBlob = new Blob([svg], {
+        type: 'image/svg+xml',
+      });
 
-    // a) if we output into a zip folder that uses the process name use the version name as the filename
-    // b) if we output as a single file use the process name as the file name
-    const filename = zipFolder ? versionName : processData.definitionName;
-    if (zipFolder) {
-      zipFolder.file(`${filename}.svg`, svgBlob);
-    } else {
-      downloadFile(`${filename}.svg`, svgBlob);
+      // a) if we output into a zip folder that uses the process name use the version name as the filename
+      // b) if we output as a single file use the process name as the file name
+      let filename = zipFolder ? versionData.name || versionName : processData.definitionName;
+
+      if (subprocessId) {
+        filename = `subprocess_${subprocessName || subprocessId}`;
+      }
+
+      if (zipFolder) {
+        zipFolder.file(`${filename}.svg`, svgBlob);
+      } else {
+        downloadFile(`${filename}.svg`, svgBlob);
+      }
     }
   }
 }
@@ -179,6 +211,13 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
 
     needsZip = needsZip || hasMulitpleVersions || hasArtefacts;
+
+    // if there are collapsed subprocesses that need to be exported as well we need a zip to bundle them with them main svg
+    if (!needsZip) {
+      const withSubprocesses = Object.values(exportData[0].versions)[0].subprocesses.length > 0;
+
+      needsZip = needsZip || withSubprocesses;
+    }
   }
 
   const zip = needsZip ? new jsZip() : undefined;

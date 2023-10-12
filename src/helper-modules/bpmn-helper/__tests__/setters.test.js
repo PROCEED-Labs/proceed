@@ -17,14 +17,11 @@ jest.doMock('bpmn-moddle', () => {
   };
 });
 
-mockToXML.mockImplementation((_, a, callback) => {
-  callback(undefined, '');
-});
+mockToXML.mockImplementation((_, a) => ({ xml: '' }));
 mockCreate.mockImplementation((name) => ({ $type: name }));
-
-mockFromXML.mockImplementation((_, a, callback) => {
-  callback(undefined, JSON.parse(JSON.stringify(baseJSON)));
-});
+mockFromXML.mockImplementation((_, a) => ({
+  rootElement: JSON.parse(JSON.stringify(baseJSON)),
+}));
 
 const setters = require('../src/setters.js');
 

@@ -1,6 +1,6 @@
 import { ApiData, get, put, post } from './fetch-data';
 
-const {
+import {
   toBpmnObject,
   toBpmnXml,
   getDefinitionsId,
@@ -9,7 +9,7 @@ const {
   getUserTaskImplementationString,
   getUserTaskFileNameMapping,
   setUserTaskData,
-} = require('@proceed/bpmn-helper');
+} from '@proceed/bpmn-helper';
 
 const { diff } = require('bpmn-js-differ');
 
@@ -31,23 +31,27 @@ async function areVersionsEqual(bpmn: string, otherBpmn: string) {
     versionBasedOn,
   } = await getDefinitionsVersionInformation(otherBpmnObj);
 
-  // check if the two bpmns were the same if they had the same version information
-  await setDefinitionsVersionInformation(bpmnObj, {
-    version,
-    versionName,
-    versionDescription,
-    versionBasedOn,
-  });
+  if (version) {
+    // check if the two bpmns were the same if they had the same version information
+    await setDefinitionsVersionInformation(bpmnObj, {
+      version,
+      versionName,
+      versionDescription,
+      versionBasedOn,
+    });
 
-  // compare the two bpmns
-  const changes = diff(otherBpmnObj, bpmnObj);
-  const hasChanges =
-    Object.keys(changes._changed).length ||
-    Object.keys(changes._removed).length ||
-    Object.keys(changes._added).length ||
-    Object.keys(changes._layoutChanged).length;
+    // compare the two bpmns
+    const changes = diff(otherBpmnObj, bpmnObj);
+    const hasChanges =
+      Object.keys(changes._changed).length ||
+      Object.keys(changes._removed).length ||
+      Object.keys(changes._added).length ||
+      Object.keys(changes._layoutChanged).length;
 
-  return !hasChanges;
+    return !hasChanges;
+  }
+
+  return false;
 }
 
 async function getLocalVersionBpmn(
@@ -93,7 +97,10 @@ async function versionUserTasks(
       let fileName = `${htmlMapping[userTaskId].fileName}-${newVersion}`;
 
       // get the html of the user task in the based on version (if there is one and it is locally known)
-      const basedOnBPMN = await getLocalVersionBpmn(processInfo, versionBasedOn);
+      const basedOnBPMN =
+        versionBasedOn !== undefined
+          ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+          : undefined;
 
       // check if there is a preceding version and if the html of the user task actually changed from that version
       let userTaskHtmlAlreadyExisting = false;
@@ -170,7 +177,11 @@ export async function createNewProcessVersion(
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
-  const basedOnBPMN = await getLocalVersionBpmn(processInfo, versionBasedOn);
+  const basedOnBPMN =
+    versionBasedOn !== undefined
+      ? await getLocalVersionBpmn(processInfo, versionBasedOn)
+      : undefined;
+
   if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
     return versionBasedOn;
   }
@@ -194,11 +205,14 @@ async function updateProcessVersionBasedOn(processDefinitionsId: string, version
   });
 
   if (processInfo?.bpmn) {
-    const versionInformation = await getDefinitionsVersionInformation(processInfo.bpmn);
-    const bpmn = await setDefinitionsVersionInformation(processInfo.bpmn, {
-      ...versionInformation,
+    const { version, description, name } = await getDefinitionsVersionInformation(processInfo.bpmn);
+
+    const bpmn = (await setDefinitionsVersionInformation(processInfo.bpmn, {
+      version,
+      versionDescription: description,
+      versionName: name,
       versionBasedOn,
-    });
+    })) as string;
     await put('/process/{definitionId}', {
       params: { path: { definitionId: processDefinitionsId } },
       body: { bpmn },

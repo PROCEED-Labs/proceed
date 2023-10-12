@@ -5273,7 +5273,7 @@ bpmn-moddle@^6.0.0:
     moddle "^5.0.1"
     moddle-xml "^8.0.8"
 
-bpmn-moddle@^8.0.0:
+bpmn-moddle@^8.0.0, bpmn-moddle@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-8.0.1.tgz#ba8a009fbd354fb521a11a1dd1417655a9d2ec02"
   integrity sha512-mwZcrWhi52+JH5Oq58WwKYcUxQ1ZMiDQuzt1bpqiqEEFFnQLqCgtLwEXQuDXFmAuQPdMAghyPzqdOZQqIQVesw==

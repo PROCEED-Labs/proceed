@@ -43,8 +43,8 @@ const proceedExtensionElements = {
 /**
  * Returns the extensionElements entry inside the given element (creates one if there isn't one already)
  *
- * @param {Object} element the element we want the extensionElements entry of
- * @returns {Object} the extensionElements entry
+ * @param {object} element the element we want the extensionElements entry of
+ * @returns {object} the extensionElements entry
  */
 function ensureExtensionElements(element) {
   let { extensionElements } = element;
@@ -70,9 +70,9 @@ function removeEmptyExtensionElements(element) {
 /**
  * Returns a container element entry inside a given element (creates it if there isn't already one)
  *
- * @param {Object} element the element that should contain the container element
- * @param {String} containerType the type of container that is expected
- * @returns {Object} the container element
+ * @param {object} element the element that should contain the container element
+ * @param {string} containerType the type of container that is expected
+ * @returns {object} the container element
  */
 function ensureContainerElement(element, containerType) {
   let container;
@@ -194,9 +194,9 @@ function setProceedElement(element, proceedElementType, value, attributes = {}) 
  * Updates the Meta Information of an element
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @param {String} elId the id of the element to update
- * @param {Object} metaValues the meta data values to set
- * @returns {(string|object)} the BPMN process as XML string or BPMN-Moddle Object based on input
+ * @param {string} elId the id of the element to update
+ * @param {object} metaValues the meta data values to set
+ * @returns {Promise.<string|object>} the BPMN process as XML string or BPMN-Moddle Object based on input
  */
 async function setMetaData(bpmn, elId, metaValues) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;

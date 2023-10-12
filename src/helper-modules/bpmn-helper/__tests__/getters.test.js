@@ -18,14 +18,11 @@ jest.doMock('bpmn-moddle', () => {
   };
 });
 
-mockToXML.mockImplementation((_, a, callback) => {
-  callback(undefined, '');
-});
+mockToXML.mockImplementation((_, a) => ({ xml: '' }));
 mockCreate.mockImplementation((name) => ({ $type: name }));
-
-mockFromXML.mockImplementation((_, a, callback) => {
-  callback(undefined, JSON.parse(JSON.stringify(baseJSON)));
-});
+mockFromXML.mockImplementation((_, a) => ({
+  rootElement: JSON.parse(JSON.stringify(baseJSON)),
+}));
 
 const getters = require('../src/getters.js');
 const { get } = require('http');
@@ -67,17 +64,17 @@ describe('Tests for getter functions of this library', () => {
 
   describe('getDeploymentMethod', () => {
     it('returns the deploymentMethod for the given process', async () => {
-      mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(deploymentObj))),
-      );
+      mockFromXML.mockImplementationOnce((_a, _b) => ({
+        rootElement: JSON.parse(JSON.stringify(deploymentObj)),
+      }));
       expect(await getters.getDeploymentMethod(deploymentXML)).toBe('static');
     });
   });
   describe('getElementMachineMapping', () => {
     it('returns a mapping from task ids to assigned machineIds or addresses', async () => {
-      mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(deploymentObj))),
-      );
+      mockFromXML.mockImplementationOnce((_a, _b) => ({
+        rootElement: JSON.parse(JSON.stringify(deploymentObj)),
+      }));
       expect(await getters.getElementMachineMapping(deploymentXML)).toStrictEqual({
         StartEvent_1: { machineId: '1234', machineAddress: undefined },
         EndEvent_1d3ier5: { machineId: undefined, machineAddress: '192.168.1.1:1234' },
@@ -87,9 +84,9 @@ describe('Tests for getter functions of this library', () => {
   });
   describe('getProcessIds', () => {
     it('returns the ids of all processes in the process definition', async () => {
-      mockFromXML.mockImplementationOnce((_a, _b, callback) =>
-        callback(undefined, JSON.parse(JSON.stringify(twoProcessObj))),
-      );
+      mockFromXML.mockImplementationOnce((_a, _b) => ({
+        rootElement: JSON.parse(JSON.stringify(twoProcessObj)),
+      }));
       expect(await getters.getProcessIds(twoProcessXML)).toStrictEqual([
         'Process_02x86ax',
         'Process_0xqodb2',

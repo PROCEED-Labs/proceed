@@ -52,14 +52,6 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       }
     }
 
-    // export the processes
-    // await new ProcessesExporter(
-    // {
-    //   type: selectedTypes[0] as ProcessExportOptions['type'],
-    //   artefacts: selectedOptions.some((el) => el === 'artefacts'),
-    // },
-    // processes,
-    // ).exportProcesses();
     await exportProcesses(
       {
         type: selectedType!,

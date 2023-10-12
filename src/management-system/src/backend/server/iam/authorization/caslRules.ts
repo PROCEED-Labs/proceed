@@ -75,7 +75,7 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
           default: { $eq: true },
         },
       },
-      fields: ['default', 'name'],
+      fields: ['default', 'name', 'expiration'],
     },
     {
       inverted: true,

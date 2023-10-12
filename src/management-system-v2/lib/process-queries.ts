@@ -83,3 +83,23 @@ export const fetchProcessUserTaskHTML = async (definitionId: string, userTaskFil
   });
   return data;
 };
+
+/**
+ * Fetches the data of a specific image used in some version of a process or by some user-task used by the process
+ *
+ * @param definitionId
+ * @param imageFileName
+ * @returns the image data
+ */
+export const fetchProcessImageData = async (definitionId: string, imageFileName: string) => {
+  const { data } = await get('/process/{definitionId}/images/{imageFileName}', {
+    params: {
+      path: {
+        definitionId,
+        imageFileName,
+      },
+    },
+    parseAs: 'blob',
+  });
+  return data as Blob;
+};

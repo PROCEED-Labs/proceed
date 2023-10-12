@@ -144,7 +144,7 @@ async function bpmnExport(data: ProcessExportData) {
 
   if (!needsZip) {
     const hasMulitpleVersions = Object.keys(data[0].versions).length > 1;
-    const hasArtefacts = !!data[0].userTasks.length;
+    const hasArtefacts = !!data[0].userTasks.length || !!data[0].images.length;
 
     needsZip = needsZip || hasMulitpleVersions || hasArtefacts;
   }
@@ -165,11 +165,19 @@ async function bpmnExport(data: ProcessExportData) {
       dataHandler(`${filename}.bpmn`, bpmnBlob);
     }
 
-    if (needsZip && processData.userTasks.length) {
-      const userTaskFolder = await folder!.folder('user-tasks');
-      for (const { filename, html } of processData.userTasks) {
-        const htmlBlob = new Blob([html], { type: 'application/html' });
-        userTaskFolder?.file(filename, htmlBlob);
+    if (needsZip) {
+      if (processData.userTasks.length) {
+        const userTaskFolder = await folder!.folder('user-tasks');
+        for (const { filename, html } of processData.userTasks) {
+          const htmlBlob = new Blob([html], { type: 'application/html' });
+          userTaskFolder?.file(filename, htmlBlob);
+        }
+      }
+      if (processData.images.length) {
+        const imageFolder = await folder!.folder('images');
+        for (const { filename, data: imageData } of processData.images) {
+          imageFolder?.file(filename, imageData);
+        }
       }
     }
   }

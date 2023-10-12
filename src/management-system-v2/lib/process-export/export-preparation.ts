@@ -2,9 +2,14 @@ import {
   fetchProcessVersionBpmn,
   fetchProcess,
   fetchProcessUserTaskHTML,
+  fetchProcessImageData,
 } from '../process-queries';
 
-const { getAllUserTaskFileNamesAndUserTaskIdsMapping } = require('@proceed/bpmn-helper');
+import {
+  getAllUserTaskFileNamesAndUserTaskIdsMapping,
+  getAllBpmnFlowElements,
+  getMetaDataFromElement,
+} from '@proceed/bpmn-helper';
 
 export type ProcessExportOptions = {
   type: 'bpmn' | 'svg' | 'pdf';
@@ -28,6 +33,10 @@ export type ProcessExportData = {
     filename: string;
     html: string;
   }[];
+  images: {
+    filename: string;
+    data: Blob;
+  }[];
 }[];
 
 /**
@@ -48,6 +57,32 @@ async function getVersionBpmn(definitionId: string, processVersion?: string | nu
   return bpmn;
 }
 
+/**
+ * Returns the required locally (on the ms server) stored image data for all image elements inside the given html
+ *
+ * @param {string} html the html file that might reference locally stored images
+ * @returns {string[]} an array containing information about all image files needed for the user task
+ */
+function getImagesReferencedByHtml(html: string) {
+  try {
+    const parser = new DOMParser();
+    const htmlDOM = parser.parseFromString(html, 'text/html');
+
+    const imageElements = Array.from(htmlDOM.getElementsByTagName('img'));
+
+    // get the referenced images that are stored locally
+    const seperatelyStored = imageElements
+      .map((img) => img.src)
+      .filter((src) => src.includes('/resources/process/'))
+      .map((src) => src.split('/').pop())
+      .filter((imageName): imageName is string => !!imageName);
+    // remove duplicates
+    return [...new Set(seperatelyStored)];
+  } catch (err) {
+    throw new Error('Unable to parse the image information from the given html');
+  }
+}
+
 type ExportMap = {
   [definitionId: string]: {
     definitionName: string;
@@ -63,10 +98,17 @@ type ExportMap = {
       filename: string;
       html: string;
     }[];
+    images: {
+      filename: string;
+      data: Blob;
+    }[];
   };
 };
 
-export async function prepareExport(options: ProcessExportOptions, processes: ExportProcessInfo) {
+export async function prepareExport(
+  options: ProcessExportOptions,
+  processes: ExportProcessInfo,
+): Promise<ProcessExportData> {
   if (!processes.length) {
     throw new Error('Tried exporting without specifying the processes to export!');
   }
@@ -95,10 +137,12 @@ export async function prepareExport(options: ProcessExportOptions, processes: Ex
         },
       },
       userTasks: [],
+      images: [],
     };
 
     if (options.artefacts) {
       const allRequiredUserTaskFiles: Set<string> = new Set();
+      const allRequiredImageFiles: Set<string> = new Set();
 
       // determine the user task files that are need per version and across all versions
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
@@ -123,8 +167,39 @@ export async function prepareExport(options: ProcessExportOptions, processes: Ex
 
         exportData[definitionId].userTasks.push({ filename, html });
       }
+
+      // determine the images that are needed per version and across all versions
+      for (const { bpmn } of Object.values(exportData[definitionId].versions)) {
+        const flowElements = await getAllBpmnFlowElements(bpmn);
+
+        flowElements.forEach((flowElement) => {
+          const metaData = getMetaDataFromElement(flowElement);
+          if (metaData.overviewImage) {
+            allRequiredImageFiles.add(metaData.overviewImage.split('/').pop());
+          }
+        });
+      }
+
+      // determine the images that are used inside user tasks
+      for (const { html } of exportData[definitionId].userTasks) {
+        const referencedImages = getImagesReferencedByHtml(html);
+        for (const filename of referencedImages) {
+          allRequiredImageFiles.add(filename);
+        }
+      }
+
+      // fetch the required image files from the backend
+      for (const filename of allRequiredImageFiles) {
+        exportData[definitionId].images.push({
+          filename,
+          data: await fetchProcessImageData(definitionId, filename),
+        });
+      }
     }
   }
 
-  return Object.entries(exportData).map(([definitionId, data]) => ({ ...data, definitionId }));
+  return Object.entries(exportData).map(([definitionId, data]) => ({
+    ...data,
+    definitionId,
+  }));
 }

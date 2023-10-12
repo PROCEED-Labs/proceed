@@ -21,6 +21,8 @@ import MetaData from './process-info-card';
 import { QueryClient } from '@tanstack/react-query';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import { useUserPreferences } from '@/lib/user-preferences';
+import useStore from '@/lib/useStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -61,8 +63,22 @@ const Processes: FC = () => {
   if (!prefs['icon-view-in-process-list']) {
     prefs['icon-view-in-process-list'] = false;
   }
+  // const prefs: Preferences = getPreferences();
+  // if (!prefs['icon-view-in-process-list']) prefs['icon-view-in-process-list'] = false;
 
-  const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
+  const preferences = useStore(useUserPreferences, (state) => state.preferences);
+
+  // console.log('preferences', preferences);
+
+  // const addPrefs = useStore(useUserPreferences, (state) => state.addPreferences);
+
+  const addPrefs = useUserPreferences((state) => state.addPreferences);
+
+  // if (!prefs['icon-view-in-process-list']) {
+  //   addPrefs({ 'icon-view-in-process-list': false });
+  // }
+
+  // const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
 
@@ -198,19 +214,29 @@ const Processes: FC = () => {
             rightNode={
               <Space.Compact>
                 <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                  style={
+                    /* !iconView */ !preferences['icon-view-in-process-list']
+                      ? { color: '#3e93de', borderColor: '#3e93de' }
+                      : {}
+                  }
                   onClick={() => {
                     addUserPreference({ 'icon-view-in-process-list': false });
-                    setIconView(false);
+                    addPrefs({ 'icon-view-in-process-list': false });
+                    // setIconView(false);
                   }}
                 >
                   <UnorderedListOutlined />
                 </Button>
                 <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                  style={
+                    /* !iconView */ !preferences['icon-view-in-process-list']
+                      ? {}
+                      : { color: '#3e93de', borderColor: '#3e93de' }
+                  }
                   onClick={() => {
                     addUserPreference({ 'icon-view-in-process-list': true });
-                    setIconView(true);
+                    addPrefs({ 'icon-view-in-process-list': true });
+                    // setIconView(true);
                   }}
                 >
                   <AppstoreOutlined />

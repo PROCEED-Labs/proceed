@@ -48,12 +48,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
 
   return (
     <>
-      {/*  <div
-      style={{
-        display: 'inline-flex',
-        justifyContent: 'space-between',
-      }}
-    > */}
       <div
         className="Hide-Scroll-Bar"
         style={{
@@ -86,7 +80,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
         ))}
       </div>
       {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
-      {/* </div> */}
     </>
   );
 };

@@ -11,13 +11,22 @@ import {
   getMetaDataFromElement,
 } from '@proceed/bpmn-helper';
 
+/**
+ * The options that can be used to select what should be exported
+ */
 export type ProcessExportOptions = {
   type: 'bpmn' | 'svg' | 'pdf';
   artefacts: boolean; // if artefacts like images or user task html should be included in the export
 };
 
+/**
+ * The incoming information about the processes(and versions) to export
+ */
 export type ExportProcessInfo = { definitionId: string; processVersion?: number | string }[];
 
+/**
+ * The data needed for the export of a specific process
+ */
 export type ProcessExportData = {
   definitionId: string;
   definitionName: string;
@@ -39,6 +48,9 @@ export type ProcessExportData = {
   }[];
 };
 
+/**
+ * The data needed for the export of all processes
+ */
 export type ProcessesExportData = ProcessExportData[];
 
 /**
@@ -85,6 +97,9 @@ function getImagesReferencedByHtml(html: string) {
   }
 }
 
+/**
+ * Internal export data representation for easier referencing
+ */
 type ExportMap = {
   [definitionId: string]: {
     definitionName: string;
@@ -107,6 +122,13 @@ type ExportMap = {
   };
 };
 
+/**
+ * Gets the data that is needed to export all the requested processes with the given options
+ *
+ * @param options the export options that were selected by the user
+ * @param processes the processes(and versions) to export
+ * @returns the data needed for the actual export
+ */
 export async function prepareExport(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
@@ -126,6 +148,7 @@ export async function prepareExport(
       );
     }
 
+    // prevent (unlikely) situations where a version might be referenced once by number and once by string
     const versionName = processVersion ? `${processVersion}` : 'latest';
 
     exportData[definitionId] = {
@@ -142,6 +165,7 @@ export async function prepareExport(
       images: [],
     };
 
+    // fetch data for additional artefacts if requested in the options
     if (options.artefacts) {
       const allRequiredUserTaskFiles: Set<string> = new Set();
       const allRequiredImageFiles: Set<string> = new Set();

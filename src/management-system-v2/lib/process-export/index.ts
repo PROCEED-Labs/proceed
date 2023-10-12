@@ -3,7 +3,6 @@ import {
   ProcessExportOptions,
   ExportProcessInfo,
   ProcessExportData,
-  ProcessesExportData,
 } from './export-preparation';
 
 import { v4 } from 'uuid';
@@ -11,6 +10,12 @@ import { jsPDF } from 'jspdf';
 import jsZip from 'jszip';
 import 'svg2pdf.js';
 
+/**
+ * Downloads the data onto the device of the user
+ *
+ * @param filename
+ * @param data
+ */
 function downloadFile(filename: string, data: Blob) {
   const objectURL = URL.createObjectURL(data);
 
@@ -31,6 +36,12 @@ function downloadFile(filename: string, data: Blob) {
   URL.revokeObjectURL(objectURL);
 }
 
+/**
+ * Converts the bpmn into an svg image of the process
+ *
+ * @param bpmn
+ * @returns the svg image as a string
+ */
 async function getSVGFromBPMN(bpmn: string) {
   const Viewer = (await import('bpmn-js/lib/Viewer')).default;
 
@@ -50,6 +61,7 @@ async function getSVGFromBPMN(bpmn: string) {
 }
 
 async function pdfExport(processData: ProcessExportData, zip?: jsZip | null) {
+  // create the pdf file for the process
   const doc = new jsPDF({
     unit: 'pt', // needed due to a bug in jsPDF: https://github.com/yWorks/svg2pdf.js/issues/245#issuecomment-1671624250
     format: 'a4',
@@ -58,8 +70,8 @@ async function pdfExport(processData: ProcessExportData, zip?: jsZip | null) {
   doc.deletePage(1);
 
   for (const versionData of Object.values(processData.versions)) {
+    // get the svg so we can display the process as a vector graphic inside the pdf
     const svg = await getSVGFromBPMN(versionData.bpmn);
-
     const parser = new DOMParser();
     const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
 
@@ -130,6 +142,7 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
   }
 
   if (zipFolder) {
+    // export the user tasks of the process
     if (processData.userTasks.length) {
       const userTaskFolder = zipFolder.folder('user-tasks');
       for (const { filename, html } of processData.userTasks) {
@@ -137,6 +150,7 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
         userTaskFolder?.file(filename, htmlBlob);
       }
     }
+    // export the images used either for flow elements or inside user task html
     if (processData.images.length) {
       const imageFolder = zipFolder.folder('images');
       for (const { filename, data: imageData } of processData.images) {
@@ -146,9 +160,16 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
   }
 }
 
+/**
+ * Exports the given processes either as a single file or if necessary inside a zip file
+ *
+ * @param options the options that were selected by the user
+ * @param processes the processes(and versions) to export
+ */
 export async function exportProcesses(options: ProcessExportOptions, processes: ExportProcessInfo) {
   const exportData = await prepareExport(options, processes);
 
+  // determine if a zip export is required
   const numProcesses = exportData.length;
   let needsZip = numProcesses > 1;
 

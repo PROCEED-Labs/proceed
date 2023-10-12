@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Modal, Checkbox, Radio, RadioChangeEvent } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
-import { ProcessExportOptions, ProcessesExporter } from '@/lib/process-export/ProcessesExporter';
 import { exportProcesses } from '@/lib/process-export';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },

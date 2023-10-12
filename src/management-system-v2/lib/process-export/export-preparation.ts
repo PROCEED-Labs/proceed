@@ -37,7 +37,9 @@ export type ProcessExportData = {
     filename: string;
     data: Blob;
   }[];
-}[];
+};
+
+export type ProcessesExportData = ProcessExportData[];
 
 /**
  * Used to get the bpmn of a specific process version
@@ -108,7 +110,7 @@ type ExportMap = {
 export async function prepareExport(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
-): Promise<ProcessExportData> {
+): Promise<ProcessesExportData> {
   if (!processes.length) {
     throw new Error('Tried exporting without specifying the processes to export!');
   }

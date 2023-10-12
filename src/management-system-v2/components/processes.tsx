@@ -59,26 +59,13 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  const prefs: Preferences = getPreferences();
-  if (!prefs['icon-view-in-process-list']) {
-    prefs['icon-view-in-process-list'] = false;
-  }
-  // const prefs: Preferences = getPreferences();
-  // if (!prefs['icon-view-in-process-list']) prefs['icon-view-in-process-list'] = false;
+  // const preferences = useStore(useUserPreferences, (state) => state.preferences);
+  // const addPreferences = useStore(useUserPreferences, (state) => state.addPreferences);
 
-  const preferences = useStore(useUserPreferences, (state) => state.preferences);
+  const preferences = useUserPreferences((state) => state.preferences);
+  const addPreferences = useUserPreferences((state) => state.addPreferences);
 
-  // console.log('preferences', preferences);
-
-  // const addPrefs = useStore(useUserPreferences, (state) => state.addPreferences);
-
-  const addPrefs = useUserPreferences((state) => state.addPreferences);
-
-  // if (!prefs['icon-view-in-process-list']) {
-  //   addPrefs({ 'icon-view-in-process-list': false });
-  // }
-
-  // const [iconView, setIconView] = useState(prefs['icon-view-in-process-list']);
+  const [iconView, setIconView] = useState(preferences['icon-view-in-process-list']);
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
 
@@ -214,29 +201,21 @@ const Processes: FC = () => {
             rightNode={
               <Space.Compact>
                 <Button
-                  style={
-                    /* !iconView */ !preferences['icon-view-in-process-list']
-                      ? { color: '#3e93de', borderColor: '#3e93de' }
-                      : {}
-                  }
+                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
                   onClick={() => {
-                    addUserPreference({ 'icon-view-in-process-list': false });
-                    addPrefs({ 'icon-view-in-process-list': false });
-                    // setIconView(false);
+                    // addUserPreference({ 'icon-view-in-process-list': false });
+                    addPreferences({ 'icon-view-in-process-list': false });
+                    setIconView(false);
                   }}
                 >
                   <UnorderedListOutlined />
                 </Button>
                 <Button
-                  style={
-                    /* !iconView */ !preferences['icon-view-in-process-list']
-                      ? {}
-                      : { color: '#3e93de', borderColor: '#3e93de' }
-                  }
+                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
                   onClick={() => {
-                    addUserPreference({ 'icon-view-in-process-list': true });
-                    addPrefs({ 'icon-view-in-process-list': true });
-                    // setIconView(true);
+                    // addUserPreference({ 'icon-view-in-process-list': true });
+                    addPreferences({ 'icon-view-in-process-list': true });
+                    setIconView(true);
                   }}
                 >
                   <AppstoreOutlined />
@@ -244,23 +223,21 @@ const Processes: FC = () => {
               </Space.Compact>
             }
           />
-          <div style={{ display: 'flex' }}>
-            {iconView ? (
-              <IconView
-                data={filteredData}
-                selection={selectedRowKeys}
-                setSelection={setSelectedRowKeys}
-              />
-            ) : (
-              <ProcessList
-                data={filteredData}
-                selection={selectedRowKeys}
-                setSelection={setSelectedRowKeys}
-                isLoading={isLoading}
-                onExportProcess={setExportProcessIds}
-              />
-            )}
-          </div>
+          {iconView ? (
+            <IconView
+              data={filteredData}
+              selection={selectedRowKeys}
+              setSelection={setSelectedRowKeys}
+            />
+          ) : (
+            <ProcessList
+              data={filteredData}
+              selection={selectedRowKeys}
+              setSelection={setSelectedRowKeys}
+              isLoading={isLoading}
+              onExportProcess={setExportProcessIds}
+            />
+          )}
         </div>
         {/* Meta Data Panel */}
         <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />

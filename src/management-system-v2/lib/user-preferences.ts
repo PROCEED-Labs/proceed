@@ -1,26 +1,24 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-type PreferencesType = {
-  preferences: Record<string, string | number | boolean>;
+type PreferencesType = Record<string, string | number | boolean>;
+
+type PreferencesStoreType = {
+  preferences: PreferencesType;
+  addPreferences: (changes: PreferencesType) => void;
 };
 
-type PreferencesStoreType = PreferencesType & {
-  addPreference: (changes: PreferencesType) => void;
-};
-
-export const useUserPreferences = create(
+export const useUserPreferences = create<PreferencesStoreType>()(
   persist(
     (set, get) => ({
       preferences: {
+        /* Default User-Settings: */
         'show-process-meta-data': true,
         'icon-view-in-process-list': false,
       },
-      //   addPreferences: (changes: PreferencesType) =>
-      //     set({ preferences: { ...get().preferences, ...changes } }),
+
       addPreferences: (changes: PreferencesType) => {
-        console.log('changes', changes);
-        return set({ preferences: { ...get().preferences, ...changes } });
+        set((state) => ({ preferences: { ...state.preferences, ...changes } }));
       },
     }),
     {
@@ -29,3 +27,8 @@ export const useUserPreferences = create(
     },
   ),
 );
+
+// addPreferences: (changes: PreferencesType) => {
+//   const oldPrefs = get().preferences;
+//   return set({ preferences: { ...oldPrefs, ...changes } });
+// },

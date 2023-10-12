@@ -7,6 +7,8 @@ import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
 import Viewer from './bpmn-viewer';
 import classNames from 'classnames';
 import { ApiData } from '@/lib/fetch-data';
+import { useUserPreferences } from '@/lib/user-preferences';
+import useStore from '@/lib/useStore';
 
 type Processes = ApiData<'/process', 'get'>;
 
@@ -18,15 +20,21 @@ type MetaDataType = {
 
 const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
-  const prefs = getPreferences();
-  const [showInfo, setShowInfo] = useState(prefs['show-process-meta-data'] || false);
 
+  // const preferences = useStore(useUserPreferences, (state) => state.preferences);
+  // const addPreferences = useStore(useUserPreferences, (state) => state.addPreferences);
+
+  const preferences = useUserPreferences((state) => state.preferences);
+  const addPreferences = useUserPreferences((state) => state.addPreferences);
+
+  const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+
+  /* Necessary for Firefox BPMN.js Viewer fix */
   const [showViewer, setShowViewer] = useState(showInfo);
 
   /* Fix for firefox: */
-
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     if (showInfo) {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {
@@ -64,7 +72,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
               zIndex: 100,
             }}
             onClick={() => {
-              addUserPreference({ 'show-process-meta-data': !showInfo });
+              addPreferences({ 'show-process-meta-data': !showInfo });
               if (triggerRerender) triggerRerender();
               setShowInfo(!showInfo);
             }}
@@ -91,7 +99,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
                   marginRight: '4px',
                 }}
                 onClick={() => {
-                  addUserPreference({
+                  addPreferences({
                     'show-process-meta-data': !showInfo,
                   });
                   if (triggerRerender) triggerRerender();

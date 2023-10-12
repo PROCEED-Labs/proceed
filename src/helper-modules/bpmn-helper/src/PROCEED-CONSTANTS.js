@@ -51,7 +51,7 @@ const idGenerator = new Ids([32, 36, 1]);
 /**
  * Generate a new ID for PROCEED BPMN elements
  *
- * @param {String} [prefix] optional prefix for the id
+ * @param {string} [prefix] optional prefix for the id
  * @returns {string} short id in the form '0bkz1kb'
  */
 function generateBpmnId(prefix) {
@@ -90,8 +90,8 @@ function generateTargetNamespace(id) {
  * Creates a minimal valid proceed bpmn
  *
  * @param {*} processId the id to use for the contained process
- * @param {String} startEventId the id to use for the start event
- * @returns {String} a minimal valid proceed bpmn
+ * @param {string} startEventId the id to use for the start event
+ * @returns {string} a minimal valid proceed bpmn
  */
 function initXml(
   processId = `Process_${generateBpmnId()}`,

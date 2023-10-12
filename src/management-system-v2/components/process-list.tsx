@@ -17,7 +17,6 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useProcessesStore } from '@/lib/use-local-process-store';
 import { ColumnType, TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
@@ -36,6 +35,7 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
+  onExportProcess: Dispatch<SetStateAction<string[]>>;
 }>;
 
 const ColumnHeader = [
@@ -67,10 +67,14 @@ const numberOfRows =
 
 const queryClient = new QueryClient();
 
-const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLoading }) => {
+const ProcessList: FC<ProcessListProps> = ({
+  data,
+  selection,
+  setSelection,
+  isLoading,
+  onExportProcess,
+}) => {
   const router = useRouter();
-
-  const setSelectedProcess = useProcessesStore((state) => state.setSelectedProcess);
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
@@ -136,7 +140,11 @@ const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLo
           />
         </Tooltip>
         <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined />
+          <ExportOutlined
+            onClick={() => {
+              onExportProcess([record.definitionId]);
+            }}
+          />
         </Tooltip>
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined
@@ -362,18 +370,6 @@ const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLo
 
   const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
-  // return (
-  //   <>
-  //     <div /* style={{ height: '200px' }} */>
-  //       <Table
-  //         dataSource={dataSource2}
-  //         columns={columns2}
-  //         pagination={{ position: ['bottomCenter'], pageSize: 1 }}
-  //       ></Table>
-  //     </div>
-  //   </>
-  // );
-
   return (
     <>
       <Table
@@ -442,7 +438,6 @@ const ProcessList: FC<ProcessListProps> = ({ data, selection, setSelection, isLo
           onDoubleClick: () => {
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
-            setSelectedProcess(record);
             router.refresh();
             router.push(`/processes/${record.definitionId}`);
           },

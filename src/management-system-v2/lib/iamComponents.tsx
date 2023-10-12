@@ -97,8 +97,7 @@ export const AuthCan: FC<AuthCanProps> = ({
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_USE_AUTH && fallbackRedirect && oauthCallbackPerformed && !allow) {
-      /* TODO: fix this, push dosn't work without the timeout */
-      setTimeout(() => router.push(fallbackRedirect), 0);
+      router.push(fallbackRedirect);
     }
   }, [fallbackRedirect, oauthCallbackPerformed, allow, router]);
 

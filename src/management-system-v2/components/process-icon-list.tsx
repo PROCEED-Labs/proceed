@@ -51,8 +51,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
       style={{
         display: 'inline-flex',
         justifyContent: 'space-between',
-        /* 100vh - Header - Footer - Menu - Extra for looks  */
-        height: 'calc(100vh - 64px - 70px - 80px - 40px)',
       }}
     >
       <List
@@ -61,10 +59,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
         className="Hide-Scroll-Bar"
         style={{
           flex: 3,
-          scrollBehavior: 'smooth',
-          overflowY: 'scroll',
-          height: '100%',
-          scrollbarWidth: 'none',
         }}
         grid={
           /* column: 4 */

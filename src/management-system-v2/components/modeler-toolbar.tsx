@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
@@ -20,10 +20,12 @@ import { SvgXML, SvgShare } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+
+import ProcessExportModal from './process-export';
+
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from './version-creation-button';
-import { useGetAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -34,21 +36,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const svgShare = <Icon component={SvgShare} />;
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
+  const [showProcessExportModal, setShowProcessExportModal] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const setVersions = useModelerStateStore((state) => state.setVersions);
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
-
-  const {
-    isSuccess,
-    data: processData,
-    refetch: refetchProcess,
-  } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
 
   let selectedElement;
 
@@ -72,18 +66,17 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         values.versionName,
         values.versionDescription,
       );
-      refetchProcess();
     }
   };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
 
-  useEffect(() => {
-    if (isSuccess) {
-      setVersions(processData!.versions);
-    }
-  }, [isSuccess, processData, setVersions]);
+  const handleProcessExportModalToggle = async () => {
+    setShowProcessExportModal(!showProcessExportModal);
+  };
+
+  const selectedVersion = useSearchParams().get('version');
 
   return (
     <>
@@ -103,7 +96,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
-                <Button icon={<ExportOutlined />}></Button>
+                <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
               </Tooltip>
               <Tooltip title="Hide Non-Executeable Elements">
                 <Button icon={<EyeOutlined />}></Button>
@@ -136,6 +129,14 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
       {/* {showPropertiesPanel && selectedElement && (
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
+      <ProcessExportModal
+        processes={
+          showProcessExportModal
+            ? [{ definitionId: processId as string, processVersion: selectedVersion || undefined }]
+            : []
+        }
+        onClose={() => setShowProcessExportModal(false)}
+      />
     </>
   );
 };

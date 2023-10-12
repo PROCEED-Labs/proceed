@@ -7,8 +7,9 @@ const { toBpmnObject, getElementsByTagName, getElementById } = require('./util.j
 /**
  * Checks if a process referenced in a call activity contains only a single non-typed start event
  *
- * @param {String} xml
- * @param {String} processId
+ * @param {string} xml
+ * @param {string} processId
+ * @returns {Promise<boolean>} true if called process is valid
  */
 async function validateCalledProcess(xml, processId) {
   const definitions = await toBpmnObject(xml);

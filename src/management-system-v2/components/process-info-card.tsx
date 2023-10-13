@@ -21,13 +21,16 @@ type MetaDataType = {
 const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
 
+  const { preferences } = useStore(useUserPreferences, (state) => state);
+
   // const preferences = useStore(useUserPreferences, (state) => state.preferences);
   // const addPreferences = useStore(useUserPreferences, (state) => state.addPreferences);
 
-  const preferences = useUserPreferences((state) => state.preferences);
+  // const preferences = useUserPreferences((state) => state.preferences);
   const addPreferences = useUserPreferences((state) => state.addPreferences);
 
-  const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+  const showInfo = preferences['show-process-meta-data'];
+  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
 
   /* Necessary for Firefox BPMN.js Viewer fix */
   const [showViewer, setShowViewer] = useState(showInfo);
@@ -74,7 +77,6 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
             onClick={() => {
               addPreferences({ 'show-process-meta-data': !showInfo });
               if (triggerRerender) triggerRerender();
-              setShowInfo(!showInfo);
             }}
           >
             <DoubleLeftOutlined />
@@ -103,7 +105,6 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
                     'show-process-meta-data': !showInfo,
                   });
                   if (triggerRerender) triggerRerender();
-                  setShowInfo(!showInfo);
                 }}
               >
                 <DoubleRightOutlined />

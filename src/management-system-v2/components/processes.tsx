@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useEffect, useMemo, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
 import { ApiData, useDeleteAsset, useGetAsset } from '@/lib/fetch-data';
 import {
@@ -18,7 +18,7 @@ import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
-import { QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -48,10 +48,14 @@ const fuseOptions = {
 
 const { Search } = Input;
 
-const queryClient = new QueryClient();
-
 const Processes: FC = () => {
-  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
+  const {
+    data,
+    isLoading,
+    isError,
+    isSuccess,
+    refetch: pullNewProcessData,
+  } = useGetAsset('/process', {
     params: {
       query: { noBpmn: true },
     },
@@ -59,15 +63,28 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  // const preferences = useStore(useUserPreferences, (state) => state.preferences);
-  // const addPreferences = useStore(useUserPreferences, (state) => state.addPreferences);
+  const { preferences } = useStore(useUserPreferences, (state) => state);
 
-  const preferences = useUserPreferences((state) => state.preferences);
   const addPreferences = useUserPreferences((state) => state.addPreferences);
 
-  const [iconView, setIconView] = useState(preferences['icon-view-in-process-list']);
+  const iconView = preferences['icon-view-in-process-list'];
 
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
+    onSettled: pullNewProcessData,
+  });
+
+  const deleteSelectedProcesses = useCallback(() => {
+    selectedRowKeys.forEach((key) => {
+      deleteProcess({
+        params: {
+          path: {
+            definitionId: key as string,
+          },
+        },
+      });
+    });
+    setSelectedRowKeys([]);
+  }, [deleteProcess, selectedRowKeys]);
 
   const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
 
@@ -81,6 +98,7 @@ const Processes: FC = () => {
       </Tooltip> */}
       <Tooltip placement="top" title={'Export'}>
         <ExportOutlined
+          className={styles.Icon}
           onClick={() => {
             setExportProcessIds(selectedRowKeys as string[]);
           }}
@@ -88,19 +106,9 @@ const Processes: FC = () => {
       </Tooltip>
       <Tooltip placement="top" title={'Delete'}>
         <DeleteOutlined
+          className={styles.Icon}
           onClick={() => {
-            selectedRowKeys.forEach((key) => {
-              deleteProcess({
-                params: {
-                  path: {
-                    definitionId: key as string,
-                  },
-                },
-              });
-              /* TODO: Invalidate query for list */
-              const keys = ['/process', { noBpmn: true }];
-              queryClient.invalidateQueries(keys);
-            });
+            deleteSelectedProcesses();
           }}
         />
       </Tooltip>
@@ -135,25 +143,14 @@ const Processes: FC = () => {
         /* DEL */
       } else if (e.key === 'Delete') {
         e.preventDefault();
-        selectedRowKeys.forEach((key) => {
-          deleteProcess({
-            params: {
-              path: {
-                definitionId: key as string,
-              },
-            },
-          });
-        });
-        /* TODO: Invalidate query for list */
-        const keys = ['/process', { noBpmn: true }];
-        queryClient.invalidateQueries(keys);
+        deleteSelectedProcesses();
+
         /* TODO: */
         /* CTRL + C */
-        /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'c') {
         e.preventDefault();
         setCopySelection(selectedRowKeys);
-        console.log(copySelection);
+        /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         e.preventDefault();
         copySelection.forEach((key) => {
@@ -170,7 +167,7 @@ const Processes: FC = () => {
 
     // Remove event listener on cleanup
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [deleteProcess, filteredData, selectedRowKeys]);
+  }, [copySelection, deleteProcess, filteredData, selectedRowKeys, deleteSelectedProcesses]);
 
   if (isError) {
     return <div>Error</div>;
@@ -188,7 +185,7 @@ const Processes: FC = () => {
                   <Button onClick={deselectAll} type="text">
                     <CloseOutlined />
                   </Button>
-                  {selectedRowKeys.length} selected:{' '}
+                  {selectedRowKeys.length} selected:
                   <span className={styles.Icons}>{actionBar}</span>
                 </Space>
               ) : undefined
@@ -205,7 +202,6 @@ const Processes: FC = () => {
                   onClick={() => {
                     // addUserPreference({ 'icon-view-in-process-list': false });
                     addPreferences({ 'icon-view-in-process-list': false });
-                    setIconView(false);
                   }}
                 >
                   <UnorderedListOutlined />
@@ -215,7 +211,6 @@ const Processes: FC = () => {
                   onClick={() => {
                     // addUserPreference({ 'icon-view-in-process-list': true });
                     addPreferences({ 'icon-view-in-process-list': true });
-                    setIconView(true);
                   }}
                 >
                   <AppstoreOutlined />
@@ -236,6 +231,7 @@ const Processes: FC = () => {
               setSelection={setSelectedRowKeys}
               isLoading={isLoading}
               onExportProcess={setExportProcessIds}
+              refreshData={pullNewProcessData}
             />
           )}
         </div>

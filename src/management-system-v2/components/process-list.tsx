@@ -7,6 +7,7 @@ import React, {
   Key,
   Dispatch,
   SetStateAction,
+  use,
 } from 'react';
 import {
   CopyOutlined,
@@ -25,7 +26,7 @@ import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, usePostAsset } from '@/lib/fetch-data';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -36,6 +37,8 @@ type ProcessListProps = PropsWithChildren<{
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
   onExportProcess: Dispatch<SetStateAction<string[]>>;
+  refreshData: any;
+  // TODO: Fix type
 }>;
 
 const ColumnHeader = [
@@ -65,14 +68,13 @@ const clipText: ColumnType<Process>['render'] = (dataIndexElement, record, index
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
 
-const queryClient = new QueryClient();
-
 const ProcessList: FC<ProcessListProps> = ({
   data,
   selection,
   setSelection,
   isLoading,
   onExportProcess,
+  refreshData,
 }) => {
   const router = useRouter();
 
@@ -98,8 +100,12 @@ const ProcessList: FC<ProcessListProps> = ({
     }, 200);
   };
 
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
   const { mutateAsync: createProcess } = usePostAsset('/process');
+
+  const queryClient = useQueryClient();
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
+    onSettled: refreshData,
+  });
 
   const actionBarGenerator = useCallback((record: Process) => {
     return (
@@ -148,17 +154,17 @@ const ProcessList: FC<ProcessListProps> = ({
         </Tooltip>
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               deleteProcess({
                 params: {
                   path: {
-                    definitionId: record.definitionId,
+                    definitionId: record.definitionId as string,
                   },
                 },
               });
-              /* TODO: Invalidate query for list */
-              const keys = ['/process', { noBpmn: true }];
-              queryClient.invalidateQueries(keys);
+
+              setSelection(selection.filter((id) => id !== record.definitionId));
             }}
           />
         </Tooltip>
@@ -181,7 +187,6 @@ const ProcessList: FC<ProcessListProps> = ({
       setSelection(selectedRows.map((row) => row.definitionId));
     },
     onSelectNone: () => {
-      // setSelection([]);
       setSelection([]);
     },
     onSelectAll: (selected, selectedRows, changeRows) => {

@@ -11,7 +11,16 @@ const useStore = <T, F>(
     setData(result);
   }, [result]);
 
-  return data;
+  return (
+    data ?? {
+      preferences: {
+        /* Default User-Settings: */
+        'show-process-meta-data': true,
+        'icon-view-in-process-list': false,
+      },
+      addPreferences: () => {},
+    }
+  );
 };
 
 export default useStore;

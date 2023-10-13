@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useState, useEffect } from 'react';
+import { immer } from 'zustand/middleware/immer';
 
 type PreferencesType = Record<string, string | number | boolean>;
 
@@ -18,7 +20,7 @@ export const useUserPreferences = create<PreferencesStoreType>()(
       },
 
       addPreferences: (changes: PreferencesType) => {
-        set((state) => ({ preferences: { ...state.preferences, ...changes } }));
+        set({ preferences: { ...get().preferences, ...changes } });
       },
     }),
     {
@@ -28,7 +30,25 @@ export const useUserPreferences = create<PreferencesStoreType>()(
   ),
 );
 
-// addPreferences: (changes: PreferencesType) => {
-//   const oldPrefs = get().preferences;
-//   return set({ preferences: { ...oldPrefs, ...changes } });
-// },
+const addPreferences = (changes: PreferencesType) => {};
+
+const usePreferences = () => {
+  const result = useUserPreferences((state) => state.preferences);
+  const [data, setData] = useState<PreferencesType | undefined>(undefined);
+
+  useEffect(() => {
+    setData(result);
+  }, [result]);
+
+  return (
+    data ?? {
+      /* Default User-Settings: */
+      'show-process-meta-data': true,
+      'icon-view-in-process-list': false,
+    }
+  );
+};
+
+const func = { preferences: usePreferences, addPreferences: addPreferences };
+
+export default func;

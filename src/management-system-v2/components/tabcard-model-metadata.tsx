@@ -125,7 +125,7 @@ const TabCard: FC<TabCardProps> = ({
       }
       style={{
         cursor: 'pointer',
-        minHeight: tabcard ? '340px' : '300px',
+        height: tabcard ? '340px' : '300px',
         // width: 'calc(100vw / 5)',
         // marginBottom: '30px',
       }}

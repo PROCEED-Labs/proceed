@@ -100,7 +100,6 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
       const targetRole = getRoleById(id);
 
       for (const [key, value] of Object.entries(role)) {
-        console.log('Key:', key, 'Value:', value, 'Target:', targetRole[key]);
         if (targetRole[key] === value) delete role[key];
       }
 

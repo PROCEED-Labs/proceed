@@ -14,11 +14,14 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import { AuthCan } from '@/lib/iamComponents';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import Bar from '@/components/bar';
+import { useAuthStore } from '@/lib/iam';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
+  const ability = useAuthStore((store) => store.ability);
 
   const { error, data: roles, isLoading, refetch: refetchRoles } = useGetAsset('/roles', {});
   const { mutateAsync: deleteRole, isLoading: deletingRole } = useDeleteAsset('/roles/{id}', {
@@ -26,15 +29,16 @@ const RolesPage: FC = () => {
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
   });
 
-  const {
-    searchQuery,
-    setSearchQuery,
-    filteredData: filteredRoles,
-  } = useFuzySearch(roles || [], ['name'], {
+  const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch(roles || [], ['name'], {
     useSearchParams: false,
   });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<Role[]>([]);
+
+  const canDeleteSelectedRows = !selectedRows.find(
+    (role) => !ability.can('delete', toCaslResource('Role', role)),
+  );
 
   async function deleteRoles(userIds: string[]) {
     setSelectedRowKeys([]);
@@ -86,50 +90,43 @@ const RolesPage: FC = () => {
     );
 
   return (
-    <Content title="Identity and Access Management" rightNode={<HeaderActions />}>
-      <Row className={styles.Headerrow}>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={10}
-          xl={6}
-          className={cn({ [styles.SelectedRow]: selectedRowKeys.length > 0 })}
-          style={{
-            justifyContent: 'start',
-          }}
-        >
-          {selectedRowKeys.length > 0 ? (
+    <Content title="Identity and Access Management">
+      <Bar
+        rightNode={<HeaderActions />}
+        leftNode={
+          selectedRowKeys.length ? (
             <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected: </span>
-              <Popconfirm
-                title="Delete User"
-                description="Are you sure you want to delete this user?"
-                onConfirm={() => deleteRoles(selectedRowKeys)}
-              >
-                <Button type="text" icon={<DeleteOutlined />} />
-              </Popconfirm>
+              <Button onClick={() => setSelectedRowKeys([])} type="text">
+                <CloseOutlined />
+              </Button>
+              {selectedRowKeys.length} selected:{' '}
+              {canDeleteSelectedRows && (
+                <span className={styles.Icons}>
+                  <Popconfirm
+                    title="Delete User"
+                    description="Are you sure you want to delete this user?"
+                    onConfirm={() => deleteRoles(selectedRowKeys)}
+                  >
+                    <Button type="text" icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                </span>
+              )}
             </Space>
-          ) : null}
-        </Col>
-        <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
-          <Input.Search
-            size="middle"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-            placeholder="Search Users"
-          />
-        </Col>
-      </Row>
+          ) : undefined
+        }
+        searchProps={{
+          onChange: (e) => setSearchQuery(e.target.value),
+          placeholder: 'Search roles ....',
+        }}
+      />
 
       <Table
         columns={columns}
         dataSource={filteredRoles}
         rowSelection={{
           selectedRowKeys,
-          onChange: (selectedRowKeys: React.Key[]) => {
+          onChange: (selectedRowKeys, selectedRows) => {
+            setSelectedRows(selectedRows);
             setSelectedRowKeys(selectedRowKeys as string[]);
           },
         }}

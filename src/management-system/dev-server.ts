@@ -79,6 +79,8 @@ if (process.env.MODE === 'iam') {
     console.error('Redis', dataString);
   });
 
+  opaProcess.on('exit', (code) => process.exit(code));
+
   // when ctrl + c detected stop docker container
   process.on('SIGINT', () => {
     execSync('docker compose -f docker-compose-dev-iam.yml down');

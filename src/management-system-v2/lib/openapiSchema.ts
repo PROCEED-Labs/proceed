@@ -153,7 +153,7 @@ export interface paths {
       };
     };
   };
-  '/role-mappings/users/{userId}/{roleId}': {
+  '/role-mappings/users/{userId}/roles/{roleId}': {
     /** @description Delete role mapping. */
     delete: operations['deleteRoleMappingByIdByUserId'];
     parameters: {
@@ -245,7 +245,7 @@ export interface components {
       | 'versions'
     >;
     processVersion: {
-      version: number;
+      version: string;
       name: string;
       description: string;
     };
@@ -339,7 +339,7 @@ export interface components {
       /** Format: email */
       email: string;
       username: string;
-      firstName: string;
+      'firstName ': string;
       lastName: string;
     };
     /** user */
@@ -394,7 +394,7 @@ export interface components {
       members?: {
         userId: string;
         username: string;
-        fisrtName: string;
+        firstName: string;
         lastName: string;
         email: string;
       }[];
@@ -422,8 +422,8 @@ export interface components {
     >;
     /** roleMappingData */
     roleMappingData: {
-      roleId?: string;
-      userId?: string;
+      roleId: string;
+      userId: string;
     };
     /** roleMappingMetaData */
     roleMappingMetaData: {
@@ -1187,13 +1187,7 @@ export interface operations {
       /** @description OK */
       200: {
         content: {
-          'application/json': components['schemas']['roleResponse'];
-        };
-      };
-      /** @description No Content */
-      204: {
-        content: {
-          'application/json': unknown[];
+          'application/json': components['schemas']['roleResponse'][];
         };
       };
       401: components['responses']['401_unauthenticated'];
@@ -1323,10 +1317,12 @@ export interface operations {
   postRoleMapping: {
     requestBody?: {
       content: {
-        'application/json': WithRequired<
-          components['schemas']['roleMappingData'],
-          'roleId' | 'userId'
-        >[];
+        'application/json': (components['schemas']['roleMappingData'] & {
+          username: string;
+          firstName: string;
+          lastName: string;
+          email: string;
+        })[];
       };
     };
     responses: {

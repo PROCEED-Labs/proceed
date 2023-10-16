@@ -1,4 +1,3 @@
-import { subject } from '@casl/ability-v6';
 import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
 import { packRules } from '@casl/ability-v6/extra';
 import {
@@ -76,7 +75,7 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
           default: { $eq: true },
         },
       },
-      fields: ['default', 'name'],
+      fields: ['default', 'name', 'expiration'],
     },
     {
       inverted: true,
@@ -116,6 +115,17 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
 
 function rulesForRoles(ability: CaslAbility) {
   const rules: AbilityRule[] = [];
+
+  rules.push({
+    inverted: true,
+    subject: 'Role',
+    action: 'delete',
+    conditions: {
+      conditions: {
+        default: { $eq: true },
+      },
+    },
+  });
 
   if (ability.cannot('admin', 'All')) {
     rules.push({
@@ -364,8 +374,4 @@ export async function rulesForUser(userId: string) {
   translatedRules.sort((a, b) => +a.inverted - +b.inverted);
 
   return { rules: packRules(translatedRules), expiration: firstExpiration };
-}
-
-export function toCaslResource(resource: ResourceType, object: any) {
-  return subject(resource, object);
 }

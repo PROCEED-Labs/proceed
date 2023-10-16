@@ -1,7 +1,7 @@
-const { abilitiesBuilt, buildAbility } = require('../authorization');
 const {
   toCaslResource,
-} = require('../../../../../../src/backend/server/iam/authorization/caslRules');
+} = require('../../../../../../../management-system-v2/lib/ability/caslAbility');
+const { abilitiesBuilt, buildAbility } = require('../authorization');
 
 let adminAbility, unauthenticatedAbility;
 

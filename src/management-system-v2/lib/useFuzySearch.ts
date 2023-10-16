@@ -22,8 +22,7 @@ export default function useFuzySearch<TData extends Record<string, any>>(
   const searchParams = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get(fuzzySearchOptions.useSearchParams ? fuzzySearchOptions.queryName : '') ??
-      undefined,
+    searchParams.get(fuzzySearchOptions.useSearchParams ? fuzzySearchOptions.queryName : ''),
   );
   const debouncedSearchQuery = useDebounce(searchQuery, 200, fuzzySearchOptions.useSearchParams);
 

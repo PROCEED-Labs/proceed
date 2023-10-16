@@ -1153,20 +1153,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/roleResponse"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content",
-            "content": {
-              "application/json": {
-                "schema": {
                   "type": "array",
-                  "minItems": 0,
-                  "maxItems": 0,
-                  "items": {}
+                  "items": {
+                    "$ref": "#/components/schemas/roleResponse"
+                  }
                 }
               }
             }
@@ -1426,9 +1416,18 @@
                   "allOf": [
                     {
                       "$ref": "#/components/schemas/roleMappingData"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "username": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" },
+                        "email": { "type": "string" }
+                      },
+                      "required": ["username", "firstName", "lastName", "email"]
                     }
-                  ],
-                  "required": ["roleId", "userId"]
+                  ]
                 }
               }
             }
@@ -1481,7 +1480,7 @@
         "description": "Get all role mappings referencing a specific user."
       }
     },
-    "/role-mappings/users/{userId}/{roleId}": {
+    "/role-mappings/users/{userId}/roles/{roleId}": {
       "parameters": [
         {
           "schema": {
@@ -2188,7 +2187,7 @@
                 "username": {
                   "type": "string"
                 },
-                "fisrtName": {
+                "firstName": {
                   "type": "string"
                 },
                 "lastName": {
@@ -2198,7 +2197,7 @@
                   "type": "string"
                 }
               },
-              "required": ["userId", "username", "fisrtName", "lastName", "email"]
+              "required": ["userId", "username", "firstName", "lastName", "email"]
             }
           },
           "default": {
@@ -2254,7 +2253,8 @@
           "userId": {
             "type": "string"
           }
-        }
+        },
+        "required": ["roleId", "userId"]
       },
       "roleMappingMetaData": {
         "title": "roleMappingMetaData",

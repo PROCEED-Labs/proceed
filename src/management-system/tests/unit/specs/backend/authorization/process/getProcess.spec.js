@@ -1,10 +1,10 @@
 const { processArray, processes, abilitiesBuilt, buildAbility } = require('../authorization');
 const {
-  toCaslResource,
-} = require('../../../../../../src/backend/server/iam/authorization/caslRules');
-const {
   permissionNumberToIdentifiers,
 } = require('../../../../../../src/backend/server/iam/authorization/permissionHelpers');
+const {
+  toCaslResource,
+} = require('../../../../../../../management-system-v2/lib/ability/caslAbility');
 
 let adminAbility,
   process_engineer_adminAbility,

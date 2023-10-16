@@ -1,10 +1,9 @@
 'use client';
 
-import React, { FC, useState } from 'react';
+import { FC, useState } from 'react';
 import styles from '@/components/processes.module.scss';
-import cn from 'classnames';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, Space, Row, Col, Button, Input, Result, Table, Popconfirm, App } from 'antd';
+import { Tooltip, Space, Button, Result, Table, Popconfirm, App } from 'antd';
 import { useGetAsset, useDeleteAsset, ApiData } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Auth from '@/lib/AuthCanWrapper';

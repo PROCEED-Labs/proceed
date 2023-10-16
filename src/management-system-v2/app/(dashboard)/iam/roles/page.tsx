@@ -67,8 +67,8 @@ const RolesPage: FC = () => {
           <AuthCan action="delete" resource={toCaslResource('Role', role)}>
             <Tooltip placement="top" title={'Delete'}>
               <Popconfirm
-                title="Delete User"
-                description="Are you sure you want to delete this user?"
+                title="Delete Role"
+                description="Are you sure you want to delete this role?"
                 onConfirm={() => deleteRoles([id])}
               >
                 <Button icon={<DeleteOutlined />} type="text" />
@@ -99,17 +99,15 @@ const RolesPage: FC = () => {
                 <CloseOutlined />
               </Button>
               {selectedRowKeys.length} selected:{' '}
-              {canDeleteSelectedRows && (
-                <span className={styles.Icons}>
-                  <Popconfirm
-                    title="Delete User"
-                    description="Are you sure you want to delete this user?"
-                    onConfirm={() => deleteRoles(selectedRowKeys)}
-                  >
-                    <Button type="text" icon={<DeleteOutlined />} />
-                  </Popconfirm>
-                </span>
-              )}
+              <span className={styles.Icons}>
+                <Popconfirm
+                  title="Delete Roles"
+                  description="Are you sure you want to the selected roles?"
+                  onConfirm={() => deleteRoles(selectedRowKeys)}
+                >
+                  <Button type="text" icon={<DeleteOutlined />} disabled={!canDeleteSelectedRows} />
+                </Popconfirm>
+              </span>
             </Space>
           ) : undefined
         }

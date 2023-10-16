@@ -143,7 +143,7 @@ rolesRouter.delete('/:id', isAllowed('delete', 'Role'), async (req, res) => {
       /** @type {Ability} */
       const userAbility = req.userAbility;
 
-      if (!userAbility.can('update', toCaslResource('Role', role)))
+      if (!userAbility.can('delete', toCaslResource('Role', role)))
         return res.status(403).send('Forbidden.');
 
       await deleteRole(id);

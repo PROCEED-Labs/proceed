@@ -195,7 +195,6 @@ export interface components {
     };
     /** processData */
     processData: {
-      description?: string;
       departments?: string[];
       /** @description The variables supposed to be used in the process */
       variables?: {
@@ -550,6 +549,8 @@ export interface components {
   pathItems: never;
 }
 
+export type $defs = Record<string, never>;
+
 export type external = Record<string, never>;
 
 export interface operations {
@@ -571,7 +572,9 @@ export interface operations {
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description Failed to get processes */
-      500: never;
+      500: {
+        content: never;
+      };
     };
   };
   /** @description Post a process. */
@@ -600,11 +603,15 @@ export interface operations {
         };
       };
       /** @description The body of the request does not conform to the schma of a process */
-      400: never;
+      400: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description Failed to create the process due an internal error */
-      500: never;
+      500: {
+        content: never;
+      };
     };
   };
   /** @description Get a porcess by it's id. */
@@ -621,11 +628,15 @@ export interface operations {
         };
       };
       /** @description Error getting the bpmn of the process */
-      400: never;
+      400: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
   /** @description Updates a **partial** set of properties (this means, that arbitrarily many properties can be left out). */
@@ -655,10 +666,14 @@ export interface operations {
         };
       };
       /** @description Request body doesn't contain a partial set of key:value properties of the Process scheme */
-      400: never;
+      400: {
+        content: never;
+      };
       403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
   /** @description Delete a process. */
@@ -670,10 +685,14 @@ export interface operations {
     };
     responses: {
       /** @description Process deleted succesfuly */
-      200: never;
+      200: {
+        content: never;
+      };
       403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
   /** @description Get all the versions of a process. */
@@ -693,7 +712,9 @@ export interface operations {
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description No Process with the given definitionId was found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
   /** @description Post a new version of a process. */
@@ -713,9 +734,13 @@ export interface operations {
     };
     responses: {
       /** @description OK */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
       403: components['responses']['403_validationFailed'];
     };
   };
@@ -736,7 +761,9 @@ export interface operations {
         };
       };
       /** @description {definitionId} or {version} are wrong */
-      400: never;
+      400: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
     };
@@ -771,7 +798,7 @@ export interface operations {
     requestBody?: {
       content: {
         'application/json': {
-          [key: string]: components['schemas']['image'] | undefined;
+          [key: string]: components['schemas']['image'];
         };
       };
     };
@@ -787,7 +814,9 @@ export interface operations {
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description Not Found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
   /** @description Get all user tasks used in a process. */
@@ -849,9 +878,13 @@ export interface operations {
     };
     responses: {
       /** @description User task HTML updated */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description User task HTML created in the server */
-      201: never;
+      201: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
     };
@@ -867,7 +900,9 @@ export interface operations {
     };
     responses: {
       /** @description The request returns 200 wether the userTaskFile exists or not */
-      200: never;
+      200: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
     };
@@ -906,7 +941,9 @@ export interface operations {
     };
     responses: {
       /** @description Created */
-      201: never;
+      201: {
+        content: never;
+      };
       /** @description Bad Request */
       400: {
         content: {
@@ -956,7 +993,9 @@ export interface operations {
     };
     responses: {
       /** @description OK */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Possible causes: The body of the request is not a JSON object or the machine is not stored and thus can't be changed. */
       400: {
         content: {
@@ -983,7 +1022,9 @@ export interface operations {
     };
     responses: {
       /** @description OK (This is the response, even if the machine is not known) */
-      200: never;
+      200: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       /** @description The machine is known through the discovery and not stored. It can't be removed! */
       403: {
@@ -1003,7 +1044,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
     };
@@ -1016,7 +1059,7 @@ export interface operations {
           /** Format: email */
           email: string;
           username: string;
-          lastName?: string;
+          lastName: string;
           firstName: string;
           password: string;
         };
@@ -1024,7 +1067,9 @@ export interface operations {
     };
     responses: {
       /** @description OK */
-      200: never;
+      200: {
+        content: never;
+      };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
     };
@@ -1069,7 +1114,9 @@ export interface operations {
     };
     responses: {
       /** @description No Content */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Bad Request */
       400: {
         content: {
@@ -1090,7 +1137,9 @@ export interface operations {
     };
     responses: {
       /** @description No Content */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Bad Request */
       400: {
         content: {
@@ -1239,7 +1288,9 @@ export interface operations {
     };
     responses: {
       /** @description No Content */
-      204: never;
+      204: {
+        content: never;
+      };
       400: components['responses']['400_Error_Json'];
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
@@ -1280,7 +1331,9 @@ export interface operations {
     };
     responses: {
       /** @description Created */
-      201: never;
+      201: {
+        content: never;
+      };
       400: components['responses']['400_error_message'];
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
@@ -1317,7 +1370,9 @@ export interface operations {
     };
     responses: {
       /** @description Role deleted */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Bad Request */
       400: {
         content: {
@@ -1362,7 +1417,9 @@ export interface operations {
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
       /** @description Not Found */
-      404: never;
+      404: {
+        content: never;
+      };
     };
   };
 }

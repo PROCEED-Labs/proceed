@@ -85,8 +85,6 @@ const UserDataModal: FC<{
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
           username: userData.username,
           ...values,
         };
@@ -227,11 +225,15 @@ const UserProfile: FC = () => {
 
   async function deleteUser() {
     try {
-      await deleteUserMutation({
-        params: { path: { id: user && user.sub } },
-      });
-      messageApi.success({ content: 'Your account was deleted' });
-      logout();
+      // Since this should only be callable once the user was loaded, we can assume that the user is not false.
+      // Check is only for typescript.
+      if (user && user.sub) {
+        await deleteUserMutation({
+          params: { path: { id: user.sub } },
+        });
+        messageApi.success({ content: 'Your account was deleted' });
+        logout();
+      }
     } catch (e) {
       messageApi.error({ content: 'An error ocurred' });
     }

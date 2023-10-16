@@ -245,7 +245,7 @@ export interface components {
       | 'versions'
     >;
     processVersion: {
-      version: string;
+      version: number;
       name: string;
       description: string;
     };
@@ -339,7 +339,7 @@ export interface components {
       /** Format: email */
       email: string;
       username: string;
-      'firstName ': string;
+      firstName: string;
       lastName: string;
     };
     /** user */

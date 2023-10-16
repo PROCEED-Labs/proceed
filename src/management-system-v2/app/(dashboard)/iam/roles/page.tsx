@@ -14,6 +14,7 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import { AuthCan } from '@/lib/iamComponents';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import Bar from '@/components/bar';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
@@ -86,7 +87,8 @@ const RolesPage: FC = () => {
     );
 
   return (
-    <Content title="Identity and Access Management" rightNode={<HeaderActions />}>
+    <Content title="Identity and Access Management">
+      <Bar rightNode={<HeaderActions />} />
       <Row className={styles.Headerrow}>
         <Col
           xs={24}

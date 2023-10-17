@@ -168,6 +168,9 @@ async function versionUserTasks(
             path: { definitionId: processInfo.definitionId, userTaskFileName: versionFileName },
           },
           body: userTaskHTML,
+          headers: new Headers({
+            'Content-Type': 'text/plain',
+          }),
           parseAs: 'text',
         });
       }

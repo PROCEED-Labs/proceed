@@ -52,7 +52,7 @@ WORKDIR /opt/proceed-ms-server
 # Copy complete build folder into docker image
 COPY . .
 
-RUN if [ "$OLD" = "true" ] ; then npm install ; else mv package.json temp.json && npm install vm2 && mv temp.json package.json ; fi \
+RUN if [ "$OLD" = "true" ] ; then npm install ; else mv package.json temp.json && npm install vm2 && mv temp.json package.json && rm -rf frontend && rm -rf puppeteerPages ; fi \
     # Add user so we don't need --no-sandbox for Chrome/Puppeteer.
     # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
     && groupadd -r proceed && useradd -r -g proceed -G audio,video proceed \

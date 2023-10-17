@@ -183,6 +183,10 @@ export async function createNewProcessVersion(
   const bpmnObj = await toBpmnObject(bpmn);
   const definitionId = await getDefinitionsId(bpmnObj);
 
+  if (!definitionId) {
+    throw new Error("There is no definitionId for the process. Can't create a new version");
+  }
+
   const processInfo = (
     await get('/process/{definitionId}', {
       params: { path: { definitionId: definitionId } },

@@ -13,8 +13,8 @@ const App: FC<PropsWithChildren> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <ReactQueryDevtools initialIsOpen={false} />
-      <AuthCallbackListener />
       <AntDesignApp>
+        <AuthCallbackListener />
         <Theme>{children}</Theme>
       </AntDesignApp>
     </QueryClientProvider>

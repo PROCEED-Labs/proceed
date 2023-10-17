@@ -61,7 +61,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       // This is not the most recent instance, so don't do anything.
       if (active !== modeler.current) return;
 
-      if (editingDisabled) {
+      if (selectedVersionId !== null) {
         modeler.current = new Viewer!({
           container: canvas.current!,
           moddleExtensions: {
@@ -103,7 +103,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, editingDisabled, processId, updateProcessMutation]);
+  }, [setModeler, editingDisabled, selectedVersionId, processId, updateProcessMutation]);
 
   const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersionId);
 

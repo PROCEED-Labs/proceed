@@ -1,11 +1,17 @@
 'use client';
 
-const {
+import {
   setDefinitionsId,
   setDefinitionsName,
   manipulateElementsByTagName,
   generateDefinitionsId,
-} = require('@proceed/bpmn-helper');
+  getUserTaskFileNameMapping,
+  getDefinitionsVersionInformation,
+  setDefinitionsVersionInformation,
+  setUserTaskData,
+  toBpmnObject,
+  toBpmnXml,
+} from '@proceed/bpmn-helper';
 
 import React, { useEffect, useState } from 'react';
 
@@ -16,9 +22,11 @@ import { Tooltip, Button, Space, Modal, Form, Input } from 'antd';
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { FormInstance } from 'antd/es/form';
-import { useGetAsset, post } from '@/lib/fetch-data';
+import { useGetAsset, post, get, del, put } from '@/lib/fetch-data';
+import { areVersionsEqual, convertToEditableBpmn } from '@/lib/helpers/processVersioning';
+import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const ModalSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit: Function }) => {
   const [submittable, setSubmittable] = useState(false);
@@ -101,10 +109,33 @@ const ProcessModal: React.FC<ProcessModalProps> = ({ show, close }) => {
   );
 };
 
+type ConfirmationModalProps = {
+  show: boolean;
+  close: () => void;
+  confirm: () => void;
+};
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ show, close, confirm }) => {
+  return (
+    <Modal
+      title="Are you sure you want to continue editing with this version?"
+      open={show}
+      onOk={() => {
+        confirm();
+      }}
+      onCancel={() => {
+        close();
+      }}
+    >
+      <p>Any changes that are not stored in another version are irrecoverably lost!</p>
+    </Modal>
+  );
+};
+
 type VersionToolbarProps = {};
 const VersionToolbar: React.FC<VersionToolbarProps> = () => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
@@ -125,6 +156,10 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
     setIsProcessModalOpen(true);
   };
 
+  const openConfirmationModal = () => {
+    setIsConfirmationModalOpen(true);
+  };
+
   const createNewProcess = async (values: { name: string; description: string }) => {
     const saveXMLResult = await modeler?.saveXML({ format: true });
     if (saveXMLResult?.xml) {
@@ -132,7 +167,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
       const defId = generateDefinitionsId();
       let newBpmn = await setDefinitionsId(bpmn, defId);
       newBpmn = await setDefinitionsName(newBpmn, values.name);
-      newBpmn = await manipulateElementsByTagName(
+      newBpmn = (await manipulateElementsByTagName(
         newBpmn,
         'bpmn:Definitions',
         (definitions: any) => {
@@ -141,11 +176,104 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
           delete definitions.versionDescription;
           delete definitions.versionBasedOn;
         },
-      );
+      )) as string;
       const response = await post('/process', {
         body: { bpmn: newBpmn, /*description: values.description,*/ departments: [] },
         parseAs: 'text',
       });
+    }
+  };
+
+  const getUsedFileNames = async (bpmn: string) => {
+    const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmn);
+
+    const fileNames = new Set<string>();
+
+    Object.values(userTaskFileNameMapping).forEach(({ fileName }) => {
+      if (fileName) {
+        fileNames.add(fileName);
+      }
+    });
+
+    return [...fileNames];
+  };
+
+  const getHtmlMappingByFileName = async () => {
+    // Retrieve all stored userTask fileNames and corresponding html
+    const { data } = await get('/process/{definitionId}/user-tasks', {
+      params: { path: { definitionId: processId as string } },
+    });
+    const existingUserTaskFileNames = data || [];
+
+    const htmlMappingByFileName = {} as { [userTaskId: string]: string };
+    await asyncForEach(existingUserTaskFileNames, async (existingUserTaskFileName) => {
+      const { data: html } = await get('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+        params: {
+          path: {
+            definitionId: processId as string,
+            userTaskFileName: existingUserTaskFileName,
+          },
+        },
+        parseAs: 'text',
+      });
+
+      if (html) {
+        htmlMappingByFileName[existingUserTaskFileName] = html;
+      }
+    });
+    return htmlMappingByFileName;
+  };
+
+  const setAsLatestVersion = async () => {
+    const saveXMLResult = await modeler?.saveXML({ format: true });
+
+    // Retrieve editable bpmn of latest version
+    const { data: editableProcessData } = await get('/process/{definitionId}', {
+      params: { path: { definitionId: processId as string } },
+    });
+    const editableBpmn = editableProcessData?.bpmn;
+
+    if (saveXMLResult?.xml && editableBpmn) {
+      const currentVersionBpmn = saveXMLResult.xml;
+
+      const htmlMappingByFileName = await getHtmlMappingByFileName();
+
+      const { bpmn: convertedBpmn, changedFileNames } =
+        await convertToEditableBpmn(currentVersionBpmn);
+
+      // Delete UserTasks stored for latest version
+      const fileNamesInEditableVersion = await getUsedFileNames(editableBpmn);
+      await asyncMap(fileNamesInEditableVersion, async (fileNameInEditableVersion: string) => {
+        await del('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+          params: {
+            path: {
+              definitionId: processId as string,
+              userTaskFileName: fileNameInEditableVersion,
+            },
+          },
+        });
+      });
+
+      // Store UserTasks from this version as UserTasks from latest version
+      await asyncMap(Object.entries(changedFileNames), async ([oldName, newName]) => {
+        await put('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+          params: {
+            path: { definitionId: processId as string, userTaskFileName: newName },
+          },
+          body: htmlMappingByFileName[oldName],
+          headers: new Headers({
+            'Content-Type': 'text/plain',
+          }),
+        });
+      });
+
+      // Store bpmn from this version as latest version
+      await put('/process/{definitionId}', {
+        params: { path: { definitionId: processId as string } },
+        body: { bpmn: convertedBpmn },
+      });
+
+      router.push(`/processes/${processId as string}`);
     }
   };
 
@@ -157,7 +285,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
             <Button icon={<PlusOutlined />} onClick={openNewProcessModal}></Button>
           </Tooltip>
           <Tooltip title="Make editable">
-            <Button icon={<FormOutlined />}></Button>
+            <Button icon={<FormOutlined />} onClick={openConfirmationModal}></Button>
           </Tooltip>
         </Space.Compact>
       </div>
@@ -171,6 +299,16 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
         }}
         show={isProcessModalOpen}
       ></ProcessModal>
+      <ConfirmationModal
+        close={() => {
+          setIsConfirmationModalOpen(false);
+        }}
+        confirm={() => {
+          setAsLatestVersion();
+          setIsConfirmationModalOpen(false);
+        }}
+        show={isConfirmationModalOpen}
+      ></ConfirmationModal>
     </>
   );
 };

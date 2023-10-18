@@ -52,7 +52,7 @@ const items: MenuProps['items'] = [
  */
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const router = useRouter();
-  const activeSegment = usePathname().split('/')[1] || 'processes';
+  const activeSegment = usePathname().slice(1) || 'processes';
   const [collapsed, setCollapsed] = useState(false);
   const ability = useAuthStore((state) => state.ability);
   const loggedIn = useAuthStore((state) => state.loggedIn);

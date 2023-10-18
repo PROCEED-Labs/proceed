@@ -226,6 +226,7 @@ const UserProfile: FC = () => {
   async function deleteUser() {
     try {
       // Since this should only be callable once the user was loaded, we can assume that the user is not false.
+      // Check is only for typescript.
       if (user && user.sub) {
         await deleteUserMutation({
           params: { path: { id: user.sub } },

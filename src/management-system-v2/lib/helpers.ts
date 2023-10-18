@@ -88,7 +88,7 @@ async function versionUserTasks(
         params: {
           path: {
             definitionId: processInfo.definitionId,
-            userTaskFileName: htmlMapping[userTaskId].fileName,
+            userTaskFileName: htmlMapping[userTaskId].fileName!,
           },
         },
         parseAs: 'text',
@@ -115,7 +115,7 @@ async function versionUserTasks(
             params: {
               path: {
                 definitionId: processInfo.definitionId,
-                userTaskFileName: basedOnVersionFileInfo.fileName,
+                userTaskFileName: basedOnVersionFileInfo.fileName!,
               },
             },
             parseAs: 'text',
@@ -125,7 +125,7 @@ async function versionUserTasks(
         if (basedOnVersionFileInfo && basedOnVersionUserTaskHTML === html) {
           // reuse the html of the previous version
           userTaskHtmlAlreadyExisting = true;
-          fileName = basedOnVersionFileInfo.fileName;
+          fileName = basedOnVersionFileInfo.fileName!;
         }
       }
 
@@ -150,6 +150,10 @@ export async function createNewProcessVersion(
 ) {
   const bpmnObj = await toBpmnObject(bpmn);
   const definitionId = await getDefinitionsId(bpmnObj);
+
+  if (!definitionId) {
+    throw new Error("There is no definitionId for the process. Can't create a new version");
+  }
 
   const processInfo = (
     await get('/process/{definitionId}', {

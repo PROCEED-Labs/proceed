@@ -209,15 +209,10 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
   if (!needsZip && options.type !== 'pdf') {
     const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
     const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
+    // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
+    const withSubprocesses = Object.values(exportData[0].versions)[0].subprocesses.length > 0;
 
-    needsZip = needsZip || hasMulitpleVersions || hasArtefacts;
-
-    // if there are collapsed subprocesses that need to be exported as well we need a zip to bundle them with them main svg
-    if (!needsZip) {
-      const withSubprocesses = Object.values(exportData[0].versions)[0].subprocesses.length > 0;
-
-      needsZip = needsZip || withSubprocesses;
-    }
+    needsZip = needsZip || hasMulitpleVersions || hasArtefacts || withSubprocesses;
   }
 
   const zip = needsZip ? new jsZip() : undefined;
@@ -226,7 +221,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     if (options.type === 'pdf') {
       await pdfExport(processData, zip);
     } else {
-      const folder = needsZip ? zip!.folder(processData.definitionName) : undefined;
+      const folder = zip?.folder(processData.definitionName);
       if (options.type === 'bpmn') await bpmnExport(processData, folder);
       if (options.type === 'svg') await svgExport(processData, folder);
     }

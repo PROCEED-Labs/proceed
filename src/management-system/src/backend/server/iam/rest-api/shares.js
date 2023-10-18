@@ -9,8 +9,8 @@ import {
 import { abilityCacheDeleteAll, isAllowed } from '../middleware/authorization';
 import { validateShare } from '../middleware/inputValidations.js';
 import jwt from 'jsonwebtoken';
-import { toCaslResource } from '../authorization/caslRules';
 import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
+import { toCaslResource } from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
 const sharesRouter = express.Router();
 

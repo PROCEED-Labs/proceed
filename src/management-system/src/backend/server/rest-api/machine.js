@@ -7,8 +7,8 @@ import {
 import { v4 } from 'uuid';
 import express from 'express';
 import { isAllowed } from '../iam/middleware/authorization';
-import { toCaslResource } from '../iam/authorization/caslRules';
 import Ability from '../../../../../management-system-v2/lib/ability/abilityHelper';
+import { toCaslResource } from '../../../../../management-system-v2/lib/ability/caslAbility';
 
 const machinesRouter = express.Router();
 

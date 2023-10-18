@@ -9,7 +9,7 @@ import {
 import createClient, { FetchOptions } from 'openapi-fetch';
 import { FilterKeys } from 'openapi-typescript-helpers';
 import { paths } from './openapiSchema';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 const BASE_URL = process.env.API_URL;
 
@@ -80,23 +80,40 @@ export type ApiData<
     : unknown
   : unknown;
 
+function getKeys(path: any, params: any) {
+  const keys = [path];
+
+  if (
+    typeof params === 'object' &&
+    'params' in params &&
+    typeof params.params === 'object' &&
+    'path' in params.params
+  ) {
+    keys.push(params.params.path as any);
+  }
+
+  return keys;
+}
+
+type PathParamsToList<T> = T extends { params: { path: any } } ? [T] : [];
+
+export function useInvalidateAsset<
+  TFirstParam extends Parameters<typeof apiClient.GET>[0],
+  TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
+>(path: TFirstParam, ...params: PathParamsToList<TSecondParam>) {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    () => queryClient.invalidateQueries(getKeys(path, params)),
+    [path, params, queryClient],
+  );
+}
+
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.GET>[0],
   TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
 >(path: TFirstParam, params: TSecondParam, reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>) {
-  const keys = useMemo(() => {
-    const keys = [path];
-    if (
-      typeof params === 'object' &&
-      'params' in params &&
-      typeof params.params === 'object' &&
-      'path' in params.params
-    ) {
-      keys.push(params.params.path as any);
-    }
-
-    return keys;
-  }, [path, params]);
+  const keys = useMemo(() => getKeys(path, params), [path, params]);
 
   type Data = QueryData<typeof apiClient.GET<TFirstParam>> | undefined;
 
@@ -127,17 +144,7 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.POS
     mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>) => {
       const { data } = await post(path, body);
 
-      const keys: any[] = [path];
-      if (
-        typeof body === 'object' &&
-        'params' in body &&
-        typeof body.params === 'object' &&
-        'path' in body.params
-      ) {
-        keys.push(body.params.path);
-      }
-
-      queryClient.invalidateQueries(keys);
+      queryClient.invalidateQueries(getKeys(path, body));
 
       return data as QueryData<typeof apiClient.POST<TFirstParam>>;
     },
@@ -165,17 +172,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.PUT>
 
       const { data } = await put(path, body);
 
-      const keys: any[] = [path];
-      if (
-        typeof body === 'object' &&
-        'params' in body &&
-        typeof body.params === 'object' &&
-        'path' in body.params
-      ) {
-        keys.push(body.params.path);
-      }
-
-      queryClient.invalidateQueries(keys);
+      queryClient.invalidateQueries(getKeys(path, body));
 
       return data as QueryData<typeof apiClient.PUT<TFirstParam>>;
     },
@@ -199,17 +196,7 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.D
     mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>) => {
       const { data } = await del(path, body);
 
-      const keys: any[] = [path];
-      if (
-        typeof body === 'object' &&
-        'params' in body &&
-        typeof body.params === 'object' &&
-        'path' in body.params
-      ) {
-        keys.push(body.params.path);
-      }
-
-      queryClient.invalidateQueries(keys);
+      queryClient.invalidateQueries(getKeys(path, body));
 
       return data as QueryData<typeof apiClient.DELETE<TFirstParam>>;
     },

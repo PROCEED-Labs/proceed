@@ -1,0 +1,3 @@
+[submodule "src/management-system/src/backend/server/environment-configurations"]
+	path = src/management-system/src/backend/server/environment-configurations
+	url = https://github.com/PROCEED-Labs/environments

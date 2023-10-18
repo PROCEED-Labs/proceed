@@ -143,7 +143,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
         },
       );
       const response = await post('/process', {
-        body: { bpmn: newBpmn, description: values.description, departments: [] },
+        body: { bpmn: newBpmn, /*description: values.description,*/ departments: [] },
         parseAs: 'text',
       });
     }

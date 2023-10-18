@@ -1,12 +1,13 @@
 import { PackRule, unpackRules } from '@casl/ability/extra';
-import { AbilityRule, CaslAbility, ResourceType, buildAbility } from './caslAbility';
-import { subject } from '@casl/ability';
+import {
+  AbilityRule,
+  CaslAbility,
+  ResourceType,
+  buildAbility,
+  toCaslResource,
+} from './caslAbility';
 
 type CanParams = Parameters<CaslAbility['can']>;
-
-export function toCaslResource(resource: ResourceType, object: any) {
-  return subject(resource, object);
-}
 
 export default class Ability {
   caslAbility: CaslAbility;
@@ -24,7 +25,7 @@ export default class Ability {
     return true;
   }
 
-  filter(action: CanParams[0] | CanParams[0][], resource: CanParams[1], array: any[]) {
+  filter(action: CanParams[0] | CanParams[0][], resource: ResourceType, array: any[]) {
     return array.filter((resourceInstance) =>
       this.can(action, toCaslResource(resource, resourceInstance)),
     );

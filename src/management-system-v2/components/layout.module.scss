@@ -1,6 +1,6 @@
 .Sider {
   overflow: auto;
-  height: 100vh;
+  height: calc(100vh - 70px);
   //position: fixed !important;
   left: 0;
   top: 0;
@@ -42,7 +42,7 @@
   flex: auto;
   position: relative;
   /* Need this for the absolute editor page to work in non-parallel route. */
-  min-height: 100vh;
+  height: 92vh;
 }
 
 .Footer {

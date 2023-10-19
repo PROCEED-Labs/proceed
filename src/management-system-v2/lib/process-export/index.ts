@@ -136,7 +136,7 @@ async function addPDFPage(
 }
 
 /**
- * Allows to recursively add versions of the process and its imports to the pdf
+ * Allows to recursively add versions of a process and its imports to the pdf
  *
  * @param processesData the data of all processes
  * @param processData the data of the complete process
@@ -144,7 +144,7 @@ async function addPDFPage(
  * @param pdf the pdf to add a page to
  * @param isImport if the version is of an import
  */
-async function handleProcessPdfExportData(
+async function handleProcessVersionPdfExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
   version: string,
@@ -164,11 +164,18 @@ async function handleProcessPdfExportData(
   for (const { definitionId, processVersion } of versionData.imports) {
     const importData = processesData.find((el) => el.definitionId === definitionId);
     if (importData) {
-      await handleProcessPdfExportData(processesData, importData, processVersion, pdf, true);
+      await handleProcessVersionPdfExport(processesData, importData, processVersion, pdf, true);
     }
   }
 }
 
+/**
+ * Creates a pdf and adds all the requested information of a specific process (including other processes if there are imports to add)
+ *
+ * @param processesData the data of all processes
+ * @param processData the data of the complete process to export
+ * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
+ */
 async function pdfExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
@@ -182,13 +189,13 @@ async function pdfExport(
   });
   pdf.deletePage(1);
 
-  // only export the versions that were explicitly selected for export inside the pdf file for the given process
+  // only export the versions that were explicitly selected for the given process
   const nonImportVersions = Object.entries(processData.versions)
     .filter(([_, { isImport }]) => !isImport)
     .map(([version]) => version);
 
   for (const version of nonImportVersions) {
-    await handleProcessPdfExportData(processesData, processData, version, pdf);
+    await handleProcessVersionPdfExport(processesData, processData, version, pdf);
   }
 
   if (zip) {
@@ -258,7 +265,7 @@ async function addSVGFile(
  * @param isImport if the version is of an import
  * @param zipFolder the folder to add the svg to (optional since we can export a single file directly as an svg which is decided before this function is called)
  */
-async function handleProcessSVGExportData(
+async function handleProcessVersionSVGExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
   version: string,
@@ -278,11 +285,26 @@ async function handleProcessSVGExportData(
   for (const { definitionId, processVersion } of versionData.imports) {
     const importData = processesData.find((el) => el.definitionId === definitionId);
     if (importData) {
-      await handleProcessSVGExportData(processesData, importData, processVersion, true, zipFolder);
+      await handleProcessVersionSVGExport(
+        processesData,
+        importData,
+        processVersion,
+        true,
+        zipFolder,
+      );
     }
   }
 }
 
+/**
+ * Exports a process as a svg either as a single file or into a folder of a zip archive if multiple files should be exported
+ *
+ * Might export multiple files if imports or collapsed subprocesses should be exported as well
+ *
+ * @param processesData the data of all processes
+ * @param processData the data of the complete process
+ * @param zipFolder a zip folder the exported files should be added to in case of multi file export
+ */
 async function svgExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
@@ -294,13 +316,13 @@ async function svgExport(
     .map(([version]) => version);
 
   for (const version of nonImportVersions) {
-    await handleProcessSVGExportData(processesData, processData, version, false, zipFolder);
+    await handleProcessVersionSVGExport(processesData, processData, version, false, zipFolder);
   }
 }
 
 async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
   for (let [versionName, versionData] of Object.entries(processData.versions)) {
-    // if the version data contains an explicit name use that instead of the the current versionName which is just the version id or "latest"
+    // if the version data contains an explicit name use that instead of the the current versionName which is just the version id
     if (versionData.name) {
       versionName = versionData.name;
     }

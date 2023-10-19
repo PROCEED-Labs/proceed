@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent, Space } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -83,12 +83,15 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
     : 'Select the file type';
 
   const typeSelection = (
-    <Radio.Group
-      options={exportTypeOptions}
-      onChange={handleTypeSelectionChange}
-      value={selectedType}
-      style={{ flexDirection: 'column' }}
-    />
+    <Radio.Group onChange={handleTypeSelectionChange} value={selectedType}>
+      <Space direction="vertical">
+        {exportTypeOptions.map(({ label, value }) => (
+          <Radio value={value} key={value}>
+            {label}
+          </Radio>
+        ))}
+      </Space>
+    </Radio.Group>
   );
 
   const optionSelection = (

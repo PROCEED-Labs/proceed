@@ -22,6 +22,8 @@ import createConfig from './iam/utils/config.js';
 import getClient from './iam/authentication/client.js';
 import { getStorePath } from '../shared-electron-server/data/store.js';
 import { abilityMiddleware, initialiazeRulesCache } from './iam/middleware/authorization';
+import { getSessionFromCookie } from './iam/middleware/nextAuthMiddleware.js';
+import dotenv from 'dotenv';
 
 const configPath =
   process.env.NODE_ENV === 'development'
@@ -62,6 +64,9 @@ async function init() {
     logger.error(e.toString());
     logger.info('Started MS without Authentication and Authorization.');
   }
+
+  // Use .env file from ms2
+  if (process.env.API_ONLY) dotenv.config({ path: '../management-system-v2/.env.local' });
 
   backendServer.use(cookieParser());
   backendServer.use(
@@ -108,25 +113,29 @@ async function init() {
     const hostName = msUrl.hostname;
     const domainName = hostName.replace(/^[^.]+\./g, '');
 
-    // express-session middleware currently saves keycloak data and cookie data in memorystore DB
-    // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
-    loginSession = session({
-      resave: false,
-      secret: crypto.randomBytes(64).toString('hex'), // random secret
-      saveUninitialized: false, // doesn't save uninitialized sessions to the store
-      store,
-      cookie: {
-        secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
-        sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
-        httpOnly: true,
-        expires: 1000 * 60 * 60 * 10,
-        path: '/',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
-      },
-      name: 'id', // name of the cookie in the browser
-    });
-    backendServer.use(loginSession);
+    if (process.env.API_ONLY) {
+      backendServer.use(getSessionFromCookie);
+    } else {
+      // express-session middleware currently saves keycloak data and cookie data in memorystore DB
+      // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+      loginSession = session({
+        resave: false,
+        secret: crypto.randomBytes(64).toString('hex'), // random secret
+        saveUninitialized: false, // doesn't save uninitialized sessions to the store
+        store,
+        cookie: {
+          secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
+          sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
+          httpOnly: true,
+          expires: 1000 * 60 * 60 * 10,
+          path: '/',
+          domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
+        },
+        name: 'id', // name of the cookie in the browser
+      });
+      backendServer.use(loginSession);
+    }
   }
   backendServer.use(authRouter(config, client)); // separate authentication routes
 

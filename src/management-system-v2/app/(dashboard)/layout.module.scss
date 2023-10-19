@@ -46,7 +46,7 @@
   /* Need this for the absolute editor page to work in non-parallel route. */
   //min-height: 70vh;
   max-width: calc(100vw - 200px);
-  height: calc(100vh - 70px);
+  height: calc(100vh - 150px);
 
   &.collapsed {
     margin-left: 25px;

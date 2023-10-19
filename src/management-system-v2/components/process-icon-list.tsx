@@ -61,7 +61,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
           // alignContent: 'space-between',
           // flexWrap: 'wrap',
           overflowX: 'hidden',
-          msOverflowY: 'scroll',
+          overflowY: 'scroll',
           /* TODO: Make parent fitting height */
           // height: '100%',
           height: 'calc(100vh - 220px)',
@@ -85,30 +85,3 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
 };
 
 export default IconView;
-
-// <List
-//         /* Force rerender when layout changes */
-//         key={layout.xxl}
-//         className="Hide-Scroll-Bar"
-//         style={{
-//           flex: 3,
-//         }}
-//         grid={
-//           /* column: 4 */
-//           layout
-//         }
-//         dataSource={data}
-//         renderItem={(item) => (
-//           <List.Item>
-//             {
-//               <TabCard
-//                 item={item}
-//                 completeList={data!}
-//                 selection={selection}
-//                 setSelection={setSelection}
-//                 tabcard={false}
-//               />
-//             }
-//           </List.Item>
-//         )}
-//       />

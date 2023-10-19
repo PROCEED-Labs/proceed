@@ -39,6 +39,7 @@ type ProcessListProps = PropsWithChildren<{
   onExportProcess: Dispatch<SetStateAction<string[]>>;
   refreshData: any;
   // TODO: Fix type
+  search?: string;
 }>;
 
 const ColumnHeader = [
@@ -50,21 +51,6 @@ const ColumnHeader = [
   'Owner',
 ];
 
-const clipText: ColumnType<Process>['render'] = (dataIndexElement, record, index) => {
-  return (
-    <div
-      style={{
-        width: '10vw',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-      }}
-    >
-      {dataIndexElement}
-    </div>
-  );
-};
-
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
 
@@ -75,6 +61,7 @@ const ProcessList: FC<ProcessListProps> = ({
   isLoading,
   onExportProcess,
   refreshData,
+  search,
 }) => {
   const router = useRouter();
 
@@ -92,6 +79,39 @@ const ProcessList: FC<ProcessListProps> = ({
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
   const [rerender, setRerender] = useState(false);
+
+  const clipAndHighlightText = useCallback(
+    (dataIndexElement, record, index) => {
+      const withoutSearchTerm = dataIndexElement?.split(search);
+      let res = dataIndexElement;
+      if (search && withoutSearchTerm?.length > 1) {
+        res = withoutSearchTerm.map((word, i, arr) => {
+          if (i === arr.length - 1) return word;
+
+          return (
+            <span key={i}>
+              <span>{word}</span>
+              <span style={{ color: '#3e93de' }}>{search}</span>
+            </span>
+          );
+        });
+      }
+
+      return (
+        <div
+          style={{
+            width: '10vw',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {res}
+        </div>
+      );
+    },
+    [search],
+  );
 
   const triggerRerender = () => {
     /*  Timeout necessary for animation and table resize */
@@ -262,7 +282,7 @@ const ProcessList: FC<ProcessListProps> = ({
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
-      render: clipText,
+      render: clipAndHighlightText,
     },
     {
       title: 'Description',
@@ -278,7 +298,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      render: clipText,
+      render: clipAndHighlightText,
     },
 
     {

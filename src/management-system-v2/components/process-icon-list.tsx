@@ -14,9 +14,10 @@ type IconViewProps = {
   data?: Processes;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
+  search?: string;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
+const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) => {
   const [rerender, setRerender] = useState(false);
 
   const triggerRerender = () => {
@@ -75,7 +76,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
             selection={selection}
             setSelection={setSelection}
             tabcard={false}
-            justify={i > arr.length - 1 - 3}
+            search={search}
           />
         ))}
       </div>

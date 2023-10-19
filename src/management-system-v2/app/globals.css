@@ -68,7 +68,6 @@
   }
 }
 
-/* TODO: Move to module */
 .ant-menu-light.ant-menu-root.ant-menu-inline,
 .ant-menu-light > .ant-menu.ant-menu-root.ant-menu-inline,
 .ant-menu-light.ant-menu-root.ant-menu-vertical,
@@ -123,4 +122,11 @@
 
 .fit-height {
   height: calc(100vh - 64px - 70px);
+}
+
+.djs-palette {
+  background-color: white !important;
+  border: solid 1px #d9d9d9 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02) !important;
 }

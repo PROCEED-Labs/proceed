@@ -3,7 +3,7 @@
 import styles from './processes.module.scss';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
-import { ApiData, useDeleteAsset, useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -22,6 +22,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import { useUserPreferences } from '@/lib/user-preferences';
+import { fetchProcessVersionBpmn } from '@/lib/process-queries';
+import {
+  setDefinitionsId,
+  setDefinitionsName,
+  manipulateElementsByTagName,
+  generateDefinitionsId,
+  setTargetNamespace,
+  setDefinitionsVersionInformation,
+} from '@proceed/bpmn-helper';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -45,7 +54,32 @@ const fuseOptions = {
   keys: ['definitionName', 'description'],
 };
 
-const { Search } = Input;
+type CopyProcessType = {
+  bpmn: string;
+  newName?: string;
+};
+
+const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
+  const newDefinitionsId = await generateDefinitionsId();
+  let newBPMN = await setDefinitionsId(bpmn, newDefinitionsId);
+  newBPMN = await setDefinitionsName(newBPMN, newName || 'Copy of Process');
+  newBPMN = await setTargetNamespace(newBPMN, newDefinitionsId);
+
+  newBPMN = await setDefinitionsVersionInformation(newBPMN, {
+    version: undefined,
+    versionName: undefined,
+    versionDescription: undefined,
+    versionBasedOn: undefined,
+  });
+  // newBPMN = await manipulateElementsByTagName(newBPMN, 'bpmn:Definitions', (definitions: any) => {
+  //   delete definitions.version;
+  //   delete definitions.versionName;
+  //   delete definitions.versionDescription;
+  //   delete definitions.versionBasedOn;
+  // });
+
+  return newBPMN;
+};
 
 const Processes: FC = () => {
   const {
@@ -73,6 +107,7 @@ const Processes: FC = () => {
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: pullNewProcessData,
   });
+  const { mutateAsync: addProcess } = usePostAsset('/process', {});
 
   const deleteSelectedProcesses = useCallback(() => {
     selectedRowKeys.forEach((key) => {
@@ -119,7 +154,7 @@ const Processes: FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const rerenderLists = () => {
-    //setFilteredData(filteredData);
+    //setFilteredData(filteredData);,
   };
 
   const filteredData = useMemo(() => {
@@ -143,7 +178,7 @@ const Processes: FC = () => {
         setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
         /* DEL */
       } else if (e.key === 'Delete') {
-        e.preventDefault();
+        // e.preventDefault();
         deleteSelectedProcesses();
 
         /* TODO: */
@@ -154,13 +189,35 @@ const Processes: FC = () => {
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         e.preventDefault();
-        copySelection.forEach((key) => {
+        copySelection.forEach(async (key) => {
           /* TODO:
             Post to /process
             (identical + name with (copy) suffix
           */
-          console.log(key);
+          // const { mutateAsync: addProcess } = usePostAsset('/process', {});
+          const process = data?.find((item) => item.definitionId === key);
+          const processBpmn = await fetchProcessVersionBpmn(key as string);
+
+          const newBPMN = await copyProcess({
+            bpmn: processBpmn as string,
+            newName: `${process?.definitionName} (Copy)`,
+          });
+
+          addProcess({
+            body: {
+              bpmn: newBPMN as string,
+              departments: [],
+              variables: [],
+            },
+          });
         });
+
+        // body: {
+        //   definitionName: `${process?.definitionName} (copy)`,
+        //   description: process?.description,
+        //   bpmn: processBpmn as string,
+        // },
+        // type 'WithRequired<{ departments?: string[] | undefined; variables?: { name: string; type: "" | "string" | "number" | "boolean" | "object" | "array"; }[] | undefined; } & { bpmn?: string | undefined; }, "departments" | "bpmn">'
       }
     };
     // Add event listener
@@ -219,11 +276,13 @@ const Processes: FC = () => {
               </Space.Compact>
             }
           />
+
           {iconView ? (
             <IconView
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
+              search={searchTerm}
             />
           ) : (
             <ProcessList
@@ -233,6 +292,7 @@ const Processes: FC = () => {
               isLoading={isLoading}
               onExportProcess={setExportProcessIds}
               refreshData={pullNewProcessData}
+              search={searchTerm}
             />
           )}
         </div>

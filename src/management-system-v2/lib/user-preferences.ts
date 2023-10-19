@@ -10,14 +10,16 @@ type PreferencesStoreType = {
   addPreferences: (changes: PreferencesType) => void;
 };
 
-export const useUserPreferences = create<PreferencesStoreType>()(
+const defaultPreferences: PreferencesType = {
+  /* Default User-Settings: */
+  'show-process-meta-data': true,
+  'icon-view-in-process-list': false,
+};
+
+export const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(
     (set, get) => ({
-      preferences: {
-        /* Default User-Settings: */
-        'show-process-meta-data': true,
-        'icon-view-in-process-list': false,
-      },
+      preferences: defaultPreferences,
 
       addPreferences: (changes: PreferencesType) => {
         set({ preferences: { ...get().preferences, ...changes } });
@@ -30,25 +32,19 @@ export const useUserPreferences = create<PreferencesStoreType>()(
   ),
 );
 
-const addPreferences = (changes: PreferencesType) => {};
-
-const usePreferences = () => {
-  const result = useUserPreferences((state) => state.preferences);
+export const useUserPreferences = () => {
+  const prefs = useUserPreferencesStore((state) => state.preferences);
+  const addPrefs = useUserPreferencesStore((state) => state.addPreferences);
   const [data, setData] = useState<PreferencesType | undefined>(undefined);
 
   useEffect(() => {
-    setData(result);
-  }, [result]);
+    setData(prefs);
+  }, [prefs]);
 
-  return (
-    data ?? {
-      /* Default User-Settings: */
-      'show-process-meta-data': true,
-      'icon-view-in-process-list': false,
-    }
-  );
+  if (data) return { preferences: data, addPreferences: addPrefs };
+
+  return {
+    preferences: defaultPreferences,
+    addPreferences: addPrefs,
+  };
 };
-
-const func = { preferences: usePreferences, addPreferences: addPreferences };
-
-export default func;

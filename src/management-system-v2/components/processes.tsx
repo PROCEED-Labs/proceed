@@ -22,7 +22,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import { useUserPreferences } from '@/lib/user-preferences';
-import useStore from '@/lib/useStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -63,9 +62,11 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  const { preferences } = useStore(useUserPreferences, (state) => state);
+  // const { preferences } = useStore(useUserPreferences, (state) => state);
 
-  const addPreferences = useUserPreferences((state) => state.addPreferences);
+  // const addPreferences = useUserPreferences((state) => state.addPreferences);
+
+  const { preferences, addPreferences } = useUserPreferences();
 
   const iconView = preferences['icon-view-in-process-list'];
 

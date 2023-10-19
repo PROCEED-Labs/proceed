@@ -8,7 +8,6 @@ import Viewer from './bpmn-viewer';
 import classNames from 'classnames';
 import { ApiData } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-import useStore from '@/lib/useStore';
 
 type Processes = ApiData<'/process', 'get'>;
 
@@ -21,13 +20,7 @@ type MetaDataType = {
 const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
 
-  const { preferences } = useStore(useUserPreferences, (state) => state);
-
-  // const preferences = useStore(useUserPreferences, (state) => state.preferences);
-  // const addPreferences = useStore(useUserPreferences, (state) => state.addPreferences);
-
-  // const preferences = useUserPreferences((state) => state.preferences);
-  const addPreferences = useUserPreferences((state) => state.addPreferences);
+  const { preferences, addPreferences } = useUserPreferences();
 
   const showInfo = preferences['show-process-meta-data'];
   // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);

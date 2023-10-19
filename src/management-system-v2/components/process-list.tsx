@@ -1,3 +1,5 @@
+'use client';
+
 import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,

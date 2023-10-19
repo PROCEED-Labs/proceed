@@ -19,7 +19,7 @@ import {
   App,
 } from 'antd';
 import styles from './userProfile.module.scss';
-import { logout, useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 import {
   ApiData,
   ApiRequestBody,
@@ -28,7 +28,7 @@ import {
   useDeleteAsset,
 } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
-import Auth from '@/lib/AuthCanWrapper';
+import Auth from '@/lib/serverAuthComponents';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;
@@ -50,7 +50,7 @@ const UserDataModal: FC<{
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  const user = useAuthStore((store) => store.user);
+  const user = useAbilityStore((store) => store.user);
   const { data: userData, isLoading } = useGetAsset('/users/{id}', {
     params: {
       path: { id: user.sub },
@@ -207,7 +207,7 @@ const UserDataRow: FC<{ title: string; data?: string; onClick: () => void }> = (
 };
 
 const UserProfile: FC = () => {
-  const user = useAuthStore((store) => store.loggedIn && store.user);
+  const user = useAbilityStore((store) => store.loggedIn && store.user);
 
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);

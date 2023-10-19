@@ -22,7 +22,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from '@/components/version-creation-button';
-import Auth from '@/lib/AuthCanWrapper';
+import Auth from '@/lib/serverAuthComponents';
 
 type ProcessProps = {
   params: { processId: string };

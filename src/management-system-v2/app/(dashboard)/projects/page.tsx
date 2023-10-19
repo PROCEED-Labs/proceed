@@ -2,8 +2,8 @@ import Processes from '@/components/processes';
 import { FC } from 'react';
 import ProjectStats from './project-stats';
 import Content from '@/components/content';
-import Auth from '@/lib/AuthCanWrapper';
 import { Space } from 'antd';
+import Auth from '@/lib/serverAuthComponents';
 
 const Projects: FC = () => {
   return (

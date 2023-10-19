@@ -1,4 +1,6 @@
-import { useAuthStore } from './iam';
+'use client';
+
+import { useAbilityStore } from './abilityStore';
 import {
   UseMutationOptions,
   UseQueryOptions,
@@ -20,16 +22,10 @@ function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClie
 ) {
   // @ts-ignore
   const wrappedFunction: typeof call = async (...args) => {
-    const state = useAuthStore.getState();
-
-    if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+    const state = useAbilityStore.getState();
 
     // @ts-ignore
     const response = await (call as (...args: any[]) => Promise<any>)(args[0], {
-      headers: {
-        'x-csrf-token': process.env.NEXT_PUBLIC_USE_AUTH ? state.csrfToken : undefined,
-        'x-csrf': '1',
-      },
       credentials: process.env.NEXT_PUBLIC_USE_AUTH
         ? process.env.NODE_ENV === 'production'
           ? 'same-origin'
@@ -166,9 +162,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.PUT>
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>) => {
-      const state = useAuthStore.getState();
-
-      if (process.env.NEXT_PUBLIC_USE_AUTH && !state.loggedIn) throw new Error('Not logged in');
+      const state = useAbilityStore.getState();
 
       const { data } = await put(path, body);
 

@@ -14,8 +14,8 @@ const exportTypeOptions = [
 
 const exportSubOptions = {
   bpmn: [{ label: 'Export with Artefacts', value: 'artefacts' }],
-  pdf: [],
-  svg: [],
+  pdf: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
+  svg: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
 };
 
 type ProcessExportModalProps = {
@@ -56,6 +56,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       {
         type: selectedType!,
         artefacts: selectedOptions.some((el) => el === 'artefacts'),
+        subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
       },
       processes,
     );

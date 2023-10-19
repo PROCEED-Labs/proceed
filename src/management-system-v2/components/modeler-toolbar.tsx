@@ -26,6 +26,8 @@ import ProcessExportModal from './process-export';
 
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
+import { useQueryClient } from '@tanstack/react-query';
+import { useInvalidateAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -41,8 +43,17 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
-  // const [index, setIndex] = useState(0);
   const { processId } = useParams();
+
+  const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  const invalidateProcesses = useInvalidateAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  // const [index, setIndex] = useState(0);
 
   let selectedElement;
 
@@ -66,6 +77,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         values.versionName,
         values.versionDescription,
       );
+      await invalidateVersions();
+      await invalidateProcesses();
     }
   };
   const handlePropertiesPanelToggle = () => {

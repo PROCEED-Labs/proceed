@@ -43,7 +43,7 @@ export type ProcessExportData = {
       name?: string;
       bpmn: string;
       isImport: boolean;
-      subprocesses: { id: string; name: string }[];
+      subprocesses: { id: string; name?: string }[];
       imports: { definitionId: string; processVersion: string }[];
     };
   };
@@ -111,7 +111,7 @@ function getImagesReferencedByHtml(html: string) {
  *
  * @param bpmn
  */
-async function getCollapsedSubprocessIds(bpmn: string) {
+async function getCollapsedSubprocessInfos(bpmn: string) {
   const definitions = await toBpmnObject(bpmn);
   const subprocesses = getElementsByTagName(definitions, 'bpmn:SubProcess');
 
@@ -134,7 +134,7 @@ type ExportMap = {
         name?: string;
         bpmn: string;
         isImport: boolean;
-        subprocesses: { id: string; name: string }[];
+        subprocesses: { id: string; name?: string }[];
         imports: { definitionId: string; processVersion: string }[];
       };
     };
@@ -253,7 +253,7 @@ export async function prepareExport(
     if (options.subprocesses) {
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
         exportData[definitionId].versions[version].subprocesses = (
-          await getCollapsedSubprocessIds(bpmn)
+          await getCollapsedSubprocessInfos(bpmn)
         ).reverse();
       }
     }

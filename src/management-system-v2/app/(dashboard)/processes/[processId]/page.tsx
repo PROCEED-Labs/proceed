@@ -23,6 +23,7 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import Auth from '@/lib/AuthCanWrapper';
+import ProcessCreationButton from '@/components/process-creation-button';
 
 type ProcessProps = {
   params: { processId: string };
@@ -75,10 +76,6 @@ const Processes: FC<ProcessProps> = () => {
     }
   }, [minimized]);
 
-  const createProcess = () => {
-    console.log('create process');
-  };
-
   const createProcessVersion = async (values: {
     versionName: string;
     versionDescription: string;
@@ -119,9 +116,9 @@ const Processes: FC<ProcessProps> = () => {
               {menu}
               <Divider style={{ margin: '4px 0' }} />
               <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                <Button type="text" icon={<PlusOutlined />} onClick={createProcess}>
+                <ProcessCreationButton type="text" icon={<PlusOutlined />}>
                   Create new process
-                </Button>
+                </ProcessCreationButton>
               </Space>
             </>
           )}

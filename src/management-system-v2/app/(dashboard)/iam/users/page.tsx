@@ -1,149 +1,68 @@
 'use client';
 
-import React, { FC, useMemo, useState } from 'react';
-import styles from '@/components/processes.module.scss';
-import cn from 'classnames';
+import { FC } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import {
-  Tooltip,
-  Space,
-  Avatar,
-  Row,
-  Col,
-  Button,
-  Input,
-  Result,
-  Table,
-  Popconfirm,
-  App,
-} from 'antd';
+import { Tooltip, Button, Popconfirm, App } from 'antd';
 import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
-import { CloseOutlined } from '@ant-design/icons';
 import Auth from '@/lib/AuthCanWrapper';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
-import useFuzySearch from '@/lib/useFuzySearch';
-import Bar from '@/components/bar';
+import UserList from '@/components/user-list';
+import { useQueryClient } from '@tanstack/react-query';
 
 const UsersPage: FC = () => {
-  const { error, data, isLoading, refetch: refetchUsers } = useGetAsset('/users', {});
   const { message: messageApi } = App.useApp();
+  const queryClient = useQueryClient();
+
+  const { error, data, isLoading } = useGetAsset('/users', {});
   const { mutateAsync: deleteUser, isLoading: deletingUser } = useDeleteAsset('/users/{id}', {
-    onSuccess: () => refetchUsers(),
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
+    onSuccess: async () => await queryClient.invalidateQueries(['/users']),
   });
 
-  const { searchQuery, setSearchQuery, filteredData } = useFuzySearch(
-    data || [],
-    ['firstName', 'lastName', 'username', 'email'],
-    { useSearchParams: false },
-  );
-
-  const filteredUsers = useMemo(() => {
-    return filteredData.map((user) => ({
-      ...user,
-      display: (
-        <Space size={16}>
-          <Avatar src={user.picture} />
-          <span>
-            {user.firstName} {user.lastName}
-          </span>
-        </Space>
-      ),
-    }));
-  }, [filteredData]);
-
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-
-  async function deleteUsers(userIds: string[]) {
-    setSelectedRowKeys([]);
-    await Promise.allSettled(userIds.map((id) => deleteUser({ params: { path: { id } } })));
+  async function deleteUsers(ids: string[], unsetIds?: () => void) {
+    if (unsetIds) unsetIds();
+    const promises = ids.map((id) => deleteUser({ params: { path: { id } } }));
+    await Promise.allSettled(promises);
   }
 
   const columns = [
     {
-      title: 'Account',
-      dataIndex: 'display',
-      key: 'display',
-    },
-    {
-      title: 'Username',
-      dataIndex: 'username',
-      key: 'username',
-    },
-    {
-      title: 'Email Adress',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
       dataIndex: 'id',
       key: 'tooltip',
       title: '',
-      with: 100,
-      render: (id: string) =>
-        selectedRowKeys.length === 0 ? (
-          <Tooltip placement="top" title={'Delete'}>
-            <Popconfirm
-              title="Delete User"
-              description="Are you sure you want to delete this user?"
-              onConfirm={() => deleteUsers([id])}
-            >
-              <Button icon={<DeleteOutlined />} type="text" />
-            </Popconfirm>
-          </Tooltip>
-        ) : undefined,
+      width: 100,
+      render: (id: string) => (
+        <Tooltip placement="top" title="Delete">
+          <Popconfirm
+            title="Delete User"
+            description="Are you sure you want to delete this user?"
+            onConfirm={() => deleteUsers([id])}
+          >
+            <Button icon={<DeleteOutlined />} type="text" />
+          </Popconfirm>
+        </Tooltip>
+      ),
     },
   ];
 
-  if (error)
-    return (
-      <Content title="Identity and Access Management">
-        <Result
-          status="error"
-          title="Failed to fetch your profile"
-          subTitle="An error ocurred while fetching your profile, please try again."
-        />
-      </Content>
-    );
-
   return (
     <Content title="Identity and Access Management">
-      <Bar
-        leftNode={
-          selectedRowKeys.length ? (
-            <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected: </span>
-              <Popconfirm
-                title="Delete User"
-                description="Are you sure you want to delete this user?"
-                onConfirm={() => deleteUsers(selectedRowKeys)}
-              >
-                <Button type="text" icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </Space>
-          ) : undefined
-        }
-        searchProps={{
-          value: searchQuery,
-          onChange: (e) => setSearchQuery(e.target.value),
-          placeholder: 'Search Users ...',
-        }}
-        rightNode={<HeaderActions />}
-      />
-      <Table
+      <UserList
+        users={data || []}
+        error={!!error}
         columns={columns}
-        dataSource={filteredUsers}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (selectedRowKeys: React.Key[]) => {
-            setSelectedRowKeys(selectedRowKeys as string[]);
-          },
-        }}
-        rowKey="id"
-        loading={isLoading || deletingUser}
-        size="middle"
+        loading={deletingUser || isLoading}
+        selectedRowActions={(ids, clearIds) => (
+          <Popconfirm
+            title="Delete Users"
+            description="Are you sure you want to delete the selected users?"
+            onConfirm={() => deleteUsers(ids, clearIds)}
+          >
+            <Button type="text" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        )}
+        searchBarRightNode={<HeaderActions />}
       />
     </Content>
   );

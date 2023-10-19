@@ -8,8 +8,8 @@ import {
 } from '../../../shared-electron-server/data/iam/roles.js';
 import { validateRole } from '../middleware/inputValidations.js';
 import { abilityCacheDeleteAll, isAllowed, isAuthenticated } from '../middleware/authorization';
-import { toCaslResource } from '../authorization/caslRules';
 import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
+import { toCaslResource } from '../../../../../../management-system-v2/lib/ability/caslAbility';
 
 const rolesRouter = express.Router();
 
@@ -41,7 +41,6 @@ rolesRouter.get('/:id', isAuthenticated(), async (req, res) => {
 rolesRouter.get('/', isAuthenticated(), async (req, res) => {
   try {
     const roles = await getRoles();
-    if (roles.length === 0) return res.status(204).json([]);
     return res.status(200).json(roles);
   } catch (e) {
     return res.status(400).json(e.toString());
@@ -87,15 +86,28 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
 
   if (role) {
     try {
+      // validateRole turns expiration into a Date, in order for the object merge
+      // to work, we need it to be a string (type safe option in mergeIntoObject)
+      if (typeof role.expiration === 'object') {
+        /** @type {Date} */
+        const expirationDate = role.expiration;
+        role.expiration = expirationDate.toISOString();
+      }
+
       /** @type {Ability} */
       const userAbility = req.userAbility;
 
       const targetRole = getRoleById(id);
 
+      for (const [key, value] of Object.entries(role)) {
+        console.log('Key:', key, 'Value:', value, 'Target:', targetRole[key]);
+        if (targetRole[key] === value) delete role[key];
+      }
+
       // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
       if (
         !(
-          userAbility.can('update', toCaslResource('Role', targetRole)) &&
+          userAbility.checkInputFields(toCaslResource('Role', targetRole), 'update', role) &&
           userAbility.can('create', toCaslResource('Role', role))
         )
       )

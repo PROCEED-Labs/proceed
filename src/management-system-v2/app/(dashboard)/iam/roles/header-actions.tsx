@@ -90,6 +90,7 @@ const CreateUserModal: FC<{
   const submitData = async (
     values: Record<keyof ApiRequestBody<'/users', 'post'> | 'confirm_password', string>,
   ) => {
+    debugger;
     try {
       await postUser({
         body: {

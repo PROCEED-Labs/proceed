@@ -1,10 +1,10 @@
 const { abilitiesBuilt, buildAbility } = require('../authorization');
 const {
-  toCaslResource,
-} = require('../../../../../../src/backend/server/iam/authorization/caslRules');
-const {
   getShares,
 } = require('../../../../../../src/backend/shared-electron-server/data/iam/shares');
+const {
+  toCaslResource,
+} = require('../../../../../../../management-system-v2/lib/ability/caslAbility');
 
 let adminAbility, process_engineer_adminAbility, unauthenticatedAbility;
 

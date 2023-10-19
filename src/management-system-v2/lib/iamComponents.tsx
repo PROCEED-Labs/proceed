@@ -12,9 +12,10 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { Route } from 'next';
-import { ResourceActionType, ResourceType } from '../lib/ability/caslAbility';
+import { CaslAbility, ResourceActionType, ResourceType } from '../lib/ability/caslAbility';
 import { handleOauthCallback, useAuthStore } from './iam';
 import { App } from 'antd';
+import { Ability } from '@casl/ability';
 
 export const AuthCallbackListener: FC = () => {
   const oauthCallback = useAuthStore((store) => store.oauthCallback);
@@ -57,9 +58,10 @@ export const AuthCallbackListener: FC = () => {
   return null;
 };
 
+type CanParams = Parameters<CaslAbility['can']>;
 export type AuthCanProps = PropsWithChildren<{
   action: ResourceActionType | ResourceActionType[];
-  resource: ResourceType | ResourceType[];
+  resource: CanParams[1] | CanParams[1][];
   notLoggedIn?: ReactNode;
   fallback?: ReactNode;
   fallbackRedirect?: Route;

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
-import { immer } from 'zustand/middleware/immer';
 
 type PreferencesType = Record<string, string | number | boolean>;
 

@@ -47,7 +47,8 @@ const startManagementSystem = () => {
 
 // check if start with or without IAM
 if (process.env.MODE === 'iam') {
-  const path = './src/backend/server/environment-configurations/development/config_iam.json';
+  const environmentsFolder = './src/backend/server/environment-configurations/';
+  const path = environmentsFolder + 'development/config_iam.json';
 
   // if submodule doesn't exist, add environment submodule
   if (!fs.existsSync(path)) {
@@ -60,8 +61,10 @@ if (process.env.MODE === 'iam') {
     );
 
     execSync(
-      'cd ./src/backend/server/ && git submodule add --force https://github.com/PROCEED-Labs/environments environment-configurations',
+      'cd ./src/backend/server/ && git clone https://github.com/PROCEED-Labs/environments environment-configurations',
     );
+
+    fs.rmSync(environmentsFolder + '.git', { recursive: true, force: true });
   }
 
   // start docker container in separate subprocess

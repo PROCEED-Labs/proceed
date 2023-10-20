@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
 
-type PreferencesType = Record<string, string | number | boolean>;
+type PreferencesType = Record<string, any>;
 
 type PreferencesStoreType = {
   preferences: PreferencesType;
@@ -11,8 +11,15 @@ type PreferencesStoreType = {
 
 const defaultPreferences: PreferencesType = {
   /* Default User-Settings: */
+  /* 
+    Delete user-preferences in localstorage, after adding a preference-setting
+    The new default won't be set otherwise
+  */
   'show-process-meta-data': true,
   'icon-view-in-process-list': false,
+  'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
+  'ask-before-deleting-multiple': true,
+  'ask-before-deleting-single': true,
 };
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(

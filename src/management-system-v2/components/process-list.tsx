@@ -27,6 +27,8 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, usePostAsset } from '@/lib/fetch-data';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useUserPreferences } from '@/lib/user-preferences';
+import ProcessDeleteSingleModal from './process-delete-single';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -79,6 +81,10 @@ const ProcessList: FC<ProcessListProps> = ({
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
   const [rerender, setRerender] = useState(false);
+
+  const { preferences, addPreferences } = useUserPreferences();
+
+  const selectedColumns = preferences['process-list-columns'];
 
   const clipAndHighlightText = useCallback(
     (dataIndexElement, record, index) => {
@@ -176,6 +182,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <DeleteOutlined
             onClick={(e) => {
               e.stopPropagation();
+
               deleteProcess({
                 params: {
                   path: {
@@ -215,22 +222,17 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   };
 
-  const [selectedColumns, setSelectedColumns] = useState([
-    '',
-    'Process Name',
-    'Description',
-    'Last Edited',
-  ]);
-
   const onCheckboxChange = (e: CheckboxChangeEvent) => {
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
-      setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
+      //setSelectedColumns([...selectedColumns, value]);
+      addPreferences({ 'process-list-columns': [...selectedColumns, value] });
     } else {
-      setSelectedColumns((prevSelectedColumns) =>
-        prevSelectedColumns.filter((column) => column !== value),
-      );
+      //setSelectedColumns(selectedColumns.filter((column) => column !== value));
+      addPreferences({
+        'process-list-columns': selectedColumns.filter((column) => column !== value),
+      });
     }
   };
 
@@ -494,6 +496,8 @@ const ProcessList: FC<ProcessListProps> = ({
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
+
+      {/* <ProcessDeleteSingleModal setDeleteProcessIds={} processKeys={} setSelection={} /> */}
     </>
   );
 };

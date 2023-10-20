@@ -31,6 +31,8 @@ import {
   setTargetNamespace,
   setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
+import ProcessDeleteModal from './process-delete';
+import ProcessDeleteSingleModal from './process-delete-single';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -96,17 +98,18 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  // const { preferences } = useStore(useUserPreferences, (state) => state);
-
-  // const addPreferences = useUserPreferences((state) => state.addPreferences);
-
   const { preferences, addPreferences } = useUserPreferences();
 
-  const iconView = preferences['icon-view-in-process-list'];
+  const {
+    'icon-view-in-process-list': iconView,
+    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
+    'ask-before-deleting-single': openModalWhenDeleteSingle,
+  } = preferences;
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: pullNewProcessData,
   });
+
   const { mutateAsync: addProcess } = usePostAsset('/process', {});
 
   const deleteSelectedProcesses = useCallback(() => {
@@ -123,6 +126,8 @@ const Processes: FC = () => {
   }, [deleteProcess, selectedRowKeys]);
 
   const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
+  const [copyProcessIds, setCopyProcessIds] = useState<string[]>([]);
+  const [deleteProcessIds, setDeleteProcessIds] = useState<string[]>([]);
 
   const actionBar = (
     <>
@@ -144,7 +149,14 @@ const Processes: FC = () => {
         <DeleteOutlined
           className={styles.Icon}
           onClick={() => {
-            deleteSelectedProcesses();
+            if (
+              (openModalWhenDeleteMultiple || openModalWhenDeleteSingle) &&
+              selectedRowKeys.length
+            ) {
+              setDeleteProcessIds(selectedRowKeys as string[]);
+            } else {
+              deleteSelectedProcesses();
+            }
           }}
         />
       </Tooltip>
@@ -179,9 +191,14 @@ const Processes: FC = () => {
         /* DEL */
       } else if (e.key === 'Delete') {
         // e.preventDefault();
-        deleteSelectedProcesses();
-
-        /* TODO: */
+        if ((openModalWhenDeleteMultiple || openModalWhenDeleteSingle) && selectedRowKeys.length) {
+          setDeleteProcessIds(selectedRowKeys as string[]);
+        } else {
+          deleteSelectedProcesses();
+        }
+        /* ESC */
+      } else if (e.key === 'Escape') {
+        deselectAll();
         /* CTRL + C */
       } else if (e.ctrlKey && e.key === 'c') {
         e.preventDefault();
@@ -190,11 +207,6 @@ const Processes: FC = () => {
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         e.preventDefault();
         copySelection.forEach(async (key) => {
-          /* TODO:
-            Post to /process
-            (identical + name with (copy) suffix
-          */
-          // const { mutateAsync: addProcess } = usePostAsset('/process', {});
           const process = data?.find((item) => item.definitionId === key);
           const processBpmn = await fetchProcessVersionBpmn(key as string);
 
@@ -211,13 +223,6 @@ const Processes: FC = () => {
             },
           });
         });
-
-        // body: {
-        //   definitionName: `${process?.definitionName} (copy)`,
-        //   description: process?.description,
-        //   bpmn: processBpmn as string,
-        // },
-        // type 'WithRequired<{ departments?: string[] | undefined; variables?: { name: string; type: "" | "string" | "number" | "boolean" | "object" | "array"; }[] | undefined; } & { bpmn?: string | undefined; }, "departments" | "bpmn">'
       }
     };
     // Add event listener
@@ -225,7 +230,16 @@ const Processes: FC = () => {
 
     // Remove event listener on cleanup
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelection, deleteProcess, filteredData, selectedRowKeys, deleteSelectedProcesses]);
+  }, [
+    copySelection,
+    deleteProcess,
+    filteredData,
+    selectedRowKeys,
+    deleteSelectedProcesses,
+    data,
+    addProcess,
+    openModalWhenDeleteMultiple,
+  ]);
 
   if (isError) {
     return <div>Error</div>;
@@ -302,6 +316,17 @@ const Processes: FC = () => {
       <ProcessExportModal
         processes={exportProcessIds.map((definitionId) => ({ definitionId }))}
         onClose={() => setExportProcessIds([])}
+      />
+      <ProcessDeleteModal
+        setDeleteProcessIds={setDeleteProcessIds}
+        processKeys={deleteProcessIds}
+        setSelection={setSelectedRowKeys}
+      />
+      <ProcessDeleteSingleModal
+      setDeleteProcessIds={setDeleteProcessIds}
+      processKeys={deleteProcessIds}
+      setSelection={setSelectedRowKeys}
+      pullNewProcessData={pullNewProcessData}
       />
     </>
   );

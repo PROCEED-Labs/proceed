@@ -33,6 +33,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ show, close, conf
     <Modal
       title="Are you sure you want to continue editing with this version?"
       open={show}
+      closeIcon={null}
       onOk={() => {
         confirm();
       }}

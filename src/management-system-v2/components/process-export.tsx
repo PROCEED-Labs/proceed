@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
-import { Modal, Checkbox } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
-import { exportBpmn, exportPDF, exportSVG } from '@/lib/process-export';
+import { exportProcesses } from '@/lib/process-export';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -11,59 +12,91 @@ const exportTypeOptions = [
   { label: 'SVG', value: 'svg' },
 ];
 
-type ProcessExportModalProps = {
-  processId?: string; // the id of the process to export; also used to decide if the modal should be opened
-  onClose: () => void;
-  processVersion?: number | string;
+const exportSubOptions = {
+  bpmn: [{ label: 'Export with Artefacts', value: 'artefacts' }],
+  pdf: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
+  svg: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
 };
 
-const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
-  processId,
-  onClose,
-  processVersion,
-}) => {
-  const [selectedTypes, setSelectedTypes] = useState<CheckboxValueType[]>([]);
+type ProcessExportModalProps = {
+  processes: { definitionId: string; processVersion?: number | string }[]; // the processes to export; also used to decide if the modal should be opened
+  onClose: () => void;
+};
 
-  const handleTypeSelectionChange = (checkedValues: CheckboxValueType[]) => {
-    // allow selection of exactly one element
-    if (!checkedValues.length) return;
-    setSelectedTypes(checkedValues.filter((el) => !selectedTypes.includes(el)));
+const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
+  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
+  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>([]);
+  const [finishedTypeSelection, setfinishedTypeSelection] = useState(false);
+
+  const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
+    setSelectedType(value);
   };
 
-  const handleProcessExport = async () => {
-    switch (selectedTypes[0]) {
-      case 'bpmn':
-        await exportBpmn(processId!, processVersion);
-        break;
-      case 'pdf':
-        await exportPDF(processId!, processVersion);
-        break;
-      case 'svg':
-        await exportSVG(processId!, processVersion);
-        break;
-      default:
-        throw 'Unexpected value for process export!';
-    }
+  const handleOptionSelectionChange = (checkedValues: CheckboxValueType[]) => {
+    setSelectedOptions(checkedValues);
+  };
 
+  const handleClose = () => {
+    setSelectedType(undefined);
+    setfinishedTypeSelection(false);
     onClose();
   };
+
+  const handleOk = async () => {
+    if (!finishedTypeSelection) {
+      const subOptions = exportSubOptions[selectedType!];
+      if (subOptions && subOptions.length) {
+        // there are suboptions that the user might want to select => switch to the other modal view
+        setfinishedTypeSelection(true);
+        return;
+      }
+    }
+
+    await exportProcesses(
+      {
+        type: selectedType!,
+        artefacts: selectedOptions.some((el) => el === 'artefacts'),
+        subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
+      },
+      processes,
+    );
+
+    handleClose();
+  };
+
+  const modalTitle = finishedTypeSelection
+    ? `Select ${selectedType} export options`
+    : 'Select the file type';
+
+  const typeSelection = (
+    <Radio.Group
+      options={exportTypeOptions}
+      onChange={handleTypeSelectionChange}
+      value={selectedType}
+      style={{ flexDirection: 'column' }}
+    />
+  );
+
+  const optionSelection = (
+    <Checkbox.Group
+      options={exportSubOptions[selectedType!]}
+      onChange={handleOptionSelectionChange}
+      value={selectedOptions}
+      style={{ flexDirection: 'column' }}
+    />
+  );
 
   return (
     <>
       <Modal
-        title="Export selected process"
-        open={!!processId}
-        onOk={handleProcessExport}
-        onCancel={onClose}
+        title={modalTitle}
+        open={!!processes.length}
+        onOk={handleOk}
+        onCancel={handleClose}
         centered
-        okButtonProps={{ disabled: !selectedTypes.length }}
+        okButtonProps={{ disabled: !selectedType }}
       >
-        <Checkbox.Group
-          options={exportTypeOptions}
-          onChange={handleTypeSelectionChange}
-          value={selectedTypes}
-          style={{ flexDirection: 'column' }}
-        />
+        {finishedTypeSelection ? optionSelection : typeSelection}
       </Modal>
     </>
   );

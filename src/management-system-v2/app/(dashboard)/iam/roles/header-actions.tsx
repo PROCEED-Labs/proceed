@@ -2,35 +2,67 @@
 
 import { ApiRequestBody, usePostAsset } from '@/lib/fetch-data';
 import { AuthCan } from '@/lib/iamComponents';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, DatePicker } from 'antd';
-import { FC, ReactNode, useState } from 'react';
-import { Dayjs } from 'dayjs';
+import { ImportOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Form, App, Input, Modal } from 'antd';
+import { ComponentProps, FC, ReactNode, useEffect, useState } from 'react';
 
-import germanLocale from 'antd/es/date-picker/locale/de_DE';
-import { useRouter } from 'next/navigation';
+type PostUserField = keyof ApiRequestBody<'/users', 'post'>;
 
-type RoleRequestBody = ApiRequestBody<'/roles', 'post'>;
+const modalStructureWithoutPassword: {
+  dataKey: PostUserField;
+  label: string;
+  type: string;
+}[] = [
+  {
+    dataKey: 'firstName',
+    label: 'First Name',
+    type: 'text',
+  },
+  {
+    dataKey: 'lastName',
+    label: 'Last Name',
+    type: 'text',
+  },
+  {
+    dataKey: 'username',
+    label: 'Username Name',
+    type: 'text',
+  },
+  {
+    dataKey: 'email',
+    label: 'Email',
+    type: 'email',
+  },
+];
 
-const CreateRoleModal: FC<{
+const fieldNameToLabel: Record<PostUserField, string> = modalStructureWithoutPassword.reduce(
+  (acc, curr) => {
+    acc[curr.dataKey] = curr.label;
+    return acc;
+  },
+  {} as Record<PostUserField, string>,
+);
+
+const CreateUserModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ modalOpen, close }) => {
   const [form] = Form.useForm();
-  const router = useRouter();
   const { message: messageApi } = App.useApp();
-  type ErrorsObject = Partial<{ [field in keyof RoleRequestBody]?: ReactNode[] }>;
+  type ErrorsObject = { [field in PostUserField]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
 
-  const { mutateAsync: postRole, isLoading } = usePostAsset('/roles', {
+  const { mutateAsync: postUser, isLoading } = usePostAsset('/users', {
     onError(e) {
       if (!(typeof e === 'object' && e !== null && 'errors' in e)) {
         return;
       }
 
-      const errors: ErrorsObject = {};
+      const errors: { [key in PostUserField]?: ReactNode[] } = {};
 
-      function appendError(key: keyof RoleRequestBody, error: string) {
+      function appendError(key: PostUserField, error: string) {
+        error = error.replace(key, fieldNameToLabel[key]);
+
         if (key in errors) {
           errors[key]!.push(<p key={errors[key]?.length}>{error}</p>);
         } else {
@@ -39,35 +71,37 @@ const CreateRoleModal: FC<{
       }
 
       for (const error of e.errors as string[]) {
-        if (error.includes('name')) appendError('name', error);
-        else if (error.includes('description')) appendError('description', error);
-        else if (error.includes('expiration')) appendError('expiration', error);
+        if (error.includes('username')) appendError('username', error);
+        else if (error.includes('email')) appendError('email', error);
+        else if (error.includes('firstName')) appendError('firstName', error);
+        else if (error.includes('lastName')) appendError('lastName', error);
+        else if (error.includes('password')) appendError('password', error);
       }
 
       setFormatError(errors);
     },
   });
 
-  const submitData = async () => {
-    try {
-      type FormData = {
-        name: string;
-        description?: string;
-        expiration?: Dayjs;
-      };
-      const values: FormData = await form.validateFields();
+  useEffect(() => {
+    form.resetFields();
+    setFormatError({});
+  }, [form, modalOpen]);
 
-      const response = await postRole({
+  const submitData = async (
+    values: Record<keyof ApiRequestBody<'/users', 'post'> | 'confirm_password', string>,
+  ) => {
+    debugger;
+    try {
+      await postUser({
         body: {
-          name: values.name,
-          description: values.description,
-          expiration: values.expiration ? values.expiration.toISOString() : undefined,
+          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          username: values.username,
+          password: values.password,
         },
       });
-
-      if (response.id && typeof response.id === 'string') router.push(`/iam/roles/${response.id}`);
-
-      messageApi.success({ content: 'Role created' });
+      messageApi.success({ content: 'Account created' });
       close();
     } catch (e) {
       messageApi.error({ content: 'An error ocurred' });
@@ -75,42 +109,63 @@ const CreateRoleModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null} title="Create a new role">
+    <Modal open={modalOpen} onCancel={close} footer={null}>
       <Form form={form} layout="vertical" onFinish={submitData}>
+        {modalStructureWithoutPassword.map((formField) => (
+          <Form.Item
+            key={formField.dataKey}
+            label={formField.label}
+            name={formField.dataKey}
+            validateStatus={formField.dataKey in formatError ? 'error' : ''}
+            help={formField.dataKey in formatError ? formatError[formField.dataKey] : ''}
+            hasFeedback
+            required
+          >
+            <Input type={formField.type} />
+          </Form.Item>
+        ))}
+
         <Form.Item
-          name="name"
-          label="Role Name"
-          rules={[{ required: true, message: 'Please the role name' }]}
-          help={'name' in formatError ? formatError['name'] : ''}
-          validateStatus={'name' in formatError ? 'error' : ''}
+          name="password"
+          label="Password"
+          rules={[
+            {
+              required: true,
+              message: 'Please input your password!',
+            },
+          ]}
+          validateStatus={'password' in formatError ? 'error' : ''}
+          help={'password' in formatError ? formatError.password : ''}
           hasFeedback
-          required
         >
-          <Input />
+          <Input.Password />
         </Form.Item>
 
         <Form.Item
-          name="description"
-          label="Description"
-          help={'description' in formatError ? formatError['description'] : ''}
-          validateStatus={'description' in formatError ? 'error' : ''}
+          name="confirm_password"
+          label="Confirm Password"
+          dependencies={['password']}
           hasFeedback
+          rules={[
+            {
+              required: true,
+              message: 'Please confirm your password!',
+            },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('password') === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('The new password that you entered do not match!'));
+              },
+            }),
+          ]}
         >
-          <Input.TextArea />
-        </Form.Item>
-
-        <Form.Item
-          name="expiration"
-          label="Expiration"
-          help={'expiration' in formatError ? formatError['expiration'] : ''}
-          validateStatus={'expiration' in formatError ? 'error' : ''}
-          hasFeedback
-        >
-          <DatePicker locale={germanLocale} />
+          <Input.Password />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" onClick={submitData} loading={isLoading}>
+          <Button type="primary" htmlType="submit" loading={isLoading}>
             Submit
           </Button>
         </Form.Item>
@@ -120,17 +175,17 @@ const CreateRoleModal: FC<{
 };
 
 const HeaderActions: FC = () => {
-  const [createRoleModalOpen, setCreateRoleModalOpen] = useState(false);
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
 
   return (
     <>
-      <CreateRoleModal
-        modalOpen={createRoleModalOpen}
-        close={() => setCreateRoleModalOpen(false)}
+      <CreateUserModal
+        modalOpen={createUserModalOpen}
+        close={() => setCreateUserModalOpen(false)}
       />
 
       <AuthCan action="create" resource="User">
-        <Button type="primary" onClick={() => setCreateRoleModalOpen(true)}>
+        <Button type="primary" onClick={() => setCreateUserModalOpen(true)}>
           <PlusOutlined /> Create
         </Button>
       </AuthCan>

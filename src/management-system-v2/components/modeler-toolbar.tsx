@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
@@ -20,13 +20,12 @@ import { SvgXML, SvgShare } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import ProcessExportModal from './process-export';
 
 import { createNewProcessVersion } from '@/lib/helpers';
 import VersionCreationButton from './version-creation-button';
-import { useGetAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -44,14 +43,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();
-
-  const {
-    isSuccess,
-    data: processData,
-    refetch: refetchProcess,
-  } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
 
   let selectedElement;
 
@@ -75,7 +66,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         values.versionName,
         values.versionDescription,
       );
-      refetchProcess();
     }
   };
   const handlePropertiesPanelToggle = () => {
@@ -86,7 +76,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     setShowProcessExportModal(!showProcessExportModal);
   };
 
-  const selectedVersion = useModelerStateStore((state) => state.selectedVersion);
+  const selectedVersion = useSearchParams().get('version');
 
   return (
     <>
@@ -140,9 +130,12 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
       )} */}
       <ProcessExportModal
-        processId={showProcessExportModal ? (processId as string) : undefined}
+        processes={
+          showProcessExportModal
+            ? [{ definitionId: processId as string, processVersion: selectedVersion || undefined }]
+            : []
+        }
         onClose={() => setShowProcessExportModal(false)}
-        processVersion={selectedVersion || undefined}
       />
     </>
   );

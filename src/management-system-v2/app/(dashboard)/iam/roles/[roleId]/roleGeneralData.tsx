@@ -43,42 +43,40 @@ const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
   }
 
   return (
-    <div style={{ maxWidth: '800px' }}>
-      <Form form={form} layout="vertical" onFinish={submitChanges} initialValues={role}>
-        {role.note && (
-          <>
-            <Alert type="warning" message={role.note} />
-            <br />
-          </>
-        )}
-        <Form.Item label="Name" name="name">
-          <Input placeholder="input placeholder" disabled={!ability.can('update', role, 'name')} />
-        </Form.Item>
+    <Form form={form} layout="vertical" onFinish={submitChanges} initialValues={role}>
+      {role.note && (
+        <>
+          <Alert type="warning" message={role.note} />
+          <br />
+        </>
+      )}
+      <Form.Item label="Name" name="name">
+        <Input placeholder="input placeholder" disabled={!ability.can('update', role, 'name')} />
+      </Form.Item>
 
-        <Form.Item label="Description" name="description">
-          <Input.TextArea
-            placeholder="input placeholder"
-            disabled={!ability.can('update', role, 'description')}
-          />
-        </Form.Item>
+      <Form.Item label="Description" name="description">
+        <Input.TextArea
+          placeholder="input placeholder"
+          disabled={!ability.can('update', role, 'description')}
+        />
+      </Form.Item>
 
-        <Form.Item label="Expiration" name="expirationDayJs">
-          <DatePicker
-            // Note german locale hard coded
-            locale={germanLocale}
-            allowClear={true}
-            disabled={!ability.can('update', role, 'expiration')}
-            defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
-          />
-        </Form.Item>
+      <Form.Item label="Expiration" name="expirationDayJs">
+        <DatePicker
+          // Note german locale hard coded
+          locale={germanLocale}
+          allowClear={true}
+          disabled={!ability.can('update', role, 'expiration')}
+          defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
+        />
+      </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={putLoading}>
-            Submit
-          </Button>
-        </Form.Item>
-      </Form>
-    </div>
+      <Form.Item>
+        <Button type="primary" htmlType="submit" loading={putLoading}>
+          Submit
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 

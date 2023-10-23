@@ -26,15 +26,15 @@ function RolePage({ params: { roleId } }: { params: { roleId: string } }) {
   const items: Items = role
     ? [
         {
-          key: 'generalData',
-          label: 'General Data',
-          children: <RoleGeneralData roleId={roleId} />,
-        },
-        { key: 'permissions', label: 'Permissions', children: <RolePermissions role={role} /> },
-        {
           key: 'members',
           label: 'Manage Members',
           children: <RoleMembers role={role} isLoadingRole={isLoading} />,
+        },
+        { key: 'permissions', label: 'Permissions', children: <RolePermissions role={role} /> },
+        {
+          key: 'generalData',
+          label: 'General Data',
+          children: <RoleGeneralData roleId={roleId} />,
         },
       ]
     : [];

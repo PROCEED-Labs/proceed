@@ -24,6 +24,7 @@ import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import Auth from '@/lib/AuthCanWrapper';
 import ProcessCreationButton from '@/components/process-creation-button';
+import { AuthCan } from '@/lib/iamComponents';
 
 type ProcessProps = {
   params: { processId: string };
@@ -115,12 +116,14 @@ const Processes: FC<ProcessProps> = () => {
           dropdownRender={(menu) => (
             <>
               {menu}
-              <Divider style={{ margin: '4px 0' }} />
-              <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                <ProcessCreationButton type="text" icon={<PlusOutlined />}>
-                  Create new process
-                </ProcessCreationButton>
-              </Space>
+              <AuthCan action="create" resource="Process">
+                <Divider style={{ margin: '4px 0' }} />
+                <Space style={{ display: 'flex', justifyContent: 'center' }}>
+                  <ProcessCreationButton type="text" icon={<PlusOutlined />}>
+                    Create new process
+                  </ProcessCreationButton>
+                </Space>
+              </AuthCan>
             </>
           )}
           options={processes?.map(({ definitionId, definitionName }) => ({

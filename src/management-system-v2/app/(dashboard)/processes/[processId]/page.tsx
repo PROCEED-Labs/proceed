@@ -7,7 +7,7 @@ import Modeler from '@/components/modeler';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
-import { useGetAsset } from '@/lib/fetch-data';
+import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
 import {
   Breadcrumb,
   BreadcrumbProps,
@@ -20,9 +20,11 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { createNewProcessVersion } from '@/lib/helpers';
+import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import Auth from '@/lib/AuthCanWrapper';
+import ProcessCreationButton from '@/components/process-creation-button';
+import { AuthCan } from '@/lib/iamComponents';
 
 type ProcessProps = {
   params: { processId: string };
@@ -39,24 +41,23 @@ const Processes: FC<ProcessProps> = () => {
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
-  const {
-    isSuccess,
-    data: process,
-    refetch: refetchProcess,
-    isLoading: processIsLoading,
-  } = useGetAsset('/process/{definitionId}', {
+  const { data: process, isLoading: processIsLoading } = useGetAsset('/process/{definitionId}', {
     params: { path: { definitionId: processId as string } },
   });
-  const {
-    data: processes,
-    isLoading: processesIsLoading,
-    isError: processesIsError,
-    isSuccess: processesIsSuccess,
-  } = useGetAsset('/process', {
+  const { data: processes } = useGetAsset('/process', {
     params: {
       query: { noBpmn: true },
     },
   });
+
+  const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  const invalidateProcesses = useInvalidateAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
+
   const {
     token: { fontSizeHeading1 },
   } = theme.useToken();
@@ -75,10 +76,6 @@ const Processes: FC<ProcessProps> = () => {
     }
   }, [minimized]);
 
-  const createProcess = () => {
-    console.log('create process');
-  };
-
   const createProcessVersion = async (values: {
     versionName: string;
     versionDescription: string;
@@ -91,6 +88,8 @@ const Processes: FC<ProcessProps> = () => {
         values.versionName,
         values.versionDescription,
       );
+      await invalidateVersions();
+      await invalidateProcesses();
     }
   };
 
@@ -117,12 +116,14 @@ const Processes: FC<ProcessProps> = () => {
           dropdownRender={(menu) => (
             <>
               {menu}
-              <Divider style={{ margin: '4px 0' }} />
-              <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                <Button type="text" icon={<PlusOutlined />} onClick={createProcess}>
-                  Create new process
-                </Button>
-              </Space>
+              <AuthCan action="create" resource="Process">
+                <Divider style={{ margin: '4px 0' }} />
+                <Space style={{ display: 'flex', justifyContent: 'center' }}>
+                  <ProcessCreationButton type="text" icon={<PlusOutlined />}>
+                    Create new process
+                  </ProcessCreationButton>
+                </Space>
+              </AuthCan>
             </>
           )}
           options={processes?.map(({ definitionId, definitionName }) => ({

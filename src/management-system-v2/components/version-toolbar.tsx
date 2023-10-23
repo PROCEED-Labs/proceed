@@ -22,6 +22,7 @@ import { get, del, put, usePostAsset } from '@/lib/fetch-data';
 import { convertToEditableBpmn } from '@/lib/helpers/processVersioning';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import ProcessCreationButton from './process-creation-button';
+import { AuthCan } from '@/lib/iamComponents';
 
 type ConfirmationModalProps = {
   show: boolean;
@@ -196,12 +197,14 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
     <>
       <div style={{ position: 'absolute', zIndex: 10, padding: '12px', top: '80px' }}>
         <Space.Compact size="large" direction="vertical">
-          <Tooltip title="Create as new process">
-            <ProcessCreationButton
-              icon={<PlusOutlined />}
-              createProcess={createNewProcess}
-            ></ProcessCreationButton>
-          </Tooltip>
+          <AuthCan action="create" resource="Process">
+            <Tooltip title="Create as new process">
+              <ProcessCreationButton
+                icon={<PlusOutlined />}
+                createProcess={createNewProcess}
+              ></ProcessCreationButton>
+            </Tooltip>
+          </AuthCan>
           <Tooltip title="Make editable">
             <Button icon={<FormOutlined />} onClick={openConfirmationModal}></Button>
           </Tooltip>

@@ -40,8 +40,9 @@ type ProcessListProps = PropsWithChildren<{
   isLoading?: boolean;
   onExportProcess: Dispatch<SetStateAction<string[]>>;
   refreshData: any;
-  // TODO: Fix type
   search?: string;
+  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  deleteProcessKeys: React.Key[];
 }>;
 
 const ColumnHeader = [
@@ -64,6 +65,8 @@ const ProcessList: FC<ProcessListProps> = ({
   onExportProcess,
   refreshData,
   search,
+  setDeleteProcessIds,
+  deleteProcessKeys,
 }) => {
   const router = useRouter();
 
@@ -84,7 +87,10 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const { preferences, addPreferences } = useUserPreferences();
 
-  const selectedColumns = preferences['process-list-columns'];
+  const {
+    'process-list-columns': selectedColumns,
+    'ask-before-deleting-single': openModalWhenDeleteSingle,
+  } = preferences;
 
   const clipAndHighlightText = useCallback(
     (dataIndexElement, record, index) => {
@@ -119,13 +125,6 @@ const ProcessList: FC<ProcessListProps> = ({
     [search],
   );
 
-  const triggerRerender = () => {
-    /*  Timeout necessary for animation and table resize */
-    setTimeout(() => {
-      setRerender(!rerender);
-    }, 200);
-  };
-
   const { mutateAsync: createProcess } = usePostAsset('/process');
 
   const queryClient = useQueryClient();
@@ -133,71 +132,85 @@ const ProcessList: FC<ProcessListProps> = ({
     onSettled: refreshData,
   });
 
-  const actionBarGenerator = useCallback((record: Process) => {
-    return (
-      <>
-        <Tooltip placement="top" title={'Preview'}>
-          <EyeOutlined
-            onClick={() => {
-              setPreviewProcess(record);
-              setPreviewerOpen(true);
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Copy'}>
-          <CopyOutlined
-            onClick={() => {
-              // fetch(`localhost:33080/api/process/${record.definitionId}`)
-              //   .then((res) => res.json())
-              //   .then((data) => {
-              createProcess({
-                /* TODO: 
+  const actionBarGenerator = useCallback(
+    (record: Process) => {
+      return (
+        <>
+          <Tooltip placement="top" title={'Preview'}>
+            <EyeOutlined
+              onClick={() => {
+                setPreviewProcess(record);
+                setPreviewerOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="top" title={'Copy'}>
+            <CopyOutlined
+              onClick={() => {
+                // fetch(`localhost:33080/api/process/${record.definitionId}`)
+                //   .then((res) => res.json())
+                //   .then((data) => {
+                createProcess({
+                  /* TODO: 
                     Causes 500
                   */
-                body: {
-                  ...record,
-                  // description: record.description,
-                  // departments: record.departments,
-                  bpmn: /* data */ record.bpmn || '',
-                  variables: [
-                    {
-                      name: `${record.definitionName} Copy`,
-                      type: '',
-                    },
-                  ],
-                },
-              });
-              // });
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined
-            onClick={() => {
-              onExportProcess([record.definitionId]);
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined
-            onClick={(e) => {
-              e.stopPropagation();
-
-              deleteProcess({
-                params: {
-                  path: {
-                    definitionId: record.definitionId as string,
+                  body: {
+                    ...record,
+                    // description: record.description,
+                    // departments: record.departments,
+                    bpmn: /* data */ record.bpmn || '',
+                    variables: [
+                      {
+                        name: `${record.definitionName} Copy`,
+                        type: '',
+                      },
+                    ],
                   },
-                },
-              });
+                });
+                // });
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="top" title={'Export'}>
+            <ExportOutlined
+              onClick={() => {
+                onExportProcess([record.definitionId]);
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="top" title={'Delete'}>
+            <DeleteOutlined
+              onClick={(e) => {
+                e.stopPropagation();
+                if (openModalWhenDeleteSingle) {
+                  setDeleteProcessIds([record.definitionId]);
+                } else {
+                  deleteProcess({
+                    params: {
+                      path: {
+                        definitionId: record.definitionId as string,
+                      },
+                    },
+                  });
+                }
 
-              setSelection(selection.filter((id) => id !== record.definitionId));
-            }}
-          />
-        </Tooltip>
-      </>
-    );
-  }, []);
+                setSelection(selection.filter((id) => id !== record.definitionId));
+              }}
+            />
+          </Tooltip>
+        </>
+      );
+    },
+    [
+      createProcess,
+      deleteProcess,
+      onExportProcess,
+      openModalWhenDeleteSingle,
+      selection,
+      setDeleteProcessIds,
+      setSelection,
+    ],
+  );
 
   // rowSelection object indicates the need for row selection
 
@@ -470,11 +483,9 @@ const ProcessList: FC<ProcessListProps> = ({
           },
           onMouseEnter: (event) => {
             setHovered(record);
-            // console.log('mouse enter row', record);
           }, // mouse enter row
           onMouseLeave: (event) => {
             setHovered(undefined);
-            // console.log('mouse leave row', event);
           }, // mouse leave row
         })}
         /* ---- */
@@ -492,12 +503,15 @@ const ProcessList: FC<ProcessListProps> = ({
         size="middle"
       />
 
-      {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
-
-      {/* <ProcessDeleteSingleModal setDeleteProcessIds={} processKeys={} setSelection={} /> */}
+      <ProcessDeleteSingleModal
+        setDeleteProcessIds={setDeleteProcessIds}
+        processKeys={deleteProcessKeys}
+        setSelection={setSelection}
+        pullNewProcessData={refreshData}
+      />
     </>
   );
 };

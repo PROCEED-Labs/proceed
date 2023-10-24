@@ -150,8 +150,8 @@ const Processes: FC = () => {
           className={styles.Icon}
           onClick={() => {
             if (
-              (openModalWhenDeleteMultiple || openModalWhenDeleteSingle) &&
-              selectedRowKeys.length
+              (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
+              (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
             ) {
               setDeleteProcessIds(selectedRowKeys as string[]);
             } else {
@@ -191,7 +191,10 @@ const Processes: FC = () => {
         /* DEL */
       } else if (e.key === 'Delete') {
         // e.preventDefault();
-        if ((openModalWhenDeleteMultiple || openModalWhenDeleteSingle) && selectedRowKeys.length) {
+        if (
+          (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
+          (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
+        ) {
           setDeleteProcessIds(selectedRowKeys as string[]);
         } else {
           deleteSelectedProcesses();
@@ -239,6 +242,7 @@ const Processes: FC = () => {
     data,
     addProcess,
     openModalWhenDeleteMultiple,
+    openModalWhenDeleteSingle,
   ]);
 
   if (isError) {
@@ -307,6 +311,8 @@ const Processes: FC = () => {
               onExportProcess={setExportProcessIds}
               refreshData={pullNewProcessData}
               search={searchTerm}
+              setDeleteProcessIds={setDeleteProcessIds}
+              deleteProcessKeys={deleteProcessIds}
             />
           )}
         </div>
@@ -323,10 +329,10 @@ const Processes: FC = () => {
         setSelection={setSelectedRowKeys}
       />
       <ProcessDeleteSingleModal
-      setDeleteProcessIds={setDeleteProcessIds}
-      processKeys={deleteProcessIds}
-      setSelection={setSelectedRowKeys}
-      pullNewProcessData={pullNewProcessData}
+        setDeleteProcessIds={setDeleteProcessIds}
+        processKeys={deleteProcessIds}
+        setSelection={setSelectedRowKeys}
+        pullNewProcessData={pullNewProcessData}
       />
     </>
   );

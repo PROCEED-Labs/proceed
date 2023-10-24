@@ -66,6 +66,8 @@ processRouter.post('/', isAllowed('create', 'Process'), async (req, res) => {
     return;
   }
 
+  body.owner = req.session.userId || '';
+
   /** @type {Ability} */
   const userAbility = req.userAbility;
 

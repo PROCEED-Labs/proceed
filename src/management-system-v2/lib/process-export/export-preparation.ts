@@ -9,6 +9,10 @@ import {
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
   getAllBpmnFlowElements,
   getMetaDataFromElement,
+  getElementsByTagName,
+  toBpmnObject,
+  getElementDI,
+  getDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
 
 /**
@@ -17,6 +21,7 @@ import {
 export type ProcessExportOptions = {
   type: 'bpmn' | 'svg' | 'pdf';
   artefacts: boolean; // if artefacts like images or user task html should be included in the export
+  subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg, pdf)
 };
 
 /**
@@ -32,10 +37,9 @@ export type ProcessExportData = {
   definitionName: string;
   versions: {
     [version: string]: {
+      name?: string;
       bpmn: string;
-      artefactsToExport: {
-        userTaskFiles: string[];
-      };
+      subprocesses: { id: string; name: string }[];
     };
   };
   userTasks: {
@@ -98,6 +102,22 @@ function getImagesReferencedByHtml(html: string) {
 }
 
 /**
+ * Returns the ids of all subprocesses in the given bpmn that are not expanded
+ *
+ * @param bpmn
+ */
+async function getCollapsedSubprocessIds(bpmn: string) {
+  const definitions = await toBpmnObject(bpmn);
+  const subprocesses = getElementsByTagName(definitions, 'bpmn:SubProcess');
+
+  const collapsedSubprocesses = subprocesses
+    .filter((subprocess) => !getElementDI(subprocess, definitions).isExpanded)
+    .map(({ id, name }) => ({ id, name }));
+
+  return collapsedSubprocesses;
+}
+
+/**
  * Internal export data representation for easier referencing
  */
 type ExportMap = {
@@ -105,10 +125,9 @@ type ExportMap = {
     definitionName: string;
     versions: {
       [version: string]: {
+        name?: string;
         bpmn: string;
-        artefactsToExport: {
-          userTaskFiles: string[];
-        };
+        subprocesses: { id: string; name: string }[];
       };
     };
     userTasks: {
@@ -151,19 +170,29 @@ export async function prepareExport(
     // prevent (unlikely) situations where a version might be referenced once by number and once by string
     const versionName = processVersion ? `${processVersion}` : 'latest';
 
+    const versionBpmn = await getVersionBpmn(definitionId, processVersion);
+    const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
+
     exportData[definitionId] = {
       definitionName: process.definitionName,
       versions: {
         [versionName]: {
-          bpmn: await getVersionBpmn(definitionId, processVersion),
-          artefactsToExport: {
-            userTaskFiles: [],
-          },
+          name: versionInformation.name,
+          bpmn: versionBpmn,
+          subprocesses: [],
         },
       },
       userTasks: [],
       images: [],
     };
+
+    // get the ids of all collapsed subprocesses so they can be used later during export
+    if (options.subprocesses) {
+      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+        exportData[definitionId].versions[version].subprocesses =
+          await getCollapsedSubprocessIds(bpmn);
+      }
+    }
 
     // fetch data for additional artefacts if requested in the options
     if (options.artefacts) {
@@ -175,8 +204,6 @@ export async function prepareExport(
         const versionUserTasks = Object.keys(
           await getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn),
         );
-        exportData[definitionId].versions[version].artefactsToExport.userTaskFiles =
-          versionUserTasks;
 
         for (const filename of versionUserTasks) allRequiredUserTaskFiles.add(filename);
       }

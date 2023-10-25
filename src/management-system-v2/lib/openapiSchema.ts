@@ -245,7 +245,7 @@ export interface components {
       | 'versions'
     >;
     processVersion: {
-      version: string;
+      version: number;
       name: string;
       description: string;
     };
@@ -339,7 +339,7 @@ export interface components {
       /** Format: email */
       email: string;
       username: string;
-      'firstName ': string;
+      firstName: string;
       lastName: string;
     };
     /** user */
@@ -372,8 +372,8 @@ export interface components {
      * - ezample 2
      */
     PermissionNumber: number;
-    /** rolePostData */
-    rolePostData: {
+    /** role */
+    roleData: {
       name?: string;
       description?: string;
       note?: string;
@@ -391,10 +391,6 @@ export interface components {
         All?: components['schemas']['PermissionNumber'];
       };
       expiration?: string;
-      default?: boolean;
-    };
-    /** role */
-    roleData: {
       members?: {
         userId: string;
         username: string;
@@ -402,7 +398,8 @@ export interface components {
         lastName: string;
         email: string;
       }[];
-    } & components['schemas']['rolePostData'];
+      default?: boolean;
+    };
     /** role */
     roleMetaData: {
       id?: string;
@@ -1201,7 +1198,10 @@ export interface operations {
   postRole: {
     requestBody?: {
       content: {
-        'application/json': WithRequired<components['schemas']['rolePostData'], 'name'>;
+        'application/json': WithRequired<
+          components['schemas']['roleData'],
+          'name' | 'description' | 'note' | 'permissions' | 'expiration' | 'members' | 'default'
+        >;
       };
     };
     responses: {

@@ -42,7 +42,7 @@
   flex: auto;
   position: relative;
   /* Need this for the absolute editor page to work in non-parallel route. */
-  height: 92vh;
+  // min-height: 100vh;
 }
 
 .Footer {

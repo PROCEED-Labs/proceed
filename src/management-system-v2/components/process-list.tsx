@@ -7,7 +7,6 @@ import React, {
   Key,
   Dispatch,
   SetStateAction,
-  use,
 } from 'react';
 import {
   CopyOutlined,
@@ -26,7 +25,6 @@ import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, usePostAsset } from '@/lib/fetch-data';
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
 import { useAuthStore } from '@/lib/iam';
@@ -83,8 +81,6 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
-
-  const [rerender, setRerender] = useState(false);
 
   const { preferences, addPreferences } = useUserPreferences();
 

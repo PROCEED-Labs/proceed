@@ -37,6 +37,7 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
             definitionId: key as string,
           },
         },
+        parseAs: 'text',
       });
     });
   }, [deleteProcess, processKeys]);

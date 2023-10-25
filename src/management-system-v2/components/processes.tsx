@@ -35,6 +35,7 @@ import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
+import { useAuthStore } from '@/lib/iam';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -109,6 +110,8 @@ const Processes: FC = () => {
     'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
+  const ability = useAuthStore((state) => state.ability);
+
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: pullNewProcessData,
   });
@@ -123,6 +126,7 @@ const Processes: FC = () => {
             definitionId: key as string,
           },
         },
+        parseAs: 'text',
       });
     });
     setSelectedRowKeys([]);
@@ -148,21 +152,23 @@ const Processes: FC = () => {
           }}
         />
       </Tooltip>
-      <Tooltip placement="top" title={'Delete'}>
-        <DeleteOutlined
-          className={styles.Icon}
-          onClick={() => {
-            if (
-              (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-              (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
-            ) {
-              setDeleteProcessIds(selectedRowKeys as string[]);
-            } else {
-              deleteSelectedProcesses();
-            }
-          }}
-        />
-      </Tooltip>
+      {ability.can('delete', 'Process') && (
+        <Tooltip placement="top" title={'Delete'}>
+          <DeleteOutlined
+            className={styles.Icon}
+            onClick={() => {
+              if (
+                (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
+                (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
+              ) {
+                setDeleteProcessIds(selectedRowKeys as string[]);
+              } else {
+                deleteSelectedProcesses();
+              }
+            }}
+          />
+        </Tooltip>
+      )}
     </>
   );
 
@@ -198,45 +204,48 @@ const Processes: FC = () => {
         setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
         /* DEL */
       } else if (e.key === 'Delete') {
-        // e.preventDefault();
-        if (
-          (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-          (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
-        ) {
-          setDeleteProcessIds(selectedRowKeys as string[]);
-        } else {
-          deleteSelectedProcesses();
+        if (ability.can('delete', 'Process')) {
+          if (
+            (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
+            (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
+          ) {
+            setDeleteProcessIds(selectedRowKeys as string[]);
+          } else {
+            deleteSelectedProcesses();
+          }
         }
         /* ESC */
       } else if (e.key === 'Escape') {
         deselectAll();
         /* CTRL + C */
       } else if (e.ctrlKey && e.key === 'c' && copyProcessIds.length == 0) {
-        // e.preventDefault();
-        setCopySelection(selectedRowKeys);
+        if (ability.can('create', 'Process')) {
+          setCopySelection(selectedRowKeys);
+        }
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        // e.preventDefault();
-        if (openModalWhenCopy) {
-          setCopyProcessIds(copySelection as string[]);
-        } else {
-          copySelection.forEach(async (key) => {
-            const process = data?.find((item) => item.definitionId === key);
-            const processBpmn = await fetchProcessVersionBpmn(key as string);
+        if (ability.can('create', 'Process')) {
+          if (openModalWhenCopy) {
+            setCopyProcessIds(copySelection as string[]);
+          } else {
+            copySelection.forEach(async (key) => {
+              const process = data?.find((item) => item.definitionId === key);
+              const processBpmn = await fetchProcessVersionBpmn(key as string);
 
-            const newBPMN = await copyProcess({
-              bpmn: processBpmn as string,
-              newName: `${process?.definitionName} (Copy)`,
-            });
+              const newBPMN = await copyProcess({
+                bpmn: processBpmn as string,
+                newName: `${process?.definitionName} (Copy)`,
+              });
 
-            addProcess({
-              body: {
-                bpmn: newBPMN as string,
-                departments: [],
-                variables: [],
-              },
+              addProcess({
+                body: {
+                  bpmn: newBPMN as string,
+                  departments: [],
+                  variables: [],
+                },
+              });
             });
-          });
+          }
         }
       }
     };
@@ -258,6 +267,7 @@ const Processes: FC = () => {
     copyProcessIds.length,
     deleteProcessIds.length,
     openModalWhenCopy,
+    ability,
   ]);
 
   if (isError) {

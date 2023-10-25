@@ -41,17 +41,15 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 }) => {
   const { mutateAsync: addProcess } = usePostAsset('/process', {
     onError: async (error, variables) => {
-      // TODO: add id to failed
       const id = await getDefinitionsId(variables.body.bpmn);
       setFailed((prev) => [...prev, id as string]);
-      console.log(error);
-      console.log('variables', variables);
     },
-    onSuccess: (data) => {
-      if (data) {
-        setSelection((prev) => [...prev, data.definitionId as string]);
-        setSuccessful((prev) => [...prev, data.definitionId as string]);
-      }
+    onSuccess: async (data) => {
+      const id = JSON.parse(data).definitionId;
+      setSelection((prev) => [...prev, id as string]);
+      setSuccessful((prev) => [...prev, id as string]);
+      //   setSelection((prev) => [...prev, data.definitionId as string]);
+      //   setSuccessful((prev) => [...prev, data.definitionId as string]);
     },
   });
 
@@ -78,8 +76,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
         return {
           id: process.definitionId,
           copyId: undefined,
-          name: process.definitionName,
-          copyName: undefined,
+          name: `${process.definitionName} (Copy)`,
           description: process.description,
         };
       }),
@@ -92,14 +89,17 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
         .map((process) => {
           return {
             id: process.definitionId,
-            name: process.definitionName,
-            description: process.description,
             copyId: undefined,
-            copyName: undefined,
+            name: `${process.definitionName} (Copy)`,
+            description: process.description,
           };
         }),
     );
-  }, [data, processKeys]);
+    /* 
+    Do not include data as dependency
+    The Blue-Print should only be determined by the processKeys
+    */
+  }, [processKeys]);
 
   useEffect(() => {
     /* Some Failed */
@@ -124,7 +124,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
       setBluePrintForProcesses((prev) => {
         return prev?.map((item) => {
           if (item.id === oldId) {
-            return { ...item, copyId: newDefinitionsId, copyName: newName };
+            return { ...item, copyId: newDefinitionsId };
           }
           return item;
         });
@@ -167,6 +167,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
           departments: [],
           variables: [],
         },
+        parseAs: 'text',
       }).then(() => {
         setSelection((prev) => prev.filter((key: string) => key !== id));
       });
@@ -204,11 +205,13 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
       ),
       children: (
         <>
-          <h5>Process-Name:</h5>
+          <h5>
+            <b>Process-Name:</b>
+          </h5>
           <Input
             placeholder="Give your process a name"
             required
-            value={bluePrintForProcesses?.find((e) => e.id == id)?.name}
+            value={`${bluePrintForProcesses?.find((e) => e.id == id)?.name}`}
             onChange={(e) => {
               setBluePrintForProcesses((prev) => {
                 return prev?.map((item) => {
@@ -220,7 +223,9 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
               });
             }}
           />
-          <h5 style={{ marginTop: '8px' }}>Process-Description:</h5>
+          <h5 style={{ marginTop: '8px' }}>
+            <b>Process-Description:</b>
+          </h5>
 
           <TextArea
             rows={4}
@@ -313,13 +318,10 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 
               if (successful.includes(copyId || ' ')) {
                 symbol = '✔';
-                console.log('successful', name);
               } else if (failed.includes(copyId || ' ')) {
                 symbol = '✖';
-                console.log('failed', name);
               } else if (loading) {
                 indicator = <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />;
-                console.log('loading', name);
               }
 
               return (

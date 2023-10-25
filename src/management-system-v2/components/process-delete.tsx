@@ -47,6 +47,7 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
             definitionId: key as string,
           },
         },
+        parseAs: 'text',
       });
     });
   }, [deleteProcess, processKeys]);
@@ -68,7 +69,7 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
     setDeleteProcessIds([]);
     setFailed([]);
     setSuccessful([]);
-  }, [setDeleteProcessIds])
+  }, [setDeleteProcessIds]);
 
   useEffect(() => {
     /* Some Failed */

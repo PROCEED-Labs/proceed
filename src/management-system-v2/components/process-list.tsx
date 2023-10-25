@@ -29,6 +29,7 @@ import { ApiData, useDeleteAsset, usePostAsset } from '@/lib/fetch-data';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
+import { useAuthStore } from '@/lib/iam';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -92,6 +93,8 @@ const ProcessList: FC<ProcessListProps> = ({
     'ask-before-deleting-single': openModalWhenDeleteSingle,
   } = preferences;
 
+  const ability = useAuthStore((state) => state.ability);
+
   const clipAndHighlightText = useCallback(
     (dataIndexElement, record, index) => {
       const withoutSearchTerm = dataIndexElement?.split(search);
@@ -127,7 +130,6 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const { mutateAsync: createProcess } = usePostAsset('/process');
 
-  const queryClient = useQueryClient();
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: refreshData,
   });
@@ -178,26 +180,28 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip>
-          <Tooltip placement="top" title={'Delete'}>
-            <DeleteOutlined
-              onClick={(e) => {
-                e.stopPropagation();
-                if (openModalWhenDeleteSingle) {
-                  setDeleteProcessIds([record.definitionId]);
-                } else {
-                  deleteProcess({
-                    params: {
-                      path: {
-                        definitionId: record.definitionId as string,
+          {ability.can('delete', 'Process') && (
+            <Tooltip placement="top" title={'Delete'}>
+              <DeleteOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (openModalWhenDeleteSingle) {
+                    setDeleteProcessIds([record.definitionId]);
+                  } else {
+                    deleteProcess({
+                      params: {
+                        path: {
+                          definitionId: record.definitionId as string,
+                        },
                       },
-                    },
-                  });
-                }
+                    });
+                  }
 
-                setSelection(selection.filter((id) => id !== record.definitionId));
-              }}
-            />
-          </Tooltip>
+                  setSelection(selection.filter((id) => id !== record.definitionId));
+                }}
+              />
+            </Tooltip>
+          )}
         </>
       );
     },

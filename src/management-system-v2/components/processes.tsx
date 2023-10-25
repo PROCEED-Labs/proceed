@@ -2,8 +2,8 @@
 
 import styles from './processes.module.scss';
 import React, { FC, useEffect, useMemo, useState } from 'react';
-import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
-import { ApiData, useGetAsset } from '@/lib/fetch-data';
+import { Space, Button, Tooltip } from 'antd';
+import { ApiData, del, useGetAsset } from '@/lib/fetch-data';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -13,7 +13,6 @@ import {
   AppstoreOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import cn from 'classnames';
 import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -22,6 +21,7 @@ import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessEditButton from './process-edit-button';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -69,6 +69,10 @@ const Processes: FC = () => {
 
   const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
 
+  const deselectAll = () => {
+    setSelectedRowKeys([]);
+  };
+
   const actionBar = (
     <>
       {/* <Tooltip placement="top" title={'Preview'}>
@@ -98,7 +102,18 @@ const Processes: FC = () => {
         />
       )}
       <Tooltip placement="top" title={'Delete'}>
-        <DeleteOutlined />
+        <DeleteOutlined
+          onClick={async () => {
+            deselectAll();
+            await asyncForEach(selectedRowKeys as string[], async (selectedRowKey: string) => {
+              await del('/process/{definitionId}', {
+                params: { path: { definitionId: selectedRowKey } },
+              });
+            });
+
+            await refetchProcesses();
+          }}
+        />
       </Tooltip>
     </>
   );
@@ -116,10 +131,6 @@ const Processes: FC = () => {
     }
     return data;
   }, [data, searchTerm]);
-
-  const deselectAll = () => {
-    setSelectedRowKeys([]);
-  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

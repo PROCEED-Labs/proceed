@@ -25,7 +25,7 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
-import { ApiData, useInvalidateAsset } from '@/lib/fetch-data';
+import { ApiData, del, useInvalidateAsset } from '@/lib/fetch-data';
 import ProcessEditButton from './process-edit-button';
 
 type Processes = ApiData<'/process', 'get'>;
@@ -133,7 +133,20 @@ const ProcessList: FC<ProcessListProps> = ({
           }}
         />
         <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined />
+          <DeleteOutlined
+            onClick={async (event) => {
+              event.stopPropagation();
+              event.preventDefault();
+
+              setSelection(
+                (selection as string[]).filter((id: string) => id !== record.definitionId),
+              );
+              await del('/process/{definitionId}', {
+                params: { path: { definitionId: record.definitionId } },
+              });
+              await invalidateProcesses();
+            }}
+          />
         </Tooltip>
       </>
     );

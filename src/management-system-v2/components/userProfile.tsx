@@ -85,8 +85,6 @@ const UserDataModal: FC<{
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
           username: userData.username,
           ...values,
         };

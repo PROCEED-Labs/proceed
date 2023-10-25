@@ -33,6 +33,8 @@ import {
 } from '@proceed/bpmn-helper';
 import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
+import ProcessCopyModal from './process-copy';
+import { copy } from 'fs-extra';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -104,6 +106,7 @@ const Processes: FC = () => {
     'icon-view-in-process-list': iconView,
     'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
     'ask-before-deleting-single': openModalWhenDeleteSingle,
+    'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
@@ -185,7 +188,12 @@ const Processes: FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a') {
+      if (
+        e.ctrlKey &&
+        e.key === 'a' &&
+        copyProcessIds.length == 0 &&
+        deleteProcessIds.length == 0
+      ) {
         e.preventDefault();
         setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
         /* DEL */
@@ -203,29 +211,33 @@ const Processes: FC = () => {
       } else if (e.key === 'Escape') {
         deselectAll();
         /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c') {
-        e.preventDefault();
+      } else if (e.ctrlKey && e.key === 'c' && copyProcessIds.length == 0) {
+        // e.preventDefault();
         setCopySelection(selectedRowKeys);
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        e.preventDefault();
-        copySelection.forEach(async (key) => {
-          const process = data?.find((item) => item.definitionId === key);
-          const processBpmn = await fetchProcessVersionBpmn(key as string);
+        // e.preventDefault();
+        if (openModalWhenCopy) {
+          setCopyProcessIds(copySelection as string[]);
+        } else {
+          copySelection.forEach(async (key) => {
+            const process = data?.find((item) => item.definitionId === key);
+            const processBpmn = await fetchProcessVersionBpmn(key as string);
 
-          const newBPMN = await copyProcess({
-            bpmn: processBpmn as string,
-            newName: `${process?.definitionName} (Copy)`,
-          });
+            const newBPMN = await copyProcess({
+              bpmn: processBpmn as string,
+              newName: `${process?.definitionName} (Copy)`,
+            });
 
-          addProcess({
-            body: {
-              bpmn: newBPMN as string,
-              departments: [],
-              variables: [],
-            },
+            addProcess({
+              body: {
+                bpmn: newBPMN as string,
+                departments: [],
+                variables: [],
+              },
+            });
           });
-        });
+        }
       }
     };
     // Add event listener
@@ -243,6 +255,9 @@ const Processes: FC = () => {
     addProcess,
     openModalWhenDeleteMultiple,
     openModalWhenDeleteSingle,
+    copyProcessIds.length,
+    deleteProcessIds.length,
+    openModalWhenCopy,
   ]);
 
   if (isError) {
@@ -334,6 +349,11 @@ const Processes: FC = () => {
         setSelection={setSelectedRowKeys}
         pullNewProcessData={pullNewProcessData}
       />
+      <ProcessCopyModal
+        setSelection={setSelectedRowKeys}
+        processKeys={copyProcessIds}
+        setCopyProcessIds={setCopyProcessIds}
+      ></ProcessCopyModal>
     </>
   );
 };

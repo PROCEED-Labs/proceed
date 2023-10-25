@@ -124,9 +124,20 @@
   height: calc(100vh - 64px - 70px);
 }
 
+/* Adapt BPMN.js toolbar styles */
 .djs-palette {
   background-color: white !important;
   border: solid 1px #d9d9d9 !important;
   border-radius: 8px !important;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02) !important;
+}
+
+.group .entry {
+  border-bottom: solid 1px #d9d9d9;
+}
+.group .entry :last-child {
+  border-bottom: none;
+}
+.group .separator {
+  display: none;
 }

@@ -20,6 +20,8 @@ const defaultPreferences: PreferencesType = {
   'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
   'ask-before-deleting-multiple': true,
   'ask-before-deleting-single': true,
+  'ask-before-copying': true,
+  'process-copy-modal-accordion': true,
 };
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(

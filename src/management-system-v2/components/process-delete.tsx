@@ -11,10 +11,6 @@ type ProcessDeleteModalType = {
   setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
 };
 
-const sliceTitleLength = (title: String) => {
-  return title.length > 50 ? `${title.slice(0, 51)} ...` : title;
-};
-
 const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
   setDeleteProcessIds,
   processKeys,
@@ -32,7 +28,30 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
 
   const { addPreferences } = useUserPreferences();
 
-  const handleDelete = () => {
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
+    //onSettled: pullNewProcessData,
+    onError: (error, variables) => {
+      setFailed((prev) => [...prev, variables.params.path.definitionId]);
+    },
+    onSuccess: (data, variables) => {
+      setSuccessful((prev) => [...prev, variables.params.path.definitionId]);
+      setSelection((prev) => prev.filter((key) => key !== variables.params.path.definitionId));
+    },
+  });
+
+  const deleteSelectedProcesses = useCallback(() => {
+    processKeys.forEach((key: React.Key) => {
+      deleteProcess({
+        params: {
+          path: {
+            definitionId: key as string,
+          },
+        },
+      });
+    });
+  }, [deleteProcess, processKeys]);
+
+  const handleDelete = useCallback(() => {
     if (failed.length) {
       setSelection(failed);
       setDeleteProcessIds(failed);
@@ -43,14 +62,13 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
 
     setLoading(true);
     deleteSelectedProcesses();
-    // setDeleteProcessIds([]);
-  };
+  }, [deleteSelectedProcesses, failed, pullNewProcessData, setDeleteProcessIds, setSelection]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setDeleteProcessIds([]);
     setFailed([]);
     setSuccessful([]);
-  };
+  }, [setDeleteProcessIds])
 
   useEffect(() => {
     /* Some Failed */
@@ -68,29 +86,6 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
       }, 2_000);
     }
   }, [successful, failed, processKeys, setSelection, setDeleteProcessIds, pullNewProcessData]);
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    //onSettled: pullNewProcessData,
-    onError: (error, variables) => {
-      setFailed((prev) => [...prev, variables.params.path.definitionId]);
-    },
-    onSuccess: (error, variables) => {
-      setSuccessful((prev) => [...prev, variables.params.path.definitionId]);
-      setSelection((prev) => prev.filter((key) => key !== variables.params.path.definitionId));
-    },
-  });
-
-  const deleteSelectedProcesses = useCallback(() => {
-    processKeys.forEach((key: React.Key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-      });
-    });
-  }, [deleteProcess, processKeys]);
 
   return (
     <>
@@ -129,28 +124,37 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
                   return (
                     <li key={process.definitionId}>
                       ✔
-                      <span style={{ textDecoration: 'line-through' }}>
-                        {sliceTitleLength(process.definitionName)}
+                      <span
+                        className={styles.ClippedProcessTitle}
+                        style={{
+                          textDecoration: 'line-through',
+                        }}
+                      >
+                        {process.definitionName}
                       </span>
                     </li>
                   );
                   /*  Fail */
                 } else if (failed.includes(process.definitionId)) {
                   return (
-                    <li key={process.definitionId}>✖{sliceTitleLength(process.definitionName)}</li>
+                    <li key={process.definitionId}>
+                      ✖<span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
+                    </li>
                   );
                   /*  Loading */
                 } else if (loading) {
                   return (
                     <li key={process.definitionId}>
                       <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-                      {sliceTitleLength(process.definitionName)}
+                      <span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
                     </li>
                   );
                   /* Inital */
                 } else {
                   return (
-                    <li key={process.definitionId}>{sliceTitleLength(process.definitionName)}</li>
+                    <li key={process.definitionId}>
+                      <span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
+                    </li>
                   );
                 }
               })}

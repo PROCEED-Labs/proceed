@@ -15,12 +15,13 @@ import { AuthCan } from '@/lib/iamComponents';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
+import { useAuthStore } from '@/lib/iam';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
-
+  const ability = useAuthStore((store) => store.ability);
   const { error, data: roles, isLoading, refetch: refetchRoles } = useGetAsset('/roles', {});
   const { mutateAsync: deleteRole, isLoading: deletingRole } = useDeleteAsset('/roles/{id}', {
     onSuccess: () => refetchRoles(),
@@ -36,9 +37,15 @@ const RolesPage: FC = () => {
   });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [selectedRow, setSelectedRows] = useState<Role[]>([]);
+
+  const canDeleteSelected = !selectedRow.some(
+    (role) => !ability.can('delete', toCaslResource('Role', role)),
+  );
 
   async function deleteRoles(userIds: string[]) {
     setSelectedRowKeys([]);
+    setSelectedRows([]);
     await Promise.allSettled(userIds.map((id) => deleteRole({ params: { path: { id } } })));
   }
 
@@ -88,51 +95,42 @@ const RolesPage: FC = () => {
 
   return (
     <Content title="Identity and Access Management">
-      <Bar rightNode={<HeaderActions />} />
-      <Row className={styles.Headerrow}>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={10}
-          xl={6}
-          className={cn({ [styles.SelectedRow]: selectedRowKeys.length > 0 })}
-          style={{
-            justifyContent: 'start',
-          }}
-        >
-          {selectedRowKeys.length > 0 ? (
+      <Bar
+        rightNode={<HeaderActions />}
+        leftNode={
+          selectedRowKeys.length > 0 ? (
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected: </span>
-              <Popconfirm
-                title="Delete User"
-                description="Are you sure you want to delete this user?"
-                onConfirm={() => deleteRoles(selectedRowKeys)}
-              >
-                <Button type="text" icon={<DeleteOutlined />} />
-              </Popconfirm>
+              <span>
+                {selectedRowKeys.length} selected {canDeleteSelected ? ':' : ' '}
+              </span>
+              {canDeleteSelected && (
+                <Popconfirm
+                  title="Delete User"
+                  description="Are you sure you want to delete this user?"
+                  onConfirm={() => deleteRoles(selectedRowKeys)}
+                >
+                  <Button type="text" icon={<DeleteOutlined />} />
+                </Popconfirm>
+              )}
             </Space>
-          ) : null}
-        </Col>
-        <Col className={styles.Headercol} xs={22} sm={22} md={22} lg={9} xl={13}>
-          <Input.Search
-            size="middle"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-            placeholder="Search Users"
-          />
-        </Col>
-      </Row>
+          ) : null
+        }
+        searchProps={{
+          onChange: (e) => setSearchQuery(e.target.value),
+          onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
+          placeholder: 'Search Role ...',
+        }}
+      />
 
       <Table
         columns={columns}
         dataSource={filteredRoles}
         rowSelection={{
           selectedRowKeys,
-          onChange: (selectedRowKeys: React.Key[]) => {
+          onChange: (selectedRowKeys, selectedRows) => {
             setSelectedRowKeys(selectedRowKeys as string[]);
+            setSelectedRows(selectedRows);
           },
         }}
         rowKey="id"

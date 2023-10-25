@@ -1,5 +1,6 @@
 .Main {
   min-height: 100vh !important;
+  max-height: 100vh !important;
 
   .Header {
     display: flex;
@@ -19,7 +20,8 @@
   }
 
   .Content {
-    overflow: initial;
+    overflow-x: initial;
+    overflow-y: auto;
     padding: 40px 20px;
     max-width: 100%;
     background-color: white;

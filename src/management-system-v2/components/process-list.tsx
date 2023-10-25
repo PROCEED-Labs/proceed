@@ -11,6 +11,7 @@ import React, {
 import {
   CopyOutlined,
   ExportOutlined,
+  EditOutlined,
   DeleteOutlined,
   StarOutlined,
   EyeOutlined,
@@ -24,7 +25,8 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
-import { ApiData } from '@/lib/fetch-data';
+import { ApiData, useInvalidateAsset } from '@/lib/fetch-data';
+import ProcessEditButton from './process-edit-button';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -74,6 +76,8 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
 
+  const invalidateProcesses = useInvalidateAsset('/process');
+
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
   const [hovered, setHovered] = useState<Process | undefined>(undefined);
@@ -117,6 +121,17 @@ const ProcessList: FC<ProcessListProps> = ({
             }}
           />
         </Tooltip>
+        <ProcessEditButton
+          definitionId={record.definitionId}
+          wrapperElement={
+            <Tooltip placement="top" title={'Edit'}>
+              <EditOutlined />
+            </Tooltip>
+          }
+          onEdited={() => {
+            invalidateProcesses();
+          }}
+        />
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined />
         </Tooltip>

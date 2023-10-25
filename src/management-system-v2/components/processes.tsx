@@ -7,6 +7,7 @@ import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import {
   CopyOutlined,
   ExportOutlined,
+  EditOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
@@ -20,6 +21,7 @@ import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import ProcessEditButton from './process-edit-button';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -44,7 +46,13 @@ const fuseOptions = {
 };
 
 const Processes: FC = () => {
-  const { data, isLoading, isError, isSuccess } = useGetAsset('/process', {
+  const {
+    data,
+    isLoading,
+    isError,
+    isSuccess,
+    refetch: refetchProcesses,
+  } = useGetAsset('/process', {
     params: {
       query: { noBpmn: true },
     },
@@ -76,6 +84,19 @@ const Processes: FC = () => {
           }}
         />
       </Tooltip>
+      {selectedRowKeys.length === 1 && (
+        <ProcessEditButton
+          definitionId={selectedRowKeys[0] as string}
+          wrapperElement={
+            <Tooltip placement="top" title={'Edit'}>
+              <EditOutlined onClick={() => {}} />
+            </Tooltip>
+          }
+          onEdited={() => {
+            refetchProcesses();
+          }}
+        />
+      )}
       <Tooltip placement="top" title={'Delete'}>
         <DeleteOutlined />
       </Tooltip>

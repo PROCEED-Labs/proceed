@@ -1,5 +1,3 @@
-import { ApiData, get, put, post } from './fetch-data';
-
 import {
   toBpmnObject,
   toBpmnXml,
@@ -11,16 +9,13 @@ import {
   setUserTaskData,
 } from '@proceed/bpmn-helper';
 
+import { ApiData, get, put, post } from '../fetch-data';
+
+import { asyncForEach, asyncMap } from './javascriptHelpers';
+
 const { diff } = require('bpmn-js-differ');
 
-/**
- * Will compare two bpmns to check if both are equal (with possible differences in their versions)
- *
- * @param {string} bpmn
- * @param {string} otherBpmn
- * @returns {boolean}
- */
-async function areVersionsEqual(bpmn: string, otherBpmn: string) {
+export async function areVersionsEqual(bpmn: string, otherBpmn: string) {
   const bpmnObj = await toBpmnObject(bpmn);
   const otherBpmnObj = await toBpmnObject(otherBpmn);
 
@@ -54,6 +49,30 @@ async function areVersionsEqual(bpmn: string, otherBpmn: string) {
   return false;
 }
 
+export async function convertToEditableBpmn(bpmn: string) {
+  let bpmnObj = await toBpmnObject(bpmn);
+
+  const { version } = await getDefinitionsVersionInformation(bpmnObj);
+
+  bpmnObj = (await setDefinitionsVersionInformation(bpmnObj, {
+    versionBasedOn: version,
+  })) as object;
+
+  const changedFileNames = {} as { [key: string]: string };
+
+  const fileNameMapping = await getUserTaskFileNameMapping(bpmnObj);
+
+  await asyncForEach(Object.entries(fileNameMapping), async ([userTaskId, { fileName }]) => {
+    if (fileName) {
+      const [unversionedName] = fileName.split('-');
+      changedFileNames[fileName] = unversionedName;
+      await setUserTaskData(bpmnObj, userTaskId, unversionedName);
+    }
+  });
+
+  return { bpmn: await toBpmnXml(bpmnObj), changedFileNames };
+}
+
 async function getLocalVersionBpmn(
   process: ApiData<'/process', 'get'>[number],
   localVersion: number,
@@ -82,19 +101,21 @@ async function versionUserTasks(
   const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   for (let userTaskId in htmlMapping) {
+    const { fileName, implementation } = htmlMapping[userTaskId];
     // only version user tasks that use html
-    if (htmlMapping[userTaskId].implementation === getUserTaskImplementationString()) {
-      const { data: html } = await get('/process/{definitionId}/user-tasks/{userTaskFileName}', {
+    if (fileName && implementation === getUserTaskImplementationString()) {
+      const { data } = await get('/process/{definitionId}/user-tasks/{userTaskFileName}', {
         params: {
           path: {
             definitionId: processInfo.definitionId,
-            userTaskFileName: htmlMapping[userTaskId].fileName!,
+            userTaskFileName: fileName,
           },
         },
         parseAs: 'text',
       });
+      const userTaskHTML = data!;
 
-      let fileName = `${htmlMapping[userTaskId].fileName}-${newVersion}`;
+      let versionFileName = `${fileName}-${newVersion}`;
 
       // get the html of the user task in the based on version (if there is one and it is locally known)
       const basedOnBPMN =
@@ -109,34 +130,48 @@ async function versionUserTasks(
 
         // check if the user task existed and if it had the same html
         const basedOnVersionFileInfo = basedOnVersionHtmlMapping[userTaskId];
-        const { data: basedOnVersionUserTaskHTML } = await get(
-          '/process/{definitionId}/user-tasks/{userTaskFileName}',
-          {
-            params: {
-              path: {
-                definitionId: processInfo.definitionId,
-                userTaskFileName: basedOnVersionFileInfo.fileName!,
-              },
-            },
-            parseAs: 'text',
-          },
-        );
 
-        if (basedOnVersionFileInfo && basedOnVersionUserTaskHTML === html) {
-          // reuse the html of the previous version
-          userTaskHtmlAlreadyExisting = true;
-          fileName = basedOnVersionFileInfo.fileName!;
+        if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
+          const { data: basedOnVersionUserTaskHTML } = await get(
+            '/process/{definitionId}/user-tasks/{userTaskFileName}',
+            {
+              params: {
+                path: {
+                  definitionId: processInfo.definitionId,
+                  userTaskFileName: basedOnVersionFileInfo.fileName,
+                },
+              },
+              parseAs: 'text',
+            },
+          );
+
+          if (basedOnVersionUserTaskHTML === userTaskHTML) {
+            // reuse the html of the previous version
+            userTaskHtmlAlreadyExisting = true;
+            versionFileName = basedOnVersionFileInfo.fileName;
+          }
         }
       }
 
       // make sure the user task is using the correct data
-      await setUserTaskData(bpmnObj, userTaskId, fileName, getUserTaskImplementationString());
+      await setUserTaskData(
+        bpmnObj,
+        userTaskId,
+        versionFileName,
+        getUserTaskImplementationString(),
+      );
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskHtmlAlreadyExisting) {
         await put('/process/{definitionId}/user-tasks/{userTaskFileName}', {
-          params: { path: { definitionId: processInfo.definitionId, userTaskFileName: fileName } },
-          body: html,
+          params: {
+            path: { definitionId: processInfo.definitionId, userTaskFileName: versionFileName },
+          },
+          body: userTaskHTML,
+          headers: new Headers({
+            'Content-Type': 'text/plain',
+          }),
+          parseAs: 'text',
         });
       }
     }

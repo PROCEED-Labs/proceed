@@ -3,7 +3,7 @@
 import styles from './processes.module.scss';
 import React, { FC, useEffect, useMemo, useState } from 'react';
 import { Space, Button, Tooltip } from 'antd';
-import { ApiData, del, useGetAsset } from '@/lib/fetch-data';
+import { ApiData, useDeleteAsset, useGetAsset } from '@/lib/fetch-data';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -60,6 +60,8 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
+
   const prefs: Preferences = getPreferences();
   if (!prefs['icon-view-in-process-list']) {
     prefs['icon-view-in-process-list'] = false;
@@ -106,9 +108,7 @@ const Processes: FC = () => {
           onClick={async () => {
             deselectAll();
             await asyncForEach(selectedRowKeys as string[], async (selectedRowKey: string) => {
-              await del('/process/{definitionId}', {
-                params: { path: { definitionId: selectedRowKey } },
-              });
+              await deleteProcess({ params: { path: { definitionId: selectedRowKey } } });
             });
 
             await refetchProcesses();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent, Space } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -14,16 +14,17 @@ const exportTypeOptions = [
 
 const exportSubOptions = {
   bpmn: [
-    { label: 'Export with referenced Processes', value: 'imports' },
-    { label: 'Export with Artefacts', value: 'artefacts' },
+    { label: 'with referenced Processes', value: 'imports' },
+    { label: 'with Artefacts', value: 'artefacts' },
   ],
   pdf: [
-    { label: 'Export with referenced Processes', value: 'imports' },
-    { label: 'Export with collapsed subprocesses', value: 'subprocesses' },
+    { label: 'with Title', value: 'titles' },
+    { label: 'with referenced Processes', value: 'imports' },
+    { label: 'with collapsed Subprocesses', value: 'subprocesses' },
   ],
   svg: [
-    { label: 'Export with referenced Processes', value: 'imports' },
-    { label: 'Export with collapsed subprocesses', value: 'subprocesses' },
+    { label: 'with referenced Processes', value: 'imports' },
+    { label: 'with collapsed Subprocesses', value: 'subprocesses' },
   ],
 };
 
@@ -35,7 +36,6 @@ type ProcessExportModalProps = {
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>([]);
-  const [finishedTypeSelection, setfinishedTypeSelection] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
@@ -47,23 +47,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   };
 
   const handleClose = () => {
-    setSelectedType(undefined);
-    setSelectedOptions([]);
-    setfinishedTypeSelection(false);
     setIsExporting(false);
     onClose();
   };
 
   const handleOk = async () => {
-    if (!finishedTypeSelection) {
-      const subOptions = exportSubOptions[selectedType!];
-      if (subOptions && subOptions.length) {
-        // there are suboptions that the user might want to select => switch to the other modal view
-        setfinishedTypeSelection(true);
-        return;
-      }
-    }
-
     setIsExporting(true);
     await exportProcesses(
       {
@@ -71,6 +59,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         artefacts: selectedOptions.some((el) => el === 'artefacts'),
         subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
         imports: selectedOptions.some((el) => el === 'imports'),
+        titles: selectedOptions.some((el) => el === 'titles'),
       },
       processes,
     );
@@ -78,12 +67,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
     handleClose();
   };
 
-  const modalTitle = finishedTypeSelection
-    ? `Select ${selectedType} export options`
-    : 'Select the file type';
-
   const typeSelection = (
-    <Radio.Group onChange={handleTypeSelectionChange} value={selectedType}>
+    <Radio.Group onChange={handleTypeSelectionChange} value={selectedType} style={{ width: '50%' }}>
       <Space direction="vertical">
         {exportTypeOptions.map(({ label, value }) => (
           <Radio value={value} key={value}>
@@ -99,21 +84,25 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       options={exportSubOptions[selectedType!]}
       onChange={handleOptionSelectionChange}
       value={selectedOptions}
-      style={{ flexDirection: 'column' }}
+      style={{ flexDirection: 'column', width: '50%' }}
     />
   );
 
   return (
     <>
       <Modal
-        title={modalTitle}
+        title={`Export selected processes`}
         open={!!processes.length}
         onOk={handleOk}
         onCancel={handleClose}
         centered
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
       >
-        {finishedTypeSelection ? optionSelection : typeSelection}
+        <Flex>
+          {typeSelection}
+          <Divider type="vertical" style={{ height: 'auto' }} />
+          {!!selectedType && optionSelection}
+        </Flex>
       </Modal>
     </>
   );

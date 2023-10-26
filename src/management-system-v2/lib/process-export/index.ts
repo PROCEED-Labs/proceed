@@ -78,6 +78,7 @@ async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
  * @param version the specific version to handle
  * @param pdf the pdf to add a page to
  * @param isImport if the data to be added is part of an imported process
+ * @param withTitles if process information should be added as text to the process page
  * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
  * @param subprocessName the name of the collapsed subprocess to be added
  */
@@ -85,6 +86,7 @@ async function addPDFPage(
   processData: ProcessExportData,
   version: string,
   pdf: jsPDF,
+  withTitles: boolean,
   isImport = false,
   subprocessId?: string,
   subprocessName?: string,
@@ -95,43 +97,57 @@ async function addPDFPage(
   const parser = new DOMParser();
   const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
 
-  let numTitleLines = 1;
-  let docTitle = `Version: ${versionData.name || version}`;
-
-  if (isImport) {
-    ++numTitleLines;
-    docTitle =
-      `Imported Process: ${processData.definitionName || processData.definitionId}\n` + docTitle;
-  }
-
-  if (subprocessId) {
-    ++numTitleLines;
-    docTitle += `\nSubprocess: ${subprocessName || subprocessId}`;
-  }
-
   // get image dimensions
   let svgWidth = parseFloat(svg.split('width="')[1].split('"')[0]);
-  let svgHeight = 10 * (numTitleLines + 1) + parseFloat(svg.split('height="')[1].split('"')[0]);
+  let svgHeight = parseFloat(svg.split('height="')[1].split('"')[0]);
+
+  // how much the svg has to be pushed downwards (based on the title)
+  let svgTopOffset = 0;
+  let titleLines = [];
+  if (withTitles) {
+    // generate the lines in the title: (Imported )Process Name, Process Version
+    titleLines.push(
+      `${isImport ? 'Imported ' : ''}Process: ${
+        processData.definitionName || processData.definitionId
+      }`,
+      `Version: ${versionData.name || version}`,
+    );
+
+    // add an aditional title line for a subprocess image
+    if (subprocessId) {
+      titleLines.push(`Subprocess: ${subprocessName || subprocessId}`);
+    }
+
+    // calculate the width needed for the title
+    let titleWidth = pdf.getStringUnitWidth(titleLines[0]);
+    for (let i = 1; i < titleLines.length; ++i) {
+      titleWidth = Math.max(titleWidth, pdf.getStringUnitWidth(titleLines[i]));
+    }
+    titleWidth = titleWidth * pdf.getFontSize() + 10;
+
+    let titleHeight = pdf.getLineHeight() * titleLines.length;
+    svgTopOffset = titleHeight;
+    svgHeight += svgTopOffset;
+    svgWidth = Math.max(svgWidth, titleWidth);
+  }
 
   // adding a new page, second parameter orientation: p - portrait, l - landscape
   pdf.addPage([svgWidth, svgHeight], svgHeight > svgWidth ? 'p' : 'l');
 
   //Getting PDF Documents width and height
-  const pageWidth = pdf.internal.pageSize.getWidth() - 10;
-  const pageHeight = pdf.internal.pageSize.getHeight() - 10;
-
-  //Setting pdf font size
-  pdf.setFontSize(15);
+  const processImageWidth = pdf.internal.pageSize.getWidth() - 10;
+  const processImageHeight = pdf.internal.pageSize.getHeight() - svgTopOffset;
 
   //Adding Header to the Pdf
-  // TODO: make sure that the text fits both in landscape as well as in portrait mode
-  pdf.text(docTitle, 10 * numTitleLines, 15);
+  if (titleLines.length) {
+    pdf.text(titleLines, 5, 15);
+  }
 
   await pdf.svg(svgDOM.children[0], {
-    x: 0,
-    y: 10 * numTitleLines,
-    width: pageWidth,
-    height: pageHeight,
+    x: 5,
+    y: svgTopOffset,
+    width: processImageWidth,
+    height: processImageHeight,
   });
 }
 
@@ -142,6 +158,7 @@ async function addPDFPage(
  * @param processData the data of the complete process
  * @param version the specific version to handle
  * @param pdf the pdf to add a page to
+ * @param withTitles if process information should be added as text to the process page
  * @param isImport if the version is of an import
  */
 async function handleProcessVersionPdfExport(
@@ -149,22 +166,30 @@ async function handleProcessVersionPdfExport(
   processData: ProcessExportData,
   version: string,
   pdf: jsPDF,
+  withTitles: boolean,
   isImport = false,
 ) {
   // add the main process (version) data
-  await addPDFPage(processData, version, pdf, isImport);
+  await addPDFPage(processData, version, pdf, withTitles, isImport);
 
   const versionData = processData.versions[version];
   // add all collapsed subprocesses (if requested)
   for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
-    await addPDFPage(processData, version, pdf, isImport, subprocessId, subprocessName);
+    await addPDFPage(processData, version, pdf, withTitles, isImport, subprocessId, subprocessName);
   }
 
   // add all imported processes recursively
   for (const { definitionId, processVersion } of versionData.imports) {
     const importData = processesData.find((el) => el.definitionId === definitionId);
     if (importData) {
-      await handleProcessVersionPdfExport(processesData, importData, processVersion, pdf, true);
+      await handleProcessVersionPdfExport(
+        processesData,
+        importData,
+        processVersion,
+        pdf,
+        withTitles,
+        true,
+      );
     }
   }
 }
@@ -174,11 +199,13 @@ async function handleProcessVersionPdfExport(
  *
  * @param processesData the data of all processes
  * @param processData the data of the complete process to export
+ * @param withTitles if process information should be added as text to the process page
  * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
  */
 async function pdfExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
+  withTitles: boolean,
   zip?: jsZip | null,
 ) {
   // create the pdf file for the process
@@ -189,13 +216,16 @@ async function pdfExport(
   });
   pdf.deletePage(1);
 
+  //Setting pdf font size
+  pdf.setFontSize(15);
+
   // only export the versions that were explicitly selected for the given process
   const nonImportVersions = Object.entries(processData.versions)
     .filter(([_, { isImport }]) => !isImport)
     .map(([version]) => version);
 
   for (const version of nonImportVersions) {
-    await handleProcessVersionPdfExport(processesData, processData, version, pdf);
+    await handleProcessVersionPdfExport(processesData, processData, version, pdf, withTitles);
   }
 
   if (zip) {
@@ -391,7 +421,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
   for (const processData of exportData) {
     if (options.type === 'pdf') {
       // handle imports inside the pdfExport function
-      if (!processData.isImport) await pdfExport(exportData, processData, zip);
+      if (!processData.isImport) await pdfExport(exportData, processData, options.titles, zip);
     } else {
       if (options.type === 'bpmn') {
         const folder = zip?.folder(processData.definitionName);

@@ -22,6 +22,7 @@ import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessEditButton from './process-edit-button';
 import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { AuthCan } from '@/lib/iamComponents';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -103,18 +104,20 @@ const Processes: FC = () => {
           }}
         />
       )}
-      <Tooltip placement="top" title={'Delete'}>
-        <DeleteOutlined
-          onClick={async () => {
-            deselectAll();
-            await asyncForEach(selectedRowKeys as string[], async (selectedRowKey: string) => {
-              await deleteProcess({ params: { path: { definitionId: selectedRowKey } } });
-            });
+      <AuthCan resource="Process" action="delete">
+        <Tooltip placement="top" title={'Delete'}>
+          <DeleteOutlined
+            onClick={async () => {
+              deselectAll();
+              await asyncForEach(selectedRowKeys as string[], async (selectedRowKey: string) => {
+                await deleteProcess({ params: { path: { definitionId: selectedRowKey } } });
+              });
 
-            await refetchProcesses();
-          }}
-        />
-      </Tooltip>
+              await refetchProcesses();
+            }}
+          />
+        </Tooltip>
+      </AuthCan>
     </>
   );
 

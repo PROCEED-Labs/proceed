@@ -27,6 +27,7 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, useInvalidateAsset } from '@/lib/fetch-data';
 import ProcessEditButton from './process-edit-button';
+import { AuthCan } from '@/lib/iamComponents';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -134,20 +135,22 @@ const ProcessList: FC<ProcessListProps> = ({
             invalidateProcesses();
           }}
         />
-        <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined
-            onClick={async (event) => {
-              event.stopPropagation();
-              event.preventDefault();
+        <AuthCan resource="Process" action="delete">
+          <Tooltip placement="top" title={'Delete'}>
+            <DeleteOutlined
+              onClick={async (event) => {
+                event.stopPropagation();
+                event.preventDefault();
 
-              setSelection(
-                (selection as string[]).filter((id: string) => id !== record.definitionId),
-              );
-              await deleteProcess({ params: { path: { definitionId: record.definitionId } } });
-              await invalidateProcesses();
-            }}
-          />
-        </Tooltip>
+                setSelection(
+                  (selection as string[]).filter((id: string) => id !== record.definitionId),
+                );
+                await deleteProcess({ params: { path: { definitionId: record.definitionId } } });
+                await invalidateProcesses();
+              }}
+            />
+          </Tooltip>
+        </AuthCan>
       </>
     );
   }, []);

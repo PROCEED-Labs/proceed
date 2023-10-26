@@ -33,7 +33,7 @@ const RolesPage: FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRow, setSelectedRows] = useState<Role[]>([]);
 
-  const canDeleteSelected = !selectedRow.some(
+  const cannotDeleteSelected = selectedRow.some(
     (role) => !ability.can('delete', toCaslResource('Role', role)),
   );
 
@@ -95,18 +95,14 @@ const RolesPage: FC = () => {
           selectedRowKeys.length > 0 ? (
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>
-                {selectedRowKeys.length} selected {canDeleteSelected ? ':' : ' '}
-              </span>
-              {canDeleteSelected && (
-                <Popconfirm
-                  title="Delete roles"
-                  description="Are you sure you want to delete these roles?"
-                  onConfirm={() => deleteRoles(selectedRowKeys)}
-                >
-                  <Button type="text" icon={<DeleteOutlined />} />
-                </Popconfirm>
-              )}
+              <span>{selectedRowKeys.length} selected:</span>
+              <Popconfirm
+                title="Delete roles"
+                description="Are you sure you want to delete these roles?"
+                onConfirm={() => deleteRoles(selectedRowKeys)}
+              >
+                <Button type="text" icon={<DeleteOutlined />} disabled={cannotDeleteSelected} />
+              </Popconfirm>
             </Space>
           ) : null
         }

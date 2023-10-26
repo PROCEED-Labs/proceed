@@ -26,15 +26,15 @@ function RolePage({ params: { roleId } }: { params: { roleId: string } }) {
   const items: Items = role
     ? [
         {
-          key: 'members',
-          label: 'Manage Members',
-          children: <RoleMembers role={role} isLoadingRole={isLoading} />,
-        },
-        { key: 'permissions', label: 'Permissions', children: <RolePermissions role={role} /> },
-        {
           key: 'generalData',
           label: 'General Data',
           children: <RoleGeneralData roleId={roleId} />,
+        },
+        { key: 'permissions', label: 'Permissions', children: <RolePermissions role={role} /> },
+        {
+          key: 'members',
+          label: 'Manage Members',
+          children: <RoleMembers role={role} isLoadingRole={isLoading} />,
         },
       ]
     : [];
@@ -58,7 +58,9 @@ function RolePage({ params: { roleId } }: { params: { roleId: string } }) {
       }
     >
       <Skeleton loading={isLoading}>
-        <Tabs items={items} />
+        <div style={{ maxWidth: '800px', margin: 'auto' }}>
+          <Tabs items={items} />
+        </div>
       </Skeleton>
     </Content>
   );

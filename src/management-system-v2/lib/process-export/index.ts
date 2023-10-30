@@ -11,6 +11,8 @@ import { jsPDF } from 'jspdf';
 import jsZip from 'jszip';
 import 'svg2pdf.js';
 
+const proceedLogo = fetch('/proceed.svg').then((response) => response.text());
+
 /**
  * Downloads the data onto the device of the user
  *
@@ -95,7 +97,7 @@ async function addPDFPage(
   // get the svg so we can display the process as a vector graphic inside the pdf
   const svg = await getSVGFromBPMN(versionData.bpmn, subprocessId);
   const parser = new DOMParser();
-  const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
+  let svgDOM = parser.parseFromString(svg, 'image/svg+xml');
 
   // get image dimensions
   let svgWidth = parseFloat(svg.split('width="')[1].split('"')[0]);
@@ -149,6 +151,19 @@ async function addPDFPage(
     width: processImageWidth,
     height: processImageHeight,
   });
+
+  svgDOM = parser.parseFromString(await proceedLogo, 'image/svg+xml');
+
+  pdf.saveGraphicsState();
+
+  pdf.setGState(new (pdf.GState as any)({ opacity: 0.5 }));
+  await pdf.svg(svgDOM.children[0], {
+    x: pdf.internal.pageSize.getWidth() - 121,
+    y: pdf.internal.pageSize.getHeight() - 45,
+    width: 121,
+    height: 45,
+  });
+  pdf.restoreGraphicsState();
 }
 
 /**

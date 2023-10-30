@@ -146,7 +146,7 @@ const RolesPage: FC = () => {
 export default Auth(
   {
     action: 'manage',
-    resource: 'User',
+    resource: 'Role',
     fallbackRedirect: '/',
   },
   RolesPage,

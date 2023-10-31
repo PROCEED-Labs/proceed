@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState, useRef } from 'react';
+import React, { FC, useEffect, useState, useRef, useCallback } from 'react';
 
 type ScrollBarType = {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ const ScrollBar: FC<ScrollBarType> = ({ children, width }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (containerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
       const newScrollHeight = (clientHeight / scrollHeight) * 100;
@@ -22,35 +22,58 @@ const ScrollBar: FC<ScrollBarType> = ({ children, width }) => {
       setScrollHeight(newScrollHeight);
       setScrollPosition(newScrollPosition);
     }
-  };
+  }, []);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = useCallback(() => {
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && containerRef.current && thumbRef.current) {
-      const { clientY } = e;
-      const { top, height } = containerRef.current.getBoundingClientRect();
-      const thumbHeight = thumbRef.current.clientHeight;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging && containerRef.current && thumbRef.current) {
+        const { clientY } = e;
+        const { top, height } = containerRef.current.getBoundingClientRect();
+        const thumbHeight = thumbRef.current.clientHeight;
 
-      let newScrollTop =
-        ((clientY - top - thumbHeight / 2) / (height - thumbHeight)) *
-        containerRef.current.scrollHeight;
+        let newScrollTop =
+          ((clientY - top - thumbHeight / 2) / (height - thumbHeight)) *
+          containerRef.current.scrollHeight;
 
-      newScrollTop = Math.max(newScrollTop, 0);
-      newScrollTop = Math.min(
-        newScrollTop,
-        containerRef.current.scrollHeight - containerRef.current.clientHeight,
-      );
+        newScrollTop = Math.max(newScrollTop, 0);
+        newScrollTop = Math.min(
+          newScrollTop,
+          containerRef.current.scrollHeight - containerRef.current.clientHeight,
+        );
 
-      containerRef.current.scrollTop = newScrollTop;
-    }
-  };
+        containerRef.current.scrollTop = newScrollTop;
+      }
+    },
+    [isDragging],
+  );
+
+  // const handleMouseMove = (e: MouseEvent) => {
+  //   if (isDragging && containerRef.current && thumbRef.current) {
+  //     const { clientY } = e;
+  //     const { top, height } = containerRef.current.getBoundingClientRect();
+  //     const thumbHeight = thumbRef.current.clientHeight;
+
+  //     let newScrollTop =
+  //       ((clientY - top - thumbHeight / 2) / (height - thumbHeight)) *
+  //       containerRef.current.scrollHeight;
+
+  //     newScrollTop = Math.max(newScrollTop, 0);
+  //     newScrollTop = Math.min(
+  //       newScrollTop,
+  //       containerRef.current.scrollHeight - containerRef.current.clientHeight,
+  //     );
+
+  //     containerRef.current.scrollTop = newScrollTop;
+  //   }
+  // };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -62,7 +85,7 @@ const ScrollBar: FC<ScrollBarType> = ({ children, width }) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [handleMouseMove, isDragging]);
 
   useEffect(() => {
     handleScroll();

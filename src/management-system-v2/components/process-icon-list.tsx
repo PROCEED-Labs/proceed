@@ -24,7 +24,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) 
     <>
       <ScrollBar width="10px">
         <div
-          className="Hide-Scroll-Bar"
           style={{
             width: '100%',
             display: 'grid',

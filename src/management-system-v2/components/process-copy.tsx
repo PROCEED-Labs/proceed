@@ -30,10 +30,6 @@ type CopyProcessType = {
   oldId: string | Key;
 };
 
-const sliceTitleLength = (title: String) => {
-  return title.length > 50 ? `${title.slice(0, 51)} ...` : title;
-};
-
 const ProcessCopyModal: FC<ProcessCopyModalType> = ({
   setCopyProcessIds,
   processKeys,
@@ -44,12 +40,9 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
       const id = await getDefinitionsId(variables.body.bpmn);
       setFailed((prev) => [...prev, id as string]);
     },
-    onSuccess: async (data) => {
-      const id = JSON.parse(data).definitionId;
-      setSelection((prev) => [...prev, id as string]);
-      setSuccessful((prev) => [...prev, id as string]);
-      //   setSelection((prev) => [...prev, data.definitionId as string]);
-      //   setSuccessful((prev) => [...prev, data.definitionId as string]);
+    onSuccess: (data) => {
+      setSelection((prev) => [...prev, data.definitionId as string]);
+      setSuccessful((prev) => [...prev, data.definitionId as string]);
     },
   });
 
@@ -78,6 +71,8 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
           copyId: undefined,
           name: `${process.definitionName} (Copy)`,
           description: process.description,
+          originalName: process.definitionName,
+          originalDescription: process.description,
         };
       }),
   );
@@ -92,6 +87,8 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
             copyId: undefined,
             name: `${process.definitionName} (Copy)`,
             description: process.description,
+            originalName: process.definitionName,
+            originalDescription: process.description,
           };
         }),
     );
@@ -147,32 +144,29 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
   );
 
   const copyProcesses = useCallback(() => {
-    // setLoading(true);
-    processKeys.forEach(async (id) => {
-      const process = data?.find((item) => item.definitionId === id);
-      const processBpmn = await fetchProcessVersionBpmn(id as string);
+    bluePrintForProcesses?.forEach(
+      async ({ id, name, description, originalName, originalDescription }) => {
+        const processBpmn = await fetchProcessVersionBpmn(id as string);
 
-      const processBluePrint = bluePrintForProcesses?.find((item) => item.id === id);
+        const newBPMN = await copyProcess({
+          bpmn: processBpmn as string,
+          newName: name || `${originalName} (Copy)`,
+          newDescription: description || originalDescription,
+          oldId: id as string,
+        });
 
-      const newBPMN = await copyProcess({
-        bpmn: processBpmn as string,
-        newName: processBluePrint?.name || `${process?.definitionName} (Copy)`,
-        newDescription: processBluePrint?.description || process?.description,
-        oldId: id as string,
-      });
-
-      addProcess({
-        body: {
-          bpmn: newBPMN as string,
-          departments: [],
-          variables: [],
-        },
-        parseAs: 'text',
-      }).then(() => {
-        setSelection((prev) => prev.filter((key: string) => key !== id));
-      });
-    });
-  }, [addProcess, bluePrintForProcesses, copyProcess, data, processKeys, setSelection]);
+        addProcess({
+          body: {
+            bpmn: newBPMN as string,
+            departments: [],
+            variables: [],
+          },
+        }).then(() => {
+          setSelection((prev) => prev.filter((key: string) => key !== id));
+        });
+      },
+    );
+  }, [addProcess, bluePrintForProcesses, copyProcess, setSelection]);
 
   const handleCopy = useCallback(() => {
     if (failed.length) {

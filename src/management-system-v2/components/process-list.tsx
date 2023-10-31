@@ -24,7 +24,7 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
-import { ApiData, useDeleteAsset, usePostAsset } from '@/lib/fetch-data';
+import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
 import { useAuthStore } from '@/lib/iam';
@@ -38,7 +38,6 @@ type ProcessListProps = PropsWithChildren<{
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
   onExportProcess: Dispatch<SetStateAction<string[]>>;
-  refreshData: any;
   search?: string;
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   deleteProcessKeys: React.Key[];
@@ -62,12 +61,13 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelection,
   isLoading,
   onExportProcess,
-  refreshData,
   search,
   setDeleteProcessIds,
   deleteProcessKeys,
 }) => {
   const router = useRouter();
+
+  const refreshData = useInvalidateAsset('/process');
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
@@ -93,16 +93,23 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const clipAndHighlightText = useCallback(
     (dataIndexElement, record, index) => {
-      const withoutSearchTerm = dataIndexElement?.split(search);
+      const searchLower = search?.toLowerCase();
+      const dataIndexElementLower = dataIndexElement?.toLowerCase();
+      const withoutSearchTerm = dataIndexElementLower?.split(searchLower);
       let res = dataIndexElement;
       if (search && withoutSearchTerm?.length > 1) {
+        let lastIndex = 0;
         res = withoutSearchTerm.map((word, i, arr) => {
-          if (i === arr.length - 1) return word;
+          const highlightedWord = dataIndexElement.slice(lastIndex, lastIndex + word.length);
+          lastIndex += word.length + search.length;
+          if (i === arr.length - 1) return highlightedWord;
 
           return (
             <span key={i}>
-              <span>{word}</span>
-              <span style={{ color: '#3e93de' }}>{search}</span>
+              <span>{highlightedWord}</span>
+              <span style={{ color: '#3e93de' }}>
+                {dataIndexElement.slice(lastIndex - search.length, lastIndex)}
+              </span>
             </span>
           );
         });
@@ -145,18 +152,10 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Copy'}>
             <CopyOutlined
               onClick={() => {
-                // fetch(`localhost:33080/api/process/${record.definitionId}`)
-                //   .then((res) => res.json())
-                //   .then((data) => {
                 createProcess({
-                  /* TODO: 
-                    Causes 500
-                  */
                   body: {
                     ...record,
-                    // description: record.description,
-                    // departments: record.departments,
-                    bpmn: /* data */ record.bpmn || '',
+                    bpmn: record.bpmn || '',
                     variables: [
                       {
                         name: `${record.definitionName} Copy`,
@@ -165,7 +164,6 @@ const ProcessList: FC<ProcessListProps> = ({
                     ],
                   },
                 });
-                // });
               }}
             />
           </Tooltip>
@@ -202,6 +200,7 @@ const ProcessList: FC<ProcessListProps> = ({
       );
     },
     [
+      ability,
       createProcess,
       deleteProcess,
       onExportProcess,
@@ -510,7 +509,6 @@ const ProcessList: FC<ProcessListProps> = ({
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessKeys}
         setSelection={setSelection}
-        pullNewProcessData={refreshData}
       />
     </>
   );

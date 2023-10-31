@@ -40,13 +40,13 @@ import { useAuthStore } from '@/lib/iam';
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
 
-const fuseOptions = {
+export const fuseOptions = {
   /* Option for Fuzzy-Search for Processlistfilter */
   /* https://www.fusejs.io/api/options.html#useextendedsearch */
   // isCaseSensitive: false,
   // includeScore: false,
   // shouldSort: true,
-  // includeMatches: false,
+  includeMatches: true,
   findAllMatches: true,
   // minMatchCharLength: 1,
   // location: 0,
@@ -178,12 +178,15 @@ const Processes: FC = () => {
     //setFilteredData(filteredData);,
   };
 
-  const filteredData = useMemo(() => {
+  const { data: filteredData } = useMemo(() => {
     if (data && searchTerm !== '') {
       const fuse = new Fuse(data, fuseOptions);
-      return fuse.search(searchTerm).map((item) => item.item);
+      return {
+        data: fuse.search(searchTerm).map((item) => item.item),
+        highlight: fuse.search(searchTerm).map((item) => item.matches),
+      };
     }
-    return data;
+    return { data, highlight: [] };
   }, [data, searchTerm]);
 
   const deselectAll = () => {
@@ -334,7 +337,6 @@ const Processes: FC = () => {
               setSelection={setSelectedRowKeys}
               isLoading={isLoading}
               onExportProcess={setExportProcessIds}
-              refreshData={pullNewProcessData}
               search={searchTerm}
               setDeleteProcessIds={setDeleteProcessIds}
               deleteProcessKeys={deleteProcessIds}
@@ -357,7 +359,6 @@ const Processes: FC = () => {
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}
         setSelection={setSelectedRowKeys}
-        pullNewProcessData={pullNewProcessData}
       />
       <ProcessCopyModal
         setSelection={setSelectedRowKeys}

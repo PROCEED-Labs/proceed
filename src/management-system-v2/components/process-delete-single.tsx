@@ -2,27 +2,27 @@ import { Button, Checkbox, Modal } from 'antd';
 import React, { Dispatch, FC, Key, SetStateAction, useCallback, useState } from 'react';
 import styles from './process-delete.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { useDeleteAsset } from '@/lib/fetch-data';
+import { useDeleteAsset, useInvalidateAsset } from '@/lib/fetch-data';
 
 type ProcessDeleteModalType = {
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   processKeys: React.Key[];
   setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
-  pullNewProcessData: () => void;
 };
 
 const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
   setDeleteProcessIds,
   processKeys,
   setSelection,
-  pullNewProcessData,
 }) => {
+  const refreshData = useInvalidateAsset('/process');
+
   const [loading, setLoading] = useState(false);
 
   const { addPreferences } = useUserPreferences();
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: pullNewProcessData,
+    onSettled: refreshData,
     onSuccess: () => {
       setDeleteProcessIds([]);
       setSelection([]);

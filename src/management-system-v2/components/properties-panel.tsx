@@ -2,11 +2,13 @@
 
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
+import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
+
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 
-import React, { FocusEvent, useEffect, useState } from 'react';
+import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
 
 import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
 
@@ -29,10 +31,31 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     }
   }, [selectedElement]);
 
+  const backgroundColor = useMemo(() => {
+    return getFillColor(selectedElement, '#FFFFFFFF');
+  }, [selectedElement]);
+
+  const strokeColor = useMemo(() => {
+    return getStrokeColor(selectedElement, '#000000FF');
+  }, [selectedElement]);
+
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
     const modeling = modeler!.get('modeling') as Modeling;
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
     setName('');
+  };
+
+  const updateBackgroundColor = (backgroundColor: string) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+    modeling.setColor(selectedElement as any, {
+      fill: backgroundColor,
+    });
+  };
+  const updateStrokeColor = (frameColor: string) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+    modeling.setColor(selectedElement as any, {
+      stroke: frameColor,
+    });
   };
 
   const propPanel = (
@@ -135,6 +158,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
                     colors: [],
                   },
                 ]}
+                value={backgroundColor}
+                onChange={(_, hex) => updateBackgroundColor(hex)}
               />
               <span>Background Colour</span>
             </Space>
@@ -181,6 +206,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
                     colors: [],
                   },
                 ]}
+                value={strokeColor}
+                onChange={(_, hex) => updateStrokeColor(hex)}
               />
               <span>Stroke Colour</span>
             </Space>

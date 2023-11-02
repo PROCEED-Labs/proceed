@@ -12,7 +12,8 @@ import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
 
 import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
 
-import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
+import ResizableCard from './ResizableCard';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
@@ -58,17 +59,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     });
   };
 
-  const propPanel = (
-    <Drawer
-      title={name}
-      placement="right"
-      onClose={(e) => {
-        setOpen(false);
-      }}
-      open={true}
-      mask={false}
+  return (
+    <ResizableCard
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>name</span> <CloseOutlined onClick={() => setOpen(false)} />
+        </div>
+      }
+      initialWidth={400}
+      minWidth={400}
+      maxWidth={600}
+      style={{ position: 'absolute', top: '65px', right: '12px', height: '80vh' }}
     >
-      <Space direction="vertical" size="large">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <b>General</b>
           <Input
@@ -227,21 +230,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
           </Space>
         )}
       </Space>
-    </Drawer>
-  );
-
-  return (
-    <>
-      {/* <Card
-        title={selectedElement.id}
-        style={{ position: 'absolute', top: 150, right: 20, zIndex: 20 }}
-        onClick={(event) => event.preventDefault()}
-      >
-        Name:{' '}
-        <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameChange} />
-      </Card> */}
-      {propPanel}
-    </>
+    </ResizableCard>
   );
 };
 

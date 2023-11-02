@@ -69,7 +69,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
       mask={false}
     >
       <Space direction="vertical" size="large">
-        <Space direction="vertical" size="large">
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <b>General</b>
           <Input
             addonBefore="Name"
@@ -99,7 +99,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
           />
         </Space>
 
-        <Space direction="vertical" size="large">
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <b>Properties</b>
           <Input
             prefix={<EuroCircleOutlined className="clock-icon" />}
@@ -112,6 +112,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
             placeholder="Planned Duration"
           />
         </Space>
+
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <b>Documentation</b>
+          <Input.TextArea
+            size="large"
+            placeholder={
+              selectedElement.type !== 'bpmn:Process'
+                ? 'Element Documentation'
+                : 'Process Documentation'
+            }
+          ></Input.TextArea>
+        </Space>
+
         {selectedElement.type !== 'bpmn:Process' && (
           <Space direction="vertical" size="large">
             <b>Colors</b>

@@ -200,7 +200,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     if (options.type === 'pdf') {
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
-        await pdfExport(exportData, processData, options.titles, zip);
+        await pdfExport(exportData, processData, options.titles, options.a4, zip);
       }
     } else {
       if (options.type === 'bpmn') {

@@ -19,6 +19,7 @@ const exportSubOptions = {
   ],
   pdf: [
     { label: 'with Title', value: 'titles' },
+    { label: 'A4 Pages', value: 'a4' },
     { label: 'with referenced Processes', value: 'imports' },
     { label: 'with collapsed Subprocesses', value: 'subprocesses' },
   ],
@@ -60,6 +61,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
         imports: selectedOptions.some((el) => el === 'imports'),
         titles: selectedOptions.some((el) => el === 'titles'),
+        a4: selectedOptions.some((el) => el === 'a4'),
       },
       processes,
     );

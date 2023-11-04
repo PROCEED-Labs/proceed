@@ -25,6 +25,7 @@ export type ProcessExportOptions = {
   subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg, pdf)
   imports: boolean; // if processes referenced by this process should be exported as well
   titles: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
+  a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
 };
 
 /**

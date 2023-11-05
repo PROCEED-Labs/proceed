@@ -97,8 +97,8 @@ const RolesPage: FC = () => {
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
               <span>{selectedRowKeys.length} selected:</span>
               <Popconfirm
-                title="Delete roles"
-                description="Are you sure you want to delete these roles?"
+                title="Delete Roles"
+                description="Are you sure you want to delete the selected roles?"
                 onConfirm={() => deleteRoles(selectedRowKeys)}
               >
                 <Button type="text" icon={<DeleteOutlined />} disabled={cannotDeleteSelected} />

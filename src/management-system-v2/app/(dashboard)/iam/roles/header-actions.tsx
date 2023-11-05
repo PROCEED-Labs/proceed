@@ -46,6 +46,20 @@ const CreateRoleModal: FC<{
     },
   });
 
+  const [submittable, setSubmittable] = useState(false);
+  const values = Form.useWatch('name', form);
+
+  useEffect(() => {
+    form.validateFields({ validateOnly: true }).then(
+      () => {
+        setSubmittable(true);
+      },
+      () => {
+        setSubmittable(false);
+      },
+    );
+  }, [form, values]);
+
   useEffect(() => {
     form.resetFields();
     setFormatError({});
@@ -72,13 +86,15 @@ const CreateRoleModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null} title="Create a new role">
+    <Modal open={modalOpen} onCancel={close} footer={null} title="Create New Role">
       <Form form={form} layout="vertical" onFinish={submitData}>
         <Form.Item
           label="Name"
           name="name"
           help={formatError.name}
           validateStatus={formatError.name && 'error'}
+          rules={[{ required: true, message: 'This field is required' }]}
+          required
         >
           <Input />
         </Form.Item>
@@ -89,7 +105,7 @@ const CreateRoleModal: FC<{
           help={formatError.description}
           validateStatus={formatError.description && 'error'}
         >
-          <Input.TextArea placeholder="input placeholder" />
+          <Input.TextArea />
         </Form.Item>
 
         <Form.Item
@@ -106,8 +122,8 @@ const CreateRoleModal: FC<{
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={isLoading}>
-            Submit
+          <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
+            Create Role
           </Button>
         </Form.Item>
       </Form>
@@ -127,7 +143,7 @@ const HeaderActions: FC = () => {
 
       <AuthCan action="create" resource="Role">
         <Button type="primary" onClick={() => setCreateRoleModalOpen(true)}>
-          <PlusOutlined /> Create
+          <PlusOutlined /> Create Role
         </Button>
       </AuthCan>
     </>

@@ -57,11 +57,11 @@ function RolePage({ params: { roleId } }: { params: { roleId: string } }) {
         </Space>
       }
     >
-      <Skeleton loading={isLoading}>
-        <div style={{ maxWidth: '800px', margin: 'auto' }}>
+      <div style={{ maxWidth: '800px', margin: 'auto' }}>
+        <Skeleton loading={isLoading}>
           <Tabs items={items} />
-        </div>
-      </Skeleton>
+        </Skeleton>
+      </div>
     </Content>
   );
 }

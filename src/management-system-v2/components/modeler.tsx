@@ -154,12 +154,14 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         <>
           <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
           {selectedVersionId && <VersionToolbar />}
-          <XmlEditor
-            bpmn={xmlEditorBpmn}
-            canSave={!selectedVersionId}
-            onClose={handleCloseXmlEditor}
-            onSaveXml={handleXmlEditorSave}
-          />
+          {!!xmlEditorBpmn && (
+            <XmlEditor
+              bpmn={xmlEditorBpmn}
+              canSave={!selectedVersionId}
+              onClose={handleCloseXmlEditor}
+              onSaveXml={handleXmlEditorSave}
+            />
+          )}
         </>
       )}
       <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />

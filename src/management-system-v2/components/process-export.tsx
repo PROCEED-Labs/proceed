@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -16,18 +16,51 @@ const exportTypeOptions = [
 
 const exportSubOptions = {
   bpmn: [
-    { label: 'with referenced Processes', value: 'imports' },
-    { label: 'with Artefacts', value: 'artefacts' },
+    {
+      label: 'with artefacts',
+      value: 'artefacts',
+      tooltip:
+        'Also export html and images used in User-Tasks and images used for other process elements',
+    },
+    {
+      label: 'with referenced processes',
+      value: 'imports',
+      tooltip: 'Also export all referenced processes used in call-activities',
+    },
   ],
   pdf: [
-    { label: 'with Title', value: 'titles' },
-    { label: 'A4 Pages', value: 'a4' },
-    { label: 'with referenced Processes', value: 'imports' },
-    { label: 'with collapsed Subprocesses', value: 'subprocesses' },
+    {
+      label: 'with meta-data',
+      value: 'titles',
+      tooltip: 'Add process meta information to each page (process name, version, etc.)',
+    },
+    {
+      label: 'A4 pages',
+      value: 'a4',
+      tooltip: 'Use A4 format for all pages (Scales down the process image if necessary)',
+    },
+    {
+      label: 'with referenced processes',
+      value: 'imports',
+      tooltip: 'Also export all referenced processes used in call-activities',
+    },
+    {
+      label: 'with collapsed subprocesses',
+      value: 'subprocesses',
+      tooltip: 'Also export content of all collapsed subprocesses',
+    },
   ],
   svg: [
-    { label: 'with referenced Processes', value: 'imports' },
-    { label: 'with collapsed Subprocesses', value: 'subprocesses' },
+    {
+      label: 'with referenced processes',
+      value: 'imports',
+      tooltip: 'Also export all referenced processes used in call-activities',
+    },
+    {
+      label: 'with collapsed subprocesses',
+      value: 'subprocesses',
+      tooltip: 'Also export content of all collapsed subprocesses',
+    },
   ],
 };
 
@@ -85,11 +118,18 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
 
   const optionSelection = (
     <Checkbox.Group
-      options={exportSubOptions[selectedType!]}
       onChange={handleOptionSelectionChange}
       value={selectedOptions}
-      style={{ flexDirection: 'column', width: '50%' }}
-    />
+      style={{ width: '50%' }}
+    >
+      <Space direction="vertical">
+        {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
+          <Tooltip placement="left" title={tooltip} key={label}>
+            <Checkbox value={value}>{label}</Checkbox>
+          </Tooltip>
+        ))}
+      </Space>
+    </Checkbox.Group>
   );
 
   return (

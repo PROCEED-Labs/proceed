@@ -23,6 +23,8 @@ import Bar from './bar';
 import ProcessEditButton from './process-edit-button';
 import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 import { AuthCan } from '@/lib/iamComponents';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import { useAuthStore } from '@/lib/iam';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -59,6 +61,8 @@ const Processes: FC = () => {
     },
   });
 
+  const ability = useAuthStore((state) => state.ability);
+
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}');
@@ -91,20 +95,37 @@ const Processes: FC = () => {
           }}
         />
       </Tooltip>
-      {selectedRowKeys.length === 1 && (
-        <ProcessEditButton
-          definitionId={selectedRowKeys[0] as string}
-          wrapperElement={
-            <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => {}} />
-            </Tooltip>
-          }
-          onEdited={() => {
-            refetchProcesses();
-          }}
-        />
-      )}
-      <AuthCan resource="Process" action="delete">
+      {selectedRowKeys.length === 1 &&
+        ability.can(
+          'update',
+          toCaslResource(
+            'Process',
+            data!.find((process) => process.definitionId === (selectedRowKeys[0] as string))!,
+          ),
+        ) && (
+          <ProcessEditButton
+            definitionId={selectedRowKeys[0] as string}
+            wrapperElement={
+              <Tooltip placement="top" title={'Edit'}>
+                <EditOutlined onClick={() => {}} />
+              </Tooltip>
+            }
+            onEdited={() => {
+              refetchProcesses();
+            }}
+          />
+        )}
+      {(selectedRowKeys as string[])
+        .map((selectedRowKey) =>
+          ability.can(
+            'delete',
+            toCaslResource(
+              'Process',
+              data!.find((process) => process.definitionId === selectedRowKey)!,
+            ),
+          ),
+        )
+        .every((abilityResult) => abilityResult) && (
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined
             onClick={async () => {
@@ -117,7 +138,7 @@ const Processes: FC = () => {
             }}
           />
         </Tooltip>
-      </AuthCan>
+      )}
     </>
   );
 

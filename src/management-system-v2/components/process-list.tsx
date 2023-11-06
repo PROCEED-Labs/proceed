@@ -28,6 +28,7 @@ import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, useInvalidateAsset } from '@/lib/fetch-data';
 import ProcessEditButton from './process-edit-button';
 import { AuthCan } from '@/lib/iamComponents';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -124,18 +125,20 @@ const ProcessList: FC<ProcessListProps> = ({
             }}
           />
         </Tooltip>
-        <ProcessEditButton
-          definitionId={record.definitionId}
-          wrapperElement={
-            <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined />
-            </Tooltip>
-          }
-          onEdited={() => {
-            invalidateProcesses();
-          }}
-        />
-        <AuthCan resource="Process" action="delete">
+        <AuthCan resource={toCaslResource('Process', record)} action="update">
+          <ProcessEditButton
+            definitionId={record.definitionId}
+            wrapperElement={
+              <Tooltip placement="top" title={'Edit'}>
+                <EditOutlined />
+              </Tooltip>
+            }
+            onEdited={() => {
+              invalidateProcesses();
+            }}
+          />
+        </AuthCan>
+        <AuthCan resource={toCaslResource('Process', record)} action="delete">
           <Tooltip placement="top" title={'Delete'}>
             <DeleteOutlined
               onClick={async (event) => {

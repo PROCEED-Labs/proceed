@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent } from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent, Space } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -13,9 +13,18 @@ const exportTypeOptions = [
 ];
 
 const exportSubOptions = {
-  bpmn: [{ label: 'Export with Artefacts', value: 'artefacts' }],
-  pdf: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
-  svg: [{ label: 'Export with collapsed subprocesses', value: 'subprocesses' }],
+  bpmn: [
+    { label: 'Export with referenced Processes', value: 'imports' },
+    { label: 'Export with Artefacts', value: 'artefacts' },
+  ],
+  pdf: [
+    { label: 'Export with referenced Processes', value: 'imports' },
+    { label: 'Export with collapsed subprocesses', value: 'subprocesses' },
+  ],
+  svg: [
+    { label: 'Export with referenced Processes', value: 'imports' },
+    { label: 'Export with collapsed subprocesses', value: 'subprocesses' },
+  ],
 };
 
 type ProcessExportModalProps = {
@@ -27,6 +36,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>([]);
   const [finishedTypeSelection, setfinishedTypeSelection] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -38,7 +48,9 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
 
   const handleClose = () => {
     setSelectedType(undefined);
+    setSelectedOptions([]);
     setfinishedTypeSelection(false);
+    setIsExporting(false);
     onClose();
   };
 
@@ -52,11 +64,13 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       }
     }
 
+    setIsExporting(true);
     await exportProcesses(
       {
         type: selectedType!,
         artefacts: selectedOptions.some((el) => el === 'artefacts'),
         subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
+        imports: selectedOptions.some((el) => el === 'imports'),
       },
       processes,
     );
@@ -69,12 +83,15 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
     : 'Select the file type';
 
   const typeSelection = (
-    <Radio.Group
-      options={exportTypeOptions}
-      onChange={handleTypeSelectionChange}
-      value={selectedType}
-      style={{ flexDirection: 'column' }}
-    />
+    <Radio.Group onChange={handleTypeSelectionChange} value={selectedType}>
+      <Space direction="vertical">
+        {exportTypeOptions.map(({ label, value }) => (
+          <Radio value={value} key={value}>
+            {label}
+          </Radio>
+        ))}
+      </Space>
+    </Radio.Group>
   );
 
   const optionSelection = (
@@ -94,7 +111,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         onOk={handleOk}
         onCancel={handleClose}
         centered
-        okButtonProps={{ disabled: !selectedType }}
+        okButtonProps={{ disabled: !selectedType, loading: isExporting }}
       >
         {finishedTypeSelection ? optionSelection : typeSelection}
       </Modal>

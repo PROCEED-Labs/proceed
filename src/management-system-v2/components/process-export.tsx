@@ -36,7 +36,7 @@ type ProcessExportModalProps = {
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
-  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['titles']);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {

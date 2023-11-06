@@ -102,25 +102,16 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                 onClick={handlePropertiesPanelToggle}
               /> */}
-              <Tooltip title="Edit Process Constraints">
-                <Button icon={<FormOutlined />}></Button>
-              </Tooltip>
               <Tooltip title="Show XML">
                 <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
                 <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
               </Tooltip>
-              <Tooltip title="Hide Non-Executeable Elements">
-                <Button icon={<EyeOutlined />}></Button>
-              </Tooltip>
               <Tooltip
                 title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
               >
                 <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
-              </Tooltip>
-              <Tooltip title="Share">
-                <Button icon={svgShare}></Button>
               </Tooltip>
               <Tooltip title="Create New Version">
                 <VersionCreationButton

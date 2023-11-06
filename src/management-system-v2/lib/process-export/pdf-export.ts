@@ -7,7 +7,11 @@ import { downloadFile, getSVGFromBPMN } from './util';
 import PDFPagebuilder from './PDFPageBuilder';
 
 const proceedUrl = 'www.proceed-labs.org';
-const proceedLogo = fetch('/proceed-labs-logo.svg').then((response) => response.text());
+const proceedLogo = fetch(`/proceed-labs-logo.svg`)
+  .then((response) => response.text())
+  .catch(() => {
+    return '';
+  });
 
 /**
  * Executes the logic that adds the page for a specific process version/collapsed subprocess

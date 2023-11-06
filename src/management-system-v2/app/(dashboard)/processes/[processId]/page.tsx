@@ -163,7 +163,7 @@ const Processes: FC<ProcessProps> = () => {
                   icon={<PlusOutlined />}
                   createVersion={createProcessVersion}
                 >
-                  Create new version
+                  Create New Version
                 </VersionCreationButton>
               </Space>
             </>

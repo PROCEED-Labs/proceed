@@ -32,7 +32,7 @@ type ConfirmationModalProps = {
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ show, close, confirm }) => {
   return (
     <Modal
-      title="Are you sure you want to continue editing with this version?"
+      title="Are you sure you want to continue editing with this Version?"
       open={show}
       closeIcon={null}
       onOk={() => {
@@ -198,7 +198,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
       <div style={{ position: 'absolute', zIndex: 10, padding: '12px', top: '80px' }}>
         <Space.Compact size="large" direction="vertical">
           <AuthCan action="create" resource="Process">
-            <Tooltip title="Create a new Process using this version">
+            <Tooltip title="Create a new Process using this Version">
               <ProcessCreationButton
                 icon={<PlusOutlined />}
                 createProcess={createNewProcess}

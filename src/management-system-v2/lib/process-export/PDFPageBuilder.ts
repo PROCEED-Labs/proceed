@@ -25,7 +25,7 @@ class PDFPageBuilder {
   private pdf: jsPDF;
   // the page size WITHOUT! page margins
   private size?: { width: number; height: number };
-  // the margins of the page (along the x and y axis)
+  // the margins of the page
   private margins: { left: number; right: number; top: number; bottom: number };
   // the different pieces of text and images to put on the page
   private pageContent: PageContentInfo[];
@@ -34,7 +34,7 @@ class PDFPageBuilder {
    * Create a new page builder
    *
    * @param pdf the pdf to which the new page shall be added
-   * @param a4Format if the page ashould have an a4 Format or if it should be scaled to fit the content
+   * @param a4Format if the page should have an a4 Format or if it should be scaled to fit the content
    * @param margins the margins of the page
    */
   constructor(pdf: jsPDF, a4Format = false, margins = { left: 5, right: 5, top: 5, bottom: 5 }) {
@@ -138,7 +138,6 @@ class PDFPageBuilder {
 
     // if the image is too small dont scale it up but place it in the middle of the space to occupy
     if (size && imageDimensions.width < size.width && imageDimensions.height < size.height) {
-      // TODO: handle images that have margins
       const wDiff = size.width - imageDimensions.width;
       const hDiff = size.height - imageDimensions.height;
 
@@ -246,6 +245,31 @@ class PDFPageBuilder {
   }
 
   /**
+   * Calculates the horizontal position at which to start drawing the content
+   *
+   * @param page the page to draw to
+   * @param position if the content should be aligned on the left, right or center of the page
+   * @param width the width of the content
+   * @param margins the margins of the content
+   * @returns the horizontal position at which to start drawing the content
+   */
+  private getHorizontalStartingPosition(
+    page: jsPDF,
+    position: ContentPosition,
+    width: number,
+    margins: ContentInfo['margins'],
+  ) {
+    switch (position) {
+      case 'left':
+        return this.margins.left + margins.left;
+      case 'right':
+        return page.internal.pageSize.width - this.margins.right - margins.right - width;
+      case 'center':
+        return this.margins.left + this.size!.width / 2 - width / 2;
+    }
+  }
+
+  /**
    * Draw a line of text onto the pdf page
    *
    * @param page the page to add the text to
@@ -258,23 +282,12 @@ class PDFPageBuilder {
 
     yPosition += textContent.margins.top;
 
-    const lineWidth = this.getLineDimensions(text).width;
-
-    let xPosition = this.margins.left;
-
-    // calculate the horizontal position at which to start drawing the line
-    switch (textContent.position) {
-      case 'left':
-        xPosition = this.margins.left + textContent.margins.left;
-        break;
-      case 'right':
-        xPosition =
-          page.internal.pageSize.width - this.margins.right - textContent.margins.right - lineWidth;
-        break;
-      case 'center':
-        xPosition = this.margins.left + this.size!.width / 2 - lineWidth / 2;
-        break;
-    }
+    let xPosition = this.getHorizontalStartingPosition(
+      page,
+      textContent.position,
+      textContent.size.width,
+      textContent.margins,
+    );
 
     // we allow bold text to be defined like this '[normal]**[bold]**[normal]'
     const splitText = text.split('**');
@@ -289,7 +302,7 @@ class PDFPageBuilder {
       if (isBold) page.setFont(fontName, 'normal');
     });
 
-    // return the potential position of a potential following element below the newly drawn line
+    // return the position of a potential following element below the newly drawn line
     return yPosition + page.getLineHeight() + textContent.margins.bottom;
   }
 
@@ -304,24 +317,12 @@ class PDFPageBuilder {
   private async drawVectorImage(page: jsPDF, imageContent: ImageContentInfo, yPosition: number) {
     yPosition += imageContent.margins.top;
 
-    let xPosition = this.margins.left;
-
-    // calculate the horizontal position at which to start drawing the line
-    switch (imageContent.position) {
-      case 'left':
-        xPosition = this.margins.left + imageContent.margins.left;
-        break;
-      case 'right':
-        xPosition =
-          page.internal.pageSize.width -
-          this.margins.right -
-          imageContent.margins.right -
-          imageContent.size.width;
-        break;
-      case 'center':
-        xPosition = this.margins.left + this.size!.width / 2 - imageContent.size.width / 2;
-        break;
-    }
+    let xPosition = this.getHorizontalStartingPosition(
+      page,
+      imageContent.position,
+      imageContent.size.width,
+      imageContent.margins,
+    );
 
     // draw the image
     const parser = new DOMParser();
@@ -337,6 +338,9 @@ class PDFPageBuilder {
     return yPosition + imageContent.size.height + imageContent.margins.bottom;
   }
 
+  /**
+   * Creates a new page in the pdf given to the builder using the previously registered content
+   */
   async createPage() {
     // create the new page with the correct size
     let size = this.getPageSize();

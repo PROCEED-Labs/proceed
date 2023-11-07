@@ -31,7 +31,7 @@ const exportSubOptions = {
   pdf: [
     {
       label: 'with meta-data',
-      value: 'titles',
+      value: 'metaData',
       tooltip: 'Add process meta information to each page (process name, version, etc.)',
     },
     {
@@ -71,7 +71,7 @@ type ProcessExportModalProps = {
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
-  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['titles']);
+  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
@@ -95,7 +95,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         artefacts: selectedOptions.some((el) => el === 'artefacts'),
         subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
         imports: selectedOptions.some((el) => el === 'imports'),
-        titles: selectedOptions.some((el) => el === 'titles'),
+        metaData: selectedOptions.some((el) => el === 'metaData'),
         a4: selectedOptions.some((el) => el === 'a4'),
       },
       processes,

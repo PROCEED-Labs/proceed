@@ -19,9 +19,9 @@ const proceedLogo = fetch(`/proceed-labs-logo.svg`)
  * @param processData the data of the complete process
  * @param version the specific version to handle
  * @param pdf the pdf to add a page to
- * @param isImport if the data to be added is part of an imported process
- * @param withTitles if process information should be added as text to the process page
+ * @param withMetaData if process information should be added as text to the process page
  * @param useA4 if the process page should have an A4 format (otherwise the size of the process is used to scale the page)
+ * @param isImport if the data to be added is part of an imported process
  * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
  * @param subprocessName the name of the collapsed subprocess to be added
  */
@@ -29,7 +29,7 @@ async function addPDFPage(
   processData: ProcessExportData,
   version: string,
   pdf: jsPDF,
-  withTitles: boolean,
+  withMetaData: boolean,
   useA4: boolean,
   isImport = false,
   subprocessId?: string,
@@ -51,7 +51,7 @@ async function addPDFPage(
 
   const versionData = processData.versions[version];
   // register meta data text if requested
-  if (withTitles) {
+  if (withMetaData) {
     // generate the lines in the title: (Imported )Process Name, Process Version
     pageBuilder.addLine(
       `**${isImport ? 'Imported Process Name:' : 'Process Name:'}** ${
@@ -86,7 +86,7 @@ async function addPDFPage(
  * @param processData the data of the complete process
  * @param version the specific version to handle
  * @param pdf the pdf to add a page to
- * @param withTitles if process information should be added as text to the process page
+ * @param withMetaData if process information should be added as text to the process page
  * @param forceA4 if the pdf pages should always have an A4 page format
  * @param isImport if the version is of an import
  */
@@ -95,21 +95,21 @@ async function handleProcessVersionPdfExport(
   processData: ProcessExportData,
   version: string,
   pdf: jsPDF,
-  withTitles: boolean,
+  withMetaData: boolean,
   forceA4: boolean,
   isImport = false,
 ) {
   // add the main process (version) data
-  await addPDFPage(processData, version, pdf, withTitles, forceA4, isImport);
+  await addPDFPage(processData, version, pdf, withMetaData, forceA4, isImport);
 
   const versionData = processData.versions[version];
-  // add all collapsed subprocesses (if requested)
+  // add all collapsed subprocesses
   for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
     await addPDFPage(
       processData,
       version,
       pdf,
-      withTitles,
+      withMetaData,
       forceA4,
       isImport,
       subprocessId,
@@ -126,7 +126,7 @@ async function handleProcessVersionPdfExport(
         importData,
         processVersion,
         pdf,
-        withTitles,
+        withMetaData,
         forceA4,
         true,
       );
@@ -139,14 +139,14 @@ async function handleProcessVersionPdfExport(
  *
  * @param processesData the data of all processes
  * @param processData the data of the complete process to export
- * @param withTitles if process information should be added as text to the process page
+ * @param withMetaData if process information should be added as text to the process page
  * @param forceA4 if the pdf pages should always have an A4 page format
  * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
  */
 async function pdfExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
-  withTitles: boolean,
+  withMetaData: boolean,
   forceA4: boolean,
   zip?: jsZip | null,
 ) {
@@ -172,7 +172,7 @@ async function pdfExport(
       processData,
       version,
       pdf,
-      withTitles,
+      withMetaData,
       forceA4,
     );
   }

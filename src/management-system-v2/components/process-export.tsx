@@ -30,7 +30,7 @@ const exportSubOptions = {
   ],
   pdf: [
     {
-      label: 'with meta-data',
+      label: 'with meta data',
       value: 'metaData',
       tooltip: 'Add process meta information to each page (process name, version, etc.)',
     },
@@ -135,7 +135,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   return (
     <>
       <Modal
-        title={`Export selected processes`}
+        title={`Export selected Processes`}
         open={!!processes.length}
         onOk={handleOk}
         onCancel={handleClose}

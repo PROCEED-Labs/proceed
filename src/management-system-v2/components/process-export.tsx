@@ -2,7 +2,17 @@
 
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
+import {
+  Modal,
+  Checkbox,
+  Radio,
+  RadioChangeEvent,
+  Space,
+  Flex,
+  Divider,
+  Tooltip,
+  Slider,
+} from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -12,6 +22,7 @@ const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
   { label: 'PDF', value: 'pdf' },
   { label: 'SVG', value: 'svg' },
+  { label: 'PNG', value: 'png' },
 ];
 
 const exportSubOptions = {
@@ -62,6 +73,18 @@ const exportSubOptions = {
       tooltip: 'Also export content of all collapsed subprocesses',
     },
   ],
+  png: [
+    {
+      label: 'with referenced processes',
+      value: 'imports',
+      tooltip: 'Also export all referenced processes used in call-activities',
+    },
+    {
+      label: 'with collapsed subprocesses',
+      value: 'subprocesses',
+      tooltip: 'Also export content of all collapsed subprocesses',
+    },
+  ],
 };
 
 type ProcessExportModalProps = {
@@ -73,6 +96,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
+  const [maxPngScalingFactor, setMaxPngScalingFactor] = useState(10);
+  const [pngScalingFactor, setPngScalingFactor] = useState(1);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -97,6 +122,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         imports: selectedOptions.some((el) => el === 'imports'),
         metaData: selectedOptions.some((el) => el === 'metaData'),
         a4: selectedOptions.some((el) => el === 'a4'),
+        scaling: pngScalingFactor,
       },
       processes,
     );
@@ -117,19 +143,35 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   );
 
   const optionSelection = (
-    <Checkbox.Group
-      onChange={handleOptionSelectionChange}
-      value={selectedOptions}
-      style={{ width: '50%' }}
-    >
-      <Space direction="vertical">
-        {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
-          <Tooltip placement="left" title={tooltip} key={label}>
-            <Checkbox value={value}>{label}</Checkbox>
-          </Tooltip>
-        ))}
-      </Space>
-    </Checkbox.Group>
+    <Space direction="vertical">
+      <Checkbox.Group
+        onChange={handleOptionSelectionChange}
+        value={selectedOptions}
+        style={{ width: '100%' }}
+      >
+        <Space direction="vertical">
+          {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
+            <Tooltip placement="left" title={tooltip} key={label}>
+              <Checkbox value={value}>{label}</Checkbox>
+            </Tooltip>
+          ))}
+        </Space>
+      </Checkbox.Group>
+      {selectedType === 'png' && (
+        <div style={{ marginTop: '10px' }}>
+          <span>Scaling:</span>
+          <Slider
+            value={pngScalingFactor}
+            min={1}
+            max={maxPngScalingFactor}
+            step={1}
+            marks={{ 1: 'x1', [maxPngScalingFactor]: `x${maxPngScalingFactor}` }}
+            dots
+            onChange={setPngScalingFactor}
+          />
+        </div>
+      )}
+    </Space>
   );
 
   return (

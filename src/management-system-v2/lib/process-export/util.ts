@@ -59,3 +59,28 @@ export async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
 
   return svg;
 }
+
+/**
+ * Returns the dimensions of a vector-image
+ *
+ * @param svg the svg string to get the size from
+ * @returns the width and height of the image
+ */
+export function getImageDimensions(svg: string) {
+  let width = 0;
+  let height = 0;
+
+  const viewBox = svg.split('<svg')[1].split('>')[0].split('viewBox="');
+
+  if (viewBox) {
+    [width, height] = viewBox[1].split('"')[0].split(' ').map(parseFloat).slice(2);
+  } else {
+    width = parseFloat(svg.split('width="')[1].split('"')[0]);
+    height = parseFloat(svg.split('height="')[1].split('"')[0]);
+  }
+
+  return {
+    width,
+    height,
+  };
+}

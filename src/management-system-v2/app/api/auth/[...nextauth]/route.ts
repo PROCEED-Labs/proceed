@@ -2,6 +2,7 @@ import { AuthOptions } from 'next-auth';
 import NextAuth from 'next-auth/next';
 import Auth0Provider from 'next-auth/providers/auth0';
 import { User } from '@/types/next-auth';
+import { randomUUID } from 'crypto';
 
 export const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -28,12 +29,14 @@ export const nextAuthOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      if (trigger === 'signIn') token.csrfToken = randomUUID();
       if (user) token.user = user as User;
       return token;
     },
     session({ session, token }) {
       if (token.user) session.user = token.user;
+      session.csrfToken = token.csrfToken;
       return session;
     },
   },

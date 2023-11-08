@@ -1,6 +1,5 @@
 'use client';
 
-import { useAbilityStore } from './abilityStore';
 import {
   UseMutationOptions,
   UseQueryOptions,
@@ -8,30 +7,33 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import createClient, { FetchOptions } from 'openapi-fetch';
-import { FilterKeys } from 'openapi-typescript-helpers';
+import createClient, { FetchOptions, FetchResponse } from 'openapi-fetch';
+import { FilterKeys, PathsWithMethod } from 'openapi-typescript-helpers';
 import { paths } from './openapiSchema';
 import { useCallback, useMemo } from 'react';
+import { useCsrfTokenStore } from './csrfTokenStore';
 
 const BASE_URL = process.env.API_URL;
-
+type Paths = paths extends Record<string, any> ? paths : never;
 const apiClient = createClient<paths>({ baseUrl: BASE_URL });
-
 function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClient]>(
   call: TApiCall,
 ) {
   // @ts-ignore
-  const wrappedFunction: typeof call = async (...args) => {
-    const state = useAbilityStore.getState();
-
+  const wrappedFunction = async (path, options) => {
+    const csrfToken = useCsrfTokenStore.getState().csrfToken;
     // @ts-ignore
-    const response = await (call as (...args: any[]) => Promise<any>)(args[0], {
+    const response = await (call as (...args: any[]) => Promise<any>)(path, {
       credentials: process.env.NEXT_PUBLIC_USE_AUTH
         ? process.env.NODE_ENV === 'production'
           ? 'same-origin'
           : 'include'
         : undefined,
-      ...args[1],
+      headers: {
+        'csrf-token': csrfToken,
+      },
+      // @ts-ignore
+      ...options,
     });
 
     if (response.error) throw response.error;
@@ -42,13 +44,65 @@ function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClie
     return response;
   };
 
-  return wrappedFunction as TApiCall;
+  return wrappedFunction;
 }
 
-export const get = addAuthHeaders(apiClient.GET);
-export const post = addAuthHeaders(apiClient.POST);
-export const put = addAuthHeaders(apiClient.PUT);
-export const del = addAuthHeaders(apiClient.DELETE);
+export const get: <P extends PathsWithMethod<Paths, 'get'>>(
+  url: P,
+  init: FetchOptions<FilterKeys<Paths[P], 'get'>>,
+) => Promise<
+  FetchResponse<
+    'get' extends infer T
+      ? T extends 'get'
+        ? T extends keyof Paths[P]
+          ? Paths[P][T]
+          : unknown
+        : never
+      : never
+  >
+> = addAuthHeaders(apiClient.GET);
+export const post: <P_2 extends PathsWithMethod<Paths, 'post'>>(
+  url: P_2,
+  init: FetchOptions<FilterKeys<Paths[P_2], 'post'>>,
+) => Promise<
+  FetchResponse<
+    'post' extends infer T_2
+      ? T_2 extends 'post'
+        ? T_2 extends keyof Paths[P_2]
+          ? Paths[P_2][T_2]
+          : unknown
+        : never
+      : never
+  >
+> = addAuthHeaders(apiClient.POST);
+export const put: <P_1 extends PathsWithMethod<Paths, 'put'>>(
+  url: P_1,
+  init: FetchOptions<FilterKeys<Paths[P_1], 'put'>>,
+) => Promise<
+  FetchResponse<
+    'put' extends infer T_1
+      ? T_1 extends 'put'
+        ? T_1 extends keyof Paths[P_1]
+          ? Paths[P_1][T_1]
+          : unknown
+        : never
+      : never
+  >
+> = addAuthHeaders(apiClient.PUT);
+export const del: <P_3 extends PathsWithMethod<Paths, 'delete'>>(
+  url: P_3,
+  init: FetchOptions<FilterKeys<Paths[P_3], 'delete'>>,
+) => Promise<
+  FetchResponse<
+    'delete' extends infer T_3
+      ? T_3 extends 'delete'
+        ? T_3 extends keyof Paths[P_3]
+          ? Paths[P_3][T_3]
+          : unknown
+        : never
+      : never
+  >
+> = addAuthHeaders(apiClient.DELETE);
 
 type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K] } & {};
 type QueryData<T extends (...args: any) => any> = Prettify<
@@ -136,8 +190,9 @@ export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.POS
   > = {},
 ) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'post'>>) => {
       const { data } = await post(path, body);
 
       queryClient.invalidateQueries(getKeys(path, body));
@@ -160,10 +215,9 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.PUT>
   > = {},
 ) {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'put'>>) => {
-      const state = useAbilityStore.getState();
 
+  return useMutation({
+    mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'put'>>) => {
       const { data } = await put(path, body);
 
       queryClient.invalidateQueries(getKeys(path, body));
@@ -186,8 +240,9 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.D
   > = {},
 ) => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (body: FetchOptions<FilterKeys<paths[TFirstParam], 'delete'>>) => {
+    mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'delete'>>) => {
       const { data } = await del(path, body);
 
       queryClient.invalidateQueries(getKeys(path, body));

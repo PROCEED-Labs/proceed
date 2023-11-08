@@ -5,8 +5,9 @@ import { useAbilityStore } from './abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
 import { AbilityRule, ResourceActionType, ResourceType } from './ability/caslAbility';
-import { PackedRulesForUser } from 'proceed-management-system/src/backend/server/iam/authorization/caslRules';
 import { PackRule } from '@casl/ability/extra';
+import { useCsrfTokenStore } from './csrfTokenStore';
+import { useRouter } from 'next/navigation';
 
 export type AuthCanProps = {
   action: ResourceActionType | ResourceActionType[];
@@ -20,16 +21,21 @@ export type AuthCanProps = {
 const API_URL = process.env.API_URL;
 
 export const FetchAbility = () => {
-  const { status } = useSession();
+  const setCsrfToken = useCsrfTokenStore((store) => store.setCsrfToken);
+  const { status, data } = useSession();
   const setAbility = useAbilityStore((store) => store.setAbility);
 
   useEffect(() => {
     if (status === 'authenticated') {
-      fetch(`${API_URL}/ability`, { credentials: 'include' })
+      setCsrfToken(data.csrfToken);
+      fetch(`${API_URL}/ability`, {
+        credentials: 'include',
+        headers: { 'csrf-token': data.csrfToken },
+      })
         .then((r) => r.json())
         .then(({ rules }: { rules: PackRule<AbilityRule>[] }) => setAbility(rules));
     }
-  }, [status, setAbility]);
+  }, [status, setAbility, data, setCsrfToken]);
 
   return <></>;
 };

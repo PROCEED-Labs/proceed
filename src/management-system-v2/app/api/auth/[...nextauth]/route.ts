@@ -3,6 +3,7 @@ import NextAuth from 'next-auth/next';
 import Auth0Provider from 'next-auth/providers/auth0';
 import { User } from '@/types/next-auth';
 import { randomUUID } from 'crypto';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -42,6 +43,38 @@ export const nextAuthOptions: AuthOptions = {
   },
 };
 
+if (process.env.NODE_ENV === 'development') {
+  const developmentUsers = [
+    {
+      username: 'johndoe',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'johndoe@proceed-labs.org',
+      id: 'development-id|johndoe',
+    },
+    {
+      username: 'admin',
+      firstName: 'Admin',
+      lastName: 'Admin',
+      email: 'admin@proceed-labs.org',
+      id: 'development-id|admin',
+    },
+  ];
+
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      name: 'Development Users',
+      credentials: {
+        username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
+      },
+      async authorize(credentials) {
+        const user = developmentUsers.find((user) => user.username === credentials?.username);
+
+        return user || null;
+      },
+    }),
+  );
+}
 const handler = NextAuth(nextAuthOptions);
 
 export { handler as GET, handler as POST };

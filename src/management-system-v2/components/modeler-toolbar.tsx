@@ -24,8 +24,10 @@ import { useParams, useSearchParams } from 'next/navigation';
 
 import ProcessExportModal from './process-export';
 
-import { createNewProcessVersion } from '@/lib/helpers';
+import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
+import { useQueryClient } from '@tanstack/react-query';
+import { useInvalidateAsset } from '@/lib/fetch-data';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -41,8 +43,17 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
-  // const [index, setIndex] = useState(0);
   const { processId } = useParams();
+
+  const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  const invalidateProcesses = useInvalidateAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  // const [index, setIndex] = useState(0);
 
   let selectedElement;
 
@@ -66,6 +77,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         values.versionName,
         values.versionDescription,
       );
+      await invalidateVersions();
+      await invalidateProcesses();
     }
   };
   const handlePropertiesPanelToggle = () => {
@@ -89,25 +102,16 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                 onClick={handlePropertiesPanelToggle}
               /> */}
-              <Tooltip title="Edit Process Constraints">
-                <Button icon={<FormOutlined />}></Button>
-              </Tooltip>
               <Tooltip title="Show XML">
                 <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
               </Tooltip>
               <Tooltip title="Export">
                 <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
               </Tooltip>
-              <Tooltip title="Hide Non-Executeable Elements">
-                <Button icon={<EyeOutlined />}></Button>
-              </Tooltip>
               <Tooltip
                 title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
               >
                 <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
-              </Tooltip>
-              <Tooltip title="Share">
-                <Button icon={svgShare}></Button>
               </Tooltip>
               <Tooltip title="Create New Version">
                 <VersionCreationButton

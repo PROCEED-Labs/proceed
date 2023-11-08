@@ -1,6 +1,6 @@
 .Main {
-  min-height: 100vh !important;
   max-height: 100vh !important;
+  min-height: calc(100vh - 70px) !important;
 
   .Header {
     display: flex;
@@ -25,6 +25,7 @@
     padding: 40px 20px;
     max-width: 100%;
     background-color: white;
+    height: calc(100vh - 150px);
 
     &.compact {
       padding: 0;

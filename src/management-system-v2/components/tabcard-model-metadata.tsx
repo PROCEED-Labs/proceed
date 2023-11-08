@@ -1,5 +1,5 @@
 import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
-import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useState } from 'react';
+import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useCallback, useState } from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
@@ -19,6 +19,7 @@ type TabCardProps = {
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
   completeList: Processes;
+  search?: string;
 };
 
 const tabList = [
@@ -92,7 +93,14 @@ const generateContentList = (data: Process) => {
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelection,
+  tabcard,
+  completeList,
+  search,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
@@ -103,12 +111,35 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
     setActiveTabKey(key);
   };
 
+  const clipAndHighlightText = useCallback(
+    (dataIndexElement, record, index) => {
+      const withoutSearchTerm = dataIndexElement?.split(search);
+      let res = dataIndexElement;
+      if (search && withoutSearchTerm?.length > 1) {
+        res = withoutSearchTerm.map((word, i, arr) => {
+          if (i === arr.length - 1) return word;
+
+          return (
+            <span key={i}>
+              <span>{word}</span>
+              <span style={{ color: '#3e93de' }}>{search}</span>
+            </span>
+          );
+        });
+      }
+
+      return <div style={{ flex: 1 }}>{res}</div>;
+    },
+    [search],
+  );
+
   return (
     <Card
       hoverable
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
-          <span>{item?.definitionName}</span>
+          {/* <span>{item?.definitionName}</span> */}
+          {clipAndHighlightText(item?.definitionName, item, 0)}
           <span style={{ flex: 1 }}></span>
           <Button type="text">
             <MoreOutlined />
@@ -117,8 +148,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
       }
       style={{
         cursor: 'pointer',
-        minHeight: tabcard ? '340px' : '300px',
-        maxWidth: 'calc(100vw / 5)',
+        height: tabcard ? '340px' : '300px',
+        // width: 'calc(100vw / 5)',
+        // marginBottom: '30px',
       }}
       className={classNames({
         'small-tabs': true,
@@ -164,7 +196,6 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
             /* Nothing selected */
             setSelection([item?.definitionId]);
           }
-          /* Normal Click */
         } else {
           setSelection([item?.definitionId]);
         }

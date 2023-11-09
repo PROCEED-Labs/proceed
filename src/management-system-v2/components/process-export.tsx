@@ -96,7 +96,6 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
-  const [maxPngScalingFactor, setMaxPngScalingFactor] = useState(10);
   const [pngScalingFactor, setPngScalingFactor] = useState(1);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
@@ -163,11 +162,12 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
           <Slider
             value={pngScalingFactor}
             min={1}
-            max={maxPngScalingFactor}
+            max={10}
             step={1}
-            marks={{ 1: 'x1', [maxPngScalingFactor]: `x${maxPngScalingFactor}` }}
+            marks={{ 1: 'Min', 10: 'Max' }}
             dots
             onChange={setPngScalingFactor}
+            tooltip={{ formatter: null }}
           />
         </div>
       )}

@@ -16,6 +16,9 @@ import {
   getDefinitionsAndProcessIdForEveryCallActivity,
 } from '@proceed/bpmn-helper';
 
+import { asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
+import { getImageDimensions, getSVGFromBPMN } from './util';
+
 /**
  * The options that can be used to select what should be exported
  */
@@ -154,6 +157,25 @@ type ExportMap = {
 
 function getVersionName(version?: string | number) {
   return version ? `${version}` : 'latest';
+}
+
+async function getMaximumScalingFactor(exportData: ProcessesExportData) {
+  console.log(exportData);
+
+  const allVersionBpmns = exportData.flatMap(({ versions }) =>
+    Object.values(versions).map(({ bpmn }) => bpmn),
+  );
+
+  const maximums = await asyncMap(allVersionBpmns, async (bpmn) => {
+    const svg = await getSVGFromBPMN(bpmn);
+    const diagramSize = getImageDimensions(svg);
+
+    return Math.floor(Math.sqrt(268400000 / (diagramSize.width * diagramSize.height)));
+  });
+
+  console.log(maximums);
+
+  return Math.min(...maximums, 10);
 }
 
 /**
@@ -327,8 +349,14 @@ export async function prepareExport(
     }
   }
 
-  return Object.entries(exportData).map(([definitionId, data]) => ({
+  const finalExportData = Object.entries(exportData).map(([definitionId, data]) => ({
     ...data,
     definitionId,
   }));
+
+  if (options.type === 'png') {
+    options.scaling = (options.scaling / 10) * (await getMaximumScalingFactor(finalExportData));
+  }
+
+  return finalExportData;
 }

@@ -195,34 +195,50 @@ export async function pngExport(
       });
 
       const pngBlob: Blob = await new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas');
-
         const { width, height } = getImageDimensions(svg);
         const image = new Image(width, height);
 
         image.onload = async () => {
-          try {
-            canvas.width = scaling * image.width;
-            canvas.height = scaling * image.height;
+          // decrease the scaling if the image cannot be exported
+          for (let scale = scaling; scale >= 1; scale -= 1) {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = scale * image.width;
+              canvas.height = scale * image.height;
 
-            const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-            ctx.imageSmoothingEnabled = false;
-            ctx.scale(scaling, scaling);
-            ctx.drawImage(image, 0, 0, width, height);
+              //Creating 2D Canvas
+              const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+              //prevent from bluring the pixels
+              ctx.imageSmoothingEnabled = false;
 
-            const uri = canvas.toDataURL('image/png');
-            const DATA_URL_REGEX = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/;
-            if (DATA_URL_REGEX.test(uri)) {
-              const blob = await fetch(uri).then((res) => res.blob());
-              resolve(blob);
+              ctx.scale(scale, scale);
+
+              //Drawing Image on Canvas
+              ctx.drawImage(image, 0, 0, width, height);
+
+              //Getting URI for Image in PNG **Default = PNG
+              const uri = canvas.toDataURL('image/png');
+              const DATA_URL_REGEX = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/;
+              if (DATA_URL_REGEX.test(uri)) {
+                const blob = await fetch(uri).then((res) => res.blob());
+                resolve(blob);
+                URL.revokeObjectURL(uri);
+                return;
+              } else {
+                //Release Object URL, so the browser doesn't keep reference
+                URL.revokeObjectURL(uri);
+              }
+            } catch (err) {
+              reject(err);
             }
-            URL.revokeObjectURL(uri);
-          } catch (err) {
-            reject('Failed creating png');
           }
+
+          reject('Cannot create a png. The process size is possibly too large.');
         };
 
+        //Takes BLOB, File and Media Source and returns object url
         image.src = URL.createObjectURL(svgBlob);
+        image.remove();
       });
 
       return pngBlob;

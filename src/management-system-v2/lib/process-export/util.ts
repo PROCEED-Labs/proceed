@@ -57,6 +57,8 @@ export async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
 
   const { svg } = await viewer.saveSVG();
 
+  document.body.removeChild(viewerElement);
+
   return svg;
 }
 

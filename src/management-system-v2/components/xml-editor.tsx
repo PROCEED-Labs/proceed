@@ -129,7 +129,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         title="Warning"
         description="There are unrecognized attributes or elements in the bpmn. Save anyway?"
         onConfirm={handleValidationAndSave}
-        okText="save"
+        okText="Save"
         cancelText="Cancel"
       >
         <Button type="primary">Save</Button>

@@ -6,204 +6,12 @@ import {
   ProcessesExportData,
 } from './export-preparation';
 
-import { v4 } from 'uuid';
-import { jsPDF } from 'jspdf';
+import { downloadFile, getSVGFromBPMN } from './util';
+
 import jsZip from 'jszip';
 import 'svg2pdf.js';
 
-/**
- * Downloads the data onto the device of the user
- *
- * @param filename
- * @param data
- */
-function downloadFile(filename: string, data: Blob) {
-  const objectURL = URL.createObjectURL(data);
-
-  // Creating Anchor Element to trigger download feature
-  const aLink = document.createElement('a');
-
-  // Setting anchor tag properties
-  aLink.style.display = 'none';
-  aLink.download = filename;
-  aLink.href = objectURL;
-
-  // Setting anchor tag to DOM
-  document.body.appendChild(aLink);
-  aLink.click();
-  document.body.removeChild(aLink);
-
-  // Release Object URL, so the browser doesn't keep the reference
-  URL.revokeObjectURL(objectURL);
-}
-
-/**
- * Converts the bpmn into an svg image of the process or of subprocess contained inside the process
- *
- * @param bpmn
- * @returns the svg image as a string
- */
-async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
-  const Viewer = (await import('bpmn-js/lib/Viewer')).default;
-
-  //Creating temporary element for BPMN Viewer
-  const viewerElement = document.createElement('div');
-
-  //Assiging process id to temp element and append to DOM
-  viewerElement.id = 'canvas_' + v4();
-  document.body.appendChild(viewerElement);
-
-  //Create a viewer to transform the bpmn into an svg
-  const viewer = new Viewer({ container: '#' + viewerElement.id });
-  await viewer.importXML(bpmn);
-
-  const canvas = viewer.get('canvas') as any;
-
-  // target the correct plane (root process or the specified subprocess)
-  if (subprocessId) {
-    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`));
-  }
-
-  canvas.zoom('fit-viewport', 'auto');
-
-  const { svg } = await viewer.saveSVG();
-
-  return svg;
-}
-
-/**
- * Executes the logic that adds the page for a specific process version/collapsed subprocess
- *
- * @param processData the data of the complete process
- * @param version the specific version to handle
- * @param pdf the pdf to add a page to
- * @param isImport if the data to be added is part of an imported process
- * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
- * @param subprocessName the name of the collapsed subprocess to be added
- */
-async function addPDFPage(
-  processData: ProcessExportData,
-  version: string,
-  pdf: jsPDF,
-  isImport = false,
-  subprocessId?: string,
-  subprocessName?: string,
-) {
-  const versionData = processData.versions[version];
-  // get the svg so we can display the process as a vector graphic inside the pdf
-  const svg = await getSVGFromBPMN(versionData.bpmn, subprocessId);
-  const parser = new DOMParser();
-  const svgDOM = parser.parseFromString(svg, 'image/svg+xml');
-
-  let numTitleLines = 1;
-  let docTitle = `Version: ${versionData.name || version}`;
-
-  if (isImport) {
-    ++numTitleLines;
-    docTitle =
-      `Imported Process: ${processData.definitionName || processData.definitionId}\n` + docTitle;
-  }
-
-  if (subprocessId) {
-    ++numTitleLines;
-    docTitle += `\nSubprocess: ${subprocessName || subprocessId}`;
-  }
-
-  // get image dimensions
-  let svgWidth = parseFloat(svg.split('width="')[1].split('"')[0]);
-  let svgHeight = 10 * (numTitleLines + 1) + parseFloat(svg.split('height="')[1].split('"')[0]);
-
-  // adding a new page, second parameter orientation: p - portrait, l - landscape
-  pdf.addPage([svgWidth, svgHeight], svgHeight > svgWidth ? 'p' : 'l');
-
-  //Getting PDF Documents width and height
-  const pageWidth = pdf.internal.pageSize.getWidth() - 10;
-  const pageHeight = pdf.internal.pageSize.getHeight() - 10;
-
-  //Setting pdf font size
-  pdf.setFontSize(15);
-
-  //Adding Header to the Pdf
-  // TODO: make sure that the text fits both in landscape as well as in portrait mode
-  pdf.text(docTitle, 10 * numTitleLines, 15);
-
-  await pdf.svg(svgDOM.children[0], {
-    x: 0,
-    y: 10 * numTitleLines,
-    width: pageWidth,
-    height: pageHeight,
-  });
-}
-
-/**
- * Allows to recursively add versions of a process and its imports to the pdf
- *
- * @param processesData the data of all processes
- * @param processData the data of the complete process
- * @param version the specific version to handle
- * @param pdf the pdf to add a page to
- * @param isImport if the version is of an import
- */
-async function handleProcessVersionPdfExport(
-  processesData: ProcessesExportData,
-  processData: ProcessExportData,
-  version: string,
-  pdf: jsPDF,
-  isImport = false,
-) {
-  // add the main process (version) data
-  await addPDFPage(processData, version, pdf, isImport);
-
-  const versionData = processData.versions[version];
-  // add all collapsed subprocesses (if requested)
-  for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
-    await addPDFPage(processData, version, pdf, isImport, subprocessId, subprocessName);
-  }
-
-  // add all imported processes recursively
-  for (const { definitionId, processVersion } of versionData.imports) {
-    const importData = processesData.find((el) => el.definitionId === definitionId);
-    if (importData) {
-      await handleProcessVersionPdfExport(processesData, importData, processVersion, pdf, true);
-    }
-  }
-}
-
-/**
- * Creates a pdf and adds all the requested information of a specific process (including other processes if there are imports to add)
- *
- * @param processesData the data of all processes
- * @param processData the data of the complete process to export
- * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
- */
-async function pdfExport(
-  processesData: ProcessesExportData,
-  processData: ProcessExportData,
-  zip?: jsZip | null,
-) {
-  // create the pdf file for the process
-  const pdf = new jsPDF({
-    unit: 'pt', // needed due to a bug in jsPDF: https://github.com/yWorks/svg2pdf.js/issues/245#issuecomment-1671624250
-    format: 'a4',
-    orientation: 'landscape',
-  });
-  pdf.deletePage(1);
-
-  // only export the versions that were explicitly selected for the given process
-  const nonImportVersions = Object.entries(processData.versions)
-    .filter(([_, { isImport }]) => !isImport)
-    .map(([version]) => version);
-
-  for (const version of nonImportVersions) {
-    await handleProcessVersionPdfExport(processesData, processData, version, pdf);
-  }
-
-  if (zip) {
-    zip.file(`${processData.definitionName}.pdf`, await pdf.output('blob'));
-  } else {
-    downloadFile(`${processData.definitionName}.pdf`, await pdf.output('blob'));
-  }
-}
+import pdfExport from './pdf-export';
 
 /**
  * Executes the logic that adds the file for a specific process version/collapsed subprocess
@@ -391,7 +199,9 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
   for (const processData of exportData) {
     if (options.type === 'pdf') {
       // handle imports inside the pdfExport function
-      if (!processData.isImport) await pdfExport(exportData, processData, zip);
+      if (!processData.isImport) {
+        await pdfExport(exportData, processData, options.metaData, options.a4, zip);
+      }
     } else {
       if (options.type === 'bpmn') {
         const folder = zip?.folder(processData.definitionName);

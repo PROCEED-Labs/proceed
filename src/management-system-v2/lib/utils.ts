@@ -48,3 +48,13 @@ export const addUserPreference = (prefs: Preferences) => {
   'icon-view-in-process-list': false
 }
 */
+
+// found here: https://www.freecodecamp.org/news/javascript-debounce-example/
+// TODO: should we use a library or create our own with functions like this that will be used frequently
+export function debounce(func: Function, timeout = 1000) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return (...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), timeout);
+  };
+}

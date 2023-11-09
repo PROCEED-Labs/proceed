@@ -2,7 +2,7 @@
 
 import React, { FC, useRef, useState } from 'react';
 
-import { Modal, Alert, Button, Space, Tooltip, Flex } from 'antd';
+import { Modal, Button, Tooltip, Flex, Popconfirm } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 const { Title } = Typography;
@@ -11,6 +11,8 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
 import { moddle } from '@proceed/bpmn-helper';
+
+import { debounce } from '@/lib/utils';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -49,21 +51,10 @@ async function checkBpmn(bpmn: string) {
   return { warnings };
 }
 
-// found here: https://www.freecodecamp.org/news/javascript-debounce-example/
-// TODO: should we use a library or create our own with functions like this that will be used frequently
-function debounce(func: Function) {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  return (...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func(...args), 300);
-  };
-}
-
 const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
-  const [saveInfoState, setSaveInfoState] = useState<'error' | 'warning' | 'none'>('none');
-  const [hasError, setHasError] = useState(false);
+  const [saveState, setSaveState] = useState<'error' | 'warning' | 'none'>('none');
 
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -76,24 +67,25 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
 
       onSaveXml(newBpmn);
     }
-    setSaveInfoState('none');
   };
 
   async function validateProcess() {
     if (editorRef.current && monacoRef.current) {
       monacoRef.current.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', []);
-      setHasError(false);
+      setSaveState('none');
       const bpmn = editorRef.current.getValue();
 
-      const { error } = await checkBpmn(bpmn);
+      const { error, warnings } = await checkBpmn(bpmn);
 
       if (error) {
-        setHasError(true);
+        setSaveState('error');
         monacoRef.current.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', [
           { ...error, severity: monacoRef.current.MarkerSeverity.Error },
         ]);
 
         return false;
+      } else if (warnings && warnings.length) {
+        setSaveState('warning');
       }
     }
 
@@ -101,29 +93,54 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
   }
 
   // run the validation when something changes and add code highlighting (with debounce)
-  const handleChange = debounce(() => validateProcess());
+  const handleChange = debounce(() => validateProcess(), 100);
 
   const handleValidationAndSave = async () => {
     if (editorRef.current && monacoRef.current) {
       const newBpmn = editorRef.current.getValue();
 
-      const { error, warnings } = await checkBpmn(newBpmn);
+      const { error } = await checkBpmn(newBpmn);
 
-      if (error || (warnings && warnings.length)) {
-        setSaveInfoState(error ? 'error' : 'warning');
-      } else {
+      if (!error) {
         handleSave();
       }
     }
   };
 
-  let alertText = '';
-
-  if (saveInfoState === 'error') {
-    alertText = 'Cannot save the bpmn due to syntax errors.';
-  } else if (saveInfoState === 'warning') {
-    alertText = 'Found non-breaking issues within the bpmn. Save anyway?';
-  }
+  const saveButton = {
+    disabled: (
+      <Tooltip
+        key="tooltip-save-button"
+        placement="top"
+        title={
+          !canSave
+            ? 'Already versioned bpmn cannot be changed!'
+            : 'Fix the syntax errors in the bpmn before saving!'
+        }
+      >
+        <Button key="disabled-save-button" type="primary" disabled>
+          Save
+        </Button>
+      </Tooltip>
+    ),
+    warning: (
+      <Popconfirm
+        key="warning-save-button"
+        title="Warning"
+        description="There are unrecognized attributes or elements in the bpmn. Save anyway?"
+        onConfirm={handleValidationAndSave}
+        okText="save"
+        cancelText="Cancel"
+      >
+        <Button type="primary">Save</Button>
+      </Popconfirm>
+    ),
+    normal: (
+      <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
+        Save
+      </Button>
+    ),
+  };
 
   return (
     <Modal
@@ -148,25 +165,9 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         <Button key="close-button" onClick={onClose}>
           Close
         </Button>,
-        !canSave || hasError ? (
-          <Tooltip
-            key="save-button-tooltip"
-            placement="top"
-            title={
-              !canSave
-                ? 'Already versioned bpmn cannot be changed!'
-                : 'Fix the syntax errors in the bpmn before saving!'
-            }
-          >
-            <Button key="disabled-save-button" type="primary" disabled>
-              Save
-            </Button>
-          </Tooltip>
-        ) : (
-          <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
-            Save
-          </Button>
-        ),
+        ((!canSave || saveState === 'error') && saveButton['disabled']) ||
+          (saveState === 'warning' && saveButton['warning']) ||
+          saveButton['normal'],
       ]}
     >
       <Editor
@@ -182,41 +183,6 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         onChange={handleChange}
         height="85vh"
       />
-      {saveInfoState !== 'none' && (
-        <Modal
-          open={true}
-          footer={null}
-          centered
-          closeIcon={false}
-          onCancel={() => setSaveInfoState('none')}
-          maskClosable
-          style={{ pointerEvents: 'auto' }}
-          modalRender={() => (
-            <Alert
-              showIcon
-              message={alertText}
-              type={saveInfoState}
-              action={
-                saveInfoState === 'warning' && (
-                  <Space direction="vertical">
-                    <Button size="small" danger ghost block onClick={handleSave}>
-                      Save
-                    </Button>
-                    <Button
-                      size="small"
-                      type="primary"
-                      onClick={() => setSaveInfoState('none')}
-                      block
-                    >
-                      Cancel
-                    </Button>
-                  </Space>
-                )
-              }
-            />
-          )}
-        />
-      )}
     </Modal>
   );
 };

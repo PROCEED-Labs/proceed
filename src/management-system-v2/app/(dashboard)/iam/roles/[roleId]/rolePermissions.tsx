@@ -1,15 +1,28 @@
 'use client';
 
-import { Divider, Form, Row, Space, Switch, Typography, FloatButton, Tooltip, Spin } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
-import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
-import { FC } from 'react';
+import {
+  Divider,
+  Form,
+  Row,
+  Space,
+  Switch,
+  Typography,
+  FloatButton,
+  Tooltip,
+  Spin,
+  App,
+} from 'antd';
+import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ResourceActionType } from '@/lib/ability/caslAbility';
+import { FC, useState } from 'react';
 import { ApiData, usePutAsset } from '@/lib/fetch-data';
+import { useAuthStore } from '@/lib/iam';
+import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 
 type PermissionCategory = {
   key: string;
   title: string;
-  resource: ResourceType;
+  resource: keyof Role['permissions'];
   permissions: {
     key: string;
     title: string;
@@ -245,91 +258,110 @@ const basePermissionOptions: PermissionCategory[] = [
 
 type Role = ApiData<'/roles', 'get'>[number];
 
-// permission mapping to verbs
-const PERMISSION_MAPPING = {
-  none: 0,
-  view: 1,
-  update: 2,
-  create: 4,
-  delete: 8,
-  manage: 16,
-  share: 32,
-  'manage-roles': 64,
-  'manage-groups': 128,
-  'manage-password': 256,
-  admin: 9007199254740991,
-};
-
-function permissionChecked(role: Role, subject: ResourceType, action: ResourceActionType) {
-  if (
-    !('permissions' in role && typeof role.permissions === 'object' && subject in role.permissions)
-  )
-    return false;
-
-  // @ts-ignore
-  const permissionNumber = role.permissions[subject];
-
-  return !!(PERMISSION_MAPPING[action] & permissionNumber);
-}
-
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
-  const { mutateAsync, isLoading } = usePutAsset('/roles/{id}');
+  const [permissions, setPermissions] = useState(role.permissions);
+  const ability = useAuthStore((store) => store.ability);
+  const { mutateAsync, isLoading } = usePutAsset('/roles/{id}', {
+    /* onSuccess: () => message.open({ content: 'Role updated', type: 'success' }),
+    onError: () => message.open({ content: 'Something went wrong', type: 'error' }), */
+  });
+  const { message } = App.useApp();
   const [form] = Form.useForm();
 
-  function updateRole(values: any) {
-    // TODO submit role
-    const newRole = {
-      description: role.description,
-      name: role.name,
-      permissions: role.permissions,
-      id: role.id,
-      note: role.note,
-      default: role.default,
-      members: role.members,
-      expiration: role.expiration,
-    };
+  async function updateRole() {
+    try {
+      await mutateAsync({
+        params: { path: { id: role.id } },
+        body: {
+          description: role.description,
+          name: role.name,
+          permissions: permissions,
+          note: role.note,
+          default: role.default,
+          expiration: role.expiration,
+        },
+      });
+
+      message.open({ content: 'Role updated', type: 'success' });
+    } catch (e) {
+      message.open({ content: 'Something went wrong', type: 'error' });
+    }
   }
 
   return (
-    <Form form={form} onFinish={updateRole} disabled={isLoading}>
-      {basePermissionOptions.map((permissionCategory) => (
-        <>
-          <Typography.Title type="secondary" level={5}>
-            {permissionCategory.title}
-          </Typography.Title>
-          {permissionCategory.permissions.map((permission, idx) => (
-            <>
-              <Row key={permissionCategory.key} align="top" justify="space-between" wrap={false}>
-                <Space direction="vertical" size={0}>
-                  <Typography.Text strong>{permission.title}</Typography.Text>
-                  <Typography.Text type="secondary">{permission.description}</Typography.Text>
-                </Space>
-                <Form.Item name={`${permissionCategory.resource}-${permission.permission}`}>
-                  <Switch
-                    defaultChecked={permissionChecked(
-                      role,
-                      permissionCategory.resource,
-                      permission.permission,
-                    )}
-                  />
-                </Form.Item>
-              </Row>
-              {idx < permissionCategory.permissions.length - 1 && (
-                <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
-              )}
-            </>
-          ))}
-          <br />
-        </>
-      ))}
-      <Tooltip title="Save changes">
-        <FloatButton
-          type="primary"
-          icon={isLoading ? <Spin /> : <SaveOutlined />}
-          onClick={() => !isLoading && form.submit()}
-        />
-      </Tooltip>
-    </Form>
+    <div
+      style={{
+        scrollBehavior: 'smooth',
+        overflowY: 'scroll',
+        maxHeight: '100%',
+        height: '100%',
+      }}
+    >
+      <Form form={form} onFinish={updateRole}>
+        {basePermissionOptions.map((permissionCategory) => (
+          <>
+            <Typography.Title type="secondary" level={5}>
+              {permissionCategory.title}
+            </Typography.Title>
+            {permissionCategory.permissions.map((permission, idx) => (
+              <>
+                <Row key={permissionCategory.key} align="top" justify="space-between" wrap={false}>
+                  <Space direction="vertical" size={0}>
+                    <Typography.Text strong>{permission.title}</Typography.Text>
+                    <Typography.Text type="secondary">{permission.description}</Typography.Text>
+                  </Space>
+                  <Form.Item name={`${permissionCategory.resource}-${permission.permission}`}>
+                    <Switch
+                      disabled={
+                        isLoading ||
+                        switchDisabled(
+                          permissions,
+                          permissionCategory.resource,
+                          permission.permission,
+                          ability,
+                        )
+                      }
+                      checked={switchChecked(
+                        permissions,
+                        permissionCategory.resource,
+                        permission.permission,
+                      )}
+                      onChange={() =>
+                        setPermissions(
+                          togglePermission(
+                            permissions,
+                            permissionCategory.resource,
+                            permission.permission,
+                          ),
+                        )
+                      }
+                    />
+                  </Form.Item>
+                </Row>
+                {idx < permissionCategory.permissions.length - 1 && (
+                  <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
+                )}
+              </>
+            ))}
+            <br />
+          </>
+        ))}
+
+        <Tooltip title="Save changes">
+          <FloatButton
+            type="primary"
+            icon={
+              isLoading ? (
+                <Spin indicator={<LoadingOutlined style={{ color: '#fff' }} />} />
+              ) : (
+                <SaveOutlined />
+              )
+            }
+            onClick={() => !isLoading && form.submit()}
+          />
+        </Tooltip>
+      </Form>
+    </div>
   );
 };
 

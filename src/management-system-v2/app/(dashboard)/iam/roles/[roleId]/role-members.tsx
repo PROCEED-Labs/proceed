@@ -99,6 +99,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
     await Promise.allSettled(
       userIds.map((userId) =>
         deleteUser({
+          parseAs: 'text',
           params: { path: { roleId: role.id, userId: userId } },
         }),
       ),

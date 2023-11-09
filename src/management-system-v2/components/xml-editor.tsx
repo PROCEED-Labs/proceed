@@ -2,7 +2,8 @@
 
 import React, { FC, useRef, useState } from 'react';
 
-import { Modal, Alert, Button, Space, Tooltip } from 'antd';
+import { Modal, Alert, Button, Space, Tooltip, Flex } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 const { Title } = Typography;
 
@@ -131,7 +132,17 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
       onCancel={onClose}
       centered
       width="85vw"
-      title={<Title level={3}>BPMN XML</Title>}
+      title={
+        <Flex justify="space-between">
+          <Title level={3}>BPMN XML</Title>
+          <Button
+            icon={<SearchOutlined />}
+            onClick={() => {
+              if (editorRef.current) editorRef.current.getAction('actions.find')?.run();
+            }}
+          />
+        </Flex>
+      }
       closeIcon={false}
       footer={[
         <Button key="close-button" onClick={onClose}>

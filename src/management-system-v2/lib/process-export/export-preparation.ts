@@ -160,8 +160,6 @@ function getVersionName(version?: string | number) {
 }
 
 async function getMaximumScalingFactor(exportData: ProcessesExportData) {
-  console.log(exportData);
-
   const allVersionBpmns = exportData.flatMap(({ versions }) =>
     Object.values(versions).map(({ bpmn }) => bpmn),
   );
@@ -172,8 +170,6 @@ async function getMaximumScalingFactor(exportData: ProcessesExportData) {
 
     return Math.floor(Math.sqrt(268400000 / (diagramSize.width * diagramSize.height)));
   });
-
-  console.log(maximums);
 
   return Math.min(...maximums, 10);
 }

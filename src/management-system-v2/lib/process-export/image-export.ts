@@ -170,6 +170,61 @@ export async function svgExport(
   );
 }
 
+export async function getPNGFromSVG(svg: string, scaling = 1) {
+  const svgBlob = new Blob([svg], {
+    type: 'image/svg+xml;charset=utf-8',
+  });
+
+  const pngBlob: Blob = await new Promise((resolve, reject) => {
+    const { width, height } = getImageDimensions(svg);
+    const image = new Image(width, height);
+
+    image.onload = async () => {
+      // decrease the scaling if the image cannot be exported
+      for (let scale = scaling; scale >= 1; scale -= 1) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = scale * image.width;
+          canvas.height = scale * image.height;
+
+          //Creating 2D Canvas
+          const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+          //prevent from bluring the pixels
+          ctx.imageSmoothingEnabled = false;
+
+          ctx.scale(scale, scale);
+
+          //Drawing Image on Canvas
+          ctx.drawImage(image, 0, 0, width, height);
+
+          //Getting URI for Image in PNG **Default = PNG
+          const uri = canvas.toDataURL('image/png');
+          const DATA_URL_REGEX = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/;
+          if (DATA_URL_REGEX.test(uri)) {
+            const blob = await fetch(uri).then((res) => res.blob());
+            resolve(blob);
+            URL.revokeObjectURL(uri);
+            return;
+          } else {
+            //Release Object URL, so the browser doesn't keep reference
+            URL.revokeObjectURL(uri);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      }
+
+      reject('Cannot create a png. The process size is possibly too large.');
+    };
+
+    //Takes BLOB, File and Media Source and returns object url
+    image.src = URL.createObjectURL(svgBlob);
+    image.remove();
+  });
+
+  return pngBlob;
+}
+
 /**
  * Exports a process as a png either as a single file or into a folder of a zip archive if multiple files should be exported
  *
@@ -189,60 +244,7 @@ export async function pngExport(
   await exportImage(
     processesData,
     processData,
-    async (svg) => {
-      const svgBlob = new Blob([svg], {
-        type: 'image/svg+xml;charset=utf-8',
-      });
-
-      const pngBlob: Blob = await new Promise((resolve, reject) => {
-        const { width, height } = getImageDimensions(svg);
-        const image = new Image(width, height);
-
-        image.onload = async () => {
-          // decrease the scaling if the image cannot be exported
-          for (let scale = scaling; scale >= 1; scale -= 1) {
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = scale * image.width;
-              canvas.height = scale * image.height;
-
-              //Creating 2D Canvas
-              const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-              //prevent from bluring the pixels
-              ctx.imageSmoothingEnabled = false;
-
-              ctx.scale(scale, scale);
-
-              //Drawing Image on Canvas
-              ctx.drawImage(image, 0, 0, width, height);
-
-              //Getting URI for Image in PNG **Default = PNG
-              const uri = canvas.toDataURL('image/png');
-              const DATA_URL_REGEX = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/;
-              if (DATA_URL_REGEX.test(uri)) {
-                const blob = await fetch(uri).then((res) => res.blob());
-                resolve(blob);
-                URL.revokeObjectURL(uri);
-                return;
-              } else {
-                //Release Object URL, so the browser doesn't keep reference
-                URL.revokeObjectURL(uri);
-              }
-            } catch (err) {
-              reject(err);
-            }
-          }
-
-          reject('Cannot create a png. The process size is possibly too large.');
-        };
-
-        //Takes BLOB, File and Media Source and returns object url
-        image.src = URL.createObjectURL(svgBlob);
-        image.remove();
-      });
-
-      return pngBlob;
-    },
+    (svg: string) => getPNGFromSVG(svg, scaling),
     'png',
     zipFolder,
   );

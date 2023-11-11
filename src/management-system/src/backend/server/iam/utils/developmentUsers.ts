@@ -14,14 +14,14 @@ type User = {
   password: string;
 };
 
-function addRoleMappingForUser(user: any, role: any) {
+async function addRoleMappingForUser(user: any, role: any) {
   if (
-    role.members.find((member: any) => member.userId === user.user_id || member.user_id == user.id)
+    role.members.find((member: any) => member.userId === user.user_id || member.userId === user.id)
   )
     return;
 
   try {
-    addRoleMapping([
+    await addRoleMapping([
       {
         userId: user.user_id || user.id,
         roleId: role.id,
@@ -95,7 +95,7 @@ export async function createDevelopmentUsers() {
   const adminRole = roles.find((role) => role.name === '@admin');
 
   if (process.env.API_ONLY) {
-    addRoleMappingForUser(
+    await addRoleMappingForUser(
       {
         username: 'johndoe',
         firstName: 'John',
@@ -106,7 +106,7 @@ export async function createDevelopmentUsers() {
       processAdminRole,
     );
 
-    addRoleMappingForUser(
+    await addRoleMappingForUser(
       {
         username: 'admin',
         firstName: 'Admin',

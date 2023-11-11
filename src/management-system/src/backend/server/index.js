@@ -94,7 +94,7 @@ async function init() {
   backendServer.use(express.json());
 
   if (config.useAuthorization) {
-    if (config.clientID) {
+    if (process.env.USE_AUTH0) {
       try {
         client = await getClient(config);
       } catch (e) {

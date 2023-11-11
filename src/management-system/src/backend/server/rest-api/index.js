@@ -21,9 +21,11 @@ const createApiRouter = (config, client) => {
   apiRouter.use('/machines', machinesRouter);
   apiRouter.use('/speech', speechAssistantRouter);
   if (config.useAuthorization) {
-    url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')
-      ? apiRouter.use('/users', auth0UserRouter)
-      : apiRouter.use('/users', keycloakUserRouter);
+    if (config.clientID)
+      url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')
+        ? apiRouter.use('/users', auth0UserRouter)
+        : apiRouter.use('/users', keycloakUserRouter);
+
     apiRouter.use('/roles', rolesRouter);
     apiRouter.use('/role-mappings', roleMappingsRouter);
     apiRouter.use('/resources', resourcesRouter);

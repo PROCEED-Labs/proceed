@@ -7,7 +7,24 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  providers: [
+  providers: [],
+  callbacks: {
+    async jwt({ token, user, trigger }) {
+      if (trigger === 'signIn') token.csrfToken = randomUUID();
+      if (user) token.user = user as User;
+      return token;
+    },
+    session(args) {
+      const { session, token } = args;
+      if (token.user) session.user = token.user;
+      session.csrfToken = token.csrfToken;
+      return session;
+    },
+  },
+};
+
+if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_CLIENT_SECRET && process.env.AUTH0_ISSUER) {
+  nextAuthOptions.providers.push(
     Auth0Provider({
       clientId: process.env.AUTH0_CLIENT_ID as string,
       clientSecret: process.env.AUTH0_CLIENT_SECRET as string,
@@ -28,20 +45,8 @@ export const nextAuthOptions: AuthOptions = {
         };
       },
     }),
-  ],
-  callbacks: {
-    async jwt({ token, user, trigger }) {
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
-      if (user) token.user = user as User;
-      return token;
-    },
-    session({ session, token }) {
-      if (token.user) session.user = token.user;
-      session.csrfToken = token.csrfToken;
-      return session;
-    },
-  },
-};
+  );
+}
 
 if (process.env.NODE_ENV === 'development') {
   const developmentUsers = [

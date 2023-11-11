@@ -4,7 +4,7 @@ import RolesPage from './role-page';
 export default Auth(
   {
     action: 'manage',
-    resource: 'User',
+    resource: 'Role',
     fallbackRedirect: '/',
   },
   RolesPage,

@@ -25,21 +25,20 @@
 }
 
 .Icons {
-  margin-left: 10px;
-  display: inline-flex;
-  width: 40%;
-  justify-content: space-around;
-  align-items: center;
-
-  .Icon {
-    margin: 0 5px;
-    cursor: pointer;
-    transition: color 0.2s;
-  }
+  //display: inline-flex;
+  width: 45%;
+  //justify-content: space-around;
+  //align-items: center;
 
   .Icon:hover {
-    color: #dcdcdc;
+    color: #3e93de;
   }
+}
+
+.Icon {
+  margin: 0 10px;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
 .Selectview {

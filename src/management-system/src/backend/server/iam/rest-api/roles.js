@@ -88,7 +88,7 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
     try {
       // validateRole turns expiration into a Date, in order for the object merge
       // to work, we need it to be a string (type safe option in mergeIntoObject)
-      if (typeof role.expiration === 'object') {
+      if (role.expiration !== null && typeof role.expiration === 'object') {
         /** @type {Date} */
         const expirationDate = role.expiration;
         role.expiration = expirationDate.toISOString();

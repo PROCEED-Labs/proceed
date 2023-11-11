@@ -2,45 +2,16 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
-import { Layout as AntLayout, Grid, Menu, MenuProps } from 'antd';
-const { SubMenu, Item, Divider, ItemGroup } = Menu;
-import Logo from '@/public/proceed.svg';
-import {
-  EditOutlined,
-  UnorderedListOutlined,
-  ProfileOutlined,
-  FileAddOutlined,
-  SettingOutlined,
-  ApiOutlined,
-  UserOutlined,
-  StarOutlined,
-  UnlockOutlined,
-} from '@ant-design/icons';
+import { Layout as AntLayout, Grid, Menu } from 'antd';
+const { Item, Divider, ItemGroup } = Menu;
+import { SettingOutlined, ApiOutlined, UserOutlined, UnlockOutlined } from '@ant-design/icons';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import cn from 'classnames';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Link from 'next/link';
+import ProcessSider from './ProcessSider';
 import { useSession } from 'next-auth/react';
-
-const items: MenuProps['items'] = [
-  {
-    key: 'processes',
-    icon: <EditOutlined />,
-    label: 'Processes',
-  },
-  {
-    key: 'projects',
-    icon: <UnorderedListOutlined />,
-    label: 'Projects',
-  },
-  {
-    key: 'templates',
-    icon: <ProfileOutlined />,
-    label: 'Templates',
-    disabled: true,
-  },
-];
 
 /**
  * The main layout of the application. It defines the sidebar and footer. Note
@@ -52,7 +23,6 @@ const items: MenuProps['items'] = [
  * page content in parallel routes.
  */
 const Layout: FC<PropsWithChildren> = ({ children }) => {
-  const router = useRouter();
   const activeSegment = usePathname().slice(1) || 'processes';
   const [collapsed, setCollapsed] = useState(false);
   const { status } = useSession();
@@ -90,68 +60,10 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
             </Link>
           </div>
           {loggedIn ? (
-            <Menu
-              theme="light"
-              mode="inline"
-              selectedKeys={[activeSegment]}
-              onClick={({ key }) => {
-                const path = key.split(':').at(-1);
-                router.push(`/${path}`);
-              }}
-            >
+            <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
               {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
                 <>
-                  <ItemGroup key="processes" title="Processes">
-                    {ability.can('view', 'Process') ? (
-                      <SubMenu
-                        key="processes"
-                        title={
-                          <span
-                            onClick={() => {
-                              router.push(`/processes`);
-                            }}
-                          >
-                            Process List
-                          </span>
-                        }
-                        className={activeSegment === 'processes' ? 'SelectedSegment' : ''}
-                        icon={
-                          <EditOutlined
-                            onClick={() => {
-                              router.push(`/processes`);
-                            }}
-                          />
-                        }
-                      >
-                        <Item
-                          key="newProcess"
-                          icon={<FileAddOutlined />}
-                          hidden={!ability.can('create', 'Process')}
-                        >
-                          New Process
-                        </Item>
-                        <Item key="processFavorites" icon={<StarOutlined />}>
-                          Favorites
-                        </Item>
-                      </SubMenu>
-                    ) : null}
-
-                    {ability.can('view', 'Template') ? (
-                      <SubMenu key="templates" title="Templates" icon={<ProfileOutlined />}>
-                        <Item
-                          key="newTemplate"
-                          icon={<FileAddOutlined />}
-                          hidden={!ability.can('create', 'Template')}
-                        >
-                          New Template
-                        </Item>
-                        <Item key="templateFavorites" icon={<StarOutlined />}>
-                          Favorites
-                        </Item>
-                      </SubMenu>
-                    ) : null}
-                  </ItemGroup>
-
+                  <ProcessSider></ProcessSider>
                   <Divider />
                 </>
               ) : null}

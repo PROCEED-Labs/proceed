@@ -26,7 +26,10 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
-import { ApiData } from '@/lib/fetch-data';
+import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
+import { useUserPreferences } from '@/lib/user-preferences';
+import ProcessDeleteSingleModal from './process-delete-single';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -37,6 +40,9 @@ type ProcessListProps = PropsWithChildren<{
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
   onExportProcess: Dispatch<SetStateAction<string[]>>;
+  search?: string;
+  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  deleteProcessKeys: React.Key[];
 }>;
 
 const ColumnHeader = [
@@ -48,24 +54,8 @@ const ColumnHeader = [
   'Owner',
 ];
 
-const clipText: ColumnType<Process>['render'] = (dataIndexElement, record, index) => {
-  return (
-    <div
-      style={{
-        width: '10vw',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-      }}
-    >
-      {dataIndexElement}
-    </div>
-  );
-};
-
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
-console.log(numberOfRows);
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -73,8 +63,13 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelection,
   isLoading,
   onExportProcess,
+  search,
+  setDeleteProcessIds,
+  deleteProcessKeys,
 }) => {
   const router = useRouter();
+
+  const refreshData = useInvalidateAsset('/process');
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
@@ -89,42 +84,134 @@ const ProcessList: FC<ProcessListProps> = ({
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
-  const [rerender, setRerender] = useState(false);
+  const { preferences, addPreferences } = useUserPreferences();
 
-  const triggerRerender = () => {
-    /*  Timeout necessary for animation and table resize */
-    setTimeout(() => {
-      setRerender(!rerender);
-    }, 200);
-  };
+  const {
+    'process-list-columns': selectedColumns,
+    'ask-before-deleting-single': openModalWhenDeleteSingle,
+  } = preferences;
 
-  const actionBarGenerator = useCallback((record: Process) => {
-    return (
-      <>
-        <Tooltip placement="top" title={'Preview'}>
-          <EyeOutlined
-            onClick={() => {
-              setPreviewProcess(record);
-              setPreviewerOpen(true);
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Copy'}>
-          <CopyOutlined />
-        </Tooltip>
-        <Tooltip placement="top" title={'Export'}>
-          <ExportOutlined
-            onClick={() => {
-              onExportProcess([record.definitionId]);
-            }}
-          />
-        </Tooltip>
-        <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined />
-        </Tooltip>
-      </>
-    );
-  }, []);
+  const ability = useAbilityStore((state) => state.ability);
+
+  const clipAndHighlightText = useCallback(
+    (dataIndexElement, record, index) => {
+      const searchLower = search?.toLowerCase();
+      const dataIndexElementLower = dataIndexElement?.toLowerCase();
+      const withoutSearchTerm = dataIndexElementLower?.split(searchLower);
+      let res = dataIndexElement;
+      if (search && withoutSearchTerm?.length > 1) {
+        let lastIndex = 0;
+        res = withoutSearchTerm.map((word, i, arr) => {
+          const highlightedWord = dataIndexElement.slice(lastIndex, lastIndex + word.length);
+          lastIndex += word.length + search.length;
+          if (i === arr.length - 1) return highlightedWord;
+
+          return (
+            <span key={i}>
+              <span>{highlightedWord}</span>
+              <span style={{ color: '#3e93de' }}>
+                {dataIndexElement.slice(lastIndex - search.length, lastIndex)}
+              </span>
+            </span>
+          );
+        });
+      }
+
+      return (
+        <div
+          style={{
+            width: '10vw',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {res}
+        </div>
+      );
+    },
+    [search],
+  );
+
+  const { mutateAsync: createProcess } = usePostAsset('/process');
+
+  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
+    onSettled: refreshData,
+  });
+
+  const actionBarGenerator = useCallback(
+    (record: Process) => {
+      return (
+        <>
+          <Tooltip placement="top" title={'Preview'}>
+            <EyeOutlined
+              onClick={() => {
+                setPreviewProcess(record);
+                setPreviewerOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="top" title={'Copy'}>
+            <CopyOutlined
+              onClick={() => {
+                createProcess({
+                  body: {
+                    ...record,
+                    bpmn: record.bpmn || '',
+                    variables: [
+                      {
+                        name: `${record.definitionName} Copy`,
+                        type: '',
+                      },
+                    ],
+                  },
+                });
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="top" title={'Export'}>
+            <ExportOutlined
+              onClick={() => {
+                onExportProcess([record.definitionId]);
+              }}
+            />
+          </Tooltip>
+          {ability.can('delete', 'Process') && (
+            <Tooltip placement="top" title={'Delete'}>
+              <DeleteOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (openModalWhenDeleteSingle) {
+                    setDeleteProcessIds([record.definitionId]);
+                  } else {
+                    deleteProcess({
+                      params: {
+                        path: {
+                          definitionId: record.definitionId as string,
+                        },
+                      },
+                    });
+                  }
+
+                  setSelection(selection.filter((id) => id !== record.definitionId));
+                }}
+              />
+            </Tooltip>
+          )}
+        </>
+      );
+    },
+    [
+      ability,
+      createProcess,
+      deleteProcess,
+      onExportProcess,
+      openModalWhenDeleteSingle,
+      selection,
+      setDeleteProcessIds,
+      setSelection,
+    ],
+  );
 
   // rowSelection object indicates the need for row selection
 
@@ -141,7 +228,6 @@ const ProcessList: FC<ProcessListProps> = ({
       setSelection(selectedRows.map((row) => row.definitionId));
     },
     onSelectNone: () => {
-      // setSelection([]);
       setSelection([]);
     },
     onSelectAll: (selected, selectedRows, changeRows) => {
@@ -150,22 +236,17 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   };
 
-  const [selectedColumns, setSelectedColumns] = useState([
-    '',
-    'Process Name',
-    'Description',
-    'Last Edited',
-  ]);
-
   const onCheckboxChange = (e: CheckboxChangeEvent) => {
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
-      setSelectedColumns((prevSelectedColumns) => [...prevSelectedColumns, value]);
+      //setSelectedColumns([...selectedColumns, value]);
+      addPreferences({ 'process-list-columns': [...selectedColumns, value] });
     } else {
-      setSelectedColumns((prevSelectedColumns) =>
-        prevSelectedColumns.filter((column) => column !== value),
-      );
+      //setSelectedColumns(selectedColumns.filter((column) => column !== value));
+      addPreferences({
+        'process-list-columns': selectedColumns.filter((column) => column !== value),
+      });
     }
   };
 
@@ -217,7 +298,7 @@ const ProcessList: FC<ProcessListProps> = ({
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
-      render: clipText,
+      render: clipAndHighlightText,
     },
     {
       title: 'Description',
@@ -233,7 +314,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      render: clipText,
+      render: clipAndHighlightText,
     },
 
     {
@@ -403,11 +484,9 @@ const ProcessList: FC<ProcessListProps> = ({
           },
           onMouseEnter: (event) => {
             setHovered(record);
-            // console.log('mouse enter row', record);
           }, // mouse enter row
           onMouseLeave: (event) => {
             setHovered(undefined);
-            // console.log('mouse leave row', event);
           }, // mouse leave row
         })}
         /* ---- */
@@ -425,10 +504,14 @@ const ProcessList: FC<ProcessListProps> = ({
         size="middle"
       />
 
-      {/* <MetaData data={data} selection={selection} triggerRerender={triggerRerender} /> */}
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
+      <ProcessDeleteSingleModal
+        setDeleteProcessIds={setDeleteProcessIds}
+        processKeys={deleteProcessKeys}
+        setSelection={setSelection}
+      />
     </>
   );
 };

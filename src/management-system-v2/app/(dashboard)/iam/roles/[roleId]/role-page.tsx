@@ -38,12 +38,14 @@ function RolePage({ params: { roleId } }: { params: { roleId: string } }) {
       ]
     : [];
 
-  if (error) return;
-  <Result
-    status="error"
-    title="Failed to fetch role"
-    subTitle="An error ocurred while fetching role, please try again."
-  />;
+  if (error)
+    return (
+      <Result
+        status="error"
+        title="Failed to fetch role"
+        subTitle="An error ocurred while fetching role, please try again."
+      />
+    );
 
   return (
     <Content

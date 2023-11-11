@@ -57,7 +57,7 @@ const RolesPage: FC = () => {
       dataIndex: 'id',
       key: 'tooltip',
       title: '',
-      with: 100,
+      width: 100,
       render: (id: string, role: Role) =>
         selectedRowKeys.length === 0 ? (
           <AuthCan action="delete" resource={toCaslResource('Role', role)}>

@@ -47,9 +47,11 @@ export const AuthCan = ({
   loading: loadingAuth,
   notLoggedIn,
   children,
-}: Omit<AuthCanProps, 'fallbackRedirect'> & {
+  fallbackRedirect,
+}: AuthCanProps & {
   children: ReactElement;
 }) => {
+  const router = useRouter();
   const { status } = useSession();
 
   const ability = useAbilityStore((store) => store.ability);
@@ -69,6 +71,10 @@ export const AuthCan = ({
 
     return true;
   }, [action, resource, ability, abilityFetched, status]);
+
+  useEffect(() => {
+    if (abilityFetched && !allow && fallbackRedirect) router.push(fallbackRedirect);
+  }, [allow, fallbackRedirect, router, abilityFetched]);
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) return children;
 

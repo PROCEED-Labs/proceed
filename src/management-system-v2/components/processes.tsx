@@ -20,6 +20,7 @@ import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import ProcessCreationButton from './process-creation-button';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -146,26 +147,29 @@ const Processes: FC = () => {
               placeholder: 'Search Processes ...',
             }}
             rightNode={
-              <Space.Compact>
-                <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                  onClick={() => {
-                    addUserPreference({ 'icon-view-in-process-list': false });
-                    setIconView(false);
-                  }}
-                >
-                  <UnorderedListOutlined />
-                </Button>
-                <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                  onClick={() => {
-                    addUserPreference({ 'icon-view-in-process-list': true });
-                    setIconView(true);
-                  }}
-                >
-                  <AppstoreOutlined />
-                </Button>
-              </Space.Compact>
+              <Space size={16} style={{ paddingLeft: 8 }}>
+                <Space.Compact>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => {
+                      addUserPreference({ 'icon-view-in-process-list': false });
+                      setIconView(false);
+                    }}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => {
+                      addUserPreference({ 'icon-view-in-process-list': true });
+                      setIconView(true);
+                    }}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+                <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+              </Space>
             }
           />
           {iconView ? (

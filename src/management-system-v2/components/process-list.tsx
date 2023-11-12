@@ -1,3 +1,5 @@
+'use client';
+
 import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,
@@ -27,7 +29,7 @@ import { generateDateString } from '@/lib/utils';
 import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
-import { useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -89,7 +91,7 @@ const ProcessList: FC<ProcessListProps> = ({
     'ask-before-deleting-single': openModalWhenDeleteSingle,
   } = preferences;
 
-  const ability = useAuthStore((state) => state.ability);
+  const ability = useAbilityStore((state) => state.ability);
 
   const clipAndHighlightText = useCallback(
     (dataIndexElement, record, index) => {

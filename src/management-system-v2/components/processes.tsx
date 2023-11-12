@@ -35,7 +35,7 @@ import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
-import { useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -110,7 +110,7 @@ const Processes: FC = () => {
     'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
-  const ability = useAuthStore((state) => state.ability);
+  const ability = useAbilityStore((state) => state.ability);
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: pullNewProcessData,

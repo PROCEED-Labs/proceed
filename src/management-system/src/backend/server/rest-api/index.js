@@ -10,6 +10,7 @@ import roleMappingsRouter from '../iam/rest-api/role-mappings.js';
 import resourcesRouter from '../iam/rest-api/resources.js';
 import sharesRouter from '../iam/rest-api/shares.js';
 import { validateRequest } from '../iam/middleware/requestValidation.js';
+import abilityRouter from '../iam/rest-api/ability.js';
 
 // middleware for all routes to refactor the code
 const createApiRouter = (config, client) => {
@@ -20,13 +21,16 @@ const createApiRouter = (config, client) => {
   apiRouter.use('/machines', machinesRouter);
   apiRouter.use('/speech', speechAssistantRouter);
   if (config.useAuthorization) {
-    url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')
-      ? apiRouter.use('/users', auth0UserRouter)
-      : apiRouter.use('/users', keycloakUserRouter);
+    if (process.env.USE_AUTH0)
+      url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')
+        ? apiRouter.use('/users', auth0UserRouter)
+        : apiRouter.use('/users', keycloakUserRouter);
+
     apiRouter.use('/roles', rolesRouter);
     apiRouter.use('/role-mappings', roleMappingsRouter);
     apiRouter.use('/resources', resourcesRouter);
     apiRouter.use('/shares', sharesRouter);
+    apiRouter.use('/ability', abilityRouter);
   }
 
   return apiRouter;

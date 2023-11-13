@@ -163,7 +163,11 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
       <Popconfirm
         key="warning-save-button"
         title="Warning"
-        description="There are unrecognized attributes or elements in the bpmn. Save anyway?"
+        description={
+          <span>
+            There are unrecognized attributes or <br /> elements in the BPMN. Save anyway?
+          </span>
+        }
         onConfirm={handleValidationAndSave}
         okText="Save"
         cancelText="Cancel"
@@ -228,6 +232,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         onMount={handleEditorMount}
         onChange={handleChange}
         height="85vh"
+        className="Hide-Scroll-Bar"
       />
     </Modal>
   );

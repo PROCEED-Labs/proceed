@@ -21,7 +21,7 @@ type XmlEditorProps = {
   bpmn?: string;
   canSave: boolean;
   onClose: () => void;
-  onSaveXml: (bpmn: string) => void;
+  onSaveXml: (bpmn: string) => Promise<void>;
 };
 
 async function checkBpmn(bpmn: string) {
@@ -68,7 +68,8 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
     if (editorRef.current) {
       const newBpmn = editorRef.current.getValue();
 
-      onSaveXml(newBpmn);
+      await onSaveXml(newBpmn);
+      onClose();
     }
   };
 
@@ -155,7 +156,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         }
       >
         <Button key="disabled-save-button" type="primary" disabled>
-          Save
+          Ok
         </Button>
       </Tooltip>
     ),
@@ -172,12 +173,12 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
         okText="Save"
         cancelText="Cancel"
       >
-        <Button type="primary">Save</Button>
+        <Button type="primary">Ok</Button>
       </Popconfirm>
     ),
     normal: (
       <Button key="save-button" type="primary" onClick={handleValidationAndSave}>
-        Save
+        Ok
       </Button>
     ),
   };
@@ -213,7 +214,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
       closeIcon={false}
       footer={[
         <Button key="close-button" onClick={onClose}>
-          Close
+          Cancel
         </Button>,
         ((!canSave || saveState === 'error') && saveButton['disabled']) ||
           (saveState === 'warning' && saveButton['warning']) ||

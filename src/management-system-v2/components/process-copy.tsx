@@ -21,7 +21,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 type ProcessCopyModalType = {
   setCopyProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   processKeys: React.Key[] | String[];
-  setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  setSelection: Dispatch<SetStateAction<Key[]>>;
 };
 type CopyProcessType = {
   bpmn: string;
@@ -68,7 +68,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
       .map((process) => {
         return {
           id: process.definitionId,
-          copyId: undefined,
+          copyId: undefined as string | undefined,
           name: `${process.definitionName} (Copy)`,
           description: process.description,
           originalName: process.definitionName,
@@ -162,7 +162,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
             variables: [],
           },
         }).then(() => {
-          setSelection((prev) => prev.filter((key: string) => key !== id));
+          setSelection((prev) => prev.filter((key) => key !== id));
         });
       },
     );
@@ -191,7 +191,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
   const items: CollapseProps['items'] = processKeys.map((id) => {
     /* Initial */
     return {
-      key: id,
+      key: id as string | number,
       label: (
         <span className={styles.ClippedProcessTitle}>
           {bluePrintForProcesses?.find((e) => e.id == id)?.name}

@@ -31,6 +31,8 @@ const validate = (data, req) => {
 
 export const validateRequest = (requireCsrf = true) => {
   return async (req, res, next) => {
+    if (process.env.API_ONLY) return next();
+
     const requestData = {
       preflightCsrf: req.headers.hasOwnProperty('x-csrf') ? true : false,
       csrfHeader: req.headers && req.headers['x-csrf-token'],

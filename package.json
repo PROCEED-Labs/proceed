@@ -49,7 +49,7 @@
     "dev-many": "node src/engine/e2e_tests/process/deployment/startEngines.js",
     "build": "cd src/engine/native/node && webpack --config webpack.native.config.js && webpack --config webpack.injector.config.ts && node --loader ts-node/esm ./build-injector.js && cd ../../universal && webpack --config webpack.universal.config.js",
     "build-ms-web": "cd src/management-system && yarn web:build-server-frontend",
-    "build-ms-server": "cd src/management-system && yarn web:build-server && cd ../.. && cp -r src/management-system-v2 build/management-system/server/management-system-v2 && cp -r src/helper-modules build/management-system/server/management-system-v2/helper-modules",
+    "build-ms-server": "cd src/management-system && yarn web:build-server && cd .. && cd management-system-v2 && yarn build && cp -r .next/standalone ../../build/management-system/server/v2",
     "build-web": "yarn build && cd src/engine/native/web/server && yarn build",
     "docker:run": "docker container run --publish 33029:33029 --rm --network host --detach --name engine proceed/engine:latest",
     "docker:stop": "docker container stop engine",

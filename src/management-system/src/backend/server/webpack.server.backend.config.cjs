@@ -113,7 +113,7 @@ module.exports = {
             main: 'server.js',
             scripts: {
               'start-new':
-                'API_ONLY=true node server.js & cd management-system-v2 && npm run start -- -p 33081',
+                'API_ONLY=true node server.js & cd v2/src/management-system-v2 && PORT=33081 node server.js',
             },
             dependencies,
           };

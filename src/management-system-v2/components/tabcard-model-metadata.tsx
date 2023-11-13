@@ -112,20 +112,35 @@ const TabCard: FC<TabCardProps> = ({
   };
 
   const clipAndHighlightText = useCallback(
-    (dataIndexElement, record, index) => {
+    (dataIndexElement: any) => {
       const withoutSearchTerm = dataIndexElement?.split(search);
       let res = dataIndexElement;
       if (search && withoutSearchTerm?.length > 1) {
-        res = withoutSearchTerm.map((word, i, arr) => {
-          if (i === arr.length - 1) return word;
+        res = withoutSearchTerm.map(
+          (
+            word:
+              | string
+              | number
+              | boolean
+              | React.ReactElement<any, string | React.JSXElementConstructor<any>>
+              | Iterable<React.ReactNode>
+              | React.ReactPortal
+              | React.PromiseLikeOfReactNode
+              | null
+              | undefined,
+            i: React.Key | null | undefined,
+            arr: string | any[],
+          ) => {
+            if (i === arr.length - 1) return word;
 
-          return (
-            <span key={i}>
-              <span>{word}</span>
-              <span style={{ color: '#3e93de' }}>{search}</span>
-            </span>
-          );
-        });
+            return (
+              <span key={i}>
+                <span>{word}</span>
+                <span style={{ color: '#3e93de' }}>{search}</span>
+              </span>
+            );
+          },
+        );
       }
 
       return <div style={{ flex: 1 }}>{res}</div>;
@@ -139,7 +154,7 @@ const TabCard: FC<TabCardProps> = ({
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
           {/* <span>{item?.definitionName}</span> */}
-          {clipAndHighlightText(item?.definitionName, item, 0)}
+          {clipAndHighlightText(item?.definitionName)}
           <span style={{ flex: 1 }}></span>
           <Button type="text">
             <MoreOutlined />

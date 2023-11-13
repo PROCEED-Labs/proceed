@@ -1,21 +1,11 @@
 'use client';
 
-import React, {
-  Dispatch,
-  FC,
-  Key,
-  SetStateAction,
-  use,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import React, { Dispatch, FC, Key, SetStateAction } from 'react';
 
 import TabCard from './tabcard-model-metadata';
 
 import { ApiData } from '@/lib/fetch-data';
 import ScrollBar from './scrollbar';
-import { clear } from 'console';
 
 type Processes = ApiData<'/process', 'get'>;
 

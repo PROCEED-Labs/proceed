@@ -7,7 +7,7 @@ import classNames from 'classnames';
 type ScrollBarType = {
   children: React.ReactNode;
   width: string;
-  threshhold?: number;
+  threshold?: number;
   reachedEndCallBack?: () => void;
   maxCallInterval?: number;
 };
@@ -17,7 +17,7 @@ const [maxThumbHeight, minThumbHeight] = [15, 5]; /* In % */
 const ScrollBar: FC<ScrollBarType> = ({
   children,
   width,
-  threshhold,
+  threshold,
   reachedEndCallBack,
   maxCallInterval,
 }) => {
@@ -42,7 +42,7 @@ const ScrollBar: FC<ScrollBarType> = ({
         (scrollTop / (scrollHeight - clientHeight)) * (100 - newThumbHeight);
 
       if (reachedEndCallBack) {
-        const th = threshhold || 0.8;
+        const th = threshold || 0.8;
 
         if (scrollTop / (scrollHeight - clientHeight) > th) {
           scrolledToTH();

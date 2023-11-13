@@ -8,12 +8,15 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 
+import TextEditor from './textEditor';
+
 import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
 
 import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import ResizableCard from './ResizableCard';
+import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
@@ -28,7 +31,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
-      console.log(selectedElement);
     }
   }, [selectedElement]);
 
@@ -59,15 +61,30 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     });
   };
 
+  const updateDescription = (text: string) => {
+    console.log('updateDescription', text);
+    const modeling = modeler!.get('modeling') as Modeling;
+    const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
+
+    let documentationElement = undefined;
+    if (text) {
+      documentationElement = bpmnFactory.create('bpmn:Documentation', {
+        text,
+      });
+    }
+
+    modeling.updateProperties(selectedElement as any, { documentation: [documentationElement] });
+  };
+
   return (
     <ResizableCard
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>name</span> <CloseOutlined onClick={() => setOpen(false)} />
+          <span>Properties</span> <CloseOutlined onClick={() => setOpen(false)} />
         </div>
       }
-      initialWidth={400}
-      minWidth={400}
+      initialWidth={450}
+      minWidth={450}
       maxWidth={600}
       style={{ position: 'absolute', top: '65px', right: '12px', height: '80vh' }}
     >
@@ -117,15 +134,16 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
         </Space>
 
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <b>Documentation</b>
-          <Input.TextArea
-            size="large"
-            placeholder={
-              selectedElement.type !== 'bpmn:Process'
-                ? 'Element Documentation'
-                : 'Process Documentation'
+          <b>Description</b>
+          <TextEditor
+            placeholder="Description"
+            value={
+              (selectedElement.businessObject.documentation &&
+                selectedElement.businessObject.documentation[0]?.text) ||
+              ''
             }
-          ></Input.TextArea>
+            handleChange={(value: string) => updateDescription(value)}
+          ></TextEditor>
         </Space>
 
         {selectedElement.type !== 'bpmn:Process' && (

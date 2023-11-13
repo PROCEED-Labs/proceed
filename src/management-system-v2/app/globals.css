@@ -2,6 +2,25 @@
   top: 125px;
 }
 
+.quill {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+}
+
+.quill .ql-container.ql-snow {
+  border: 0px !important;
+}
+
+.quill .ql-container.ql-snow .ql-editor {
+  min-height: 200px;
+}
+
+.quill .ql-toolbar.ql-snow {
+  border-width: 0px 0px 1px 0px !important;
+  border-style: solid;
+  border-color: #d9d9d9;
+}
+
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */
 .ant-col.ant-col-xs-flex-initial {
   flex: initial;

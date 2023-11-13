@@ -2,8 +2,9 @@
 
 import React, { FC, useRef, useState } from 'react';
 
-import { Modal, Button, Tooltip, Flex, Popconfirm } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Modal, Button, Tooltip, Flex, Popconfirm, Space } from 'antd';
+import { SearchOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 const { Title } = Typography;
 
@@ -13,6 +14,8 @@ import * as monaco from 'monaco-editor';
 import { moddle } from '@proceed/bpmn-helper';
 
 import { debounce } from '@/lib/utils';
+import { useGetAsset } from '@/lib/fetch-data';
+import { downloadFile } from '@/lib/process-export/util';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -107,6 +110,39 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
     }
   };
 
+  const handleCopyToClipboard = () => {
+    if (editorRef.current) {
+      navigator.clipboard.writeText(editorRef.current.getValue());
+    }
+  };
+
+  const { processId } = useParams();
+
+  const { data: process, isSuccess } = useGetAsset('/process/{definitionId}', {
+    params: { path: { definitionId: processId as string } },
+  });
+
+  const selectedVersionId = parseInt(useSearchParams().get('version') ?? '-1');
+
+  const handleDownload = async () => {
+    if (editorRef.current && isSuccess) {
+      let filename = process!.definitionName || 'process.bpmn';
+
+      if (selectedVersionId > -1) {
+        const versionInfo = process?.versions.find(({ version }) => version == selectedVersionId);
+
+        if (versionInfo) {
+          filename += `_version_${versionInfo.name || selectedVersionId}`;
+        }
+      }
+
+      await downloadFile(
+        `${filename}.bpmn`,
+        new Blob([editorRef.current.getValue()], { type: 'application/xml' }),
+      );
+    }
+  };
+
   const saveButton = {
     disabled: (
       <Tooltip
@@ -152,12 +188,22 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
       title={
         <Flex justify="space-between">
           <Title level={3}>BPMN XML</Title>
-          <Button
-            icon={<SearchOutlined />}
-            onClick={() => {
-              if (editorRef.current) editorRef.current.getAction('actions.find')?.run();
-            }}
-          />
+          <Space.Compact>
+            <Tooltip title="Download">
+              <Button icon={<DownloadOutlined />} onClick={handleDownload} />
+            </Tooltip>
+            <Tooltip title="Copy to Clipboard">
+              <Button icon={<CopyOutlined />} onClick={handleCopyToClipboard} />
+            </Tooltip>
+            <Tooltip title="Search">
+              <Button
+                icon={<SearchOutlined />}
+                onClick={() => {
+                  if (editorRef.current) editorRef.current.getAction('actions.find')?.run();
+                }}
+              />
+            </Tooltip>
+          </Space.Compact>
         </Flex>
       }
       closeIcon={false}

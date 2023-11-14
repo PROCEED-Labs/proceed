@@ -1,5 +1,14 @@
 import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
-import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useCallback, useState } from 'react';
+import React, {
+  Dispatch,
+  FC,
+  Key,
+  ReactNode,
+  SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
@@ -9,6 +18,7 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import { ApiData } from '@/lib/fetch-data';
+import { useLazyLoading } from './scrollbar';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -67,7 +77,7 @@ const generateDescription = (data: Process) => {
   return desc;
 };
 
-const generateContentList = (data: Process) => {
+const generateContentList = (data: Process, showViewer: boolean = true) => {
   return {
     viewer: (
       <div
@@ -78,7 +88,7 @@ const generateContentList = (data: Process) => {
           borderRadius: '8px',
         }}
       >
-        <Viewer selectedElement={data} reduceLogo={true} />
+        {showViewer && <Viewer selectedElement={data} reduceLogo={true} />}
       </div>
     ),
     meta: (
@@ -103,6 +113,9 @@ const TabCard: FC<TabCardProps> = ({
 }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useLazyLoading(cardRef);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -150,6 +163,7 @@ const TabCard: FC<TabCardProps> = ({
 
   return (
     <Card
+      ref={cardRef}
       hoverable
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
@@ -222,7 +236,7 @@ const TabCard: FC<TabCardProps> = ({
         router.push(`/processes/${item.definitionId}`);
       }}
     >
-      {generateContentList(item)[activeTabKey]}
+      {generateContentList(item, isVisible)[activeTabKey]}
     </Card>
   );
 };

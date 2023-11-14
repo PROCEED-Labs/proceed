@@ -16,8 +16,8 @@ import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
 import { FC, useState } from 'react';
 import { ApiData, usePutAsset } from '@/lib/fetch-data';
-import { useAuthStore } from '@/lib/iam';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type PermissionCategory = {
   key: string;
@@ -260,7 +260,7 @@ type Role = ApiData<'/roles', 'get'>[number];
 
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const [permissions, setPermissions] = useState(role.permissions);
-  const ability = useAuthStore((store) => store.ability);
+  const ability = useAbilityStore((store) => store.ability);
   const { mutateAsync, isLoading } = usePutAsset('/roles/{id}', {
     /* onSuccess: () => message.open({ content: 'Role updated', type: 'success' }),
     onError: () => message.open({ content: 'Something went wrong', type: 'error' }), */

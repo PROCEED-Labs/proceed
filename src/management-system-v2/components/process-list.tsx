@@ -1,4 +1,16 @@
-import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+'use client';
+
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  MenuProps,
+  Row,
+  Table,
+  TableColumnProps,
+  TableColumnsType,
+  Tooltip,
+} from 'antd';
 import React, {
   useCallback,
   useState,
@@ -31,7 +43,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
-import { useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -94,30 +106,32 @@ const ProcessList: FC<ProcessListProps> = ({
     'ask-before-deleting-single': openModalWhenDeleteSingle,
   } = preferences;
 
-  const ability = useAuthStore((state) => state.ability);
+  const ability = useAbilityStore((state) => state.ability);
 
   const clipAndHighlightText = useCallback(
-    (dataIndexElement, record, index) => {
+    (dataIndexElement: any) => {
       const searchLower = search?.toLowerCase();
       const dataIndexElementLower = dataIndexElement?.toLowerCase();
       const withoutSearchTerm = dataIndexElementLower?.split(searchLower);
       let res = dataIndexElement;
       if (search && withoutSearchTerm?.length > 1) {
         let lastIndex = 0;
-        res = withoutSearchTerm.map((word, i, arr) => {
-          const highlightedWord = dataIndexElement.slice(lastIndex, lastIndex + word.length);
-          lastIndex += word.length + search.length;
-          if (i === arr.length - 1) return highlightedWord;
+        res = withoutSearchTerm.map(
+          (word: string | any[], i: React.Key | null | undefined, arr: string | any[]) => {
+            const highlightedWord = dataIndexElement.slice(lastIndex, lastIndex + word.length);
+            lastIndex += word.length + search.length;
+            if (i === arr.length - 1) return highlightedWord;
 
-          return (
-            <span key={i}>
-              <span>{highlightedWord}</span>
-              <span style={{ color: '#3e93de' }}>
-                {dataIndexElement.slice(lastIndex - search.length, lastIndex)}
+            return (
+              <span key={i}>
+                <span>{highlightedWord}</span>
+                <span style={{ color: '#3e93de' }}>
+                  {dataIndexElement.slice(lastIndex - search.length, lastIndex)}
+                </span>
               </span>
-            </span>
-          );
-        });
+            );
+          },
+        );
       }
 
       return (
@@ -261,7 +275,7 @@ const ProcessList: FC<ProcessListProps> = ({
     } else {
       //setSelectedColumns(selectedColumns.filter((column) => column !== value));
       addPreferences({
-        'process-list-columns': selectedColumns.filter((column) => column !== value),
+        'process-list-columns': selectedColumns.filter((column: any) => column !== value),
       });
     }
   };

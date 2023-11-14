@@ -4,7 +4,6 @@ import React, { Dispatch, FC, Key, SetStateAction } from 'react';
 
 import TabCard from './tabcard-model-metadata';
 
-import { Preferences, getPreferences } from '@/lib/utils';
 import { ApiData } from '@/lib/fetch-data';
 import ScrollBar from './scrollbar';
 
@@ -18,11 +17,9 @@ type IconViewProps = {
 };
 
 const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) => {
-  const prefs: Preferences = getPreferences();
-
   return (
     <>
-      <ScrollBar width="10px">
+      <ScrollBar width="12px">
         <div
           style={{
             width: '100%',

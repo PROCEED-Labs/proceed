@@ -22,7 +22,7 @@ import { get, del, put, usePostAsset } from '@/lib/fetch-data';
 import { convertToEditableBpmn } from '@/lib/helpers/processVersioning';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import ProcessCreationButton from './process-creation-button';
-import { AuthCan } from '@/lib/iamComponents';
+import { AuthCan } from '@/lib/clientAuthComponents';
 
 type ConfirmationModalProps = {
   show: boolean;

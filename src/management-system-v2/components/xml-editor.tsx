@@ -24,7 +24,14 @@ type XmlEditorProps = {
   onSaveXml: (bpmn: string) => Promise<void>;
 };
 
+/**
+ * Checks for syntax errors in the bpmn as well as for moddle warnings
+ *
+ * @param bpmn
+ * @returns found syntax errors or warnings
+ */
 async function checkBpmn(bpmn: string) {
+  // check the bpmn (xml) for syntax errors using the domparser
   const domParser = new DOMParser();
   var dom = domParser.parseFromString(bpmn, 'text/xml');
   const parserErrors = dom.getElementsByTagName('parsererror');
@@ -34,6 +41,7 @@ async function checkBpmn(bpmn: string) {
     );
 
     if (match) {
+      // convert the positional information into a format that can be passed to the monaco editor
       let [_, lineString, columnString, message] = match;
       const line = parseInt(lineString);
       const column = parseInt(columnString);
@@ -49,8 +57,8 @@ async function checkBpmn(bpmn: string) {
     }
   }
 
+  // check for bpmn related mistakes (nonconformity with the underlying model [e.g. unknown elements or attributes])
   const { warnings } = await moddle.fromXML(bpmn);
-  // TODO: how do we want to show which warnings exist to the user?
   return { warnings };
 }
 
@@ -75,6 +83,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
 
   async function validateProcess() {
     if (editorRef.current && monacoRef.current) {
+      // reset error markings in the editor
       monacoRef.current.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', []);
       setSaveState('none');
       const bpmn = editorRef.current.getValue();
@@ -83,6 +92,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
 
       if (error) {
         setSaveState('error');
+        // add new error markings
         monacoRef.current.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', [
           { ...error, severity: monacoRef.current.MarkerSeverity.Error },
         ]);

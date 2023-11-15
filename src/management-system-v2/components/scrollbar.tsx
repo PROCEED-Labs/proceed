@@ -52,7 +52,7 @@ const ScrollBar: FC<ScrollBarType> = ({
       setThumbHeight(newThumbHeight);
       setScrollPosition(newScrollPosition);
     }
-  }, [reachedEndCallBack, scrolledToTH, threshhold]);
+  }, [reachedEndCallBack, scrolledToTH, threshold]);
 
   const handleScrollbarClick = useCallback((e: MouseEvent) => {
     if (containerRef.current && thumbRef.current) {

@@ -23,6 +23,7 @@ import getClient from './iam/authentication/client.js';
 import { getStorePath } from '../shared-electron-server/data/store.js';
 import { abilityMiddleware, initialiazeRulesCache } from './iam/middleware/authorization';
 import { getSessionFromCookie } from './iam/middleware/nextAuthMiddleware.js';
+import { createDevelopmentUsers } from './iam/utils/developmentUsers';
 
 const configPath =
   process.env.NODE_ENV === 'development'
@@ -106,6 +107,8 @@ async function init() {
         logger.info('Started MS without Authentication and Authorization.');
       }
     }
+
+    if (process.env.NODE_ENV === 'development') await createDevelopmentUsers(config);
 
     if (process.env.API_ONLY) {
       backendServer.use(getSessionFromCookie(config));

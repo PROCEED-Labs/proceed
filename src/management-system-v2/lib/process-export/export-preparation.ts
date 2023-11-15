@@ -167,7 +167,7 @@ async function getMaximumScalingFactor(exportData: ProcessesExportData) {
   const maximums = await asyncMap(allVersionBpmns, async (bpmn) => {
     const svg = await getSVGFromBPMN(bpmn);
     const diagramSize = getImageDimensions(svg);
-
+    // the canvas that is used to transform the svg to a png has a limited size (https://github.com/jhildenbiddle/canvas-size#test-results)
     return Math.floor(Math.sqrt(268400000 / (diagramSize.width * diagramSize.height)));
   });
 
@@ -351,7 +351,8 @@ export async function prepareExport(
   }));
 
   if (options.type === 'png') {
-    options.scaling = (options.scaling / 10) * (await getMaximumScalingFactor(finalExportData));
+    // decrease the scaling factor if the image size would exceed export limits
+    options.scaling = Math.min(options.scaling, await getMaximumScalingFactor(finalExportData));
   }
 
   return finalExportData;

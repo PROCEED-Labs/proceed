@@ -158,17 +158,15 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       </Checkbox.Group>
       {selectedType === 'png' && (
         <div style={{ marginTop: '10px' }}>
-          <span>Scaling:</span>
-          <Slider
+          <span>Quality:</span>
+          <Radio.Group
+            onChange={(e) => setPngScalingFactor(e.target.value)}
             value={pngScalingFactor}
-            min={1}
-            max={10}
-            step={1}
-            marks={{ 1: 'Min', 10: 'Max' }}
-            dots
-            onChange={setPngScalingFactor}
-            tooltip={{ formatter: null }}
-          />
+          >
+            <Radio value={1.5}>Normal</Radio>
+            <Radio value={2.5}>Good</Radio>
+            <Radio value={4}>Excellent</Radio>
+          </Radio.Group>
         </div>
       )}
     </Space>

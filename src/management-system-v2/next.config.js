@@ -12,6 +12,7 @@ try {
 
   oauthProvidersConfig = {
     NEXTAUTH_SECRET: environmentsContent.nextAuthSecret,
+    USE_AUTH0: environmentsContent.useAuth0,
     AUTH0_CLIENT_ID: environmentsContent.clientID,
     AUTH0_CLIENT_SECRET: environmentsContent.clientSecret,
     AUTH0_clientCredentialScope: environmentsContent.clientCredentialScope,

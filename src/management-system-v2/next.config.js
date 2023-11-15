@@ -32,8 +32,8 @@ const nextConfig = {
   transpilePackages: ['antd'],
   env: {
     API_URL:
-      process.env.NODE_ENV === 'development' ? 'https://localhost:33080/api' : process.env.API_URL,
-    BACKEND_URL: process.env.NODE_ENV === 'development' ? 'https://localhost:33080' : 'FIXME',
+      process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
+    BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',
     NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true',
     NEXTAUTH_SECRET:
       process.env.NODE_ENV === 'development'

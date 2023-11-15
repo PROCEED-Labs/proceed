@@ -142,49 +142,59 @@ async function init() {
   initialiazeRulesCache(config);
   backendServer.use(abilityMiddleware);
 
-  // allow requests for Let's Encrypt
-  const letsencryptPath = path.join(__dirname, 'lets-encrypt');
-  if (process.env.NODE_ENV === 'production') {
-    await fse.ensureDir(letsencryptPath);
-
-    // create a server that will be used to serve the Let's Encrypt Challenge and then reused to forward to https for http requests
-    const httpApp = express();
-
-    httpApp.use(`/.well-known`, express.static(letsencryptPath, { dotfiles: 'allow' }));
-    // reuse for redirect on other requests
-    httpApp.get('*', (req, res) => {
-      res.redirect('https://' + req.headers.host + req.url);
-    });
-
-    await httpApp.listen(80);
-  }
-
-  // get the best certificate available (user provided > automatic Lets' Encrypt Cert > Self Signed Dev Cert)
-  const options = await getCertificate(letsencryptPath);
-
   const apiRouter = createApiRouter(config, client);
   backendServer.use(['/api', '/resources'], apiRouter);
 
-  // Frontend + REST API
-  const frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
-    logger.info(
-      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
-    );
-  });
+  let frontendServer, websocketServer;
+  if (process.env.API_ONLY) {
+    // Frontend + REST API
+    backendServer.listen(ports.frontend, () => {
+      logger.info(
+        `MS HTTPS server started on port ${ports.frontend}. Open: http://<IP>:${ports.frontend}/`,
+      );
+    });
+  } else {
+    // allow requests for Let's Encrypt
+    const letsencryptPath = path.join(__dirname, 'lets-encrypt');
+    if (process.env.NODE_ENV === 'production') {
+      await fse.ensureDir(letsencryptPath);
 
-  // Puppeteer Endpoint
-  https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
-    logger.debug(
-      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
-    );
-  });
+      // create a server that will be used to serve the Let's Encrypt Challenge and then reused to forward to https for http requests
+      const httpApp = express();
 
-  // WebSocket Endpoint for Collaborative Editing
-  // Only here for API_ONLY because we need the const in the call below.
-  const websocketServer = https.createServer(options);
+      httpApp.use(`/.well-known`, express.static(letsencryptPath, { dotfiles: 'allow' }));
+      // reuse for redirect on other requests
+      httpApp.get('*', (req, res) => {
+        res.redirect('https://' + req.headers.host + req.url);
+      });
 
-  if (process.env.NODE_ENV === 'production') {
-    handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
+      await httpApp.listen(80);
+    }
+
+    // get the best certificate available (user provided > automatic Lets' Encrypt Cert > Self Signed Dev Cert)
+    const options = await getCertificate(letsencryptPath);
+
+    // Frontend + REST API
+    frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
+      logger.info(
+        `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
+      );
+    });
+
+    // Puppeteer Endpoint
+    https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
+      logger.debug(
+        `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
+      );
+    });
+
+    // WebSocket Endpoint for Collaborative Editing
+    // Only here for API_ONLY because we need the const in the call below.
+    websocketServer = https.createServer(options);
+
+    if (process.env.NODE_ENV === 'production') {
+      handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
+    }
   }
 
   if (process.env.API_ONLY) {
@@ -192,7 +202,6 @@ async function init() {
   }
 
   startWebsocketServer(websocketServer, loginSession, config);
-
   // Load BPMN Modeller for Server after Websocket Endpoint is started
   (await import('./puppeteerStartWebviewWithBpmnModeller.js')).default();
 }

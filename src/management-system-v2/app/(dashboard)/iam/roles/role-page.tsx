@@ -60,7 +60,7 @@ const RolesPage: FC = () => {
       width: 100,
       render: (id: string, role: Role) =>
         selectedRowKeys.length === 0 ? (
-          <AuthCan action="delete" resource={toCaslResource('Role', role) as any}>
+          <AuthCan action="delete" resource={toCaslResource('Role', role)}>
             <Tooltip placement="top" title={'Delete'}>
               <Popconfirm
                 title="Delete User"

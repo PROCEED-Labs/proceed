@@ -1,15 +1,15 @@
 'use client';
 
-import { login, logout, useAuthStore } from '@/lib/iam';
-import { UserOutlined, PlusOutlined } from '@ant-design/icons';
+import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Space, Tooltip } from 'antd';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FC } from 'react';
 
 const HeaderActions: FC = () => {
   const router = useRouter();
-  const loggedIn = useAuthStore((store) => store.loggedIn);
-  const user = useAuthStore((store) => store.user);
+  const session = useSession();
+  const loggedIn = session.status === 'authenticated';
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {
     return null;
@@ -18,12 +18,12 @@ const HeaderActions: FC = () => {
   if (!loggedIn) {
     return (
       <Space style={{ float: 'right' }}>
-        <Button type="text" onClick={login}>
+        <Button type="text" onClick={() => signIn()}>
           <u>Log in</u>
         </Button>
 
         <Tooltip title="Log in">
-          <Button shape="circle" icon={<UserOutlined />} onClick={login} />
+          <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
         </Tooltip>
       </Space>
     );
@@ -31,12 +31,16 @@ const HeaderActions: FC = () => {
 
   return (
     <Space style={{ float: 'right' }}>
-      <Button type="text" onClick={logout}>
+      <Button type="text" onClick={() => signOut()}>
         <u>Logout</u>
       </Button>
 
       <Tooltip title={loggedIn ? 'Account Settings' : 'Log in'}>
-        <Avatar src={user.picture} onClick={() => router.push('/profile')} />
+        <Avatar src={session.data.user.image} onClick={() => router.push('/profile')}>
+          {session.data.user.image
+            ? null
+            : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
+        </Avatar>
       </Tooltip>
     </Space>
   );

@@ -14,6 +14,28 @@ type User = {
   password: string;
 };
 
+async function addRoleMappingForUser(user: any, role: any) {
+  if (
+    role.members.find((member: any) => member.userId === user.user_id || member.userId === user.id)
+  )
+    return;
+
+  try {
+    await addRoleMapping([
+      {
+        userId: user.user_id || user.id,
+        roleId: role.id,
+        username: user.username,
+        firstName: user.given_name || user.firstName,
+        lastName: user.family_name || user.lastName,
+        email: user.email,
+      },
+    ]);
+  } catch (e) {
+    throw e;
+  }
+}
+
 async function createUser(user: User, role?: any) {
   let userData: any;
 
@@ -63,40 +85,48 @@ async function createUser(user: User, role?: any) {
     if (!newUser) throw new Error('Failed to fetch existing user.');
   }
 
-  if (!role) return;
-
-  if (role.members.find((member: any) => member.userId === newUser.user_id || newUser.id)) return;
-
-  try {
-    await addRoleMapping([
-      {
-        userId: newUser.user_id || newUser.id,
-        roleId: role.id,
-        username: newUser.username,
-        firstName: newUser.given_name || newUser.firstName,
-        lastName: newUser.family_name || newUser.lastName,
-        email: newUser.email,
-      },
-    ]);
-  } catch (e) {
-    throw e;
-  }
+  if (role) addRoleMappingForUser(newUser, role);
 }
 
 export async function createDevelopmentUsers() {
   const roles = await getRoles();
 
   const processAdminRole = roles.find((role) => role.name === '@process_admin');
+  const adminRole = roles.find((role) => role.name === '@admin');
 
-  await createUser(
-    {
-      given_name: 'John',
-      family_name: 'Doe',
-      name: 'John Doe',
-      username: 'johndoe',
-      email: 'johndoe@proceed-labs.org',
-      password: 'JohnDoe1!',
-    },
-    processAdminRole,
-  );
+  if (process.env.API_ONLY) {
+    await addRoleMappingForUser(
+      {
+        username: 'johndoe',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'johndoe@proceed-labs.org',
+        id: 'development-id|johndoe',
+      },
+      processAdminRole,
+    );
+
+    await addRoleMappingForUser(
+      {
+        username: 'admin',
+        firstName: 'Admin',
+        lastName: 'Admin',
+        email: 'admin@proceed-labs.org',
+        id: 'development-id|admin',
+      },
+      adminRole,
+    );
+  } else {
+    await createUser(
+      {
+        given_name: 'John',
+        family_name: 'Doe',
+        name: 'John Doe',
+        username: 'johndoe',
+        email: 'johndoe@proceed-labs.org',
+        password: 'JohnDoe1!',
+      },
+      processAdminRole,
+    );
+  }
 }

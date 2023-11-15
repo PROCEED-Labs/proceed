@@ -22,6 +22,7 @@ import createConfig from './iam/utils/config.js';
 import getClient from './iam/authentication/client.js';
 import { getStorePath } from '../shared-electron-server/data/store.js';
 import { abilityMiddleware, initialiazeRulesCache } from './iam/middleware/authorization';
+import { getSessionFromCookie } from './iam/middleware/nextAuthMiddleware.js';
 
 const configPath =
   process.env.NODE_ENV === 'development'
@@ -55,7 +56,6 @@ async function init() {
     const file = await fse.readFile(configPath);
     if (file) {
       config = await createConfig(JSON.parse(file));
-      if (config.useAuthorization) store = await createSessionStore(config);
     }
   } catch (e) {
     config = await createConfig();
@@ -94,39 +94,48 @@ async function init() {
   backendServer.use(express.json());
 
   if (config.useAuthorization) {
-    try {
-      client = await getClient(config);
-    } catch (e) {
-      if (process.env.NODE_ENV === 'production') {
+    if (process.env.USE_AUTH0) {
+      try {
+        client = await getClient(config);
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production') {
+          logger.error(e.toString());
+          throw new Error(e.toString());
+        }
         logger.error(e.toString());
-        throw new Error(e.toString());
+        logger.info('Started MS without Authentication and Authorization.');
       }
-      logger.error(e.toString());
-      logger.info('Started MS without Authentication and Authorization.');
     }
-    const msUrl = new URL(config.msURL);
-    const hostName = msUrl.hostname;
-    const domainName = hostName.replace(/^[^.]+\./g, '');
 
-    // express-session middleware currently saves keycloak data and cookie data in memorystore DB
-    // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
-    loginSession = session({
-      resave: false,
-      secret: crypto.randomBytes(64).toString('hex'), // random secret
-      saveUninitialized: false, // doesn't save uninitialized sessions to the store
-      store,
-      cookie: {
-        secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
-        sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
-        httpOnly: true,
-        expires: 1000 * 60 * 60 * 10,
-        path: '/',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
-      },
-      name: 'id', // name of the cookie in the browser
-    });
-    backendServer.use(loginSession);
+    if (process.env.API_ONLY) {
+      backendServer.use(getSessionFromCookie(config));
+    } else {
+      store = await createSessionStore(config);
+
+      const msUrl = new URL(config.msURL);
+      const hostName = msUrl.hostname;
+      const domainName = hostName.replace(/^[^.]+\./g, '');
+
+      // express-session middleware currently saves keycloak data and cookie data in memorystore DB
+      // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+      loginSession = session({
+        resave: false,
+        secret: crypto.randomBytes(64).toString('hex'), // random secret
+        saveUninitialized: false, // doesn't save uninitialized sessions to the store
+        store,
+        cookie: {
+          secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
+          sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
+          httpOnly: true,
+          expires: 1000 * 60 * 60 * 10,
+          path: '/',
+          domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
+        },
+        name: 'id', // name of the cookie in the browser
+      });
+      backendServer.use(loginSession);
+    }
   }
   backendServer.use(authRouter(config, client)); // separate authentication routes
 

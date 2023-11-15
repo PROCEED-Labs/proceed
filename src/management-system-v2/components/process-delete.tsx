@@ -8,7 +8,7 @@ import styles from './process-delete.module.scss';
 type ProcessDeleteModalType = {
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   processKeys: React.Key[];
-  setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  setSelection: Dispatch<SetStateAction<Key[]>>;
 };
 
 const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({

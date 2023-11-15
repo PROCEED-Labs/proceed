@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, useEffect, useMemo } from 'react';
+import { ReactElement, ReactNode, useEffect, useMemo } from 'react';
 import { useAbilityStore } from './abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
@@ -49,7 +49,7 @@ export const AuthCan = ({
   children,
   fallbackRedirect,
 }: AuthCanProps & {
-  children: ReactElement;
+  children: ReactNode;
 }) => {
   const router = useRouter();
   const { status } = useSession();

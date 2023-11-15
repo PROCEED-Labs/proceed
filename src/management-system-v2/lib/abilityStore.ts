@@ -12,7 +12,7 @@ type AbilityStoreType = {
 };
 
 export const useAbilityStore = create<AbilityStoreType>((set) => ({
-  ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule)),
+  ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[])),
   abilityFetched: false,
   setAbility(rules) {
     set({ ability: new Ability(rules), abilityFetched: true });

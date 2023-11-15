@@ -42,7 +42,7 @@ export async function copyProcessImage(modeler: any) {
 
   // get the png and copy it to the clipboard
   const svg = await getSVGFromBPMN(xml!, subprocessId);
-  const blob = await getPNGFromSVG(svg);
+  const blob = await getPNGFromSVG(svg, 3);
   const data = [new ClipboardItem({ 'image/png': blob })];
   navigator.clipboard.write(data).then(() => {
     console.log('Copied to clipboard');

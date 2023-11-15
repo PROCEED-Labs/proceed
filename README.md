@@ -108,12 +108,12 @@ _Server version:_ If successful, this automatically starts a Chrome/Chromium bro
 
 **Authentication & Authorization**
 
-Wether you start the API with `yarn dev-ms-api` or `yarn dev-ms-api-auth0` you can log in with two default users just by typing their name in the 'Sign in with Development Users' section:
+When you start the API with `yarn dev-ms-api`, you can log in with two default users just by typing their name in the 'Sign in with Development Users' section:
 
 - Admin: With the username `admin`.
 - John Doe: With the username `johndoe`.
 
-If you start the API with `yarn dev-ms-api-auth0`, two users are created on the development Auth0 environment:
+Additionaly, if you have set up the environments folder in `src/management-system/src/backend/server/environment-configurations/` and `useAuth0` is set to `true` these two default users are created in the development Auth0 environment.
 
 - Admin: With the username `admin` and the password `ProceedAdm1n!`.
 - John Doe: With the username `johndoe` and the password `JohnDoe1!`.

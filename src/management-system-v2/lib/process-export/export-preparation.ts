@@ -171,7 +171,7 @@ async function getMaximumScalingFactor(exportData: ProcessesExportData) {
     return Math.floor(Math.sqrt(268400000 / (diagramSize.width * diagramSize.height)));
   });
 
-  return Math.min(...maximums, 10);
+  return Math.min(...maximums);
 }
 
 /**

@@ -81,8 +81,6 @@ const getClient = async (config) => {
         await createAdminUser();
       }
 
-      if (process.env.NODE_ENV === 'development') await createDevelopmentUsers();
-
       // set global roles for authorization
       const globalRoles = { everybodyRole: '', guestRole: '' };
       for (const role of getRoles()) {

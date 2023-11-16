@@ -152,8 +152,8 @@ const schema = yup.object({
     .default([defaultFrontendAddress, puppeteerAddress]),
   nextAuthSecret: yup.string().when('useAuthorization', {
     is: true,
-    then: (schema) => (process.env.API_ONLY ? schema.required() : schema.optional),
-    otherwise: (schema) => (process.env.API_ONLY ? schema.required() : schema.optional),
+    then: (schema) => (process.env.API_ONLY ? schema.required() : schema.optional()),
+    otherwise: (schema) => (process.env.API_ONLY ? schema.required() : schema.optional()),
   }),
 });
 
@@ -204,7 +204,6 @@ const createConfig = async (params = {}) => {
       trustedOrigins: process.env.TRUSTED_ORIGINS
         ? process.env.TRUSTED_ORIGINS.split(',')
         : undefined,
-      useAuth0: process.env.USE_AUTH0,
       nextAuthSecret:
         process.env.NEXTAUTH_SECRET ||
         (process.env.API_ONLY &&

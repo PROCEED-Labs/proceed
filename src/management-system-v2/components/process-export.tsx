@@ -181,6 +181,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         onCancel={handleClose}
         centered
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
+        width={540}
       >
         <Flex>
           {typeSelection}

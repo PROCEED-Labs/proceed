@@ -158,14 +158,23 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
       </Checkbox.Group>
       {selectedType === 'png' && (
         <div style={{ marginTop: '10px' }}>
-          <span>Quality:</span>
+          <Tooltip placement="left" title="Export with different image resolutions">
+            <span>Quality:</span>
+          </Tooltip>
+
           <Radio.Group
             onChange={(e) => setPngScalingFactor(e.target.value)}
             value={pngScalingFactor}
           >
-            <Radio value={1.5}>Normal</Radio>
-            <Radio value={2.5}>Good</Radio>
-            <Radio value={4}>Excellent</Radio>
+            <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
+              <Radio value={1.5}>Normal</Radio>
+            </Tooltip>
+            <Tooltip placement="bottom" title="Medium resolution and medium file size">
+              <Radio value={2.5}>Good</Radio>
+            </Tooltip>
+            <Tooltip placement="bottom" title="Highest resolution and biggest file size">
+              <Radio value={4}>Excellent</Radio>
+            </Tooltip>
           </Radio.Group>
         </div>
       )}

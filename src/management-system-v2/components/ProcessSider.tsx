@@ -5,13 +5,13 @@ import { Menu } from 'antd';
 const { SubMenu, Item, ItemGroup } = Menu;
 import { EditOutlined, ProfileOutlined, FileAddOutlined, StarOutlined } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/iam';
 import ProcessCreationButton from './process-creation-button';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 const ProcessSider: FC<PropsWithChildren> = () => {
   const router = useRouter();
   const activeSegment = usePathname().slice(1) || 'processes';
-  const ability = useAuthStore((state) => state.ability);
+  const ability = useAbilityStore((state) => state.ability);
 
   return (
     <>

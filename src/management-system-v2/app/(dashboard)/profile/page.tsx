@@ -1,9 +1,11 @@
-import { FC } from 'react';
 import UserProfile from '@/components/userProfile';
-// import style from './profile.module.scss';
+import Auth from '@/lib/serverAuthComponents';
 
-const ProfilePage: FC = () => {
-  return <UserProfile></UserProfile>;
-};
-
-export default ProfilePage;
+export default Auth(
+  {
+    action: 'view',
+    resource: 'User',
+    fallbackRedirect: '/',
+  },
+  UserProfile,
+);

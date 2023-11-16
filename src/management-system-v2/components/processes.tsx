@@ -2,23 +2,19 @@
 
 import styles from './processes.module.scss';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import { Input, Space, Button, Col, Row, Tooltip } from 'antd';
+import { Space, Button, Tooltip } from 'antd';
 import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
-  CopyOutlined,
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import cn from 'classnames';
 import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
-import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
-import { useQueryClient } from '@tanstack/react-query';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -26,7 +22,6 @@ import { fetchProcessVersionBpmn } from '@/lib/process-queries';
 import {
   setDefinitionsId,
   setDefinitionsName,
-  manipulateElementsByTagName,
   generateDefinitionsId,
   setTargetNamespace,
   setDefinitionsVersionInformation,
@@ -35,7 +30,7 @@ import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
-import { useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -110,7 +105,7 @@ const Processes: FC = () => {
     'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
-  const ability = useAuthStore((state) => state.ability);
+  const ability = useAbilityStore((state) => state.ability);
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: pullNewProcessData,

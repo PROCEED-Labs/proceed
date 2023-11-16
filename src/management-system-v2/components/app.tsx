@@ -5,19 +5,22 @@ import Theme from './theme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntDesignApp } from 'antd';
-import { AuthCallbackListener } from '@/lib/iamComponents';
+import { SessionProvider } from 'next-auth/react';
+import { FetchAbility } from '@/lib/clientAuthComponents';
 
 const queryClient = new QueryClient();
 
 const App: FC<PropsWithChildren> = ({ children }) => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ReactQueryDevtools initialIsOpen={false} />
-      <AntDesignApp>
-        <AuthCallbackListener />
-        <Theme>{children}</Theme>
-      </AntDesignApp>
-    </QueryClientProvider>
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        <FetchAbility />
+        <ReactQueryDevtools initialIsOpen={false} />
+        <AntDesignApp>
+          <Theme>{children}</Theme>
+        </AntDesignApp>
+      </QueryClientProvider>
+    </SessionProvider>
   );
 };
 

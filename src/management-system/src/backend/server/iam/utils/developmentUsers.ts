@@ -88,7 +88,7 @@ async function createUser(user: User, role?: any) {
   if (role) addRoleMappingForUser(newUser, role);
 }
 
-export async function createDevelopmentUsers() {
+export async function createDevelopmentUsers(config) {
   const roles = await getRoles();
 
   const processAdminRole = roles.find((role) => role.name === '@process_admin');
@@ -116,7 +116,9 @@ export async function createDevelopmentUsers() {
       },
       adminRole,
     );
-  } else {
+  }
+
+  if (config.useAuth0) {
     await createUser(
       {
         given_name: 'John',

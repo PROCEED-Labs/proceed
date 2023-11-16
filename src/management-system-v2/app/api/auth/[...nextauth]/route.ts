@@ -23,7 +23,7 @@ export const nextAuthOptions: AuthOptions = {
   },
 };
 
-if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_CLIENT_SECRET && process.env.AUTH0_ISSUER) {
+if (process.env.USE_AUTH0) {
   nextAuthOptions.providers.push(
     Auth0Provider({
       clientId: process.env.AUTH0_CLIENT_ID as string,

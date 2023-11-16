@@ -23,6 +23,7 @@ import React, {
 import {
   CopyOutlined,
   ExportOutlined,
+  EditOutlined,
   DeleteOutlined,
   StarOutlined,
   EyeOutlined,
@@ -36,6 +37,9 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
+import ProcessEditButton from './process-edit-button';
+import { AuthCan } from '@/lib/iamComponents';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
@@ -79,6 +83,7 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
 
+  const invalidateProcesses = useInvalidateAsset('/process');
   const refreshData = useInvalidateAsset('/process');
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
@@ -188,6 +193,19 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip>
+          <AuthCan resource={toCaslResource('Process', record)} action="update">
+            <ProcessEditButton
+              definitionId={record.definitionId}
+              wrapperElement={
+                <Tooltip placement="top" title={'Edit'}>
+                  <EditOutlined />
+                </Tooltip>
+              }
+              onEdited={() => {
+                invalidateProcesses();
+              }}
+            />
+          </AuthCan>
           {ability.can('delete', 'Process') && (
             <Tooltip placement="top" title={'Delete'}>
               <DeleteOutlined

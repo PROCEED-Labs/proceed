@@ -72,7 +72,7 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
     setIsConfirmationModalOpen(true);
   };
 
-  const createNewProcess = async (values: { name: string; description: string }) => {
+  const createNewProcess = async (values: { name: string; description?: string }) => {
     const saveXMLResult = await modeler?.saveXML({ format: true });
     if (saveXMLResult?.xml) {
       try {

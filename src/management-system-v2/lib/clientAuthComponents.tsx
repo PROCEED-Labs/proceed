@@ -1,17 +1,18 @@
 'use client';
 
-import { ReactElement, ReactNode, useEffect, useMemo } from 'react';
+import { ReactElement, ReactNode, useEffect, useMemo, FC, PropsWithChildren } from 'react';
 import { useAbilityStore } from './abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
-import { AbilityRule, ResourceActionType, ResourceType } from './ability/caslAbility';
+import { AbilityRule, ResourceActionType } from './ability/caslAbility';
 import { PackRule } from '@casl/ability/extra';
 import { useCsrfTokenStore } from './csrfTokenStore';
 import { useRouter } from 'next/navigation';
+import Ability from './ability/abilityHelper';
 
 export type AuthCanProps = {
   action: ResourceActionType | ResourceActionType[];
-  resource: ResourceType | ResourceType[];
+  resource: Parameters<Ability['can']>[1];
   notLoggedIn?: ReactElement;
   fallback?: ReactElement;
   fallbackRedirect?: Route;
@@ -40,7 +41,7 @@ export const FetchAbility = () => {
   return <></>;
 };
 
-export const AuthCan = ({
+export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   action,
   resource,
   fallback,
@@ -48,8 +49,6 @@ export const AuthCan = ({
   notLoggedIn,
   children,
   fallbackRedirect,
-}: AuthCanProps & {
-  children: ReactNode;
 }) => {
   const router = useRouter();
   const { status } = useSession();

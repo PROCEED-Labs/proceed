@@ -58,6 +58,7 @@ function getChildren(travObj) {
     'diagrams',
     'imports',
     'extensionElements',
+    'participants',
   ];
 
   const allChildren = childNodeTypes

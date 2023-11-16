@@ -20,28 +20,12 @@ export async function copyProcessImage(modeler: any) {
 
   // get the selected elements
   let selection: any[] = (modeler.get('selection') as any).get();
-  // remove connections where the source or target or both are not selected
-  selection = selection.filter((el) => {
-    if (!el.source && !el.target) return true;
-    return selection.includes(el.source) && selection.includes(el.target);
-  });
-
-  // if something is selected only copy the selection
-  if (selection.length) {
-    const bpmnObj: any = await toBpmnObject(xml!);
-    // find the correct plane (either the root process/collaboration or a subprocess)
-    const plane = bpmnObj.diagrams.find(
-      (el: any) => el.plane.bpmnElement.id === rootElement.id,
-    ).plane;
-    // remove the visualisation of the elements that are not selected
-    plane.planeElement = plane.planeElement.filter((diEl: any) =>
-      selection.some((el: any) => el.id === diEl.bpmnElement.id),
-    );
-    xml = await toBpmnXml(bpmnObj);
-  }
-
   // get the png and copy it to the clipboard
-  const svg = await getSVGFromBPMN(xml!, subprocessId);
+  const svg = await getSVGFromBPMN(
+    xml!,
+    subprocessId,
+    selection.map((el) => el.id),
+  );
   const blob = await getPNGFromSVG(svg, 3);
   const data = [new ClipboardItem({ 'image/png': blob })];
   navigator.clipboard.write(data).then(() => {

@@ -1,5 +1,7 @@
 import { v4 } from 'uuid';
 
+import { toBpmnObject, toBpmnXml, getElementById } from '@proceed/bpmn-helper';
+
 /**
  * Downloads the data onto the device of the user
  *
@@ -32,7 +34,11 @@ export function downloadFile(filename: string, data: Blob) {
  * @param bpmn
  * @returns the svg image as a string
  */
-export async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
+export async function getSVGFromBPMN(
+  bpmn: string,
+  subprocessId?: string,
+  flowElementsToExportIds: string[] = [],
+) {
   const Viewer = (await import('bpmn-js/lib/Viewer')).default;
 
   //Creating temporary element for BPMN Viewer
@@ -41,6 +47,36 @@ export async function getSVGFromBPMN(bpmn: string, subprocessId?: string) {
   //Assiging process id to temp element and append to DOM
   viewerElement.id = 'canvas_' + v4();
   document.body.appendChild(viewerElement);
+
+  // if specific elements are selected for export make sure to filter out all other elements
+  if (flowElementsToExportIds.length) {
+    const bpmnObj: any = await toBpmnObject(bpmn!);
+    // remove connections where the source or target or both are not selected
+    flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
+      const el = getElementById(bpmnObj, id) as any;
+      return (
+        el &&
+        (!el.sourceRef || flowElementsToExportIds.includes(el.sourceRef.id)) &&
+        (!el.targetRef || flowElementsToExportIds.includes(el.targetRef.id))
+      );
+    });
+
+    if (flowElementsToExportIds.length) {
+      // find the correct plane (either the root process/collaboration or a subprocess)
+      const { plane } = bpmnObj.diagrams.find((el: any) =>
+        subprocessId
+          ? // either find the subprocess plane
+            el.plane.bpmnElement.id === subprocessId
+          : // or the root process/collaboration plane
+            el.plane.bpmnElement.$type !== 'bpmn:SubProcess',
+      );
+      // remove the visualisation of the elements that are not selected
+      plane.planeElement = plane.planeElement.filter((diEl: any) =>
+        flowElementsToExportIds.some((id) => id === diEl.bpmnElement.id),
+      );
+      bpmn = await toBpmnXml(bpmnObj);
+    }
+  }
 
   //Create a viewer to transform the bpmn into an svg
   const viewer = new Viewer({ container: '#' + viewerElement.id });

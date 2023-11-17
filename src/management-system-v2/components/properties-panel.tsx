@@ -10,13 +10,15 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 
 import TextEditor from './textEditor';
 
-import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
+import React, { FocusEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
+import { Input, ColorPicker, Space, Image } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import ResizableCard from './ResizableCard';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
+import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
+import CustomPropertySection from './custom-property-section';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
@@ -24,15 +26,31 @@ type PropertiesPanelProperties = {
 };
 
 const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen }) => {
+  const [metaData, setMetaData] = useState(getMetaDataFromElement(selectedElement.businessObject));
   const [name, setName] = useState('');
+  const [costsPlanned, setCostsPlanned] = useState('');
+  const [timePlannedDuration, setTimePlannedDuration] = useState('');
 
   const modeler = useModelerStateStore((state) => state.modeler);
+
+  const refreshMetaData = useCallback(() => {
+    setMetaData(getMetaDataFromElement(selectedElement.businessObject));
+  }, [selectedElement.businessObject]);
+
+  useEffect(() => {
+    refreshMetaData();
+  }, [selectedElement, refreshMetaData]);
 
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
     }
   }, [selectedElement]);
+
+  useEffect(() => {
+    setCostsPlanned(metaData.costsPlanned);
+    setTimePlannedDuration(metaData.timePlannedDuration);
+  }, [metaData]);
 
   const backgroundColor = useMemo(() => {
     return getFillColor(selectedElement, '#FFFFFFFF');
@@ -61,8 +79,22 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     });
   };
 
+  const updateMetaData = (name: string, value: any) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+
+    if (name === 'property') {
+      setProceedElement(selectedElement.businessObject, name, value.value, value.attributes);
+    } else {
+      setProceedElement(selectedElement.businessObject, name, value ? value : null);
+    }
+    modeling.updateProperties(selectedElement as any, {
+      extensionElements: selectedElement.businessObject.extensionElements,
+    });
+
+    refreshMetaData();
+  };
+
   const updateDescription = (text: string) => {
-    console.log('updateDescription', text);
     const modeling = modeler!.get('modeling') as Modeling;
     const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
 
@@ -125,11 +157,25 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
             prefix={<EuroCircleOutlined className="clock-icon" />}
             size="large"
             placeholder="Planned Cost"
+            value={costsPlanned}
+            onChange={(event) => {
+              setCostsPlanned(event.target.value);
+            }}
+            onBlur={() => {
+              updateMetaData('costsPlanned', costsPlanned);
+            }}
           />
           <Input
             prefix={<ClockCircleOutlined className="clock-icon" />}
             size="large"
             placeholder="Planned Duration"
+            value={timePlannedDuration}
+            onChange={(event) => {
+              setTimePlannedDuration(event.target.value);
+            }}
+            onBlur={() => {
+              updateMetaData('timePlannedDuration', timePlannedDuration);
+            }}
           />
         </Space>
 
@@ -145,6 +191,13 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
             handleChange={(value: string) => updateDescription(value)}
           ></TextEditor>
         </Space>
+
+        <CustomPropertySection
+          metaData={metaData}
+          onChange={(name, value) => {
+            updateMetaData('property', { value: value, attributes: { name } });
+          }}
+        ></CustomPropertySection>
 
         {selectedElement.type !== 'bpmn:Process' && (
           <Space direction="vertical" size="large">

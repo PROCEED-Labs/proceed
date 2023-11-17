@@ -6,23 +6,21 @@ import { useEffect, useState } from 'react';
 
 type ReplaceStateEvent = Event & { arguments: Parameters<typeof history.replaceState> };
 
-export function useSearchParamState<T extends string>(
-  paramName: string,
-): [T | undefined, (newValue: T | undefined) => void] {
+export function useSearchParamState(paramName: string): [string, (newValue: string) => void] {
   // Get the initial value from the URL search parameter or use the provided initial value.
   const initialQueryParam =
     typeof window !== 'undefined'
-      ? (new URLSearchParams(window.location.search).get(paramName) as T) ?? undefined
-      : undefined;
+      ? new URLSearchParams(window.location.search).get(paramName) ?? ''
+      : '';
 
-  const [state, setState] = useState<T | undefined>(initialQueryParam);
+  const [state, setState] = useState(initialQueryParam);
 
   useEffect(() => {
     const replaceStateListener = (e: ReplaceStateEvent) => {
       const argUrl = e.arguments[2] as string | URL | undefined;
       if (!argUrl) return;
       const url = new URL(argUrl, window.location.origin);
-      const searchParam = (url.searchParams.get(paramName) as T) ?? undefined;
+      const searchParam = (url.searchParams.get(paramName) as string) ?? '';
       if (searchParam !== state) {
         setState(searchParam);
       }
@@ -36,7 +34,7 @@ export function useSearchParamState<T extends string>(
   }, [paramName, state]);
 
   // Function to update both state and URL search parameter without adding to history.
-  const updateState = (newValue: T | undefined) => {
+  const updateState = (newValue: string) => {
     setState(newValue);
 
     // Update the URL search parameter with the new value without modifying history.

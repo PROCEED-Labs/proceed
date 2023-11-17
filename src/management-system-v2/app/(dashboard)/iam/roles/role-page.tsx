@@ -25,8 +25,11 @@ const RolesPage: FC = () => {
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
   });
 
-  const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch(roles || [], ['name'], {
-    useSearchParams: false,
+  const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch({
+    data: roles || [],
+    keys: ['name'],
+    highlightedKeys: ['name'],
+    transformData: (items) => items.map((item) => item.item),
   });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -47,7 +50,11 @@ const RolesPage: FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'display',
-      render: (name: string, role: Role) => <Link href={`/iam/roles/${role.id}`}>{name}</Link>,
+      render: (name: string, role: Role) => (
+        <Link style={{ color: '#000' }} href={`/iam/roles/${role.id}`}>
+          {name}
+        </Link>
+      ),
     },
     {
       title: 'Members',

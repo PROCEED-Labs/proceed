@@ -32,6 +32,7 @@ type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefin
 
 export type UserListProps = {
   users: ListUser[];
+  highlightedKeys?: ('firstName' | 'lastName' | 'username' | 'email')[] | null;
   columns?: Column | ((clearSelected: () => void) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
@@ -41,17 +42,35 @@ export type UserListProps = {
 
 const UserList: FC<UserListProps> = ({
   users,
+  highlightedKeys = ['firstName', 'lastName', 'username', 'email'],
   columns,
   selectedRowActions,
   error,
   searchBarRightNode,
   loading,
 }) => {
-  const { searchQuery, setSearchQuery, filteredData } = useFuzySearch(
-    users,
-    ['firstName', 'lastName', 'username', 'email'],
-    { useSearchParams: false },
-  );
+  const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
+    data: users,
+    keys: ['firstName', 'lastName', 'username', 'email'],
+    transformData: (matches) =>
+      matches.map((item) => {
+        const user = item.item;
+        return {
+          ...user,
+          display: (
+            <Space size={16}>
+              <Avatar src={user.picture}>
+                {user.picture ? null : user.firstName.slice(0, 1) + user.lastName.slice(0, 1)}
+              </Avatar>
+              <span>
+                {user.firstName} {user.lastName}
+              </span>
+            </Space>
+          ),
+        };
+      }),
+    highlightedKeys: highlightedKeys ? highlightedKeys : undefined,
+  });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<typeof users>([]);
@@ -94,19 +113,7 @@ const UserList: FC<UserListProps> = ({
       />
       <Table
         columns={tableColums}
-        dataSource={filteredData.map((user) => ({
-          ...user,
-          display: (
-            <Space size={16}>
-              <Avatar src={user.picture}>
-                {user.picture ? null : user.firstName.slice(0, 1) + user.lastName.slice(0, 1)}
-              </Avatar>
-              <span>
-                {user.firstName} {user.lastName}
-              </span>
-            </Space>
-          ),
-        }))}
+        dataSource={filteredData}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys: React.Key[], selectedObjects: typeof users) => {

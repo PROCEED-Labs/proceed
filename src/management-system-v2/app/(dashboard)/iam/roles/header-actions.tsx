@@ -1,13 +1,13 @@
 'use client';
 
 import { usePostAsset } from '@/lib/fetch-data';
-import { AuthCan } from '@/lib/iamComponents';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, App, Input, Modal, DatePicker } from 'antd';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useRouter } from 'next/navigation';
+import { AuthCan } from '@/lib/clientAuthComponents';
 
 type PostRoleKeys = 'name' | 'description' | 'expiration';
 

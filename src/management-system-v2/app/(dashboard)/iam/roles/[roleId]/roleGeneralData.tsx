@@ -1,15 +1,16 @@
-import Auth from '@/lib/AuthCanWrapper';
+'use client';
+
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
-import { useAuthStore } from '@/lib/iam';
 import { Alert, App, Button, DatePicker, Form, Input, Spin } from 'antd';
 import { FC, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
+import { useAbilityStore } from '@/lib/abilityStore';
 
 const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
   const { message } = App.useApp();
-  const ability = useAuthStore((store) => store.ability);
+  const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
 
   const { data, isLoading, error } = useGetAsset('/roles/{id}', {
@@ -100,11 +101,4 @@ const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
   );
 };
 
-export default Auth(
-  {
-    action: ['view', 'manage'],
-    resource: 'Role',
-    fallbackRedirect: '/',
-  },
-  RoleGeneralData,
-);
+export default RoleGeneralData;

@@ -13,6 +13,7 @@ import {
   toBpmnObject,
   getElementDI,
   getDefinitionsVersionInformation,
+  getDefinitionsAndProcessIdForEveryCallActivity,
 } from '@proceed/bpmn-helper';
 
 /**
@@ -22,6 +23,9 @@ export type ProcessExportOptions = {
   type: 'bpmn' | 'svg' | 'pdf';
   artefacts: boolean; // if artefacts like images or user task html should be included in the export
   subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg, pdf)
+  imports: boolean; // if processes referenced by this process should be exported as well
+  metaData: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
+  a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
 };
 
 /**
@@ -35,11 +39,14 @@ export type ExportProcessInfo = { definitionId: string; processVersion?: number 
 export type ProcessExportData = {
   definitionId: string;
   definitionName: string;
+  isImport: boolean;
   versions: {
     [version: string]: {
       name?: string;
       bpmn: string;
-      subprocesses: { id: string; name: string }[];
+      isImport: boolean;
+      subprocesses: { id: string; name?: string }[];
+      imports: { definitionId: string; processVersion: string }[];
     };
   };
   userTasks: {
@@ -106,7 +113,7 @@ function getImagesReferencedByHtml(html: string) {
  *
  * @param bpmn
  */
-async function getCollapsedSubprocessIds(bpmn: string) {
+async function getCollapsedSubprocessInfos(bpmn: string) {
   const definitions = await toBpmnObject(bpmn);
   const subprocesses = getElementsByTagName(definitions, 'bpmn:SubProcess');
 
@@ -123,11 +130,14 @@ async function getCollapsedSubprocessIds(bpmn: string) {
 type ExportMap = {
   [definitionId: string]: {
     definitionName: string;
+    isImport: boolean;
     versions: {
       [version: string]: {
         name?: string;
         bpmn: string;
-        subprocesses: { id: string; name: string }[];
+        isImport: boolean;
+        subprocesses: { id: string; name?: string }[];
+        imports: { definitionId: string; processVersion: string }[];
       };
     };
     userTasks: {
@@ -140,6 +150,57 @@ type ExportMap = {
     }[];
   };
 };
+
+function getVersionName(version?: string | number) {
+  return version ? `${version}` : 'latest';
+}
+
+/**
+ * Will fetch information for a process (version) from the backend if it is not present in the exportData yet
+ *
+ * @param exportData the currently existing process data to export
+ * @param processInfo the info that identifies the process (version) to fetch
+ * @param isImport if the data should be marked as (only) required as part of an import if it was not fetched before
+ */
+async function ensureProcessInfo(
+  exportData: ExportMap,
+  { definitionId, processVersion }: { definitionId: string; processVersion?: string | number },
+  isImport = false,
+) {
+  if (!exportData[definitionId]) {
+    const process = await fetchProcess(definitionId);
+
+    if (!process) {
+      throw new Error(
+        `Failed to get process info (definitionId: ${definitionId}) during process export`,
+      );
+    }
+
+    exportData[definitionId] = {
+      definitionName: process.definitionName,
+      isImport,
+      versions: {},
+      userTasks: [],
+      images: [],
+    };
+  }
+
+  // prevent (unlikely) situations where a version might be referenced once by number and once by string
+  const versionName = getVersionName(processVersion);
+
+  if (!exportData[definitionId].versions[versionName]) {
+    const versionBpmn = await getVersionBpmn(definitionId, processVersion);
+    const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
+
+    exportData[definitionId].versions[versionName] = {
+      name: versionInformation.name,
+      bpmn: versionBpmn,
+      isImport,
+      subprocesses: [],
+      imports: [],
+    };
+  }
+}
 
 /**
  * Gets the data that is needed to export all the requested processes with the given options
@@ -157,40 +218,54 @@ export async function prepareExport(
   }
 
   const exportData: ExportMap = {};
-  // get the bpmn for all processes and their versions to export
-  for (const { definitionId, processVersion } of processes) {
-    const process = await fetchProcess(definitionId);
 
-    if (!process) {
-      throw new Error(
-        `Failed to get process info (definitionId: ${definitionId}) during process export`,
-      );
+  let processVersionsToAdd = processes.map((info) => ({ ...info, isImport: false }));
+
+  // keep resolving process (version) information until no new information is required by imports
+  while (processVersionsToAdd.length) {
+    let newProcessVersionsToAdd: typeof processVersionsToAdd = [];
+    // get the bpmn for all processes and their versions to export
+    for (const { definitionId, processVersion, isImport } of processVersionsToAdd) {
+      await ensureProcessInfo(exportData, { definitionId, processVersion }, isImport);
+
+      // if the option to export referenced processes is selected make sure to fetch their information as well
+      if (options.imports) {
+        const versionName = getVersionName(processVersion);
+        const { bpmn, imports } = exportData[definitionId].versions[versionName];
+
+        // check the bpmn for referenced processes
+        const importInfo = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
+
+        for (const { definitionId: importDefinitionId, version: importVersion } of Object.values(
+          importInfo,
+        )) {
+          // add the import information to the respective version
+          imports.push({ definitionId: importDefinitionId, processVersion: `${importVersion}` });
+          const importVersionName = getVersionName(importVersion);
+          // mark the process (version) as to be added if there is no information for it
+          if (!exportData[importDefinitionId]?.versions[importVersionName]) {
+            newProcessVersionsToAdd.push({
+              definitionId: importDefinitionId,
+              processVersion: importVersion,
+              isImport: true,
+            });
+          }
+        }
+      }
     }
+    processVersionsToAdd = newProcessVersionsToAdd;
+  }
 
-    // prevent (unlikely) situations where a version might be referenced once by number and once by string
-    const versionName = processVersion ? `${processVersion}` : 'latest';
-
-    const versionBpmn = await getVersionBpmn(definitionId, processVersion);
-    const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
-
-    exportData[definitionId] = {
-      definitionName: process.definitionName,
-      versions: {
-        [versionName]: {
-          name: versionInformation.name,
-          bpmn: versionBpmn,
-          subprocesses: [],
-        },
-      },
-      userTasks: [],
-      images: [],
-    };
-
+  // get additional process information
+  for (const definitionId of Object.keys(exportData)) {
     // get the ids of all collapsed subprocesses so they can be used later during export
     if (options.subprocesses) {
       for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
-        exportData[definitionId].versions[version].subprocesses =
-          await getCollapsedSubprocessIds(bpmn);
+        exportData[definitionId].versions[version].subprocesses = (
+          await getCollapsedSubprocessInfos(bpmn)
+        )
+          // the subprocess info is returned in the reversed order from what we want (we want from the outmost subprocess to the most nested)
+          .reverse();
       }
     }
 

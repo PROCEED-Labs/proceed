@@ -46,7 +46,7 @@ const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
 
   return (
     <Modal
-      title="Create new Version"
+      title="Create New Version"
       open={show}
       onCancel={() => {
         close();

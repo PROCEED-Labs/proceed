@@ -8,9 +8,10 @@ import { SettingOutlined, ApiOutlined, UserOutlined, UnlockOutlined } from '@ant
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
-import { useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 import Link from 'next/link';
 import ProcessSider from './ProcessSider';
+import { useSession } from 'next-auth/react';
 
 /**
  * The main layout of the application. It defines the sidebar and footer. Note
@@ -25,8 +26,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   const activeSegment = usePathname().slice(1) || 'processes';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const ability = useAuthStore((state) => state.ability);
-  const loggedIn = useAuthStore((state) => state.loggedIn);
+  const { status } = useSession();
+  const loggedIn = status === 'authenticated';
+  const ability = useAbilityStore((state) => state.ability);
   const breakpoint = Grid.useBreakpoint();
 
   return (

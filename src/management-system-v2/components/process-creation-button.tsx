@@ -9,7 +9,7 @@ import { usePostAsset } from '@/lib/fetch-data';
 import { createProcess } from '@/lib/helpers/processHelpers';
 
 type ProcessCreationButtonProps = ButtonProps & {
-  createProcess?: (values: { name: string; description: string }) => any;
+  createProcess?: (values: { name: string; description?: string }) => any;
   wrapperElement?: ReactNode;
 };
 
@@ -26,7 +26,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const { mutateAsync: postProcess } = usePostAsset('/process');
 
-  const createNewProcess = async (values: { name: string; description: string }) => {
+  const createNewProcess = async (values: { name: string; description?: string }) => {
     const { metaInfo, bpmn } = await createProcess(values);
     try {
       await postProcess({

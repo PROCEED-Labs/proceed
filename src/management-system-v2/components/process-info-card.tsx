@@ -7,6 +7,7 @@ import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
 import Viewer from './bpmn-viewer';
 import classNames from 'classnames';
 import { ApiData } from '@/lib/fetch-data';
+import { useUserPreferences } from '@/lib/user-preferences';
 
 type Processes = ApiData<'/process', 'get'>;
 
@@ -18,15 +19,18 @@ type MetaDataType = {
 
 const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
-  const prefs = getPreferences();
-  const [showInfo, setShowInfo] = useState(prefs['show-process-meta-data'] || false);
 
+  const { preferences, addPreferences } = useUserPreferences();
+
+  const showInfo = preferences['show-process-meta-data'];
+  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+
+  /* Necessary for Firefox BPMN.js Viewer fix */
   const [showViewer, setShowViewer] = useState(showInfo);
 
   /* Fix for firefox: */
-
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     if (showInfo) {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {
@@ -64,9 +68,8 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
               zIndex: 100,
             }}
             onClick={() => {
-              addUserPreference({ 'show-process-meta-data': !showInfo });
+              addPreferences({ 'show-process-meta-data': !showInfo });
               if (triggerRerender) triggerRerender();
-              setShowInfo(!showInfo);
             }}
           >
             <DoubleLeftOutlined />
@@ -91,11 +94,10 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
                   marginRight: '4px',
                 }}
                 onClick={() => {
-                  addUserPreference({
+                  addPreferences({
                     'show-process-meta-data': !showInfo,
                   });
                   if (triggerRerender) triggerRerender();
-                  setShowInfo(!showInfo);
                 }}
               >
                 <DoubleRightOutlined />

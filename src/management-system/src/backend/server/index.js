@@ -22,6 +22,8 @@ import createConfig from './iam/utils/config.js';
 import getClient from './iam/authentication/client.js';
 import { getStorePath } from '../shared-electron-server/data/store.js';
 import { abilityMiddleware, initialiazeRulesCache } from './iam/middleware/authorization';
+import { getSessionFromCookie } from './iam/middleware/nextAuthMiddleware.js';
+import { createDevelopmentUsers } from './iam/utils/developmentUsers';
 
 const configPath =
   process.env.NODE_ENV === 'development'
@@ -55,7 +57,6 @@ async function init() {
     const file = await fse.readFile(configPath);
     if (file) {
       config = await createConfig(JSON.parse(file));
-      if (config.useAuthorization) store = await createSessionStore(config);
     }
   } catch (e) {
     config = await createConfig();
@@ -94,88 +95,109 @@ async function init() {
   backendServer.use(express.json());
 
   if (config.useAuthorization) {
-    try {
-      client = await getClient(config);
-    } catch (e) {
-      if (process.env.NODE_ENV === 'production') {
+    if (config.useAuth0) {
+      try {
+        client = await getClient(config);
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production') {
+          logger.error(e.toString());
+          throw new Error(e.toString());
+        }
         logger.error(e.toString());
-        throw new Error(e.toString());
+        logger.info('Started MS without Authentication and Authorization.');
       }
-      logger.error(e.toString());
-      logger.info('Started MS without Authentication and Authorization.');
     }
-    const msUrl = new URL(config.msURL);
-    const hostName = msUrl.hostname;
-    const domainName = hostName.replace(/^[^.]+\./g, '');
 
-    // express-session middleware currently saves keycloak data and cookie data in memorystore DB
-    // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
-    loginSession = session({
-      resave: false,
-      secret: crypto.randomBytes(64).toString('hex'), // random secret
-      saveUninitialized: false, // doesn't save uninitialized sessions to the store
-      store,
-      cookie: {
-        secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
-        sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
-        httpOnly: true,
-        expires: 1000 * 60 * 60 * 10,
-        path: '/',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
-      },
-      name: 'id', // name of the cookie in the browser
-    });
-    backendServer.use(loginSession);
+    if (process.env.NODE_ENV === 'development') await createDevelopmentUsers(config);
+
+    if (process.env.API_ONLY) {
+      backendServer.use(getSessionFromCookie(config));
+    } else {
+      store = await createSessionStore(config);
+
+      const msUrl = new URL(config.msURL);
+      const hostName = msUrl.hostname;
+      const domainName = hostName.replace(/^[^.]+\./g, '');
+
+      // express-session middleware currently saves keycloak data and cookie data in memorystore DB
+      // ATTENTION: secret possibly has to be set to a fixed secure and unguessable value if the PROCEED MS runs in multiple containers, to prevent that each container uses a different secret > if a loadbalancer would redirect a user to a container with a mismatched secret, the session would be invalidated, maybe this is also resolvable with an external session DB like Redis
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+      loginSession = session({
+        resave: false,
+        secret: crypto.randomBytes(64).toString('hex'), // random secret
+        saveUninitialized: false, // doesn't save uninitialized sessions to the store
+        store,
+        cookie: {
+          secure: process.env.NODE_ENV === 'development' ? 'auto' : true,
+          sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict',
+          httpOnly: true,
+          expires: 1000 * 60 * 60 * 10,
+          path: '/',
+          domain: process.env.NODE_ENV === 'development' ? 'localhost' : domainName,
+        },
+        name: 'id', // name of the cookie in the browser
+      });
+      backendServer.use(loginSession);
+    }
   }
   backendServer.use(authRouter(config, client)); // separate authentication routes
 
   initialiazeRulesCache(config);
   backendServer.use(abilityMiddleware);
 
-  // allow requests for Let's Encrypt
-  const letsencryptPath = path.join(__dirname, 'lets-encrypt');
-  if (process.env.NODE_ENV === 'production') {
-    await fse.ensureDir(letsencryptPath);
-
-    // create a server that will be used to serve the Let's Encrypt Challenge and then reused to forward to https for http requests
-    const httpApp = express();
-
-    httpApp.use(`/.well-known`, express.static(letsencryptPath, { dotfiles: 'allow' }));
-    // reuse for redirect on other requests
-    httpApp.get('*', (req, res) => {
-      res.redirect('https://' + req.headers.host + req.url);
-    });
-
-    await httpApp.listen(80);
-  }
-
-  // get the best certificate available (user provided > automatic Lets' Encrypt Cert > Self Signed Dev Cert)
-  const options = await getCertificate(letsencryptPath);
-
   const apiRouter = createApiRouter(config, client);
   backendServer.use(['/api', '/resources'], apiRouter);
 
-  // Frontend + REST API
-  const frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
-    logger.info(
-      `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
-    );
-  });
+  let frontendServer, websocketServer;
+  if (process.env.API_ONLY) {
+    // Frontend + REST API
+    backendServer.listen(ports.frontend, () => {
+      logger.info(
+        `MS HTTPS server started on port ${ports.frontend}. Open: http://<IP>:${ports.frontend}/`,
+      );
+    });
+  } else {
+    // allow requests for Let's Encrypt
+    const letsencryptPath = path.join(__dirname, 'lets-encrypt');
+    if (process.env.NODE_ENV === 'production') {
+      await fse.ensureDir(letsencryptPath);
 
-  // Puppeteer Endpoint
-  https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
-    logger.debug(
-      `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
-    );
-  });
+      // create a server that will be used to serve the Let's Encrypt Challenge and then reused to forward to https for http requests
+      const httpApp = express();
 
-  // WebSocket Endpoint for Collaborative Editing
-  // Only here for API_ONLY because we need the const in the call below.
-  const websocketServer = https.createServer(options);
+      httpApp.use(`/.well-known`, express.static(letsencryptPath, { dotfiles: 'allow' }));
+      // reuse for redirect on other requests
+      httpApp.get('*', (req, res) => {
+        res.redirect('https://' + req.headers.host + req.url);
+      });
 
-  if (process.env.NODE_ENV === 'production') {
-    handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
+      await httpApp.listen(80);
+    }
+
+    // get the best certificate available (user provided > automatic Lets' Encrypt Cert > Self Signed Dev Cert)
+    const options = await getCertificate(letsencryptPath);
+
+    // Frontend + REST API
+    frontendServer = https.createServer(options, backendServer).listen(ports.frontend, () => {
+      logger.info(
+        `MS HTTPS server started on port ${ports.frontend}. Open: https://<IP>:${ports.frontend}/`,
+      );
+    });
+
+    // Puppeteer Endpoint
+    https.createServer(options, backendPuppeteerApp).listen(ports.puppeteer, 'localhost', () => {
+      logger.debug(
+        `HTTPS Server for Puppeteer started on port ${ports.puppeteer}. Open: https://localhost:${ports.frontend}/bpmn-modeller.html`,
+      );
+    });
+
+    // WebSocket Endpoint for Collaborative Editing
+    // Only here for API_ONLY because we need the const in the call below.
+    websocketServer = https.createServer(options);
+
+    if (process.env.NODE_ENV === 'production') {
+      handleLetsEncrypt(letsencryptPath, [frontendServer, websocketServer]);
+    }
   }
 
   if (process.env.API_ONLY) {
@@ -183,7 +205,6 @@ async function init() {
   }
 
   startWebsocketServer(websocketServer, loginSession, config);
-
   // Load BPMN Modeller for Server after Websocket Endpoint is started
   (await import('./puppeteerStartWebviewWithBpmnModeller.js')).default();
 }

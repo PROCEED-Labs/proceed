@@ -68,7 +68,6 @@
   }
 }
 
-/* TODO: Move to module */
 .ant-menu-light.ant-menu-root.ant-menu-inline,
 .ant-menu-light > .ant-menu.ant-menu-root.ant-menu-inline,
 .ant-menu-light.ant-menu-root.ant-menu-vertical,
@@ -88,7 +87,7 @@
 }
 
 .reduceLogo .bjs-powered-by svg {
-  width: 30px;
+  width: 20px;
 }
 
 .small-tabs .ant-tabs-nav-wrap {
@@ -110,8 +109,8 @@
 }
 
 .card-selected {
-  background-color: #ebf8ff;
-  border: 1px solid #1976d2;
+  background-color: #ebf8ff !important;
+  border: 1px solid #1976d2 !important;
 }
 
 .no-select {
@@ -123,4 +122,22 @@
 
 .fit-height {
   height: calc(100vh - 64px - 70px);
+}
+
+/* Adapt BPMN.js toolbar styles */
+.djs-palette {
+  background-color: white !important;
+  border: solid 1px #d9d9d9 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02) !important;
+}
+
+.group .entry {
+  border-bottom: solid 1px #d9d9d9;
+}
+.group .entry :last-child {
+  border-bottom: none;
+}
+.group .separator {
+  display: none;
 }

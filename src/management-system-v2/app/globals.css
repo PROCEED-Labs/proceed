@@ -141,3 +141,9 @@
 .group .separator {
   display: none;
 }
+
+.bjs-breadcrumbs {
+  left: 20px !important;
+  top: unset !important;
+  bottom: 10px;
+}

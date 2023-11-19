@@ -188,5 +188,5 @@ export function toCaslResource<T extends Record<PropertyKey, any>>(
   resource: ResourceType,
   object: T,
 ) {
-  return subject(resource, object);
+  return subject(resource, { ...object });
 }

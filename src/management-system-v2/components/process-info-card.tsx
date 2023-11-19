@@ -1,6 +1,6 @@
 'use client';
 
-import { generateDateString, getPreferences, addUserPreference } from '@/lib/utils';
+import { generateDateString } from '@/lib/utils';
 import { Card, Divider, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
@@ -8,11 +8,10 @@ import Viewer from './bpmn-viewer';
 import classNames from 'classnames';
 import { ApiData } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-
-type Processes = ApiData<'/process', 'get'>;
+import { ProcessListProcess } from './processes';
 
 type MetaDataType = {
-  data?: Processes;
+  data?: ProcessListProcess[];
   selection: Key[];
   triggerRerender?: () => void;
 };
@@ -119,7 +118,9 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
               <>
                 {showViewer && (
                   <Viewer
-                    selectedElement={data?.find((item) => item.definitionId === selection[0])}
+                    selectedElementId={
+                      data?.find((item) => item.definitionId === selection[0])?.definitionId
+                    }
                     reduceLogo={true}
                   />
                 )}

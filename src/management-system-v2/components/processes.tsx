@@ -31,28 +31,13 @@ import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 
 type Processes = ApiData<'/process', 'get'>;
-type Process = Processes[number];
-
-export const fuseOptions = {
-  /* Option for Fuzzy-Search for Processlistfilter */
-  /* https://www.fusejs.io/api/options.html#useextendedsearch */
-  // isCaseSensitive: false,
-  // includeScore: false,
-  // shouldSort: true,
-  includeMatches: true,
-  findAllMatches: true,
-  // minMatchCharLength: 1,
-  // location: 0,
-  threshold: 0.75,
-  // distance: 100,
-  useExtendedSearch: true,
-  ignoreLocation: true,
-  // ignoreFieldNorm: false,
-  // fieldNormWeight: 1,
-  keys: ['definitionName', 'description'],
-};
+export type ProcessListProcess = ReplaceKeysWithHighlighted<
+  Processes[number],
+  'definitionName' | 'description'
+>;
 
 type CopyProcessType = {
   bpmn: string;
@@ -86,7 +71,6 @@ const Processes: FC = () => {
     data,
     isLoading,
     isError,
-    isSuccess,
     refetch: pullNewProcessData,
   } = useGetAsset('/process', {
     params: {
@@ -167,22 +151,20 @@ const Processes: FC = () => {
     </>
   );
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const {
+    filteredData,
+    searchQuery: searchTerm,
+    setSearchQuery: setSearchTerm,
+  } = useFuzySearch({
+    data: data ?? [],
+    keys: ['definitionName', 'description'],
+    highlightedKeys: ['definitionName', 'description'],
+    transformData: (matches) => matches.map((match) => match.item),
+  });
 
   const rerenderLists = () => {
     //setFilteredData(filteredData);,
   };
-
-  const { data: filteredData } = useMemo(() => {
-    if (data && searchTerm !== '') {
-      const fuse = new Fuse(data, fuseOptions);
-      return {
-        data: fuse.search(searchTerm).map((item) => item.item),
-        highlight: fuse.search(searchTerm).map((item) => item.matches),
-      };
-    }
-    return { data, highlight: [] };
-  }, [data, searchTerm]);
 
   const deselectAll = () => {
     setSelectedRowKeys([]);
@@ -323,7 +305,6 @@ const Processes: FC = () => {
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
-              search={searchTerm}
             />
           ) : (
             <ProcessList

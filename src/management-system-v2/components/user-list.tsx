@@ -32,7 +32,9 @@ type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefin
 
 export type UserListProps = {
   users: ListUser[];
-  columns?: Column | ((clearSelected: () => void) => Column);
+  columns?:
+    | Column
+    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKets: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
   searchBarRightNode?: ReactNode;
@@ -55,14 +57,15 @@ const UserList: FC<UserListProps> = ({
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<typeof users>([]);
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
 
-  const tableColums = useMemo(() => {
-    if (!columns) return defaultColumns;
-
-    if (typeof columns === 'function')
-      return [...defaultColumns, ...columns(() => setSelectedRowKeys([]))];
-    else return [...defaultColumns, ...columns];
-  }, [columns]);
+  let tableColumns: Column = defaultColumns;
+  if (typeof columns === 'function')
+    tableColumns = [
+      ...defaultColumns,
+      ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
+    ];
+  else if (columns) tableColumns = [...defaultColumns, ...columns];
 
   if (error)
     <Result
@@ -93,7 +96,7 @@ const UserList: FC<UserListProps> = ({
         rightNode={searchBarRightNode ? searchBarRightNode : null}
       />
       <Table
-        columns={tableColums}
+        columns={tableColumns}
         dataSource={filteredData.map((user) => ({
           ...user,
           display: (
@@ -107,6 +110,10 @@ const UserList: FC<UserListProps> = ({
             </Space>
           ),
         }))}
+        onRow={({ id }) => ({
+          onMouseEnter: () => setHoveredRowId(id),
+          onMouseLeave: () => setHoveredRowId(null),
+        })}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys: React.Key[], selectedObjects: typeof users) => {

@@ -26,34 +26,33 @@ const UsersPage: FC = () => {
     await Promise.allSettled(promises);
   }
 
-  const columns = [
-    {
-      dataIndex: 'id',
-      key: 'tooltip',
-      title: '',
-      width: 100,
-      render: (id: string) => (
-        <Tooltip placement="top" title="Delete">
-          <ConfirmationButton
-            title="Delete User"
-            description="Are you sure you want to delete this user?"
-            onConfirm={() => deleteUsers([id])}
-            buttonProps={{
-              icon: <DeleteOutlined />,
-              type: 'text',
-            }}
-          />
-        </Tooltip>
-      ),
-    },
-  ];
-
   return (
     <Content title="Identity and Access Management">
       <UserList
         users={data || []}
         error={!!error}
-        columns={columns}
+        columns={(clearSelected, hoveredId, selectedRowKeys) => [
+          {
+            dataIndex: 'id',
+            key: 'tooltip',
+            title: '',
+            width: 100,
+            render: (id: string) => (
+              <Tooltip placement="top" title="Delete">
+                <ConfirmationButton
+                  title="Delete User"
+                  description="Are you sure you want to delete this user?"
+                  onConfirm={() => deleteUsers([id], clearSelected)}
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    type: 'text',
+                    style: { opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0 },
+                  }}
+                />
+              </Tooltip>
+            ),
+          },
+        ]}
         loading={deletingUser || isLoading}
         selectedRowActions={(ids, clearIds) => (
           <ConfirmationButton

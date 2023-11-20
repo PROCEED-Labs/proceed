@@ -14,6 +14,7 @@ import Bar from '@/components/bar';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ConfirmationButton from '@/components/confirmation-button';
+import TableHoverableActions from '@/components/table-hoverable-actions';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
@@ -32,6 +33,7 @@ const RolesPage: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRow, setSelectedRows] = useState<Role[]>([]);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const cannotDeleteSelected = selectedRow.some(
     (role) => !ability.can('delete', toCaslResource('Role', role)),
@@ -61,22 +63,26 @@ const RolesPage: FC = () => {
       key: 'tooltip',
       title: '',
       width: 100,
-      render: (id: string, role: Role) =>
-        selectedRowKeys.length === 0 ? (
-          <AuthCan action="delete" resource={toCaslResource('Role', role)}>
-            <Tooltip placement="top" title={'Delete'}>
-              <ConfirmationButton
-                title="Delete Role"
-                description="Are you sure you want to delete this role?"
-                onConfirm={() => deleteRoles([id])}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
-            </Tooltip>
-          </AuthCan>
-        ) : null,
+      render: (id: string, role: Role) => (
+        <ConfirmationButton
+          title="Delete Role"
+          description="Are you sure you want to delete this role?"
+          onConfirm={() => deleteRoles([id])}
+          buttonProps={{
+            disabled: !ability.can('delete', toCaslResource('Role', role)),
+            style: {
+              opacity: selectedRowKeys.length === 0 && id === hoveredRow ? 1 : 0,
+              // Otherwise the button stretches the row
+              position: 'absolute',
+              margin: 'auto',
+              top: '0',
+              bottom: '0',
+            },
+            icon: <DeleteOutlined />,
+            type: 'text',
+          }}
+        />
+      ),
     },
   ];
 
@@ -121,6 +127,10 @@ const RolesPage: FC = () => {
       <Table
         columns={columns}
         dataSource={filteredRoles}
+        onRow={({ id }) => ({
+          onMouseEnter: () => setHoveredRow(id),
+          onMouseLeave: () => setHoveredRow(null),
+        })}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys, selectedRows) => {
@@ -130,7 +140,6 @@ const RolesPage: FC = () => {
         }}
         rowKey="id"
         loading={isLoading || deletingRole}
-        size="middle"
       />
     </Content>
   );

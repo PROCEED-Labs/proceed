@@ -61,15 +61,18 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
       <UserList
         users={usersNotInRole}
         loading={isLoadingUsers || isLoadingMutation}
-        columns={(clearSelected) => [
+        columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
-            render: (_, user) => (
+            render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
                   type="text"
                   onClick={() => addUsers([user], clearSelected)}
+                  style={{
+                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
+                  }}
                 />
               </Tooltip>
             ),
@@ -113,7 +116,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
       <UserList
         users={role.members.map((member) => ({ ...member, id: member.userId }))}
         loading={isLoadingDelete || isLoadingRole}
-        columns={(clearSelected) => [
+        columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
             key: 'remove',
@@ -122,10 +125,11 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
             render: (id: string) => (
               <Tooltip placement="top" title="Remove Member">
                 <ConfirmationButton
-                  title="Remove member"
+                  title="Remove Member"
                   description="Are you sure you want to remove this member?"
                   onConfirm={() => deleteMembers([id], clearSelected)}
                   buttonProps={{
+                    style: { opacity: hoveredId == id && selectedRowKeys.length === 0 ? 1 : 0 },
                     icon: <DeleteOutlined />,
                     type: 'text',
                   }}
@@ -137,7 +141,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
         selectedRowActions={(ids, clearIds) => (
           <Tooltip placement="top" title="Remove Members">
             <ConfirmationButton
-              title="Remove members"
+              title="Remove Members"
               description="Are you sure you want to remove the selected members?"
               onConfirm={() => deleteMembers(ids, clearIds)}
               buttonProps={{

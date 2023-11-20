@@ -175,12 +175,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
             onBlur={handleNameChange}
             disabled={selectedElement.type === 'bpmn:Process'}
           />
-          <Input
-            addonBefore="ID &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-            size="large"
-            placeholder={selectedElement.id}
-            disabled
-          />
+
+          <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
         </Space>
 
         {selectedElement.type === 'bpmn:UserTask' && (

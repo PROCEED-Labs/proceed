@@ -2,7 +2,7 @@
 
 import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, Space, Button, Result, Table, Popconfirm, App } from 'antd';
+import { Tooltip, Space, Button, Result, Table, App } from 'antd';
 import { useGetAsset, useDeleteAsset, ApiData } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
@@ -13,6 +13,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { useAbilityStore } from '@/lib/abilityStore';
+import ConfirmationButton from '@/components/confirmation-button';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
@@ -64,13 +65,15 @@ const RolesPage: FC = () => {
         selectedRowKeys.length === 0 ? (
           <AuthCan action="delete" resource={toCaslResource('Role', role)}>
             <Tooltip placement="top" title={'Delete'}>
-              <Popconfirm
+              <ConfirmationButton
                 title="Delete Role"
                 description="Are you sure you want to delete this role?"
                 onConfirm={() => deleteRoles([id])}
-              >
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Popconfirm>
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
             </Tooltip>
           </AuthCan>
         ) : null,
@@ -95,13 +98,16 @@ const RolesPage: FC = () => {
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
               <span>{selectedRowKeys.length} selected:</span>
-              <Popconfirm
+              <ConfirmationButton
                 title="Delete Roles"
                 description="Are you sure you want to delete the selected roles?"
                 onConfirm={() => deleteRoles(selectedRowKeys)}
-              >
-                <Button type="text" icon={<DeleteOutlined />} disabled={cannotDeleteSelected} />
-              </Popconfirm>
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  disabled: cannotDeleteSelected,
+                  type: 'text',
+                }}
+              />
             </Space>
           ) : null
         }

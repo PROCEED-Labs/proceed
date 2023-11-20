@@ -13,13 +13,11 @@ import {
   Form,
   Input,
   Typography,
-  Popconfirm,
   Result,
   Modal,
   App,
 } from 'antd';
 import styles from './userProfile.module.scss';
-import { useAbilityStore } from '@/lib/abilityStore';
 import {
   ApiData,
   ApiRequestBody,
@@ -29,6 +27,7 @@ import {
 } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut, useSession } from 'next-auth/react';
+import ConfirmationButton from './confirmation-button';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;
@@ -215,7 +214,6 @@ const UserProfile: FC = () => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
   const [changePasswordOpen, setPasswordOpen] = useState(false);
-  const [deleteUserPopup, setDeleteUserPopup] = useState(false);
 
   const { message: messageApi } = App.useApp();
   const { mutateAsync: deleteUserMutation } = useDeleteAsset('/users/{id}');
@@ -335,17 +333,17 @@ const UserProfile: FC = () => {
                 <Button type="primary" onClick={() => setPasswordOpen(true)}>
                   Change Password
                 </Button>
-                <Popconfirm
-                  title="Delete account"
+                <ConfirmationButton
+                  title="Delete Account"
                   description="Are you sure you want to delete your account?"
-                  open={deleteUserPopup}
-                  onOpenChange={setDeleteUserPopup}
                   onConfirm={deleteUser}
-                  okText="Yes"
-                  cancelText="No"
+                  modalProps={{
+                    okText: 'Delete Account',
+                  }}
+                  buttonProps={{ danger: true }}
                 >
-                  <Button danger>Delete account</Button>
-                </Popconfirm>
+                  Delete Account
+                </ConfirmationButton>
               </Space>
             </Skeleton>
           </Card>

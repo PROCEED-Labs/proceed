@@ -10,7 +10,8 @@ import {
   usePostAsset,
 } from '@/lib/fetch-data';
 import UserList, { UserListProps } from '@/components/user-list';
-import { Button, Modal, Popconfirm, Tooltip } from 'antd';
+import { Button, Modal, Tooltip } from 'antd';
+import ConfirmationButton from '@/components/confirmation-button';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
@@ -119,27 +120,31 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
             title: '',
             width: 100,
             render: (id: string) => (
-              <Tooltip placement="top" title="Remove member">
-                <Popconfirm
+              <Tooltip placement="top" title="Remove Member">
+                <ConfirmationButton
                   title="Remove member"
                   description="Are you sure you want to remove this member?"
                   onConfirm={() => deleteMembers([id], clearSelected)}
-                >
-                  <Button icon={<DeleteOutlined />} type="text" />
-                </Popconfirm>
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    type: 'text',
+                  }}
+                />
               </Tooltip>
             ),
           },
         ]}
         selectedRowActions={(ids, clearIds) => (
-          <Tooltip placement="top" title="Remove members">
-            <Popconfirm
-              title="Remove member"
-              description="Are you sure you want to remove this member?"
+          <Tooltip placement="top" title="Remove Members">
+            <ConfirmationButton
+              title="Remove members"
+              description="Are you sure you want to remove the selected members?"
               onConfirm={() => deleteMembers(ids, clearIds)}
-            >
-              <Button icon={<DeleteOutlined />} type="text" />
-            </Popconfirm>
+              buttonProps={{
+                icon: <DeleteOutlined />,
+                type: 'text',
+              }}
+            />
           </Tooltip>
         )}
         searchBarRightNode={

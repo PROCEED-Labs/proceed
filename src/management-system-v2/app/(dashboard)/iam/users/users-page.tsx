@@ -2,12 +2,13 @@
 
 import { FC } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, Button, Popconfirm, App } from 'antd';
+import { Tooltip, App } from 'antd';
 import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
 import UserList from '@/components/user-list';
 import { useQueryClient } from '@tanstack/react-query';
+import ConfirmationButton from '@/components/confirmation-button';
 
 const UsersPage: FC = () => {
   const { message: messageApi } = App.useApp();
@@ -33,13 +34,15 @@ const UsersPage: FC = () => {
       width: 100,
       render: (id: string) => (
         <Tooltip placement="top" title="Delete">
-          <Popconfirm
+          <ConfirmationButton
             title="Delete User"
             description="Are you sure you want to delete this user?"
             onConfirm={() => deleteUsers([id])}
-          >
-            <Button icon={<DeleteOutlined />} type="text" />
-          </Popconfirm>
+            buttonProps={{
+              icon: <DeleteOutlined />,
+              type: 'text',
+            }}
+          />
         </Tooltip>
       ),
     },
@@ -53,13 +56,15 @@ const UsersPage: FC = () => {
         columns={columns}
         loading={deletingUser || isLoading}
         selectedRowActions={(ids, clearIds) => (
-          <Popconfirm
+          <ConfirmationButton
             title="Delete Users"
             description="Are you sure you want to delete the selected users?"
             onConfirm={() => deleteUsers(ids, clearIds)}
-          >
-            <Button type="text" icon={<DeleteOutlined />} />
-          </Popconfirm>
+            buttonProps={{
+              type: 'text',
+              icon: <DeleteOutlined />,
+            }}
+          />
         )}
         searchBarRightNode={<HeaderActions />}
       />

@@ -17,8 +17,13 @@ import { Input, ColorPicker, Space, Image } from 'antd';
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import ResizableCard from './ResizableCard';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
-import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
+import {
+  getMetaDataFromElement,
+  getMilestonesFromElement,
+  setProceedElement,
+} from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
+import MilestoneSelectionSection from './milestone-selection-section';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
@@ -27,6 +32,9 @@ type PropertiesPanelProperties = {
 
 const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen }) => {
   const [metaData, setMetaData] = useState(getMetaDataFromElement(selectedElement.businessObject));
+  const [milestones, setMilestones] = useState(
+    getMilestonesFromElement(selectedElement.businessObject),
+  );
   const [name, setName] = useState('');
   const [costsPlanned, setCostsPlanned] = useState('');
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
@@ -37,9 +45,14 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     setMetaData(getMetaDataFromElement(selectedElement.businessObject));
   }, [selectedElement.businessObject]);
 
+  const refreshMilestones = useCallback(() => {
+    setMilestones(getMilestonesFromElement(selectedElement.businessObject));
+  }, [selectedElement.businessObject]);
+
   useEffect(() => {
     refreshMetaData();
-  }, [selectedElement, refreshMetaData]);
+    refreshMilestones();
+  }, [selectedElement, refreshMetaData, refreshMilestones]);
 
   useEffect(() => {
     if (selectedElement) {
@@ -94,6 +107,36 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     refreshMetaData();
   };
 
+  const updateMilestones = (
+    newMilestones: { id: string; name: string; description?: string }[],
+  ) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+    newMilestones.forEach((milestone) => {
+      const milestoneExisting = !!milestones.find(
+        (oldMilestone) => oldMilestone.id === milestone.id,
+      );
+
+      if (!milestoneExisting) {
+        setProceedElement(selectedElement.businessObject, 'Milestone', undefined, milestone);
+      }
+    });
+
+    // remove milestones that do not exist anymore
+    milestones.forEach((oldMilestone) => {
+      if (!newMilestones.find((milestone) => milestone.id === oldMilestone.id)) {
+        setProceedElement(selectedElement.businessObject, 'Milestone', null, {
+          id: oldMilestone.id,
+        });
+      }
+    });
+
+    modeling.updateProperties(selectedElement as any, {
+      extensionElements: selectedElement.businessObject.extensionElements,
+    });
+
+    refreshMilestones();
+  };
+
   const updateDescription = (text: string) => {
     const modeling = modeler!.get('modeling') as Modeling;
     const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
@@ -140,6 +183,12 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
           />
         </Space>
 
+        {selectedElement.type === 'bpmn:UserTask' && (
+          <MilestoneSelectionSection
+            milestones={milestones}
+            onSelection={updateMilestones}
+          ></MilestoneSelectionSection>
+        )}
         <Space direction="vertical" size="large">
           <b>Image</b>
           <Image

@@ -6,7 +6,7 @@ import { Layout as AntLayout, Grid, Menu } from 'antd';
 const { Item, Divider, ItemGroup } = Menu;
 import { SettingOutlined, ApiOutlined, UserOutlined, UnlockOutlined } from '@ant-design/icons';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Link from 'next/link';
@@ -24,6 +24,7 @@ import { useSession } from 'next-auth/react';
  */
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const activeSegment = usePathname().slice(1) || 'processes';
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const { status } = useSession();
   const loggedIn = status === 'authenticated';
@@ -78,7 +79,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                       icon={<UserOutlined />}
                       hidden={!ability.can('manage', 'User')}
                     >
-                      Users
+                      <Link href="/iam/users">Users</Link>
                     </Item>
 
                     <Item
@@ -88,7 +89,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                         !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
                       }
                     >
-                      Roles
+                      <Link href="/iam/roles">Roles</Link>
                     </Item>
                   </ItemGroup>
 

@@ -144,7 +144,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
         )}
         searchBarRightNode={
           <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
-            Add member
+            Add Member
           </Button>
         }
       />

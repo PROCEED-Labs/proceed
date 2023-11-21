@@ -8,8 +8,6 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 
-import TextEditor from './textEditor';
-
 import React, { FocusEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Input, ColorPicker, Space, Image } from 'antd';
@@ -240,15 +238,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
 
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <b>Description</b>
-            <TextEditor
-              placeholder="Description"
-              value={
-                (selectedElement.businessObject.documentation &&
-                  selectedElement.businessObject.documentation[0]?.text) ||
-                ''
+            <Input.TextArea
+              size="large"
+              placeholder={
+                selectedElement.type !== 'bpmn:Process'
+                  ? 'Element Documentation'
+                  : 'Process Documentation'
               }
-              handleChange={(value: string) => updateDescription(value)}
-            ></TextEditor>
+              onChange={(event) => updateDescription(event.target.value)}
+            ></Input.TextArea>
           </Space>
 
           <CustomPropertySection

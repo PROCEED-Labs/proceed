@@ -99,6 +99,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
     await Promise.allSettled(
       userIds.map((userId) =>
         deleteUser({
+          parseAs: 'text',
           params: { path: { roleId: role.id, userId: userId } },
         }),
       ),
@@ -143,7 +144,7 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
         )}
         searchBarRightNode={
           <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
-            Add member
+            Add Member
           </Button>
         }
       />

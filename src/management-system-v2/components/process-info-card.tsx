@@ -1,11 +1,12 @@
 'use client';
 
-import { generateDateString, getPreferences, addUserPreference } from '@/lib/utils';
+import { generateDateString } from '@/lib/utils';
 import { Divider } from 'antd';
 import React, { FC, Key, useEffect, useState } from 'react';
 import Viewer from './bpmn-viewer';
 import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
+import { useUserPreferences } from '@/lib/user-preferences';
 
 type Processes = ApiData<'/process', 'get'>;
 
@@ -17,15 +18,18 @@ type MetaDataType = {
 
 const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
-  const prefs = getPreferences();
-  const [showInfo, setShowInfo] = useState((prefs['show-process-meta-data'] || false) as boolean);
 
+  const { preferences, addPreferences } = useUserPreferences();
+
+  const showInfo = preferences['show-process-meta-data'];
+  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+
+  /* Necessary for Firefox BPMN.js Viewer fix */
   const [showViewer, setShowViewer] = useState(showInfo);
 
   /* Fix for firefox: */
-
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     if (showInfo) {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {
@@ -45,18 +49,17 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
       style={{
         justifySelf: 'flex-end',
         position: 'relative',
-        flex: !showInfo ? 'none' : 1,
+        flex: !showViewer ? 'none' : 1,
         transition: 'flex 0.3s ease-in-out',
         marginLeft: '20px',
       }}
     >
       <CollapsibleCard
         title="How to PROCEED?"
-        show={showInfo}
+        show={showViewer}
         onCollapse={() => {
-          addUserPreference({ 'show-process-meta-data': !showInfo });
+          addPreferences({ 'show-process-meta-data': !showViewer });
           if (triggerRerender) triggerRerender();
-          setShowInfo(!showInfo);
         }}
       >
         {/* Viewer */}
@@ -66,7 +69,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
             width: '100%',
           }}
         >
-          {Boolean(selection.length) && showInfo ? (
+          {Boolean(selection.length) && showViewer ? (
             <>
               {showViewer && (
                 <Viewer
@@ -113,7 +116,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
               <p>Test</p>
             </>
           ) : (
-            showInfo && <div>Please select a process.</div>
+            showViewer && <div>Please select a process.</div>
           )}
         </div>
       </CollapsibleCard>

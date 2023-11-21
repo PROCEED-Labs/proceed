@@ -1,10 +1,10 @@
 'use client';
 
+import { AuthCan } from '@/lib/clientAuthComponents';
 import { ApiRequestBody, usePostAsset } from '@/lib/fetch-data';
-import { AuthCan } from '@/lib/iamComponents';
-import { ImportOutlined, PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, App, Input, Modal } from 'antd';
-import { ComponentProps, FC, ReactNode, useEffect, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 
 type PostUserField = keyof ApiRequestBody<'/users', 'post'>;
 
@@ -47,10 +47,24 @@ const CreateUserModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ modalOpen, close }) => {
-  const [form] = Form.useForm();
   const { message: messageApi } = App.useApp();
   type ErrorsObject = { [field in PostUserField]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
+  const [form] = Form.useForm();
+
+  const [submittable, setSubmittable] = useState(false);
+  const values = Form.useWatch([], form);
+
+  useEffect(() => {
+    form.validateFields({ validateOnly: true }).then(
+      () => {
+        setSubmittable(true);
+      },
+      () => {
+        setSubmittable(false);
+      },
+    );
+  }, [form, values]);
 
   const { mutateAsync: postUser, isLoading } = usePostAsset('/users', {
     onError(e) {
@@ -108,7 +122,7 @@ const CreateUserModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null}>
+    <Modal open={modalOpen} onCancel={close} footer={null} title="Create New User">
       <Form form={form} layout="vertical" onFinish={submitData}>
         {modalStructureWithoutPassword.map((formField) => (
           <Form.Item
@@ -164,8 +178,8 @@ const CreateUserModal: FC<{
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={isLoading}>
-            Submit
+          <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
+            Create User
           </Button>
         </Form.Item>
       </Form>
@@ -185,7 +199,7 @@ const HeaderActions: FC = () => {
 
       <AuthCan action="create" resource="User">
         <Button type="primary" onClick={() => setCreateUserModalOpen(true)}>
-          <PlusOutlined /> Create
+          <PlusOutlined /> Create User
         </Button>
       </AuthCan>
     </>

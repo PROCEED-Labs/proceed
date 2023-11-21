@@ -1,5 +1,14 @@
 import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
-import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useState } from 'react';
+import React, {
+  Dispatch,
+  FC,
+  Key,
+  ReactNode,
+  SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
@@ -9,6 +18,7 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import { ApiData } from '@/lib/fetch-data';
+import { useLazyLoading } from './scrollbar';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -19,6 +29,7 @@ type TabCardProps = {
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
   completeList: Processes;
+  search?: string;
 };
 
 const tabList = [
@@ -66,7 +77,7 @@ const generateDescription = (data: Process) => {
   return desc;
 };
 
-const generateContentList = (data: Process) => {
+const generateContentList = (data: Process, showViewer: boolean = true) => {
   return {
     viewer: (
       <div
@@ -77,7 +88,7 @@ const generateContentList = (data: Process) => {
           borderRadius: '8px',
         }}
       >
-        <Viewer selectedElement={data} reduceLogo={true} />
+        {showViewer && <Viewer selectedElement={data} reduceLogo={true} />}
       </div>
     ),
     meta: (
@@ -92,9 +103,19 @@ const generateContentList = (data: Process) => {
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelection,
+  tabcard,
+  completeList,
+  search,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const isVisible = useLazyLoading(cardRef);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -103,12 +124,51 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
     setActiveTabKey(key);
   };
 
+  const clipAndHighlightText = useCallback(
+    (dataIndexElement: any) => {
+      const withoutSearchTerm = dataIndexElement?.split(search);
+      let res = dataIndexElement;
+      if (search && withoutSearchTerm?.length > 1) {
+        res = withoutSearchTerm.map(
+          (
+            word:
+              | string
+              | number
+              | boolean
+              | React.ReactElement<any, string | React.JSXElementConstructor<any>>
+              | Iterable<React.ReactNode>
+              | React.ReactPortal
+              | React.PromiseLikeOfReactNode
+              | null
+              | undefined,
+            i: React.Key | null | undefined,
+            arr: string | any[],
+          ) => {
+            if (i === arr.length - 1) return word;
+
+            return (
+              <span key={i}>
+                <span>{word}</span>
+                <span style={{ color: '#3e93de' }}>{search}</span>
+              </span>
+            );
+          },
+        );
+      }
+
+      return <div style={{ flex: 1 }}>{res}</div>;
+    },
+    [search],
+  );
+
   return (
     <Card
+      ref={cardRef}
       hoverable
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
-          <span>{item?.definitionName}</span>
+          {/* <span>{item?.definitionName}</span> */}
+          {clipAndHighlightText(item?.definitionName)}
           <span style={{ flex: 1 }}></span>
           <Button type="text">
             <MoreOutlined />
@@ -117,8 +177,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
       }
       style={{
         cursor: 'pointer',
-        minHeight: tabcard ? '340px' : '300px',
-        maxWidth: 'calc(100vw / 5)',
+        height: tabcard ? '340px' : '300px',
+        // width: 'calc(100vw / 5)',
+        // marginBottom: '30px',
       }}
       className={classNames({
         'small-tabs': true,
@@ -164,7 +225,6 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
             /* Nothing selected */
             setSelection([item?.definitionId]);
           }
-          /* Normal Click */
         } else {
           setSelection([item?.definitionId]);
         }
@@ -176,7 +236,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
         router.push(`/processes/${item.definitionId}`);
       }}
     >
-      {generateContentList(item)[activeTabKey]}
+      {generateContentList(item, isVisible)[activeTabKey]}
     </Card>
   );
 };

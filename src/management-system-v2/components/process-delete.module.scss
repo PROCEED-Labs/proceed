@@ -1,0 +1,13 @@
+.Checkbox {
+  font-size: 12px;
+  width: 65%;
+}
+
+.ClippedProcessTitle {
+  display: inline-block;
+  vertical-align: bottom;
+  width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

@@ -19,10 +19,12 @@
   }
 
   .Content {
-    overflow: initial;
-    padding: 40px 20px;
+    overflow-x: initial;
+    overflow-y: auto;
+    padding: 10px 10px;
     max-width: 100%;
     background-color: white;
+    height: calc(100vh - 150px);
 
     &.compact {
       padding: 0;

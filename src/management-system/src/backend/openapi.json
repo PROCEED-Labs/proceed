@@ -1208,18 +1208,10 @@
               "schema": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/roleData"
+                    "$ref": "#/components/schemas/rolePostData"
                   }
                 ],
-                "required": [
-                  "name",
-                  "description",
-                  "note",
-                  "permissions",
-                  "expiration",
-                  "members",
-                  "default"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -2122,8 +2114,8 @@
         "type": "number",
         "description": "- example\n- ezample 2"
       },
-      "roleData": {
-        "title": "role",
+      "rolePostData": {
+        "title": "rolePostData",
         "type": "object",
         "properties": {
           "name": {
@@ -2175,35 +2167,48 @@
           },
           "expiration": {
             "type": "string"
-          },
-          "members": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "userId": {
-                  "type": "string"
-                },
-                "username": {
-                  "type": "string"
-                },
-                "firstName": {
-                  "type": "string"
-                },
-                "lastName": {
-                  "type": "string"
-                },
-                "email": {
-                  "type": "string"
-                }
-              },
-              "required": ["userId", "username", "firstName", "lastName", "email"]
-            }
-          },
-          "default": {
-            "type": "boolean"
           }
         }
+      },
+      "roleData": {
+        "title": "role",
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    },
+                    "firstName": {
+                      "type": "string"
+                    },
+                    "lastName": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["userId", "username", "firstName", "lastName", "email"]
+                }
+              },
+              "default": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/rolePostData"
+          }
+        ]
       },
       "roleMetaData": {
         "title": "role",

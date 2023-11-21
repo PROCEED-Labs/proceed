@@ -19,7 +19,7 @@ import {
   App,
 } from 'antd';
 import styles from './userProfile.module.scss';
-import { logout, useAuthStore } from '@/lib/iam';
+import { useAbilityStore } from '@/lib/abilityStore';
 import {
   ApiData,
   ApiRequestBody,
@@ -28,7 +28,7 @@ import {
   useDeleteAsset,
 } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
-import Auth from '@/lib/AuthCanWrapper';
+import { signOut, useSession } from 'next-auth/react';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;
@@ -50,10 +50,12 @@ const UserDataModal: FC<{
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  const user = useAuthStore((store) => store.user);
+  const { data } = useSession();
+  const user = data!.user;
+
   const { data: userData, isLoading } = useGetAsset('/users/{id}', {
     params: {
-      path: { id: user.sub },
+      path: { id: user.id },
     },
   });
   const defaultValues: Record<string, any> = {};
@@ -77,7 +79,7 @@ const UserDataModal: FC<{
     try {
       if (structure.password) {
         await changePassword({
-          params: { path: { id: user.sub } },
+          params: { path: { id: user.id } },
           body: { password: form.getFieldValue('password') },
         });
       } else {
@@ -90,7 +92,7 @@ const UserDataModal: FC<{
         };
 
         await changeUserData({
-          params: { path: { id: user.sub } },
+          params: { path: { id: user.id } },
           body,
         });
       }
@@ -207,7 +209,8 @@ const UserDataRow: FC<{ title: string; data?: string; onClick: () => void }> = (
 };
 
 const UserProfile: FC = () => {
-  const user = useAuthStore((store) => store.loggedIn && store.user);
+  const { data } = useSession();
+  const user = data!.user;
 
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
@@ -221,18 +224,18 @@ const UserProfile: FC = () => {
     error,
     data: userData,
     isLoading,
-  } = useGetAsset('/users/{id}', { params: { path: { id: (user && user.sub) || '' } } });
+  } = useGetAsset('/users/{id}', { params: { path: { id: (user && user.id) || '' } } });
 
   async function deleteUser() {
     try {
       // Since this should only be callable once the user was loaded, we can assume that the user is not false.
       // Check is only for typescript.
-      if (user && user.sub) {
+      if (user && user.id) {
         await deleteUserMutation({
-          params: { path: { id: user.sub } },
+          params: { path: { id: user.id } },
         });
         messageApi.success({ content: 'Your account was deleted' });
-        logout();
+        signOut();
       }
     } catch (e) {
       messageApi.error({ content: 'An error ocurred' });
@@ -352,11 +355,4 @@ const UserProfile: FC = () => {
   );
 };
 
-export default Auth(
-  {
-    action: 'view',
-    resource: 'User',
-    fallbackRedirect: '/',
-  },
-  UserProfile,
-);
+export default UserProfile;

@@ -138,12 +138,14 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
 
   const handleXmlEditorSave = async (bpmn: string) => {
     if (modeler.current) {
-      modeler.current.importXML(bpmn).then(() => {
+      await modeler.current.importXML(bpmn).then(() => {
         (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
+      // if the bpmn contains unexpected content (text content for an element where the model does not define text) the modeler will remove it automatically => make sure the stored bpmn is the same as the one in the modeler
+      const { xml: cleanedBpmn } = await modeler.current.saveXML({ format: true });
       await updateProcessMutation({
         params: { path: { definitionId: processId as string } },
-        body: { bpmn },
+        body: { bpmn: cleanedBpmn },
       });
     }
   };
@@ -154,12 +156,14 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         <>
           <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
           {selectedVersionId && <VersionToolbar />}
-          <XmlEditor
-            bpmn={xmlEditorBpmn}
-            canSave={!selectedVersionId}
-            onClose={handleCloseXmlEditor}
-            onSaveXml={handleXmlEditorSave}
-          />
+          {!!xmlEditorBpmn && (
+            <XmlEditor
+              bpmn={xmlEditorBpmn}
+              canSave={!selectedVersionId}
+              onClose={handleCloseXmlEditor}
+              onSaveXml={handleXmlEditorSave}
+            />
+          )}
         </>
       )}
       <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />

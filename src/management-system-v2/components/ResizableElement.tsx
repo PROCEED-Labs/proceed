@@ -1,22 +1,25 @@
-import React, { useState, useEffect, PropsWithChildren } from 'react';
-import { Card, CardProps } from 'antd';
+import React, { useState, useEffect, PropsWithChildren, CSSProperties } from 'react';
 
-type ResizableCardProps = CardProps &
-  PropsWithChildren<{
-    initialWidth: number;
-    minWidth: number;
-    maxWidth: number;
-  }>;
+type ResizableElementProps = PropsWithChildren<{
+  initialWidth: number;
+  minWidth: number;
+  maxWidth: number;
+  style?: CSSProperties;
+}>;
 
-const ResizableCard: React.FC<ResizableCardProps> = ({
+const ResizableElement: React.FC<ResizableElementProps> = ({
   children,
   initialWidth,
   minWidth,
   maxWidth,
-  ...props
+  style = {},
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [width, setWidth] = useState(initialWidth);
+
+  useEffect(() => {
+    setWidth(initialWidth);
+  }, [initialWidth]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,14 +52,13 @@ const ResizableCard: React.FC<ResizableCardProps> = ({
   });
 
   return (
-    <Card
-      {...props}
+    <div
       style={{
-        ...props.style,
+        ...style,
         width: width,
-        overflowY: 'scroll',
       }}
     >
+      {/* This is used to resize the element  */}
       <div
         style={{
           position: 'absolute',
@@ -71,8 +73,8 @@ const ResizableCard: React.FC<ResizableCardProps> = ({
         onMouseDown={onMouseDown}
       />
       {children}
-    </Card>
+    </div>
   );
 };
 
-export default ResizableCard;
+export default ResizableElement;

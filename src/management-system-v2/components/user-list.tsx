@@ -123,7 +123,6 @@ const UserList: FC<UserListProps> = ({
         }}
         rowKey="id"
         loading={loading}
-        size="middle"
       />
     </>
   );

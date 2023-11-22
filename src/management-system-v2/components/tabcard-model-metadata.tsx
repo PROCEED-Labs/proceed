@@ -95,7 +95,6 @@ const generateContentList = (data: Process, showViewer: boolean = true) => {
       <Descriptions
         // title="User Info"
         bordered
-        size="small"
         column={1}
         items={generateDescription(data)}
       />

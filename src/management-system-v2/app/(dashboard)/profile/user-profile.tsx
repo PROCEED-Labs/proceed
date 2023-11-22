@@ -107,7 +107,7 @@ const UserProfile: FC = () => {
         messageApi={messageApi}
       />
 
-      <Space direction="vertical" size="large" className={styles.Container}>
+      <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
           <Typography.Title level={3}>Account Information</Typography.Title>
           <Skeleton loading={isLoading}>

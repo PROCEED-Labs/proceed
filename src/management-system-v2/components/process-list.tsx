@@ -537,8 +537,6 @@ const ProcessList: FC<ProcessListProps> = ({
         dataSource={data}
         loading={isLoading}
         className={classNames('no-select')}
-        /* Row size rowsize */
-        size="middle"
       />
 
       {previewerOpen && (

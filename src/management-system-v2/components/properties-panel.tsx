@@ -45,12 +45,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
       open={true}
       mask={false}
     >
-      <Space direction="vertical" size="large">
-        <Space direction="vertical" size="large">
+      <Space direction="vertical">
+        <Space direction="vertical">
           <b>General</b>
           <Input
             addonBefore="Name"
-            size="large"
             placeholder={selectedElement.businessObject.name}
             value={name}
             // onChange={(e) => setName(e.target.value)}
@@ -59,13 +58,12 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
           />
           <Input
             addonBefore="ID &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-            size="large"
             placeholder={selectedElement.id}
             disabled
           />
         </Space>
 
-        <Space direction="vertical" size="large">
+        <Space direction="vertical">
           <b>Image</b>
           <Image
             width={200}
@@ -76,21 +74,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
           />
         </Space>
 
-        <Space direction="vertical" size="large">
+        <Space direction="vertical">
           <b>Properties</b>
           <Input
             prefix={<EuroCircleOutlined className="clock-icon" />}
-            size="large"
             placeholder="Planned Cost"
           />
           <Input
             prefix={<ClockCircleOutlined className="clock-icon" />}
-            size="large"
             placeholder="Planned Duration"
           />
         </Space>
         {selectedElement.type !== 'bpmn:Process' && (
-          <Space direction="vertical" size="large">
+          <Space direction="vertical">
             <b>Colors</b>
             <Space>
               <ColorPicker

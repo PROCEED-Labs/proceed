@@ -122,7 +122,7 @@ const ProcessList: FC<ProcessListProps> = ({
                     bpmn: record.bpmn || '',
                     variables: [
                       {
-                        name: `${record.definitionName} Copy`,
+                        name: `${record.definitionName.value} Copy`,
                         type: '',
                       },
                     ],
@@ -262,8 +262,7 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'definitionName',
       key: 'Process Name',
       className: styles.Title,
-      /* TODO: sort by highlighted term
-       * sorter: (a, b) =>a.definitionName.localeCompare(b.definitionName), */
+      sorter: (a, b) => a.definitionName.value.localeCompare(b.definitionName.value),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
@@ -283,7 +282,7 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.definitionName}
+          {record.definitionName.highlighted}
         </span>
       ),
     },
@@ -291,8 +290,7 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      /* TODO: sort by highlighted term
-       * sorter: (a, b) => a.description.localeCompare(b.description), */
+      sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
         //   // TODO: This is a hack to clear the parallel route when selecting
@@ -311,7 +309,7 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.description}
+          {record.description.highlighted}
         </div>
       ),
     },

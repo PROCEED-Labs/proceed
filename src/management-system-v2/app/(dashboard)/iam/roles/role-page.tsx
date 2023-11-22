@@ -3,7 +3,7 @@
 import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Tooltip, Space, Button, Result, Table, Popconfirm, App } from 'antd';
-import { useGetAsset, useDeleteAsset, ApiData } from '@/lib/fetch-data';
+import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
@@ -13,8 +13,6 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { useAbilityStore } from '@/lib/abilityStore';
-
-type Role = ApiData<'/roles', 'get'>[number];
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
@@ -29,11 +27,13 @@ const RolesPage: FC = () => {
     data: roles || [],
     keys: ['name'],
     highlightedKeys: ['name'],
-    transformData: (items) => items.map((item) => item.item),
+    transformData: (items) =>
+      items.map((item) => ({ ...item.item, name: item.item.name.highlighted })),
   });
+  type FilteredRole = (typeof filteredRoles)[number];
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [selectedRow, setSelectedRows] = useState<Role[]>([]);
+  const [selectedRow, setSelectedRows] = useState<FilteredRole[]>([]);
 
   const cannotDeleteSelected = selectedRow.some(
     (role) => !ability.can('delete', toCaslResource('Role', role)),
@@ -50,7 +50,7 @@ const RolesPage: FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'display',
-      render: (name: string, role: Role) => (
+      render: (name: string, role: FilteredRole) => (
         <Link style={{ color: '#000' }} href={`/iam/roles/${role.id}`}>
           {name}
         </Link>
@@ -59,7 +59,7 @@ const RolesPage: FC = () => {
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (_: any, record: Role) => record.members.length,
+      render: (_: any, record: FilteredRole) => record.members.length,
       key: 'username',
     },
     {
@@ -67,7 +67,7 @@ const RolesPage: FC = () => {
       key: 'tooltip',
       title: '',
       width: 100,
-      render: (id: string, role: Role) =>
+      render: (id: string, role: FilteredRole) =>
         selectedRowKeys.length === 0 ? (
           <AuthCan action="delete" resource={toCaslResource('Role', role)}>
             <Tooltip placement="top" title={'Delete'}>
@@ -119,9 +119,9 @@ const RolesPage: FC = () => {
         }}
       />
 
-      <Table
-        columns={columns}
+      <Table<FilteredRole>
         dataSource={filteredRoles}
+        columns={columns}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys, selectedRows) => {

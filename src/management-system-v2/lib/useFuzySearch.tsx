@@ -16,7 +16,7 @@ function highlightText<TObj>(
   const value = fuseElement.item[dataIndexElement] as string;
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 
-  if (!matches) return <span>{value}</span>;
+  if (!matches) return { highlighted: <span>{value}</span>, value };
 
   const result: JSX.Element[] = [];
   let lastIndex = 0;
@@ -35,7 +35,7 @@ function highlightText<TObj>(
   if (lastIndex !== value.length)
     result.push(<span key={lastIndex}>{value.slice(lastIndex)}</span>);
 
-  return <span>{result}</span>;
+  return { highlighted: <span>{result}</span>, value };
 }
 
 type UseFuzySearchOptions<TData, TKeys, THighlightKeys, TTransformFunc> = {

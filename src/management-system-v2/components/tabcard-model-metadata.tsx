@@ -69,7 +69,7 @@ const generateDescription = (data: ProcessListProcess) => {
             WebkitBoxOrient: 'vertical',
           }}
         >
-          {description}
+          {description.highlighted}
         </span>
       ),
     },
@@ -124,7 +124,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
           {/* <span>{item?.definitionName}</span> */}
-          {item?.definitionName}
+          {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
           <Button type="text">
             <MoreOutlined />

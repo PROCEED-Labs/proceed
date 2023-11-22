@@ -102,7 +102,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
                 <DoubleRightOutlined />
               </Button>
               {selection.length
-                ? data?.find((item) => item.definitionId === selection[0])?.definitionName
+                ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value
                 : 'How to PROCEED?'}
             </>
           }
@@ -156,7 +156,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
                 <h5>
                   <b>Description</b>
                 </h5>
-                <p>{data?.find((item) => item.definitionId === selection[0])?.description}</p>
+                <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
 
                 <Divider style={{ width: '140%', marginLeft: '-20%' }} />
                 <h3>Access Rights</h3>

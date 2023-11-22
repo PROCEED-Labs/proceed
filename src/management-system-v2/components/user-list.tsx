@@ -3,36 +3,22 @@
 import React, { ComponentProps, FC, ReactNode, useMemo, useState } from 'react';
 import { Space, Avatar, Button, Table, Result } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import useFuzySearch from '@/lib/useFuzySearch';
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { ApiData } from '@/lib/fetch-data';
 
-const defaultColumns = [
-  {
-    title: 'Account',
-    dataIndex: 'display',
-    key: 'display',
-  },
-  {
-    title: 'Username',
-    dataIndex: 'username',
-    key: 'username',
-  },
-  {
-    title: 'Email Adress',
-    dataIndex: 'email',
-    key: 'email',
-  },
-];
-
 type User = ApiData<'/users', 'get'>[number];
-type ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
+type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+type ListUser = ReplaceKeysWithHighlighted<
+  _ListUser,
+  'firstName' | 'lastName' | 'username' | 'email'
+>;
 type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefined>;
 
 export type UserListProps = {
-  users: ListUser[];
-  highlightedKeys?: ('firstName' | 'lastName' | 'username' | 'email')[] | null;
+  users: _ListUser[];
+  highlightKeys?: boolean;
   columns?: Column | ((clearSelected: () => void) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
@@ -42,7 +28,7 @@ export type UserListProps = {
 
 const UserList: FC<UserListProps> = ({
   users,
-  highlightedKeys = ['firstName', 'lastName', 'username', 'email'],
+  highlightKeys = true,
   columns,
   selectedRowActions,
   error,
@@ -60,28 +46,54 @@ const UserList: FC<UserListProps> = ({
           display: (
             <Space size={16}>
               <Avatar src={user.picture}>
-                {user.picture ? null : user.firstName.slice(0, 1) + user.lastName.slice(0, 1)}
+                {user.picture
+                  ? null
+                  : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
               </Avatar>
               <span>
-                {user.firstName} {user.lastName}
+                {highlightKeys ? (
+                  <>
+                    {user.firstName.highlighted} {user.lastName.highlighted}
+                  </>
+                ) : (
+                  `${user.firstName.value} ${user.lastName.value}`
+                )}
               </span>
             </Space>
           ),
         };
       }),
-    highlightedKeys: highlightedKeys ? highlightedKeys : undefined,
+    highlightedKeys: ['firstName', 'lastName', 'username', 'email'],
   });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [selectedRows, setSelectedRows] = useState<typeof users>([]);
+  const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
 
   const tableColums = useMemo(() => {
+    const defaultColumns: Column = [
+      {
+        title: 'Account',
+        dataIndex: 'display',
+        key: 'display',
+      },
+      {
+        title: 'Username',
+        key: 'username',
+        render: (_, { username: { highlighted, value } }) => (highlightKeys ? highlighted : value),
+      },
+      {
+        title: 'Email Adress',
+        key: 'email',
+        render: (_, { email: { highlighted, value } }) => (highlightKeys ? highlighted : value),
+      },
+    ];
+
     if (!columns) return defaultColumns;
 
     if (typeof columns === 'function')
       return [...defaultColumns, ...columns(() => setSelectedRowKeys([]))];
     else return [...defaultColumns, ...columns];
-  }, [columns]);
+  }, [columns, highlightKeys]);
 
   if (error)
     <Result
@@ -111,12 +123,12 @@ const UserList: FC<UserListProps> = ({
         }}
         rightNode={searchBarRightNode ? searchBarRightNode : null}
       />
-      <Table
+      <Table<ListUser>
         columns={tableColums}
         dataSource={filteredData}
         rowSelection={{
           selectedRowKeys,
-          onChange: (selectedRowKeys: React.Key[], selectedObjects: typeof users) => {
+          onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
             setSelectedRowKeys(selectedRowKeys as string[]);
             setSelectedRows(selectedObjects);
           },

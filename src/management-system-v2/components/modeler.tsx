@@ -16,6 +16,8 @@ import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 
+import { copyProcessImage } from '@/lib/process-export/copy-process-image';
+
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
@@ -93,6 +95,21 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
           }, 2000);
         });
       }
+
+      // allow keyboard shortcuts like copy (strg+c) and paste (strg+v) etc.
+      (modeler.current.get('keyboard') as any).bind(document);
+
+      // create a custom copy behaviour where the whole process or selected parts can be copied to the clipboard as an image
+      (modeler.current.get('keyboard') as any).addListener(
+        async (_: any, events: { keyEvent: KeyboardEvent }) => {
+          const { keyEvent } = events;
+          // handle the copy shortcut
+          if (keyEvent.ctrlKey && keyEvent.key === 'c' && modeler.current) {
+            await copyProcessImage(modeler.current);
+          }
+        },
+        'keyboard.keyup',
+      );
 
       setModeler(modeler.current);
       setInitialized(true);

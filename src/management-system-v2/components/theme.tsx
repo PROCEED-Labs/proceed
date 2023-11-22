@@ -1,4 +1,5 @@
-import { ConfigProvider } from 'antd';
+import { useUserPreferences } from '@/lib/user-preferences';
+import { ConfigProvider, theme } from 'antd';
 // This React import is required for the JSX to work in the script file.
 import React, { FC, PropsWithChildren } from 'react';
 
@@ -18,23 +19,32 @@ import React, { FC, PropsWithChildren } from 'react';
  */
 
 const Theme: FC<PropsWithChildren> = ({ children }) => {
+  const { preferences } = useUserPreferences();
+
   return (
     <ConfigProvider
-      componentSize="middle"
+      componentSize={preferences['interface-size']}
       theme={{
-        token: {
-          // colorPrimary: '#00b96b',
-          colorPrimary: '#1976D2',
-          fontFamily: 'var(--inter)',
-          colorBgContainer: '#fff',
-          fontSize: 14,
-          fontSizeHeading1: 16,
-        },
-        components: {
-          Layout: {
-            headerBg: '#fff',
-          },
-        },
+        algorithm: preferences['dark-mode-enabled'] ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: preferences['dark-mode-enabled']
+          ? {}
+          : {
+              // colorPrimary: '#00b96b',
+              colorPrimary: '#1976D2',
+              fontFamily: 'var(--inter)',
+              colorBgContainer: '#fff',
+
+              /* fontSize: 14, */
+              /* fontSizeHeading1: 16, */
+            },
+        components: preferences['dark-mode-enabled']
+          ? {}
+          : {
+              Layout: {
+                headerBg: '#fff',
+                bodyBg: 'white',
+              },
+            },
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import { ComponentProps, FC, PropsWithChildren, useState } from 'react';
-import { Button, Modal } from 'antd';
+import { Button, Modal, Tooltip } from 'antd';
 
 type ConfirmationModalProps = {
   onConfirm: (...args: any[]) => Promise<any> | any;
@@ -11,6 +11,7 @@ type ConfirmationModalProps = {
     'open' | 'title' | 'onOk' | 'confirmLoading' | 'onCancel'
   >;
   buttonProps?: ComponentProps<typeof Button>;
+  tooltip?: string;
 };
 
 const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
@@ -21,6 +22,7 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
   canCloseWhileLoading = false,
   modalProps,
   buttonProps,
+  tooltip,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,14 +59,17 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
       >
         <p>{description}</p>
       </Modal>
-      <Button
-        {...buttonProps}
-        onClick={() => setModalOpen(true)}
-        disabled={modalOpen || buttonProps?.disabled}
-        loading={loading}
-      >
-        {children}
-      </Button>
+
+      <Tooltip title={tooltip}>
+        <Button
+          {...buttonProps}
+          onClick={() => setModalOpen(true)}
+          disabled={modalOpen || buttonProps?.disabled}
+          loading={loading}
+        >
+          {children}
+        </Button>
+      </Tooltip>
     </>
   );
 };

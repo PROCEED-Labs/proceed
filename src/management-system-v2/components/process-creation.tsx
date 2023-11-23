@@ -66,6 +66,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
 
+  // the data that is overwritten by the user before the processes are created (e.g. the user wants a different definition name that provided in the processesData)
   const [dataChanges, setDataChanges] = useState<{ [definitionId: string]: ProcessDataOverwrite }>(
     {},
   );
@@ -88,6 +89,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
     },
     onSuccess: (data) => {
       if (onCreated) onCreated(data.definitionId as string);
+
       setDataChanges(
         produce((draft) => {
           if (draft[data.definitionId as string]) {
@@ -100,31 +102,32 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
     },
   });
 
-  const successful = useMemo(() => {
-    return Object.entries(dataChanges)
-      .filter(([_definitionId, data]) => data.successful)
-      .map(([definitionId]) => definitionId);
+  const numSuccesses = useMemo(() => {
+    return Object.values(dataChanges).reduce((acc, { successful }) => {
+      if (successful) return acc + 1;
+      else return acc;
+    }, 0);
   }, [dataChanges]);
 
-  const failed = useMemo(() => {
-    return Object.entries(dataChanges)
-      .filter(([_definitionId, data]) => data.failed)
-      .map(([definitionId]) => definitionId);
+  const numFails = useMemo(() => {
+    return Object.values(dataChanges).reduce((acc, { failed }) => {
+      if (failed) return acc + 1;
+      else return acc;
+    }, 0);
   }, [dataChanges]);
 
   const handleCancel = () => {
     setDataChanges({});
-
     onCancel();
   };
 
   useEffect(() => {
     /* All done */
-    if (processesData.length && successful.length + failed.length === processesData.length) {
+    if (processesData.length && numSuccesses + numFails === processesData.length) {
       setLoading(false);
 
       /* All Successful */
-      if (successful.length === processesData.length) {
+      if (numSuccesses === processesData.length) {
         setTimeout(() => {
           handleCancel();
           refreshData();
@@ -134,10 +137,10 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
   }, [dataChanges, processesData, refreshData]);
 
   const { preferences, addPreferences } = useUserPreferences();
-
   const { [`${creationType.toLowerCase()}-modal-accordion`]: isAccordion } = preferences;
 
   const getFinalBpmn = async ({ definitionId, definitionName, description, bpmn }: ProcessData) => {
+    // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
     const bpmnObj = await toBpmnObject(bpmn);
     await setDefinitionsId(bpmnObj, definitionId);
     await setDefinitionsName(bpmnObj, dataChanges[definitionId]?.definitionName || definitionName);
@@ -179,6 +182,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
     });
   };
 
+  // create the ui that allows users to change some of the meta data (e.g. definitionName,description) of the process
   const items: CollapseProps['items'] = processesData.map(
     ({ definitionId, definitionName, description }) => {
       /* Initial */
@@ -281,17 +285,19 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
             Cancel
           </Button>,
           <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
-            {failed.length ? 'Retry' : 'Ok'}
+            {numFails ? 'Retry' : 'Ok'}
           </Button>,
         ]}
       >
-        {!successful.length && !failed.length && !loading ? (
+        {!numSuccesses && !numFails && !loading ? (
+          // before submit => show the different processes to create with the option to edit some meta data
           <Collapse
             style={{ maxHeight: '60vh', overflowY: 'scroll' }}
             accordion={isAccordion}
             items={items}
           ></Collapse>
         ) : (
+          // after submit => show a list of processes with symbols showing the state of their creation
           <ul>
             {processesData.map(({ definitionId, definitionName }) => {
               let symbol = '';

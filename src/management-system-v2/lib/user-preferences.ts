@@ -11,17 +11,17 @@ type PreferencesStoreType = {
 
 const defaultPreferences: PreferencesType = {
   /* Default User-Settings: */
-  /* 
+  /*
     Delete user-preferences in localstorage, after adding a preference-setting
     The new default won't be set otherwise
   */
   'show-process-meta-data': true,
   'icon-view-in-process-list': false,
   'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
-  'ask-before-deleting-multiple': true,
-  'ask-before-deleting-single': true,
+  // 'ask-before-deleting': true,
+  // 'ask-before-deleting-single': true,
   'ask-before-copying': true,
-  'process-copy-modal-accordion': true,
+  // 'process-copy-modal-accordion': true,
 };
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(

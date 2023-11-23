@@ -31,10 +31,12 @@ import ProcessEditButton from './process-edit-button';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-import ProcessDeleteSingleModal from './process-delete-single';
+import ProcessDeleteModal from './process-delete';
+// import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { ProcessListProcess } from './processes';
+import ProcessCopyModal from './process-copy';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -43,7 +45,9 @@ type ProcessListProps = PropsWithChildren<{
   isLoading?: boolean;
   onExportProcess: Dispatch<SetStateAction<string[]>>;
   search?: string;
+  setCopyProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  copyProcessKeys: React.Key[];
   deleteProcessKeys: React.Key[];
 }>;
 
@@ -65,7 +69,9 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelection,
   isLoading,
   onExportProcess,
+  setCopyProcessIds,
   setDeleteProcessIds,
+  copyProcessKeys,
   deleteProcessKeys,
 }) => {
   const router = useRouter();
@@ -90,7 +96,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const {
     'process-list-columns': selectedColumns,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
+    // 'ask-before-deleting': openModalWhenDelete,
   } = preferences;
 
   const ability = useAbilityStore((state) => state.ability);
@@ -115,19 +121,22 @@ const ProcessList: FC<ProcessListProps> = ({
           </Tooltip>
           <Tooltip placement="top" title={'Copy'}>
             <CopyOutlined
-              onClick={() => {
-                createProcess({
-                  body: {
-                    ...record,
-                    bpmn: record.bpmn || '',
-                    variables: [
-                      {
-                        name: `${record.definitionName.value} Copy`,
-                        type: '',
-                      },
-                    ],
-                  },
-                });
+              onClick={(e) => {
+                // createProcess({
+                //   body: {
+                //     ...record,
+                //     bpmn: record.bpmn || '',
+                //     variables: [
+                //       {
+                //         name: `${record.definitionName.value} Copy`,
+                //         type: '',
+                //       },
+                //     ],
+                //   },
+                // });
+                e.stopPropagation();
+                setCopyProcessIds([record.definitionId])
+                setSelection([record.definitionId])
               }}
             />
           </Tooltip>
@@ -156,19 +165,19 @@ const ProcessList: FC<ProcessListProps> = ({
               <DeleteOutlined
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (openModalWhenDeleteSingle) {
-                    setDeleteProcessIds([record.definitionId]);
-                  } else {
-                    deleteProcess({
-                      params: {
-                        path: {
-                          definitionId: record.definitionId as string,
-                        },
-                      },
-                    });
-                  }
-
-                  setSelection(selection.filter((id) => id !== record.definitionId));
+                  // if (openModalWhenDelete) {
+                  //   setDeleteProcessIds([record.definitionId]);
+                  // } else {
+                  //   deleteProcess({
+                  //     params: {
+                  //       path: {
+                  //         definitionId: record.definitionId as string,
+                  //       },
+                  //     },
+                  //   });
+                  // }
+                  setDeleteProcessIds([record.definitionId]);
+                  setSelection([record.definitionId]);
                 }}
               />
             </Tooltip>
@@ -181,8 +190,9 @@ const ProcessList: FC<ProcessListProps> = ({
       createProcess,
       deleteProcess,
       onExportProcess,
-      openModalWhenDeleteSingle,
+      // openModalWhenDelete,
       selection,
+      setCopyProcessIds,
       setDeleteProcessIds,
       setSelection,
     ],
@@ -504,7 +514,12 @@ const ProcessList: FC<ProcessListProps> = ({
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
-      <ProcessDeleteSingleModal
+      <ProcessCopyModal
+        setCopyProcessIds={setCopyProcessIds}
+        processKeys={copyProcessKeys}
+        setSelection={setSelection}
+      />
+      <ProcessDeleteModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessKeys}
         setSelection={setSelection}

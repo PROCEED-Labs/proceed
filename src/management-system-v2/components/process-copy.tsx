@@ -3,7 +3,7 @@ import React, { Dispatch, FC, Key, SetStateAction, useCallback, useEffect, useSt
 import styles from './process-copy.module.scss';
 import TextArea from 'antd/es/input/TextArea';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { addUserPreference } from '@/lib/utils';
+// import { addUserPreference } from '@/lib/utils';
 import { useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import type { CollapseProps } from 'antd';
 import {
@@ -53,7 +53,12 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 
   const { preferences, addPreferences } = useUserPreferences();
 
-  const { 'process-copy-modal-accordion': isAccordion, 'ask-before-copying': copyModalPreference } =
+
+  //TODO: add copyModalPreference
+
+  const {
+    // 'process-copy-modal-accordion': isAccordion,
+  'ask-before-copying': copyModalPreference } =
     preferences;
 
   const { data, refetch: refreshData } = useGetAsset('/process', {
@@ -64,7 +69,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 
   const [bluePrintForProcesses, setBluePrintForProcesses] = useState(
     data
-      ?.filter((process) => processKeys.includes(process.definitionId))
+      ?.filter((process) => processKeys?.includes(process.definitionId))
       .map((process) => {
         return {
           id: process.definitionId,
@@ -80,7 +85,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
   useEffect(() => {
     setBluePrintForProcesses(
       data
-        ?.filter((process) => processKeys.includes(process.definitionId))
+        ?.filter((process) => processKeys?.includes(process.definitionId))
         .map((process) => {
           return {
             id: process.definitionId,
@@ -92,7 +97,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
           };
         }),
     );
-    /* 
+    /*
     Do not include data as dependency
     The Blue-Print should only be determined by the processKeys
     */
@@ -100,11 +105,11 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 
   useEffect(() => {
     /* Some Failed */
-    if (processKeys.length && successful.length + failed.length === processKeys.length) {
+    if (processKeys?.length && successful.length + failed.length === processKeys?.length) {
       setLoading(false);
     }
     /* All Successful */
-    if (processKeys.length && successful.length === processKeys.length) {
+    if (processKeys?.length && successful.length === processKeys?.length) {
       setTimeout(() => {
         setCopyProcessIds([]);
         setFailed([]);
@@ -188,7 +193,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
     setBluePrintForProcesses([]);
   }, [setCopyProcessIds]);
 
-  const items: CollapseProps['items'] = processKeys.map((id) => {
+  const items: CollapseProps['items'] = processKeys?.map((id) => {
     /* Initial */
     return {
       key: id as string | number,
@@ -247,9 +252,9 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
         width={600}
         title={
           <div style={{ display: 'flex' }}>
-            <span>{processKeys.length > 1 ? 'Copy Processes' : 'Copy Process'}</span>
+            <span>{processKeys?.length > 1 ? 'Copy Processes' : 'Copy Process'}</span>
             <div style={{ flex: 19 }}></div>
-            <Tooltip
+            {/* <Tooltip
               placement="left"
               title={
                 <>
@@ -266,12 +271,12 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
                   addPreferences({ 'process-copy-modal-accordion': checked });
                 }}
               />
-            </Tooltip>
+            </Tooltip> */}
             <div style={{ flex: 1 }}></div>
           </div>
         }
         centered
-        open={processKeys.length > 0}
+        open={processKeys?.length > 0}
         onCancel={handleCancel}
         footer={[
           <Tooltip
@@ -301,7 +306,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
         {!successful.length && !failed.length && !loading ? (
           <Collapse
             style={{ maxHeight: '60vh', overflowY: 'scroll' }}
-            accordion={isAccordion}
+            accordion={true}
             items={items}
           ></Collapse>
         ) : (

@@ -93,18 +93,18 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
       <Modal
         title="Delete selected processes?"
         centered
-        open={processKeys.length > 1}
+        open={processKeys.length >= 1}
         onCancel={handleCancel}
         footer={[
-          <Checkbox
-            key="checkbox"
-            className={styles.Checkbox}
-            onChange={(e) => {
-              addPreferences({ 'ask-before-deleting-multiple': !e.target.checked });
-            }}
-          >
-            Don&apos;t show again
-          </Checkbox>,
+          // <Checkbox
+          //   key="checkbox"
+          //   className={styles.Checkbox}
+          //   onChange={(e) => {
+          //     addPreferences({ 'ask-before-deleting-multiple': !e.target.checked });
+          //   }}
+          // >
+          //   Don&apos;t show again
+          // </Checkbox>,
           <Button loading={loading} key="back" onClick={handleCancel}>
             Cancel
           </Button>,

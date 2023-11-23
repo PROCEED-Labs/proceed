@@ -27,7 +27,7 @@ import {
   setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
 import ProcessDeleteModal from './process-delete';
-import ProcessDeleteSingleModal from './process-delete-single';
+//import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -84,8 +84,8 @@ const Processes: FC = () => {
 
   const {
     'icon-view-in-process-list': iconView,
-    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
+    // 'ask-before-deleting': openModalWhenDelete,
+    //'ask-before-deleting-single': openModalWhenDeleteSingle,
     'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
@@ -137,8 +137,9 @@ const Processes: FC = () => {
             className={styles.Icon}
             onClick={() => {
               if (
-                (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-                (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
+                (
+                  //openModalWhenDelete &&
+                  selectedRowKeys.length)
               ) {
                 setDeleteProcessIds(selectedRowKeys as string[]);
               } else {
@@ -186,8 +187,9 @@ const Processes: FC = () => {
       } else if (e.key === 'Delete') {
         if (ability.can('delete', 'Process')) {
           if (
-            (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-            (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
+            (
+              // openModalWhenDelete &&
+              selectedRowKeys.length)
           ) {
             setDeleteProcessIds(selectedRowKeys as string[]);
           } else {
@@ -242,8 +244,7 @@ const Processes: FC = () => {
     deleteSelectedProcesses,
     data,
     addProcess,
-    openModalWhenDeleteMultiple,
-    openModalWhenDeleteSingle,
+    // openModalWhenDelete,
     copyProcessIds.length,
     deleteProcessIds.length,
     openModalWhenCopy,
@@ -314,6 +315,8 @@ const Processes: FC = () => {
               isLoading={isLoading}
               onExportProcess={setExportProcessIds}
               search={searchTerm}
+              setCopyProcessIds={setCopyProcessIds}
+              copyProcessKeys={copyProcessIds}
               setDeleteProcessIds={setDeleteProcessIds}
               deleteProcessKeys={deleteProcessIds}
             />
@@ -331,11 +334,11 @@ const Processes: FC = () => {
         processKeys={deleteProcessIds}
         setSelection={setSelectedRowKeys}
       />
-      <ProcessDeleteSingleModal
+      {/* <ProcessDeleteSingleModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}
         setSelection={setSelectedRowKeys}
-      />
+      /> */}
       <ProcessCopyModal
         setSelection={setSelectedRowKeys}
         processKeys={copyProcessIds}

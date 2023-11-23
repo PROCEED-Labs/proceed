@@ -92,7 +92,7 @@ async function init() {
   }
 
   backendServer.use(express.text({ type: ['text/plain', 'text/html'] }));
-  backendServer.use(express.json());
+  backendServer.use(express.json({ limit: '500kb' }));
 
   if (config.useAuthorization) {
     if (config.useAuth0) {

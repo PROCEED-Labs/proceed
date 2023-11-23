@@ -1,5 +1,12 @@
 .bpmn-js-modeler-with-toolbar .djs-palette {
-  top: 125px;
+  top: 70px;
+}
+
+.bpmn-js-modeler-with-toolbar .bjs-breadcrumbs {
+  top: unset;
+  left: 15px !important;
+  bottom: 10px;
+  font-size: 20px;
 }
 
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */

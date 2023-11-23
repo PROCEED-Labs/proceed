@@ -16,6 +16,8 @@ import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 
+import { copyProcessImage } from '@/lib/process-export/copy-process-image';
+
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
@@ -94,6 +96,21 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         });
       }
 
+      // allow keyboard shortcuts like copy (strg+c) and paste (strg+v) etc.
+      (modeler.current.get('keyboard') as any).bind(document);
+
+      // create a custom copy behaviour where the whole process or selected parts can be copied to the clipboard as an image
+      (modeler.current.get('keyboard') as any).addListener(
+        async (_: any, events: { keyEvent: KeyboardEvent }) => {
+          const { keyEvent } = events;
+          // handle the copy shortcut
+          if (keyEvent.ctrlKey && keyEvent.key === 'c' && modeler.current) {
+            await copyProcessImage(modeler.current);
+          }
+        },
+        'keyboard.keyup',
+      );
+
       setModeler(modeler.current);
       setInitialized(true);
     });
@@ -138,12 +155,14 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
 
   const handleXmlEditorSave = async (bpmn: string) => {
     if (modeler.current) {
-      modeler.current.importXML(bpmn).then(() => {
+      await modeler.current.importXML(bpmn).then(() => {
         (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
+      // if the bpmn contains unexpected content (text content for an element where the model does not define text) the modeler will remove it automatically => make sure the stored bpmn is the same as the one in the modeler
+      const { xml: cleanedBpmn } = await modeler.current.saveXML({ format: true });
       await updateProcessMutation({
         params: { path: { definitionId: processId as string } },
-        body: { bpmn },
+        body: { bpmn: cleanedBpmn },
       });
     }
   };
@@ -154,12 +173,14 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         <>
           <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
           {selectedVersionId && <VersionToolbar />}
-          <XmlEditor
-            bpmn={xmlEditorBpmn}
-            canSave={!selectedVersionId}
-            onClose={handleCloseXmlEditor}
-            onSaveXml={handleXmlEditorSave}
-          />
+          {!!xmlEditorBpmn && (
+            <XmlEditor
+              bpmn={xmlEditorBpmn}
+              canSave={!selectedVersionId}
+              onClose={handleCloseXmlEditor}
+              onSaveXml={handleXmlEditorSave}
+            />
+          )}
         </>
       )}
       <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />

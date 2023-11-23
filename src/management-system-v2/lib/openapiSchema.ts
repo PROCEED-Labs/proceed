@@ -372,8 +372,8 @@ export interface components {
      * - ezample 2
      */
     PermissionNumber: number;
-    /** role */
-    roleData: {
+    /** rolePostData */
+    rolePostData: {
       name?: string;
       description?: string;
       note?: string;
@@ -391,6 +391,9 @@ export interface components {
         All?: components['schemas']['PermissionNumber'];
       };
       expiration?: string;
+    };
+    /** role */
+    roleData: {
       members?: {
         userId: string;
         username: string;
@@ -399,7 +402,7 @@ export interface components {
         email: string;
       }[];
       default?: boolean;
-    };
+    } & components['schemas']['rolePostData'];
     /** role */
     roleMetaData: {
       id?: string;
@@ -1198,10 +1201,7 @@ export interface operations {
   postRole: {
     requestBody?: {
       content: {
-        'application/json': WithRequired<
-          components['schemas']['roleData'],
-          'name' | 'description' | 'note' | 'permissions' | 'expiration' | 'members' | 'default'
-        >;
+        'application/json': WithRequired<components['schemas']['rolePostData'], 'name'>;
       };
     };
     responses: {

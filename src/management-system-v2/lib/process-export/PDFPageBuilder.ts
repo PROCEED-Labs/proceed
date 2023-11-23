@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 
+import { getImageDimensions } from './util';
+
 type ContentPosition = 'left' | 'right' | 'center';
 
 interface ContentInfo {
@@ -83,31 +85,6 @@ class PDFPageBuilder {
   }
 
   /**
-   * Returns the dimensions of a vector-image
-   *
-   * @param svg the svg string to get the size from
-   * @returns the width and height of the image
-   */
-  private getImageDimensions(svg: string) {
-    let width = 0;
-    let height = 0;
-
-    const viewBox = svg.split('<svg')[1].split('>')[0].split('viewBox="');
-
-    if (viewBox) {
-      [width, height] = viewBox[1].split('"')[0].split(' ').map(parseFloat).slice(2);
-    } else {
-      width = parseFloat(svg.split('width="')[1].split('"')[0]);
-      height = parseFloat(svg.split('height="')[1].split('"')[0]);
-    }
-
-    return {
-      width,
-      height,
-    };
-  }
-
-  /**
    * Add a vector-image to the page
    *
    * @param svg the svg image
@@ -134,7 +111,7 @@ class PDFPageBuilder {
       bottom: margins.bottom || 0,
     };
 
-    const imageDimensions = this.getImageDimensions(svg);
+    const imageDimensions = getImageDimensions(svg);
 
     // if the image is too small dont scale it up but place it in the middle of the space to occupy
     if (size && imageDimensions.width < size.width && imageDimensions.height < size.height) {

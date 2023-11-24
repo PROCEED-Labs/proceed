@@ -17,6 +17,7 @@ import {
 } from '@proceed/bpmn-helper';
 import { fetchProcessVersionBpmn } from '@/lib/process-queries';
 import { LoadingOutlined } from '@ant-design/icons';
+import Scrollbar from './scrollbar';
 
 type ProcessCopyModalType = {
   setCopyProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
@@ -303,6 +304,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
           </Button>,
         ]}
       >
+        <Scrollbar width='10px'>
         {!successful.length && !failed.length && !loading ? (
           <Collapse
             style={{ maxHeight: '60vh', overflowY: 'scroll' }}
@@ -335,6 +337,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
             })}
           </ul>
         )}
+        </Scrollbar>
       </Modal>
     </>
   );

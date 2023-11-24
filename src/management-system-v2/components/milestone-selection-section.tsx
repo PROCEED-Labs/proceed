@@ -5,6 +5,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 
 import { Button, Divider, Form, FormInstance, Input, Modal, Select, Space } from 'antd';
+import { setProceedElement } from '@proceed/bpmn-helper';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
+import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
+import useModelerStateStore from '@/lib/use-modeler-state-store';
 
 const ModalSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit: Function }) => {
   const [submittable, setSubmittable] = useState(false);
@@ -91,14 +95,44 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close }) => 
 
 type MilestoneSelectionProperties = {
   milestones: { id: string; name: string; description?: string }[];
-  onSelection: (values: { id: string; name: string; description?: string }[]) => void;
+  selectedElement: ElementLike;
 };
 
 const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   milestones,
-  onSelection,
+  selectedElement,
 }) => {
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+
+  const modeler = useModelerStateStore((state) => state.modeler);
+
+  const updateMilestones = (
+    newMilestones: { id: string; name: string; description?: string }[],
+  ) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+    newMilestones.forEach((milestone) => {
+      const milestoneExisting = !!milestones.find(
+        (oldMilestone) => oldMilestone.id === milestone.id,
+      );
+
+      if (!milestoneExisting) {
+        setProceedElement(selectedElement.businessObject, 'Milestone', undefined, milestone);
+      }
+    });
+
+    // remove milestones that do not exist anymore
+    milestones.forEach((oldMilestone) => {
+      if (!newMilestones.find((milestone) => milestone.id === oldMilestone.id)) {
+        setProceedElement(selectedElement.businessObject, 'Milestone', null, {
+          id: oldMilestone.id,
+        });
+      }
+    });
+
+    modeling.updateProperties(selectedElement as any, {
+      extensionElements: selectedElement.businessObject.extensionElements,
+    });
+  };
 
   return (
     <>
@@ -113,7 +147,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
           allowClear
           placeholder="Select Milestones"
           onChange={(_, selectedMilestones) => {
-            onSelection(
+            updateMilestones(
               Array.isArray(selectedMilestones) ? selectedMilestones : [selectedMilestones],
             );
           }}
@@ -138,7 +172,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
         show={isMilestoneModalOpen}
         close={(values) => {
           if (values) {
-            onSelection([...milestones, values]);
+            updateMilestones([...milestones, values]);
           }
 
           setIsMilestoneModalOpen(false);

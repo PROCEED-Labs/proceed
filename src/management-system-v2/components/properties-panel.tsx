@@ -139,34 +139,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     });
   };
 
-  const updateMilestones = (
-    newMilestones: { id: string; name: string; description?: string }[],
-  ) => {
-    const modeling = modeler!.get('modeling') as Modeling;
-    newMilestones.forEach((milestone) => {
-      const milestoneExisting = !!milestones.find(
-        (oldMilestone) => oldMilestone.id === milestone.id,
-      );
-
-      if (!milestoneExisting) {
-        setProceedElement(selectedElement.businessObject, 'Milestone', undefined, milestone);
-      }
-    });
-
-    // remove milestones that do not exist anymore
-    milestones.forEach((oldMilestone) => {
-      if (!newMilestones.find((milestone) => milestone.id === oldMilestone.id)) {
-        setProceedElement(selectedElement.businessObject, 'Milestone', null, {
-          id: oldMilestone.id,
-        });
-      }
-    });
-
-    modeling.updateProperties(selectedElement as any, {
-      extensionElements: selectedElement.businessObject.extensionElements,
-    });
-  };
-
   const updateDescription = (text: string) => {
     const modeling = modeler!.get('modeling') as Modeling;
     const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
@@ -222,7 +194,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
           {selectedElement.type === 'bpmn:UserTask' && (
             <MilestoneSelectionSection
               milestones={milestones}
-              onSelection={updateMilestones}
+              selectedElement={selectedElement}
             ></MilestoneSelectionSection>
           )}
           <Space direction="vertical" size="large">

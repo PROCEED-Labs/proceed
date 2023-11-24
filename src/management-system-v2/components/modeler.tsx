@@ -48,6 +48,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
+  const setEditingDisabled = useModelerStateStore((state) => state.setEditingDisabled);
 
   /// Derived State
   const selectedVersionId = query.get('version');
@@ -70,6 +71,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             proceed: schema,
           },
         });
+        setEditingDisabled(true);
       } else {
         modeler.current = new Modeler!({
           container: canvas.current!,
@@ -80,7 +82,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
 
         // update process after change with 2 second debounce
         let timer: ReturnType<typeof setTimeout>;
-        modeler.current.on('commandStack.changed', async () => {
+        modeler.current.on('commandStack.changed', () => {
           clearTimeout(timer);
           timer = setTimeout(async () => {
             try {
@@ -95,6 +97,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             }
           }, 2000);
         });
+
+        setEditingDisabled(false);
       }
 
       // allow keyboard shortcuts like copy (strg+c) and paste (strg+v) etc.

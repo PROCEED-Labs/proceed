@@ -4,19 +4,16 @@ import React, { Dispatch, FC, Key, SetStateAction } from 'react';
 
 import TabCard from './tabcard-model-metadata';
 
-import { ApiData } from '@/lib/fetch-data';
 import ScrollBar from './scrollbar';
-
-type Processes = ApiData<'/process', 'get'>;
+import { ProcessListProcess } from './processes';
 
 type IconViewProps = {
-  data?: Processes;
+  data?: ProcessListProcess[];
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
-  search?: string;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) => {
+const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
   return (
     <>
       <ScrollBar width="12px">
@@ -29,7 +26,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) 
             gridGap: '20px',
           }}
         >
-          {data?.map((item, i, arr) => (
+          {data?.map((item) => (
             <TabCard
               key={item.definitionId}
               item={item}
@@ -37,7 +34,6 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection, search }) 
               selection={selection}
               setSelection={setSelection}
               tabcard={false}
-              search={search}
             />
           ))}
         </div>

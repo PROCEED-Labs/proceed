@@ -7,11 +7,10 @@ import Viewer from './bpmn-viewer';
 import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
-
-type Processes = ApiData<'/process', 'get'>;
+import { ProcessListProcess } from './processes';
 
 type MetaDataType = {
-  data?: Processes;
+  data?: ProcessListProcess[];
   selection: Key[];
 };
 
@@ -54,7 +53,11 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
       }}
     >
       <CollapsibleCard
-        title="How to PROCEED?"
+        title={
+          selection.length
+            ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value!
+            : 'How to PROCEED?'
+        }
         show={showViewer}
         onCollapse={() => {
           addPreferences({ 'show-process-meta-data': !showViewer });
@@ -71,7 +74,9 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
             <>
               {showViewer && (
                 <Viewer
-                  selectedElement={data?.find((item) => item.definitionId === selection[0])}
+                  selectedElementId={
+                    data?.find((item) => item.definitionId === selection[0])?.definitionId
+                  }
                   reduceLogo={true}
                 />
               )}
@@ -107,7 +112,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
               <h5>
                 <b>Description</b>
               </h5>
-              <p>{data?.find((item) => item.definitionId === selection[0])?.description}</p>
+              <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
 
               <Divider style={{ width: '140%', marginLeft: '-20%' }} />
               <h3>Access Rights</h3>

@@ -72,8 +72,15 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   useEffect(() => {
     if (modeler) {
+      const commandStack = modeler.get('commandStack', false) as CommandStack;
+      // check if there is a commandStack (does not exist on the viewer used when editing is disabled)
+      if (commandStack) {
+        // init canUndo and canRedo
+        setCanUndo(commandStack.canUndo());
+        setCanRedo(commandStack.canRedo());
+      }
       modeler.on('commandStack.changed', () => {
-        const commandStack = modeler.get('commandStack') as CommandStack;
+        // update canUndo and canRedo when the state of the modelers commandStack changes
         setCanUndo(commandStack.canUndo());
         setCanRedo(commandStack.canRedo());
       });

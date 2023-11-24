@@ -7,6 +7,7 @@ type ResizableElementProps = PropsWithChildren<{
   style?: CSSProperties;
 }>;
 
+let isResizing = false;
 const ResizableElement: React.FC<ResizableElementProps> = ({
   children,
   initialWidth,
@@ -14,7 +15,6 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
   maxWidth,
   style = {},
 }) => {
-  const [isResizing, setIsResizing] = useState(false);
   const [width, setWidth] = useState(initialWidth);
 
   useEffect(() => {
@@ -24,11 +24,11 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
   const onMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsResizing(true);
+    isResizing = true;
   };
 
   const onMouseUp = (e: MouseEvent) => {
-    setIsResizing(false);
+    isResizing = false;
   };
 
   const onMouseMove = (e: MouseEvent) => {

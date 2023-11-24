@@ -163,9 +163,9 @@ const Processes: FC = () => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const rerenderLists = () => {
-    //setFilteredData(filteredData);,
-  };
+  // const rerenderLists = () => {
+  //   //setFilteredData(filteredData);,
+  // };
 
   const deselectAll = () => {
     setSelectedRowKeys([]);

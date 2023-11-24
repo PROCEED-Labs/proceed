@@ -13,10 +13,9 @@ type Processes = ApiData<'/process', 'get'>;
 type MetaDataType = {
   data?: Processes;
   selection: Key[];
-  triggerRerender?: () => void;
 };
 
-const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
+const MetaData: FC<MetaDataType> = ({ data, selection }) => {
   /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
 
   const { preferences, addPreferences } = useUserPreferences();
@@ -59,7 +58,6 @@ const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
         show={showViewer}
         onCollapse={() => {
           addPreferences({ 'show-process-meta-data': !showViewer });
-          if (triggerRerender) triggerRerender();
         }}
       >
         {/* Viewer */}

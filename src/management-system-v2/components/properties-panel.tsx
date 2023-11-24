@@ -8,7 +8,7 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 
-import React, { FocusEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
 
 import { Input, ColorPicker, Space, Image } from 'antd';
 
@@ -26,35 +26,67 @@ import CollapsibleCard from './collapsible-card';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
-  setOpen: (open: boolean) => void;
 };
 
-const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen }) => {
+const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
   const [showInfo, setShowInfo] = useState(true);
   const [width, setWidth] = useState(450);
-
-  const [metaData, setMetaData] = useState(getMetaDataFromElement(selectedElement.businessObject));
-  const [milestones, setMilestones] = useState(
-    getMilestonesFromElement(selectedElement.businessObject),
-  );
   const [name, setName] = useState('');
   const [costsPlanned, setCostsPlanned] = useState('');
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
-  const refreshMetaData = useCallback(() => {
-    setMetaData(getMetaDataFromElement(selectedElement.businessObject));
-  }, [selectedElement.businessObject]);
+  const colorPickerPresets = [
+    {
+      label: 'Recommended',
+      colors: [
+        '#000000',
+        '#000000E0',
+        '#000000A6',
+        '#00000073',
+        '#00000040',
+        '#00000026',
+        '#0000001A',
+        '#00000012',
+        '#0000000A',
+        '#00000005',
+        '#F5222D',
+        '#FA8C16',
+        '#FADB14',
+        '#8BBB11',
+        '#52C41A',
+        '#13A8A8',
+        '#1677FF',
+        '#2F54EB',
+        '#722ED1',
+        '#EB2F96',
+        '#F5222D4D',
+        '#FA8C164D',
+        '#FADB144D',
+        '#8BBB114D',
+        '#52C41A4D',
+        '#13A8A84D',
+        '#1677FF4D',
+        '#2F54EB4D',
+        '#722ED14D',
+        '#EB2F964D',
+      ],
+    },
+    {
+      label: 'Recent',
+      colors: [],
+    },
+  ];
 
-  const refreshMilestones = useCallback(() => {
-    setMilestones(getMilestonesFromElement(selectedElement.businessObject));
-  }, [selectedElement.businessObject]);
-
-  useEffect(() => {
-    refreshMetaData();
-    refreshMilestones();
-  }, [selectedElement, refreshMetaData, refreshMilestones]);
+  // deep comparison of extentionElements object to track changes in array
+  const metaData = useMemo(() => {
+    return getMetaDataFromElement(selectedElement.businessObject);
+  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
+  // deep comparison of extentionElements object to track changes in array
+  const milestones = useMemo(() => {
+    return getMilestonesFromElement(selectedElement.businessObject);
+  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
 
   useEffect(() => {
     if (selectedElement) {
@@ -105,8 +137,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
     });
-
-    refreshMetaData();
   };
 
   const updateMilestones = (
@@ -135,8 +165,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
     });
-
-    refreshMilestones();
   };
 
   const updateDescription = (text: string) => {
@@ -261,47 +289,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
               <b>Colors</b>
               <Space>
                 <ColorPicker
-                  presets={[
-                    {
-                      label: 'Recommended',
-                      colors: [
-                        '#000000',
-                        '#000000E0',
-                        '#000000A6',
-                        '#00000073',
-                        '#00000040',
-                        '#00000026',
-                        '#0000001A',
-                        '#00000012',
-                        '#0000000A',
-                        '#00000005',
-                        '#F5222D',
-                        '#FA8C16',
-                        '#FADB14',
-                        '#8BBB11',
-                        '#52C41A',
-                        '#13A8A8',
-                        '#1677FF',
-                        '#2F54EB',
-                        '#722ED1',
-                        '#EB2F96',
-                        '#F5222D4D',
-                        '#FA8C164D',
-                        '#FADB144D',
-                        '#8BBB114D',
-                        '#52C41A4D',
-                        '#13A8A84D',
-                        '#1677FF4D',
-                        '#2F54EB4D',
-                        '#722ED14D',
-                        '#EB2F964D',
-                      ],
-                    },
-                    {
-                      label: 'Recent',
-                      colors: [],
-                    },
-                  ]}
+                  presets={colorPickerPresets}
                   value={backgroundColor}
                   onChange={(_, hex) => updateBackgroundColor(hex)}
                 />
@@ -309,47 +297,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement,
               </Space>
               <Space>
                 <ColorPicker
-                  presets={[
-                    {
-                      label: 'Recommended',
-                      colors: [
-                        '#000000',
-                        '#000000E0',
-                        '#000000A6',
-                        '#00000073',
-                        '#00000040',
-                        '#00000026',
-                        '#0000001A',
-                        '#00000012',
-                        '#0000000A',
-                        '#00000005',
-                        '#F5222D',
-                        '#FA8C16',
-                        '#FADB14',
-                        '#8BBB11',
-                        '#52C41A',
-                        '#13A8A8',
-                        '#1677FF',
-                        '#2F54EB',
-                        '#722ED1',
-                        '#EB2F96',
-                        '#F5222D4D',
-                        '#FA8C164D',
-                        '#FADB144D',
-                        '#8BBB114D',
-                        '#52C41A4D',
-                        '#13A8A84D',
-                        '#1677FF4D',
-                        '#2F54EB4D',
-                        '#722ED14D',
-                        '#EB2F964D',
-                      ],
-                    },
-                    {
-                      label: 'Recent',
-                      colors: [],
-                    },
-                  ]}
+                  presets={colorPickerPresets}
                   value={strokeColor}
                   onChange={(_, hex) => updateStrokeColor(hex)}
                 />

@@ -9,38 +9,7 @@ import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-
-const ModalSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit: Function }) => {
-  const [submittable, setSubmittable] = useState(false);
-
-  // Watch all values
-  const values = Form.useWatch([], form);
-
-  React.useEffect(() => {
-    form.validateFields({ validateOnly: true }).then(
-      () => {
-        setSubmittable(true);
-      },
-      () => {
-        setSubmittable(false);
-      },
-    );
-  }, [form, values]);
-
-  return (
-    <Button
-      type="primary"
-      htmlType="submit"
-      disabled={!submittable}
-      onClick={() => {
-        onSubmit(values);
-        form.resetFields();
-      }}
-    >
-      Create Milestone
-    </Button>
-  );
-};
+import FormSubmitButton from './form-submit-button';
 
 type MilestoneModalProperties = {
   show: boolean;
@@ -64,7 +33,12 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close }) => 
         >
           Cancel
         </Button>,
-        <ModalSubmitButton key="submit" form={form} onSubmit={close}></ModalSubmitButton>,
+        <FormSubmitButton
+          key="submit"
+          form={form}
+          onSubmit={close}
+          submitText="Create Milestone"
+        ></FormSubmitButton>,
       ]}
     >
       <Form form={form} name="name" wrapperCol={{ span: 24 }} autoComplete="off">

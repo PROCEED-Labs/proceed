@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import { Space, Button, Tooltip } from 'antd';
+import { Space, Button, Tooltip, Popconfirm } from 'antd';
 import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
@@ -32,6 +32,8 @@ import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
+import { AuthCan } from '@/lib/clientAuthComponents';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -131,7 +133,20 @@ const Processes: FC = () => {
           }}
         />
       </Tooltip>
-      {ability.can('delete', 'Process') && (
+
+      <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+            <Tooltip placement="top" title={'Delete'}>
+              <Popconfirm
+                title="Delete Processes"
+                description="Are you sure you want to delete the selected processes?"
+                onConfirm={() => deleteSelectedProcesses()}
+              >
+                <Button icon={<DeleteOutlined />} type="text" />
+              </Popconfirm>
+            </Tooltip>
+          </AuthCan>
+
+      {/* {ability.can('delete', 'Process') && (
         <Tooltip placement="top" title={'Delete'}>
           <DeleteOutlined
             className={styles.Icon}
@@ -148,7 +163,7 @@ const Processes: FC = () => {
             }}
           />
         </Tooltip>
-      )}
+      )} */}
     </>
   );
 
@@ -318,22 +333,23 @@ const Processes: FC = () => {
               setCopyProcessIds={setCopyProcessIds}
               copyProcessKeys={copyProcessIds}
               setDeleteProcessIds={setDeleteProcessIds}
-              deleteProcessKeys={deleteProcessIds}
+              deleteProcessIds={deleteProcessIds}
+              //deleteSelectedProcesses={deleteSelectedProcesses}
             />
           )}
         </div>
         {/* Meta Data Panel */}
-        <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
+        <MetaData data={filteredData} selection={selectedRowKeys} />
       </div>
       <ProcessExportModal
         processes={exportProcessIds.map((definitionId) => ({ definitionId }))}
         onClose={() => setExportProcessIds([])}
       />
-      <ProcessDeleteModal
+      {/* <ProcessDeleteModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}
         setSelection={setSelectedRowKeys}
-      />
+      /> */}
       {/* <ProcessDeleteSingleModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}

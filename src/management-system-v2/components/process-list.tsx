@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import { Button, Checkbox, Dropdown, MenuProps, Popconfirm, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,
   useState,
@@ -48,7 +48,9 @@ type ProcessListProps = PropsWithChildren<{
   setCopyProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
   copyProcessKeys: React.Key[];
-  deleteProcessKeys: React.Key[];
+  deleteProcessIds: React.Key[];
+  //TODO: what type for deleteSelectedProcess?
+  // deleteSelectedProcesses: void;
 }>;
 
 const ColumnHeader = [
@@ -72,7 +74,8 @@ const ProcessList: FC<ProcessListProps> = ({
   setCopyProcessIds,
   setDeleteProcessIds,
   copyProcessKeys,
-  deleteProcessKeys,
+  deleteProcessIds,
+  // deleteSelectedProcesses
 }) => {
   const router = useRouter();
 
@@ -107,6 +110,20 @@ const ProcessList: FC<ProcessListProps> = ({
     onSettled: refreshData,
   });
 
+  const deleteSelectedProcesses = useCallback(() => {
+    selection.forEach((id) => {
+      deleteProcess({
+        params: {
+          path: {
+            definitionId: id as string,
+          },
+        },
+        parseAs: 'text',
+      });
+    });
+    setSelection([]);
+  }, [deleteProcess, selection]);
+
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       return (
@@ -122,18 +139,6 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Copy'}>
             <CopyOutlined
               onClick={(e) => {
-                // createProcess({
-                //   body: {
-                //     ...record,
-                //     bpmn: record.bpmn || '',
-                //     variables: [
-                //       {
-                //         name: `${record.definitionName.value} Copy`,
-                //         type: '',
-                //       },
-                //     ],
-                //   },
-                // });
                 e.stopPropagation();
                 setCopyProcessIds([record.definitionId])
                 setSelection([record.definitionId])
@@ -160,28 +165,41 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </AuthCan>
-          {ability.can('delete', 'Process') && (
+
+
+          {/*
+          TODO: delete doesn't work, yet */}
+          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+            <Tooltip placement="top" title={'Delete'}>
+              <Popconfirm
+                title="Delete Process"
+                description="Are you sure you want to delete this process?"
+                onConfirm={() => {
+                  setSelection([record.definitionId])
+                  // console.log(record.definitionId)
+                  // setDeleteProcessIds([record.definitionId])
+                  // console.log(deleteProcessIds)
+                  // setDeleteProcessIds(['_801edcc1-59c4-4c7f-a3ba-11005ef4995e'])
+                  // console.log(deleteProcessIds)
+                  deleteSelectedProcesses()
+                }}
+              >
+                <Button icon={<DeleteOutlined />} type="text" />
+              </Popconfirm>
+            </Tooltip>
+          </AuthCan>
+
+          {/* {ability.can('delete', 'Process') && (
             <Tooltip placement="top" title={'Delete'}>
               <DeleteOutlined
                 onClick={(e) => {
                   e.stopPropagation();
-                  // if (openModalWhenDelete) {
-                  //   setDeleteProcessIds([record.definitionId]);
-                  // } else {
-                  //   deleteProcess({
-                  //     params: {
-                  //       path: {
-                  //         definitionId: record.definitionId as string,
-                  //       },
-                  //     },
-                  //   });
-                  // }
                   setDeleteProcessIds([record.definitionId]);
                   setSelection([record.definitionId]);
                 }}
               />
             </Tooltip>
-          )}
+          )} */}
         </>
       );
     },
@@ -195,6 +213,7 @@ const ProcessList: FC<ProcessListProps> = ({
       setCopyProcessIds,
       setDeleteProcessIds,
       setSelection,
+      deleteProcessIds
     ],
   );
 
@@ -519,11 +538,11 @@ const ProcessList: FC<ProcessListProps> = ({
         processKeys={copyProcessKeys}
         setSelection={setSelection}
       />
-      <ProcessDeleteModal
+      {/* <ProcessDeleteModal
         setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessKeys}
+        processKeys={deleteProcessIds}
         setSelection={setSelection}
-      />
+      /> */}
     </>
   );
 };

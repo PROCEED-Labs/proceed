@@ -133,13 +133,8 @@ export type ApiData<
 function getKeys(path: any, params: any) {
   const keys = [path];
 
-  if (
-    typeof params === 'object' &&
-    'params' in params &&
-    typeof params.params === 'object' &&
-    'path' in params.params
-  ) {
-    keys.push(params.params.path as any);
+  if (typeof params === 'object' && 'params' in params && typeof params.params === 'object') {
+    keys.push(params.params as any);
   }
 
   return keys;

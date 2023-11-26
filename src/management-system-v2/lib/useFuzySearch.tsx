@@ -20,7 +20,9 @@ function highlightText<TObj>(
 
   const result: JSX.Element[] = [];
   let lastIndex = 0;
-  for (const [start, end] of matches.indices) {
+  const sortedMatches = matches.indices.toSorted((a, b) => a[0] - b[0]);
+
+  for (const [start, end] of sortedMatches) {
     if (lastIndex < start)
       result.push(<span key={lastIndex}>{value.slice(lastIndex, start)}</span>);
 

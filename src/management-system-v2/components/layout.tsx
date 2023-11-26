@@ -39,7 +39,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
             backgroundColor: '#fff',
             borderRight: '1px solid #eee',
           }}
-          className={styles.Sider}
+          className={cn(styles.Sider, breakpoint.xs ? styles.SiderNone : "")}
           collapsible
           collapsed={collapsed}
           onCollapse={(collapsed) => setCollapsed(collapsed)}

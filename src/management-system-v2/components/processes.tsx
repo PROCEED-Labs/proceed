@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import { Space, Button, Tooltip, Popconfirm } from 'antd';
+import { Space, Button, Tooltip, Popconfirm, Grid } from 'antd';
 import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
@@ -113,6 +113,8 @@ const Processes: FC = () => {
     setSelectedRowKeys([]);
   }, [deleteProcess, selectedRowKeys]);
 
+  const breakpoint = Grid.useBreakpoint();
+
   const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
   const [copyProcessIds, setCopyProcessIds] = useState<string[]>([]);
   const [deleteProcessIds, setDeleteProcessIds] = useState<string[]>([]);
@@ -200,12 +202,9 @@ const Processes: FC = () => {
         setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
         /* DEL */
       } else if (e.key === 'Delete') {
+        //TODO: change to smth else!
         if (ability.can('delete', 'Process')) {
-          if (
-            (
-              // openModalWhenDelete &&
-              selectedRowKeys.length)
-          ) {
+          if (selectedRowKeys.length) {
             setDeleteProcessIds(selectedRowKeys as string[]);
           } else {
             deleteSelectedProcesses();
@@ -339,7 +338,7 @@ const Processes: FC = () => {
           )}
         </div>
         {/* Meta Data Panel */}
-        <MetaData data={filteredData} selection={selectedRowKeys} />
+        {breakpoint.sm ? <MetaData data={filteredData} selection={selectedRowKeys} /> : null}
       </div>
       <ProcessExportModal
         processes={exportProcessIds.map((definitionId) => ({ definitionId }))}

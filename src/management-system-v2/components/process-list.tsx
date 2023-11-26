@@ -110,19 +110,19 @@ const ProcessList: FC<ProcessListProps> = ({
     onSettled: refreshData,
   });
 
-  const deleteSelectedProcesses = useCallback(() => {
-    selection.forEach((id) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: id as string,
-          },
-        },
-        parseAs: 'text',
-      });
-    });
-    setSelection([]);
-  }, [deleteProcess, selection]);
+  // const deleteSelectedProcesses = useCallback(() => {
+  //   selection.forEach((id) => {
+  //     deleteProcess({
+  //       params: {
+  //         path: {
+  //           definitionId: id as string,
+  //         },
+  //       },
+  //       parseAs: 'text',
+  //     });
+  //   });
+  //   setSelection([]);
+  // }, [deleteProcess, selection]);
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -168,28 +168,24 @@ const ProcessList: FC<ProcessListProps> = ({
 
 
           {/*
-          TODO: delete doesn't work, yet */}
-          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+          TODO: delete with Popconfirm doesn't work, yet */}
+
+          {/* <AuthCan action="delete" resource={toCaslResource('Process', process)}>
             <Tooltip placement="top" title={'Delete'}>
               <Popconfirm
                 title="Delete Process"
                 description="Are you sure you want to delete this process?"
                 onConfirm={() => {
                   setSelection([record.definitionId])
-                  // console.log(record.definitionId)
-                  // setDeleteProcessIds([record.definitionId])
-                  // console.log(deleteProcessIds)
-                  // setDeleteProcessIds(['_801edcc1-59c4-4c7f-a3ba-11005ef4995e'])
-                  // console.log(deleteProcessIds)
                   deleteSelectedProcesses()
                 }}
               >
                 <Button icon={<DeleteOutlined />} type="text" />
               </Popconfirm>
             </Tooltip>
-          </AuthCan>
+          </AuthCan> */}
 
-          {/* {ability.can('delete', 'Process') && (
+          {ability.can('delete', 'Process') && (
             <Tooltip placement="top" title={'Delete'}>
               <DeleteOutlined
                 onClick={(e) => {
@@ -199,7 +195,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 }}
               />
             </Tooltip>
-          )} */}
+          )}
         </>
       );
     },
@@ -284,6 +280,7 @@ const ProcessList: FC<ProcessListProps> = ({
         ) : (
           ''
         ),
+      responsive: ['xs']
     },
 
     {
@@ -314,7 +311,9 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.definitionName.highlighted}
         </span>
       ),
+      responsive: ['xs', 'sm']
     },
+
     {
       title: 'Description',
       dataIndex: 'description',
@@ -341,6 +340,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.description.highlighted}
         </div>
       ),
+      responsive: ['sm']
     },
 
     {
@@ -358,7 +358,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md']
     },
+
     {
       title: 'Created On',
       dataIndex: 'createdOn',
@@ -374,7 +376,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md']
     },
+
     {
       title: 'File Size',
       key: 'File Size',
@@ -388,7 +392,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md']
     },
+
     {
       title: 'Owner',
       dataIndex: 'owner',
@@ -403,7 +409,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md']
     },
+
     {
       fixed: 'right',
       width: 160,
@@ -538,11 +546,11 @@ const ProcessList: FC<ProcessListProps> = ({
         processKeys={copyProcessKeys}
         setSelection={setSelection}
       />
-      {/* <ProcessDeleteModal
+      <ProcessDeleteModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}
         setSelection={setSelection}
-      /> */}
+      />
     </>
   );
 };

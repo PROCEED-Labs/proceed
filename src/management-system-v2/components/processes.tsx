@@ -26,8 +26,8 @@ import {
   setTargetNamespace,
   setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
-import ProcessDeleteModal from './process-delete';
-//import ProcessDeleteSingleModal from './process-delete-single';
+// import ProcessDeleteModal from './process-delete';
+// import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';

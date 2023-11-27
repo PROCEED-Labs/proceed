@@ -31,7 +31,7 @@ import ProcessEditButton from './process-edit-button';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-import ProcessDeleteModal from './process-delete';
+// import ProcessDeleteModal from './process-delete';
 // import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/lib/clientAuthComponents';
@@ -110,19 +110,19 @@ const ProcessList: FC<ProcessListProps> = ({
     onSettled: refreshData,
   });
 
-  // const deleteSelectedProcesses = useCallback(() => {
-  //   selection.forEach((id) => {
-  //     deleteProcess({
-  //       params: {
-  //         path: {
-  //           definitionId: id as string,
-  //         },
-  //       },
-  //       parseAs: 'text',
-  //     });
-  //   });
-  //   setSelection([]);
-  // }, [deleteProcess, selection]);
+  const deleteSelectedProcesses = useCallback(() => {
+    selection.forEach((id) => {
+      deleteProcess({
+        params: {
+          path: {
+            definitionId: id as string,
+          },
+        },
+        parseAs: 'text',
+      });
+    });
+    setSelection([]);
+  }, [deleteProcess, selection]);
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -170,7 +170,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {/*
           TODO: delete with Popconfirm doesn't work, yet */}
 
-          {/* <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
             <Tooltip placement="top" title={'Delete'}>
               <Popconfirm
                 title="Delete Process"
@@ -183,9 +183,9 @@ const ProcessList: FC<ProcessListProps> = ({
                 <Button icon={<DeleteOutlined />} type="text" />
               </Popconfirm>
             </Tooltip>
-          </AuthCan> */}
+          </AuthCan>
 
-          {ability.can('delete', 'Process') && (
+          {/* {ability.can('delete', 'Process') && (
             <Tooltip placement="top" title={'Delete'}>
               <DeleteOutlined
                 onClick={(e) => {
@@ -195,7 +195,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 }}
               />
             </Tooltip>
-          )}
+          )} */}
         </>
       );
     },
@@ -546,11 +546,11 @@ const ProcessList: FC<ProcessListProps> = ({
         processKeys={copyProcessKeys}
         setSelection={setSelection}
       />
-      <ProcessDeleteModal
+      {/* <ProcessDeleteModal
         setDeleteProcessIds={setDeleteProcessIds}
         processKeys={deleteProcessIds}
         setSelection={setSelection}
-      />
+      /> */}
     </>
   );
 };

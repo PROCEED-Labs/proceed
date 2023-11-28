@@ -195,7 +195,15 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
 
   return (
     <>
-      <div style={{ position: 'absolute', zIndex: 10, padding: '12px', top: '80px' }}>
+      <div
+        style={{
+          position: 'absolute',
+          zIndex: 10,
+          padding: '12px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
+      >
         <Space.Compact size="large" direction="vertical">
           <AuthCan action="create" resource="Process">
             <Tooltip title="Create a new Process using this Version">

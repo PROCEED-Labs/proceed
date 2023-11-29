@@ -125,7 +125,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     <>
       <Toolbar>
         <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-          {!editingDisabled && modeler && (
+          {!editingDisabled && modeler ? (
             <ToolbarGroup>
               <Tooltip title="Undo">
                 <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
@@ -134,6 +134,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
               </Tooltip>
             </ToolbarGroup>
+          ) : (
+            <div></div>
           )}
           <ToolbarGroup>
             {/* <Button>Test</Button>

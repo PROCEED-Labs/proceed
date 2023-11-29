@@ -6,10 +6,8 @@ import styles from './user-profile.module.scss';
 import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut, useSession } from 'next-auth/react';
-import InterfaceSettings from '@/app/(dashboard)/profile/interface-settings';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
-import Content from '@/components/content';
 
 const UserProfile: FC = () => {
   const { data } = useSession();
@@ -165,7 +163,6 @@ const UserProfile: FC = () => {
             </Space>
           </Skeleton>
         </Card>
-        <InterfaceSettings />
       </Space>
     </>
   );

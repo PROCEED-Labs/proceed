@@ -6,7 +6,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
@@ -40,6 +40,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [initialized, setInitialized] = useState(false);
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
+  const router = useRouter();
 
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
@@ -101,7 +102,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         setEditingDisabled(false);
       }
 
-      // allow keyboard shortcuts like copy (strg+c) and paste (strg+v) etc.
+      // allow keyboard shortcuts like copy (ctrl+c) and paste (ctrl+v) etc.
       (modeler.current.get('keyboard') as any).bind(document);
 
       // create a custom copy behaviour where the whole process or selected parts can be copied to the clipboard as an image
@@ -115,6 +116,28 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         },
         'keyboard.keyup',
       );
+
+      // TODO: stay in the current subprocess when the page or the modeler reloads (unless the process is changed or the subprocess does not exist anymore)
+      modeler.current.on('root.set', (event: any) => {
+        // when the current root (the visible layer [the main process/collaboration or some collapsed subprocess]) is changed to a subprocess add its id to the query
+        const query = [] as string[];
+
+        if (selectedVersionId) {
+          query.push(`version=${selectedVersionId}`);
+        }
+
+        if (event.element?.businessObject?.$type === 'bpmn:SubProcess') {
+          query.push(`subprocess=${event.element.businessObject.id}`);
+        }
+
+        const queryString = query.reduce((string, el, index) => {
+          string += index ? '&' : '?';
+          string += el;
+          return string;
+        }, '');
+
+        router.push(`/processes/${processId}${queryString}`);
+      });
 
       setModeler(modeler.current);
       setInitialized(true);

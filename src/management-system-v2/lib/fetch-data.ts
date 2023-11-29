@@ -12,6 +12,7 @@ import { FilterKeys, PathsWithMethod } from 'openapi-typescript-helpers';
 import { paths } from './openapiSchema';
 import { useCallback, useMemo } from 'react';
 import { useCsrfTokenStore } from './csrfTokenStore';
+import { Prettify } from './typescript-utils';
 
 const BASE_URL = process.env.API_URL;
 type Paths = paths extends Record<string, any> ? paths : never;
@@ -104,7 +105,6 @@ export const del: <P_3 extends PathsWithMethod<Paths, 'delete'>>(
   >
 > = addAuthHeaders(apiClient.DELETE);
 
-type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof T]: T[K] } & {};
 type QueryData<T extends (...args: any) => any> = Prettify<
   Extract<Awaited<ReturnType<T>>, { data: any }>['data']
 >;
@@ -133,13 +133,8 @@ export type ApiData<
 function getKeys(path: any, params: any) {
   const keys = [path];
 
-  if (
-    typeof params === 'object' &&
-    'params' in params &&
-    typeof params.params === 'object' &&
-    'path' in params.params
-  ) {
-    keys.push(params.params.path as any);
+  if (typeof params === 'object' && 'params' in params && typeof params.params === 'object') {
+    keys.push(params.params as any);
   }
 
   return keys;

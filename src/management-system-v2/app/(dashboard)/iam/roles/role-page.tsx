@@ -2,8 +2,8 @@
 
 import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, Space, Button, Result, Table, App } from 'antd';
-import { useGetAsset, useDeleteAsset, ApiData } from '@/lib/fetch-data';
+import { Space, Button, Result, Table, App } from 'antd';
+import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
@@ -11,12 +11,8 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
-import { AuthCan } from '@/lib/clientAuthComponents';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ConfirmationButton from '@/components/confirmation-button';
-import TableHoverableActions from '@/components/table-hoverable-actions';
-
-type Role = ApiData<'/roles', 'get'>[number];
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
@@ -27,12 +23,17 @@ const RolesPage: FC = () => {
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
   });
 
-  const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch(roles || [], ['name'], {
-    useSearchParams: false,
+  const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch({
+    data: roles || [],
+    keys: ['name'],
+    highlightedKeys: ['name'],
+    transformData: (items) =>
+      items.map((item) => ({ ...item.item, name: item.item.name.highlighted })),
   });
+  type FilteredRole = (typeof filteredRoles)[number];
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [selectedRow, setSelectedRows] = useState<Role[]>([]);
+  const [selectedRow, setSelectedRows] = useState<FilteredRole[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const cannotDeleteSelected = selectedRow.some(
@@ -50,12 +51,16 @@ const RolesPage: FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'display',
-      render: (name: string, role: Role) => <Link href={`/iam/roles/${role.id}`}>{name}</Link>,
+      render: (name: string, role: FilteredRole) => (
+        <Link style={{ color: '#000' }} href={`/iam/roles/${role.id}`}>
+          {name}
+        </Link>
+      ),
     },
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (_: any, record: Role) => record.members.length,
+      render: (_: any, record: FilteredRole) => record.members.length,
       key: 'username',
     },
     {
@@ -63,7 +68,7 @@ const RolesPage: FC = () => {
       key: 'tooltip',
       title: '',
       width: 100,
-      render: (id: string, role: Role) => (
+      render: (id: string, role: FilteredRole) => (
         <ConfirmationButton
           title="Delete Role"
           description="Are you sure you want to delete this role?"
@@ -124,7 +129,7 @@ const RolesPage: FC = () => {
         }}
       />
 
-      <Table
+      <Table<FilteredRole>
         columns={columns}
         dataSource={filteredRoles}
         onRow={({ id }) => ({

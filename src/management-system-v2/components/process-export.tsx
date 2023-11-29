@@ -2,7 +2,17 @@
 
 import React, { useState } from 'react';
 
-import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
+import {
+  Modal,
+  Checkbox,
+  Radio,
+  RadioChangeEvent,
+  Space,
+  Flex,
+  Divider,
+  Tooltip,
+  Slider,
+} from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
@@ -12,6 +22,7 @@ const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
   { label: 'PDF', value: 'pdf' },
   { label: 'SVG', value: 'svg' },
+  { label: 'PNG', value: 'png' },
 ];
 
 const exportSubOptions = {
@@ -62,6 +73,18 @@ const exportSubOptions = {
       tooltip: 'Also export content of all collapsed subprocesses',
     },
   ],
+  png: [
+    {
+      label: 'with referenced processes',
+      value: 'imports',
+      tooltip: 'Also export all referenced processes used in call-activities',
+    },
+    {
+      label: 'with collapsed subprocesses',
+      value: 'subprocesses',
+      tooltip: 'Also export content of all collapsed subprocesses',
+    },
+  ],
 };
 
 type ProcessExportModalProps = {
@@ -73,6 +96,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
+  const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -97,6 +121,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         imports: selectedOptions.some((el) => el === 'imports'),
         metaData: selectedOptions.some((el) => el === 'metaData'),
         a4: selectedOptions.some((el) => el === 'a4'),
+        scaling: pngScalingFactor,
       },
       processes,
     );
@@ -117,19 +142,43 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
   );
 
   const optionSelection = (
-    <Checkbox.Group
-      onChange={handleOptionSelectionChange}
-      value={selectedOptions}
-      style={{ width: '50%' }}
-    >
-      <Space direction="vertical">
-        {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
-          <Tooltip placement="left" title={tooltip} key={label}>
-            <Checkbox value={value}>{label}</Checkbox>
+    <Space direction="vertical">
+      <Checkbox.Group
+        onChange={handleOptionSelectionChange}
+        value={selectedOptions}
+        style={{ width: '100%' }}
+      >
+        <Space direction="vertical">
+          {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
+            <Tooltip placement="left" title={tooltip} key={label}>
+              <Checkbox value={value}>{label}</Checkbox>
+            </Tooltip>
+          ))}
+        </Space>
+      </Checkbox.Group>
+      {selectedType === 'png' && (
+        <div style={{ marginTop: '10px' }}>
+          <Tooltip placement="left" title="Export with different image resolutions">
+            <span>Quality:</span>
           </Tooltip>
-        ))}
-      </Space>
-    </Checkbox.Group>
+
+          <Radio.Group
+            onChange={(e) => setPngScalingFactor(e.target.value)}
+            value={pngScalingFactor}
+          >
+            <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
+              <Radio value={1.5}>Normal</Radio>
+            </Tooltip>
+            <Tooltip placement="bottom" title="Medium resolution and medium file size">
+              <Radio value={2.5}>Good</Radio>
+            </Tooltip>
+            <Tooltip placement="bottom" title="Highest resolution and biggest file size">
+              <Radio value={4}>Excellent</Radio>
+            </Tooltip>
+          </Radio.Group>
+        </div>
+      )}
+    </Space>
   );
 
   return (
@@ -141,6 +190,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
         onCancel={handleClose}
         centered
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
+        width={540}
       >
         <Flex>
           {typeSelection}

@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  MenuProps,
-  Row,
-  Table,
-  TableColumnProps,
-  TableColumnsType,
-  Tooltip,
-} from 'antd';
+import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,
   useState,
@@ -30,7 +20,7 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { ColumnType, TableRowSelection } from 'antd/es/table/interface';
+import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import Preview from './previewProcess';
@@ -39,17 +29,15 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import ProcessEditButton from './process-edit-button';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { ApiData, useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
+import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/lib/clientAuthComponents';
-
-type Processes = ApiData<'/process', 'get'>;
-type Process = Processes[number];
+import { ProcessListProcess } from './processes';
 
 type ProcessListProps = PropsWithChildren<{
-  data?: Processes;
+  data?: ProcessListProcess[];
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
@@ -79,7 +67,6 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelection,
   isLoading,
   onExportProcess,
-  search,
   setDeleteProcessIds,
   deleteProcessKeys,
 }) => {
@@ -90,13 +77,13 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
 
-  const [hovered, setHovered] = useState<Process | undefined>(undefined);
+  const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const favourites = [0];
 
-  const [previewProcess, setPreviewProcess] = useState<Process>();
+  const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -110,48 +97,6 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const ability = useAbilityStore((state) => state.ability);
 
-  const clipAndHighlightText = useCallback(
-    (dataIndexElement: any) => {
-      const searchLower = search?.toLowerCase();
-      const dataIndexElementLower = dataIndexElement?.toLowerCase();
-      const withoutSearchTerm = dataIndexElementLower?.split(searchLower);
-      let res = dataIndexElement;
-      if (search && withoutSearchTerm?.length > 1) {
-        let lastIndex = 0;
-        res = withoutSearchTerm.map(
-          (word: string | any[], i: React.Key | null | undefined, arr: string | any[]) => {
-            const highlightedWord = dataIndexElement.slice(lastIndex, lastIndex + word.length);
-            lastIndex += word.length + search.length;
-            if (i === arr.length - 1) return highlightedWord;
-
-            return (
-              <span key={i}>
-                <span>{highlightedWord}</span>
-                <span style={{ color: '#3e93de' }}>
-                  {dataIndexElement.slice(lastIndex - search.length, lastIndex)}
-                </span>
-              </span>
-            );
-          },
-        );
-      }
-
-      return (
-        <div
-          style={{
-            width: '10vw',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {res}
-        </div>
-      );
-    },
-    [search],
-  );
-
   const { mutateAsync: createProcess } = usePostAsset('/process');
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
@@ -159,7 +104,7 @@ const ProcessList: FC<ProcessListProps> = ({
   });
 
   const actionBarGenerator = useCallback(
-    (record: Process) => {
+    (record: ProcessListProcess) => {
       return (
         <>
           <Tooltip placement="top" title={'Preview'}>
@@ -179,7 +124,7 @@ const ProcessList: FC<ProcessListProps> = ({
                     bpmn: record.bpmn || '',
                     variables: [
                       {
-                        name: `${record.definitionName} Copy`,
+                        name: `${record.definitionName.value} Copy`,
                         type: '',
                       },
                     ],
@@ -248,22 +193,22 @@ const ProcessList: FC<ProcessListProps> = ({
 
   // rowSelection object indicates the need for row selection
 
-  const rowSelection: TableRowSelection<Process> = {
+  const rowSelection: TableRowSelection<ProcessListProcess> = {
     selectedRowKeys: selection,
-    onChange: (selectedRowKeys: React.Key[], selectedRows: Processes) => {
+    onChange: (selectedRowKeys: React.Key[]) => {
       setSelection(selectedRowKeys);
     },
-    getCheckboxProps: (record: Processes[number]) => ({
+    getCheckboxProps: (record: ProcessListProcess) => ({
       name: record.definitionId,
     }),
-    onSelect: (record, selected, selectedRows, nativeEvent) => {
+    onSelect: (_, __, selectedRows) => {
       // setSelection(selectedRows);
       setSelection(selectedRows.map((row) => row.definitionId));
     },
     onSelectNone: () => {
       setSelection([]);
     },
-    onSelectAll: (selected, selectedRows, changeRows) => {
+    onSelectAll: (_, selectedRows) => {
       // setSelection(selectedRows);
       setSelection(selectedRows.map((row) => row.definitionId));
     },
@@ -299,7 +244,7 @@ const ProcessList: FC<ProcessListProps> = ({
     key: title,
   }));
 
-  const columns: TableColumnsType<Processes[number]> = [
+  const columns: TableColumnsType<ProcessListProcess> = [
     {
       title: <StarOutlined />,
       dataIndex: 'definitionId',
@@ -320,7 +265,7 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'definitionName',
       key: 'Process Name',
       className: styles.Title,
-      sorter: (a, b) => a.definitionName.localeCompare(b.definitionName),
+      sorter: (a, b) => a.definitionName.value.localeCompare(b.definitionName.value),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
@@ -331,13 +276,24 @@ const ProcessList: FC<ProcessListProps> = ({
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
-      render: clipAndHighlightText,
+      render: (_, record) => (
+        <span
+          style={{
+            width: '10vw',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {record.definitionName.highlighted}
+        </span>
+      ),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      sorter: (a, b) => a.description.localeCompare(b.description),
+      sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       onCell: (record, rowIndex) => ({
         // onClick: (event) => {
         //   // TODO: This is a hack to clear the parallel route when selecting
@@ -347,7 +303,18 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      render: clipAndHighlightText,
+      render: (_, record) => (
+        <div
+          style={{
+            maxWidth: '15vw',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {record.description.highlighted}
+        </div>
+      ),
     },
 
     {

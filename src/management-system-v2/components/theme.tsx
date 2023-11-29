@@ -1,6 +1,4 @@
-// relative import for predev script
-import { useUserPreferences } from '../lib/user-preferences';
-
+import { useUserPreferences } from '@/lib/user-preferences';
 import { ConfigProvider, theme } from 'antd';
 // This React import is required for the JSX to work in the script file.
 import React, { FC, PropsWithChildren } from 'react';

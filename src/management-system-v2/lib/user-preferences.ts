@@ -24,8 +24,6 @@ const defaultPreferences = {
   'ask-before-deleting-single': true,
   'ask-before-copying': true,
   'process-copy-modal-accordion': true,
-  'interface-size': 'middle',
-  'dark-mode-enabled': false,
 } as const;
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(

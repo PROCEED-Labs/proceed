@@ -8,6 +8,8 @@ import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
+import { App } from 'antd';
+
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
 
@@ -41,6 +43,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
+  const { message: messageApi } = App.useApp();
 
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
@@ -117,26 +120,19 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
         'keyboard.keyup',
       );
 
-      // TODO: stay in the current subprocess when the page or the modeler reloads (unless the process is changed or the subprocess does not exist anymore)
       modeler.current.on('root.set', (event: any) => {
         // when the current root (the visible layer [the main process/collaboration or some collapsed subprocess]) is changed to a subprocess add its id to the query
-        const query = [] as string[];
-
-        if (selectedVersionId) {
-          query.push(`version=${selectedVersionId}`);
-        }
-
+        const searchParams = new URLSearchParams(query);
         if (event.element?.businessObject?.$type === 'bpmn:SubProcess') {
-          query.push(`subprocess=${event.element.businessObject.id}`);
+          searchParams.set(`subprocess`, `${event.element.businessObject.id}`);
+        } else {
+          searchParams.delete('subprocess');
         }
-
-        const queryString = query.reduce((string, el, index) => {
-          string += index ? '&' : '?';
-          string += el;
-          return string;
-        }, '');
-
-        router.push(`/processes/${processId}${queryString}`);
+        router.push(
+          `/processes/${processId as string}${
+            searchParams.size ? '?' + searchParams.toString() : ''
+          }`,
+        );
       });
 
       setModeler(modeler.current);
@@ -156,6 +152,20 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
     if (!initialized && modeler.current?.importXML && processBpmn) {
       // import the diagram that was returned by the request
       modeler.current.importXML(processBpmn).then(() => {
+        // stay in the current subprocess when the page or the modeler reloads (unless the subprocess does not exist anymore because the process changed)
+        const subprocessId = query.get('subprocess');
+        if (subprocessId && modeler.current) {
+          const canvas = modeler.current.get('canvas') as any;
+          const subprocessPlane = canvas
+            .getRootElements()
+            .find((el: any) => el.businessObject.id === subprocessId);
+          if (subprocessPlane) canvas.setRootElement(subprocessPlane);
+          else
+            messageApi.info(
+              'The sub-process that was open does not exist anymore. Switched to the main process view.',
+            );
+        }
+
         (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
 

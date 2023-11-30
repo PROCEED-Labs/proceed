@@ -160,11 +160,14 @@ const Processes: FC<ProcessProps> = () => {
             label: selectedVersion.name,
           }}
           onSelect={(_, option) => {
-            if (option.value === -1) {
-              router.push(`/processes/${processId as string}`);
-            } else {
-              router.push(`/processes/${processId as string}?version=${option.value}`);
-            }
+            const searchParams = new URLSearchParams(query);
+            if (!option.value || option.value === -1) searchParams.delete('version');
+            else searchParams.set(`version`, `${option.value}`);
+            router.push(
+              `/processes/${processId as string}${
+                searchParams.size ? '?' + searchParams.toString() : ''
+              }`,
+            );
           }}
           dropdownRender={(menu) => (
             <>

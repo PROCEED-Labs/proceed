@@ -2,7 +2,7 @@ import { ComponentProps, FC, PropsWithChildren, useState } from 'react';
 import { Button, Modal, Tooltip } from 'antd';
 
 type ConfirmationModalProps = {
-  onConfirm: (...args: any[]) => Promise<any> | any;
+  onConfirm: () => Promise<any> | any;
   title: string;
   description: string;
   canCloseWhileLoading?: boolean;

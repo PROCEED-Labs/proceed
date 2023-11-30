@@ -160,6 +160,7 @@ const Processes: FC<ProcessProps> = () => {
             label: selectedVersion.name,
           }}
           onSelect={(_, option) => {
+            // change the version info in the query but keep other info (e.g. the currently open subprocess)
             const searchParams = new URLSearchParams(query);
             if (!option.value || option.value === -1) searchParams.delete('version');
             else searchParams.set(`version`, `${option.value}`);
@@ -209,7 +210,6 @@ const Processes: FC<ProcessProps> = () => {
     /* Sub-Processes-Layers */
     ...subprocessChain.map(({ id, name }, index) => {
       return {
-        // TODO: Elipsis
         title: (
           <Typography.Text
             strong={index === subprocessChain.length - 1}

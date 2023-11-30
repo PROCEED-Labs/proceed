@@ -20,10 +20,10 @@ const UserDataModal: FC<{
   structure: modalInput;
   modalOpen: boolean;
   close: () => void;
-  messageApi: ReturnType<typeof App.useApp>['message'];
-}> = ({ structure, modalOpen, close, messageApi }) => {
+}> = ({ structure, modalOpen, close }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { message } = App.useApp();
 
   const { data } = useSession();
   const user = data!.user;
@@ -72,10 +72,10 @@ const UserDataModal: FC<{
         });
       }
 
-      messageApi.success({ content: 'Profile updated' });
+      message.success({ content: 'Profile updated' });
       close();
     } catch (e) {
-      messageApi.error({ content: 'An error ocurred' });
+      message.error({ content: 'An error ocurred' });
     } finally {
       setLoading(false);
     }

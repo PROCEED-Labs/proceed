@@ -60,7 +60,6 @@ const UserProfile: FC = () => {
           title: 'Change your password',
           password: true,
         }}
-        messageApi={messageApi}
       />
       <UserDataModal
         modalOpen={changeEmailModalOpen}
@@ -76,7 +75,6 @@ const UserProfile: FC = () => {
             },
           ],
         }}
-        messageApi={messageApi}
       />
       <UserDataModal
         modalOpen={changeNameModalOpen}
@@ -102,7 +100,6 @@ const UserProfile: FC = () => {
             },
           ],
         }}
-        messageApi={messageApi}
       />
 
       <Space direction="vertical" className={styles.Container}>

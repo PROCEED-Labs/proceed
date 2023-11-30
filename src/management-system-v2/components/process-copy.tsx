@@ -1,6 +1,6 @@
-import { Dispatch, FC, Key, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { Dispatch, FC, Key, SetStateAction, useMemo } from 'react';
 
-import ProcessCreationModal, { ProcessData } from './process-creation';
+import ProcessCreationModal from './process-creation';
 import { useGetAsset } from '@/lib/fetch-data';
 
 import { generateDefinitionsId } from '@proceed/bpmn-helper';

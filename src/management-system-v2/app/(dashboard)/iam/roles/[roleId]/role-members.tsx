@@ -10,7 +10,8 @@ import {
   usePostAsset,
 } from '@/lib/fetch-data';
 import UserList, { UserListProps } from '@/components/user-list';
-import { Button, Modal, Popconfirm, Tooltip } from 'antd';
+import { Button, Modal, Tooltip } from 'antd';
+import ConfirmationButton from '@/components/confirmation-button';
 
 type Role = ApiData<'/roles', 'get'>[number];
 
@@ -60,15 +61,18 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
       <UserList
         users={usersNotInRole}
         loading={isLoadingUsers || isLoadingMutation}
-        columns={(clearSelected) => [
+        columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
-            render: (_, user) => (
+            render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
                   type="text"
                   onClick={() => addUsers([user], clearSelected)}
+                  style={{
+                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
+                  }}
                 />
               </Tooltip>
             ),
@@ -112,34 +116,39 @@ const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoad
       <UserList
         users={role.members.map((member) => ({ ...member, id: member.userId }))}
         loading={isLoadingDelete || isLoadingRole}
-        columns={(clearSelected) => [
+        columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
             key: 'remove',
             title: '',
             width: 100,
             render: (id: string) => (
-              <Tooltip placement="top" title="Remove member">
-                <Popconfirm
-                  title="Remove member"
+              <Tooltip placement="top" title="Remove Member">
+                <ConfirmationButton
+                  title="Remove Member"
                   description="Are you sure you want to remove this member?"
                   onConfirm={() => deleteMembers([id], clearSelected)}
-                >
-                  <Button icon={<DeleteOutlined />} type="text" />
-                </Popconfirm>
+                  buttonProps={{
+                    style: { opacity: hoveredId == id && selectedRowKeys.length === 0 ? 1 : 0 },
+                    icon: <DeleteOutlined />,
+                    type: 'text',
+                  }}
+                />
               </Tooltip>
             ),
           },
         ]}
         selectedRowActions={(ids, clearIds) => (
-          <Tooltip placement="top" title="Remove members">
-            <Popconfirm
-              title="Remove member"
-              description="Are you sure you want to remove this member?"
+          <Tooltip placement="top" title="Remove Members">
+            <ConfirmationButton
+              title="Remove Members"
+              description="Are you sure you want to remove the selected members?"
               onConfirm={() => deleteMembers(ids, clearIds)}
-            >
-              <Button icon={<DeleteOutlined />} type="text" />
-            </Popconfirm>
+              buttonProps={{
+                icon: <DeleteOutlined />,
+                type: 'text',
+              }}
+            />
           </Tooltip>
         )}
         searchBarRightNode={

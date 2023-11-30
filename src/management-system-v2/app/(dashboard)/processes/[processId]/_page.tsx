@@ -8,17 +8,7 @@ import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
 import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
-import { fetchProcessVersionBpmn } from '@/lib/process-queries';
-import {
-  BreadcrumbProps,
-  Button,
-  Divider,
-  Select,
-  SelectProps,
-  Space,
-  theme,
-  Typography,
-} from 'antd';
+import { BreadcrumbProps, Divider, Select, SelectProps, Space, theme, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
@@ -26,8 +16,6 @@ import VersionCreationButton from '@/components/version-creation-button';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
-
-import { toBpmnObject, getElementById, getElementDI } from '@proceed/bpmn-helper';
 
 type SubprocessInfo = {
   id: string;
@@ -77,43 +65,22 @@ const Processes: FC<ProcessProps> = () => {
   const selectedVersion =
     process?.versions.find((version) => version.version === selectedVersionId) ?? LATEST_VERSION;
 
-  const openSubprocessId = query.get('subprocess') || '';
-
-  // TODO: get the bpmn directly from the modeler instead of fetching it from the server (avoids inconsistencies)
+  // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   useEffect(() => {
-    let canceledByNewerRequest = false;
+    if (modeler) {
+      modeler.on('root.set', (event: any) => {
+        const newSubprocessChain = [] as SubprocessInfo[];
 
-    const updateSubprocessChain = async () => {
-      const newSubprocessChain = [] as SubprocessInfo[];
-
-      if (processId && openSubprocessId) {
-        const bpmn = await fetchProcessVersionBpmn(
-          processId as string,
-          selectedVersionId > 0 ? selectedVersionId : undefined,
-        );
-
-        if (bpmn) {
-          const bpmnObj = await toBpmnObject(bpmn);
-          let element = getElementById(bpmnObj, openSubprocessId) as any;
-
-          while (element?.$type === 'bpmn:SubProcess') {
-            newSubprocessChain.unshift({ id: element.id, name: element.name });
-            element = element.$parent;
-          }
+        let element = event.element?.businessObject;
+        while (element?.$type === 'bpmn:SubProcess') {
+          newSubprocessChain.unshift({ id: element.id, name: element.name });
+          element = element.$parent;
         }
-      }
 
-      if (!canceledByNewerRequest) {
         setSubprocessChain(newSubprocessChain);
-      }
-    };
-
-    updateSubprocessChain();
-
-    return () => {
-      canceledByNewerRequest = true;
-    };
-  }, [processId, selectedVersionId, openSubprocessId]);
+      });
+    }
+  }, [modeler]);
 
   useEffect(() => {
     // Reset closed state when page is not minimized anymore.
@@ -221,7 +188,6 @@ const Processes: FC<ProcessProps> = () => {
         />
       ),
     },
-    // TODO: somehow get a consistent styling with the selects above
     /* Root-Process-Layer */
     {
       title: <Typography.Text strong={!subprocessChain.length}>[Process Layer]</Typography.Text>,
@@ -232,7 +198,6 @@ const Processes: FC<ProcessProps> = () => {
           const processDIId = canvas
             .getRootElements()
             .find((el: any) => el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration');
-          console.log(processDIId);
           canvas.setRootElement(canvas.findRoot(processDIId));
           canvas.zoom('fit-viewport', 'auto');
         }
@@ -255,9 +220,12 @@ const Processes: FC<ProcessProps> = () => {
           // move to the view of another subprocess
           if (modeler && index < subprocessChain.length - 1) {
             const canvas = modeler.get('canvas') as any;
-            const subprocessDIId = `${id}_plane`;
-            console.log(subprocessDIId);
-            canvas.setRootElement(canvas.findRoot(subprocessDIId));
+
+            const subprocessPlane = canvas
+              .getRootElements()
+              .find((el: any) => el.businessObject.id === id);
+            if (!subprocessPlane) return;
+            canvas.setRootElement(subprocessPlane);
             canvas.zoom('fit-viewport', 'auto');
           }
         },

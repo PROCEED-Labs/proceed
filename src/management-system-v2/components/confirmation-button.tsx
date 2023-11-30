@@ -52,7 +52,7 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
         onOk={onConfirmWrapper}
         confirmLoading={loading}
         onCancel={() => (canCloseWhileLoading || !loading) && setModalOpen(false)}
-        cancelButtonProps={{ disabled: loading }}
+        cancelButtonProps={{ disabled: !canCloseWhileLoading && loading }}
       >
         <p>{description}</p>
       </Modal>

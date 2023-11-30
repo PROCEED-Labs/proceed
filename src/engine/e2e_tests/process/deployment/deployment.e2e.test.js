@@ -8,12 +8,16 @@ jest.setTimeout(100000);
 
 function killEngineProcess(engineProcess) {
   return new Promise((resolve) => {
+    const i = Math.random();
     engineProcess.on('exit', () => {
+      console.log('engineProcess killed', i);
       resolve();
     });
     engineProcess.on('error', () => {
+      console.log('engineProcess error', i);
       resolve();
     });
+    console.log('engineProcess kill command', i);
     engineProcess.kill();
   });
 }
@@ -77,11 +81,9 @@ describe('Test deploying a process', () => {
 
   afterAll(async () => {
     // kills all processes and their subprocesses
-    const killCommands = engineProcesses.map((engineProcess) =>
-      killEngineProcess(engineProcess.process),
-    );
-
-    await Promise.all(killCommands);
+    for (engineProcess of engineProcesses) {
+      await killEngineProcess(engineProcess.process);
+    }
   });
 
   beforeEach(() => {

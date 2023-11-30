@@ -1,0 +1,12 @@
+.Container {
+  display: flex;
+  margin: auto;
+  width: 90%;
+  max-width: 800px;
+}
+
+.Table {
+  tr:last-child > td {
+    border: none;
+  }
+}

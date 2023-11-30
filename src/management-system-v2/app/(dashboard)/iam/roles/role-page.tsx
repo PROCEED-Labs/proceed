@@ -2,7 +2,7 @@
 
 import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, Space, Button, Result, Table, Popconfirm, App } from 'antd';
+import { Space, Button, Result, Table, App } from 'antd';
 import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
@@ -11,8 +11,8 @@ import useFuzySearch from '@/lib/useFuzySearch';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
-import { AuthCan } from '@/lib/clientAuthComponents';
 import { useAbilityStore } from '@/lib/abilityStore';
+import ConfirmationButton from '@/components/confirmation-button';
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
@@ -34,6 +34,7 @@ const RolesPage: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRow, setSelectedRows] = useState<FilteredRole[]>([]);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const cannotDeleteSelected = selectedRow.some(
     (role) => !ability.can('delete', toCaslResource('Role', role)),
@@ -67,20 +68,26 @@ const RolesPage: FC = () => {
       key: 'tooltip',
       title: '',
       width: 100,
-      render: (id: string, role: FilteredRole) =>
-        selectedRowKeys.length === 0 ? (
-          <AuthCan action="delete" resource={toCaslResource('Role', role)}>
-            <Tooltip placement="top" title={'Delete'}>
-              <Popconfirm
-                title="Delete Role"
-                description="Are you sure you want to delete this role?"
-                onConfirm={() => deleteRoles([id])}
-              >
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Popconfirm>
-            </Tooltip>
-          </AuthCan>
-        ) : null,
+      render: (id: string, role: FilteredRole) => (
+        <ConfirmationButton
+          title="Delete Role"
+          description="Are you sure you want to delete this role?"
+          onConfirm={() => deleteRoles([id])}
+          buttonProps={{
+            disabled: !ability.can('delete', toCaslResource('Role', role)),
+            style: {
+              opacity: selectedRowKeys.length === 0 && id === hoveredRow ? 1 : 0,
+              // Otherwise the button stretches the row
+              position: 'absolute',
+              margin: 'auto',
+              top: '0',
+              bottom: '0',
+            },
+            icon: <DeleteOutlined />,
+            type: 'text',
+          }}
+        />
+      ),
     },
   ];
 
@@ -102,13 +109,16 @@ const RolesPage: FC = () => {
             <Space size={20}>
               <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
               <span>{selectedRowKeys.length} selected:</span>
-              <Popconfirm
+              <ConfirmationButton
                 title="Delete Roles"
                 description="Are you sure you want to delete the selected roles?"
                 onConfirm={() => deleteRoles(selectedRowKeys)}
-              >
-                <Button type="text" icon={<DeleteOutlined />} disabled={cannotDeleteSelected} />
-              </Popconfirm>
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  disabled: cannotDeleteSelected,
+                  type: 'text',
+                }}
+              />
             </Space>
           ) : null
         }
@@ -120,8 +130,12 @@ const RolesPage: FC = () => {
       />
 
       <Table<FilteredRole>
-        dataSource={filteredRoles}
         columns={columns}
+        dataSource={filteredRoles}
+        onRow={({ id }) => ({
+          onMouseEnter: () => setHoveredRow(id),
+          onMouseLeave: () => setHoveredRow(null),
+        })}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys, selectedRows) => {
@@ -131,7 +145,6 @@ const RolesPage: FC = () => {
         }}
         rowKey="id"
         loading={isLoading || deletingRole}
-        size="middle"
       />
     </Content>
   );

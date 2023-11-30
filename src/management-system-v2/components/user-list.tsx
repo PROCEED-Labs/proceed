@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ComponentProps, FC, ReactNode, useMemo, useState } from 'react';
+import React, { ComponentProps, FC, ReactNode, useState } from 'react';
 import { Space, Avatar, Button, Table, Result } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -16,10 +16,30 @@ type ListUser = ReplaceKeysWithHighlighted<
 >;
 type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefined>;
 
+const defaultColumns = [
+  {
+    title: 'Account',
+    dataIndex: 'display',
+    key: 'display',
+  },
+  {
+    title: 'Username',
+    dataIndex: 'username',
+    key: 'username',
+  },
+  {
+    title: 'Email Adress',
+    dataIndex: 'email',
+    key: 'email',
+  },
+];
+
 export type UserListProps = {
   users: _ListUser[];
   highlightKeys?: boolean;
-  columns?: Column | ((clearSelected: () => void) => Column);
+  columns?:
+    | Column
+    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
   searchBarRightNode?: ReactNode;
@@ -68,32 +88,15 @@ const UserList: FC<UserListProps> = ({
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
 
-  const tableColums = useMemo(() => {
-    const defaultColumns: Column = [
-      {
-        title: 'Account',
-        dataIndex: 'display',
-        key: 'display',
-      },
-      {
-        title: 'Username',
-        key: 'username',
-        render: (_, { username: { highlighted, value } }) => (highlightKeys ? highlighted : value),
-      },
-      {
-        title: 'Email Adress',
-        key: 'email',
-        render: (_, { email: { highlighted, value } }) => (highlightKeys ? highlighted : value),
-      },
+  let tableColumns: Column = defaultColumns;
+  if (typeof columns === 'function')
+    tableColumns = [
+      ...defaultColumns,
+      ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
     ];
-
-    if (!columns) return defaultColumns;
-
-    if (typeof columns === 'function')
-      return [...defaultColumns, ...columns(() => setSelectedRowKeys([]))];
-    else return [...defaultColumns, ...columns];
-  }, [columns, highlightKeys]);
+  else if (columns) tableColumns = [...defaultColumns, ...columns];
 
   if (error)
     <Result
@@ -124,8 +127,12 @@ const UserList: FC<UserListProps> = ({
         rightNode={searchBarRightNode ? searchBarRightNode : null}
       />
       <Table<ListUser>
-        columns={tableColums}
+        columns={tableColumns}
         dataSource={filteredData}
+        onRow={({ id }) => ({
+          onMouseEnter: () => setHoveredRowId(id),
+          onMouseLeave: () => setHoveredRowId(null),
+        })}
         rowSelection={{
           selectedRowKeys,
           onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
@@ -135,7 +142,6 @@ const UserList: FC<UserListProps> = ({
         }}
         rowKey="id"
         loading={loading}
-        size="middle"
       />
     </>
   );

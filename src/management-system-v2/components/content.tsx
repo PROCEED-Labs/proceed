@@ -39,7 +39,6 @@ const Content: FC<ContentProps> = ({
             // Hamburger menu for mobile view
             <Button
               type="text"
-              size="large"
               style={{ marginTop: '20px', marginLeft: '15px' }}
               icon={<MenuOutlined style={{ fontSize: '170%' }} />}
             />

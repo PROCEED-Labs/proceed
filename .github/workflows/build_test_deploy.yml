@@ -43,7 +43,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --frozen-lockfile --ignore-engines # Remove once node-ipc is removed
 
       # Cache for this workflow run.
       - uses: actions/cache@v3

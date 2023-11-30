@@ -39,7 +39,7 @@ export type UserListProps = {
   highlightKeys?: boolean;
   columns?:
     | Column
-    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKets: string[]) => Column);
+    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
   searchBarRightNode?: ReactNode;

@@ -32,17 +32,14 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
     setLoading(false);
   };
 
-  const onConfirmWrapper = () => {
+  const onConfirmWrapper = async () => {
     setLoading(true);
-    const possiblePromise = onConfirm();
 
-    if (
-      typeof possiblePromise === 'object' &&
-      'then' in possiblePromise &&
-      typeof possiblePromise.then === 'function'
-    )
-      possiblePromise.then(clearModal).catch(clearModal);
-    else clearModal();
+    try {
+      await onConfirm();
+    } catch (err) {}
+
+    clearModal();
   };
 
   return (

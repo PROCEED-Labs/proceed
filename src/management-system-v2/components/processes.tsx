@@ -30,7 +30,6 @@ import {
 import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
-import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 

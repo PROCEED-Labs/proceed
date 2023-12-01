@@ -8,7 +8,7 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 
-import React, { FocusEvent, useEffect, useMemo, useState } from 'react';
+import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Input, ColorPicker, Space, Image } from 'antd';
 
@@ -21,7 +21,7 @@ import {
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
-import ResizableElement from './ResizableElement';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import CollapsibleCard from './collapsible-card';
 
 type PropertiesPanelProperties = {
@@ -30,7 +30,6 @@ type PropertiesPanelProperties = {
 
 const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
   const [showInfo, setShowInfo] = useState(true);
-  const [width, setWidth] = useState(450);
   const [name, setName] = useState('');
   const [costsPlanned, setCostsPlanned] = useState('');
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
@@ -153,23 +152,26 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     modeling.updateProperties(selectedElement as any, { documentation: [documentationElement] });
   };
 
+  const resizableElementRef = useRef<ResizableElementRefType>(null);
   return (
     <ResizableElement
-      initialWidth={width}
+      initialWidth={450}
       minWidth={450}
       maxWidth={600}
       style={{ position: 'absolute', top: '65px', right: '12px', height: '70vh' }}
+      ref={resizableElementRef}
     >
       <CollapsibleCard
         show={showInfo}
         onCollapse={() => {
           //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
-          if (showInfo) {
-            setWidth(40);
-          } else {
-            setWidth(450);
+          if (resizableElementRef.current) {
+            if (showInfo) {
+              resizableElementRef.current(40);
+            } else {
+              resizableElementRef.current(450);
+            }
           }
-
           setShowInfo(!showInfo);
         }}
         title="Properties"

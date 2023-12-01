@@ -182,7 +182,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
             <b>General</b>
             <Input
               addonBefore="Name"
-              size="large"
               placeholder={selectedElement.businessObject.name}
               value={name}
               // onChange={(e) => setName(e.target.value)}
@@ -214,7 +213,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
             <b>Properties</b>
             <Input
               prefix={<EuroCircleOutlined className="clock-icon" />}
-              size="large"
               placeholder="Planned Cost"
               value={costsPlanned}
               onChange={(event) => {
@@ -226,7 +224,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
             />
             <Input
               prefix={<ClockCircleOutlined className="clock-icon" />}
-              size="large"
               placeholder="Planned Duration"
               value={timePlannedDuration}
               onChange={(event) => {
@@ -241,7 +238,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <b>Description</b>
             <Input.TextArea
-              size="large"
               placeholder={
                 selectedElement.type !== 'bpmn:Process'
                   ? 'Element Documentation'

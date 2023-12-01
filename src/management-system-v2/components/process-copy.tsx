@@ -3,7 +3,6 @@ import React, { Dispatch, FC, Key, SetStateAction, useCallback, useEffect, useSt
 import styles from './process-copy.module.scss';
 import TextArea from 'antd/es/input/TextArea';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { addUserPreference } from '@/lib/utils';
 import { useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import type { CollapseProps } from 'antd';
 import {
@@ -92,7 +91,7 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
           };
         }),
     );
-    /* 
+    /*
     Do not include data as dependency
     The Blue-Print should only be determined by the processKeys
     */

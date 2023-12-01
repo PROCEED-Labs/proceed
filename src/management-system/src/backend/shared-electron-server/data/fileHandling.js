@@ -271,6 +271,33 @@ export async function getImage(processDefinitionsId, imageFileName) {
 }
 
 /**
+ * Returns all image filenames in a process
+ *
+ * @param {String} processDefinitionsId
+ *
+ * @returns {Promise<string[]>}
+ *    @resolves {Array} Array containing all fileNames for images
+ */
+export function getImageFileNames(processDefinitionsId) {
+  return new Promise((resolve, reject) => {
+    const imagesDir = getImagesDir(processDefinitionsId);
+
+    if (!fse.existsSync(imagesDir)) {
+      resolve([]);
+    }
+
+    fse.readdir(imagesDir, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(files);
+    });
+  });
+}
+
+/**
  * Returns all images in a process
  *
  * @param {String} processDefinitionsId
@@ -311,9 +338,9 @@ export function getImages(processDefinitionsId) {
 /**
  * Saves an image used in a process
  *
- * @param {String} processDefinitionsId the id of the process that contains the user task
- * @param {String} imageId the id of the specific user task
- * @param {String} image an image of the user task
+ * @param {String} processDefinitionsId the id of the process that contains the image
+ * @param {String} imageId the id of the specific image
+ * @param {String} image an image
  */
 export async function saveImage(processDefinitionsId, imageFileName, image) {
   const imagesDir = getImagesDir(processDefinitionsId);
@@ -323,6 +350,18 @@ export async function saveImage(processDefinitionsId, imageFileName, image) {
   fse.writeFileSync(path.join(imagesDir, `${imageFileName}`), image);
 
   eventHandler.dispatch('image_changed', { processDefinitionsId, imageFileName, image });
+}
+
+/**
+ * Deletes an image used in a process
+ *
+ * @param {String} processDefinitionsId the id of the process that contains the image
+ * @param {String} imageId the id of the specific image
+ */
+export async function deleteImage(processDefinitionsId, imageFileName) {
+  const imagesDir = getImagesDir(processDefinitionsId);
+  const filePath = path.join(imagesDir, `${imageFileName}`);
+  fse.unlinkSync(filePath);
 }
 
 /**

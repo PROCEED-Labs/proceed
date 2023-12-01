@@ -3,39 +3,8 @@
 import React, { useState } from 'react';
 
 import { Button, Modal, Form, Input } from 'antd';
-import type { FormInstance, ButtonProps } from 'antd';
-
-const ModalSubmitButton = ({ form, onSubmit }: { form: FormInstance; onSubmit: Function }) => {
-  const [submittable, setSubmittable] = useState(false);
-
-  // Watch all values
-  const values = Form.useWatch([], form);
-
-  React.useEffect(() => {
-    form.validateFields({ validateOnly: true }).then(
-      () => {
-        setSubmittable(true);
-      },
-      () => {
-        setSubmittable(false);
-      },
-    );
-  }, [form, values]);
-
-  return (
-    <Button
-      type="primary"
-      htmlType="submit"
-      disabled={!submittable}
-      onClick={() => {
-        onSubmit(values);
-        form.resetFields();
-      }}
-    >
-      Create Version
-    </Button>
-  );
-};
+import type { ButtonProps } from 'antd';
+import FormSubmitButton from './form-submit-button';
 
 type VersionModalProps = {
   show: boolean;
@@ -60,7 +29,12 @@ const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
         >
           Cancel
         </Button>,
-        <ModalSubmitButton key="submit" form={form} onSubmit={close}></ModalSubmitButton>,
+        <FormSubmitButton
+          key="submit"
+          form={form}
+          onSubmit={close}
+          submitText="Create Version"
+        ></FormSubmitButton>,
       ]}
     >
       <Form form={form} name="versioning" wrapperCol={{ span: 24 }} autoComplete="off">

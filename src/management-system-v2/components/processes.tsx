@@ -17,6 +17,7 @@ import ProcessList from './process-list';
 import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import ProcessCreationButton from './process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { fetchProcessVersionBpmn } from '@/lib/process-queries';
 import {
@@ -276,26 +277,27 @@ const Processes: FC = () => {
               placeholder: 'Search Processes ...',
             }}
             rightNode={
-              <Space.Compact>
-                <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                  onClick={() => {
-                    // addUserPreference({ 'icon-view-in-process-list': false });
-                    addPreferences({ 'icon-view-in-process-list': false });
-                  }}
-                >
-                  <UnorderedListOutlined />
-                </Button>
-                <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                  onClick={() => {
-                    // addUserPreference({ 'icon-view-in-process-list': true });
-                    addPreferences({ 'icon-view-in-process-list': true });
-                  }}
-                >
-                  <AppstoreOutlined />
-                </Button>
-              </Space.Compact>
+              <Space size={16} style={{ paddingLeft: 8 }}>
+                <Space.Compact>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': false });
+                    }}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': true });
+                    }}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+                <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+              </Space>
             }
           />
 
@@ -319,7 +321,7 @@ const Processes: FC = () => {
           )}
         </div>
         {/* Meta Data Panel */}
-        <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
+        <MetaData data={filteredData} selection={selectedRowKeys} />
       </div>
       <ProcessExportModal
         processes={exportProcessIds.map((definitionId) => ({ definitionId }))}

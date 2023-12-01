@@ -92,7 +92,10 @@ async function init() {
   }
 
   backendServer.use(express.text({ type: ['text/plain', 'text/html'] }));
-  backendServer.use(express.json({ limit: '500kb' }));
+  backendServer.use(express.json({ limit: '1mb' }));
+  backendServer.use(
+    express.raw({ type: ['image/jpeg', 'image/png', 'image/svg+xml'], limit: '5mb' }),
+  );
 
   if (config.useAuthorization) {
     if (config.useAuth0) {

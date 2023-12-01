@@ -32,7 +32,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   const breakpoint = Grid.useBreakpoint();
 
   return (
-    <AntLayout>
+    <AntLayout style={{ height: '100vh' }}>
       <AntLayout hasSider>
         <AntLayout.Sider
           style={{

@@ -95,7 +95,6 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
       <Descriptions
         // title="User Info"
         bordered
-        size="small"
         column={1}
         items={generateDescription(data)}
       />
@@ -107,7 +106,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
-  const cardRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);

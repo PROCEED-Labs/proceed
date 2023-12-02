@@ -473,11 +473,95 @@
     },
     "/process/{definitionId}/images": {
       "get": {
-        "operationId": "getImageOfProcessById",
+        "operationId": "getImageFilenamesByProcessId",
         "tags": ["Process"],
         "parameters": [
           {
             "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 0,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Get all image filenames used in a process."
+      },
+      "post": {
+        "operationId": "postImageByProcessId",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/png image/svg+xml image/jpeg": {}
+          },
+          "description": "Image file to be stored"
+        },
+        "responses": {
+          "201": {
+            "description": "Image created in the server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "imageFileName": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Post a new image for a process."
+      }
+    },
+    "/process/{definitionId}/images/{imageFileName}": {
+      "get": {
+        "description": "Get a specific image of a process.",
+        "operationId": "getImageByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "imageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
           }
         ],
         "responses": {
@@ -497,15 +581,15 @@
           },
           "403": {
             "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Not Found"
           }
-        },
-        "description": "Get all images used in a process."
-      }
-    },
-    "/process/{definitionId}/images/{imageFileName}": {
-      "get": {
-        "description": "Get a specific image og a process.",
-        "operationId": "getImagesByProcessId",
+        }
+      },
+      "put": {
+        "description": "Update a specific image of a process.\nIf imageFileName exists, then it is updated with the body of the request (200 response), if not, then the image is created (201 response).",
+        "operationId": "updateImageByFilename",
         "tags": ["Process"],
         "parameters": [
           {
@@ -522,43 +606,56 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/image"
-                }
-              }
-            }
-          }
+            "image/png image/svg+xml image/jpeg": {}
+          },
+          "description": "Image file to be stored"
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Image updated"
+          },
+          "201": {
+            "description": "Image created in the server"
           },
           "401": {
             "$ref": "#/components/responses/401_unauthenticated"
           },
           "403": {
             "$ref": "#/components/responses/403_validationFailed"
-          },
-          "404": {
-            "description": "Not Found"
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteImageByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "ImageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request returns 200 wether the image exists or not"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        },
+        "description": "Delete a specific image of a process."
       }
     },
     "/process/{definitionId}/user-tasks": {
@@ -1412,10 +1509,18 @@
                     {
                       "type": "object",
                       "properties": {
-                        "username": { "type": "string" },
-                        "firstName": { "type": "string" },
-                        "lastName": { "type": "string" },
-                        "email": { "type": "string" }
+                        "username": {
+                          "type": "string"
+                        },
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
                       },
                       "required": ["username", "firstName", "lastName", "email"]
                     }

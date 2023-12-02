@@ -27,9 +27,10 @@ module.exports = () => {
 
     let out = '';
     let ready = false;
+    console.log('Starting engine...');
     const engineProcess = spawn(
-      'node',
-      ['--loader', 'ts-node/esm', path.resolve(__dirname, 'testEngine', 'startEngine.js')],
+      'yarn',
+      ['ts-node', path.resolve(__dirname, 'testEngine', 'startEngine.js')],
       {
         cwd: __dirname,
         detached: false,
@@ -51,6 +52,9 @@ module.exports = () => {
         );
         ready = true; // avoid setting multiple timeouts
       }
+    });
+    engineProcess.stderr.on('data', (data) => {
+      console.error(data.toString());
     });
   });
 };

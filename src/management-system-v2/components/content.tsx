@@ -61,7 +61,6 @@ const Content: FC<ContentProps> = ({
             <Button
               className={styles.Hamburger}
               type="text"
-              size="large"
               style={{ marginTop: '20px', marginLeft: '15px' }}
               icon={<MenuOutlined style={{ fontSize: '170%' }} />}
               onClick={() => !siderOpened}

@@ -53,6 +53,8 @@ type ProcessListProps = PropsWithChildren<{
   // deleteSelectedProcesses: void;
 }>;
 
+const ProcessActions = () => {};
+
 const ColumnHeader = [
   'Process Name',
   'Description',
@@ -209,7 +211,8 @@ const ProcessList: FC<ProcessListProps> = ({
       setCopyProcessIds,
       setDeleteProcessIds,
       setSelection,
-      deleteProcessIds
+      invalidateProcesses,
+      deleteProcess,
     ],
   );
 
@@ -272,15 +275,14 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'definitionId',
       key: '',
       width: '40px',
-      render: (definitionId, _, index) =>
-        favourites?.includes(index) ? (
-          <StarOutlined style={{ color: '#FFD700' }} />
-        ) : hovered?.definitionId === definitionId ? (
-          <StarOutlined />
-        ) : (
-          ''
-        ),
-      responsive: ['xs']
+      render: (definitionId, _, index) => (
+        <StarOutlined
+          style={{
+            color: favourites?.includes(index) ? '#FFD700' : undefined,
+            opacity: hovered?.definitionId === definitionId || favourites?.includes(index) ? 1 : 0,
+          }}
+        />
+      ),
     },
 
     {
@@ -434,12 +436,16 @@ const ProcessList: FC<ProcessListProps> = ({
           </Dropdown>
         </div>
       ),
-      render: (definitionId, record, index) =>
-        hovered?.definitionId === definitionId ? (
-          <Row justify="space-evenly">{actionBarGenerator(record)}</Row>
-        ) : (
-          ''
-        ),
+      render: (definitionId, record, index) => (
+        <Row
+          justify="space-evenly"
+          style={{
+            opacity: hovered?.definitionId === definitionId ? 1 : 0,
+          }}
+        >
+          {actionBarGenerator(record)}
+        </Row>
+      ),
     },
   ];
 
@@ -534,8 +540,6 @@ const ProcessList: FC<ProcessListProps> = ({
         dataSource={data}
         loading={isLoading}
         className={classNames('no-select')}
-        /* Row size rowsize */
-        size="middle"
       />
 
       {previewerOpen && (

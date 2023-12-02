@@ -54,7 +54,7 @@ const ScrollBar: FC<ScrollBarType> = ({
     }
   }, [reachedEndCallBack, scrolledToTH, threshold]);
 
-  const handleScrollbarClick = useCallback((e: MouseEvent) => {
+  const handleScrollbarClick: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
     if (containerRef.current && thumbRef.current) {
       const { clientY } = e;
       const { top, height } = containerRef.current.getBoundingClientRect();
@@ -197,12 +197,14 @@ export const useLazyLoading = (
 ) => {
   const [isVisible, setIsVisible] = useState(false);
   const viewport = useRef<HTMLElement | null>(null);
+  const thisElement = watchElement!.current;
+
   /* viewport = null -> defaults to the browser viewport */
 
   useEffect(() => {
-    viewport.current = findParentWithAttribute(watchElement!.current, 'data-proceed-scroll');
+    if (!thisElement) return;
 
-    const thisElement = watchElement!.current;
+    viewport.current = findParentWithAttribute(thisElement, 'data-proceed-scroll');
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -223,7 +225,7 @@ export const useLazyLoading = (
     return () => {
       observer.unobserve(thisElement);
     };
-  }, [watchElement, margin, once]);
+  }, [thisElement, margin, once]);
 
   return isVisible;
 };

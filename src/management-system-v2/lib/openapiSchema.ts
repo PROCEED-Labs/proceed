@@ -41,12 +41,21 @@ export interface paths {
     get: operations['getVersionById'];
   };
   '/process/{definitionId}/images': {
-    /** @description Get all images used in a process. */
-    get: operations['getImageOfProcessById'];
+    /** @description Get all image filenames used in a process. */
+    get: operations['getImageFilenamesByProcessId'];
+    /** @description Post a new image for a process. */
+    post: operations['postImageByProcessId'];
   };
   '/process/{definitionId}/images/{imageFileName}': {
-    /** @description Get a specific image og a process. */
-    get: operations['getImagesByProcessId'];
+    /** @description Get a specific image of a process. */
+    get: operations['getImageByFilename'];
+    /**
+     * @description Update a specific image of a process.
+     * If imageFileName exists, then it is updated with the body of the request (200 response), if not, then the image is created (201 response).
+     */
+    put: operations['updateImageByFilename'];
+    /** @description Delete a specific image of a process. */
+    delete: operations['deleteImageByFilename'];
   };
   '/process/{definitionId}/user-tasks': {
     /** @description Get all user tasks used in a process. */
@@ -372,8 +381,8 @@ export interface components {
      * - ezample 2
      */
     PermissionNumber: number;
-    /** role */
-    roleData: {
+    /** rolePostData */
+    rolePostData: {
       name?: string;
       description?: string;
       note?: string;
@@ -391,6 +400,9 @@ export interface components {
         All?: components['schemas']['PermissionNumber'];
       };
       expiration?: string;
+    };
+    /** role */
+    roleData: {
       members?: {
         userId: string;
         username: string;
@@ -399,7 +411,7 @@ export interface components {
         email: string;
       }[];
       default?: boolean;
-    };
+    } & components['schemas']['rolePostData'];
     /** role */
     roleMetaData: {
       id?: string;
@@ -768,11 +780,57 @@ export interface operations {
       403: components['responses']['403_validationFailed'];
     };
   };
-  /** @description Get all images used in a process. */
-  getImageOfProcessById: {
+  /** @description Get all image filenames used in a process. */
+  getImageFilenamesByProcessId: {
     parameters: {
       path: {
         definitionId: components['parameters']['definitionId'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        content: {
+          'application/json': string[];
+        };
+      };
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
+    };
+  };
+  /** @description Post a new image for a process. */
+  postImageByProcessId: {
+    parameters: {
+      path: {
+        definitionId: components['parameters']['definitionId'];
+      };
+    };
+    /** @description Image file to be stored */
+    requestBody: {
+      content: {
+        'image/png image/svg+xml image/jpeg': unknown;
+      };
+    };
+    responses: {
+      /** @description Image created in the server */
+      201: {
+        content: {
+          'application/json': {
+            imageFileName?: string;
+          };
+        };
+      };
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
+    };
+  };
+  /** @description Get a specific image of a process. */
+  getImageByFilename: {
+    parameters: {
+      path: {
+        definitionId: components['parameters']['definitionId'];
+        /** @description Filename of the image */
+        imageFileName: string;
       };
     };
     responses: {
@@ -784,10 +842,17 @@ export interface operations {
       };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
+      /** @description Not Found */
+      404: {
+        content: never;
+      };
     };
   };
-  /** @description Get a specific image og a process. */
-  getImagesByProcessId: {
+  /**
+   * @description Update a specific image of a process.
+   * If imageFileName exists, then it is updated with the body of the request (200 response), if not, then the image is created (201 response).
+   */
+  updateImageByFilename: {
     parameters: {
       path: {
         definitionId: components['parameters']['definitionId'];
@@ -795,28 +860,41 @@ export interface operations {
         imageFileName: string;
       };
     };
-    requestBody?: {
+    /** @description Image file to be stored */
+    requestBody: {
       content: {
-        'application/json': {
-          [key: string]: components['schemas']['image'];
-        };
+        'image/png image/svg+xml image/jpeg': unknown;
       };
     };
     responses: {
-      /** @description OK */
+      /** @description Image updated */
       200: {
-        content: {
-          'application/json': {
-            ''?: string;
-          };
-        };
+        content: never;
+      };
+      /** @description Image created in the server */
+      201: {
+        content: never;
       };
       401: components['responses']['401_unauthenticated'];
       403: components['responses']['403_validationFailed'];
-      /** @description Not Found */
-      404: {
+    };
+  };
+  /** @description Delete a specific image of a process. */
+  deleteImageByFilename: {
+    parameters: {
+      path: {
+        definitionId: components['parameters']['definitionId'];
+        /** @description Filename of the image */
+        ImageFileName: string;
+      };
+    };
+    responses: {
+      /** @description The request returns 200 wether the image exists or not */
+      200: {
         content: never;
       };
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
   /** @description Get all user tasks used in a process. */
@@ -1198,10 +1276,7 @@ export interface operations {
   postRole: {
     requestBody?: {
       content: {
-        'application/json': WithRequired<
-          components['schemas']['roleData'],
-          'name' | 'description' | 'note' | 'permissions' | 'expiration' | 'members' | 'default'
-        >;
+        'application/json': WithRequired<components['schemas']['rolePostData'], 'name'>;
       };
     };
     responses: {

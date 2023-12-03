@@ -14,16 +14,14 @@ const BPMNViewer =
   typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;
 
 type ViewerProps = {
-  selectedElement?: Process | undefined;
+  selectedElementId?: string;
   rerenderTrigger?: any;
   reduceLogo?: boolean;
 };
 
-const Viewer: FC<ViewerProps> = ({ selectedElement, rerenderTrigger, reduceLogo }) => {
+const Viewer: FC<ViewerProps> = ({ selectedElementId, rerenderTrigger, reduceLogo }) => {
   const [initialized, setInitialized] = useState(false);
-  const { data: bpmn, isSuccess } = useProcessBpmn(
-    selectedElement ? selectedElement.definitionId : '',
-  );
+  const { data: bpmn, isSuccess } = useProcessBpmn(selectedElementId ?? '');
   const canvas = useRef<HTMLDivElement>(null);
   const previewer = useRef<ViewerType | null>(null);
 
@@ -42,18 +40,18 @@ const Viewer: FC<ViewerProps> = ({ selectedElement, rerenderTrigger, reduceLogo 
   }, [bpmn]);
 
   useEffect(() => {
-    if (initialized && bpmn && selectedElement) {
+    if (initialized && bpmn && selectedElementId) {
       previewer.current!.importXML(bpmn).then(() => {
         (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
     }
-  }, [initialized, bpmn, selectedElement]);
+  }, [initialized, bpmn, selectedElementId]);
 
   useEffect(() => {
-    if (initialized && selectedElement) {
+    if (initialized && selectedElementId) {
       (previewer.current!.get('canvas') as any)?.zoom('fit-viewport', 'auto');
     }
-  }, [initialized, rerenderTrigger, selectedElement]);
+  }, [initialized, rerenderTrigger, selectedElementId]);
 
   return (
     <div

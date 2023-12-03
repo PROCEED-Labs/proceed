@@ -45,7 +45,7 @@ export async function addRole(roleRepresentation) {
     name,
     description: description || null,
     note: note || null,
-    permissions: permissions || null,
+    permissions: permissions || {},
     expiration: expiration || null,
     members: [],
     id,

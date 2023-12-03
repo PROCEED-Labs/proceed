@@ -1,5 +1,6 @@
-import UserProfile from '@/components/userProfile';
 import Auth from '@/lib/serverAuthComponents';
+import UserProfile from './user-profile';
+import Content from '@/components/content';
 
 export default Auth(
   {
@@ -7,5 +8,9 @@ export default Auth(
     resource: 'User',
     fallbackRedirect: '/',
   },
-  UserProfile,
+  () => (
+    <Content>
+      <UserProfile />
+    </Content>
+  ),
 );

@@ -16,16 +16,20 @@ import {
   getDefinitionsAndProcessIdForEveryCallActivity,
 } from '@proceed/bpmn-helper';
 
+import { asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
+import { getImageDimensions, getSVGFromBPMN } from './util';
+
 /**
  * The options that can be used to select what should be exported
  */
 export type ProcessExportOptions = {
-  type: 'bpmn' | 'svg' | 'pdf';
+  type: 'bpmn' | 'svg' | 'pdf' | 'png';
   artefacts: boolean; // if artefacts like images or user task html should be included in the export
   subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg, pdf)
   imports: boolean; // if processes referenced by this process should be exported as well
   metaData: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
   a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
+  scaling: number; // the scaling factor that should be used for png export
 };
 
 /**
@@ -153,6 +157,21 @@ type ExportMap = {
 
 function getVersionName(version?: string | number) {
   return version ? `${version}` : 'latest';
+}
+
+async function getMaximumScalingFactor(exportData: ProcessesExportData) {
+  const allVersionBpmns = exportData.flatMap(({ versions }) =>
+    Object.values(versions).map(({ bpmn }) => bpmn),
+  );
+
+  const maximums = await asyncMap(allVersionBpmns, async (bpmn) => {
+    const svg = await getSVGFromBPMN(bpmn);
+    const diagramSize = getImageDimensions(svg);
+    // the canvas that is used to transform the svg to a png has a limited size (https://github.com/jhildenbiddle/canvas-size#test-results)
+    return Math.floor(Math.sqrt(268400000 / (diagramSize.width * diagramSize.height)));
+  });
+
+  return Math.min(...maximums);
 }
 
 /**
@@ -326,8 +345,15 @@ export async function prepareExport(
     }
   }
 
-  return Object.entries(exportData).map(([definitionId, data]) => ({
+  const finalExportData = Object.entries(exportData).map(([definitionId, data]) => ({
     ...data,
     definitionId,
   }));
+
+  if (options.type === 'png') {
+    // decrease the scaling factor if the image size would exceed export limits
+    options.scaling = Math.min(options.scaling, await getMaximumScalingFactor(finalExportData));
+  }
+
+  return finalExportData;
 }

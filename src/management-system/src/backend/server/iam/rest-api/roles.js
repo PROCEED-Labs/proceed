@@ -99,10 +99,8 @@ rolesRouter.put('/:id', validateRole, isAllowed('update', 'Role'), async (req, r
 
       const targetRole = getRoleById(id);
 
-      for (const [key, value] of Object.entries(role)) {
-        console.log('Key:', key, 'Value:', value, 'Target:', targetRole[key]);
+      for (const [key, value] of Object.entries(role))
         if (targetRole[key] === value) delete role[key];
-      }
 
       // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
       if (
@@ -144,7 +142,7 @@ rolesRouter.delete('/:id', isAllowed('delete', 'Role'), async (req, res) => {
       /** @type {Ability} */
       const userAbility = req.userAbility;
 
-      if (!userAbility.can('update', toCaslResource('Role', role)))
+      if (!userAbility.can('delete', toCaslResource('Role', role)))
         return res.status(403).send('Forbidden.');
 
       await deleteRole(id);

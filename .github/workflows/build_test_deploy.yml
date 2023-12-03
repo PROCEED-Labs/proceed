@@ -39,11 +39,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --frozen-lockfile --ignore-engines # Remove once node-ipc is removed
 
       # Cache for this workflow run.
       - uses: actions/cache@v3
@@ -67,7 +67,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
@@ -87,7 +87,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
@@ -107,7 +107,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
@@ -127,7 +127,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
@@ -147,7 +147,7 @@ jobs:
   #     - name: Set up Node.js
   #       uses: actions/setup-node@v3
   #       with:
-  #         node-version: 16
+  #         node-version: 20
   #         check-latest: true
   #         cache: 'yarn'
 
@@ -183,7 +183,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 
@@ -212,7 +212,7 @@ jobs:
   #   - name: Set up Node.js
   #     uses: actions/setup-node@v3
   #     with:
-  #       node-version: 16
+  #       node-version: 20
   #       check-latest: true
   #       cache: 'yarn'
   #
@@ -244,7 +244,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: 'yarn'
 

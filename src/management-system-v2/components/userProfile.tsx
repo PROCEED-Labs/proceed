@@ -19,7 +19,6 @@ import {
   App,
 } from 'antd';
 import styles from './userProfile.module.scss';
-import { useAbilityStore } from '@/lib/abilityStore';
 import {
   ApiData,
   ApiRequestBody,
@@ -29,6 +28,7 @@ import {
 } from '@/lib/fetch-data';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut, useSession } from 'next-auth/react';
+import { useParseServerErrors } from '@/lib/useParseServerErrors';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;
@@ -46,7 +46,7 @@ const UserDataModal: FC<{
   modalOpen: boolean;
   close: () => void;
   messageApi: ReturnType<typeof App.useApp>['message'];
-}> = ({ structure, modalOpen, close, messageApi }) => {
+}> = ({ structure, modalOpen, close: propClose, messageApi }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -58,18 +58,32 @@ const UserDataModal: FC<{
       path: { id: user.id },
     },
   });
-  const defaultValues: Record<string, any> = {};
+  type User = NonNullable<typeof userData>;
+  const [formatErrors, parseErrors] = useParseServerErrors<User>({
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    username: 'Username',
+  });
 
-  if (!structure.password && userData)
-    for (const input of structure.inputFields)
-      defaultValues[input.submitField] = userData[input.userDataField];
-
-  const { mutateAsync: changeUserData } = usePutAsset('/users/{id}');
-  const { mutateAsync: changePassword } = usePutAsset('/users/{id}/update-password');
+  function close() {
+    propClose();
+    parseErrors(null);
+  }
 
   useEffect(() => {
-    return form.resetFields();
-  }, [form, modalOpen]);
+    if (!modalOpen) {
+      const defaultValues: Record<string, any> = {};
+
+      if (!structure.password && userData)
+        for (const input of structure.inputFields)
+          defaultValues[input.submitField] = userData[input.userDataField];
+
+      form.setFieldsValue(defaultValues);
+    }
+  }, [form, modalOpen, userData, structure]);
+
+  const { mutateAsync: changeUserData } = usePutAsset('/users/{id}', { onError: parseErrors });
+  const { mutateAsync: changePassword } = usePutAsset('/users/{id}/update-password');
 
   const submitData = async (values: Record<string, any>) => {
     if (!userData) return;
@@ -100,6 +114,7 @@ const UserDataModal: FC<{
       messageApi.success({ content: 'Profile updated' });
       close();
     } catch (e) {
+      parseErrors(e);
       messageApi.error({ content: 'An error ocurred' });
     } finally {
       setLoading(false);
@@ -110,7 +125,7 @@ const UserDataModal: FC<{
     <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title}>
       <Skeleton loading={isLoading}>
         <br />
-        <Form form={form} layout="vertical" onFinish={submitData} initialValues={defaultValues}>
+        <Form form={form} layout="vertical" onFinish={submitData}>
           {structure.password ? (
             <>
               <Form.Item
@@ -159,6 +174,8 @@ const UserDataModal: FC<{
                 key={input.submitField}
                 label={input.label}
                 name={input.submitField}
+                validateStatus={input.submitField in formatErrors ? 'error' : ''}
+                help={input.submitField in formatErrors ? formatErrors[input.submitField] : ''}
                 required
               >
                 <Input />
@@ -224,7 +241,7 @@ const UserProfile: FC = () => {
     error,
     data: userData,
     isLoading,
-  } = useGetAsset('/users/{id}', { params: { path: { id: (user && user.id) || '' } } });
+  } = useGetAsset('/users/{id}', { params: { path: { id: user.id } } });
 
   async function deleteUser() {
     try {

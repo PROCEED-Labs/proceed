@@ -1,14 +1,21 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
+import { RemoveReadOnly, ToPrimitive } from './typescript-utils';
 
-type PreferencesType = Record<string, any> & {
-  -readonly [key in keyof typeof defaultPreferences]: any;
-};
+type GetType<T> = T extends Record<any, any>
+  ? T extends readonly any[]
+    ? T
+    : {
+        [Key in keyof T]: GetType<T[Key]>;
+      }
+  : ToPrimitive<T>;
+
+type PreferencesType = Record<string, any> & GetType<typeof defaultPreferences>;
 
 type PreferencesStoreType = {
   preferences: PreferencesType;
-  addPreferences: (changes: Partial<PreferencesType>) => void;
+  addPreferences: (changes: Partial<RemoveReadOnly<PreferencesType>>) => void;
 };
 
 const defaultPreferences = {

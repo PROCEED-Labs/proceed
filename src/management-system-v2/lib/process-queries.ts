@@ -101,5 +101,5 @@ export const fetchProcessImageData = async (definitionId: string, imageFileName:
     },
     parseAs: 'blob',
   });
-  return data as Blob;
+  return data as unknown as Blob;
 };

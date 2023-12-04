@@ -54,10 +54,10 @@
     "eslint": "8.50.0",
     "eslint-config-next": "13.5.3",
     "eslint-config-prettier": "9.0.0",
-    "prettier": "3.0.3",
-    "ts-node": "10.9.1",
-    "typescript": "5.2.2",
     "openapi-typescript": "6.7.0",
-    "sass": "1.68.0"
+    "prettier": "3.0.3",
+    "sass": "1.68.0",
+    "ts-node": "10.9.1",
+    "typescript": "5.2.2"
   }
 }

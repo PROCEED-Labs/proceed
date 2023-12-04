@@ -8,11 +8,11 @@ import {
   getUserTaskFileNameMapping,
 } from '@proceed/bpmn-helper';
 
-import React, { useState } from 'react';
+import React from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
-import { Tooltip, Button, Space, Modal } from 'antd';
+import { Tooltip, Space } from 'antd';
 
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 
@@ -23,33 +23,10 @@ import { convertToEditableBpmn } from '@/lib/helpers/processVersioning';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import ProcessCreationButton from './process-creation-button';
 import { AuthCan } from '@/lib/clientAuthComponents';
-
-type ConfirmationModalProps = {
-  show: boolean;
-  close: () => void;
-  confirm: () => void;
-};
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ show, close, confirm }) => {
-  return (
-    <Modal
-      title="Are you sure you want to continue editing with this Version?"
-      open={show}
-      closeIcon={null}
-      onOk={() => {
-        confirm();
-      }}
-      onCancel={() => {
-        close();
-      }}
-    >
-      <p>Any changes that are not stored in another version are irrecoverably lost!</p>
-    </Modal>
-  );
-};
+import ConfirmationButton from './confirmation-button';
 
 type VersionToolbarProps = {};
 const VersionToolbar: React.FC<VersionToolbarProps> = () => {
-  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -67,10 +44,6 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
       ? elementRegistry.get(selectedElementId)!
       : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
   }
-
-  const openConfirmationModal = () => {
-    setIsConfirmationModalOpen(true);
-  };
 
   const createNewProcess = async (values: { name: string; description?: string }) => {
     const saveXMLResult = await modeler?.saveXML({ format: true });
@@ -194,41 +167,28 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
   };
 
   return (
-    <>
-      <div
-        style={{
-          position: 'absolute',
-          zIndex: 10,
-          padding: '12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-        }}
-      >
-        <Space.Compact size="large" direction="vertical">
-          <AuthCan action="create" resource="Process">
-            <Tooltip title="Create a new Process using this Version">
-              <ProcessCreationButton
-                icon={<PlusOutlined />}
-                createProcess={createNewProcess}
-              ></ProcessCreationButton>
-            </Tooltip>
-          </AuthCan>
-          <Tooltip title="Set as latest Version and enable editing">
-            <Button icon={<FormOutlined />} onClick={openConfirmationModal}></Button>
+    <div style={{ position: 'absolute', zIndex: 10, padding: '12px', top: '80px' }}>
+      <Space.Compact size="large" direction="vertical">
+        <AuthCan action="create" resource="Process">
+          <Tooltip title="Create a new Process using this Version">
+            <ProcessCreationButton
+              icon={<PlusOutlined />}
+              createProcess={createNewProcess}
+            ></ProcessCreationButton>
           </Tooltip>
-        </Space.Compact>
-      </div>
-      <ConfirmationModal
-        close={() => {
-          setIsConfirmationModalOpen(false);
-        }}
-        confirm={() => {
-          setAsLatestVersion();
-          setIsConfirmationModalOpen(false);
-        }}
-        show={isConfirmationModalOpen}
-      ></ConfirmationModal>
-    </>
+        </AuthCan>
+
+        <ConfirmationButton
+          title="Are you sure you want to continue editing with this Version?"
+          description="Any changes that are not stored in another version are irrecoverably lost!"
+          tooltip="Set as latest Version and enable editing"
+          onConfirm={setAsLatestVersion}
+          buttonProps={{
+            icon: <FormOutlined />,
+          }}
+        />
+      </Space.Compact>
+    </div>
   );
 };
 

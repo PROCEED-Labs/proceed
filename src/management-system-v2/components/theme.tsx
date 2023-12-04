@@ -20,6 +20,7 @@ import React, { FC, PropsWithChildren } from 'react';
 const Theme: FC<PropsWithChildren> = ({ children }) => {
   return (
     <ConfigProvider
+      componentSize="middle"
       theme={{
         token: {
           // colorPrimary: '#00b96b',

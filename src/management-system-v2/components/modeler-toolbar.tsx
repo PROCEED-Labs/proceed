@@ -161,19 +161,11 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
               ></VersionCreationButton>
             </Tooltip>
           </ToolbarGroup>
-
-          {showPropertiesPanel && <div style={{ width: '378px' }}></div>}
         </Space>
-        {/* {showPropertiesPanel && <Col></Col>} */}
         {showPropertiesPanel && selectedElement && (
-          <>
-            <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
-          </>
+          <PropertiesPanel selectedElement={selectedElement} />
         )}
       </Toolbar>
-      {/* {showPropertiesPanel && selectedElement && (
-        <PropertiesPanel selectedElement={selectedElement} setOpen={setShowPropertiesPanel} />
-      )} */}
       <ProcessExportModal
         processes={
           showProcessExportModal

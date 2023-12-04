@@ -2,16 +2,18 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
 
-type PreferencesType = Record<string, any>;
+type PreferencesType = Record<string, any> & {
+  -readonly [key in keyof typeof defaultPreferences]: any;
+};
 
 type PreferencesStoreType = {
   preferences: PreferencesType;
-  addPreferences: (changes: PreferencesType) => void;
+  addPreferences: (changes: Partial<PreferencesType>) => void;
 };
 
-const defaultPreferences: PreferencesType = {
+const defaultPreferences = {
   /* Default User-Settings: */
-  /* 
+  /*
     Delete user-preferences in localstorage, after adding a preference-setting
     The new default won't be set otherwise
   */
@@ -22,14 +24,14 @@ const defaultPreferences: PreferencesType = {
   'ask-before-deleting-single': true,
   'ask-before-copying': true,
   'process-copy-modal-accordion': true,
-};
+} as const;
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(
     (set, get) => ({
       preferences: defaultPreferences,
 
-      addPreferences: (changes: PreferencesType) => {
+      addPreferences: (changes) => {
         set({ preferences: { ...get().preferences, ...changes } });
       },
     }),
@@ -49,10 +51,8 @@ export const useUserPreferences = () => {
     setData(prefs);
   }, [prefs]);
 
-  if (data) return { preferences: data, addPreferences: addPrefs };
-
   return {
-    preferences: defaultPreferences,
+    preferences: (data ? data : defaultPreferences) as PreferencesType,
     addPreferences: addPrefs,
   };
 };

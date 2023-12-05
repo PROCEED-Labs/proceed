@@ -4,29 +4,6 @@ import React, { useState } from 'react';
 
 import { Button, Modal, Form, Input } from 'antd';
 
-const ModalSubmitButton = ({
-  submittable,
-  onSubmit,
-  submitText,
-}: {
-  submittable: boolean;
-  onSubmit: Function;
-  submitText: string;
-}) => {
-  return (
-    <Button
-      type="primary"
-      htmlType="submit"
-      disabled={!submittable}
-      onClick={() => {
-        onSubmit();
-      }}
-    >
-      {submitText}
-    </Button>
-  );
-};
-
 type ProcessModalProps = {
   show: boolean;
   close: (values?: { name: string; description?: string }) => void;
@@ -82,15 +59,18 @@ const ProcessModal: React.FC<ProcessModalProps> = ({ show, close, initialProcess
         >
           Cancel
         </Button>,
-        <ModalSubmitButton
+        <Button
           key="submit"
-          submittable={submittable}
-          onSubmit={() => {
+          type="primary"
+          htmlType="submit"
+          disabled={!submittable}
+          onClick={() => {
             close(values);
             form.resetFields();
           }}
-          submitText={initialProcessData ? 'Edit Process' : 'Create Process'}
-        ></ModalSubmitButton>,
+        >
+          {initialProcessData ? 'Edit Process' : 'Create Process'}
+        </Button>,
       ]}
     >
       <Form form={form} name="name" wrapperCol={{ span: 24 }} autoComplete="off">

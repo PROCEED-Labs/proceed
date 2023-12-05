@@ -3,10 +3,17 @@
 import { FC, PropsWithChildren } from 'react';
 import { Menu } from 'antd';
 const { SubMenu, Item, ItemGroup } = Menu;
-import { EditOutlined, ProfileOutlined, FileAddOutlined, StarOutlined } from '@ant-design/icons';
+import {
+  EditOutlined,
+  ProfileOutlined,
+  FileAddOutlined,
+  StarOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import ProcessCreationButton from './process-creation-button';
 import { useAbilityStore } from '@/lib/abilityStore';
+import ProcessImportButton from './process-import';
 
 const ProcessSider: FC<PropsWithChildren> = () => {
   const router = useRouter();
@@ -45,6 +52,13 @@ const ProcessSider: FC<PropsWithChildren> = () => {
               <ProcessCreationButton
                 wrapperElement={<span>New Process</span>}
               ></ProcessCreationButton>
+            </Item>
+            <Item
+              key="processImport"
+              icon={<UploadOutlined />}
+              hidden={!ability.can('create', 'Process')}
+            >
+              <ProcessImportButton />
             </Item>
             <Item key="processFavorites" icon={<StarOutlined />}>
               Favorites

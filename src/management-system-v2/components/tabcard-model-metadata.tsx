@@ -1,14 +1,5 @@
 import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
-import React, {
-  Dispatch,
-  FC,
-  Key,
-  ReactNode,
-  SetStateAction,
-  useCallback,
-  useRef,
-  useState,
-} from 'react';
+import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useRef, useState } from 'react';
 
 import { MoreOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
@@ -17,19 +8,15 @@ import classNames from 'classnames';
 
 import { generateDateString } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import { ApiData } from '@/lib/fetch-data';
 import { useLazyLoading } from './scrollbar';
-
-type Processes = ApiData<'/process', 'get'>;
-type Process = Processes[number];
+import { ProcessListProcess } from './processes';
 
 type TabCardProps = {
-  item: Process;
+  item: ProcessListProcess;
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
-  completeList: Processes;
-  search?: string;
+  completeList: ProcessListProcess[];
 };
 
 const tabList = [
@@ -43,9 +30,9 @@ const tabList = [
   },
 ];
 
-type Tab = (typeof tabList)[number]['key'];
+type Tab = 'viewer' | 'meta'; // has to be defined manually, antdesign errors if tabList is defined 'as const'
 
-const generateDescription = (data: Process) => {
+const generateDescription = (data: ProcessListProcess) => {
   const { description, createdOn, lastEdited, owner } = data;
   const desc: DescriptionsProps['items'] = [
     {
@@ -66,18 +53,31 @@ const generateDescription = (data: Process) => {
     {
       key: `4`,
       label: 'Owner',
-      children: `${owner}`,
+      children: owner,
     },
     {
       key: `5`,
       label: 'Description',
-      children: description.length > 20 ? `${description.slice(0, 21)} ...` : `${description}`,
+      children: (
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            lineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {description.highlighted}
+        </span>
+      ),
     },
   ];
   return desc;
 };
 
-const generateContentList = (data: Process, showViewer: boolean = true) => {
+const generateContentList = (data: ProcessListProcess, showViewer: boolean = true) => {
   return {
     viewer: (
       <div
@@ -88,14 +88,13 @@ const generateContentList = (data: Process, showViewer: boolean = true) => {
           borderRadius: '8px',
         }}
       >
-        {showViewer && <Viewer selectedElement={data} reduceLogo={true} />}
+        {showViewer && <Viewer selectedElementId={data.definitionId} reduceLogo={true} />}
       </div>
     ),
     meta: (
       <Descriptions
         // title="User Info"
         bordered
-        size="small"
         column={1}
         items={generateDescription(data)}
       />
@@ -103,63 +102,19 @@ const generateContentList = (data: Process, showViewer: boolean = true) => {
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({
-  item,
-  selection,
-  setSelection,
-  tabcard,
-  completeList,
-  search,
-}) => {
+const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
-  const cardRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
-  const onTabChange = (key: Tab) => {
-    setActiveTabKey(key);
+  const onTabChange = (key: string) => {
+    setActiveTabKey(key as Tab);
   };
-
-  const clipAndHighlightText = useCallback(
-    (dataIndexElement: any) => {
-      const withoutSearchTerm = dataIndexElement?.split(search);
-      let res = dataIndexElement;
-      if (search && withoutSearchTerm?.length > 1) {
-        res = withoutSearchTerm.map(
-          (
-            word:
-              | string
-              | number
-              | boolean
-              | React.ReactElement<any, string | React.JSXElementConstructor<any>>
-              | Iterable<React.ReactNode>
-              | React.ReactPortal
-              | React.PromiseLikeOfReactNode
-              | null
-              | undefined,
-            i: React.Key | null | undefined,
-            arr: string | any[],
-          ) => {
-            if (i === arr.length - 1) return word;
-
-            return (
-              <span key={i}>
-                <span>{word}</span>
-                <span style={{ color: '#3e93de' }}>{search}</span>
-              </span>
-            );
-          },
-        );
-      }
-
-      return <div style={{ flex: 1 }}>{res}</div>;
-    },
-    [search],
-  );
 
   return (
     <Card
@@ -168,7 +123,7 @@ const TabCard: FC<TabCardProps> = ({
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
           {/* <span>{item?.definitionName}</span> */}
-          {clipAndHighlightText(item?.definitionName)}
+          {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
           <Button type="text">
             <MoreOutlined />

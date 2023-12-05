@@ -10,6 +10,7 @@ type ModelerStateStore = {
   editingDisabled: boolean;
   setModeler: (newModeler: Modeler | Viewer | null) => void;
   setSelectedElementId: (newId: null | string) => void;
+  setEditingDisabled: (isDisabled: boolean) => void;
 };
 
 const useModelerStateStore = create<ModelerStateStore>()(
@@ -24,6 +25,10 @@ const useModelerStateStore = create<ModelerStateStore>()(
     setSelectedElementId: (newId: null | string) =>
       set((state) => {
         state.selectedElementId = newId;
+      }),
+    setEditingDisabled: (isDisabled: boolean) =>
+      set((state) => {
+        state.editingDisabled = isDisabled;
       }),
   })),
 );

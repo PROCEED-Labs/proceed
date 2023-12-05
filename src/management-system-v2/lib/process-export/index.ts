@@ -3,130 +3,15 @@ import {
   ProcessExportOptions,
   ExportProcessInfo,
   ProcessExportData,
-  ProcessesExportData,
 } from './export-preparation';
 
-import { downloadFile, getSVGFromBPMN } from './util';
+import { downloadFile } from './util';
 
 import jsZip from 'jszip';
 import 'svg2pdf.js';
 
 import pdfExport from './pdf-export';
-
-/**
- * Executes the logic that adds the file for a specific process version/collapsed subprocess
- *
- * @param processData the data of the complete process
- * @param version the specific version to handle
- * @param isImport if the data to be added is part of an imported process
- * @param zipFolder the folder to add the svg to (optional since we can export a single file directly as an svg which is decided before this function is called)
- * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
- * @param subprocessName the name of the collapsed subprocess to be added
- */
-async function addSVGFile(
-  processData: ProcessExportData,
-  version: string,
-  isImport = false,
-  zipFolder?: jsZip | null,
-  subprocessId?: string,
-  subprocessName?: string,
-) {
-  const versionData = processData.versions[version];
-  const svg = await getSVGFromBPMN(versionData.bpmn!, subprocessId);
-
-  const svgBlob = new Blob([svg], {
-    type: 'image/svg+xml',
-  });
-
-  let versionName = version;
-  // if the version data contains an explicit name use that instead of the the current versionName which is just the version id or "latest"
-  if (versionData.name) {
-    versionName = versionData.name;
-  }
-  if (versionName !== 'latest') versionName = 'version_' + versionName;
-
-  // a) if we output into a zip folder that uses the process name use the version name as the filename
-  // b) if we output as a single file use the process name as the file name
-  let filename = zipFolder ? versionName : processData.definitionName;
-
-  // add additional information if this file is added as additional info for another process (only possible in case of zip export)
-  if (isImport) {
-    filename = `import_${processData.definitionName || processData.definitionId}_` + filename;
-  }
-  if (subprocessId) {
-    filename += `_subprocess_${subprocessName || subprocessId}`;
-  }
-
-  if (zipFolder) {
-    zipFolder.file(`${filename}.svg`, svgBlob);
-  } else {
-    downloadFile(`${filename}.svg`, svgBlob);
-  }
-}
-
-/**
- * Allows to recursively add versions of the process and its imports to the folder
- *
- * @param processesData the data of all processes
- * @param processData the data of the complete process
- * @param version the specific version to handle
- * @param isImport if the version is of an import
- * @param zipFolder the folder to add the svg to (optional since we can export a single file directly as an svg which is decided before this function is called)
- */
-async function handleProcessVersionSVGExport(
-  processesData: ProcessesExportData,
-  processData: ProcessExportData,
-  version: string,
-  isImport = false,
-  zipFolder?: jsZip | null,
-) {
-  // add the main process (version) file
-  await addSVGFile(processData, version, isImport, zipFolder);
-
-  const versionData = processData.versions[version];
-  // add collapsed subprocesses as additional files
-  for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
-    await addSVGFile(processData, version, isImport, zipFolder, subprocessId, subprocessName);
-  }
-
-  // recursively add imports as additional files into the same folder
-  for (const { definitionId, processVersion } of versionData.imports) {
-    const importData = processesData.find((el) => el.definitionId === definitionId);
-    if (importData) {
-      await handleProcessVersionSVGExport(
-        processesData,
-        importData,
-        processVersion,
-        true,
-        zipFolder,
-      );
-    }
-  }
-}
-
-/**
- * Exports a process as a svg either as a single file or into a folder of a zip archive if multiple files should be exported
- *
- * Might export multiple files if imports or collapsed subprocesses should be exported as well
- *
- * @param processesData the data of all processes
- * @param processData the data of the complete process
- * @param zipFolder a zip folder the exported files should be added to in case of multi file export
- */
-async function svgExport(
-  processesData: ProcessesExportData,
-  processData: ProcessExportData,
-  zipFolder?: jsZip | null,
-) {
-  // only export the versions that were explicitly selected for export inside the folder for the given process
-  const nonImportVersions = Object.entries(processData.versions)
-    .filter(([_, { isImport }]) => !isImport)
-    .map(([version]) => version);
-
-  for (const version of nonImportVersions) {
-    await handleProcessVersionSVGExport(processesData, processData, version, false, zipFolder);
-  }
-}
+import { pngExport, svgExport } from './image-export';
 
 async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
   for (let [versionName, versionData] of Object.entries(processData.versions)) {
@@ -211,6 +96,10 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       if (options.type === 'svg' && !processData.isImport) {
         const folder = zip?.folder(processData.definitionName);
         await svgExport(exportData, processData, folder);
+      }
+      if (options.type === 'png' && !processData.isImport) {
+        const folder = zip?.folder(processData.definitionName);
+        await pngExport(exportData, processData, options.scaling, folder);
       }
     }
   }

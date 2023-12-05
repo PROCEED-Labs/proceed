@@ -11,14 +11,17 @@ import {
   deleteProcessUserTask,
   addProcessVersion,
   getProcessVersionBpmn,
-  getProcessImages,
   getProcessImage,
+  getProcessImageFileNames,
+  saveProcessImage,
+  deleteProcessImage,
 } from '../../shared-electron-server/data/process.js';
 import express from 'express';
 import { isAllowed } from '../iam/middleware/authorization.ts';
 import logger from '../../shared-electron-server/logging.js';
 import Ability from '../../../../../management-system-v2/lib/ability/abilityHelper';
 import { toCaslResource } from '../../../../../management-system-v2/lib/ability/caslAbility';
+import { v4 } from 'uuid';
 
 const processRouter = express.Router();
 
@@ -295,7 +298,36 @@ processRouter.get('/:definitionId/images', isAllowed('view', 'Process'), async (
   if (!userAbility.can('view', toCaslResource('Process', req.process)))
     return res.status(403).send('Forbidden.');
 
-  res.status(200).json(await getProcessImages(req.definitionsId));
+  res.status(200).json(await getProcessImageFileNames(req.definitionsId));
+});
+
+processRouter.post('/:definitionId/images', isAllowed('view', 'Process'), async (req, res) => {
+  const { definitionId } = req.params;
+
+  const { body: image } = req;
+
+  /** @type {Ability} */
+  const userAbility = req.userAbility;
+
+  if (!userAbility.can('update', toCaslResource('Process', req.process)))
+    return res.status(403).send('Forbidden.');
+
+  const contentType = req.get('Content-Type');
+  const imageType = contentType.split('image/').pop();
+  const imageFileName = `_image${v4()}.${imageType}`;
+
+  await saveProcessImage(definitionId, imageFileName, image);
+
+  res.status(201).send({ imageFileName });
+});
+
+processRouter.use('/:definitionId/images/:imageFileName', async (req, res, next) => {
+  req.imageFileName = req.params.imageFileName;
+  try {
+    // see if there already exists some data for this user task and make it accessible for later steps
+    req.image = await getProcessImage(req.definitionsId, req.imageFileName);
+  } catch (err) {}
+  next();
 });
 
 processRouter.get(
@@ -310,9 +342,54 @@ processRouter.get(
     if (!userAbility.can('view', toCaslResource('Process', req.process)))
       return res.status(403).send('Forbidden.');
 
-    const image = await getProcessImage(definitionId, imageFileName);
     res.set({ 'Content-Type': 'image/png image/svg+xml image/jpeg' });
-    res.status(200).send(image);
+    res.status(200).send(req.image);
+  },
+);
+
+processRouter.put(
+  '/:definitionId/images/:imageFileName',
+  isAllowed('update', 'Process'),
+  async (req, res) => {
+    const { definitionId, imageFileName } = req.params;
+
+    const { body: image } = req;
+
+    /** @type {Ability} */
+    const userAbility = req.userAbility;
+
+    if (!userAbility.can('update', toCaslResource('Process', req.process)))
+      return res.status(403).send('Forbidden.');
+
+    await saveProcessImage(definitionId, imageFileName, image);
+
+    if (!req.image) {
+      res.status(201);
+    } else {
+      res.status(200);
+    }
+
+    res.end();
+  },
+);
+
+processRouter.delete(
+  '/:definitionId/images/:imageFileName',
+  isAllowed('update', 'Process'),
+  async (req, res) => {
+    const { definitionId, imageFileName } = req.params;
+
+    /** @type {Ability} */
+    const userAbility = req.userAbility;
+
+    if (!userAbility.can('delete', toCaslResource('Process', req.process)))
+      return res.status(403).send('Forbidden.');
+
+    if (req.image) {
+      await deleteProcessImage(definitionId, imageFileName);
+    }
+
+    res.status(200).send();
   },
 );
 

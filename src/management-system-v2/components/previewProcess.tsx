@@ -16,9 +16,10 @@ import { useProcessBpmn } from '@/lib/process-queries';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
 import Viewer from './bpmn-viewer';
+import { ProcessListProcess } from './processes';
 
 type PropertiesPanelProperties = {
-  selectedElement?: ApiData<'/process', 'get'>[number];
+  selectedElement?: ProcessListProcess;
   setOpen: (open: boolean) => void;
 };
 
@@ -81,7 +82,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
         }}
         onMouseDown={handleMouseDown}
       ></div>
-      <Viewer selectedElement={selectedElement} rerenderTrigger={drawerHeight} />
+      <Viewer selectedElementId={selectedElement?.definitionId} rerenderTrigger={drawerHeight} />
     </Drawer>
   );
 

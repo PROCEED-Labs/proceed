@@ -30,7 +30,7 @@ const HeaderActions: FC = () => {
   }
 
   return (
-    <Space style={{ float: 'right' }}>
+    <Space style={{ float: 'right', padding: '16px' }}>
       <Button type="text" onClick={() => signOut()}>
         <u>Logout</u>
       </Button>

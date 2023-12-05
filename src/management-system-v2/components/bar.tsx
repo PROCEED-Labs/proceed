@@ -22,9 +22,7 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
         </Col>
       )}
       <Col xs={24} lg={{ flex: 'auto' }}>
-        {searchProps && (
-          <Input.Search size="middle" allowClear placeholder="Search ..." {...searchProps} />
-        )}
+        {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
       </Col>
       {rightNode && (
         <Col xs={24} lg={{ flex: 'none' }}>

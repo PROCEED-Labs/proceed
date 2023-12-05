@@ -98,9 +98,11 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               ) : null}
 
               <ItemGroup key="settings" title="Settings">
-                <Item key="generalSettings" icon={<SettingOutlined />}>
-                  General Settings
-                </Item>
+                {ability.can('view', 'Setting') ? (
+                  <Item key="generalSettings" icon={<SettingOutlined />}>
+                    <Link href="/general-settings">General Settings</Link>
+                  </Item>
+                ) : null}
                 <Item key="plugins" icon={<ApiOutlined />}>
                   Plugins
                 </Item>

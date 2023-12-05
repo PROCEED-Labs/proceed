@@ -22,8 +22,7 @@ const GeneralSettingsPage: FC = () => {
   async function submitForm(values: Partial<Settings>) {
     try {
       await changeSettings({ body: values });
-      console.log(values);
-      /* message.open({ type: 'success', content: 'Settings updated successfully' }); */
+      message.open({ type: 'success', content: 'Settings Updated Successfully' });
     } catch (_) {
       message.open({ type: 'error', content: 'Something went wrong' });
     }

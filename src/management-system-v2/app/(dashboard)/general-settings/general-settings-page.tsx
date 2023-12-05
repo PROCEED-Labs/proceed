@@ -1,9 +1,9 @@
 'use client';
-import { FC, useEffect } from 'react';
-import { App, Button, Card, Form, Input, Result, Select, Space, Table, Typography } from 'antd';
+
+import { FC } from 'react';
+import { App, Button, Card, Form, Result, Select, Table, Typography } from 'antd';
 import Content from '@/components/content';
 import { ApiData, useGetAsset, usePutAsset } from '@/lib/fetch-data';
-import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 
 type Settings = ApiData<'/settings', 'get'>;
 

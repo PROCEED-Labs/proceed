@@ -256,9 +256,14 @@ const Processes: FC = () => {
 
   return (
     <>
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ /* width: '75%', */ flex: 3, width: '100%' }}>
+        <div
+          style={{
+            /* width: '75%', */
+            flex: 1,
+          }}
+        >
           <Bar
             leftNode={
               selectedRowKeys.length ? (

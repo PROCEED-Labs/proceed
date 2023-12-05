@@ -31,6 +31,7 @@ const defaultPreferences = {
   'ask-before-deleting-single': true,
   'ask-before-copying': true,
   'process-copy-modal-accordion': true,
+  'role-page-side-panel': { open: false, width: 300 },
 } as const;
 
 export const useUserPreferencesStore = create<PreferencesStoreType>()(

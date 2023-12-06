@@ -14,12 +14,6 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
-  // runs once the page is rehydrated on the client
-  /* const [clientRehydrated, setClientRehydrated] = useState(false);
-  useEffect(() => {
-    setClientRehydrated(true);
-  }, []); */
-
   return (
     <ResizableElement
       initialWidth={
@@ -27,8 +21,8 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
           ? useUserPreferencesStore.getState().preferences['role-page-side-panel'].width
           : 30
       }
-      maxWidth={400}
-      minWidth={200}
+      minWidth={300}
+      maxWidth={600}
       style={{ position: 'relative' }}
       onWidthChange={(width) =>
         setUserPreferences({

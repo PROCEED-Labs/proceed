@@ -14,12 +14,6 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
-  // runs once the page is rehydrated on the client
-  /* const [clientRehydrated, setClientRehydrated] = useState(false);
-  useEffect(() => {
-    setClientRehydrated(true);
-  }, [clientRehydrated]); */
-
   const userFullName = user ? `${user.firstName.value} ${user.lastName.value}` : null;
 
   return (
@@ -29,8 +23,8 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
           ? useUserPreferencesStore.getState().preferences['user-page-side-panel'].width
           : 30
       }
-      maxWidth={400}
-      minWidth={200}
+      minWidth={300}
+      maxWidth={600}
       style={{ position: 'relative' }}
       onWidthChange={(width) =>
         setUserPreferences({

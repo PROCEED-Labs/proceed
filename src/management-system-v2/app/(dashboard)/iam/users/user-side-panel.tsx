@@ -47,19 +47,21 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
         show={sidePanelOpen}
         collapsedWidth="30px"
         onCollapse={() => {
+          const resizeCard = resizableElementRef.current;
           const sidepanelWidth =
             useUserPreferencesStore.getState().preferences['user-page-side-panel'].width;
+
+          if (resizeCard) {
+            if (sidePanelOpen) resizeCard(30);
+            else resizeCard(sidepanelWidth);
+          }
+
           setUserPreferences({
             'user-page-side-panel': {
               open: !sidePanelOpen,
               width: sidepanelWidth,
             },
           });
-
-          if (!resizeCard) return;
-
-          if (sidePanelOpen) resizeCard(30);
-          else resizeCard(sidepanelWidth);
         }}
       >
         {user ? (

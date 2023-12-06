@@ -67,21 +67,28 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
           width: width,
         }}
       >
-        {/* This is used to resize the element  */}
         <div
           style={{
-            position: 'absolute',
-            width: '5px',
-            padding: '4px 0 0',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            zIndex: 100,
-            cursor: 'ew-resize',
+            position: 'relative',
+            height: '100%',
           }}
-          onMouseDown={onMouseDown}
-        />
-        {children}
+        >
+          {/* This is used to resize the element  */}
+          <div
+            style={{
+              position: 'absolute',
+              width: '5px',
+              padding: '4px 0 0',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              zIndex: 100,
+              cursor: 'ew-resize',
+            }}
+            onMouseDown={onMouseDown}
+          />
+          {children}
+        </div>
       </div>
     );
   },

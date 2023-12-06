@@ -2,12 +2,13 @@
 
 import { generateDateString } from '@/lib/utils';
 import { Divider } from 'antd';
-import React, { FC, Key, useEffect, useState } from 'react';
+import React, { FC, Key, useEffect, useRef, useState } from 'react';
 import Viewer from './bpmn-viewer';
 import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 
 type MetaDataType = {
   data?: ProcessListProcess[];
@@ -32,9 +33,19 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {
         setShowViewer(true);
+
+        //  set width of parent component (resizable element) to 450 which is the desired with of the collapsed card
+        if (resizableElementRef.current) {
+          resizableElementRef.current(300);
+        }
       }, 350); // Transition duration + 50ms
     } else {
       setShowViewer(false);
+
+      //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
+      if (resizableElementRef.current) {
+        resizableElementRef.current(40);
+      }
     }
 
     return () => {
@@ -42,15 +53,20 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
     };
   }, [showInfo]);
 
+  const resizableElementRef = useRef<ResizableElementRefType>(null);
   return (
-    <div
+    <ResizableElement
+      initialWidth={300}
+      minWidth={300}
+      maxWidth={600}
       style={{
-        justifySelf: 'flex-end',
-        position: 'relative',
-        flex: !showViewer ? 'none' : 1,
+        // position: 'relative',
+        // flex: !showViewer ? 'none' : 1,
         transition: 'flex 0.3s ease-in-out',
         marginLeft: '20px',
+        maxWidth: '33%',
       }}
+      ref={resizableElementRef}
     >
       <CollapsibleCard
         title={
@@ -123,7 +139,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
           )}
         </div>
       </CollapsibleCard>
-    </div>
+    </ResizableElement>
   );
 };
 

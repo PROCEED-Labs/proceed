@@ -13,13 +13,12 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
     (store) => store.preferences['role-page-side-panel'].open,
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  const resizeCard = resizableElementRef.current;
 
   // runs once the page is rehydrated on the client
-  const [clientRehydrated, setClientRehydrated] = useState(false);
+  /* const [clientRehydrated, setClientRehydrated] = useState(false);
   useEffect(() => {
     setClientRehydrated(true);
-  }, [clientRehydrated]);
+  }, []); */
 
   return (
     <ResizableElement

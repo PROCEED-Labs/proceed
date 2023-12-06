@@ -13,13 +13,12 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
     (store) => store.preferences['user-page-side-panel'].open,
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  const resizeCard = resizableElementRef.current;
 
   // runs once the page is rehydrated on the client
-  const [clientRehydrated, setClientRehydrated] = useState(false);
+  /* const [clientRehydrated, setClientRehydrated] = useState(false);
   useEffect(() => {
     setClientRehydrated(true);
-  }, [clientRehydrated]);
+  }, [clientRehydrated]); */
 
   const userFullName = user ? `${user.firstName.value} ${user.lastName.value}` : null;
 

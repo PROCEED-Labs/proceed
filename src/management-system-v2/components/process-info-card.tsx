@@ -15,9 +15,8 @@ type MetaDataType = {
   selection: Key[];
 };
 
+/** NEEDS TO BE PLACED IN A FLEX CONTAINER */
 const MetaData: FC<MetaDataType> = ({ data, selection }) => {
-  /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
-
   const { preferences, addPreferences } = useUserPreferences();
 
   const showInfo = preferences['show-process-meta-data'];

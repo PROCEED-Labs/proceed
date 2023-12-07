@@ -40,8 +40,8 @@
 }
 
 .ProcessBreadcrumb {
-  :global(li:not(:last-child) > .ant-breadcrumb-link),
-  :global(li:not(:last-child) > .ant-dropdown-trigger) {
+  :global(.ant-breadcrumb-link),
+  :global(.ant-dropdown-trigger) {
     cursor: pointer;
   }
 

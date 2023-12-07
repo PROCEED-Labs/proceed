@@ -2,38 +2,36 @@
 
 import styles from './page.module.scss';
 import { FC, useEffect, useState } from 'react';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import Modeler from '@/components/modeler';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
-import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 import { BreadcrumbProps, Divider, Select, SelectProps, Space, theme, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
-import VersionCreationButton from '@/components/version-creation-button';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 
+import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
+import type Canvas from 'diagram-js/lib/core/Canvas';
+
 type SubprocessInfo = {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
 };
 
 type ProcessProps = {
   params: { processId: string };
 };
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
-
 const Processes: FC<ProcessProps> = () => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
   const pathname = usePathname();
-  const query = useSearchParams();
   const [closed, setClosed] = useState(false);
   const [subprocessChain, setSubprocessChain] = useState<SubprocessInfo[]>([]);
   const router = useRouter();
@@ -47,23 +45,12 @@ const Processes: FC<ProcessProps> = () => {
     },
   });
 
-  const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
-    params: { path: { definitionId: processId as string } },
-  });
-
-  const invalidateProcesses = useInvalidateAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
-
   const {
     token: { fontSizeHeading1 },
   } = theme.useToken();
 
   /// Derived State
   const minimized = pathname !== `/processes/${processId}`;
-  const selectedVersionId = parseInt(query.get('version') ?? '-1');
-  const selectedVersion =
-    process?.versions.find((version) => version.version === selectedVersionId) ?? LATEST_VERSION;
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   useEffect(() => {
@@ -72,15 +59,19 @@ const Processes: FC<ProcessProps> = () => {
         const newSubprocessChain = [] as SubprocessInfo[];
 
         let element = event.element?.businessObject;
-        while (element?.$type === 'bpmn:SubProcess') {
+        while (bpmnIs(element, 'bpmn:SubProcess')) {
           newSubprocessChain.unshift({ id: element.id, name: element.name });
           element = element.$parent;
         }
-
+        // push a dummy element that represents the root process to generalize the subprocess handling to all possible layers in the modeler
+        newSubprocessChain.unshift({
+          id: undefined,
+          name: undefined,
+        });
         setSubprocessChain(newSubprocessChain);
       });
     }
-  }, [modeler]);
+  }, [process, modeler]);
 
   useEffect(() => {
     // Reset closed state when page is not minimized anymore.
@@ -88,23 +79,6 @@ const Processes: FC<ProcessProps> = () => {
       setClosed(false);
     }
   }, [minimized]);
-
-  const createProcessVersion = async (values: {
-    versionName: string;
-    versionDescription: string;
-  }) => {
-    const saveXMLResult = await modeler?.saveXML({ format: true });
-
-    if (saveXMLResult?.xml) {
-      await createNewProcessVersion(
-        saveXMLResult.xml,
-        values.versionName,
-        values.versionDescription,
-      );
-      await invalidateVersions();
-      await invalidateProcesses();
-    }
-  };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
@@ -121,8 +95,10 @@ const Processes: FC<ProcessProps> = () => {
           filterOption={filterOption}
           value={{
             value: process?.definitionId,
-            label: process?.definitionName,
+            label: 'Process List',
           }}
+          // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
+          optionLabelProp="children"
           onSelect={(_, option) => {
             router.push(`/processes/${option.value}`);
           }}
@@ -146,111 +122,76 @@ const Processes: FC<ProcessProps> = () => {
         />
       ),
     },
-    /* Versions: */
-    {
-      title: (
-        <Select
-          bordered={false}
-          popupMatchSelectWidth={false}
-          placeholder="Select Version"
-          showSearch
-          filterOption={filterOption}
-          value={{
-            value: selectedVersion.version,
-            label: selectedVersion.name,
-          }}
-          onSelect={(_, option) => {
-            // change the version info in the query but keep other info (e.g. the currently open subprocess)
-            const searchParams = new URLSearchParams(query);
-            if (!option.value || option.value === -1) searchParams.delete('version');
-            else searchParams.set(`version`, `${option.value}`);
-            router.push(
-              `/processes/${processId as string}${
-                searchParams.size ? '?' + searchParams.toString() : ''
-              }`,
-            );
-          }}
-          dropdownRender={(menu) => (
-            <>
-              {menu}
-              <Divider style={{ margin: '4px 0' }} />
-              <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                <VersionCreationButton
-                  type="text"
-                  icon={<PlusOutlined />}
-                  createVersion={createProcessVersion}
-                >
-                  Create New Version
-                </VersionCreationButton>
-              </Space>
-            </>
-          )}
-          options={[LATEST_VERSION].concat(process?.versions ?? []).map(({ version, name }) => ({
-            value: version,
-            label: name,
-          }))}
-        />
-      ),
-    },
-    /* Root-Process-Layer */
-    {
-      title: <Typography.Text strong={!subprocessChain.length}>[Process Layer]</Typography.Text>,
-      onClick: async () => {
-        // move to the root process view if a subprocess is currently open
-        if (modeler && subprocessChain.length) {
-          const canvas = modeler.get('canvas') as any;
-          const processDIId = canvas
-            .getRootElements()
-            .find((el: any) => el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration');
-          canvas.setRootElement(canvas.findRoot(processDIId));
-          canvas.zoom('fit-viewport', 'auto');
-        }
-      },
-    },
-    /* Sub-Processes-Layers */
-    ...subprocessChain.map(({ id, name }, index) => {
+    /* (Process/Sub-Process)-Layers */
+    ...subprocessChain.slice(0, -1).map(({ id, name }) => {
+      const label = id
+        ? name || id
+        : process?.definitionName || process?.definitionId || '[Root Layer]';
       return {
         title: (
-          <Typography.Text
-            strong={index === subprocessChain.length - 1}
-            style={{ maxWidth: '15rem' }}
-            ellipsis={{ tooltip: name || id }}
-          >
-            {name || id}
+          <Typography.Text style={{ maxWidth: '8rem' }} ellipsis={{ tooltip: label }}>
+            {label}
           </Typography.Text>
         ),
         onClick: async () => {
-          // move to the view of another subprocess
-          if (modeler && index < subprocessChain.length - 1) {
-            const canvas = modeler.get('canvas') as any;
+          // move to the view of another subprocess or the one of the root process
+          if (modeler) {
+            const canvas = modeler.get('canvas') as Canvas;
 
-            const subprocessPlane = canvas
-              .getRootElements()
-              .find((el: any) => el.businessObject.id === id);
-            if (!subprocessPlane) return;
-            canvas.setRootElement(subprocessPlane);
-            canvas.zoom('fit-viewport', 'auto');
+            if (id) {
+              // a specific subprocess is supposed to be displayed
+              const subprocessPlane = canvas
+                .getRootElements()
+                .find((el) => el.businessObject.id === id);
+              if (!subprocessPlane) return;
+              canvas.setRootElement(subprocessPlane);
+            } else {
+              // no id => show the root process
+              const processPlane = canvas
+                .getRootElements()
+                .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
+              if (!processPlane) return;
+              canvas.setRootElement(processPlane);
+            }
+
+            // the logic in zoom does not match the possible input types (if the second argument is defined but not an object the canvas will automatically define center)
+            canvas.zoom('fit-viewport', 'auto' as any);
           }
         },
       };
     }),
   ];
 
+  if (subprocessChain.length > 1) {
+    breadcrumItems.push({ title: '' });
+  }
+
   if (closed) {
     return null;
   }
 
+  const currentLayerName =
+    subprocessChain.length > 1
+      ? subprocessChain[subprocessChain.length - 1].name ||
+        subprocessChain[subprocessChain.length - 1].id
+      : process?.definitionName || process?.definitionId;
+
   return (
     <Content
-      title={
+      headerLeft={
         !processIsLoading && (
           <EllipsisBreadcrumb
+            keepInFront={2}
+            keepInBack={2}
             className={styles.ProcessBreadcrumb}
-            style={{ fontSize: fontSizeHeading1, color: 'black' }}
+            style={{ fontSize: fontSizeHeading1, color: 'black', flex: 1, padding: '0 5px' }}
             separator={<span style={{ fontSize: '20px' }}>/</span>}
             items={breadcrumItems}
           />
         )
+      }
+      headerCenter={
+        <Typography.Text style={{ flex: 1, padding: '0 5px' }}>{currentLayerName}</Typography.Text>
       }
       compact
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}

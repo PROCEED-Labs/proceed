@@ -21,6 +21,8 @@ import VersionToolbar from './version-toolbar';
 
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
 // immediately loaded when the initial script first executes (not after
@@ -121,9 +123,10 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       );
 
       modeler.current.on('root.set', (event: any) => {
+        if (modeler.current) (modeler.current.get('canvas') as any).zoom('fit-viewport', 'auto');
         // when the current root (the visible layer [the main process/collaboration or some collapsed subprocess]) is changed to a subprocess add its id to the query
         const searchParams = new URLSearchParams(query);
-        if (event.element?.businessObject?.$type === 'bpmn:SubProcess') {
+        if (bpmnIs(event.element, 'bpmn:SubProcess')) {
           searchParams.set(`subprocess`, `${event.element.businessObject.id}`);
         } else {
           searchParams.delete('subprocess');

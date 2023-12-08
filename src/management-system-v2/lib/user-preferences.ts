@@ -16,6 +16,7 @@ type PreferencesType = Record<string, any> & GetType<typeof defaultPreferences>;
 type PreferencesStoreType = {
   preferences: PreferencesType;
   addPreferences: (changes: Partial<RemoveReadOnly<PreferencesType>>) => void;
+  _hydrated: boolean;
 };
 
 const defaultPreferences = {
@@ -39,10 +40,10 @@ const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(
     (set, get) => ({
       preferences: defaultPreferences,
-
       addPreferences: (changes) => {
         set({ preferences: { ...get().preferences, ...changes } });
       },
+      _hydrated: false,
     }),
     {
       name: 'user-preferences', // name of the item in the storage (must be unique)
@@ -54,10 +55,12 @@ const useUserPreferencesStore = create<PreferencesStoreType>()(
 const defaultStore: PreferencesStoreType = {
   preferences: defaultPreferences,
   addPreferences: () => {},
+  _hydrated: false,
 };
 
 type AllProperties = PreferencesType & {
   addPreferences: PreferencesStoreType['addPreferences'];
+  _hydrated: PreferencesStoreType['_hydrated'];
 };
 type AutoGenerators = {
   [K in keyof AllProperties]: () => AllProperties[K];
@@ -78,6 +81,7 @@ const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) =>
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     setHydrated(true);
+    useUserPreferencesStore.setState({ _hydrated: true });
   }, [hydrated]);
 
   return hydrated ? storeValues : defaultValues;
@@ -88,6 +92,7 @@ _useUserPreferences.setState = useUserPreferencesStore.getState;
 _useUserPreferences.use = {} as AutoGenerators;
 
 _useUserPreferences.use.addPreferences = () => _useUserPreferences((store) => store.addPreferences);
+_useUserPreferences.use._hydrated = () => _useUserPreferences((store) => store._hydrated);
 for (const preference of Object.keys(defaultPreferences)) {
   _useUserPreferences.use[preference] = () =>
     _useUserPreferences((store) => store.preferences[preference]);

@@ -9,12 +9,14 @@ import { FilteredRole } from './role-page';
 
 const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
   const setUserPreferences = useUserPreferences.use.addPreferences();
-
   const sidePanelOpen = useUserPreferences(
     (store) => store.preferences['role-page-side-panel'].open,
   );
+  const hydrated = useUserPreferences.use._hydrated();
+
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
+  if (!hydrated) return null;
   return (
     <ResizableElement
       initialWidth={

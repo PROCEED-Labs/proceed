@@ -9,6 +9,7 @@ import { ListUser } from '@/components/user-list';
 
 const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
   const setUserPreferences = useUserPreferences.use.addPreferences();
+  const hydrated = useUserPreferences.use._hydrated();
   const sidePanelOpen = useUserPreferences(
     (store) => store.preferences['user-page-side-panel'].open,
   );
@@ -16,6 +17,7 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
 
   const userFullName = user ? `${user.firstName.value} ${user.lastName.value}` : null;
 
+  if (!hydrated) return null;
   return (
     <ResizableElement
       initialWidth={

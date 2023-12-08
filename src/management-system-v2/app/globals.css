@@ -9,6 +9,23 @@
   font-size: 20px;
 }
 
+.editor-modal .ant-modal-content {
+  padding: 0 !important;
+}
+
+.editor-modal .toastui-editor-mode-switch {
+  padding: 0 !important;
+}
+
+/* Hide Toolbar for Write/Preview Toggle in Markdown view*/
+.toastui-editor-toolbar .toastui-editor-md-tab-container {
+  display: none !important;
+}
+
+.toastui-editor-toolbar .toastui-editor-defaultUI-toolbar {
+  padding: 0 14px !important;
+}
+
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */
 .ant-col.ant-col-xs-flex-initial {
   flex: initial;

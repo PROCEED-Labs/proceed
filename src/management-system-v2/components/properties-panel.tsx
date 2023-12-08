@@ -23,6 +23,7 @@ import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import CollapsibleCard from './collapsible-card';
+import DescriptionSection from './description-section';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;
@@ -87,6 +88,18 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     return getMilestonesFromElement(selectedElement.businessObject);
   }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
 
+  const description = useMemo(() => {
+    if (!selectedElement.businessObject) {
+      return '';
+    }
+
+    if (selectedElement.businessObject.documentation) {
+      return selectedElement.businessObject.documentation[0]?.text;
+    } else {
+      return '';
+    }
+  }, [JSON.stringify(selectedElement.businessObject)]);
+
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
@@ -136,20 +149,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
     });
-  };
-
-  const updateDescription = (text: string) => {
-    const modeling = modeler!.get('modeling') as Modeling;
-    const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
-
-    let documentationElement = undefined;
-    if (text) {
-      documentationElement = bpmnFactory.create('bpmn:Documentation', {
-        text,
-      });
-    }
-
-    modeling.updateProperties(selectedElement as any, { documentation: [documentationElement] });
   };
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
@@ -235,17 +234,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
             />
           </Space>
 
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>Description</b>
-            <Input.TextArea
+          <DescriptionSection
+            description={description}
+            selectedElement={selectedElement}
+          ></DescriptionSection>
+          {/* <Input.TextArea
+              size="large"
               placeholder={
                 selectedElement.type !== 'bpmn:Process'
                   ? 'Element Documentation'
                   : 'Process Documentation'
               }
               onChange={(event) => updateDescription(event.target.value)}
-            ></Input.TextArea>
-          </Space>
+            ></Input.TextArea> */}
 
           <CustomPropertySection
             metaData={metaData}

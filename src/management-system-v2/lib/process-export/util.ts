@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 
-import { toBpmnObject, toBpmnXml, getElementById } from '@proceed/bpmn-helper';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 
 /**
  * Downloads the data onto the device of the user
@@ -48,39 +48,39 @@ export async function getSVGFromBPMN(
   viewerElement.id = 'canvas_' + v4();
   document.body.appendChild(viewerElement);
 
-  // if specific elements are selected for export make sure to filter out all other elements
-  if (flowElementsToExportIds.length) {
-    const bpmnObj: any = await toBpmnObject(bpmn!);
-    // remove connections where the source or target or both are not selected
-    flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
-      const el = getElementById(bpmnObj, id) as any;
-      return (
-        el &&
-        (!el.sourceRef || flowElementsToExportIds.includes(el.sourceRef.id)) &&
-        (!el.targetRef || flowElementsToExportIds.includes(el.targetRef.id))
-      );
-    });
-
-    if (flowElementsToExportIds.length) {
-      // find the correct plane (either the root process/collaboration or a subprocess)
-      const { plane } = bpmnObj.diagrams.find((el: any) =>
-        subprocessId
-          ? // either find the subprocess plane
-            el.plane.bpmnElement.id === subprocessId
-          : // or the root process/collaboration plane
-            el.plane.bpmnElement.$type !== 'bpmn:SubProcess',
-      );
-      // remove the visualisation of the elements that are not selected
-      plane.planeElement = plane.planeElement.filter((diEl: any) =>
-        flowElementsToExportIds.some((id) => id === diEl.bpmnElement.id),
-      );
-      bpmn = await toBpmnXml(bpmnObj);
-    }
-  }
-
   //Create a viewer to transform the bpmn into an svg
   const viewer = new Viewer({ container: '#' + viewerElement.id });
   await viewer.importXML(bpmn);
+
+  const elementRegistry = viewer.get('elementRegistry') as ElementRegistry;
+
+  // if specific elements are selected for export make sure to filter out all other elements
+  if (flowElementsToExportIds.length) {
+    // remove connections where the source or target or both are not selected
+    flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
+      const el = elementRegistry.get(id);
+      return (
+        el &&
+        (!el.source || flowElementsToExportIds.includes(el.source.id)) &&
+        (!el.targetRef || flowElementsToExportIds.includes(el.target.id))
+      );
+    });
+    if (flowElementsToExportIds.length) {
+      // hide all elements that are not directly selected and that are not indirectly selected due to a parent being selected
+      const unselectedElements = elementRegistry.filter((el) => {
+        while (el) {
+          if (flowElementsToExportIds.includes(el.id)) {
+            return false;
+          }
+          el = el.parent;
+        }
+        return true;
+      });
+      unselectedElements.forEach((el: any) => {
+        elementRegistry.getGraphics(el).style.setProperty('display', 'none');
+      });
+    }
+  }
 
   const canvas = viewer.get('canvas') as any;
 

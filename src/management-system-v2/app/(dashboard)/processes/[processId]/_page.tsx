@@ -26,6 +26,9 @@ import { AuthCan } from '@/lib/clientAuthComponents';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
+import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
+import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 
 type SubprocessInfo = {
@@ -68,11 +71,19 @@ const Processes: FC<ProcessProps> = () => {
       modeler.on('root.set', (event: any) => {
         const newSubprocessChain = [] as SubprocessInfo[];
 
-        let element = event.element?.businessObject;
-        while (bpmnIs(element, 'bpmn:SubProcess')) {
-          newSubprocessChain.unshift({ id: element.id, name: element.name });
-          element = element.$parent;
+        if (isPlane(event.element)) {
+          const elementRegistry = modeler.get('elementRegistry') as ElementRegistry;
+          let element = event.element?.businessObject;
+          while (bpmnIs(element, 'bpmn:SubProcess')) {
+            const shape = elementRegistry.get(element.id);
+            // ignore expanded sub-processes that might be in the hierarchy chain
+            if (shape && !isExpanded(shape as any)) {
+              newSubprocessChain.unshift({ id: element.id, name: element.name });
+            }
+            element = element.$parent;
+          }
         }
+
         // push a dummy element that represents the root process to generalize the subprocess handling to all possible layers in the modeler
         newSubprocessChain.unshift({
           id: undefined,
@@ -96,7 +107,7 @@ const Processes: FC<ProcessProps> = () => {
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const breadcrumItems: BreadcrumbProps['items'] = showMobileView
-    ? []
+    ? [] // avoid unnecessary work in the mobile view
     : [
         /* Processes: */
         {
@@ -168,7 +179,7 @@ const Processes: FC<ProcessProps> = () => {
                   canvas.setRootElement(processPlane);
                 }
 
-                // the logic in zoom does not match the possible input types (if the second argument is defined but not an object the canvas will automatically define center)
+                // the logic in zoom does not match the possible argument types (if the second argument is defined but not an object the canvas will automatically define center)
                 canvas.zoom('fit-viewport', 'auto' as any);
               }
             },
@@ -176,6 +187,7 @@ const Processes: FC<ProcessProps> = () => {
         }),
       ];
 
+  // add a trailing slash if the name that is displayed in the center of the header is of a subprocess
   if (subprocessChain.length > 1) {
     breadcrumItems.push({ title: '' });
   }
@@ -184,11 +196,14 @@ const Processes: FC<ProcessProps> = () => {
     return null;
   }
 
+  // the name that is displayed in the center of the header
   let currentLayerName = process?.definitionName || process?.definitionId;
+  // the name of the previous layer or 'Process List' if already in the root layer (only used in the mobile view)
   let backButtonLabel = 'Process List';
 
   if (subprocessChain.length > 1) {
     const lastEntryIndex = subprocessChain.length - 1;
+    // get the name of the last subprocess in the chain (that is the one currently shown in the modeler)
     currentLayerName = subprocessChain[lastEntryIndex].name || subprocessChain[lastEntryIndex].id;
 
     const previousSubprocess = subprocessChain.slice(-2, -1)[0];

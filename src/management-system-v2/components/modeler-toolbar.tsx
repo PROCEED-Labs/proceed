@@ -76,7 +76,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
     selectedElement = selectedElementId
       ? elementRegistry.get(selectedElementId)!
-      : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
+      : elementRegistry.getAll().filter((el) => el.businessObject?.$type === 'bpmn:Process')[0];
   }
 
   useEffect(() => {

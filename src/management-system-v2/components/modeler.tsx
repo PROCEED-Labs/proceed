@@ -19,6 +19,8 @@ import { usePutAsset } from '@/lib/fetch-data';
 import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 
+import useMobileModeler from '@/lib/useMobileModeler';
+
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
@@ -59,6 +61,10 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
   /// Derived State
   const selectedVersionId = query.get('version');
 
+  const showMobileView = useMobileModeler();
+
+  const canEdit = !selectedVersionId && !showMobileView;
+
   useEffect(() => {
     if (!canvas.current) return;
     // Little ref check to ensure only the latest modeler is active.
@@ -70,7 +76,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       // This is not the most recent instance, so don't do anything.
       if (active !== modeler.current) return;
 
-      if (selectedVersionId !== null) {
+      if (!canEdit) {
         modeler.current = new Viewer!({
           container: canvas.current!,
           moddleExtensions: {
@@ -146,7 +152,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, selectedVersionId, processId, updateProcessMutation]);
+  }, [setModeler, canEdit, processId, updateProcessMutation, selectedVersionId]);
 
   const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersionId);
 
@@ -213,7 +219,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       {!minimized && (
         <>
           <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
-          {selectedVersionId && <VersionToolbar />}
+          {selectedVersionId && !showMobileView && <VersionToolbar />}
           {!!xmlEditorBpmn && (
             <XmlEditor
               bpmn={xmlEditorBpmn}

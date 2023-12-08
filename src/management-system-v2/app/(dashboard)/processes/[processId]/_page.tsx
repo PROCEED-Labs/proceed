@@ -8,9 +8,19 @@ import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
 import { useGetAsset } from '@/lib/fetch-data';
-import { BreadcrumbProps, Divider, Select, SelectProps, Space, theme, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {
+  BreadcrumbProps,
+  Button,
+  Divider,
+  Select,
+  SelectProps,
+  Space,
+  theme,
+  Typography,
+} from 'antd';
+import { PlusOutlined, LeftOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
@@ -80,87 +90,91 @@ const Processes: FC<ProcessProps> = () => {
     }
   }, [minimized]);
 
+  const showMobileView = useMobileModeler();
+
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  const breadcrumItems: BreadcrumbProps['items'] = [
-    /* Processes: */
-    {
-      title: (
-        <Select
-          bordered={false}
-          popupMatchSelectWidth={false}
-          placeholder="Select Process"
-          showSearch
-          filterOption={filterOption}
-          value={{
-            value: process?.definitionId,
-            label: 'Process List',
-          }}
-          // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
-          optionLabelProp="children"
-          onSelect={(_, option) => {
-            router.push(`/processes/${option.value}`);
-          }}
-          dropdownRender={(menu) => (
-            <>
-              {menu}
-              <AuthCan action="create" resource="Process">
-                <Divider style={{ margin: '4px 0' }} />
-                <Space style={{ display: 'flex', justifyContent: 'center' }}>
-                  <ProcessCreationButton type="text" icon={<PlusOutlined />}>
-                    Create new process
-                  </ProcessCreationButton>
-                </Space>
-              </AuthCan>
-            </>
-          )}
-          options={processes?.map(({ definitionId, definitionName }) => ({
-            value: definitionId,
-            label: definitionName,
-          }))}
-        />
-      ),
-    },
-    /* (Process/Sub-Process)-Layers */
-    ...subprocessChain.slice(0, -1).map(({ id, name }) => {
-      const label = id
-        ? name || id
-        : process?.definitionName || process?.definitionId || '[Root Layer]';
-      return {
-        title: (
-          <Typography.Text style={{ maxWidth: '8rem' }} ellipsis={{ tooltip: label }}>
-            {label}
-          </Typography.Text>
-        ),
-        onClick: async () => {
-          // move to the view of another subprocess or the one of the root process
-          if (modeler) {
-            const canvas = modeler.get('canvas') as Canvas;
-
-            if (id) {
-              // a specific subprocess is supposed to be displayed
-              const subprocessPlane = canvas
-                .getRootElements()
-                .find((el) => el.businessObject.id === id);
-              if (!subprocessPlane) return;
-              canvas.setRootElement(subprocessPlane);
-            } else {
-              // no id => show the root process
-              const processPlane = canvas
-                .getRootElements()
-                .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
-              if (!processPlane) return;
-              canvas.setRootElement(processPlane);
-            }
-
-            // the logic in zoom does not match the possible input types (if the second argument is defined but not an object the canvas will automatically define center)
-            canvas.zoom('fit-viewport', 'auto' as any);
-          }
+  const breadcrumItems: BreadcrumbProps['items'] = showMobileView
+    ? []
+    : [
+        /* Processes: */
+        {
+          title: (
+            <Select
+              bordered={false}
+              popupMatchSelectWidth={false}
+              placeholder="Select Process"
+              showSearch
+              filterOption={filterOption}
+              value={{
+                value: process?.definitionId,
+                label: 'Process List',
+              }}
+              // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
+              optionLabelProp="children"
+              onSelect={(_, option) => {
+                router.push(`/processes/${option.value}`);
+              }}
+              dropdownRender={(menu) => (
+                <>
+                  {menu}
+                  <AuthCan action="create" resource="Process">
+                    <Divider style={{ margin: '4px 0' }} />
+                    <Space style={{ display: 'flex', justifyContent: 'center' }}>
+                      <ProcessCreationButton type="text" icon={<PlusOutlined />}>
+                        Create new process
+                      </ProcessCreationButton>
+                    </Space>
+                  </AuthCan>
+                </>
+              )}
+              options={processes?.map(({ definitionId, definitionName }) => ({
+                value: definitionId,
+                label: definitionName,
+              }))}
+            />
+          ),
         },
-      };
-    }),
-  ];
+        /* (Process/Sub-Process)-Layers */
+        ...subprocessChain.slice(0, -1).map(({ id, name }) => {
+          const label = id
+            ? name || id
+            : process?.definitionName || process?.definitionId || '[Root Layer]';
+          return {
+            title: (
+              <Typography.Text style={{ maxWidth: '8rem' }} ellipsis={{ tooltip: label }}>
+                {label}
+              </Typography.Text>
+            ),
+            onClick: async () => {
+              // move to the view of another subprocess or the one of the root process
+              if (modeler) {
+                const canvas = modeler.get('canvas') as Canvas;
+
+                if (id) {
+                  // a specific subprocess is supposed to be displayed
+                  const subprocessPlane = canvas
+                    .getRootElements()
+                    .find((el) => el.businessObject.id === id);
+                  if (!subprocessPlane) return;
+                  canvas.setRootElement(subprocessPlane);
+                } else {
+                  // no id => show the root process
+                  const processPlane = canvas
+                    .getRootElements()
+                    .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
+                  if (!processPlane) return;
+                  canvas.setRootElement(processPlane);
+                }
+
+                // the logic in zoom does not match the possible input types (if the second argument is defined but not an object the canvas will automatically define center)
+                canvas.zoom('fit-viewport', 'auto' as any);
+              }
+            },
+          };
+        }),
+      ];
 
   if (subprocessChain.length > 1) {
     breadcrumItems.push({ title: '' });
@@ -170,28 +184,67 @@ const Processes: FC<ProcessProps> = () => {
     return null;
   }
 
-  const currentLayerName =
-    subprocessChain.length > 1
-      ? subprocessChain[subprocessChain.length - 1].name ||
-        subprocessChain[subprocessChain.length - 1].id
-      : process?.definitionName || process?.definitionId;
+  let currentLayerName = process?.definitionName || process?.definitionId;
+  let backButtonLabel = 'Process List';
+
+  if (subprocessChain.length > 1) {
+    const lastEntryIndex = subprocessChain.length - 1;
+    currentLayerName = subprocessChain[lastEntryIndex].name || subprocessChain[lastEntryIndex].id;
+
+    const previousSubprocess = subprocessChain.slice(-2, -1)[0];
+    backButtonLabel =
+      previousSubprocess?.name ||
+      previousSubprocess?.id ||
+      process?.definitionName ||
+      '[Root Layer]';
+  }
+
+  const currentSubprocess = subprocessChain.slice(-1)[0];
+
+  const handleBackButtonClick = () => {
+    if (modeler) {
+      const canvas = modeler.get('canvas') as any;
+
+      if (currentSubprocess.id) {
+        canvas.setRootElement(canvas.findRoot(currentSubprocess.id));
+        canvas.zoom('fit-viewport', 'auto');
+      } else {
+        router.push('/processes');
+      }
+    }
+  };
 
   return (
     <Content
       headerLeft={
         !processIsLoading && (
-          <EllipsisBreadcrumb
-            keepInFront={2}
-            keepInBack={2}
-            className={styles.ProcessBreadcrumb}
-            style={{ fontSize: fontSizeHeading1, color: 'black', flex: 1, padding: '0 5px' }}
-            separator={<span style={{ fontSize: '20px' }}>/</span>}
-            items={breadcrumItems}
-          />
+          <div style={{ flex: 1, padding: '0 5px' }}>
+            {showMobileView ? (
+              <Button icon={<LeftOutlined />} type="text" onClick={handleBackButtonClick}>
+                <Typography.Text
+                  ellipsis={{ tooltip: backButtonLabel }}
+                  style={{ maxWidth: '10rem' }}
+                >
+                  {backButtonLabel}
+                </Typography.Text>
+              </Button>
+            ) : (
+              <EllipsisBreadcrumb
+                keepInFront={2}
+                keepInBack={2}
+                className={styles.ProcessBreadcrumb}
+                style={{ fontSize: fontSizeHeading1, color: 'black' }}
+                separator={<span style={{ fontSize: '20px' }}>/</span>}
+                items={breadcrumItems}
+              />
+            )}
+          </div>
         )
       }
       headerCenter={
-        <Typography.Text style={{ flex: 1, padding: '0 5px' }}>{currentLayerName}</Typography.Text>
+        <Typography.Text strong style={{ flex: 1, padding: '0 5px' }}>
+          {currentLayerName}
+        </Typography.Text>
       }
       compact
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}

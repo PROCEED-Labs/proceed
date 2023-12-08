@@ -31,6 +31,8 @@ import VersionCreationButton from './version-creation-button';
 
 import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
 
+import useMobileModeler from '@/lib/useMobileModeler';
+
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
@@ -146,6 +148,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     process?.versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
     LATEST_VERSION;
 
+  const showMobileView = useMobileModeler();
+
   return (
     <>
       <Toolbar>
@@ -178,25 +182,29 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                   label: name,
                 }))}
             />
-            <Tooltip title="Create New Version">
-              <VersionCreationButton
-                icon={<PlusOutlined />}
-                createVersion={createProcessVersion}
-              ></VersionCreationButton>
-            </Tooltip>
-            <Tooltip title="Back to parent">
-              <Button
-                icon={<ArrowUpOutlined />}
-                disabled={!subprocessId}
-                onClick={handleReturnToParent}
-              />
-            </Tooltip>
-            <Tooltip title="Undo">
-              <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
-            </Tooltip>
-            <Tooltip title="Redo">
-              <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
-            </Tooltip>
+            {!showMobileView && (
+              <>
+                <Tooltip title="Create New Version">
+                  <VersionCreationButton
+                    icon={<PlusOutlined />}
+                    createVersion={createProcessVersion}
+                  ></VersionCreationButton>
+                </Tooltip>
+                <Tooltip title="Back to parent">
+                  <Button
+                    icon={<ArrowUpOutlined />}
+                    disabled={!subprocessId}
+                    onClick={handleReturnToParent}
+                  />
+                </Tooltip>
+                <Tooltip title="Undo">
+                  <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
+                </Tooltip>
+                <Tooltip title="Redo">
+                  <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
+                </Tooltip>
+              </>
+            )}
           </ToolbarGroup>
 
           <ToolbarGroup>
@@ -205,12 +213,19 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
             >
               <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
             </Tooltip>
-            <Tooltip title="Show XML">
-              <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
-            </Tooltip>
-            <Tooltip title="Export">
-              <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
-            </Tooltip>
+            {!showMobileView && (
+              <>
+                <Tooltip title="Show XML">
+                  <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
+                </Tooltip>
+                <Tooltip title="Export">
+                  <Button
+                    icon={<ExportOutlined />}
+                    onClick={handleProcessExportModalToggle}
+                  ></Button>
+                </Tooltip>
+              </>
+            )}
           </ToolbarGroup>
         </Space>
         {showPropertiesPanel && selectedElement && (

@@ -80,14 +80,11 @@ const Processes: FC = () => {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const {
-    'icon-view-in-process-list': iconView,
-    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
-    'ask-before-copying': openModalWhenCopy,
-  } = preferences;
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const openModalWhenDeleteMultiple = useUserPreferences.use['ask-before-deleting-multiple']();
+  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
+  const openModalWhenCopy = useUserPreferences.use['ask-before-copying']();
 
   const ability = useAbilityStore((state) => state.ability);
 

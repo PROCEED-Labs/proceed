@@ -5,7 +5,7 @@ import { RemoveReadOnly, ToPrimitive } from './typescript-utils';
 
 type GetType<T> = T extends Record<any, any>
   ? T extends readonly any[]
-    ? T
+    ? readonly (T[0] extends undefined ? any : ToPrimitive<T[0]>)[]
     : {
         [Key in keyof T]: GetType<T[Key]>;
       }
@@ -35,7 +35,7 @@ const defaultPreferences = {
   'user-page-side-panel': { open: false, width: 300 },
 } as const;
 
-export const useUserPreferencesStore = create<PreferencesStoreType>()(
+const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(
     (set, get) => ({
       preferences: defaultPreferences,
@@ -51,17 +51,46 @@ export const useUserPreferencesStore = create<PreferencesStoreType>()(
   ),
 );
 
-export const useUserPreferences = () => {
-  const prefs = useUserPreferencesStore((state) => state.preferences);
-  const addPrefs = useUserPreferencesStore((state) => state.addPreferences);
-  const [data, setData] = useState<PreferencesType | undefined>(undefined);
-
-  useEffect(() => {
-    setData(prefs);
-  }, [prefs]);
-
-  return {
-    preferences: (data ? data : defaultPreferences) as PreferencesType,
-    addPreferences: addPrefs,
-  };
+const defaultStore: PreferencesStoreType = {
+  preferences: defaultPreferences,
+  addPreferences: () => {},
 };
+
+type AllProperties = PreferencesType & {
+  addPreferences: PreferencesStoreType['addPreferences'];
+};
+type AutoGenerators = {
+  [K in keyof AllProperties]: () => AllProperties[K];
+};
+type UseStore = {
+  (): PreferencesStoreType;
+  <U>(selector: (state: PreferencesStoreType) => U): U;
+  getState: (typeof useUserPreferencesStore)['getState'];
+  setState: (typeof useUserPreferencesStore)['setState'];
+  use: AutoGenerators;
+};
+
+const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) => {
+  //@ts-ignore
+  const storeValues = useUserPreferencesStore(selector);
+  const defaultValues = selector ? selector(defaultStore) : defaultStore;
+
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, [hydrated]);
+
+  return hydrated ? storeValues : defaultValues;
+};
+
+_useUserPreferences.getState = useUserPreferencesStore.getState;
+_useUserPreferences.setState = useUserPreferencesStore.getState;
+_useUserPreferences.use = {} as AutoGenerators;
+
+_useUserPreferences.use.addPreferences = () => _useUserPreferences((store) => store.addPreferences);
+for (const preference of Object.keys(defaultPreferences)) {
+  _useUserPreferences.use[preference] = () =>
+    _useUserPreferences((store) => store.preferences[preference]);
+}
+
+export const useUserPreferences = _useUserPreferences as UseStore;

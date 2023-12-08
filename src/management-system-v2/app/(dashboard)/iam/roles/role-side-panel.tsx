@@ -1,15 +1,16 @@
 'use client';
 
-import { FC, useEffect, useRef, useState } from 'react';
+import { FC, useRef } from 'react';
 import { Alert, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
-import { useUserPreferencesStore } from '@/lib/user-preferences';
+import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { FilteredRole } from './role-page';
 
 const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
-  const setUserPreferences = useUserPreferencesStore((store) => store.addPreferences);
-  const sidePanelOpen = useUserPreferencesStore(
+  const setUserPreferences = useUserPreferences.use.addPreferences();
+
+  const sidePanelOpen = useUserPreferences(
     (store) => store.preferences['role-page-side-panel'].open,
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
@@ -17,9 +18,7 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
   return (
     <ResizableElement
       initialWidth={
-        sidePanelOpen
-          ? useUserPreferencesStore.getState().preferences['role-page-side-panel'].width
-          : 30
+        sidePanelOpen ? useUserPreferences.getState().preferences['role-page-side-panel'].width : 30
       }
       minWidth={300}
       maxWidth={600}
@@ -41,7 +40,7 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
         onCollapse={() => {
           const resizeCard = resizableElementRef.current;
           const sidepanelWidth =
-            useUserPreferencesStore.getState().preferences['role-page-side-panel'].width;
+            useUserPreferences.getState().preferences['role-page-side-panel'].width;
 
           if (resizeCard) {
             if (sidePanelOpen) resizeCard(30);

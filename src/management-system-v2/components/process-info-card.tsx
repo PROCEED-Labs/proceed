@@ -17,10 +17,8 @@ type MetaDataType = {
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
 const MetaData: FC<MetaDataType> = ({ data, selection }) => {
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const showInfo = preferences['show-process-meta-data'];
-  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const showInfo = useUserPreferences.use['show-process-meta-data']();
 
   /* Necessary for Firefox BPMN.js Viewer fix */
   const [showViewer, setShowViewer] = useState(showInfo);

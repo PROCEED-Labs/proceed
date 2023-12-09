@@ -1,5 +1,3 @@
-import { toBpmnObject, toBpmnXml } from '@proceed/bpmn-helper';
-
 import { getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
 

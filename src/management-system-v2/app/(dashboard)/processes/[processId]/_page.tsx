@@ -23,7 +23,7 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import ProcessCreationButton from '@/components/process-creation-button';
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 
 type ProcessProps = {
   params: { processId: string };

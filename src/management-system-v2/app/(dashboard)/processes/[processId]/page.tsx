@@ -1,4 +1,4 @@
-import Auth from '@/lib/serverAuthComponents';
+import Auth from '@/components/auth';
 import Processes from './_page';
 
 export default Auth(

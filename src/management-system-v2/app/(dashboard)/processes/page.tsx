@@ -1,15 +1,19 @@
-import { FC } from 'react';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Result, Space } from 'antd';
 import NotLoggedInFallback from './not-logged-in-fallback';
-import Auth from '@/lib/serverAuthComponents';
+import { getProcesses } from '@/lib/data/legacy/process';
+import Auth, { getCurrentUser } from '@/components/auth';
 
-const ProcessesPage: FC = () => {
+const ProcessesPage = async () => {
+  const { ability } = await getCurrentUser();
+  const processes = await getProcesses(ability);
+  //await new Promise((resolve) => setTimeout(resolve, 10000));
+
   return (
     <Content title="Processes">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes />
+        <Processes processes={processes} />
       </Space>
     </Content>
   );

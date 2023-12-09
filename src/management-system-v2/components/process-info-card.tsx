@@ -161,7 +161,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
               <p>Test</p>
             </>
           ) : (
-            showViewer && <div>Please select a process.</div>
+            <div>Please select a process.</div>
           )}
         </div>
       </CollapsibleCard>

@@ -77,14 +77,11 @@ const Processes = ({ processes }: ProcessesProps) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const {
-    'icon-view-in-process-list': iconView,
-    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
-    'ask-before-copying': openModalWhenCopy,
-  } = preferences;
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const openModalWhenDeleteMultiple = useUserPreferences.use['ask-before-deleting-multiple']();
+  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
+  const openModalWhenCopy = useUserPreferences.use['ask-before-copying']();
 
   const ability = useAbilityStore((state) => state.ability);
 
@@ -235,9 +232,14 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ /* width: '75%', */ flex: 3, width: '100%' }}>
+        <div
+          style={{
+            /* width: '75%', */
+            flex: 1,
+          }}
+        >
           <Bar
             leftNode={
               selectedRowKeys.length ? (

@@ -136,8 +136,10 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
     }
   }, [dataChanges, processesData, refreshData]);
 
-  const { preferences, addPreferences } = useUserPreferences();
-  const { [`${creationType.toLowerCase()}-modal-accordion`]: isAccordion } = preferences;
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const isAccordion = useUserPreferences(
+    (store) => store.preferences[`${creationType.toLowerCase()}-modal-accordion`],
+  ) as boolean;
 
   const getFinalBpmn = async ({ definitionId, definitionName, description, bpmn }: ProcessData) => {
     // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend

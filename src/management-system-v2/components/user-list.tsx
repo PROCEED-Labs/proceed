@@ -10,7 +10,7 @@ import { ApiData } from '@/lib/fetch-data';
 type User = ApiData<'/users', 'get'>[number];
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
-type ListUser = ReplaceKeysWithHighlighted<
+export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'
 >;
@@ -44,6 +44,8 @@ export type UserListProps = {
   error?: boolean;
   searchBarRightNode?: ReactNode;
   loading?: boolean;
+  sidePanel?: ReactNode;
+  onSelectedRows?: (users: ListUser[]) => void;
 };
 
 const UserList: FC<UserListProps> = ({
@@ -54,6 +56,8 @@ const UserList: FC<UserListProps> = ({
   error,
   searchBarRightNode,
   loading,
+  sidePanel,
+  onSelectedRows,
 }) => {
   const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
     data: users,
@@ -106,7 +110,7 @@ const UserList: FC<UserListProps> = ({
     />;
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Bar
         leftNode={
           selectedRowKeys.length ? (
@@ -126,24 +130,36 @@ const UserList: FC<UserListProps> = ({
         }}
         rightNode={searchBarRightNode ? searchBarRightNode : null}
       />
-      <Table<ListUser>
-        columns={tableColumns}
-        dataSource={filteredData}
-        onRow={({ id }) => ({
-          onMouseEnter: () => setHoveredRowId(id),
-          onMouseLeave: () => setHoveredRowId(null),
-        })}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-            setSelectedRowKeys(selectedRowKeys as string[]);
-            setSelectedRows(selectedObjects);
-          },
-        }}
-        rowKey="id"
-        loading={loading}
-      />
-    </>
+      <div style={{ display: 'flex', height: '100%', gap: 20 }}>
+        <div style={{ flex: 1 }}>
+          <Table<ListUser>
+            columns={tableColumns}
+            dataSource={filteredData}
+            onRow={(element) => ({
+              onMouseEnter: () => setHoveredRowId(element.id),
+              onMouseLeave: () => setHoveredRowId(null),
+              onClick: () => {
+                setSelectedRowKeys([element.id]);
+                setSelectedRows([element]);
+                if (onSelectedRows) onSelectedRows([element]);
+              },
+            })}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
+                setSelectedRowKeys(selectedRowKeys as string[]);
+                setSelectedRows(selectedObjects);
+                if (onSelectedRows) onSelectedRows(selectedObjects);
+              },
+            }}
+            rowKey="id"
+            loading={loading}
+          />
+        </div>
+
+        {sidePanel}
+      </div>
+    </div>
   );
 };
 

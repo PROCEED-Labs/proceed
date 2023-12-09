@@ -32,7 +32,7 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
 
   const [loading, setLoading] = useState(false);
 
-  const { addPreferences } = useUserPreferences();
+  const addPreferences = useUserPreferences.use.addPreferences();
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: refreshData,

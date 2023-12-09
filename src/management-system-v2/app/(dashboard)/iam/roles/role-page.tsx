@@ -3,16 +3,21 @@
 import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Space, Button, Result, Table, App } from 'antd';
-import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
+import { useGetAsset, useDeleteAsset, ApiData } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
-import useFuzySearch from '@/lib/useFuzySearch';
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Link from 'next/link';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import Bar from '@/components/bar';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ConfirmationButton from '@/components/confirmation-button';
+import { useRouter } from 'next/navigation';
+import RoleSidePanel from './role-side-panel';
+
+type Role = ApiData<'/roles', 'get'>[number];
+export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
 const RolesPage: FC = () => {
   const { message: messageApi } = App.useApp();
@@ -22,21 +27,23 @@ const RolesPage: FC = () => {
     onSuccess: () => refetchRoles(),
     onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
   });
+  const router = useRouter();
 
   const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch({
     data: roles || [],
     keys: ['name'],
     highlightedKeys: ['name'],
-    transformData: (items) =>
-      items.map((item) => ({ ...item.item, name: item.item.name.highlighted })),
+    transformData: (items) => items.map((item) => ({ ...item.item })),
   });
-  type FilteredRole = (typeof filteredRoles)[number];
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [selectedRow, setSelectedRows] = useState<FilteredRole[]>([]);
+  const [selectedRows, setSelectedRows] = useState<FilteredRole[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
-  const cannotDeleteSelected = selectedRow.some(
+  const lastSelectedElement =
+    selectedRows.length > 0 ? selectedRows[selectedRows.length - 1] : null;
+
+  const cannotDeleteSelected = selectedRows.some(
     (role) => !ability.can('delete', toCaslResource('Role', role)),
   );
 
@@ -51,16 +58,16 @@ const RolesPage: FC = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'display',
-      render: (name: string, role: FilteredRole) => (
+      render: (name: FilteredRole['name'], role: FilteredRole) => (
         <Link style={{ color: '#000' }} href={`/iam/roles/${role.id}`}>
-          {name}
+          {name.highlighted}
         </Link>
       ),
     },
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (_: any, record: FilteredRole) => record.members.length,
+      render: (members: FilteredRole['members']) => members.length,
       key: 'username',
     },
     {
@@ -102,50 +109,65 @@ const RolesPage: FC = () => {
 
   return (
     <Content title="Identity and Access Management">
-      <Bar
-        rightNode={<HeaderActions />}
-        leftNode={
-          selectedRowKeys.length > 0 ? (
-            <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected:</span>
-              <ConfirmationButton
-                title="Delete Roles"
-                description="Are you sure you want to delete the selected roles?"
-                onConfirm={() => deleteRoles(selectedRowKeys)}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  disabled: cannotDeleteSelected,
-                  type: 'text',
-                }}
-              />
-            </Space>
-          ) : null
-        }
-        searchProps={{
-          onChange: (e) => setSearchQuery(e.target.value),
-          onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
-          placeholder: 'Search Role ...',
-        }}
-      />
-
-      <Table<FilteredRole>
-        columns={columns}
-        dataSource={filteredRoles}
-        onRow={({ id }) => ({
-          onMouseEnter: () => setHoveredRow(id),
-          onMouseLeave: () => setHoveredRow(null),
-        })}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (selectedRowKeys, selectedRows) => {
-            setSelectedRowKeys(selectedRowKeys as string[]);
-            setSelectedRows(selectedRows);
-          },
-        }}
-        rowKey="id"
-        loading={isLoading || deletingRole}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Bar
+          rightNode={<HeaderActions />}
+          leftNode={
+            selectedRowKeys.length > 0 ? (
+              <Space size={20}>
+                <Button
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={() => setSelectedRowKeys([])}
+                />
+                <span>{selectedRowKeys.length} selected:</span>
+                <ConfirmationButton
+                  title="Delete Roles"
+                  description="Are you sure you want to delete the selected roles?"
+                  onConfirm={() => deleteRoles(selectedRowKeys)}
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    disabled: cannotDeleteSelected,
+                    type: 'text',
+                  }}
+                />
+              </Space>
+            ) : null
+          }
+          searchProps={{
+            onChange: (e) => setSearchQuery(e.target.value),
+            onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
+            placeholder: 'Search Role ...',
+          }}
+        />
+        <div style={{ display: 'flex', height: '100%', gap: 20 }}>
+          <div style={{ flex: 1 }}>
+            <Table<FilteredRole>
+              columns={columns}
+              dataSource={filteredRoles}
+              onRow={(element) => ({
+                onMouseEnter: () => setHoveredRow(element.id),
+                onMouseLeave: () => setHoveredRow(null),
+                onDoubleClick: () => router.push(`/iam/roles/${element.id}`),
+                onClick: () => {
+                  setSelectedRowKeys([element.id]);
+                  setSelectedRows([element]);
+                },
+              })}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedRowKeys, selectedRows) => {
+                  setSelectedRowKeys(selectedRowKeys as string[]);
+                  setSelectedRows(selectedRows);
+                },
+              }}
+              rowKey="id"
+              loading={isLoading || deletingRole}
+            />
+          </div>
+          <RoleSidePanel role={lastSelectedElement} />
+        </div>
+      </div>
     </Content>
   );
 };

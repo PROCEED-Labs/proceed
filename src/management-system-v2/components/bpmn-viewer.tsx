@@ -17,9 +17,15 @@ type ViewerProps = {
   selectedElementId?: string;
   rerenderTrigger?: any;
   reduceLogo?: boolean;
+  resizeOnWidthChange?: boolean;
 };
 
-const Viewer: FC<ViewerProps> = ({ selectedElementId, rerenderTrigger, reduceLogo }) => {
+const Viewer: FC<ViewerProps> = ({
+  selectedElementId,
+  rerenderTrigger,
+  reduceLogo,
+  resizeOnWidthChange,
+}) => {
   const [initialized, setInitialized] = useState(false);
   const { data: bpmn, isSuccess } = useProcessBpmn(selectedElementId ?? '');
   const canvas = useRef<HTMLDivElement>(null);
@@ -40,12 +46,29 @@ const Viewer: FC<ViewerProps> = ({ selectedElementId, rerenderTrigger, reduceLog
   }, [bpmn]);
 
   useEffect(() => {
-    if (initialized && bpmn && selectedElementId) {
-      previewer.current!.importXML(bpmn).then(() => {
-        (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-      });
+    function fitViewport() {
+      if (initialized && bpmn && selectedElementId) {
+        previewer.current!.importXML(bpmn).then(() => {
+          (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+        });
+      }
     }
-  }, [initialized, bpmn, selectedElementId]);
+
+    fitViewport();
+
+    if (resizeOnWidthChange) {
+      const resizeObserver = new ResizeObserver(() => {
+        if (initialized && bpmn && selectedElementId) {
+          previewer.current!.importXML(bpmn).then(() => {
+            (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
+          });
+        }
+      });
+
+      resizeObserver.observe(canvas.current!);
+      return () => resizeObserver.disconnect();
+    }
+  }, [initialized, bpmn, selectedElementId, resizeOnWidthChange]);
 
   useEffect(() => {
     if (initialized && selectedElementId) {

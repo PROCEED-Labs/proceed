@@ -4,6 +4,7 @@ import { FC, useEffect, useState } from 'react';
 import { Button, Skeleton, Form, Input, Modal, App } from 'antd';
 import { ApiData, ApiRequestBody, useGetAsset, usePutAsset } from '@/lib/fetch-data';
 import { useSession } from 'next-auth/react';
+import { useParseServerErrors } from '@/lib/useParseServerErrors';
 
 type modalInputField = {
   userDataField: keyof ApiData<'/users/{id}', 'get'>;
@@ -20,7 +21,7 @@ const UserDataModal: FC<{
   structure: modalInput;
   modalOpen: boolean;
   close: () => void;
-}> = ({ structure, modalOpen, close }) => {
+}> = ({ structure, modalOpen, close: propClose }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const { message } = App.useApp();
@@ -33,18 +34,32 @@ const UserDataModal: FC<{
       path: { id: user.id },
     },
   });
-  const defaultValues: Record<string, any> = {};
+  type User = NonNullable<typeof userData>;
+  const [formatErrors, parseErrors] = useParseServerErrors<User>({
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    username: 'Username',
+  });
 
-  if (!structure.password && userData)
-    for (const input of structure.inputFields)
-      defaultValues[input.submitField] = userData[input.userDataField];
-
-  const { mutateAsync: changeUserData } = usePutAsset('/users/{id}');
-  const { mutateAsync: changePassword } = usePutAsset('/users/{id}/update-password');
+  function close() {
+    propClose();
+    parseErrors(null);
+  }
 
   useEffect(() => {
-    return form.resetFields();
-  }, [form, modalOpen]);
+    if (!modalOpen) {
+      const defaultValues: Record<string, any> = {};
+
+      if (!structure.password && userData)
+        for (const input of structure.inputFields)
+          defaultValues[input.submitField] = userData[input.userDataField];
+
+      form.setFieldsValue(defaultValues);
+    }
+  }, [form, modalOpen, userData, structure]);
+
+  const { mutateAsync: changeUserData } = usePutAsset('/users/{id}', { onError: parseErrors });
+  const { mutateAsync: changePassword } = usePutAsset('/users/{id}/update-password');
 
   const submitData = async (values: Record<string, any>) => {
     if (!userData) return;
@@ -75,6 +90,7 @@ const UserDataModal: FC<{
       message.success({ content: 'Profile updated' });
       close();
     } catch (e) {
+      parseErrors(e);
       message.error({ content: 'An error ocurred' });
     } finally {
       setLoading(false);
@@ -85,7 +101,7 @@ const UserDataModal: FC<{
     <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title}>
       <Skeleton loading={isLoading}>
         <br />
-        <Form form={form} layout="vertical" onFinish={submitData} initialValues={defaultValues}>
+        <Form form={form} layout="vertical" onFinish={submitData}>
           {structure.password ? (
             <>
               <Form.Item
@@ -117,7 +133,9 @@ const UserDataModal: FC<{
                       if (!value || getFieldValue('password') === value) {
                         return Promise.resolve();
                       }
-                      return Promise.reject(new Error('The passwords do not match!'));
+                      return Promise.reject(
+                        new Error('The new password that you entered do not match!'),
+                      );
                     },
                   }),
                 ]}
@@ -132,6 +150,8 @@ const UserDataModal: FC<{
                 key={input.submitField}
                 label={input.label}
                 name={input.submitField}
+                validateStatus={input.submitField in formatErrors ? 'error' : ''}
+                help={input.submitField in formatErrors ? formatErrors[input.submitField] : ''}
                 required
               >
                 <Input />

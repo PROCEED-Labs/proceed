@@ -53,6 +53,11 @@ After cloning the repository, you need to install the PROCEED project dependenci
 yarn install
 ```
 
+**Docker Installation**
+Make sure Docker is installed on your system. If not, you can download and install Docker from the official website: (https://docs.docker.com)
+
+Ensure the Docker daemon is running on your system.
+
 This will install all modules and their dependencies inside `node_modules/`
 
 > Note: On macOS catalina there might be an error message popping up during the install step involving node-gyp. If it says "no xcode or clt version detected" then follow the steps from [this page of the node-gyp repo](https://github.com/nodejs/node-gyp/blob/master/macOS_Catalina.md) to resolve this problem.

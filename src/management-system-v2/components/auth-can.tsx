@@ -1,14 +1,14 @@
 'use client';
 
 import { ReactElement, ReactNode, useEffect, useMemo, FC, PropsWithChildren } from 'react';
-import { useAbilityStore } from './abilityStore';
+import { useAbilityStore } from '@/lib/abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
-import { AbilityRule, ResourceActionType } from './ability/caslAbility';
+import { AbilityRule, ResourceActionType } from '@/lib/ability/caslAbility';
 import { PackRule } from '@casl/ability/extra';
-import { useCsrfTokenStore } from './csrfTokenStore';
+import { useCsrfTokenStore } from '@/lib/csrfTokenStore';
 import { useRouter } from 'next/navigation';
-import Ability from './ability/abilityHelper';
+import Ability from '@/lib/ability/abilityHelper';
 
 export type AuthCanProps = {
   action: ResourceActionType | ResourceActionType[];
@@ -41,6 +41,9 @@ export const FetchAbility = () => {
   return <></>;
 };
 
+// TODO: Weil client side werden evtl. sensible Daten an den Client geschickt.
+// Auf server side ändern und eigene component für client side die aber nur für
+// buttons etc. benutzt werden sollte
 export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   action,
   resource,

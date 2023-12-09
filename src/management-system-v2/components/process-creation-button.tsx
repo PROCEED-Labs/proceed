@@ -1,12 +1,12 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
-
+import React, { ReactNode, useState, useTransition } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import ProcessModal from './process-modal';
-import { usePostAsset } from '@/lib/fetch-data';
 import { createProcess } from '@/lib/helpers/processHelpers';
+import { addProcess } from '@/lib/data/processes';
+import { useRouter } from 'next/navigation';
 
 type ProcessCreationButtonProps = ButtonProps & {
   createProcess?: (values: { name: string; description?: string }) => any;
@@ -24,17 +24,19 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-  const { mutateAsync: postProcess } = usePostAsset('/process');
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const createNewProcess = async (values: { name: string; description?: string }) => {
     const { metaInfo, bpmn } = await createProcess(values);
-    try {
-      await postProcess({
-        body: { bpmn: bpmn, departments: [] },
-      });
-    } catch (err) {
-      console.log(err);
-    }
+    startTransition(async () => {
+      try {
+        await addProcess({ bpmn: bpmn, departments: [] });
+      } catch (error) {
+        console.error(error);
+      }
+      router.refresh();
+    });
   };
 
   return (

@@ -33,7 +33,7 @@ import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-da
 import { useUserPreferences } from '@/lib/user-preferences';
 import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 
 type ProcessListProps = PropsWithChildren<{

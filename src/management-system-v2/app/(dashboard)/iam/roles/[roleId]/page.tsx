@@ -1,4 +1,4 @@
-import Auth from '@/lib/serverAuthComponents';
+import Auth from '@/components/auth';
 import RolePage from './role-page';
 
 export default Auth(

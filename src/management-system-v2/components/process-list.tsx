@@ -37,6 +37,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { ProcessListProcess } from './processes';
 import ProcessCopyModal from './process-copy';
+import ConfirmationButton from './confirmation-button';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -169,12 +170,11 @@ const ProcessList: FC<ProcessListProps> = ({
           </AuthCan>
 
 
-          {/*
-          TODO: delete with Popconfirm doesn't work, yet */}
+          {/*TODO: errors regarding query */}
 
           <AuthCan action="delete" resource={toCaslResource('Process', process)}>
             <Tooltip placement="top" title={'Delete'}>
-              <Popconfirm
+              {/* <Popconfirm
                 title="Delete Process"
                 description="Are you sure you want to delete this process?"
                 onConfirm={() => {
@@ -183,7 +183,16 @@ const ProcessList: FC<ProcessListProps> = ({
                 }}
               >
                 <Button icon={<DeleteOutlined />} type="text" />
-              </Popconfirm>
+              </Popconfirm> */}
+              <ConfirmationButton
+                title="Delete Process"
+                description="Are you sure you want to delete the selected process?"
+                onConfirm={() => deleteSelectedProcesses()}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
             </Tooltip>
           </AuthCan>
 

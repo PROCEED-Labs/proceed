@@ -34,6 +34,8 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { AuthCan } from '@/lib/clientAuthComponents';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import ConfirmationButton from './confirmation-button';
+import ProcessImportButton from './process-import';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -88,7 +90,7 @@ const Processes: FC = () => {
     'icon-view-in-process-list': iconView,
     // 'ask-before-deleting': openModalWhenDelete,
     //'ask-before-deleting-single': openModalWhenDeleteSingle,
-    'ask-before-copying': openModalWhenCopy,
+    // 'ask-before-copying': openModalWhenCopy,
   } = preferences;
 
   const ability = useAbilityStore((state) => state.ability);
@@ -138,13 +140,15 @@ const Processes: FC = () => {
 
       <AuthCan action="delete" resource={toCaslResource('Process', process)}>
             <Tooltip placement="top" title={'Delete'}>
-              <Popconfirm
+                <ConfirmationButton
                 title="Delete Processes"
                 description="Are you sure you want to delete the selected processes?"
                 onConfirm={() => deleteSelectedProcesses()}
-              >
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Popconfirm>
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
             </Tooltip>
           </AuthCan>
 
@@ -221,27 +225,28 @@ const Processes: FC = () => {
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         if (ability.can('create', 'Process')) {
-          if (openModalWhenCopy) {
-            setCopyProcessIds(copySelection as string[]);
-          } else {
-            copySelection.forEach(async (key) => {
-              const process = data?.find((item) => item.definitionId === key);
-              const processBpmn = await fetchProcessVersionBpmn(key as string);
+          setCopyProcessIds(copySelection as string[])
+          // if (openModalWhenCopy) {
+          //   setCopyProcessIds(copySelection as string[]);
+          // } else {
+          //   copySelection.forEach(async (key) => {
+          //     const process = data?.find((item) => item.definitionId === key);
+          //     const processBpmn = await fetchProcessVersionBpmn(key as string);
 
-              const newBPMN = await copyProcess({
-                bpmn: processBpmn as string,
-                newName: `${process?.definitionName} (Copy)`,
-              });
+          //     const newBPMN = await copyProcess({
+          //       bpmn: processBpmn as string,
+          //       newName: `${process?.definitionName} (Copy)`,
+          //     });
 
-              addProcess({
-                body: {
-                  bpmn: newBPMN as string,
-                  departments: [],
-                  variables: [],
-                },
-              });
-            });
-          }
+          //     addProcess({
+          //       body: {
+          //         bpmn: newBPMN as string,
+          //         departments: [],
+          //         variables: [],
+          //       },
+          //     });
+          //   });
+          // }
         }
       }
     };
@@ -261,7 +266,7 @@ const Processes: FC = () => {
     // openModalWhenDelete,
     copyProcessIds.length,
     deleteProcessIds.length,
-    openModalWhenCopy,
+    // openModalWhenCopy,
     ability,
   ]);
 
@@ -312,6 +317,7 @@ const Processes: FC = () => {
                   </Button>
                 </Space.Compact>
                 <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+                <Button type="default"><ProcessImportButton></ProcessImportButton></Button>
               </Space>
             }
           />

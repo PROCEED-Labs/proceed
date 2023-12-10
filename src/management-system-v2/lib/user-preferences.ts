@@ -22,7 +22,7 @@ const defaultPreferences = {
   'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
   // 'ask-before-deleting': true,
   // 'ask-before-deleting-single': true,
-  'ask-before-copying': true,
+  // 'ask-before-copying': true,
   // 'process-copy-modal-accordion': true,
 };
 

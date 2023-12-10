@@ -240,14 +240,14 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
           <div style={{ display: 'flex' }}>
             <span>{title}</span>
             <div style={{ flex: 19 }}></div>
-            <Tooltip
-              placement="left"
-              title={
-                <>
-                  <div>Auto-Close: Only one panel open</div>
-                  <div>Keep-Open: Close panels manually</div>
-                </>
-              }
+            {/* <Tooltip
+              // placement="left"
+              // title={
+              //   <>
+              //     <div>Auto-Close: Only one panel open</div>
+              //     <div>Keep-Open: Close panels manually</div>
+              //   </>
+              // }
             >
               <Switch
                 checkedChildren="Auto-Close"
@@ -257,7 +257,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
                   addPreferences({ [`${creationType.toLowerCase()}-modal-accordion`]: checked });
                 }}
               />
-            </Tooltip>
+            </Tooltip> */}
             <div style={{ flex: 1 }}></div>
           </div>
         }
@@ -270,7 +270,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
             placement="top"
             title={<>{`${creationType}`} processes without editing</>}
           >
-            <Checkbox
+            {/* <Checkbox
               key="checkbox"
               className={styles.Checkbox}
               onChange={(e) => {
@@ -278,7 +278,7 @@ const ProcessCreationModal: React.FC<ProcessCreationProps> = ({
               }}
             >
               Don&apos;t show again
-            </Checkbox>
+            </Checkbox> */}
           </Tooltip>,
           <span style={{ display: 'inline-block', width: '34%' }} key={'filler'}></span>,
           <Button loading={loading} key="back" onClick={handleCancel}>

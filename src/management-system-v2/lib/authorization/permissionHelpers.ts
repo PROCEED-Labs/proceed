@@ -15,7 +15,7 @@ export function permissionNumberToIdentifiers(permission: number): ResourceActio
     return ['admin'];
   }
 
-  const actions = [];
+  const actions: ResourceActionType[] = [];
 
   // starts at 1 because none would be allways included and
   // ends at length-1 because admin needs to be added with adminPermissions number

@@ -4,6 +4,7 @@ import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
 import { roleMappingsMetaObjects } from './role-mappings.js';
 
+/** @type {any} - object containing all roles */
 export let roleMetaObjects = {};
 
 /**

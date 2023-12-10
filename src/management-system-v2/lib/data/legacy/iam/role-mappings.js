@@ -2,6 +2,7 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMetaObjects } from './roles.js';
 
+/** @type {any} - object containing all role mappings */
 export let roleMappingsMetaObjects = {};
 
 /**

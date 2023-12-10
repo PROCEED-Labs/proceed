@@ -11,7 +11,10 @@ import {
   getProcessMetaObjects,
   toExternalFormat,
   addProcess as _addProcess,
+  getProcessBpmn,
+  updateProcess as _updateProcess,
 } from './legacy/_process';
+import { addDocumentation, setDefinitionsName } from '@proceed/bpmn-helper';
 
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
@@ -46,4 +49,36 @@ export const addProcess = async (newProcess: any) => {
   }
 
   return toExternalFormat({ ...process, bpmn });
+};
+
+export const updateProcess = async (
+  definitionsId: string,
+  bpmn?: string,
+  description?: string,
+  name?: string,
+) => {
+  const { ability } = await getCurrentUser();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionsId];
+
+  if (!process) {
+    throw new Error('A process with this id does not exist.');
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    throw new Error('Forbidden.');
+  }
+
+  // Either replace or update the old BPMN.
+  let newBpmn = bpmn ?? (await getProcessBpmn(definitionsId));
+  if (description !== undefined) {
+    newBpmn = (await addDocumentation(newBpmn, description)) as string;
+  }
+  if (name !== undefined) {
+    newBpmn = (await setDefinitionsName(newBpmn, name)) as string;
+  }
+
+  const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
+  return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });
 };

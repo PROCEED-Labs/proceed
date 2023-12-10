@@ -218,7 +218,7 @@ async function rulesForSharedResources(ability: CaslAbility, userId: string) {
           conditions: {
             conditions: {
               id: { $eq: share.resourceId },
-              $: { $not_expired_value: share.expiredAt },
+              $: { $not_expired_value: share.expiredAt ?? undefined },
             },
           },
         });
@@ -240,7 +240,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         resourceOwner: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration },
+        $: { $not_expired_value: expiration ?? undefined },
       },
       conditionsOperator: 'and',
     },
@@ -253,7 +253,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         sharedBy: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration },
+        $: { $not_expired_value: expiration ?? undefined },
       },
       conditionsOperator: 'and',
     },
@@ -307,7 +307,7 @@ export async function rulesForUser(userId: string) {
 
     for (const resource of resources) {
       if (!(resource in role.permissions)) continue;
-      const permissionsForResource = role.permissions[resource];
+      const permissionsForResource = role.permissions[resource]!;
 
       const actionsSet = new Set<ResourceActionType>();
 
@@ -321,14 +321,14 @@ export async function rulesForUser(userId: string) {
           action: 'manage-roles',
           conditions: {
             conditions: {
-              $: { $not_expired_value: role.expiration },
+              $: { $not_expired_value: role.expiration ?? undefined },
             },
           },
         });
       }
 
       if (actionsSet.has('share'))
-        translatedRules.push(...rulesForShares(resource, userId, role.expiration));
+        translatedRules.push(...rulesForShares(resource, userId, role.expiration ?? null));
 
       if (actionsSet.has('admin'))
         translatedRules.push({
@@ -337,12 +337,14 @@ export async function rulesForUser(userId: string) {
           conditions: {
             conditions: {
               resourceType: { $eq_string_case_insensitive: resource },
-              $: { $not_expired_value: role.expiration },
+              $: { $not_expired_value: role.expiration ?? undefined },
             },
           },
         });
       const ownershipConditions =
-        needOwnership.has(resource) && !actionsSet.has('admin') ? { owner: { $eq: userId } } : {};
+        needOwnership.has(resource) && !actionsSet.has('admin')
+          ? { owner: { $eq: userId } }
+          : undefined;
 
       translatedRules.push({
         subject: resource,
@@ -350,7 +352,7 @@ export async function rulesForUser(userId: string) {
         conditions: {
           conditions: {
             ...ownershipConditions,
-            $: { $not_expired_value: role.expiration },
+            $: { $not_expired_value: role.expiration ?? undefined },
           },
         },
       });
@@ -371,7 +373,7 @@ export async function rulesForUser(userId: string) {
 
   // casl uses the ordering of the rules to decide
   // this way inverted rules allways decide over normal rules
-  translatedRules.sort((a, b) => +a.inverted - +b.inverted);
+  translatedRules.sort((a, b) => Number(a.inverted) - Number(b.inverted));
 
   return { rules: packRules(translatedRules), expiration: firstExpiration };
 }

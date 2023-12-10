@@ -12,21 +12,26 @@ type Role = {
 
 export function getAppliedRolesForUser(userId: string): Role[] {
   if (userId === '')
-    return [Object.values(roleMetaObjects).find((role) => role.default && role.name === '@guest')];
+    return [
+      Object.values(roleMetaObjects).find((role: any) => role.default && role.name === '@guest'),
+    ] as Role[];
 
   const userRoles: Role[] = [];
 
   const adminRole = Object.values(roleMetaObjects).find(
-    (role) => role.default && role.name === '@admin',
-  );
-  if (adminRole.members.map((member) => member.userId).includes(userId)) userRoles.push(adminRole);
+    (role: any) => role.default && role.name === '@admin',
+  ) as any;
+  if (adminRole.members.map((member: any) => member.userId).includes(userId))
+    userRoles.push(adminRole);
 
   userRoles.push(
-    Object.values(roleMetaObjects).find((role) => role.default && role.name === '@everyone'),
+    Object.values(roleMetaObjects).find(
+      (role: any) => role.default && role.name === '@everyone',
+    ) as Role,
   );
 
   if (roleMappingsMetaObjects.users.hasOwnProperty(userId)) {
-    roleMappingsMetaObjects.users[userId].forEach((role) => {
+    roleMappingsMetaObjects.users[userId].forEach((role: any) => {
       const roleObject = roleMetaObjects[role.roleId];
       if (roleObject.expiration === null || new Date(roleObject.expiration) > new Date())
         userRoles.push(roleMetaObjects[role.roleId]);

@@ -8,7 +8,7 @@ const myFormat = winston.format.printf(({ timestamp, level, message }) => {
 
 const config = getBackendConfig();
 
-console.log(`Created logger with logging level ${config.logLevel}`);
+//console.log(`Created logger with logging level ${config.logLevel}`);
 
 const logger = winston.createLogger({
   level: config.logLevel,

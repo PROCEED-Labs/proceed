@@ -73,6 +73,17 @@ export async function getProcesses(ability, includeBPMN = false) {
   return userProcesses;
 }
 
+export async function getProcess(processDefinitionsId, includeBPMN = false) {
+  const process = processMetaObjects[processDefinitionsId];
+
+  if (!process) {
+    throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
+  }
+
+  const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
+  return toExternalFormat({ ...process, bpmn });
+}
+
 /**
  * Throws if process with given id doesn't exist
  *
@@ -129,7 +140,7 @@ export async function addProcess(processData) {
  *
  * @param {String} processDefinitionsId
  * @param {String} newBpmn
- * @returns {Object} - contains the new process meta information
+ * @returns {Promise<Object>} - contains the new process meta information
  */
 export async function updateProcess(processDefinitionsId, newInfo) {
   checkIfProcessExists(processDefinitionsId);
@@ -278,7 +289,7 @@ export async function addProcessVersion(processDefinitionsId, bpmn) {
  *
  * @param {String} processDefinitionsId
  * @param {String} version
- * @returns {string} the bpmn of the specific process version
+ * @returns {Promise<string>} the bpmn of the specific process version
  */
 export async function getProcessVersionBpmn(processDefinitionsId, version) {
   let existingProcess = processMetaObjects[processDefinitionsId];
@@ -311,7 +322,7 @@ function removeExcessiveInformation(processInfo) {
  * Returns the process definition for the process with the given id
  *
  * @param {String} processDefinitionsId
- * @returns {String} - the process definition
+ * @returns {Promise<String>} - the process definition
  */
 export async function getProcessBpmn(processDefinitionsId) {
   checkIfProcessExists(processDefinitionsId);

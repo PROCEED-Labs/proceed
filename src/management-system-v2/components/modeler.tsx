@@ -1,12 +1,12 @@
 'use client';
 
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef, useState, useTransition } from 'react';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useSearchParams } from 'next/navigation';
 
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
@@ -18,6 +18,7 @@ import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
+import { updateProcess } from '@/lib/data/processes';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -32,25 +33,26 @@ const BPMNViewer =
     : null;
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
-  minimized: boolean;
+  processBpmn: string;
 };
 
-const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
+const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
   const { processId } = useParams();
+  const pathname = usePathname();
   const [initialized, setInitialized] = useState(false);
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
-
-  const { mutateAsync: updateProcessMutation } = usePutAsset('/process/{definitionId}');
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setEditingDisabled = useModelerStateStore((state) => state.setEditingDisabled);
 
   /// Derived State
+  const minimized = pathname !== `/processes/${processId}`;
   const selectedVersionId = query.get('version');
 
   useEffect(() => {
@@ -88,9 +90,9 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
             try {
               const { xml } = await modeler.current!.saveXML({ format: true });
               /* await updateProcess(processId as string, { bpmn: xml! }); */
-              await updateProcessMutation({
-                params: { path: { definitionId: processId as string } },
-                body: { bpmn: xml },
+
+              startTransition(async () => {
+                await updateProcess(processId as string, xml);
               });
             } catch (err) {
               console.log(err);
@@ -124,9 +126,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       modeler.current?.destroy();
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, selectedVersionId, processId, updateProcessMutation]);
-
-  const { data: processBpmn } = useProcessBpmn(processId as string, selectedVersionId);
+  }, [setModeler, selectedVersionId, processId]);
 
   useEffect(() => {
     // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
@@ -165,9 +165,8 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
       });
       // if the bpmn contains unexpected content (text content for an element where the model does not define text) the modeler will remove it automatically => make sure the stored bpmn is the same as the one in the modeler
       const { xml: cleanedBpmn } = await modeler.current.saveXML({ format: true });
-      await updateProcessMutation({
-        params: { path: { definitionId: processId as string } },
-        body: { bpmn: cleanedBpmn },
+      startTransition(async () => {
+        await updateProcess(processId as string, cleanedBpmn);
       });
     }
   };
@@ -188,7 +187,7 @@ const Modeler: FC<ModelerProps> = ({ minimized, ...props }) => {
           )}
         </>
       )}
-      <div className="modeler" style={{ height: '100%' }} {...props} ref={canvas} />
+      <div className="modeler" style={{ height: '100%' }} {...divProps} ref={canvas} />
     </div>
   );
 };

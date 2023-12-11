@@ -110,56 +110,57 @@ const UserList: FC<UserListProps> = ({
     />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Bar
-        leftNode={
-          selectedRowKeys.length ? (
-            <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected: </span>
-              {selectedRowActions
-                ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
-                : null}
-            </Space>
-          ) : undefined
-        }
-        searchProps={{
-          value: searchQuery,
-          onChange: (e) => setSearchQuery(e.target.value),
-          placeholder: 'Search Users ...',
-        }}
-        rightNode={searchBarRightNode ? searchBarRightNode : null}
-      />
-      <div style={{ display: 'flex', height: '100%', gap: 20 }}>
-        <div style={{ flex: 1 }}>
-          <Table<ListUser>
-            columns={tableColumns}
-            dataSource={filteredData}
-            onRow={(element) => ({
-              onMouseEnter: () => setHoveredRowId(element.id),
-              onMouseLeave: () => setHoveredRowId(null),
-              onClick: () => {
-                setSelectedRowKeys([element.id]);
-                setSelectedRows([element]);
-                if (onSelectedRows) onSelectedRows([element]);
-              },
-            })}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-                setSelectedRowKeys(selectedRowKeys as string[]);
-                setSelectedRows(selectedObjects);
-                if (onSelectedRows) onSelectedRows(selectedObjects);
-              },
-            }}
-            pagination={{ position: ['bottomCenter'] }}
-            rowKey="id"
-            loading={loading}
-          />
-        </div>
-
-        {sidePanel}
+    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: '10px' }}>
+      <div style={{ flexGrow: 1 }}>
+        <Bar
+          leftNode={
+            selectedRowKeys.length ? (
+              <Space size={20}>
+                <Button
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={() => setSelectedRowKeys([])}
+                />
+                <span>{selectedRowKeys.length} selected: </span>
+                {selectedRowActions
+                  ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
+                  : null}
+              </Space>
+            ) : undefined
+          }
+          searchProps={{
+            value: searchQuery,
+            onChange: (e) => setSearchQuery(e.target.value),
+            placeholder: 'Search Users ...',
+          }}
+          rightNode={searchBarRightNode ? searchBarRightNode : null}
+        />
+        <Table<ListUser>
+          columns={tableColumns}
+          dataSource={filteredData}
+          onRow={(element) => ({
+            onMouseEnter: () => setHoveredRowId(element.id),
+            onMouseLeave: () => setHoveredRowId(null),
+            onClick: () => {
+              setSelectedRowKeys([element.id]);
+              setSelectedRows([element]);
+              if (onSelectedRows) onSelectedRows([element]);
+            },
+          })}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
+              setSelectedRowKeys(selectedRowKeys as string[]);
+              setSelectedRows(selectedObjects);
+              if (onSelectedRows) onSelectedRows(selectedObjects);
+            },
+          }}
+          pagination={{ position: ['bottomCenter'] }}
+          rowKey="id"
+          loading={loading}
+        />
       </div>
+      {sidePanel}
     </div>
   );
 };

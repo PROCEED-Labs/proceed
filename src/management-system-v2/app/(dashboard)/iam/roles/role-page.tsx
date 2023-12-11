@@ -109,38 +109,39 @@ const RolesPage: FC = () => {
 
   return (
     <Content title="Identity and Access Management">
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <Bar
-          rightNode={<HeaderActions />}
-          leftNode={
-            selectedRowKeys.length > 0 ? (
-              <Space size={20}>
-                <Button
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={() => setSelectedRowKeys([])}
-                />
-                <span>{selectedRowKeys.length} selected:</span>
-                <ConfirmationButton
-                  title="Delete Roles"
-                  description="Are you sure you want to delete the selected roles?"
-                  onConfirm={() => deleteRoles(selectedRowKeys)}
-                  buttonProps={{
-                    icon: <DeleteOutlined />,
-                    disabled: cannotDeleteSelected,
-                    type: 'text',
-                  }}
-                />
-              </Space>
-            ) : null
-          }
-          searchProps={{
-            onChange: (e) => setSearchQuery(e.target.value),
-            onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
-            placeholder: 'Search Role ...',
-          }}
-        />
-        <div style={{ display: 'flex', height: '100%', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: '10px' }}>
+        <div style={{ flexGrow: 1 }}>
+          <Bar
+            rightNode={<HeaderActions />}
+            leftNode={
+              selectedRowKeys.length > 0 ? (
+                <Space size={20}>
+                  <Button
+                    type="text"
+                    icon={<CloseOutlined />}
+                    onClick={() => setSelectedRowKeys([])}
+                  />
+                  <span>{selectedRowKeys.length} selected:</span>
+                  <ConfirmationButton
+                    title="Delete Roles"
+                    description="Are you sure you want to delete the selected roles?"
+                    onConfirm={() => deleteRoles(selectedRowKeys)}
+                    buttonProps={{
+                      icon: <DeleteOutlined />,
+                      disabled: cannotDeleteSelected,
+                      type: 'text',
+                    }}
+                  />
+                </Space>
+              ) : null
+            }
+            searchProps={{
+              onChange: (e) => setSearchQuery(e.target.value),
+              onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
+              placeholder: 'Search Role ...',
+            }}
+          />
+
           <div style={{ flex: 1 }}>
             <Table<FilteredRole>
               columns={columns}
@@ -166,8 +167,8 @@ const RolesPage: FC = () => {
               loading={isLoading || deletingRole}
             />
           </div>
-          <RoleSidePanel role={lastSelectedElement} />
         </div>
+        <RoleSidePanel role={lastSelectedElement} />
       </div>
     </Content>
   );

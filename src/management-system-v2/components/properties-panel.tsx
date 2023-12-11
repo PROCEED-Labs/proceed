@@ -10,10 +10,9 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Input, ColorPicker, Space, Image } from 'antd';
+import { Input, ColorPicker, Space, Grid, Drawer } from 'antd';
 
-import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
+import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import {
   getMetaDataFromElement,
   getMilestonesFromElement,
@@ -30,13 +29,10 @@ type PropertiesPanelProperties = {
   selectedElement: ElementLike;
 };
 
-const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
-  const [showInfo, setShowInfo] = useState(true);
+const PropertiesPanelContent: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
   const [name, setName] = useState('');
   const [costsPlanned, setCostsPlanned] = useState('');
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
-
-  const modeler = useModelerStateStore((state) => state.modeler);
 
   const colorPickerPresets = [
     {
@@ -152,8 +148,128 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     });
   };
 
-  const resizableElementRef = useRef<ResizableElementRefType>(null);
+  const modeler = useModelerStateStore((state) => state.modeler);
   return (
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <b>General</b>
+        <Input
+          addonBefore="Name"
+          placeholder={selectedElement.businessObject.name}
+          value={name}
+          // onChange={(e) => setName(e.target.value)}
+          onBlur={handleNameChange}
+          disabled={selectedElement.type === 'bpmn:Process'}
+        />
+
+        <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
+      </Space>
+
+      {selectedElement.type === 'bpmn:UserTask' && (
+        <MilestoneSelectionSection
+          milestones={milestones}
+          selectedElement={selectedElement}
+        ></MilestoneSelectionSection>
+      )}
+      <ImageSelectionSection metaData={metaData}></ImageSelectionSection>
+
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <b>Properties</b>
+        <Input
+          prefix={<EuroCircleOutlined className="clock-icon" />}
+          placeholder="Planned Cost"
+          value={costsPlanned}
+          onChange={(event) => {
+            setCostsPlanned(event.target.value);
+          }}
+          onBlur={() => {
+            updateMetaData('costsPlanned', costsPlanned);
+          }}
+        />
+        <Input
+          prefix={<ClockCircleOutlined className="clock-icon" />}
+          placeholder="Planned Duration"
+          value={timePlannedDuration}
+          onChange={(event) => {
+            setTimePlannedDuration(event.target.value);
+          }}
+          onBlur={() => {
+            updateMetaData('timePlannedDuration', timePlannedDuration);
+          }}
+        />
+      </Space>
+
+      <DescriptionSection
+        description={description}
+        selectedElement={selectedElement}
+      ></DescriptionSection>
+      {/* <Input.TextArea
+      size="large"
+      placeholder={
+        selectedElement.type !== 'bpmn:Process'
+          ? 'Element Documentation'
+          : 'Process Documentation'
+      }
+      onChange={(event) => updateDescription(event.target.value)}
+    ></Input.TextArea> */}
+
+      <CustomPropertySection
+        metaData={metaData}
+        onChange={(name, value) => {
+          updateMetaData('property', { value: value, attributes: { name } });
+        }}
+      ></CustomPropertySection>
+
+      {selectedElement.type !== 'bpmn:Process' && (
+        <Space direction="vertical" size="large">
+          <b>Colors</b>
+          <Space>
+            <ColorPicker
+              presets={colorPickerPresets}
+              value={backgroundColor}
+              onChange={(_, hex) => updateBackgroundColor(hex)}
+            />
+            <span>Background Colour</span>
+          </Space>
+          <Space>
+            <ColorPicker
+              presets={colorPickerPresets}
+              value={strokeColor}
+              onChange={(_, hex) => updateStrokeColor(hex)}
+            />
+            <span>Stroke Colour</span>
+          </Space>
+        </Space>
+      )}
+    </Space>
+  );
+};
+
+const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
+  const [showInfo, setShowInfo] = useState(true);
+
+  const breakpoint = Grid.useBreakpoint();
+
+  const resizableElementRef = useRef<ResizableElementRefType>(null);
+  return breakpoint.xs ? (
+    <Drawer
+      open={showInfo}
+      width={'100vw'}
+      closeIcon={false}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Properties</span>
+          <CloseOutlined
+            onClick={() => {
+              setShowInfo(false);
+            }}
+          ></CloseOutlined>
+        </div>
+      }
+    >
+      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+    </Drawer>
+  ) : (
     <ResizableElement
       initialWidth={450}
       minWidth={450}
@@ -177,98 +293,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
         title="Properties"
         collapsedWidth="40px"
       >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>General</b>
-            <Input
-              addonBefore="Name"
-              placeholder={selectedElement.businessObject.name}
-              value={name}
-              // onChange={(e) => setName(e.target.value)}
-              onBlur={handleNameChange}
-              disabled={selectedElement.type === 'bpmn:Process'}
-            />
-
-            <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
-          </Space>
-
-          {selectedElement.type === 'bpmn:UserTask' && (
-            <MilestoneSelectionSection
-              milestones={milestones}
-              selectedElement={selectedElement}
-            ></MilestoneSelectionSection>
-          )}
-          <ImageSelectionSection metaData={metaData}></ImageSelectionSection>
-
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>Properties</b>
-            <Input
-              prefix={<EuroCircleOutlined className="clock-icon" />}
-              placeholder="Planned Cost"
-              value={costsPlanned}
-              onChange={(event) => {
-                setCostsPlanned(event.target.value);
-              }}
-              onBlur={() => {
-                updateMetaData('costsPlanned', costsPlanned);
-              }}
-            />
-            <Input
-              prefix={<ClockCircleOutlined className="clock-icon" />}
-              placeholder="Planned Duration"
-              value={timePlannedDuration}
-              onChange={(event) => {
-                setTimePlannedDuration(event.target.value);
-              }}
-              onBlur={() => {
-                updateMetaData('timePlannedDuration', timePlannedDuration);
-              }}
-            />
-          </Space>
-
-          <DescriptionSection
-            description={description}
-            selectedElement={selectedElement}
-          ></DescriptionSection>
-          {/* <Input.TextArea
-              size="large"
-              placeholder={
-                selectedElement.type !== 'bpmn:Process'
-                  ? 'Element Documentation'
-                  : 'Process Documentation'
-              }
-              onChange={(event) => updateDescription(event.target.value)}
-            ></Input.TextArea> */}
-
-          <CustomPropertySection
-            metaData={metaData}
-            onChange={(name, value) => {
-              updateMetaData('property', { value: value, attributes: { name } });
-            }}
-          ></CustomPropertySection>
-
-          {selectedElement.type !== 'bpmn:Process' && (
-            <Space direction="vertical" size="large">
-              <b>Colors</b>
-              <Space>
-                <ColorPicker
-                  presets={colorPickerPresets}
-                  value={backgroundColor}
-                  onChange={(_, hex) => updateBackgroundColor(hex)}
-                />
-                <span>Background Colour</span>
-              </Space>
-              <Space>
-                <ColorPicker
-                  presets={colorPickerPresets}
-                  value={strokeColor}
-                  onChange={(_, hex) => updateStrokeColor(hex)}
-                />
-                <span>Stroke Colour</span>
-              </Space>
-            </Space>
-          )}
-        </Space>
+        <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
       </CollapsibleCard>
     </ResizableElement>
   );

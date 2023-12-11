@@ -218,7 +218,7 @@ async function rulesForSharedResources(ability: CaslAbility, userId: string) {
           conditions: {
             conditions: {
               id: { $eq: share.resourceId },
-              $: { $not_expired_value: share.expiredAt ?? undefined },
+              $: { $not_expired_value: share.expiredAt ?? null },
             },
           },
         });
@@ -240,7 +240,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         resourceOwner: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? undefined },
+        $: { $not_expired_value: expiration ?? null },
       },
       conditionsOperator: 'and',
     },
@@ -253,7 +253,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         sharedBy: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration ?? undefined },
+        $: { $not_expired_value: expiration ?? null },
       },
       conditionsOperator: 'and',
     },
@@ -285,11 +285,12 @@ function rulesForAlteringShares(ability: CaslAbility) {
 }
 
 type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
-export type PackedRulesForUser = ReturnOfPromise<typeof rulesForUser>;
+export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
 
-export async function rulesForUser(userId: string) {
+/** If possible don't use this function directly, use rulesForUser which caches the rules */
+export async function computeRulesForUser(userId: string) {
   const roles = getAppliedRolesForUser(userId);
-  let firstExpiration: undefined | Date;
+  let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
 
@@ -321,7 +322,7 @@ export async function rulesForUser(userId: string) {
           action: 'manage-roles',
           conditions: {
             conditions: {
-              $: { $not_expired_value: role.expiration ?? undefined },
+              $: { $not_expired_value: role.expiration ?? null },
             },
           },
         });
@@ -337,14 +338,12 @@ export async function rulesForUser(userId: string) {
           conditions: {
             conditions: {
               resourceType: { $eq_string_case_insensitive: resource },
-              $: { $not_expired_value: role.expiration ?? undefined },
+              $: { $not_expired_value: role.expiration ?? null },
             },
           },
         });
       const ownershipConditions =
-        needOwnership.has(resource) && !actionsSet.has('admin')
-          ? { owner: { $eq: userId } }
-          : undefined;
+        needOwnership.has(resource) && !actionsSet.has('admin') ? { owner: { $eq: userId } } : null;
 
       translatedRules.push({
         subject: resource,
@@ -352,7 +351,7 @@ export async function rulesForUser(userId: string) {
         conditions: {
           conditions: {
             ...ownershipConditions,
-            $: { $not_expired_value: role.expiration ?? undefined },
+            $: { $not_expired_value: role.expiration ?? null },
           },
         },
       });

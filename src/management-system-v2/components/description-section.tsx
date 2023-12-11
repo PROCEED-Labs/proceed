@@ -63,7 +63,7 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
           }}
         ></EditOutlined>
       </div>
-      <div>
+      <div style={{ height: '30vh', overflowY: 'scroll' }}>
         <Viewer ref={editorRef} initialValue={description}></Viewer>
       </div>
 

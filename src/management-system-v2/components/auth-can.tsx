@@ -19,28 +19,6 @@ export type AuthCanProps = {
   loading?: ReactElement;
 };
 
-const API_URL = process.env.API_URL;
-
-export const FetchAbility = () => {
-  const setCsrfToken = useCsrfTokenStore((store) => store.setCsrfToken);
-  const { status, data } = useSession();
-  const setAbility = useAbilityStore((store) => store.setAbility);
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      setCsrfToken(data.csrfToken);
-      fetch(`${API_URL}/ability`, {
-        credentials: 'include',
-        headers: { 'csrf-token': data.csrfToken },
-      })
-        .then((r) => r.json())
-        .then(({ rules }: { rules: PackRule<AbilityRule>[] }) => setAbility(rules));
-    }
-  }, [status, setAbility, data, setCsrfToken]);
-
-  return <></>;
-};
-
 // TODO: Weil client side werden evtl. sensible Daten an den Client geschickt.
 // Auf server side ändern und eigene component für client side die aber nur für
 // buttons etc. benutzt werden sollte

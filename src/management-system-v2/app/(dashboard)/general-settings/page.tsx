@@ -1,4 +1,4 @@
-import Auth from '@/lib/serverAuthComponents';
+import Auth from '@/components/auth';
 import GeneralSettingsPage from './general-settings-page';
 
 export default Auth(

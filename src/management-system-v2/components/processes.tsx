@@ -1,9 +1,9 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState, useTransition } from 'react';
 import { Space, Button, Tooltip } from 'antd';
-import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
+import { ApiData, del, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -32,6 +32,8 @@ import ProcessDeleteSingleModal from './process-delete-single';
 import ProcessCopyModal from './process-copy';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
+import { useRouter } from 'next/navigation';
+import { deleteProcesses } from '@/lib/data/processes';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -66,50 +68,33 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
   return newBPMN;
 };
 
-const Processes: FC = () => {
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch: pullNewProcessData,
-  } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
+type ProcessesProps = {
+  processes: Processes;
+};
 
+const Processes = ({ processes }: ProcessesProps) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const {
-    'icon-view-in-process-list': iconView,
-    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
-    'ask-before-copying': openModalWhenCopy,
-  } = preferences;
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const openModalWhenDeleteMultiple = useUserPreferences.use['ask-before-deleting-multiple']();
+  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
+  const openModalWhenCopy = useUserPreferences.use['ask-before-copying']();
 
   const ability = useAbilityStore((state) => state.ability);
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: pullNewProcessData,
-  });
 
   const { mutateAsync: addProcess } = usePostAsset('/process', {});
 
   const deleteSelectedProcesses = useCallback(() => {
-    selectedRowKeys.forEach((key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-        parseAs: 'text',
-      });
+    startTransition(async () => {
+      console.log('delete', selectedRowKeys);
+      await deleteProcesses(selectedRowKeys as string[]);
+      setSelectedRowKeys([]);
+      //router.refresh();
     });
-    setSelectedRowKeys([]);
-  }, [deleteProcess, selectedRowKeys]);
+  }, [selectedRowKeys]);
 
   const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
   const [copyProcessIds, setCopyProcessIds] = useState<string[]>([]);
@@ -156,15 +141,11 @@ const Processes: FC = () => {
     searchQuery: searchTerm,
     setSearchQuery: setSearchTerm,
   } = useFuzySearch({
-    data: data ?? [],
+    data: processes ?? [],
     keys: ['definitionName', 'description'],
     highlightedKeys: ['definitionName', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
-
-  const rerenderLists = () => {
-    //setFilteredData(filteredData);,
-  };
 
   const deselectAll = () => {
     setSelectedRowKeys([]);
@@ -209,7 +190,7 @@ const Processes: FC = () => {
             setCopyProcessIds(copySelection as string[]);
           } else {
             copySelection.forEach(async (key) => {
-              const process = data?.find((item) => item.definitionId === key);
+              const process = processes?.find((item) => item.definitionId === key);
               const processBpmn = await fetchProcessVersionBpmn(key as string);
 
               const newBPMN = await copyProcess({
@@ -236,11 +217,10 @@ const Processes: FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     copySelection,
-    deleteProcess,
     filteredData,
     selectedRowKeys,
     deleteSelectedProcesses,
-    data,
+    processes,
     addProcess,
     openModalWhenDeleteMultiple,
     openModalWhenDeleteSingle,
@@ -250,15 +230,16 @@ const Processes: FC = () => {
     ability,
   ]);
 
-  if (isError) {
-    return <div>Error</div>;
-  }
-
   return (
     <>
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ /* width: '75%', */ flex: 3, width: '100%' }}>
+        <div
+          style={{
+            /* width: '75%', */
+            flex: 1,
+          }}
+        >
           <Bar
             leftNode={
               selectedRowKeys.length ? (
@@ -312,7 +293,8 @@ const Processes: FC = () => {
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
-              isLoading={isLoading}
+              // TODO: Replace with server component loading state
+              //isLoading={isLoading}
               onExportProcess={setExportProcessIds}
               search={searchTerm}
               setDeleteProcessIds={setDeleteProcessIds}

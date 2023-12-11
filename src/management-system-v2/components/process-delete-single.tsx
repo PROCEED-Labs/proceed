@@ -1,8 +1,19 @@
 import { Button, Checkbox, Modal } from 'antd';
-import React, { Dispatch, FC, Key, SetStateAction, useCallback, useState } from 'react';
+import React, {
+  Dispatch,
+  FC,
+  Key,
+  SetStateAction,
+  startTransition,
+  useCallback,
+  useState,
+  useTransition,
+} from 'react';
 import styles from './process-delete.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useDeleteAsset, useInvalidateAsset } from '@/lib/fetch-data';
+import { deleteProcesses } from '@/lib/data/processes';
+import { useRouter } from 'next/navigation';
 
 type ProcessDeleteModalType = {
   setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
@@ -16,10 +27,12 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
   setSelection,
 }) => {
   const refreshData = useInvalidateAsset('/process');
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
-  const { addPreferences } = useUserPreferences();
+  const addPreferences = useUserPreferences.use.addPreferences();
 
   const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
     onSettled: refreshData,
@@ -29,18 +42,14 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
     },
   });
 
-  const deleteSelectedProcesses = useCallback(() => {
-    processKeys.forEach((key: React.Key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-        parseAs: 'text',
-      });
+  const deleteSelectedProcesses = () => {
+    startTransition(async () => {
+      await deleteProcesses(processKeys as string[]);
+      setDeleteProcessIds([]);
+      setSelection([]);
+      router.refresh();
     });
-  }, [deleteProcess, processKeys]);
+  };
 
   return (
     <>

@@ -1,9 +1,8 @@
 'use client';
 
 import styles from './page.module.scss';
-import { FC, useEffect, useState } from 'react';
+import { PropsWithChildren, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import Modeler from '@/components/modeler';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
@@ -22,7 +21,7 @@ import { PlusOutlined, LeftOutlined } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
@@ -36,11 +35,11 @@ type SubprocessInfo = {
   name?: string;
 };
 
-type ProcessProps = {
-  params: { processId: string };
-};
+type WrapperProps = PropsWithChildren<{
+  processName: string;
+}>;
 
-const Processes: FC<ProcessProps> = () => {
+const Wrapper = ({ children, processName }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -49,9 +48,6 @@ const Processes: FC<ProcessProps> = () => {
   const [subprocessChain, setSubprocessChain] = useState<SubprocessInfo[]>([]);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
-  const { data: process, isLoading: processIsLoading } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
   const { data: processes } = useGetAsset('/process', {
     params: {
       query: { noBpmn: true },
@@ -106,7 +102,7 @@ const Processes: FC<ProcessProps> = () => {
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  const breadcrumItems: BreadcrumbProps['items'] = showMobileView
+  const breadcrumbItems: BreadcrumbProps['items'] = showMobileView
     ? [] // avoid unnecessary work in the mobile view
     : [
         /* Processes: */
@@ -119,7 +115,7 @@ const Processes: FC<ProcessProps> = () => {
               showSearch
               filterOption={filterOption}
               value={{
-                value: process?.definitionId,
+                value: processId,
                 label: 'Process List',
               }}
               // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
@@ -149,9 +145,7 @@ const Processes: FC<ProcessProps> = () => {
         },
         /* (Process/Sub-Process)-Layers */
         ...subprocessChain.slice(0, -1).map(({ id, name }) => {
-          const label = id
-            ? name || id
-            : process?.definitionName || process?.definitionId || '[Root Layer]';
+          const label = id ? name || id : processName || processId || '[Root Layer]';
           return {
             title: (
               <Typography.Text style={{ maxWidth: '8rem' }} ellipsis={{ tooltip: label }}>
@@ -189,7 +183,7 @@ const Processes: FC<ProcessProps> = () => {
 
   // add a trailing slash if the name that is displayed in the center of the header is of a subprocess
   if (subprocessChain.length > 1) {
-    breadcrumItems.push({ title: '' });
+    breadcrumbItems.push({ title: '' });
   }
 
   if (closed) {
@@ -197,21 +191,19 @@ const Processes: FC<ProcessProps> = () => {
   }
 
   // the name that is displayed in the center of the header
-  let currentLayerName = process?.definitionName || process?.definitionId;
+  let currentLayerName = processName || (processId as string);
   // the name of the previous layer or 'Process List' if already in the root layer (only used in the mobile view)
   let backButtonLabel = 'Process List';
 
   if (subprocessChain.length > 1) {
     const lastEntryIndex = subprocessChain.length - 1;
     // get the name of the last subprocess in the chain (that is the one currently shown in the modeler)
-    currentLayerName = subprocessChain[lastEntryIndex].name || subprocessChain[lastEntryIndex].id;
+    currentLayerName =
+      subprocessChain[lastEntryIndex].name || subprocessChain[lastEntryIndex].id || '[Root Layer]';
 
     const previousSubprocess = subprocessChain.slice(-2, -1)[0];
     backButtonLabel =
-      previousSubprocess?.name ||
-      previousSubprocess?.id ||
-      process?.definitionName ||
-      '[Root Layer]';
+      previousSubprocess?.name || previousSubprocess?.id || processName || '[Root Layer]';
   }
 
   const currentSubprocess = subprocessChain.slice(-1)[0];
@@ -232,29 +224,27 @@ const Processes: FC<ProcessProps> = () => {
   return (
     <Content
       headerLeft={
-        !processIsLoading && (
-          <div style={{ flex: 1, padding: '0 5px' }}>
-            {showMobileView ? (
-              <Button icon={<LeftOutlined />} type="text" onClick={handleBackButtonClick}>
-                <Typography.Text
-                  ellipsis={{ tooltip: backButtonLabel }}
-                  style={{ maxWidth: '10rem' }}
-                >
-                  {backButtonLabel}
-                </Typography.Text>
-              </Button>
-            ) : (
-              <EllipsisBreadcrumb
-                keepInFront={2}
-                keepInBack={2}
-                className={styles.ProcessBreadcrumb}
-                style={{ fontSize: fontSizeHeading1, color: 'black' }}
-                separator={<span style={{ fontSize: '20px' }}>/</span>}
-                items={breadcrumItems}
-              />
-            )}
-          </div>
-        )
+        <div style={{ flex: 1, padding: '0 5px' }}>
+          {showMobileView ? (
+            <Button icon={<LeftOutlined />} type="text" onClick={handleBackButtonClick}>
+              <Typography.Text
+                ellipsis={{ tooltip: backButtonLabel }}
+                style={{ maxWidth: '10rem' }}
+              >
+                {backButtonLabel}
+              </Typography.Text>
+            </Button>
+          ) : (
+            <EllipsisBreadcrumb
+              keepInFront={2}
+              keepInBack={2}
+              className={styles.ProcessBreadcrumb}
+              style={{ fontSize: fontSizeHeading1, color: 'black' }}
+              separator={<span style={{ fontSize: '20px' }}>/</span>}
+              items={breadcrumbItems}
+            />
+          )}
+        </div>
       }
       headerCenter={
         <Typography.Text strong style={{ flex: 1, padding: '0 5px' }}>
@@ -265,7 +255,7 @@ const Processes: FC<ProcessProps> = () => {
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      <Modeler className={styles.Modeler} minimized={minimized} />
+      {children}
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}
@@ -273,4 +263,4 @@ const Processes: FC<ProcessProps> = () => {
   );
 };
 
-export default Processes;
+export default Wrapper;

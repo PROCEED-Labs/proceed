@@ -16,36 +16,27 @@ import { deleteProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 
 type ProcessDeleteModalType = {
-  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  onClose: () => void;
+  open: boolean;
   processKeys: React.Key[];
   setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
 };
 
 const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
-  setDeleteProcessIds,
+  onClose,
+  open,
   processKeys,
   setSelection,
 }) => {
-  const refreshData = useInvalidateAsset('/process');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
-
   const addPreferences = useUserPreferences.use.addPreferences();
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: refreshData,
-    onSuccess: () => {
-      setDeleteProcessIds([]);
-      setSelection([]);
-    },
-  });
 
   const deleteSelectedProcesses = () => {
     startTransition(async () => {
       await deleteProcesses(processKeys as string[]);
-      setDeleteProcessIds([]);
+      onClose();
       setSelection([]);
       router.refresh();
     });
@@ -56,8 +47,8 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
       <Modal
         title="Delete this process?"
         centered
-        open={processKeys.length == 1}
-        onCancel={() => setDeleteProcessIds([])}
+        open={open}
+        onCancel={onClose}
         footer={[
           <Checkbox
             key="checkbox"
@@ -68,14 +59,14 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
           >
             Don&apos;t warn me again
           </Checkbox>,
-          <Button loading={loading} key="back" onClick={() => setDeleteProcessIds([])}>
+          <Button loading={isPending} key="back" onClick={onClose}>
             Cancel
           </Button>,
           <Button
             key="submit"
             danger
             type="primary"
-            loading={loading}
+            loading={isPending}
             onClick={deleteSelectedProcesses}
           >
             Delete

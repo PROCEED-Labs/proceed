@@ -41,10 +41,8 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
   isLoading?: boolean;
-  onExportProcess: Dispatch<SetStateAction<string[]>>;
-  search?: string;
-  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
-  deleteProcessKeys: React.Key[];
+  onExportProcess: (processId: string) => void;
+  onDeleteProcess: (processId: string) => void;
 }>;
 
 const ProcessActions = () => {};
@@ -67,12 +65,10 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelection,
   isLoading,
   onExportProcess,
-  setDeleteProcessIds,
-  deleteProcessKeys,
+  onDeleteProcess,
 }) => {
   const router = useRouter();
 
-  const invalidateProcesses = useInvalidateAsset('/process');
   const refreshData = useInvalidateAsset('/process');
 
   const [previewerOpen, setPreviewerOpen] = useState(false);
@@ -133,20 +129,24 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined
               onClick={() => {
-                onExportProcess([record.definitionId]);
+                onExportProcess(record.definitionId);
               }}
             />
           </Tooltip>
           <AuthCan resource={toCaslResource('Process', record)} action="update">
             <ProcessEditButton
-              definitionId={record.definitionId}
+              process={{
+                definitionId: record.definitionId,
+                description: record.description.value,
+                definitionName: record.definitionName.value,
+              }}
               wrapperElement={
                 <Tooltip placement="top" title={'Edit'}>
                   <EditOutlined />
                 </Tooltip>
               }
               onEdited={() => {
-                invalidateProcesses();
+                router.refresh();
               }}
             />
           </AuthCan>
@@ -156,7 +156,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (openModalWhenDeleteSingle) {
-                    setDeleteProcessIds([record.definitionId]);
+                    onDeleteProcess(record.definitionId);
                   } else {
                     deleteProcess({
                       params: {
@@ -179,12 +179,12 @@ const ProcessList: FC<ProcessListProps> = ({
       ability,
       createProcess,
       deleteProcess,
+      onDeleteProcess,
       onExportProcess,
       openModalWhenDeleteSingle,
+      router,
       selection,
-      setDeleteProcessIds,
       setSelection,
-      invalidateProcesses,
     ],
   );
 
@@ -506,11 +506,6 @@ const ProcessList: FC<ProcessListProps> = ({
       {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
-      <ProcessDeleteSingleModal
-        setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessKeys}
-        setSelection={setSelection}
-      />
     </>
   );
 };

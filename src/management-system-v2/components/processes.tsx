@@ -89,16 +89,15 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const deleteSelectedProcesses = useCallback(() => {
     startTransition(async () => {
-      console.log('delete', selectedRowKeys);
       await deleteProcesses(selectedRowKeys as string[]);
       setSelectedRowKeys([]);
-      //router.refresh();
+      router.refresh();
     });
-  }, [selectedRowKeys]);
+  }, [router, selectedRowKeys]);
 
-  const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
-  const [copyProcessIds, setCopyProcessIds] = useState<string[]>([]);
-  const [deleteProcessIds, setDeleteProcessIds] = useState<string[]>([]);
+  const [openExportModal, setOpenExportModal] = useState(false);
+  const [openCopyModal, setOpenCopyModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
   const actionBar = (
     <>
@@ -112,7 +111,7 @@ const Processes = ({ processes }: ProcessesProps) => {
         <ExportOutlined
           className={styles.Icon}
           onClick={() => {
-            setExportProcessIds(selectedRowKeys as string[]);
+            setOpenExportModal(true);
           }}
         />
       </Tooltip>
@@ -125,7 +124,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                 (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
                 (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
               ) {
-                setDeleteProcessIds(selectedRowKeys as string[]);
+                setOpenDeleteModal(true);
               } else {
                 deleteSelectedProcesses();
               }
@@ -155,14 +154,9 @@ const Processes = ({ processes }: ProcessesProps) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       /* CTRL + A */
-      if (
-        e.ctrlKey &&
-        e.key === 'a' &&
-        copyProcessIds.length == 0 &&
-        deleteProcessIds.length == 0
-      ) {
+      if (e.ctrlKey && e.key === 'a' && !openCopyModal && !openDeleteModal && !openExportModal) {
         e.preventDefault();
-        setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
+        setSelectedRowKeys(filteredData?.map((item) => item.definitionId) ?? []);
         /* DEL */
       } else if (e.key === 'Delete') {
         if (ability.can('delete', 'Process')) {
@@ -170,7 +164,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
             (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
           ) {
-            setDeleteProcessIds(selectedRowKeys as string[]);
+            setOpenDeleteModal(true);
           } else {
             deleteSelectedProcesses();
           }
@@ -179,7 +173,7 @@ const Processes = ({ processes }: ProcessesProps) => {
       } else if (e.key === 'Escape') {
         deselectAll();
         /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c' && copyProcessIds.length == 0) {
+      } else if (e.ctrlKey && e.key === 'c' && !openCopyModal) {
         if (ability.can('create', 'Process')) {
           setCopySelection(selectedRowKeys);
         }
@@ -187,7 +181,7 @@ const Processes = ({ processes }: ProcessesProps) => {
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         if (ability.can('create', 'Process')) {
           if (openModalWhenCopy) {
-            setCopyProcessIds(copySelection as string[]);
+            setOpenCopyModal(true);
           } else {
             copySelection.forEach(async (key) => {
               const process = processes?.find((item) => item.definitionId === key);
@@ -224,10 +218,11 @@ const Processes = ({ processes }: ProcessesProps) => {
     addProcess,
     openModalWhenDeleteMultiple,
     openModalWhenDeleteSingle,
-    copyProcessIds.length,
-    deleteProcessIds.length,
     openModalWhenCopy,
     ability,
+    openCopyModal,
+    openDeleteModal,
+    openExportModal,
   ]);
 
   return (
@@ -295,10 +290,17 @@ const Processes = ({ processes }: ProcessesProps) => {
               setSelection={setSelectedRowKeys}
               // TODO: Replace with server component loading state
               //isLoading={isLoading}
-              onExportProcess={setExportProcessIds}
-              search={searchTerm}
-              setDeleteProcessIds={setDeleteProcessIds}
-              deleteProcessKeys={deleteProcessIds}
+              onExportProcess={(id) => {
+                // TODO: If id is already selected, consider doing the batch
+                // operation on all selected instead of overwriting the
+                // selection with a single id.
+                setOpenExportModal(true);
+                setSelectedRowKeys([id]);
+              }}
+              onDeleteProcess={(id) => {
+                setOpenDeleteModal(true);
+                setSelectedRowKeys([id]);
+              }}
             />
           )}
         </div>
@@ -306,23 +308,30 @@ const Processes = ({ processes }: ProcessesProps) => {
         <MetaData data={filteredData} selection={selectedRowKeys} />
       </div>
       <ProcessExportModal
-        processes={exportProcessIds.map((definitionId) => ({ definitionId }))}
-        onClose={() => setExportProcessIds([])}
+        processes={selectedRowKeys.map((definitionId) => ({
+          definitionId: definitionId as string,
+        }))}
+        open={openExportModal}
+        onClose={() => setOpenExportModal(false)}
       />
       <ProcessDeleteModal
-        setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessIds}
+        onClose={() => setOpenDeleteModal(false)}
+        processKeys={selectedRowKeys}
         setSelection={setSelectedRowKeys}
+        processes={processes}
+        open={openDeleteModal && selectedRowKeys.length > 1}
       />
       <ProcessDeleteSingleModal
-        setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessIds}
+        onClose={() => setOpenDeleteModal(false)}
+        processKeys={selectedRowKeys}
         setSelection={setSelectedRowKeys}
+        open={openDeleteModal && selectedRowKeys.length === 1}
       />
       <ProcessCopyModal
+        onClose={() => setOpenCopyModal(false)}
         setSelection={setSelectedRowKeys}
-        processKeys={copyProcessIds}
-        setCopyProcessIds={setCopyProcessIds}
+        processKeys={selectedRowKeys}
+        open={openCopyModal}
       ></ProcessCopyModal>
     </>
   );

@@ -1,18 +1,20 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Tooltip, App } from 'antd';
 import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
 import Content from '@/components/content';
 import HeaderActions from './header-actions';
-import UserList from '@/components/user-list';
+import UserList, { ListUser } from '@/components/user-list';
 import { useQueryClient } from '@tanstack/react-query';
 import ConfirmationButton from '@/components/confirmation-button';
+import UserSidePanel from './user-side-panel';
 
 const UsersPage: FC = () => {
   const { message: messageApi } = App.useApp();
   const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
 
   const { error, data, isLoading } = useGetAsset('/users', {});
   const { mutateAsync: deleteUser, isLoading: deletingUser } = useDeleteAsset('/users/{id}', {
@@ -66,6 +68,11 @@ const UsersPage: FC = () => {
           />
         )}
         searchBarRightNode={<HeaderActions />}
+        onSelectedRows={(users) => {
+          console.log(users);
+          setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
+        }}
+        sidePanel={<UserSidePanel user={selectedUser} />}
       />
     </Content>
   );

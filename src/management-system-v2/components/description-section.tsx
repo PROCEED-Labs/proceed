@@ -6,9 +6,11 @@ import React, { useEffect, useState } from 'react';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
+import { CloseOutlined } from '@ant-design/icons';
+
 import { EditOutlined } from '@ant-design/icons';
 
-import { Modal, Space } from 'antd';
+import { Drawer, Grid, Modal, Space } from 'antd';
 
 const DescriptionSection: React.FC<{ description: string; selectedElement: any }> = ({
   description,
@@ -16,10 +18,13 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
 }) => {
   const editorRef: React.RefObject<any> = React.useRef();
   const modalEditorRef: React.RefObject<any> = React.useRef();
+  const drawerEditorRef: React.RefObject<any> = React.useRef();
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
   const [showPopupEditor, setShowPopupEditor] = useState(false);
+
+  const breakpoint = Grid.useBreakpoint();
 
   useEffect(() => {
     if (editorRef.current) {
@@ -38,6 +43,15 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
       editorInstance.setMarkdown(description);
     }
   }, [description, modalEditorRef]);
+
+  useEffect(() => {
+    if (drawerEditorRef.current) {
+      const editor = drawerEditorRef.current as Editor;
+      const editorInstance = editor.getInstance();
+
+      editorInstance.setMarkdown(description);
+    }
+  }, [description, drawerEditorRef]);
 
   const updateDescription = (text: string) => {
     const modeling = modeler!.get('modeling') as Modeling;
@@ -67,39 +81,82 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
         <Viewer ref={editorRef} initialValue={description}></Viewer>
       </div>
 
-      <Modal
-        width="50vw"
-        className="editor-modal"
-        styles={{ body: { height: '50vh' } }}
-        open={showPopupEditor}
-        title={null}
-        footer={null}
-        onCancel={() => setShowPopupEditor(false)}
-      >
-        <Editor
-          previewStyle="tab"
-          autofocus={true}
-          height="100%"
-          viewer={true}
-          initialEditType="wysiwyg"
-          initialValue={description}
-          ref={modalEditorRef}
-          onChange={() => {
-            const editor = modalEditorRef.current as Editor;
-            const editorInstance = editor.getInstance();
-            const content = editorInstance.getMarkdown();
-            updateDescription(content);
-          }}
-          toolbarItems={[
-            ['heading', 'bold', 'italic'],
-            ['hr', 'quote'],
-            ['ul', 'ol', 'indent', 'outdent'],
-            ['table', 'link'],
-            ['code', 'codeblock'],
-            ['scrollSync'],
-          ]}
-        />
-      </Modal>
+      {breakpoint.xs ? (
+        <Drawer
+          open={showPopupEditor}
+          width={'100vw'}
+          styles={{ body: { padding: 0, margin: 0 } }}
+          closeIcon={false}
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Description</span>
+              <CloseOutlined
+                onClick={() => {
+                  setShowPopupEditor(false);
+                }}
+              ></CloseOutlined>
+            </div>
+          }
+        >
+          <Editor
+            previewStyle="tab"
+            autofocus={true}
+            height="100%"
+            viewer={true}
+            initialEditType="wysiwyg"
+            initialValue={description}
+            ref={drawerEditorRef}
+            onChange={() => {
+              const editor = drawerEditorRef.current as Editor;
+              const editorInstance = editor.getInstance();
+              const content = editorInstance.getMarkdown();
+              updateDescription(content);
+            }}
+            toolbarItems={[
+              ['heading', 'bold', 'italic'],
+              ['hr', 'quote'],
+              ['ul', 'ol', 'indent', 'outdent'],
+              ['table', 'link'],
+              ['code', 'codeblock'],
+              ['scrollSync'],
+            ]}
+          />
+        </Drawer>
+      ) : (
+        <Modal
+          width="75vw"
+          className="editor-modal"
+          styles={{ body: { height: '75vh' } }}
+          open={showPopupEditor}
+          title={null}
+          footer={null}
+          onCancel={() => setShowPopupEditor(false)}
+        >
+          <Editor
+            previewStyle="tab"
+            autofocus={true}
+            height="100%"
+            viewer={true}
+            initialEditType="wysiwyg"
+            initialValue={description}
+            ref={modalEditorRef}
+            onChange={() => {
+              const editor = modalEditorRef.current as Editor;
+              const editorInstance = editor.getInstance();
+              const content = editorInstance.getMarkdown();
+              updateDescription(content);
+            }}
+            toolbarItems={[
+              ['heading', 'bold', 'italic'],
+              ['hr', 'quote'],
+              ['ul', 'ol', 'indent', 'outdent'],
+              ['table', 'link'],
+              ['code', 'codeblock'],
+              ['scrollSync'],
+            ]}
+          />
+        </Modal>
+      )}
     </Space>
   );
 };

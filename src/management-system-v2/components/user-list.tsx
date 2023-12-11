@@ -152,6 +152,7 @@ const UserList: FC<UserListProps> = ({
                 if (onSelectedRows) onSelectedRows(selectedObjects);
               },
             }}
+            pagination={{ position: ['bottomCenter'] }}
             rowKey="id"
             loading={loading}
           />

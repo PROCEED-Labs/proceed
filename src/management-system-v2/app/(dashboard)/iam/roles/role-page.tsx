@@ -161,6 +161,7 @@ const RolesPage: FC = () => {
                   setSelectedRows(selectedRows);
                 },
               }}
+              pagination={{ position: ['bottomCenter'] }}
               rowKey="id"
               loading={isLoading || deletingRole}
             />

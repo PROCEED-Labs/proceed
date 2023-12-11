@@ -6,13 +6,7 @@ import React, { useEffect, useState } from 'react';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
-import {
-  ExportOutlined,
-  SettingOutlined,
-  PlusOutlined,
-  UndoOutlined,
-  RedoOutlined,
-} from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 
 import { Modal, Space } from 'antd';
 
@@ -63,11 +57,11 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <b style={{ marginRight: '0.3em' }}>Description</b>
-        <ExportOutlined
+        <EditOutlined
           onClick={() => {
             setShowPopupEditor(true);
           }}
-        ></ExportOutlined>
+        ></EditOutlined>
       </div>
       <div>
         <Viewer ref={editorRef} initialValue={description}></Viewer>

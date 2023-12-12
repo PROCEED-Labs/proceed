@@ -340,7 +340,7 @@ const Processes: FC = () => {
               copyProcessKeys={copyProcessIds}
               setDeleteProcessIds={setDeleteProcessIds}
               deleteProcessIds={deleteProcessIds}
-              //deleteSelectedProcesses={deleteSelectedProcesses}
+              deleteSelectedProcesses={deleteSelectedProcesses}
             />
           )}
         </div>

@@ -51,7 +51,7 @@ type ProcessListProps = PropsWithChildren<{
   copyProcessKeys: React.Key[];
   deleteProcessIds: React.Key[];
   //TODO: what type for deleteSelectedProcess?
-  // deleteSelectedProcesses: void;
+  deleteSelectedProcesses: Dispatch<SetStateAction<Key[]>>;
 }>;
 
 const ProcessActions = () => {};
@@ -78,7 +78,7 @@ const ProcessList: FC<ProcessListProps> = ({
   setDeleteProcessIds,
   copyProcessKeys,
   deleteProcessIds,
-  // deleteSelectedProcesses
+  deleteSelectedProcesses
 }) => {
   const router = useRouter();
 
@@ -113,19 +113,19 @@ const ProcessList: FC<ProcessListProps> = ({
     onSettled: refreshData,
   });
 
-  const deleteSelectedProcesses = useCallback(() => {
-    selection.forEach((id) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: id as string,
-          },
-        },
-        parseAs: 'text',
-      });
-    });
-    setSelection([]);
-  }, [deleteProcess, selection]);
+  // const deleteSelectedProcesses = useCallback(() => {
+  //   selection.forEach((id) => {
+  //     deleteProcess({
+  //       params: {
+  //         path: {
+  //           definitionId: id as string,
+  //         },
+  //       },
+  //       parseAs: 'text',
+  //     });
+  //   });
+  //   setSelection([]);
+  // }, [deleteProcess, selection, setSelection]);
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -222,6 +222,7 @@ const ProcessList: FC<ProcessListProps> = ({
       setSelection,
       invalidateProcesses,
       deleteProcess,
+      deleteSelectedProcesses
     ],
   );
 

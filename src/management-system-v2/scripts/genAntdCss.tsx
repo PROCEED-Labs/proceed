@@ -22,7 +22,7 @@ import Theme from '../components/theme';
 // To ensure the same class name calculation, we must use the same version here
 // as in the app. Therefore this package isn't listed in package.json as a
 // dependency, because we want to use the same as the current antd version.
-import { createCache, extractStyle as extStyle, StyleProvider } from '@ant-design/cssinjs';
+import { createCache, extractStyle as extStyle, StyleProvider, px2remTransformer } from '@ant-design/cssinjs';
 import * as antd from 'antd';
 
 // These are client-only or style-less components that don't need to be included
@@ -37,6 +37,10 @@ const blackList = [
   'Tooltip',
   'Tour',
 ];
+
+const px2rem = px2remTransformer({
+  rootValue: 16, // 32px = 1rem; @default 16
+});
 
 // A node containing all the relevant antd components.
 const Components = (
@@ -64,7 +68,7 @@ export function extractThemedStyle() {
   // Create a cache to store the styles of all components with the given themes.
   const cache = createCache();
   renderToString(
-    <StyleProvider cache={cache}>
+    <StyleProvider cache={cache} transformers={[px2rem]}>
       <Theme>{Components}</Theme>
     </StyleProvider>,
   );

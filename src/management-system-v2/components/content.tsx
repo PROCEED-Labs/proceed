@@ -63,7 +63,6 @@ const Content: FC<ContentProps> = ({
               type="text"
               style={{ marginTop: '20px', marginLeft: '15px' }}
               icon={<MenuOutlined style={{ fontSize: '170%' }} />}
-              onClick={() => !siderOpened}
             /></div>
           ) : (
             // Logout and User Profile in header for screens larger than 412px

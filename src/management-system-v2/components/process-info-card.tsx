@@ -15,12 +15,12 @@ type MetaDataType = {
   selection: Key[];
 };
 
-const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
+const getWidth = () => useUserPreferences.getState().preferences['process-meta-data']?.width;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
 const MetaData: FC<MetaDataType> = ({ data, selection }) => {
   const addPreferences = useUserPreferences.use.addPreferences();
-  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
+  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data']?.open);
   const hydrated = useUserPreferences.use._hydrated();
 
   /* Necessary for Firefox BPMN.js Viewer fix */
@@ -61,7 +61,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
   return (
     <ResizableElement
       initialWidth={
-        showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
+        showInfo ? useUserPreferences.getState().preferences['process-meta-data']?.width : 30
       }
       minWidth={300}
       maxWidth={600}
@@ -92,7 +92,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         onCollapse={() => {
           const resizeCard = resizableElementRef.current;
           const sidepanelWidth =
-            useUserPreferences.getState().preferences['process-meta-data'].width;
+            useUserPreferences.getState().preferences['process-meta-data']?.width;
 
           if (resizeCard) {
             if (showInfo) resizeCard(30);

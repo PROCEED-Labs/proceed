@@ -27,6 +27,7 @@ import ProcessExportModal from './process-export';
 
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
+import ModelerShareModalButton from './modeler-share-modal';
 
 import { useInvalidateAsset } from '@/lib/fetch-data';
 
@@ -148,6 +149,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 createVersion={createProcessVersion}
               ></VersionCreationButton>
             </Tooltip>
+            <ModelerShareModalButton onExport={handleProcessExportModalToggle} />
           </ToolbarGroup>
           {!editingDisabled && modeler && (
             <ToolbarGroup>
@@ -171,6 +173,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
             : []
         }
         onClose={() => setShowProcessExportModal(false)}
+        open={showProcessExportModal}
       />
     </>
   );

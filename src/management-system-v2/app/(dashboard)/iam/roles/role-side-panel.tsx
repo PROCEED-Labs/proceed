@@ -10,7 +10,7 @@ import { FilteredRole } from './role-page';
 const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
   const setUserPreferences = useUserPreferences.use.addPreferences();
   const sidePanelOpen = useUserPreferences(
-    (store) => store.preferences['role-page-side-panel'].open,
+    (store) => store.preferences['role-page-side-panel']?.open,
   );
   const hydrated = useUserPreferences.use._hydrated();
 
@@ -20,7 +20,9 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
   return (
     <ResizableElement
       initialWidth={
-        sidePanelOpen ? useUserPreferences.getState().preferences['role-page-side-panel'].width : 30
+        sidePanelOpen
+          ? useUserPreferences.getState().preferences['role-page-side-panel']?.width
+          : 30
       }
       minWidth={300}
       maxWidth={600}
@@ -42,7 +44,7 @@ const RoleSidePanel: FC<{ role: FilteredRole | null }> = ({ role }) => {
         onCollapse={() => {
           const resizeCard = resizableElementRef.current;
           const sidepanelWidth =
-            useUserPreferences.getState().preferences['role-page-side-panel'].width;
+            useUserPreferences.getState().preferences['role-page-side-panel']?.width;
 
           if (resizeCard) {
             if (sidePanelOpen) resizeCard(30);

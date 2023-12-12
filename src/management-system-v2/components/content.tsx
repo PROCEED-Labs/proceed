@@ -32,7 +32,7 @@ const Content: FC<ContentProps> = ({
   noHeader = false,
   wrapperClass,
   headerClass,
-  siderOpened
+  siderOpened,
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -40,30 +40,32 @@ const Content: FC<ContentProps> = ({
     <AntLayout className={cn(styles.Main, wrapperClass)}>
       {noHeader ? null : (
         <AntLayout.Header className={cn(styles.Header, headerClass)}>
-
           {/* Add icon into header for xs screens*/}
-          {breakpoint.xs ? <div className={styles.LogoContainer}>
-            <Link href="/processes">
-              <Image
-                src={'/proceed-icon.png'}
-                alt="PROCEED Logo"
-                className={styles.Icon}
-                width={breakpoint.xs ? 85 : 160}
-                height={breakpoint.xs ? 35 : 63}
-              />
-            </Link>
-          </div> : null }
+          {breakpoint.xs ? (
+            <div className={styles.LogoContainer}>
+              <Link href="/processes">
+                <Image
+                  src={'/proceed-icon.png'}
+                  alt="PROCEED Logo"
+                  className={styles.Icon}
+                  width={breakpoint.xs ? 85 : 160}
+                  height={breakpoint.xs ? 35 : 63}
+                />
+              </Link>
+            </div>
+          ) : null}
 
           <div className={styles.Title}>{title}</div>
           {breakpoint.xs ? (
             // Hamburger menu for mobile view
             <div>
-            <Button
-              className={styles.Hamburger}
-              type="text"
-              style={{ marginTop: '20px', marginLeft: '15px' }}
-              icon={<MenuOutlined style={{ fontSize: '170%' }} />}
-            /></div>
+              <Button
+                className={styles.Hamburger}
+                type="text"
+                style={{ marginTop: '20px', marginLeft: '15px' }}
+                icon={<MenuOutlined style={{ fontSize: '170%' }} />}
+              />
+            </div>
           ) : (
             // Logout and User Profile in header for screens larger than 412px
             <HeaderActions />

@@ -51,10 +51,8 @@ type ProcessListProps = PropsWithChildren<{
   copyProcessKeys: React.Key[];
   deleteProcessIds: React.Key[];
   //TODO: what type for deleteSelectedProcess?
-  deleteSelectedProcesses: Dispatch<SetStateAction<Key[]>>;
+  deleteSelectedProcesses: () => void;
 }>;
-
-const ProcessActions = () => {};
 
 const ColumnHeader = [
   'Process Name',

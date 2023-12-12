@@ -22,6 +22,8 @@ type XmlEditorProps = {
   canSave: boolean;
   onClose: () => void;
   onSaveXml: (bpmn: string) => Promise<void>;
+  process: { definitionName: string; definitionId: string };
+  versionName?: string;
 };
 
 /**
@@ -62,7 +64,14 @@ async function checkBpmn(bpmn: string) {
   return { warnings };
 }
 
-const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) => {
+const XmlEditor: FC<XmlEditorProps> = ({
+  bpmn,
+  canSave,
+  onClose,
+  onSaveXml,
+  process,
+  versionName,
+}) => {
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
   const [saveState, setSaveState] = useState<'error' | 'warning' | 'none'>('none');
@@ -127,24 +136,14 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml }) =>
     }
   };
 
-  const { processId } = useParams();
-
-  const { data: process, isSuccess } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
-
   const selectedVersionId = parseInt(useSearchParams().get('version') ?? '-1');
 
   const handleDownload = async () => {
-    if (editorRef.current && isSuccess) {
-      let filename = process!.definitionName || process!.definitionId || 'process';
+    if (editorRef.current) {
+      let filename = process.definitionName || process.definitionId || 'process';
 
-      if (selectedVersionId > -1) {
-        const versionInfo = process?.versions.find(({ version }) => version == selectedVersionId);
-
-        if (versionInfo) {
-          filename += `_version_${versionInfo.name || selectedVersionId}`;
-        }
+      if (versionName !== undefined) {
+        filename += `_version_${versionName || selectedVersionId}`;
       }
 
       await downloadFile(

@@ -6,13 +6,15 @@ import { useGetAsset } from '@/lib/fetch-data';
 import { generateDefinitionsId } from '@proceed/bpmn-helper';
 
 type ProcessCopyModalType = {
-  setCopyProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  onClose: () => void;
+  open: boolean;
   processKeys: React.Key[] | String[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
 };
 
 const ProcessCopyModal: FC<ProcessCopyModalType> = ({
-  setCopyProcessIds,
+  onClose,
+  open,
   processKeys,
   setSelection,
 }) => {
@@ -52,10 +54,10 @@ const ProcessCopyModal: FC<ProcessCopyModalType> = ({
 
   return (
     <ProcessCreationModal
-      processesData={blueprintForProcesses}
+      processesData={open ? blueprintForProcesses : []}
       creationType="Copy"
       title={`Copy Process${processKeys.length > 1 ? 'es' : ''}`}
-      onCancel={() => setCopyProcessIds([])}
+      onCancel={onClose}
       onCreated={handleCopyCreated}
     ></ProcessCreationModal>
   );

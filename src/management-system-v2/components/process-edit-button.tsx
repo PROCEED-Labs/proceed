@@ -1,14 +1,15 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useTransition } from 'react';
 
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import ProcessModal from './process-modal';
 import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
+import { updateProcess } from '@/lib/data/processes';
 
 type ProcessEditButtonProps = ButtonProps & {
-  definitionId: string;
+  process: { definitionId: string; description: string; definitionName: string };
   wrapperElement?: ReactNode;
   onEdited?: () => any;
 };
@@ -17,28 +18,19 @@ type ProcessEditButtonProps = ButtonProps & {
  * Button to edit Processes including a Modal for updating values. Alternatively, a custom wrapper element can be used instead of a button.
  */
 const ProcessEditButton: React.FC<ProcessEditButtonProps> = ({
-  definitionId,
+  process,
   wrapperElement,
   onEdited,
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-  const { data: processData } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId } },
-  });
-
-  const { mutateAsync: updateProcess } = usePutAsset('/process/{definitionId}');
+  const [isPending, startTransition] = useTransition();
 
   const editProcess = async (values: { name: string; description?: string }) => {
-    try {
-      await updateProcess({
-        params: { path: { definitionId } },
-        body: { ...values },
-      });
+    startTransition(async () => {
+      await updateProcess(process.definitionId, undefined, values.description, values.name);
       onEdited && onEdited();
-    } catch (err) {
-      console.log(err);
-    }
+    });
   };
 
   return (
@@ -61,8 +53,8 @@ const ProcessEditButton: React.FC<ProcessEditButtonProps> = ({
       )}
       <ProcessModal
         initialProcessData={{
-          name: processData?.definitionName,
-          description: processData?.description,
+          name: process.definitionName,
+          description: process.description,
         }}
         close={(values) => {
           setIsProcessModalOpen(false);

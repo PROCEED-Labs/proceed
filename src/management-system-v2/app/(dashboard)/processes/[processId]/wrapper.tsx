@@ -28,11 +28,12 @@ import { AuthCan } from '@/components/auth-can';
 type WrapperProps = PropsWithChildren<{
   processName: string;
   versions: { version: number; name: string; description: string }[];
+  processes: { definitionId: string; definitionName: string }[];
 }>;
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
-const Wrapper = ({ children, processName, versions }: WrapperProps) => {
+const Wrapper = ({ children, processName, versions, processes }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -41,14 +42,6 @@ const Wrapper = ({ children, processName, versions }: WrapperProps) => {
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
-  const { data: process, isLoading: processIsLoading } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
-  const { data: processes } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
 
   const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
     params: { path: { definitionId: processId as string } },

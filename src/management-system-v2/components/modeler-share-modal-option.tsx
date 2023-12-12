@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, Tooltip, Typography } from 'antd';
 import { ReactNode } from 'react';
 
@@ -5,20 +6,28 @@ interface ModelerShareModalOptionProps {
   optionIcon: ReactNode;
   optionName: string;
   optionOnClick: () => void;
+  isActive: boolean;
 }
 
 const ModelerShareModalOption = ({
   optionIcon,
   optionName,
   optionOnClick,
+  isActive,
 }: ModelerShareModalOptionProps) => {
+  const handleButtonClick = () => {
+    if (!isActive) {
+      optionOnClick();
+    }
+  };
+
   return (
     <>
       <Tooltip title={optionName}>
         <Button
           size="large"
           style={{
-            boxShadow: '3px 2px 2px gray',
+            boxShadow: isActive ? '2px 2px 2px #3D91DB' : '3px 2px 2px gray',
             border: '1px solid black',
             width: '124px',
             height: '90px',
@@ -30,7 +39,7 @@ const ModelerShareModalOption = ({
             whiteSpace: 'normal',
             textOverflow: 'ellipsis',
           }}
-          onClick={optionOnClick}
+          onClick={handleButtonClick}
         >
           {optionIcon}
           <Typography.Text

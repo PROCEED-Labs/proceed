@@ -2,7 +2,7 @@ import { toBpmnObject, toBpmnXml } from '@proceed/bpmn-helper';
 
 import { getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
-
+import { message } from 'antd';
 /**
  * Adds an image of a process or selected parts of a process to the clipboard
  *
@@ -30,5 +30,6 @@ export async function copyProcessImage(modeler: any) {
   const data = [new ClipboardItem({ 'image/png': blob })];
   navigator.clipboard.write(data).then(() => {
     console.log('Copied to clipboard');
+    message.success('Copied to clipboard');
   });
 }

@@ -1,7 +1,5 @@
 import { FC, useState } from 'react';
-
-import { Modal, Button, Tooltip, Space, Card, Divider } from 'antd';
-
+import { Modal, Button, Tooltip, Space, Card, Divider, message } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -12,9 +10,9 @@ import {
 } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import ModelerShareModalOptionProps from './modeler-share-modal-option';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
+import ModelerShareModalOption from './modeler-share-modal-option';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -22,33 +20,76 @@ type ShareModalProps = {
 
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const [isSharePublicLinkSelected, setIsSharePublicLinkSelected] = useState(false);
-
-  const [isEmbedInWebsiteSelected, setIsEmebdInWebsiteSelected] = useState(false);
+  const [isEmbedInWebsiteSelected, setIsEmbedInWebsiteSelected] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
   const handleClose = () => {
     setIsOpen(false);
+    setIsSharePublicLinkSelected(false);
+    setIsEmbedInWebsiteSelected(false);
+    setActiveIndex(null);
   };
 
   const handleCopyXMLToClipboard = async () => {
     if (modeler) {
       const { xml } = await modeler.saveXML({ format: true });
-      if (xml) navigator.clipboard.writeText(xml);
+      if (xml) {
+        navigator.clipboard.writeText(xml);
+        message.success('Copied to clipboard');
+      }
     }
   };
 
-  const handleSharePublicLinkClick = () => {
-    setIsSharePublicLinkSelected(!isSharePublicLinkSelected);
-    setIsEmebdInWebsiteSelected(false);
+  const handleOptionClick = (index: number) => {
+    setActiveIndex(index);
+    setIsSharePublicLinkSelected(index === 0);
+    setIsEmbedInWebsiteSelected(index === 1);
   };
 
-  const handleEmbedInWebsiteClick = () => {
-    setIsSharePublicLinkSelected(false);
-    setIsEmebdInWebsiteSelected(!isEmbedInWebsiteSelected);
-  };
+  const options = [
+    {
+      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Share Public Link',
+      optionOnClick: () => handleOptionClick(0),
+    },
+    {
+      optionIcon: (
+        <span>
+          <LeftOutlined style={{ fontSize: '24px' }} />
+          <RightOutlined style={{ fontSize: '24px' }} />
+        </span>
+      ),
+      optionName: 'Embed in Website',
+      optionOnClick: () => handleOptionClick(1),
+    },
+    {
+      optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Copy Diagram to Clipboard (PNG)',
+      optionOnClick: () => {
+        handleOptionClick(2);
+        copyProcessImage(modeler);
+      },
+    },
+    {
+      optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Copy BPMN to Clipboard (XML)',
+      optionOnClick: () => {
+        handleOptionClick(3);
+        handleCopyXMLToClipboard();
+      },
+    },
+    {
+      optionIcon: <ExportOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Export as file',
+      optionOnClick: () => {
+        handleOptionClick(4);
+        onExport();
+      },
+    },
+  ];
 
   return (
     <>
@@ -72,37 +113,15 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
             justifyContent: 'space-evenly',
           }}
         >
-          <ModelerShareModalOptionProps
-            optionIcon={<LinkOutlined style={{ fontSize: '24px' }} />}
-            optionName={'Share Public Link'}
-            optionOnClick={handleSharePublicLinkClick}
-            /* TODO  */
-          />
-          <ModelerShareModalOptionProps
-            optionIcon={
-              <span>
-                <LeftOutlined style={{ fontSize: '24px' }} />
-                <RightOutlined style={{ fontSize: '24px' }} />
-              </span>
-            }
-            optionName={'Embed in Website'}
-            optionOnClick={handleEmbedInWebsiteClick} /* TODO  */
-          />
-          <ModelerShareModalOptionProps
-            optionIcon={<CopyOutlined style={{ fontSize: '24px' }} />}
-            optionName={'Copy Diagram to Clipboard (PNG)'}
-            optionOnClick={() => copyProcessImage(modeler)}
-          />
-          <ModelerShareModalOptionProps
-            optionIcon={<CopyOutlined style={{ fontSize: '24px' }} />}
-            optionName={'Copy BPMN to Clipboard (XML)'}
-            optionOnClick={handleCopyXMLToClipboard}
-          />
-          <ModelerShareModalOptionProps
-            optionIcon={<ExportOutlined style={{ fontSize: '24px' }} />}
-            optionName={'Export as file'}
-            optionOnClick={onExport}
-          />
+          {options.map((option, index) => (
+            <ModelerShareModalOption
+              key={index}
+              optionIcon={option.optionIcon}
+              optionName={option.optionName}
+              optionOnClick={option.optionOnClick}
+              isActive={index === activeIndex}
+            />
+          ))}
         </Space>
         {isSharePublicLinkSelected ? (
           <>

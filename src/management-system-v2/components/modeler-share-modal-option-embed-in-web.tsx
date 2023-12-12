@@ -2,7 +2,7 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useEffect, useRef, useState } from 'react';
 
 import { CopyOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, message } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 
 const ModelerShareModalOptionEmdedInWeb = () => {
@@ -14,6 +14,7 @@ const ModelerShareModalOptionEmdedInWeb = () => {
     const codeToEmbed = codeSection.current?.resizableTextArea.textArea.value;
     if (codeToEmbed) {
       await navigator.clipboard.writeText(codeToEmbed);
+      message.success('Code copied successfully');
     }
   };
 

@@ -139,18 +139,18 @@ const Processes: FC = () => {
       </Tooltip>
 
       <AuthCan action="delete" resource={toCaslResource('Process', process)}>
-            <Tooltip placement="top" title={'Delete'}>
-                <ConfirmationButton
-                title="Delete Processes"
-                description="Are you sure you want to delete the selected processes?"
-                onConfirm={() => deleteSelectedProcesses()}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
-            </Tooltip>
-          </AuthCan>
+        <Tooltip placement="top" title={'Delete'}>
+          <ConfirmationButton
+            title="Delete Processes"
+            description="Are you sure you want to delete the selected processes?"
+            onConfirm={() => deleteSelectedProcesses()}
+            buttonProps={{
+              icon: <DeleteOutlined />,
+              type: 'text',
+            }}
+          />
+        </Tooltip>
+      </AuthCan>
 
       {/* {ability.can('delete', 'Process') && (
         <Tooltip placement="top" title={'Delete'}>
@@ -225,7 +225,7 @@ const Processes: FC = () => {
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         if (ability.can('create', 'Process')) {
-          setCopyProcessIds(copySelection as string[])
+          setCopyProcessIds(copySelection as string[]);
           // if (openModalWhenCopy) {
           //   setCopyProcessIds(copySelection as string[]);
           // } else {
@@ -317,7 +317,9 @@ const Processes: FC = () => {
                   </Button>
                 </Space.Compact>
                 <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
-                <Button type="default"><ProcessImportButton></ProcessImportButton></Button>
+                <Button type="default">
+                  <ProcessImportButton></ProcessImportButton>
+                </Button>
               </Space>
             }
           />

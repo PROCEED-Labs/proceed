@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, MenuProps, Popconfirm, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  MenuProps,
+  Popconfirm,
+  Row,
+  Table,
+  TableColumnsType,
+  Tooltip,
+} from 'antd';
 import React, {
   useCallback,
   useState,
@@ -76,7 +86,7 @@ const ProcessList: FC<ProcessListProps> = ({
   setDeleteProcessIds,
   copyProcessKeys,
   deleteProcessIds,
-  deleteSelectedProcesses
+  deleteSelectedProcesses,
 }) => {
   const router = useRouter();
 
@@ -141,8 +151,8 @@ const ProcessList: FC<ProcessListProps> = ({
             <CopyOutlined
               onClick={(e) => {
                 e.stopPropagation();
-                setCopyProcessIds([record.definitionId])
-                setSelection([record.definitionId])
+                setCopyProcessIds([record.definitionId]);
+                setSelection([record.definitionId]);
               }}
             />
           </Tooltip>
@@ -166,7 +176,6 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </AuthCan>
-
 
           {/*TODO: errors regarding query */}
 
@@ -220,7 +229,7 @@ const ProcessList: FC<ProcessListProps> = ({
       setSelection,
       invalidateProcesses,
       deleteProcess,
-      deleteSelectedProcesses
+      deleteSelectedProcesses,
     ],
   );
 
@@ -321,7 +330,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.definitionName.highlighted}
         </span>
       ),
-      responsive: ['xs', 'sm']
+      responsive: ['xs', 'sm'],
     },
 
     {
@@ -350,7 +359,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.description.highlighted}
         </div>
       ),
-      responsive: ['sm']
+      responsive: ['sm'],
     },
 
     {
@@ -368,7 +377,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      responsive: ['md']
+      responsive: ['md'],
     },
 
     {
@@ -386,7 +395,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      responsive: ['md']
+      responsive: ['md'],
     },
 
     {
@@ -402,7 +411,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      responsive: ['md']
+      responsive: ['md'],
     },
 
     {
@@ -419,7 +428,7 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
-      responsive: ['md']
+      responsive: ['md'],
     },
 
     {

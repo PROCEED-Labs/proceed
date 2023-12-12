@@ -43,7 +43,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           collapsible
           collapsed={collapsed}
           onCollapse={(collapsed) => setCollapsed(collapsed)}
-          collapsedWidth={breakpoint.xs ? "0" : "80"}
+          collapsedWidth={breakpoint.xs ? '0' : '80'}
           breakpoint="md"
           trigger={null}
         >

@@ -14,6 +14,7 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionProps from './modeler-share-modal-option';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
+import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -40,13 +41,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
   };
 
   const handleSharePublicLinkClick = () => {
-    setIsSharePublicLinkSelected(true);
+    setIsSharePublicLinkSelected(!isSharePublicLinkSelected);
     setIsEmebdInWebsiteSelected(false);
   };
 
   const handleEmbedInWebsiteClick = () => {
     setIsSharePublicLinkSelected(false);
-    setIsEmebdInWebsiteSelected(true);
+    setIsEmebdInWebsiteSelected(!isEmbedInWebsiteSelected);
   };
 
   return (
@@ -57,7 +58,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
         width={800}
         closeIcon={false}
         onCancel={handleClose}
-        footer={<Button onClick={handleClose}>Close</Button>}
+        footer={
+          <Button onClick={handleClose} style={{ border: '1px solid black' }}>
+            Close
+          </Button>
+        }
       >
         <Space
           style={{
@@ -101,14 +106,14 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
         </Space>
         {isSharePublicLinkSelected ? (
           <>
-            <Divider style={{ backgroundColor: 'black' }} />
+            <Divider style={{ backgroundColor: '#000' }} />
             <ModelerShareModalOptionPublicLink />
           </>
         ) : null}
         {isEmbedInWebsiteSelected ? (
           <>
             <Divider style={{ backgroundColor: 'black' }} />
-            <h1>Here comes the embed script</h1>
+            <ModelerShareModalOptionEmdedInWeb />
           </>
         ) : null}
       </Modal>

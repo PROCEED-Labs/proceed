@@ -1,6 +1,11 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMetaObjects } from './roles.js';
+import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+
+let firstInit = !global.roleMappingsMetaObjects;
 
 /** @type {any} - object containing all role mappings */
 export let roleMappingsMetaObjects =
@@ -10,7 +15,7 @@ export let roleMappingsMetaObjects =
  * initializes the role mappings meta information objects
  */
 export function init() {
-  roleMappingsMetaObjects = {};
+  if (!firstInit) return;
 
   // get role mappings that were persistently stored
   const storedRoleMappings = store.get('roleMappings');
@@ -25,31 +30,39 @@ init();
 /**
  * Returns all role mappings in form of an array
  *
- * @returns {Array} - array containing all role mappings
+ * @param {Ability} ability
+ * @returns {ApiData<'/role-mappings','get'>} - array containing all role mappings
  */
-export function getRoleMappings() {
-  return Object.values(roleMappingsMetaObjects.users).flat();
+export function getRoleMappings(ability) {
+  const roleMappings = Object.values(roleMappingsMetaObjects.users).flat();
+
+  return ability.filter('view', 'RoleMapping', roleMappings);
 }
 
 /**
  * Returns a role mapping by user id
  *
  * @param {String} userId - the id of a user
- * @returns {Array} - role mappings of a user
+ * @param {Ability} ability
+ *
+ * @returns {ApiData<'/role-mappings/users/{userId}','get'>} - role mappings of a user
  */
-export function getRoleMappingByUserId(userId) {
-  return roleMappingsMetaObjects.users[userId];
+export function getRoleMappingByUserId(userId, ability) {
+  const roleMappings = roleMappingsMetaObjects.users[userId];
+  return ability.filter('view', 'RoleMapping', roleMappings);
 }
 
 // TODO: also check if user exists?
 /**
  * Adds a user role mapping
  *
- * @param {Object} roleMapping - role mapping object containing userId & roleId
- * @returns {Object} - new user role mapping
+ * @param {ApiRequestBody<'/role-mappings','post'>} roleMappings - role mapping object containing userId & roleId
+ * @param {Ability} ability
  */
-export async function addRoleMapping(roleMappings) {
-  roleMappings.forEach((roleMapping) => {
+export async function addRoleMappings(roleMappings, ability) {
+  const allowedRoleMappings = ability.filter('create', 'RoleMapping', roleMappings);
+
+  allowedRoleMappings.forEach((roleMapping) => {
     const { roleId, userId } = roleMapping;
     if (roleId && userId) {
       let role = roleMetaObjects[roleId];
@@ -111,9 +124,18 @@ export async function addRoleMapping(roleMappings) {
  *
  * @param {String} userId - id of user
  * @param {String} roleId - role mapping that has to be removed based on roleId
+ * @param {Ability} ability
+ *
  * @returns {Object} - new mapping object without removed element
  */
-export async function deleteRoleMapping(userId, roleId) {
+export async function deleteRoleMapping(userId, roleId, ability) {
+  const roleMapping = roleMappingsMetaObjects.users[userId].find(
+    (roleMapping) => roleMapping.roleId === roleId,
+  );
+
+  if (!ability.can('delete', toCaslResource('RoleMapping', roleMapping)))
+    throw new UnauthorizedError();
+
   if (userId && roleId) {
     if (!roleMappingsMetaObjects.users[userId]) {
       throw new Error('Mapping not found');

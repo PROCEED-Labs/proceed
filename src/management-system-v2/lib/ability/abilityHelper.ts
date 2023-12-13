@@ -49,3 +49,10 @@ export default class Ability {
     return true;
   }
 }
+
+export class UnauthorizedError extends Error {
+  constructor(message: string | undefined) {
+    super(message ?? 'Unauthorized');
+    this.name = 'UnauthorizedError';
+  }
+}

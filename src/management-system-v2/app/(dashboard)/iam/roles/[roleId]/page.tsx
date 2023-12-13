@@ -1,7 +1,7 @@
 import Auth, { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
-import { Button, Card, Space, Tabs } from 'antd';
+import { Button, Card, Result, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { ComponentProps } from 'react';
@@ -30,6 +30,13 @@ const Page = async ({ params: { roleId } }: { params: { roleId: string } }) => {
         },
       ]
     : [];
+
+  if (!role)
+    return (
+      <Content>
+        <Result status="404" title="Role not found" />
+      </Content>
+    );
 
   return (
     <Content

@@ -37,7 +37,7 @@ export default class Ability {
     input: any,
     prefix: string = '',
   ) {
-    if (typeof input !== 'object') return this.can(action, resourceObj, prefix);
+    if (typeof input !== 'object' || input === null) return this.can(action, resourceObj, prefix);
 
     for (const key of Object.keys(input)) {
       if (

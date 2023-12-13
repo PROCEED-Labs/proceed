@@ -15,9 +15,10 @@ import {
 import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
 import { FC, useState } from 'react';
-import { ApiData, usePutAsset } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
+import { updateRole as serverUpdateRole } from '@/lib/data/roles';
 
 type PermissionCategory = {
   key: string;
@@ -260,108 +261,87 @@ type Role = ApiData<'/roles', 'get'>[number];
 
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const [permissions, setPermissions] = useState(role.permissions);
+  const [loading, setLoading] = useState(false);
   const ability = useAbilityStore((store) => store.ability);
-  const { mutateAsync, isLoading } = usePutAsset('/roles/{id}', {
-    /* onSuccess: () => message.open({ content: 'Role updated', type: 'success' }),
-    onError: () => message.open({ content: 'Something went wrong', type: 'error' }), */
-  });
   const { message } = App.useApp();
   const [form] = Form.useForm();
 
   async function updateRole() {
+    setLoading(true);
     try {
-      await mutateAsync({
-        params: { path: { id: role.id } },
-        body: {
-          description: role.description,
-          name: role.name,
-          permissions: permissions,
-          note: role.note,
-          default: role.default,
-          expiration: role.expiration,
-        },
+      await serverUpdateRole(role.id, {
+        permissions,
       });
 
       message.open({ content: 'Role updated', type: 'success' });
     } catch (e) {
       message.open({ content: 'Something went wrong', type: 'error' });
     }
+    setLoading(false);
   }
 
   return (
-    <div
-      style={{
-        scrollBehavior: 'smooth',
-        overflowY: 'scroll',
-        maxHeight: '100%',
-        height: '100%',
-      }}
-    >
-      <Form form={form} onFinish={updateRole}>
-        {basePermissionOptions.map((permissionCategory) => (
-          <>
-            <Typography.Title type="secondary" level={5}>
-              {permissionCategory.title}
-            </Typography.Title>
-            {permissionCategory.permissions.map((permission, idx) => (
-              <>
-                <Row key={permissionCategory.key} align="top" justify="space-between" wrap={false}>
-                  <Space direction="vertical" size={0}>
-                    <Typography.Text strong>{permission.title}</Typography.Text>
-                    <Typography.Text type="secondary">{permission.description}</Typography.Text>
-                  </Space>
-                  <Form.Item name={`${permissionCategory.resource}-${permission.permission}`}>
-                    <Switch
-                      disabled={
-                        isLoading ||
-                        switchDisabled(
+    <Form form={form} onFinish={updateRole}>
+      {basePermissionOptions.map((permissionCategory) => (
+        <>
+          <Typography.Title type="secondary" level={5}>
+            {permissionCategory.title}
+          </Typography.Title>
+          {permissionCategory.permissions.map((permission, idx) => (
+            <>
+              <Row key={permissionCategory.key} align="top" justify="space-between" wrap={false}>
+                <Space direction="vertical" size={0}>
+                  <Typography.Text strong>{permission.title}</Typography.Text>
+                  <Typography.Text type="secondary">{permission.description}</Typography.Text>
+                </Space>
+                <Form.Item name={`${permissionCategory.resource}-${permission.permission}`}>
+                  <Switch
+                    disabled={switchDisabled(
+                      permissions,
+                      permissionCategory.resource,
+                      permission.permission,
+                      ability,
+                    )}
+                    checked={switchChecked(
+                      permissions,
+                      permissionCategory.resource,
+                      permission.permission,
+                    )}
+                    onChange={() =>
+                      setPermissions(
+                        togglePermission(
                           permissions,
                           permissionCategory.resource,
                           permission.permission,
-                          ability,
-                        )
-                      }
-                      checked={switchChecked(
-                        permissions,
-                        permissionCategory.resource,
-                        permission.permission,
-                      )}
-                      onChange={() =>
-                        setPermissions(
-                          togglePermission(
-                            permissions,
-                            permissionCategory.resource,
-                            permission.permission,
-                          ),
-                        )
-                      }
-                    />
-                  </Form.Item>
-                </Row>
-                {idx < permissionCategory.permissions.length - 1 && (
-                  <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
-                )}
-              </>
-            ))}
-            <br />
-          </>
-        ))}
+                        ),
+                      )
+                    }
+                  />
+                </Form.Item>
+              </Row>
+              {idx < permissionCategory.permissions.length - 1 && (
+                <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
+              )}
+            </>
+          ))}
+          <br />
+        </>
+      ))}
 
-        <Tooltip title="Save changes">
-          <FloatButton
-            type="primary"
-            icon={
-              isLoading ? (
-                <Spin indicator={<LoadingOutlined style={{ color: '#fff' }} />} />
-              ) : (
-                <SaveOutlined />
-              )
-            }
-            onClick={() => !isLoading && form.submit()}
-          />
-        </Tooltip>
-      </Form>
-    </div>
+      <Tooltip title="Save changes">
+        <FloatButton
+          type="primary"
+          icon={
+            loading ? (
+              <Spin indicator={<LoadingOutlined style={{ color: '#fff' }} />} />
+            ) : (
+              <SaveOutlined />
+            )
+          }
+          onClick={() => !loading && form.submit()}
+        />
+      </Tooltip>
+    </Form>
   );
 };
 

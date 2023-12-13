@@ -18,12 +18,6 @@ export function getAppliedRolesForUser(userId: string): Role[] {
 
   const userRoles: Role[] = [];
 
-  const adminRole = Object.values(roleMetaObjects).find(
-    (role: any) => role.default && role.name === '@admin',
-  ) as any;
-  if (adminRole.members.map((member: any) => member.userId).includes(userId))
-    userRoles.push(adminRole);
-
   userRoles.push(
     Object.values(roleMetaObjects).find(
       (role: any) => role.default && role.name === '@everyone',

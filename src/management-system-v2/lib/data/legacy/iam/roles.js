@@ -5,7 +5,30 @@ import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
 import { roleMappingsMetaObjects } from './role-mappings.js';
 
 /** @type {any} - object containing all roles */
-export let roleMetaObjects = {};
+export let roleMetaObjects = global.roleMetaObjects || (global.roleMetaObjects = {});
+
+/**
+ * initializes the roles meta information objects
+ */
+export function init() {
+  roleMetaObjects = {};
+
+  // get roles that were persistently stored
+  const storedRoles = store.get('roles');
+
+  // set roles store
+  store.set('roles', 'roles', storedRoles);
+
+  // migrate roles
+  roleMigrations.forEach((role) => {
+    const index = storedRoles.findIndex((storedRole) => storedRole.name === role.name);
+    if (index < 0) addRole(role);
+  });
+
+  // set roles store cache for quick access
+  storedRoles.forEach((role) => (roleMetaObjects[role.id] = role));
+}
+init();
 
 /**
  * Returns all roles in form of an array
@@ -131,27 +154,3 @@ export async function deleteRole(roleId) {
     },
   });
 }
-
-/**
- * initializes the roles meta information objects
- */
-export async function init() {
-  roleMetaObjects = {};
-
-  // get roles that were persistently stored
-  const storedRoles = store.get('roles');
-
-  // set roles store
-  store.set('roles', 'roles', storedRoles);
-
-  // migrate roles
-  roleMigrations.forEach((role) => {
-    const index = storedRoles.findIndex((storedRole) => storedRole.name === role.name);
-    if (index < 0) addRole(role);
-  });
-
-  // set roles store cache for quick access
-  storedRoles.forEach((role) => (roleMetaObjects[role.id] = role));
-}
-
-init();

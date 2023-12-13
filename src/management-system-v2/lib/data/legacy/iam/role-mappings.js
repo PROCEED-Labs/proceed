@@ -3,7 +3,24 @@ import store from '../store.js';
 import { roleMetaObjects } from './roles.js';
 
 /** @type {any} - object containing all role mappings */
-export let roleMappingsMetaObjects = {};
+export let roleMappingsMetaObjects =
+  global.roleMappingsMetaObjects || (global.roleMappingsMetaObjects = {});
+
+/**
+ * initializes the role mappings meta information objects
+ */
+export function init() {
+  roleMappingsMetaObjects = {};
+
+  // get role mappings that were persistently stored
+  const storedRoleMappings = store.get('roleMappings');
+
+  // set role mappings store
+  store.set('roleMappings', storedRoleMappings);
+
+  roleMappingsMetaObjects.users = storedRoleMappings.roleMappings.users;
+}
+init();
 
 /**
  * Returns all role mappings in form of an array
@@ -131,20 +148,3 @@ export async function deleteRoleMapping(userId, roleId) {
     store.update('roles', roleId, roleMetaObjects[roleId]);
   }
 }
-
-/**
- * initializes the role mappings meta information objects
- */
-export async function init() {
-  roleMappingsMetaObjects = {};
-
-  // get role mappings that were persistently stored
-  const storedRoleMappings = store.get('roleMappings');
-
-  // set role mappings store
-  store.set('roleMappings', storedRoleMappings);
-
-  roleMappingsMetaObjects.users = storedRoleMappings.roleMappings.users;
-}
-
-init();

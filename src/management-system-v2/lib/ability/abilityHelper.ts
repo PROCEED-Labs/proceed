@@ -25,10 +25,10 @@ export default class Ability {
     return true;
   }
 
-  filter(action: CanParams[0] | CanParams[0][], resource: ResourceType, array: any[]) {
+  filter<T extends {}>(action: CanParams[0] | CanParams[0][], resource: ResourceType, array: T[]) {
     return array.filter((resourceInstance) =>
       this.can(action, toCaslResource(resource, resourceInstance)),
-    );
+    ) as T[];
   }
 
   checkInputFields(

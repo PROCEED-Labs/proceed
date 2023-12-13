@@ -37,8 +37,10 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   const ability = useAbilityStore((store) => store.ability);
   const abilityFetched = useAbilityStore((store) => store.abilityFetched);
 
+  const loadingState = status === 'loading' || !abilityFetched;
+
   const allow = useMemo(() => {
-    if (status !== 'authenticated' || !abilityFetched) return false;
+    if (status !== 'authenticated' || loadingState) return false;
 
     const resources = Array.isArray(resource) ? resource : [resource];
     const actions = Array.isArray(action) ? action : [action];
@@ -50,16 +52,18 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
     }
 
     return true;
-  }, [action, resource, ability, abilityFetched, status]);
+  }, [action, resource, ability, loadingState, status]);
 
   useEffect(() => {
-    if (abilityFetched && !allow && fallbackRedirect) router.push(fallbackRedirect);
-  }, [allow, fallbackRedirect, router, abilityFetched]);
+    if (!loadingState && !allow && fallbackRedirect) {
+      router.push(fallbackRedirect);
+    }
+  }, [allow, fallbackRedirect, router, loadingState]);
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) return children;
 
   if (status === 'unauthenticated' && notLoggedIn) return notLoggedIn;
-  if (status === 'loading' || !abilityFetched) return loadingAuth || null;
+  if (loadingState) return loadingAuth || null;
   if (allow) return children;
 
   return fallback || null;

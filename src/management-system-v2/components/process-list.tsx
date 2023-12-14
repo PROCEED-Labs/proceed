@@ -31,7 +31,6 @@ import ProcessEditButton from './process-edit-button';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
@@ -113,7 +112,11 @@ const ProcessList: FC<ProcessListProps> = ({
               onClick={() => {
                 createProcess({
                   body: {
-                    ...record,
+                    ...{
+                      ...record,
+                      description: record.description.value,
+                      definitionName: record.definitionName.value,
+                    },
                     bpmn: record.bpmn || '',
                     variables: [
                       {
@@ -135,19 +138,12 @@ const ProcessList: FC<ProcessListProps> = ({
           </Tooltip>
           <AuthCan resource={toCaslResource('Process', record)} action="update">
             <ProcessEditButton
-              process={{
-                definitionId: record.definitionId,
-                description: record.description.value,
-                definitionName: record.definitionName.value,
-              }}
+              process={record}
               wrapperElement={
                 <Tooltip placement="top" title={'Edit'}>
                   <EditOutlined />
                 </Tooltip>
               }
-              onEdited={() => {
-                router.refresh();
-              }}
             />
           </AuthCan>
           {ability.can('delete', 'Process') && (

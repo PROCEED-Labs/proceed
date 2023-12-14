@@ -29,11 +29,11 @@ import {
 } from '@proceed/bpmn-helper';
 import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
-import ProcessCopyModal from './process-copy';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
-import { deleteProcesses } from '@/lib/data/processes';
+import { copyProcesses, deleteProcesses } from '@/lib/data/processes';
+import ProcessModal from './process-modal';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -327,12 +327,27 @@ const Processes = ({ processes }: ProcessesProps) => {
         setSelection={setSelectedRowKeys}
         open={openDeleteModal && selectedRowKeys.length === 1}
       />
-      <ProcessCopyModal
-        onClose={() => setOpenCopyModal(false)}
-        setSelection={setSelectedRowKeys}
-        processKeys={selectedRowKeys}
+      <ProcessModal
         open={openCopyModal}
-      ></ProcessCopyModal>
+        title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        onCancel={() => setOpenCopyModal(false)}
+        initialData={filteredData
+          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .map((process) => ({
+            definitionName: `${process.definitionName.value} (Copy)`,
+            description: process.description.value,
+            originalId: process.definitionId,
+          }))}
+        onSubmit={async (values) => {
+          const res = await copyProcesses(values);
+          // Errors are handled in the modal.
+          if ('error' in res) {
+            return res;
+          }
+          setOpenCopyModal(false);
+          router.refresh();
+        }}
+      />
     </>
   );
 };

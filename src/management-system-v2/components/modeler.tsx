@@ -38,11 +38,14 @@ const BPMNViewer =
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   processBpmn: string;
+  versionName?: string;
+  process: { definitionName: string; definitionId: string };
+  versions: { version: number; name: string; description: string }[];
 };
 
 type ModelerTypes = 'viewer' | 'modeler' | 'none';
 
-const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
+const Modeler = ({ processBpmn, versionName, process, versions, ...divProps }: ModelerProps) => {
   const { processId } = useParams();
   const pathname = usePathname();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
@@ -225,7 +228,7 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
       {!minimized && (
         <>
-          <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} />
+          <ModelerToolbar onOpenXmlEditor={handleOpenXmlEditor} versions={versions} />
           {selectedVersionId && !showMobileView && <VersionToolbar />}
           {!!xmlEditorBpmn && (
             <XmlEditor
@@ -233,6 +236,8 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
               canSave={!selectedVersionId}
               onClose={handleCloseXmlEditor}
               onSaveXml={handleXmlEditorSave}
+              process={process}
+              versionName={versionName}
             />
           )}
         </>

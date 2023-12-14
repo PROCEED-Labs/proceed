@@ -1,42 +1,44 @@
 'use client';
 
-import React, { ReactNode, useState, useTransition } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import ProcessModal from './process-modal';
 import { createProcess } from '@/lib/helpers/processHelpers';
-import { addProcess } from '@/lib/data/processes';
+import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 
 type ProcessCreationButtonProps = ButtonProps & {
-  createProcess?: (values: { name: string; description?: string }) => any;
+  customAction?: (values: { definitionName: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
 };
 
 /**
  *
  * Button to create Processes including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
- * Custom function for creation of process using inserted values can be applied
  */
 const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
-  createProcess: customCreateProcess,
   wrapperElement,
+  customAction,
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const createNewProcess = async (values: { name: string; description?: string }) => {
-    const { metaInfo, bpmn } = await createProcess(values);
-    startTransition(async () => {
-      try {
-        await addProcess({ bpmn: bpmn, departments: [] });
-      } catch (error) {
-        console.error(error);
-      }
+  const createNewProcess = async (values: { definitionName: string; description: string }[]) => {
+    // Invoke the custom handler otherwise use the default server action.
+    const process = await (customAction?.(values[0]) ??
+      addProcesses(values).then((res) => (Array.isArray(res) ? res[0] : res)));
+    if (process && 'error' in process) {
+      return process;
+    }
+    setIsProcessModalOpen(false);
+
+    if (process && 'definitionId' in process) {
+      router.push(`/processes/${process.definitionId}`);
+    } else {
       router.refresh();
-    });
+    }
   };
 
   return (
@@ -58,15 +60,12 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
         ></Button>
       )}
       <ProcessModal
-        close={(values) => {
-          setIsProcessModalOpen(false);
-
-          if (values) {
-            customCreateProcess ? customCreateProcess(values) : createNewProcess(values);
-          }
-        }}
-        show={isProcessModalOpen}
-      ></ProcessModal>
+        open={isProcessModalOpen}
+        title="Create Process"
+        okText="Create"
+        onCancel={() => setIsProcessModalOpen(false)}
+        onSubmit={createNewProcess}
+      />
     </>
   );
 };

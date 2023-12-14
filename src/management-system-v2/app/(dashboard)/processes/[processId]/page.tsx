@@ -31,12 +31,21 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   const selectedVersionBpmn = selectedVersionId
     ? await getProcessVersionBpmn(processId, selectedVersionId)
     : process.bpmn;
+  const selectedVersion = selectedVersionId
+    ? process.versions.find((version) => String(version.version) === selectedVersionId)
+    : undefined;
 
   // Since the user is able to minimize and close the page, everyting is in a
   // client component from here.
   return (
-    <Wrapper processName={process.definitionName}>
-      <Modeler className={styles.Modeler} processBpmn={selectedVersionBpmn} />
+    <Wrapper processName={process.definitionName} processes={processes}>
+      <Modeler
+        className={styles.Modeler}
+        processBpmn={selectedVersionBpmn}
+        process={process}
+        versions={process.versions}
+        versionName={selectedVersion?.name}
+      />
     </Wrapper>
   );
 };

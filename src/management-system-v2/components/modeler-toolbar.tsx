@@ -29,7 +29,7 @@ import ProcessExportModal from './process-export';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
 
-import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
+import { useInvalidateAsset } from '@/lib/fetch-data';
 
 import useMobileModeler from '@/lib/useMobileModeler';
 
@@ -37,8 +37,9 @@ const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
+  versions: { version: number; name: string; description: string }[];
 };
-const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
+const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versions }) => {
   /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
 
@@ -54,10 +55,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
   const { processId } = useParams();
-
-  const { data: process } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
 
   const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
     params: { path: { definitionId: processId as string } },
@@ -145,7 +142,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const selectedVersion =
-    process?.versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
+    versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
     LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
@@ -175,12 +172,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                   }`,
                 );
               }}
-              options={[LATEST_VERSION]
-                .concat(process?.versions ?? [])
-                .map(({ version, name }) => ({
-                  value: version,
-                  label: name,
-                }))}
+              options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
+                value: version,
+                label: name,
+              }))}
             />
             {!showMobileView && (
               <>
@@ -233,6 +228,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         )}
       </Toolbar>
       <ProcessExportModal
+        open={showProcessExportModal}
         processes={
           showProcessExportModal
             ? [

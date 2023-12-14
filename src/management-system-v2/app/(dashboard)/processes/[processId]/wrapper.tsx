@@ -6,7 +6,6 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
-import { useGetAsset } from '@/lib/fetch-data';
 import {
   BreadcrumbProps,
   Button,
@@ -37,9 +36,10 @@ type SubprocessInfo = {
 
 type WrapperProps = PropsWithChildren<{
   processName: string;
+  processes: { definitionId: string; definitionName: string }[];
 }>;
 
-const Wrapper = ({ children, processName }: WrapperProps) => {
+const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -48,11 +48,6 @@ const Wrapper = ({ children, processName }: WrapperProps) => {
   const [subprocessChain, setSubprocessChain] = useState<SubprocessInfo[]>([]);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
-  const { data: processes } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
 
   const {
     token: { fontSizeHeading1 },

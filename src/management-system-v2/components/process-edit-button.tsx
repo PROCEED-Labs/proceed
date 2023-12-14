@@ -1,45 +1,39 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useMemo, useState } from 'react';
 
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import ProcessModal from './process-modal';
-import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
+import { updateProcess } from '@/lib/data/processes';
+import { useRouter } from 'next/navigation';
+import { ProcessListProcess } from './processes';
 
 type ProcessEditButtonProps = ButtonProps & {
-  definitionId: string;
+  process: ProcessListProcess;
   wrapperElement?: ReactNode;
-  onEdited?: () => any;
 };
 
 /**
  * Button to edit Processes including a Modal for updating values. Alternatively, a custom wrapper element can be used instead of a button.
  */
 const ProcessEditButton: React.FC<ProcessEditButtonProps> = ({
-  definitionId,
+  process,
   wrapperElement,
-  onEdited,
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-  const { data: processData } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId } },
-  });
-
-  const { mutateAsync: updateProcess } = usePutAsset('/process/{definitionId}');
-
-  const editProcess = async (values: { name: string; description?: string }) => {
-    try {
-      await updateProcess({
-        params: { path: { definitionId } },
-        body: { ...values },
-      });
-      onEdited && onEdited();
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const router = useRouter();
+  const data = useMemo(
+    () => [
+      {
+        ...process,
+        definitionName: process.definitionName.value,
+        description: process.description.value,
+      },
+    ],
+    [process],
+  );
 
   return (
     <>
@@ -60,19 +54,26 @@ const ProcessEditButton: React.FC<ProcessEditButtonProps> = ({
         ></Button>
       )}
       <ProcessModal
-        initialProcessData={{
-          name: processData?.definitionName,
-          description: processData?.description,
-        }}
-        close={(values) => {
-          setIsProcessModalOpen(false);
-
-          if (values) {
-            editProcess(values);
+        open={isProcessModalOpen}
+        title="Edit Process"
+        initialData={data}
+        okText="Save"
+        onCancel={() => setIsProcessModalOpen(false)}
+        onSubmit={async (values) => {
+          const res = await updateProcess(
+            process.definitionId,
+            undefined,
+            values[0].description,
+            values[0].definitionName,
+          );
+          // Let modal handle errors
+          if ('error' in res) {
+            return res;
           }
+          setIsProcessModalOpen(false);
+          router.refresh();
         }}
-        show={isProcessModalOpen}
-      ></ProcessModal>
+      />
     </>
   );
 };

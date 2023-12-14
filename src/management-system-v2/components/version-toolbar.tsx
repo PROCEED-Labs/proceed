@@ -17,19 +17,23 @@ import { Tooltip, Space } from 'antd';
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { get, del, put, usePostAsset } from '@/lib/fetch-data';
 import { convertToEditableBpmn } from '@/lib/helpers/processVersioning';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import ProcessCreationButton from './process-creation-button';
 import { AuthCan } from '@/components/auth-can';
 import ConfirmationButton from './confirmation-button';
+import { copyProcesses } from '@/lib/data/processes';
 
 type VersionToolbarProps = {};
 const VersionToolbar: React.FC<VersionToolbarProps> = () => {
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+  const query = useSearchParams();
+  // This component should only be rendered when a version is selected
+  const selectedVersionId = query.get('version') as string;
   const { mutateAsync: postProcess } = usePostAsset('/process');
 
   // const [index, setIndex] = useState(0);
@@ -44,34 +48,6 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
       ? elementRegistry.get(selectedElementId)!
       : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
   }
-
-  const createNewProcess = async (values: { name: string; description?: string }) => {
-    const saveXMLResult = await modeler?.saveXML({ format: true });
-    if (saveXMLResult?.xml) {
-      try {
-        const bpmn = saveXMLResult.xml;
-        const defId = generateDefinitionsId();
-        let newBpmn = await setDefinitionsId(bpmn, defId);
-        newBpmn = await setDefinitionsName(newBpmn, values.name);
-        newBpmn = (await manipulateElementsByTagName(
-          newBpmn,
-          'bpmn:Definitions',
-          (definitions: any) => {
-            delete definitions.version;
-            delete definitions.versionName;
-            delete definitions.versionDescription;
-            delete definitions.versionBasedOn;
-          },
-        )) as string;
-
-        await postProcess({
-          body: { bpmn: newBpmn, departments: [] },
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    }
-  };
 
   const getUsedFileNames = async (bpmn: string) => {
     const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmn);
@@ -180,7 +156,21 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
           <Tooltip title="Create a new Process using this Version">
             <ProcessCreationButton
               icon={<PlusOutlined />}
-              createProcess={createNewProcess}
+              customAction={async (values) => {
+                const result = await copyProcesses([
+                  {
+                    ...values,
+                    originalId: processId as string,
+                    originalVersion: selectedVersionId,
+                  },
+                ]);
+                if (Array.isArray(result)) {
+                  return result[0];
+                } else {
+                  // UserError was thrown by the server
+                  return result;
+                }
+              }}
             ></ProcessCreationButton>
           </Tooltip>
         </AuthCan>

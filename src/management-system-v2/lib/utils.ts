@@ -26,12 +26,32 @@ type JSONArray = JSONValue[];
  *
  * @param func the function to call after the debounce timeout has elapsed
  * @param timeout the time that needs to elapse without a function call before the logic is executed
- * @returns the function to call for the debounc behaviour
+ * @returns the function to call for the debounced behaviour
  */
 export function debounce(func: Function, timeout = 1000) {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  return (...args: any[]) => {
+  const debounced = (...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => func(...args), timeout);
   };
+
+  /**
+   * Immediatly execute the debounced function and cancel any pending executions
+   */
+  debounced.immediate = () => {
+    clearTimeout(timer);
+    func();
+  };
+
+  /**
+   * Immediatly execute the debounced (async) function and cancel any pending executions
+   *
+   * Allows the function to be awaited
+   */
+  debounced.asyncImmediate = async () => {
+    clearTimeout(timer);
+    await func();
+  };
+
+  return debounced;
 }

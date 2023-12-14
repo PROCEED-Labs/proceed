@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useEffect, useRef, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
@@ -13,8 +13,7 @@ import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { usePutAsset } from '@/lib/fetch-data';
-import { useProcessBpmn } from '@/lib/process-queries';
+import { debounce } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -41,14 +40,16 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   processBpmn: string;
 };
 
+type ModelerTypes = 'viewer' | 'modeler' | 'none';
+
 const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
   const { processId } = useParams();
   const pathname = usePathname();
-  const [initialized, setInitialized] = useState(false);
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
+  const [currentModelerType, setCurrentModelerType] = useState<ModelerTypes>('none');
   const [isPending, startTransition] = useTransition();
 
   const canvas = useRef<HTMLDivElement>(null);
@@ -65,6 +66,24 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
   const showMobileView = useMobileModeler();
 
   const canEdit = !selectedVersionId && !showMobileView;
+
+  const saveDebounced = useMemo(
+    () =>
+      debounce(async () => {
+        // prevent saving when the function is created while editing is disabled
+        if (canEdit && modeler.current?.saveXML) {
+          try {
+            const { xml } = await modeler.current.saveXML({ format: true });
+            startTransition(async () => {
+              await updateProcess(processId as string, xml);
+            });
+          } catch (err) {
+            console.log(err);
+          }
+        }
+      }, 2000),
+    [processId, canEdit],
+  );
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -84,6 +103,7 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
             proceed: schema,
           },
         });
+        setCurrentModelerType('viewer');
         setEditingDisabled(true);
       } else {
         modeler.current = new Modeler!({
@@ -92,28 +112,11 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
             proceed: schema,
           },
         });
-
-        // update process after change with 2 second debounce
-        let timer: ReturnType<typeof setTimeout>;
-        modeler.current.on('commandStack.changed', () => {
-          clearTimeout(timer);
-          timer = setTimeout(async () => {
-            try {
-              const { xml } = await modeler.current!.saveXML({ format: true });
-              /* await updateProcess(processId as string, { bpmn: xml! }); */
-
-              startTransition(async () => {
-                await updateProcess(processId as string, xml);
-              });
-            } catch (err) {
-              console.log(err);
-            }
-          }, 2000);
-        });
+        setCurrentModelerType('modeler');
+        modeler.current.on('commandStack.changed', saveDebounced);
 
         setEditingDisabled(false);
       }
-
       // allow keyboard shortcuts like copy (ctrl+c) and paste (ctrl+v) etc.
       (modeler.current.get('keyboard') as any).bind(document);
 
@@ -132,40 +135,41 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
       modeler.current.on('root.set', (event: any) => {
         if (modeler.current) (modeler.current.get('canvas') as any).zoom('fit-viewport', 'auto');
         // when the current root (the visible layer [the main process/collaboration or some collapsed subprocess]) is changed to a subprocess add its id to the query
-        const searchParams = new URLSearchParams(query);
+        const searchParams = new URLSearchParams(window.location.search);
         if (bpmnIs(event.element, 'bpmn:SubProcess')) {
           searchParams.set(`subprocess`, `${event.element.businessObject.id}`);
         } else {
           searchParams.delete('subprocess');
         }
 
-        modeler.current!.saveXML({ format: true }).then(({ xml }) => {
-          startTransition(async () => {
-            await updateProcess(processId as string, xml);
-
-            router.push(
-              `/processes/${processId as string}${
-                searchParams.size ? '?' + searchParams.toString() : ''
-              }`,
-            );
-          });
-        });
+        router.push(
+          `/processes/${processId as string}${
+            searchParams.size ? '?' + searchParams.toString() : ''
+          }`,
+        );
       });
 
       setModeler(modeler.current);
-      setInitialized(true);
     });
 
     return () => {
-      modeler.current?.destroy();
+      setCurrentModelerType('none');
+      if (!canEdit) modeler.current?.destroy();
+      else {
+        const m = modeler.current;
+        // save the current state in the modeler before it is destroyed canceling any pending debounced saves
+        saveDebounced.asyncImmediate().finally(() => {
+          m?.destroy();
+        });
+      }
     };
     // only reset the modeler if we switch between editing being enabled or disabled
-  }, [setModeler, selectedVersionId, canEdit, processId]);
+  }, [setModeler, canEdit]);
 
   useEffect(() => {
-    // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
-    if (!initialized && modeler.current?.importXML && processBpmn) {
-      // import the diagram that was returned by the request
+    // only import the bpmn once (the effect will be retriggered when the modeler is changed or when another process or version was selected)
+    if (modeler.current?.importXML && processBpmn) {
+      // import the new bpmn
       modeler.current.importXML(processBpmn).then(() => {
         // stay in the current subprocess when the page or the modeler reloads (unless the subprocess does not exist anymore because the process changed)
         const subprocessId = query.get('subprocess');
@@ -191,9 +195,7 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
         else setSelectedElementId(null);
       });
     }
-    // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
-    setInitialized(false);
-  }, [initialized, setSelectedElementId, processBpmn]);
+  }, [setSelectedElementId, currentModelerType, processId, selectedVersionId]);
 
   const handleOpenXmlEditor = async () => {
     if (modeler.current) {

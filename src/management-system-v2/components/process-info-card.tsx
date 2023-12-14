@@ -1,174 +1,171 @@
 'use client';
 
 import { generateDateString } from '@/lib/utils';
-import { Card, Divider, Button } from 'antd';
-import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
-import React, { FC, Key, use, useCallback, useEffect, useState } from 'react';
+import { Divider } from 'antd';
+import React, { FC, Key, useEffect, useRef, useState } from 'react';
 import Viewer from './bpmn-viewer';
-import classNames from 'classnames';
 import { ApiData } from '@/lib/fetch-data';
+import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 
 type MetaDataType = {
   data?: ProcessListProcess[];
   selection: Key[];
-  triggerRerender?: () => void;
 };
 
-const MetaData: FC<MetaDataType> = ({ data, selection, triggerRerender }) => {
-  /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
+const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
 
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const showInfo = preferences['show-process-meta-data'];
-  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+/** NEEDS TO BE PLACED IN A FLEX CONTAINER */
+const MetaData: FC<MetaDataType> = ({ data, selection }) => {
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
+  const hydrated = useUserPreferences.use._hydrated();
 
   /* Necessary for Firefox BPMN.js Viewer fix */
-  const [showViewer, setShowViewer] = useState(showInfo);
+  /* const [showViewer, setShowViewer] = useState(showInfo); */
 
   /* Fix for firefox: */
-  useEffect(() => {
+  /* useEffect(() => {
+    const panelWidth = getWidth();
     let timeoutId: ReturnType<typeof setTimeout>;
     if (showInfo) {
       // Delay the rendering of Viewer
       timeoutId = setTimeout(() => {
         setShowViewer(true);
+
+        //  set width of parent component (resizable element) to 450 which is the desired with of the collapsed card
+        if (resizableElementRef.current) {
+          resizableElementRef.current(panelWidth);
+        }
       }, 350); // Transition duration + 50ms
     } else {
       setShowViewer(false);
+
+      //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
+      if (resizableElementRef.current) {
+        resizableElementRef.current(30);
+      }
     }
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [showInfo]);
+  }, [showInfo]); */
+
+  const resizableElementRef = useRef<ResizableElementRefType>(null);
+
+  if (!hydrated) return null;
 
   return (
-    <>
-      <div
-        style={{
-          justifySelf: 'flex-end',
-          position: 'relative',
-          flex: !showInfo ? 'none' : 1,
-          transition: 'flex 0.3s ease-in-out',
-          width: 30,
-          marginRight: '15px',
+    <ResizableElement
+      initialWidth={
+        showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
+      }
+      minWidth={300}
+      maxWidth={600}
+      style={{
+        // position: 'relative',
+        // flex: !showViewer ? 'none' : 1,
+        transition: 'flex 0.3s ease-in-out',
+        marginLeft: '20px',
+        maxWidth: '33%',
+      }}
+      onWidthChange={(width) =>
+        addPreferences({
+          'process-meta-data': {
+            open: showInfo,
+            width: width,
+          },
+        })
+      }
+      ref={resizableElementRef}
+    >
+      <CollapsibleCard
+        title={
+          selection.length
+            ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value!
+            : 'How to PROCEED?'
+        }
+        show={showInfo}
+        onCollapse={() => {
+          const resizeCard = resizableElementRef.current;
+          const sidepanelWidth =
+            useUserPreferences.getState().preferences['process-meta-data'].width;
+
+          if (resizeCard) {
+            if (showInfo) resizeCard(30);
+            else resizeCard(sidepanelWidth);
+          }
+          addPreferences({
+            'process-meta-data': {
+              open: !showInfo,
+              width: sidepanelWidth,
+            },
+          });
         }}
       >
-        {!showInfo && (
-          <Button
-            type="text"
-            style={{
-              padding: '2px 2px',
-              position: 'absolute',
-              right: '-16px',
-              top: '10px',
-              zIndex: 100,
-            }}
-            onClick={() => {
-              addPreferences({ 'show-process-meta-data': !showInfo });
-              if (triggerRerender) triggerRerender();
-            }}
-          >
-            <DoubleLeftOutlined />
-          </Button>
-        )}
-        <Card
-          className={classNames({ 'Hide-Scroll-Bar': !showInfo })}
+        {/* Viewer */}
+        <div
           style={{
-            marginLeft: '20px',
-            scrollBehavior: 'smooth',
-            overflowY: 'scroll',
-            height: '100%',
-            scrollbarWidth: 'none',
+            height: '200px',
             width: '100%',
           }}
-          title={
-            <>
-              <Button
-                type="text"
-                style={{
-                  padding: '2px',
-                  marginRight: '4px',
-                }}
-                onClick={() => {
-                  addPreferences({
-                    'show-process-meta-data': !showInfo,
-                  });
-                  if (triggerRerender) triggerRerender();
-                }}
-              >
-                <DoubleRightOutlined />
-              </Button>
-              {selection.length
-                ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value
-                : 'How to PROCEED?'}
-            </>
-          }
         >
-          {/* Viewer */}
-          <div
-            style={{
-              height: '200px',
-              width: '100%',
-            }}
-          >
-            {Boolean(selection.length) && showInfo ? (
-              <>
-                {showViewer && (
-                  <Viewer
-                    selectedElementId={
-                      data?.find((item) => item.definitionId === selection[0])?.definitionId
-                    }
-                    reduceLogo={true}
-                  />
+          {Boolean(selection.length) ? (
+            <>
+              <Viewer
+                selectedElementId={
+                  data?.find((item) => item.definitionId === selection[0])?.definitionId
+                }
+                reduceLogo={true}
+                resizeOnWidthChange={true}
+              />
+
+              <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+              <h3>Meta Data</h3>
+              <h5>
+                <b>Last Edited</b>
+              </h5>
+              <p>
+                {generateDateString(
+                  data?.find((item) => item.definitionId === selection[0])?.lastEdited,
+                  true,
                 )}
+              </p>
+              <h5>
+                <b>Created On</b>
+              </h5>
+              <p>
+                {generateDateString(
+                  data?.find((item) => item.definitionId === selection[0])?.createdOn,
+                  false,
+                )}
+              </p>
+              <h5>
+                <b>File Size</b>
+              </h5>
+              <p>X KB</p>
+              <h5>
+                <b>Owner</b>
+              </h5>
+              <p>Obi Wan Kenobi</p>
+              <h5>
+                <b>Description</b>
+              </h5>
+              <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
 
-                <Divider style={{ width: '140%', marginLeft: '-20%' }} />
-                <h3>Meta Data</h3>
-                <h5>
-                  <b>Last Edited</b>
-                </h5>
-                <p>
-                  {generateDateString(
-                    data?.find((item) => item.definitionId === selection[0])?.lastEdited,
-                    true,
-                  )}
-                </p>
-                <h5>
-                  <b>Created On</b>
-                </h5>
-                <p>
-                  {generateDateString(
-                    data?.find((item) => item.definitionId === selection[0])?.createdOn,
-                    false,
-                  )}
-                </p>
-                <h5>
-                  <b>File Size</b>
-                </h5>
-                <p>X KB</p>
-                <h5>
-                  <b>Owner</b>
-                </h5>
-                <p>Obi Wan Kenobi</p>
-                <h5>
-                  <b>Description</b>
-                </h5>
-                <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
-
-                <Divider style={{ width: '140%', marginLeft: '-20%' }} />
-                <h3>Access Rights</h3>
-                <p>Test</p>
-              </>
-            ) : (
-              showInfo && <div>Please select a process.</div>
-            )}
-          </div>
-        </Card>
-      </div>
-    </>
+              <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+              <h3>Access Rights</h3>
+              <p>Test</p>
+            </>
+          ) : (
+            <div>Please select a process.</div>
+          )}
+        </div>
+      </CollapsibleCard>
+    </ResizableElement>
   );
 };
 

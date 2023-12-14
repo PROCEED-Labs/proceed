@@ -19,15 +19,9 @@ function startMockEngineProcess(mockFilesPath) {
     }
 
     let outputHandlers = [];
-
     const engineProcess = spawn(
-      'node',
-      [
-        '--loader',
-        'ts-node/esm',
-        path.resolve(__dirname, 'mockEngine.js'),
-        path.resolve(__dirname, mockFilesPath),
-      ],
+      'yarn',
+      ['ts-node', path.resolve(__dirname, 'mockEngine.js'), path.resolve(__dirname, mockFilesPath)],
       {
         cwd: __dirname,
         detached: false,

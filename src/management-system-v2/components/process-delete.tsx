@@ -1,100 +1,46 @@
-import React, { useState, FC, useCallback, Dispatch, SetStateAction, useEffect, Key } from 'react';
-import { Button, Checkbox, Modal, Spin } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
-import { useDeleteAsset, useGetAsset } from '@/lib/fetch-data';
+import React, { FC, useCallback, Dispatch, SetStateAction, Key, useTransition } from 'react';
+import { Button, Checkbox, Modal } from 'antd';
 import { useUserPreferences } from '@/lib/user-preferences';
 import styles from './process-delete.module.scss';
+import { deleteProcesses } from '@/lib/data/processes';
+import { useRouter } from 'next/navigation';
 
 type ProcessDeleteModalType = {
-  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  onClose: () => void;
+  open: boolean;
   processKeys: React.Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
+  processes: { definitionId: string; definitionName: string }[];
 };
 
 const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
-  setDeleteProcessIds,
+  onClose,
+  open,
   processKeys,
   setSelection,
+  processes,
 }) => {
-  const { data, refetch: pullNewProcessData } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const [successful, setSuccessful] = useState<string[]>([]);
-  const [failed, setFailed] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const { addPreferences } = useUserPreferences();
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    //onSettled: pullNewProcessData,
-    onError: (error, variables) => {
-      setFailed((prev) => [...prev, variables.params.path.definitionId]);
-    },
-    onSuccess: (data, variables) => {
-      setSuccessful((prev) => [...prev, variables.params.path.definitionId]);
-      setSelection((prev) => prev.filter((key) => key !== variables.params.path.definitionId));
-    },
-  });
+  const addPreferences = useUserPreferences.use.addPreferences();
 
   const deleteSelectedProcesses = useCallback(() => {
-    processKeys.forEach((key: React.Key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-        parseAs: 'text',
-      });
+    startTransition(async () => {
+      await deleteProcesses(processKeys as string[]);
+      setSelection([]);
+      onClose();
+      router.refresh();
     });
-  }, [deleteProcess, processKeys]);
-
-  const handleDelete = useCallback(() => {
-    if (failed.length) {
-      setSelection(failed);
-      setDeleteProcessIds(failed);
-      setFailed([]);
-      setSuccessful([]);
-      pullNewProcessData();
-    }
-
-    setLoading(true);
-    deleteSelectedProcesses();
-  }, [deleteSelectedProcesses, failed, pullNewProcessData, setDeleteProcessIds, setSelection]);
-
-  const handleCancel = useCallback(() => {
-    setDeleteProcessIds([]);
-    setFailed([]);
-    setSuccessful([]);
-  }, [setDeleteProcessIds]);
-
-  useEffect(() => {
-    /* Some Failed */
-    if (processKeys.length && successful.length + failed.length === processKeys.length) {
-      setLoading(false);
-    }
-    /* All Successful */
-    if (processKeys.length && successful.length === processKeys.length) {
-      setTimeout(() => {
-        setSelection([]);
-        setDeleteProcessIds([]);
-        setFailed([]);
-        setSuccessful([]);
-        pullNewProcessData();
-      }, 2_000);
-    }
-  }, [successful, failed, processKeys, setSelection, setDeleteProcessIds, pullNewProcessData]);
+  }, [onClose, processKeys, router, setSelection]);
 
   return (
     <>
       <Modal
         title="Delete selected processes?"
         centered
-        open={processKeys.length > 1}
-        onCancel={handleCancel}
+        open={open}
+        onCancel={onClose}
         footer={[
           <Checkbox
             key="checkbox"
@@ -105,59 +51,31 @@ const ProcessDeleteModal: FC<ProcessDeleteModalType> = ({
           >
             Don&apos;t show again
           </Checkbox>,
-          <Button loading={loading} key="back" onClick={handleCancel}>
+          <Button loading={isPending} key="back" onClick={onClose}>
             Cancel
           </Button>,
-          <Button key="submit" type="primary" danger loading={loading} onClick={handleDelete}>
-            {failed.length ? 'Retry' : 'Delete'}
+          <Button
+            key="submit"
+            type="primary"
+            danger
+            loading={isPending}
+            onClick={deleteSelectedProcesses}
+          >
+            Delete
           </Button>,
         ]}
       >
         <div>
           <ul>
-            {data
+            {processes
               ?.filter((process) => processKeys.includes(process.definitionId))
               .sort((a, b) => a.definitionName.localeCompare(b.definitionName))
               .map((process) => {
-                // if (loading) {
-                /* Success */
-                if (successful.includes(process.definitionId)) {
-                  return (
-                    <li key={process.definitionId}>
-                      ✔
-                      <span
-                        className={styles.ClippedProcessTitle}
-                        style={{
-                          textDecoration: 'line-through',
-                        }}
-                      >
-                        {process.definitionName}
-                      </span>
-                    </li>
-                  );
-                  /*  Fail */
-                } else if (failed.includes(process.definitionId)) {
-                  return (
-                    <li key={process.definitionId}>
-                      ✖<span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
-                    </li>
-                  );
-                  /*  Loading */
-                } else if (loading) {
-                  return (
-                    <li key={process.definitionId}>
-                      <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-                      <span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
-                    </li>
-                  );
-                  /* Inital */
-                } else {
-                  return (
-                    <li key={process.definitionId}>
-                      <span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
-                    </li>
-                  );
-                }
+                return (
+                  <li key={process.definitionId}>
+                    <span className={styles.ClippedProcessTitle}>{process.definitionName}</span>
+                  </li>
+                );
               })}
           </ul>
         </div>

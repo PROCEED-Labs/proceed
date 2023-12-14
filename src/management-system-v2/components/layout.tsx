@@ -32,7 +32,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   const breakpoint = Grid.useBreakpoint();
 
   return (
-    <AntLayout>
+    <AntLayout style={{ height: '100vh' }}>
       <AntLayout hasSider>
         <AntLayout.Sider
           style={{
@@ -98,9 +98,11 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               ) : null}
 
               <ItemGroup key="settings" title="Settings">
-                <Item key="generalSettings" icon={<SettingOutlined />}>
-                  <Link href="/settings">General Settings</Link>
-                </Item>
+                {ability.can('view', 'Setting') ? (
+                  <Item key="generalSettings" icon={<SettingOutlined />}>
+                    <Link href="/general-settings">General Settings</Link>
+                  </Item>
+                ) : null}
                 <Item key="plugins" icon={<ApiOutlined />}>
                   Plugins
                 </Item>

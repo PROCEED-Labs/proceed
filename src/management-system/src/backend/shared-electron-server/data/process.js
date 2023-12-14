@@ -8,6 +8,7 @@ import {
   getImage,
   getImages,
   saveImage,
+  deleteImage,
   getUserTaskIds,
   getUserTaskHTML,
   getUserTasksHTML,
@@ -17,6 +18,7 @@ import {
   getProcessVersion,
   updateProcess as overwriteProcess,
   getUpdatedProcessesJSON,
+  getImageFileNames,
 } from './fileHandling.js';
 import helperEx from '../../../shared-frontend-backend/helpers/javascriptHelpers.js';
 const { mergeIntoObject } = helperEx;
@@ -395,10 +397,28 @@ export async function getProcessImage(processDefinitionsId, imageFileName) {
 }
 
 /**
+ * Return Array with fileNames of images for given process
+ *
+ * @param {String} processDefinitionsId
+ * @returns {Promise<string[]>} - contains all image fileNames in the process
+ */
+export async function getProcessImageFileNames(processDefinitionsId) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    const imageFilenames = await getImageFileNames(processDefinitionsId);
+    return imageFilenames;
+  } catch (err) {
+    logger.debug(`Error getting image filenames. Reason:\n${err}`);
+    throw new Error('Failed getting all image filenames in process');
+  }
+}
+
+/**
  * Return object mapping from images fileNames to their image
  *
  * @param {String} processDefinitionsId
- * @returns {Object} - contains all images in the process
+ * @returns {Promise<object>} - contains all images in the process
  */
 export async function getProcessImages(processDefinitionsId) {
   checkIfProcessExists(processDefinitionsId);
@@ -425,6 +445,17 @@ export async function saveProcessImage(processDefinitionsId, imageFileName, imag
   } catch (err) {
     logger.debug(`Error storing image. Reason:\n${err}`);
     throw new Error('Failed to store image');
+  }
+}
+
+export async function deleteProcessImage(processDefinitionsId, imageFileName) {
+  checkIfProcessExists(processDefinitionsId);
+
+  try {
+    await deleteImage(processDefinitionsId, imageFileName);
+  } catch (err) {
+    logger.debug(`Error deleting image. Reason:\n${err}`);
+    throw new Error('Failed to delete image');
   }
 }
 

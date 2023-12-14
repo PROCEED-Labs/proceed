@@ -1,9 +1,9 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState, useTransition } from 'react';
 import { Space, Button, Tooltip } from 'antd';
-import { ApiData, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
+import { ApiData, del, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -17,6 +17,7 @@ import ProcessList from './process-list';
 import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import ProcessCreationButton from './process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { fetchProcessVersionBpmn } from '@/lib/process-queries';
 import {
@@ -28,10 +29,11 @@ import {
 } from '@proceed/bpmn-helper';
 import ProcessDeleteModal from './process-delete';
 import ProcessDeleteSingleModal from './process-delete-single';
-import ProcessCopyModal from './process-copy';
-import { copy } from 'fs-extra';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
+import { useRouter } from 'next/navigation';
+import { copyProcesses, deleteProcesses } from '@/lib/data/processes';
+import ProcessModal from './process-modal';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -66,54 +68,36 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
   return newBPMN;
 };
 
-const Processes: FC = () => {
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch: pullNewProcessData,
-  } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
+type ProcessesProps = {
+  processes: Processes;
+};
 
+const Processes = ({ processes }: ProcessesProps) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const {
-    'icon-view-in-process-list': iconView,
-    'ask-before-deleting-multiple': openModalWhenDeleteMultiple,
-    'ask-before-deleting-single': openModalWhenDeleteSingle,
-    'ask-before-copying': openModalWhenCopy,
-  } = preferences;
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const openModalWhenDeleteMultiple = useUserPreferences.use['ask-before-deleting-multiple']();
+  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
+  const openModalWhenCopy = useUserPreferences.use['ask-before-copying']();
 
   const ability = useAbilityStore((state) => state.ability);
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: pullNewProcessData,
-  });
 
   const { mutateAsync: addProcess } = usePostAsset('/process', {});
 
   const deleteSelectedProcesses = useCallback(() => {
-    selectedRowKeys.forEach((key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-        parseAs: 'text',
-      });
+    startTransition(async () => {
+      await deleteProcesses(selectedRowKeys as string[]);
+      setSelectedRowKeys([]);
+      router.refresh();
     });
-    setSelectedRowKeys([]);
-  }, [deleteProcess, selectedRowKeys]);
+  }, [router, selectedRowKeys]);
 
-  const [exportProcessIds, setExportProcessIds] = useState<string[]>([]);
-  const [copyProcessIds, setCopyProcessIds] = useState<string[]>([]);
-  const [deleteProcessIds, setDeleteProcessIds] = useState<string[]>([]);
+  const [openExportModal, setOpenExportModal] = useState(false);
+  const [openCopyModal, setOpenCopyModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
   const actionBar = (
     <>
@@ -127,7 +111,7 @@ const Processes: FC = () => {
         <ExportOutlined
           className={styles.Icon}
           onClick={() => {
-            setExportProcessIds(selectedRowKeys as string[]);
+            setOpenExportModal(true);
           }}
         />
       </Tooltip>
@@ -140,7 +124,7 @@ const Processes: FC = () => {
                 (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
                 (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
               ) {
-                setDeleteProcessIds(selectedRowKeys as string[]);
+                setOpenDeleteModal(true);
               } else {
                 deleteSelectedProcesses();
               }
@@ -156,15 +140,11 @@ const Processes: FC = () => {
     searchQuery: searchTerm,
     setSearchQuery: setSearchTerm,
   } = useFuzySearch({
-    data: data ?? [],
+    data: processes ?? [],
     keys: ['definitionName', 'description'],
     highlightedKeys: ['definitionName', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
-
-  const rerenderLists = () => {
-    //setFilteredData(filteredData);,
-  };
 
   const deselectAll = () => {
     setSelectedRowKeys([]);
@@ -174,14 +154,9 @@ const Processes: FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       /* CTRL + A */
-      if (
-        e.ctrlKey &&
-        e.key === 'a' &&
-        copyProcessIds.length == 0 &&
-        deleteProcessIds.length == 0
-      ) {
+      if (e.ctrlKey && e.key === 'a' && !openCopyModal && !openDeleteModal && !openExportModal) {
         e.preventDefault();
-        setSelectedRowKeys(filteredData ? filteredData.map((item) => item.definitionId) : []);
+        setSelectedRowKeys(filteredData?.map((item) => item.definitionId) ?? []);
         /* DEL */
       } else if (e.key === 'Delete') {
         if (ability.can('delete', 'Process')) {
@@ -189,7 +164,7 @@ const Processes: FC = () => {
             (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
             (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
           ) {
-            setDeleteProcessIds(selectedRowKeys as string[]);
+            setOpenDeleteModal(true);
           } else {
             deleteSelectedProcesses();
           }
@@ -198,7 +173,7 @@ const Processes: FC = () => {
       } else if (e.key === 'Escape') {
         deselectAll();
         /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c' && copyProcessIds.length == 0) {
+      } else if (e.ctrlKey && e.key === 'c' && !openCopyModal) {
         if (ability.can('create', 'Process')) {
           setCopySelection(selectedRowKeys);
         }
@@ -206,10 +181,10 @@ const Processes: FC = () => {
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         if (ability.can('create', 'Process')) {
           if (openModalWhenCopy) {
-            setCopyProcessIds(copySelection as string[]);
+            setOpenCopyModal(true);
           } else {
             copySelection.forEach(async (key) => {
-              const process = data?.find((item) => item.definitionId === key);
+              const process = processes?.find((item) => item.definitionId === key);
               const processBpmn = await fetchProcessVersionBpmn(key as string);
 
               const newBPMN = await copyProcess({
@@ -236,29 +211,30 @@ const Processes: FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     copySelection,
-    deleteProcess,
     filteredData,
     selectedRowKeys,
     deleteSelectedProcesses,
-    data,
+    processes,
     addProcess,
     openModalWhenDeleteMultiple,
     openModalWhenDeleteSingle,
-    copyProcessIds.length,
-    deleteProcessIds.length,
     openModalWhenCopy,
     ability,
+    openCopyModal,
+    openDeleteModal,
+    openExportModal,
   ]);
-
-  if (isError) {
-    return <div>Error</div>;
-  }
 
   return (
     <>
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ /* width: '75%', */ flex: 3, width: '100%' }}>
+        <div
+          style={{
+            /* width: '75%', */
+            flex: 1,
+          }}
+        >
           <Bar
             leftNode={
               selectedRowKeys.length ? (
@@ -277,26 +253,27 @@ const Processes: FC = () => {
               placeholder: 'Search Processes ...',
             }}
             rightNode={
-              <Space.Compact>
-                <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                  onClick={() => {
-                    // addUserPreference({ 'icon-view-in-process-list': false });
-                    addPreferences({ 'icon-view-in-process-list': false });
-                  }}
-                >
-                  <UnorderedListOutlined />
-                </Button>
-                <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                  onClick={() => {
-                    // addUserPreference({ 'icon-view-in-process-list': true });
-                    addPreferences({ 'icon-view-in-process-list': true });
-                  }}
-                >
-                  <AppstoreOutlined />
-                </Button>
-              </Space.Compact>
+              <Space size={16} style={{ paddingLeft: 8 }}>
+                <Space.Compact>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': false });
+                    }}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': true });
+                    }}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+                <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+              </Space>
             }
           />
 
@@ -311,36 +288,66 @@ const Processes: FC = () => {
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
-              isLoading={isLoading}
-              onExportProcess={setExportProcessIds}
-              search={searchTerm}
-              setDeleteProcessIds={setDeleteProcessIds}
-              deleteProcessKeys={deleteProcessIds}
+              // TODO: Replace with server component loading state
+              //isLoading={isLoading}
+              onExportProcess={(id) => {
+                // TODO: If id is already selected, consider doing the batch
+                // operation on all selected instead of overwriting the
+                // selection with a single id.
+                setOpenExportModal(true);
+                setSelectedRowKeys([id]);
+              }}
+              onDeleteProcess={(id) => {
+                setOpenDeleteModal(true);
+                setSelectedRowKeys([id]);
+              }}
             />
           )}
         </div>
         {/* Meta Data Panel */}
-        <MetaData data={filteredData} selection={selectedRowKeys} triggerRerender={rerenderLists} />
+        <MetaData data={filteredData} selection={selectedRowKeys} />
       </div>
       <ProcessExportModal
-        processes={exportProcessIds.map((definitionId) => ({ definitionId }))}
-        onClose={() => setExportProcessIds([])}
+        processes={selectedRowKeys.map((definitionId) => ({
+          definitionId: definitionId as string,
+        }))}
+        open={openExportModal}
+        onClose={() => setOpenExportModal(false)}
       />
       <ProcessDeleteModal
-        setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessIds}
+        onClose={() => setOpenDeleteModal(false)}
+        processKeys={selectedRowKeys}
         setSelection={setSelectedRowKeys}
+        processes={processes}
+        open={openDeleteModal && selectedRowKeys.length > 1}
       />
       <ProcessDeleteSingleModal
-        setDeleteProcessIds={setDeleteProcessIds}
-        processKeys={deleteProcessIds}
+        onClose={() => setOpenDeleteModal(false)}
+        processKeys={selectedRowKeys}
         setSelection={setSelectedRowKeys}
+        open={openDeleteModal && selectedRowKeys.length === 1}
       />
-      <ProcessCopyModal
-        setSelection={setSelectedRowKeys}
-        processKeys={copyProcessIds}
-        setCopyProcessIds={setCopyProcessIds}
-      ></ProcessCopyModal>
+      <ProcessModal
+        open={openCopyModal}
+        title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        onCancel={() => setOpenCopyModal(false)}
+        initialData={filteredData
+          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .map((process) => ({
+            definitionName: `${process.definitionName.value} (Copy)`,
+            description: process.description.value,
+            originalId: process.definitionId,
+          }))}
+        onSubmit={async (values) => {
+          const res = await copyProcesses(values);
+          // Errors are handled in the modal.
+          if ('error' in res) {
+            return res;
+          }
+          setOpenCopyModal(false);
+          router.refresh();
+        }}
+      />
     </>
   );
 };

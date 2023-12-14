@@ -33,10 +33,10 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
       body: users.map((user) => ({
         userId: user.id,
         roleId: role.id,
-        email: user.email,
-        lastName: user.lastName,
-        firstName: user.firstName,
-        username: user.username,
+        email: user.email.value,
+        lastName: user.lastName.value,
+        firstName: user.firstName.value,
+        username: user.username.value,
       })),
       parseAs: 'text',
     });

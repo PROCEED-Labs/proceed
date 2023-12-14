@@ -1,54 +1,54 @@
 import { Button, Checkbox, Modal } from 'antd';
-import React, { Dispatch, FC, Key, SetStateAction, useCallback, useState } from 'react';
+import React, {
+  Dispatch,
+  FC,
+  Key,
+  SetStateAction,
+  startTransition,
+  useCallback,
+  useState,
+  useTransition,
+} from 'react';
 import styles from './process-delete.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useDeleteAsset, useInvalidateAsset } from '@/lib/fetch-data';
+import { deleteProcesses } from '@/lib/data/processes';
+import { useRouter } from 'next/navigation';
 
 type ProcessDeleteModalType = {
-  setDeleteProcessIds: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
+  onClose: () => void;
+  open: boolean;
   processKeys: React.Key[];
   setSelection: Dispatch<SetStateAction<string[]>> | Dispatch<SetStateAction<Key[]>>;
 };
 
 const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
-  setDeleteProcessIds,
+  onClose,
+  open,
   processKeys,
   setSelection,
 }) => {
-  const refreshData = useInvalidateAsset('/process');
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
+  const addPreferences = useUserPreferences.use.addPreferences();
 
-  const { addPreferences } = useUserPreferences();
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: refreshData,
-    onSuccess: () => {
-      setDeleteProcessIds([]);
+  const deleteSelectedProcesses = () => {
+    startTransition(async () => {
+      await deleteProcesses(processKeys as string[]);
+      onClose();
       setSelection([]);
-    },
-  });
-
-  const deleteSelectedProcesses = useCallback(() => {
-    processKeys.forEach((key: React.Key) => {
-      deleteProcess({
-        params: {
-          path: {
-            definitionId: key as string,
-          },
-        },
-        parseAs: 'text',
-      });
+      router.refresh();
     });
-  }, [deleteProcess, processKeys]);
+  };
 
   return (
     <>
       <Modal
         title="Delete this process?"
         centered
-        open={processKeys.length == 1}
-        onCancel={() => setDeleteProcessIds([])}
+        open={open}
+        onCancel={onClose}
         footer={[
           <Checkbox
             key="checkbox"
@@ -59,14 +59,14 @@ const ProcessDeleteSingleModal: FC<ProcessDeleteModalType> = ({
           >
             Don&apos;t warn me again
           </Checkbox>,
-          <Button loading={loading} key="back" onClick={() => setDeleteProcessIds([])}>
+          <Button loading={isPending} key="back" onClick={onClose}>
             Cancel
           </Button>,
           <Button
             key="submit"
             danger
             type="primary"
-            loading={loading}
+            loading={isPending}
             onClick={deleteSelectedProcesses}
           >
             Delete

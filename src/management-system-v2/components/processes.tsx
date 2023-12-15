@@ -2,8 +2,8 @@
 
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState, useTransition } from 'react';
-import { Space, Button, Tooltip } from 'antd';
-import { ApiData, del, useDeleteAsset, useGetAsset, usePostAsset } from '@/lib/fetch-data';
+import { Space, Button, Tooltip, Grid, App } from 'antd';
+import { ApiData, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -11,7 +11,6 @@ import {
   AppstoreOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import Fuse from 'fuse.js';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
 import MetaData from './process-info-card';
@@ -19,7 +18,6 @@ import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { fetchProcessVersionBpmn } from '@/lib/process-queries';
 import {
   setDefinitionsId,
   setDefinitionsName,
@@ -27,13 +25,15 @@ import {
   setTargetNamespace,
   setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
-import ProcessDeleteModal from './process-delete';
-import ProcessDeleteSingleModal from './process-delete-single';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
-import { copyProcesses, deleteProcesses } from '@/lib/data/processes';
+import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
 import ProcessModal from './process-modal';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import { AuthCan } from './auth-can';
+import ConfirmationButton from './confirmation-button';
+import ProcessImportButton from './process-import';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -74,39 +74,44 @@ type ProcessesProps = {
 
 const Processes = ({ processes }: ProcessesProps) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const { message } = App.useApp();
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
-  const openModalWhenDeleteMultiple = useUserPreferences.use['ask-before-deleting-multiple']();
-  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
-  const openModalWhenCopy = useUserPreferences.use['ask-before-copying']();
 
   const ability = useAbilityStore((state) => state.ability);
 
-  const { mutateAsync: addProcess } = usePostAsset('/process', {});
+  const deleteSelectedProcesses = useCallback(async () => {
+    try {
+      const res = await deleteProcesses(selectedRowKeys as string[]);
+      // UserError
+      if (res && 'error' in res) {
+        return message.open({
+          type: 'error',
+          content: res.error.message,
+        });
+      }
+    } catch (e) {
+      // Unkown server error or was not sent from server (e.g. network error)
+      return message.open({
+        type: 'error',
+        content: 'Someting went wrong while submitting the data',
+      });
+    }
+    setSelectedRowKeys([]);
+    router.refresh();
+  }, [message, router, selectedRowKeys]);
 
-  const deleteSelectedProcesses = useCallback(() => {
-    startTransition(async () => {
-      await deleteProcesses(selectedRowKeys as string[]);
-      setSelectedRowKeys([]);
-      router.refresh();
-    });
-  }, [router, selectedRowKeys]);
+  const breakpoint = Grid.useBreakpoint();
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
   const actionBar = (
     <>
-      {/* <Tooltip placement="top" title={'Preview'}>
-        <EyeOutlined />
-      </Tooltip> */}
-      {/* <Tooltip placement="top" title={'Copy'}>
-        <CopyOutlined />
-      </Tooltip> */}
       <Tooltip placement="top" title={'Export'}>
         <ExportOutlined
           className={styles.Icon}
@@ -115,23 +120,22 @@ const Processes = ({ processes }: ProcessesProps) => {
           }}
         />
       </Tooltip>
-      {ability.can('delete', 'Process') && (
+
+      <AuthCan action="delete" resource={toCaslResource('Process', process)}>
         <Tooltip placement="top" title={'Delete'}>
-          <DeleteOutlined
-            className={styles.Icon}
-            onClick={() => {
-              if (
-                (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-                (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
-              ) {
-                setOpenDeleteModal(true);
-              } else {
-                deleteSelectedProcesses();
-              }
+          <ConfirmationButton
+            title="Delete Processes"
+            externalOpen={openDeleteModal}
+            onExternalClose={() => setOpenDeleteModal(false)}
+            description="Are you sure you want to delete the selected processes?"
+            onConfirm={() => deleteSelectedProcesses()}
+            buttonProps={{
+              icon: <DeleteOutlined />,
+              type: 'text',
             }}
           />
         </Tooltip>
-      )}
+      </AuthCan>
     </>
   );
 
@@ -153,54 +157,31 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (openCopyModal || openExportModal || openEditModal) {
+        return;
+      }
+
       /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a' && !openCopyModal && !openDeleteModal && !openExportModal) {
+      if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
         setSelectedRowKeys(filteredData?.map((item) => item.definitionId) ?? []);
         /* DEL */
-      } else if (e.key === 'Delete') {
+      } else if (e.key === 'Delete' && selectedRowKeys.length) {
         if (ability.can('delete', 'Process')) {
-          if (
-            (openModalWhenDeleteMultiple && selectedRowKeys.length > 1) ||
-            (openModalWhenDeleteSingle && selectedRowKeys.length == 1)
-          ) {
-            setOpenDeleteModal(true);
-          } else {
-            deleteSelectedProcesses();
-          }
+          setOpenDeleteModal(true);
         }
         /* ESC */
       } else if (e.key === 'Escape') {
         deselectAll();
         /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c' && !openCopyModal) {
+      } else if (e.ctrlKey && e.key === 'c') {
         if (ability.can('create', 'Process')) {
           setCopySelection(selectedRowKeys);
         }
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
         if (ability.can('create', 'Process')) {
-          if (openModalWhenCopy) {
-            setOpenCopyModal(true);
-          } else {
-            copySelection.forEach(async (key) => {
-              const process = processes?.find((item) => item.definitionId === key);
-              const processBpmn = await fetchProcessVersionBpmn(key as string);
-
-              const newBPMN = await copyProcess({
-                bpmn: processBpmn as string,
-                newName: `${process?.definitionName} (Copy)`,
-              });
-
-              addProcess({
-                body: {
-                  bpmn: newBPMN as string,
-                  departments: [],
-                  variables: [],
-                },
-              });
-            });
-          }
+          setOpenCopyModal(true);
         }
       }
     };
@@ -213,16 +194,10 @@ const Processes = ({ processes }: ProcessesProps) => {
     copySelection,
     filteredData,
     selectedRowKeys,
-    deleteSelectedProcesses,
-    processes,
-    addProcess,
-    openModalWhenDeleteMultiple,
-    openModalWhenDeleteSingle,
-    openModalWhenCopy,
     ability,
     openCopyModal,
-    openDeleteModal,
     openExportModal,
+    openEditModal,
   ]);
 
   return (
@@ -273,6 +248,9 @@ const Processes = ({ processes }: ProcessesProps) => {
                   </Button>
                 </Space.Compact>
                 <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+                <Button type="default">
+                  <ProcessImportButton></ProcessImportButton>
+                </Button>
               </Space>
             }
           />
@@ -291,21 +269,27 @@ const Processes = ({ processes }: ProcessesProps) => {
               // TODO: Replace with server component loading state
               //isLoading={isLoading}
               onExportProcess={(id) => {
-                // TODO: If id is already selected, consider doing the batch
-                // operation on all selected instead of overwriting the
-                // selection with a single id.
                 setOpenExportModal(true);
                 setSelectedRowKeys([id]);
               }}
-              onDeleteProcess={(id) => {
-                setOpenDeleteModal(true);
+              onDeleteProcess={async (id) => {
+                await deleteProcesses([id]);
+                setSelectedRowKeys([]);
+                router.refresh();
+              }}
+              onCopyProcess={(id) => {
+                setOpenCopyModal(true);
+                setSelectedRowKeys([id]);
+              }}
+              onEditProcess={(id) => {
+                setOpenEditModal(true);
                 setSelectedRowKeys([id]);
               }}
             />
           )}
         </div>
         {/* Meta Data Panel */}
-        <MetaData data={filteredData} selection={selectedRowKeys} />
+        {breakpoint.sm ? <MetaData data={filteredData} selection={selectedRowKeys} /> : null}
       </div>
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
@@ -313,19 +297,6 @@ const Processes = ({ processes }: ProcessesProps) => {
         }))}
         open={openExportModal}
         onClose={() => setOpenExportModal(false)}
-      />
-      <ProcessDeleteModal
-        onClose={() => setOpenDeleteModal(false)}
-        processKeys={selectedRowKeys}
-        setSelection={setSelectedRowKeys}
-        processes={processes}
-        open={openDeleteModal && selectedRowKeys.length > 1}
-      />
-      <ProcessDeleteSingleModal
-        onClose={() => setOpenDeleteModal(false)}
-        processKeys={selectedRowKeys}
-        setSelection={setSelectedRowKeys}
-        open={openDeleteModal && selectedRowKeys.length === 1}
       />
       <ProcessModal
         open={openCopyModal}
@@ -345,6 +316,27 @@ const Processes = ({ processes }: ProcessesProps) => {
             return res;
           }
           setOpenCopyModal(false);
+          router.refresh();
+        }}
+      />
+      <ProcessModal
+        open={openEditModal}
+        title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        onCancel={() => setOpenEditModal(false)}
+        initialData={filteredData
+          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .map((process) => ({
+            definitionId: process.definitionId,
+            definitionName: process.definitionName.value,
+            description: process.description.value,
+          }))}
+        onSubmit={async (values) => {
+          const res = await updateProcesses(values);
+          // Errors are handled in the modal.
+          if (res && 'error' in res) {
+            return res;
+          }
+          setOpenEditModal(false);
           router.refresh();
         }}
       />

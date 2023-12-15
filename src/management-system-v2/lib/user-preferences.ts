@@ -27,10 +27,6 @@ const defaultPreferences = {
   */
   'icon-view-in-process-list': false,
   'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
-  'ask-before-deleting-multiple': true,
-  'ask-before-deleting-single': true,
-  'ask-before-copying': true,
-  'process-copy-modal-accordion': true,
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },

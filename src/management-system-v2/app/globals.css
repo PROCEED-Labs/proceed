@@ -39,6 +39,30 @@
   padding: 0 14px !important;
 }
 
+.toastui-editor-defaultUI
+  .toastui-editor-toolbar
+  .toastui-editor-popup.toastui-editor-popup-add-heading {
+  margin-left: 0 !important;
+}
+
+.milestone-drawer .milestone-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.milestone-drawer .milestone-description {
+  flex-grow: 1;
+  margin-bottom: 0 !important;
+}
+
+.milestone-drawer .ant-form-item-row,
+.milestone-drawer .ant-form-item-control,
+.milestone-drawer .ant-form-item-control-input,
+.milestone-drawer .ant-form-item-control-input-content {
+  height: 100%;
+}
+
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */
 .ant-col.ant-col-xs-flex-initial {
   flex: initial;

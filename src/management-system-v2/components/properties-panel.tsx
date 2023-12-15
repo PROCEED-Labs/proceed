@@ -169,6 +169,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
       <ImageSelectionSection metaData={metaData}></ImageSelectionSection>
 
+      <MilestoneSelectionSection
+        milestones={milestones}
+        selectedElement={selectedElement}
+      ></MilestoneSelectionSection>
+
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <b>Properties</b>
         <Input

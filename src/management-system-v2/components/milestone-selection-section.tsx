@@ -1,15 +1,108 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 
-import { Button, Divider, Form, FormInstance, Input, Modal, Select, Space } from 'antd';
+import {
+  Button,
+  Divider,
+  Drawer,
+  Form,
+  FormInstance,
+  Grid,
+  Input,
+  Modal,
+  Select,
+  Space,
+} from 'antd';
 import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import FormSubmitButton from './form-submit-button';
+import { Editor } from '@toast-ui/react-editor';
+import TextEditor from './text-editor';
+
+const MilestoneDescriptionEditor: React.FC<{ onChange: (content: string) => void }> = ({
+  onChange,
+}) => {
+  const editorRef = React.useRef<Editor>(null);
+  return (
+    <TextEditor
+      ref={editorRef}
+      placeholder="Milestone Description"
+      onChange={() => {
+        const editor = editorRef.current as Editor;
+        const editorInstance = editor.getInstance();
+        const content = editorInstance.getMarkdown();
+        onChange(content);
+      }}
+    ></TextEditor>
+  );
+};
+
+const MilestoneForm: React.FC<{ form: FormInstance }> = ({ form }) => {
+  return (
+    <Form form={form} name="name" className="milestone-form">
+      <Form.Item name="id" rules={[{ required: true, message: 'Please input the Milestone ID!' }]}>
+        <Input placeholder="Milestone ID" />
+      </Form.Item>
+      <Form.Item
+        name="name"
+        rules={[{ required: true, message: 'Please input the Milestone Name!' }]}
+      >
+        <Input placeholder="Milestone Name" />
+      </Form.Item>
+      <Form.Item name="description" className="milestone-description">
+        <MilestoneDescriptionEditor
+          onChange={(content) => {
+            form.setFieldValue('description', content);
+          }}
+        ></MilestoneDescriptionEditor>
+      </Form.Item>
+    </Form>
+  );
+};
+
+const MilestoneDrawer: React.FC<MilestoneModalProperties> = ({ show, close }) => {
+  const [form] = Form.useForm();
+  return (
+    <Drawer
+      className="milestone-drawer"
+      open={show}
+      width={'100vw'}
+      styles={{ body: { marginBottom: '1rem', overflowY: 'hidden' } }}
+      closeIcon={false}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Create new Milestone</span>
+          <CloseOutlined onClick={() => close()}></CloseOutlined>
+        </div>
+      }
+      footer={
+        <Space style={{ display: 'flex', justifyContent: 'end' }}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              close();
+            }}
+          >
+            Cancel
+          </Button>
+          <FormSubmitButton
+            key="submit"
+            form={form}
+            onSubmit={close}
+            submitText="Create Milestone"
+          ></FormSubmitButton>
+        </Space>
+      }
+    >
+      <MilestoneForm form={form}></MilestoneForm>
+    </Drawer>
+  );
+};
 
 type MilestoneModalProperties = {
   show: boolean;
@@ -22,6 +115,7 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close }) => 
   return (
     <Modal
       title="Create new Milestone"
+      width="50vw"
       open={show}
       onCancel={() => close()}
       footer={[
@@ -41,28 +135,7 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close }) => 
         ></FormSubmitButton>,
       ]}
     >
-      <Form form={form} name="name" wrapperCol={{ span: 24 }} autoComplete="off">
-        <Form.Item
-          name="id"
-          rules={[{ required: true, message: 'Please input the Milestone ID!' }]}
-        >
-          <Input placeholder="Milestone ID" />
-        </Form.Item>
-        <Form.Item
-          name="name"
-          rules={[{ required: true, message: 'Please input the Milestone Name!' }]}
-        >
-          <Input placeholder="Milestone Name" />
-        </Form.Item>
-        <Form.Item name="description">
-          <Input.TextArea
-            showCount
-            maxLength={150}
-            style={{ height: 100 }}
-            placeholder="Milestone Description"
-          />
-        </Form.Item>
-      </Form>
+      <MilestoneForm form={form}></MilestoneForm>
     </Modal>
   );
 };
@@ -79,6 +152,8 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
+
+  const breakpoint = Grid.useBreakpoint();
 
   const updateMilestones = (
     newMilestones: { id: string; name: string; description?: string }[],
@@ -142,16 +217,29 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
           )}
         ></Select>
       </Space>
-      <MilestoneModal
-        show={isMilestoneModalOpen}
-        close={(values) => {
-          if (values) {
-            updateMilestones([...milestones, values]);
-          }
+      {breakpoint.md ? (
+        <MilestoneModal
+          show={isMilestoneModalOpen}
+          close={(values) => {
+            if (values) {
+              updateMilestones([...milestones, values]);
+            }
 
-          setIsMilestoneModalOpen(false);
-        }}
-      ></MilestoneModal>
+            setIsMilestoneModalOpen(false);
+          }}
+        ></MilestoneModal>
+      ) : (
+        <MilestoneDrawer
+          show={isMilestoneModalOpen}
+          close={(values) => {
+            if (values) {
+              updateMilestones([...milestones, values]);
+            }
+
+            setIsMilestoneModalOpen(false);
+          }}
+        ></MilestoneDrawer>
+      )}
     </>
   );
 };

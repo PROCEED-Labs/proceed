@@ -13,8 +13,6 @@ import XmlEditor from './xml-editor';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { usePutAsset } from '@/lib/fetch-data';
-import { useProcessBpmn } from '@/lib/process-queries';
 import VersionToolbar from './version-toolbar';
 
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
@@ -34,9 +32,11 @@ const BPMNViewer =
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   processBpmn: string;
+  versionName?: string;
+  process: { definitionName: string; definitionId: string };
 };
 
-const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
+const Modeler = ({ processBpmn, versionName, process, ...divProps }: ModelerProps) => {
   const { processId } = useParams();
   const pathname = usePathname();
   const [initialized, setInitialized] = useState(false);
@@ -183,6 +183,8 @@ const Modeler = ({ processBpmn, ...divProps }: ModelerProps) => {
               canSave={!selectedVersionId}
               onClose={handleCloseXmlEditor}
               onSaveXml={handleXmlEditorSave}
+              process={process}
+              versionName={versionName}
             />
           )}
         </>

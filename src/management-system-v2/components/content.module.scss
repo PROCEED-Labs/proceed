@@ -29,4 +29,28 @@
       padding: 0;
     }
   }
+
+  .Icon {
+    margin: 15px -10px;
+  }
+
+  .LogoContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 64px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s;
+
+    &.collapsed {
+      justify-content: flex-start;
+      padding-left: 20px;
+    }
+  }
+
+  .Hamburger {
+    margin-bottom: 10px;
+    margin-right: 10px;
+  }
 }

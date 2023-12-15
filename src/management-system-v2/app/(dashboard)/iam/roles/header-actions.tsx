@@ -7,7 +7,7 @@ import { FC, ReactNode, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useRouter } from 'next/navigation';
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 
 type PostRoleKeys = 'name' | 'description' | 'expiration';
 

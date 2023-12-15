@@ -90,9 +90,14 @@ const exportSubOptions = {
 type ProcessExportModalProps = {
   processes: { definitionId: string; processVersion?: number | string }[]; // the processes to export; also used to decide if the modal should be opened
   onClose: () => void;
+  open: boolean;
 };
 
-const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [], onClose }) => {
+const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
+  processes = [],
+  onClose,
+  open,
+}) => {
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
@@ -185,7 +190,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({ processes = [],
     <>
       <Modal
         title={`Export selected Processes`}
-        open={!!processes.length}
+        open={open}
         onOk={handleOk}
         onCancel={handleClose}
         centered

@@ -185,6 +185,11 @@ export interface paths {
       };
     };
   };
+  '/settings': {
+    /** @description Get all of the Management System's settings */
+    get: operations['getSettings'];
+    put: operations['updateSettings'];
+  };
 }
 
 export type webhooks = Record<string, never>;
@@ -493,6 +498,23 @@ export interface components {
       sharedWith?: string;
       permissions?: string;
       type?: number | Record<string, never>;
+    };
+    /** settings */
+    settings: {
+      startEngineAtStartup?: boolean;
+      /** @enum {unknown} */
+      logLevel?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
+      machinePollingInterval?: number;
+      deploymentsPollingInterval?: number;
+      activeUserTasksPollingInterval?: number;
+      instancePollingInterval?: number;
+      deploymentStorageTime?: number;
+      activeUserTaskStorageTime?: number;
+      instanceStorageTime?: number;
+      closeOpenEditorsInMs?: number;
+      processEngineUrl?: string;
+      domains?: string[];
+      trustedOrigins?: string[];
     };
   };
   responses: {
@@ -1491,6 +1513,36 @@ export interface operations {
       404: {
         content: never;
       };
+    };
+  };
+  /** @description Get all of the Management System's settings */
+  getSettings: {
+    responses: {
+      /** @description OK */
+      200: {
+        content: {
+          'application/json': components['schemas']['settings'];
+        };
+      };
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
+    };
+  };
+  updateSettings: {
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['settings'];
+      };
+    };
+    responses: {
+      /** @description Process updated succesfuly */
+      200: {
+        content: {
+          'application/json': unknown;
+        };
+      };
+      401: components['responses']['401_unauthenticated'];
+      403: components['responses']['403_validationFailed'];
     };
   };
 }

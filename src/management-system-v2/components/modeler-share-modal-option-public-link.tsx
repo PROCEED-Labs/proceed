@@ -1,28 +1,13 @@
 import { Button, Checkbox, Flex, Input, message, QRCode, Space, Typography } from 'antd';
-import {
-  EyeOutlined,
-  EyeInvisibleOutlined,
-  DownloadOutlined,
-  CopyOutlined,
-} from '@ant-design/icons';
+import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { SetStateAction, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+const { Password } = Input;
 
 const ModelerShareModalOptionPublicLink = () => {
   const pathname = usePathname();
-
-  const [showPass, setShowPass] = useState(true);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [publicLinkValue, setPublicLinkValue] = useState(`http://localhost:3000${pathname}`);
-
-  const password = useRef(null);
-
-  const handleEyeClick = () => {
-    if (password.current) {
-      password.current.input.type = showPass ? 'text' : 'password';
-    }
-    setShowPass(!showPass);
-  };
+  const [publicLinkValue, setPublicLinkValue] = useState(`${window.location.origin}${pathname}`);
 
   const handleCopyLink = async () => {
     try {
@@ -73,6 +58,10 @@ const ModelerShareModalOptionPublicLink = () => {
 
   return (
     <>
+      <div style={{ marginBottom: '5px' }}>
+        <Checkbox>Share Link</Checkbox>
+      </div>
+
       <Flex
         vertical={false}
         style={{
@@ -108,12 +97,7 @@ const ModelerShareModalOptionPublicLink = () => {
           </Checkbox>
           {isPasswordProtected && (
             <Space>
-              <Input type={showPass ? 'password' : 'text'} ref={password} width={10} />
-              {showPass ? (
-                <EyeInvisibleOutlined onClick={handleEyeClick} />
-              ) : (
-                <EyeOutlined onClick={handleEyeClick} />
-              )}
+              <Password visibilityToggle={true} width={10} />
             </Space>
           )}
         </Flex>

@@ -1,14 +1,16 @@
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message } from 'antd';
-import TextArea from 'antd/es/input/TextArea';
+import { Button, message, Input } from 'antd';
+import { useParams } from 'next/navigation';
+import { TextAreaRef } from 'antd/es/input/TextArea';
+
+const { TextArea } = Input;
 
 const ModelerShareModalOptionEmdedInWeb = () => {
-  const [bmpnXML, setBpmnXml] = useState('');
-  const modeler = useModelerStateStore((state) => state.modeler);
-  const codeSection = useRef(null);
+  const { processId } = useParams();
+  const codeSection = useRef<TextAreaRef>(null);
 
   const handleCopyCodeSection = async () => {
     const codeToEmbed = codeSection.current?.resizableTextArea?.textArea?.value;
@@ -18,17 +20,6 @@ const ModelerShareModalOptionEmdedInWeb = () => {
     }
   };
 
-  const getXML = async () => {
-    if (modeler) {
-      const { xml } = await modeler.saveXML({ format: true });
-      if (xml) setBpmnXml(xml);
-    }
-  };
-
-  useEffect(() => {
-    getXML();
-  });
-
   return (
     <>
       <div>
@@ -36,15 +27,14 @@ const ModelerShareModalOptionEmdedInWeb = () => {
           icon={<CopyOutlined />}
           style={{ border: '1px solid black', float: 'right' }}
           onClick={handleCopyCodeSection}
-        >
-          Copy Code
-        </Button>
+          title="copy code"
+        />
       </div>
       <div className="code">
         <TextArea
-          rows={10}
+          rows={2}
           style={{ backgroundColor: 'rgb(245,245,245)' }}
-          value={`here comes the iframe code`} /* TODO: implement iframe logic */
+          value={`<iframe src='http://localhost:3000/embedded-viewer/${processId}' height="100%" width="100%" />`} /* TODO: implement iframe logic */
           ref={codeSection}
         />
       </div>

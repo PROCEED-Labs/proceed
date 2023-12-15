@@ -137,7 +137,7 @@ export function updateRole(roleId, roleRepresentation, ability) {
   // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
   if (
     !(
-      ability.checkInputFields(toCaslResource('Role', targetRole), 'update', targetRole) &&
+      ability.checkInputFields(toCaslResource('Role', targetRole), 'update', roleRepresentation) &&
       ability.can('create', toCaslResource('Role', roleRepresentation))
     )
   )

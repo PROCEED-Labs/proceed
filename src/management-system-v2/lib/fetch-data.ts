@@ -247,17 +247,3 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.D
     ...mutationParams,
   });
 };
-
-// We use distinct types for the
-// if(data){
-//   data[0].
-// }collection and individual resource responses
-// instead of `Item[]` because they might differ in what data they contain.
-
-/**
- * IMPORTANT
- *
- * The following types are only temporary until we have converted the API to the
- * new NextJS framework. These types should ideally be automatically generated
- * from the database schema (e.g. using Prisma).
- */

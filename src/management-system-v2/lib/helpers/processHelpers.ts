@@ -1,3 +1,4 @@
+import { ProcessData } from '@/components/process-import';
 import {
   toBpmnObject,
   toBpmnXml,
@@ -17,6 +18,8 @@ import {
   getOriginalDefinitionsId,
   generateProcessId,
   getIdentifyingInfos,
+  addDocumentation,
+  setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
 
 interface ProceedProcess {
@@ -179,3 +182,31 @@ export async function getProcessInfo(bpmn: string) {
 
   return metadata;
 }
+
+export const getFinalBpmn = async ({
+  definitionId,
+  definitionName,
+  description,
+  bpmn,
+}: {
+  definitionId: string;
+  definitionName: string;
+  description: string;
+  bpmn: string;
+}) => {
+  // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
+  const bpmnObj = await toBpmnObject(bpmn);
+  await setDefinitionsId(bpmnObj, definitionId);
+  await setDefinitionsName(bpmnObj, definitionName);
+  await addDocumentation(bpmnObj, description);
+  await setTargetNamespace(bpmnObj, definitionId);
+
+  await setDefinitionsVersionInformation(bpmnObj, {
+    version: undefined,
+    versionName: undefined,
+    versionDescription: undefined,
+    versionBasedOn: undefined,
+  });
+
+  return await toBpmnXml(bpmnObj);
+};

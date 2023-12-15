@@ -1,4 +1,4 @@
-import Auth from '@/lib/serverAuthComponents';
+import Auth from '@/components/auth';
 import UserProfile from './user-profile';
 import Content from '@/components/content';
 

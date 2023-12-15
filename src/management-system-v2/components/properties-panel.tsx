@@ -25,11 +25,13 @@ import CollapsibleCard from './collapsible-card';
 import DescriptionSection from './description-section';
 import ImageSelectionSection from './image-selection-section';
 
-type PropertiesPanelProperties = {
+type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
 };
 
-const PropertiesPanelContent: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
+const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+  selectedElement,
+}) => {
   const [name, setName] = useState('');
   const [costsPlanned, setCostsPlanned] = useState('');
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
@@ -165,12 +167,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelProperties> = ({ selectedE
         <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
       </Space>
 
-      {selectedElement.type === 'bpmn:UserTask' && (
-        <MilestoneSelectionSection
-          milestones={milestones}
-          selectedElement={selectedElement}
-        ></MilestoneSelectionSection>
-      )}
       <ImageSelectionSection metaData={metaData}></ImageSelectionSection>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -245,31 +241,23 @@ const PropertiesPanelContent: React.FC<PropertiesPanelProperties> = ({ selectedE
   );
 };
 
-const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
+type PropertiesPanelProperties = {
+  selectedElement: ElementLike;
+  isOpen: boolean;
+  close: () => void;
+};
+
+const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
+  selectedElement,
+  isOpen,
+  close,
+}) => {
   const [showInfo, setShowInfo] = useState(true);
 
   const breakpoint = Grid.useBreakpoint();
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  return breakpoint.xs ? (
-    <Drawer
-      open={showInfo}
-      width={'100vw'}
-      closeIcon={false}
-      title={
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Properties</span>
-          <CloseOutlined
-            onClick={() => {
-              setShowInfo(false);
-            }}
-          ></CloseOutlined>
-        </div>
-      }
-    >
-      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
-    </Drawer>
-  ) : (
+  return breakpoint.md ? (
     <ResizableElement
       initialWidth={450}
       minWidth={450}
@@ -296,6 +284,24 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
         <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
       </CollapsibleCard>
     </ResizableElement>
+  ) : (
+    <Drawer
+      open={isOpen}
+      width={'100vw'}
+      closeIcon={false}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Properties</span>
+          <CloseOutlined
+            onClick={() => {
+              close();
+            }}
+          ></CloseOutlined>
+        </div>
+      }
+    >
+      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+    </Drawer>
   );
 };
 

@@ -161,7 +161,11 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
           )}
         </Space>
         {showPropertiesPanel && selectedElement && (
-          <PropertiesPanel selectedElement={selectedElement} />
+          <PropertiesPanel
+            isOpen={showPropertiesPanel}
+            close={handlePropertiesPanelToggle}
+            selectedElement={selectedElement}
+          />
         )}
       </Toolbar>
       <ProcessExportModal

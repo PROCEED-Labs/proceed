@@ -9,20 +9,33 @@
   font-size: 20px;
 }
 
-.editor-modal .ant-modal-content {
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Grab div in which toastUI editor is contained in and allow to grow*/
+.editor-container > div:first-child {
+  flex-grow: 1;
+}
+
+/* Hide default mode switch to replace with custom */
+.toastui-editor-defaultUI .toastui-editor-mode-switch {
+  display: none !important;
   padding: 0 !important;
 }
 
-.editor-modal .toastui-editor-mode-switch {
-  padding: 0 !important;
+.toastui-editor-defaultUI .toastui-editor .ProseMirror {
+  height: 100% !important;
 }
 
 /* Hide Toolbar for Write/Preview Toggle in Markdown view*/
-.toastui-editor-toolbar .toastui-editor-md-tab-container {
+.toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-md-tab-container {
   display: none !important;
 }
 
-.toastui-editor-toolbar .toastui-editor-defaultUI-toolbar {
+.toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-defaultUI-toolbar {
   padding: 0 14px !important;
 }
 

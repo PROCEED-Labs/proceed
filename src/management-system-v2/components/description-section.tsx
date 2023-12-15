@@ -6,19 +6,18 @@ import React, { useEffect, useState } from 'react';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
-import { CloseOutlined } from '@ant-design/icons';
+import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 
-import { EditOutlined } from '@ant-design/icons';
-
-import { Drawer, Grid, Modal, Space } from 'antd';
+import { Button, Drawer, Grid, Modal, Space } from 'antd';
+import TextEditor from './text-editor';
 
 const DescriptionSection: React.FC<{ description: string; selectedElement: any }> = ({
   description,
   selectedElement,
 }) => {
-  const editorRef: React.RefObject<any> = React.useRef();
-  const modalEditorRef: React.RefObject<any> = React.useRef();
-  const drawerEditorRef: React.RefObject<any> = React.useRef();
+  const viewerRef = React.useRef<Viewer>(null);
+  const modalEditorRef = React.useRef<Editor>(null);
+  const drawerEditorRef = React.useRef<Editor>(null);
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
@@ -27,31 +26,21 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
   const breakpoint = Grid.useBreakpoint();
 
   useEffect(() => {
-    if (editorRef.current) {
-      const editor = editorRef.current as Editor;
-      const editorInstance = editor.getInstance();
+    if (viewerRef.current) {
+      const viewer = viewerRef.current as Viewer;
+      const viewerInstance = viewer.getInstance();
 
-      editorInstance.setMarkdown(description);
+      viewerInstance.setMarkdown(description);
     }
-  }, [description, editorRef]);
+  }, [description, viewerRef]);
 
-  useEffect(() => {
-    if (modalEditorRef.current) {
-      const editor = modalEditorRef.current as Editor;
-      const editorInstance = editor.getInstance();
-
-      editorInstance.setMarkdown(description);
-    }
-  }, [description, modalEditorRef]);
-
-  useEffect(() => {
-    if (drawerEditorRef.current) {
-      const editor = drawerEditorRef.current as Editor;
-      const editorInstance = editor.getInstance();
-
-      editorInstance.setMarkdown(description);
-    }
-  }, [description, drawerEditorRef]);
+  const onSubmit = (editorRef: React.RefObject<Editor>) => {
+    const editor = editorRef.current as Editor;
+    const editorInstance = editor.getInstance();
+    const content = editorInstance.getMarkdown();
+    updateDescription(content);
+    setShowPopupEditor(false);
+  };
 
   const updateDescription = (text: string) => {
     const modeling = modeler!.get('modeling') as Modeling;
@@ -77,85 +66,52 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
           }}
         ></EditOutlined>
       </div>
-      <div style={{ maxHeight: '30vh', overflowY: 'scroll' }}>
-        <Viewer ref={editorRef} initialValue={description}></Viewer>
+      <div style={{ maxHeight: '30vh', overflowY: 'auto' }}>
+        <Viewer ref={viewerRef} initialValue={description}></Viewer>
       </div>
 
-      {breakpoint.xs ? (
-        <Drawer
-          open={showPopupEditor}
-          width={'100vw'}
-          styles={{ body: { padding: 0, margin: 0 } }}
-          closeIcon={false}
-          title={
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Description</span>
-              <CloseOutlined
-                onClick={() => {
-                  setShowPopupEditor(false);
-                }}
-              ></CloseOutlined>
-            </div>
-          }
-        >
-          <Editor
-            previewStyle="tab"
-            autofocus={true}
-            height="100%"
-            viewer={true}
-            initialEditType="wysiwyg"
-            initialValue={description}
-            ref={drawerEditorRef}
-            onChange={() => {
-              const editor = drawerEditorRef.current as Editor;
-              const editorInstance = editor.getInstance();
-              const content = editorInstance.getMarkdown();
-              updateDescription(content);
-            }}
-            toolbarItems={[
-              ['heading', 'bold', 'italic'],
-              ['hr', 'quote'],
-              ['ul', 'ol', 'indent', 'outdent'],
-              ['table', 'link'],
-              ['code', 'codeblock'],
-              ['scrollSync'],
-            ]}
-          />
-        </Drawer>
-      ) : (
+      {breakpoint.md ? (
         <Modal
           width="75vw"
           className="editor-modal"
           styles={{ body: { height: '75vh' } }}
           open={showPopupEditor}
-          title={null}
-          footer={null}
+          title="Edit Description"
+          okText="Save"
+          onOk={() => onSubmit(modalEditorRef)}
           onCancel={() => setShowPopupEditor(false)}
         >
-          <Editor
-            previewStyle="tab"
-            autofocus={true}
-            height="100%"
-            viewer={true}
-            initialEditType="wysiwyg"
-            initialValue={description}
-            ref={modalEditorRef}
-            onChange={() => {
-              const editor = modalEditorRef.current as Editor;
-              const editorInstance = editor.getInstance();
-              const content = editorInstance.getMarkdown();
-              updateDescription(content);
-            }}
-            toolbarItems={[
-              ['heading', 'bold', 'italic'],
-              ['hr', 'quote'],
-              ['ul', 'ol', 'indent', 'outdent'],
-              ['table', 'link'],
-              ['code', 'codeblock'],
-              ['scrollSync'],
-            ]}
-          />
+          <TextEditor ref={modalEditorRef} initialValue={description}></TextEditor>
         </Modal>
+      ) : (
+        <Drawer
+          open={showPopupEditor}
+          width={'100vw'}
+          styles={{ body: { padding: 0, marginBottom: '1rem', overflowY: 'hidden' } }}
+          closeIcon={false}
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Edit Description</span>
+              <CloseOutlined onClick={() => setShowPopupEditor(false)}></CloseOutlined>
+            </div>
+          }
+          footer={
+            <Space style={{ display: 'flex', justifyContent: 'end' }}>
+              <Button
+                onClick={() => {
+                  setShowPopupEditor(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="primary" onClick={() => onSubmit(drawerEditorRef)}>
+                Save
+              </Button>
+            </Space>
+          }
+        >
+          <TextEditor ref={drawerEditorRef} initialValue={description}></TextEditor>
+        </Drawer>
       )}
     </Space>
   );

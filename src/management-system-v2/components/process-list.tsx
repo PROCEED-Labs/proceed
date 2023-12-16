@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import { Button, Checkbox, Dropdown, Grid, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
 import React, {
   useCallback,
   useState,
@@ -18,6 +18,7 @@ import {
   StarOutlined,
   EyeOutlined,
   MoreOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
@@ -42,6 +43,7 @@ type ProcessListProps = PropsWithChildren<{
   onDeleteProcess: (processId: string) => void;
   onEditProcess: (processId: string) => void;
   onCopyProcess: (processId: string) => void;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 }>;
 
 const ColumnHeader = [
@@ -65,9 +67,11 @@ const ProcessList: FC<ProcessListProps> = ({
   onDeleteProcess,
   onEditProcess,
   onCopyProcess,
+  setShowMobileMetaData,
 }) => {
   const router = useRouter();
-  const [previewerOpen, setPreviewerOpen] = useState(false);
+  const breakpoint = Grid.useBreakpoint();
+  //const [previewerOpen, setPreviewerOpen] = useState(false);
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
@@ -80,18 +84,22 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const favourites = [0];
 
+  const showMobileMetaData = () => {
+    setShowMobileMetaData(true)
+  }
+
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       return (
         <>
-          <Tooltip placement="top" title={'Preview'}>
+          {/* <Tooltip placement="top" title={'Preview'}>
             <EyeOutlined
               onClick={() => {
                 setPreviewProcess(record);
                 setPreviewerOpen(true);
               }}
             />
-          </Tooltip>
+          </Tooltip> */}
           <AuthCan resource={toCaslResource('Process', record)} action="create">
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
@@ -370,6 +378,19 @@ const ProcessList: FC<ProcessListProps> = ({
           {actionBarGenerator(record)}
         </Row>
       ),
+      responsive: ['sm']
+    },
+
+    {
+      fixed: 'right',
+      width: 160,
+      dataIndex: 'definitionId',
+      key: '',
+      title: '',
+      render: () => (
+          <Button style={{float: "right", marginRight: "16px"}} type="text" onClick={showMobileMetaData}><InfoCircleOutlined /></Button>
+      ),
+      responsive: ['xs'],
     },
   ];
 
@@ -464,11 +485,12 @@ const ProcessList: FC<ProcessListProps> = ({
         dataSource={data}
         loading={isLoading}
         className={classNames('no-select')}
+        size={breakpoint.xs ? "large" : "middle"}
       />
 
-      {previewerOpen && (
+      {/* {previewerOpen && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
-      )}
+      )} */}
     </>
   );
 };

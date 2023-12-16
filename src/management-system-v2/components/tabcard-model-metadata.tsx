@@ -1,7 +1,7 @@
-import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
+import { Button, Card, Descriptions, DescriptionsProps, Grid } from 'antd';
 import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useRef, useState } from 'react';
 
-import { MoreOutlined } from '@ant-design/icons';
+import { MoreOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
 import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
@@ -115,6 +115,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
   const onTabChange = (key: string) => {
     setActiveTabKey(key as Tab);
   };
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <Card
@@ -125,9 +126,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
           {/* <span>{item?.definitionName}</span> */}
           {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
-          <Button type="text">
-            <MoreOutlined />
-          </Button>
+          {breakpoint.xs ? <Button type="text">
+            <InfoCircleOutlined />
+          </Button> : null}
         </div>
       }
       style={{

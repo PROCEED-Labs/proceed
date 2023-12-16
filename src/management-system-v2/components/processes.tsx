@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App } from 'antd';
+import { Space, Button, Tooltip, Grid, App, Drawer } from 'antd';
 import { ApiData, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
@@ -34,6 +34,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { AuthCan } from './auth-can';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
+import MobileMetaData from './mobile-process-info-card';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -109,6 +110,11 @@ const Processes = ({ processes }: ProcessesProps) => {
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [showMobileMetaData, setShowMobileMetaData] = useState(false)
+
+  const closeMobileMetaData = () => {
+    setShowMobileMetaData(false)
+  }
 
   const actionBar = (
     <>
@@ -202,6 +208,7 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
+    {showMobileMetaData ? <div>show mobile meta data = true</div> : <div>show mobile meta data = false</div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div
@@ -285,12 +292,32 @@ const Processes = ({ processes }: ProcessesProps) => {
                 setOpenEditModal(true);
                 setSelectedRowKeys([id]);
               }}
+              setShowMobileMetaData={setShowMobileMetaData}
             />
           )}
         </div>
         {/* Meta Data Panel */}
         {breakpoint.sm ? <MetaData data={filteredData} selection={selectedRowKeys} /> : null}
-      </div>
+        </div>
+        {/* Mobile View Meta Data Panel*/}
+        {breakpoint.xs ? <Drawer
+          width={'100dvw'}
+          title={
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>
+            {filteredData?.find((item) => item.definitionId === selectedRowKeys[0])?.definitionName.value!}
+          </span>
+          <CloseOutlined
+            onClick={() => {
+              closeMobileMetaData();
+            }}
+          />
+          </div>
+          }
+          open={showMobileMetaData}
+          closeIcon={false}
+        ><MobileMetaData data={filteredData} selection={selectedRowKeys}/></Drawer>
+        : null }
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,

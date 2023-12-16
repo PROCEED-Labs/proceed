@@ -27,8 +27,6 @@ type ContentProps = PropsWithChildren<{
   siderOpened?: boolean;
 }>;
 
-//TODO: open and close hamburger menu
-
 const Content: FC<ContentProps> = ({
   children,
   title,

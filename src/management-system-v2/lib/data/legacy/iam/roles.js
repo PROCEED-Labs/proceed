@@ -2,10 +2,12 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
-import { roleMappingsMetaObjects } from './role-mappings.js';
+import { addRoleMappings, roleMappingsMetaObjects } from './role-mappings.js';
 import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { adminRules } from '@/lib/authorization/caslRules.ts';
+import { developmentRoleMappingsMigrations } from './migrations/role-mappings-migrations.js';
 
 let firstInit = !global.roleMetaObjects;
 
@@ -26,8 +28,22 @@ export function init() {
 
   // migrate roles
   roleMigrations.forEach((role) => {
+    debugger;
     const index = storedRoles.findIndex((storedRole) => storedRole.name === role.name);
-    if (index < 0) addRole(role);
+    if (index >= 0) return;
+
+    const { id: roleId, name } = addRole(role, new Ability(adminRules()));
+
+    if (process.env.NODE_ENV === 'development') {
+      const roleMappings = developmentRoleMappingsMigrations
+        .filter((mapping) => mapping.roleName === name)
+        .map((mapping) => ({
+          roleId,
+          userId: mapping.userId,
+        }));
+
+      addRoleMappings(roleMappings, new Ability(adminRules()));
+    }
   });
 
   // set roles store cache for quick access
@@ -38,14 +54,14 @@ init();
 /**
  * Returns all roles in form of an array
  *
- * @param {Ability} ability
+ * @param {Ability} [ability]
  *
  * @returns {ApiData<'/roles','get'>} - array containing all roles
  */
 export function getRoles(ability) {
   const roles = Object.values(roleMetaObjects);
 
-  return ability.filter('view', 'Process', roles);
+  return ability ? ability.filter('view', 'Process', roles) : roles;
 }
 
 /**
@@ -78,6 +94,7 @@ export function getRoleById(roleId, ability) {
  * @returns {ApiData<'/roles/{id}','get'> } - role object
  */
 export function addRole(roleRepresentation, ability) {
+  debugger;
   if (!ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
 

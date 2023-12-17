@@ -4,6 +4,8 @@ import { roleMetaObjects } from './roles.js';
 import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { developmentRoleMappingsMigrations } from './migrations/role-mappings-migrations.js';
+import { adminRules } from '@/lib/authorization/caslRules';
 
 let firstInit = !global.roleMappingsMetaObjects;
 
@@ -43,13 +45,15 @@ export function getRoleMappings(ability) {
  * Returns a role mapping by user id
  *
  * @param {String} userId - the id of a user
- * @param {Ability} ability
+ * @param {Ability} [ability]
  *
  * @returns {ApiData<'/role-mappings/users/{userId}','get'>} - role mappings of a user
  */
 export function getRoleMappingByUserId(userId, ability) {
-  const roleMappings = roleMappingsMetaObjects.users[userId];
-  return ability.filter('view', 'RoleMapping', roleMappings);
+  const userRoleMappings = roleMappingsMetaObjects.users[userId];
+
+  if (!ability) return userRoleMappings;
+  return ability.filter('view', 'RoleMapping', userRoleMappings);
 }
 
 // TODO: also check if user exists?
@@ -57,10 +61,12 @@ export function getRoleMappingByUserId(userId, ability) {
  * Adds a user role mapping
  *
  * @param {ApiRequestBody<'/role-mappings','post'>} roleMappings - role mapping object containing userId & roleId
- * @param {Ability} ability
+ * @param {Ability} [ability]
  */
 export async function addRoleMappings(roleMappings, ability) {
-  const allowedRoleMappings = ability.filter('create', 'RoleMapping', roleMappings);
+  const allowedRoleMappings = ability
+    ? ability.filter('create', 'RoleMapping', roleMappings)
+    : roleMappings;
 
   allowedRoleMappings.forEach((roleMapping) => {
     const { roleId, userId } = roleMapping;

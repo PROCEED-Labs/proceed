@@ -1,6 +1,11 @@
 import { v4 } from 'uuid';
 
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+
+import { toBpmnObject, getElementById, getRootFromElement } from '@proceed/bpmn-helper';
+import { asyncFilter } from '../helpers/javascriptHelpers';
+import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
 /**
  * Downloads the data onto the device of the user
@@ -52,6 +57,15 @@ export async function getSVGFromBPMN(
   const viewer = new Viewer({ container: '#' + viewerElement.id });
   await viewer.importXML(bpmn);
 
+  const canvas = viewer.get('canvas') as any;
+
+  // target the correct plane (root process or the specified subprocess)
+  if (subprocessId) {
+    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`));
+  }
+
+  canvas.zoom('fit-viewport', 'auto');
+
   const elementRegistry = viewer.get('elementRegistry') as ElementRegistry;
 
   // if specific elements are selected for export make sure to filter out all other elements
@@ -62,34 +76,28 @@ export async function getSVGFromBPMN(
       return (
         el &&
         (!el.source || flowElementsToExportIds.includes(el.source.id)) &&
-        (!el.targetRef || flowElementsToExportIds.includes(el.target.id))
+        (!el.target || flowElementsToExportIds.includes(el.target.id))
       );
     });
     if (flowElementsToExportIds.length) {
       // hide all elements that are not directly selected and that are not indirectly selected due to a parent being selected
-      const unselectedElements = elementRegistry.filter((el) => {
-        while (el) {
-          if (flowElementsToExportIds.includes(el.id)) {
-            return false;
-          }
-          el = el.parent;
-        }
-        return true;
+      const allElements = elementRegistry.getAll();
+
+      const unselectedElements = await asyncFilter(allElements, async ({ businessObject }) => {
+        return (
+          !businessObject ||
+          !(await isSelectedOrInsideSelected(
+            getRootFromElement(businessObject),
+            businessObject.id,
+            flowElementsToExportIds,
+          ))
+        );
       });
       unselectedElements.forEach((el: any) => {
         elementRegistry.getGraphics(el).style.setProperty('display', 'none');
       });
     }
   }
-
-  const canvas = viewer.get('canvas') as any;
-
-  // target the correct plane (root process or the specified subprocess)
-  if (subprocessId) {
-    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`));
-  }
-
-  canvas.zoom('fit-viewport', 'auto');
 
   const { svg } = await viewer.saveSVG();
 
@@ -121,4 +129,38 @@ export function getImageDimensions(svg: string) {
     width,
     height,
   };
+}
+
+/**
+ * Checks for a moddle element if it is selected or if an element it is nested in is selected
+ *
+ * @param bpmnOrObj the bpmn that should contain the element either as a string or as an object
+ * @param id the id of the moddle element
+ * @param selectedElementIds the ids of the elements that are considered selected
+ */
+export async function isSelectedOrInsideSelected(
+  bpmnOrObj: string | object,
+  id: string,
+  selectedElementIds: string[],
+) {
+  const bpmnObj = typeof bpmnOrObj === 'string' ? await toBpmnObject(bpmnOrObj) : bpmnOrObj;
+
+  let el = getElementById(bpmnObj, id) as any;
+
+  // this handles all elements that are directly selected or insided a selected subprocess
+  while (el && !bpmnIs(el, 'bpmn:Process')) {
+    if (selectedElementIds.includes(el.id)) return true;
+    el = el.$parent;
+  }
+
+  const participants = getElementsByTagName(bpmnObj, 'bpmn:Participant');
+  console.log(participants.some(() => false));
+  // this handles all elements that are children of a selected participant
+  return (
+    !!el &&
+    participants.some(
+      (participant) =>
+        selectedElementIds.includes(participant.id) && participant.processRef?.id === el?.id,
+    )
+  );
 }

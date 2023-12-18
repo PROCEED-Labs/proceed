@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
+import type Selection from 'diagram-js/lib/features/selection/Selection';
 
 import { Tooltip, Button, Space } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
@@ -40,6 +41,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
+  const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -108,6 +110,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   };
 
   const handleProcessExportModalToggle = async () => {
+    if (!showProcessExportModal && modeler?.get) {
+      const selectedElementIds = (modeler.get('selection') as Selection).get().map(({ id }) => id);
+      setElementsSelectedForExport(selectedElementIds);
+    } else {
+      setElementsSelectedForExport([]);
+    }
+
     setShowProcessExportModal(!showProcessExportModal);
   };
 
@@ -168,10 +177,17 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
         open={showProcessExportModal}
         processes={
           showProcessExportModal
-            ? [{ definitionId: processId as string, processVersion: selectedVersion || undefined }]
+            ? [
+                {
+                  definitionId: processId as string,
+                  processVersion: selectedVersion || undefined,
+                  selectedElements: elementsSelectedForExport,
+                },
+              ]
             : []
         }
         onClose={() => setShowProcessExportModal(false)}
+        giveSelectionOption={!!elementsSelectedForExport.length}
       />
     </>
   );

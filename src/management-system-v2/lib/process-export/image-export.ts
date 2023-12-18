@@ -11,6 +11,7 @@ import { downloadFile, getSVGFromBPMN, getImageDimensions } from './util';
  * @param generateBlobFromSvgString function that is used to get the final blob that will be exported from the svg string of the process
  * @param filetype the filetype to use for the export file
  * @param isImport if the data to be added is part of an imported process
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zipFolder the folder to add the svg to (optional since we can export a single file directly as an svg which is decided before this function is called)
  * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
  * @param subprocessName the name of the collapsed subprocess to be added
@@ -21,12 +22,17 @@ async function addImageFile(
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
   isImport = false,
+  showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
   subprocessId?: string,
   subprocessName?: string,
 ) {
   const versionData = processData.versions[version];
-  const svg = await getSVGFromBPMN(versionData.bpmn!, subprocessId);
+  const svg = await getSVGFromBPMN(
+    versionData.bpmn!,
+    subprocessId,
+    showOnlySelected ? versionData.selectedElements : undefined,
+  );
 
   const blob = await generateBlobFromSvgString(svg);
 
@@ -65,6 +71,7 @@ async function addImageFile(
  * @param generateBlobFromSvgString function that is used to get the final blob that will be exported from the svg string of the process
  * @param filetype the filetype to use for the export file
  * @param isImport if the version is of an import
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zipFolder the folder to add the svg to (optional since we can export a single file directly as an svg which is decided before this function is called)
  */
 async function handleProcessVersionExport(
@@ -74,6 +81,7 @@ async function handleProcessVersionExport(
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
   isImport = false,
+  showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
 ) {
   // add the main process (version) file
@@ -83,6 +91,7 @@ async function handleProcessVersionExport(
     generateBlobFromSvgString,
     filetype,
     isImport,
+    showOnlySelected,
     zipFolder,
   );
 
@@ -95,6 +104,7 @@ async function handleProcessVersionExport(
       generateBlobFromSvgString,
       filetype,
       isImport,
+      showOnlySelected,
       zipFolder,
       subprocessId,
       subprocessName,
@@ -112,6 +122,7 @@ async function handleProcessVersionExport(
         generateBlobFromSvgString,
         filetype,
         true,
+        showOnlySelected,
         zipFolder,
       );
     }
@@ -123,6 +134,7 @@ async function exportImage(
   processData: ProcessExportData,
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
+  showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
 ) {
   // only export the versions that were explicitly selected for export inside the folder for the given process
@@ -138,6 +150,7 @@ async function exportImage(
       generateBlobFromSvgString,
       filetype,
       false,
+      showOnlySelected,
       zipFolder,
     );
   }
@@ -150,11 +163,13 @@ async function exportImage(
  *
  * @param processesData the data of all processes
  * @param processData the data of the complete process
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zipFolder a zip folder the exported files should be added to in case of multi file export
  */
 export async function svgExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
+  showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
 ) {
   await exportImage(
@@ -166,6 +181,7 @@ export async function svgExport(
       });
     },
     'svg',
+    showOnlySelected,
     zipFolder,
   );
 }
@@ -233,12 +249,14 @@ export async function getPNGFromSVG(svg: string, scaling = 1) {
  * @param processesData the data of all processes
  * @param processData the data of the complete process
  * @param scaling the scaling factor to use when transforming the process svg to a png
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zipFolder  a zip folder the exported files should be added to in case of multi file export
  */
 export async function pngExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
   scaling: number,
+  showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
 ) {
   await exportImage(
@@ -246,6 +264,7 @@ export async function pngExport(
     processData,
     (svg: string) => getPNGFromSVG(svg, scaling),
     'png',
+    showOnlySelected,
     zipFolder,
   );
 }

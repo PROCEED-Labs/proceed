@@ -22,6 +22,7 @@ const proceedLogo = fetch(`/proceed-labs-logo.svg`)
  * @param withMetaData if process information should be added as text to the process page
  * @param useA4 if the process page should have an A4 format (otherwise the size of the process is used to scale the page)
  * @param isImport if the data to be added is part of an imported process
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param subprocessId if a specific collapsed subprocess should be added this is the id of the subprocess element
  * @param subprocessName the name of the collapsed subprocess to be added
  */
@@ -32,6 +33,7 @@ async function addPDFPage(
   withMetaData: boolean,
   useA4: boolean,
   isImport = false,
+  showOnlySelected?: boolean,
   subprocessId?: string,
   subprocessName?: string,
 ) {
@@ -68,7 +70,11 @@ async function addPDFPage(
   }
 
   // get the svg so we can display the process as a vector graphic inside the pdf
-  const processSVG = await getSVGFromBPMN(versionData.bpmn, subprocessId);
+  const processSVG = await getSVGFromBPMN(
+    versionData.bpmn,
+    subprocessId,
+    showOnlySelected ? versionData.selectedElements : undefined,
+  );
   // register the image of the process
   pageBuilder.addVectorImage(
     processSVG,
@@ -88,6 +94,7 @@ async function addPDFPage(
  * @param pdf the pdf to add a page to
  * @param withMetaData if process information should be added as text to the process page
  * @param forceA4 if the pdf pages should always have an A4 page format
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param isImport if the version is of an import
  */
 async function handleProcessVersionPdfExport(
@@ -97,10 +104,11 @@ async function handleProcessVersionPdfExport(
   pdf: jsPDF,
   withMetaData: boolean,
   forceA4: boolean,
+  showOnlySelected?: boolean,
   isImport = false,
 ) {
   // add the main process (version) data
-  await addPDFPage(processData, version, pdf, withMetaData, forceA4, isImport);
+  await addPDFPage(processData, version, pdf, withMetaData, forceA4, isImport, showOnlySelected);
 
   const versionData = processData.versions[version];
   // add all collapsed subprocesses
@@ -112,6 +120,7 @@ async function handleProcessVersionPdfExport(
       withMetaData,
       forceA4,
       isImport,
+      showOnlySelected,
       subprocessId,
       subprocessName,
     );
@@ -128,6 +137,7 @@ async function handleProcessVersionPdfExport(
         pdf,
         withMetaData,
         forceA4,
+        showOnlySelected,
         true,
       );
     }
@@ -141,6 +151,7 @@ async function handleProcessVersionPdfExport(
  * @param processData the data of the complete process to export
  * @param withMetaData if process information should be added as text to the process page
  * @param forceA4 if the pdf pages should always have an A4 page format
+ * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
  */
 async function pdfExport(
@@ -148,6 +159,7 @@ async function pdfExport(
   processData: ProcessExportData,
   withMetaData: boolean,
   forceA4: boolean,
+  showOnlySelected?: boolean,
   zip?: jsZip | null,
 ) {
   // create the pdf file for the process
@@ -174,6 +186,7 @@ async function pdfExport(
       pdf,
       withMetaData,
       forceA4,
+      showOnlySelected,
     );
   }
 

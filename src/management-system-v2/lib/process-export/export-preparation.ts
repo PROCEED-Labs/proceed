@@ -16,8 +16,8 @@ import {
   getDefinitionsAndProcessIdForEveryCallActivity,
 } from '@proceed/bpmn-helper';
 
-import { asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
-import { getImageDimensions, getSVGFromBPMN } from './util';
+import { asyncForEach, asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
+import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from './util';
 
 /**
  * The options that can be used to select what should be exported
@@ -30,12 +30,17 @@ export type ProcessExportOptions = {
   metaData: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
   a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
   scaling: number; // the scaling factor that should be used for png export
+  exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
 };
 
 /**
  * The incoming information about the processes(and versions) to export
  */
-export type ExportProcessInfo = { definitionId: string; processVersion?: number | string }[];
+export type ExportProcessInfo = {
+  definitionId: string;
+  processVersion?: number | string;
+  selectedElements?: string[];
+}[];
 
 /**
  * The data needed for the export of a specific process
@@ -51,6 +56,7 @@ export type ProcessExportData = {
       isImport: boolean;
       subprocesses: { id: string; name?: string }[];
       imports: { definitionId: string; processVersion: string }[];
+      selectedElements?: string[];
     };
   };
   userTasks: {
@@ -142,6 +148,7 @@ type ExportMap = {
         isImport: boolean;
         subprocesses: { id: string; name?: string }[];
         imports: { definitionId: string; processVersion: string }[];
+        selectedElements?: string[];
       };
     };
     userTasks: {
@@ -183,7 +190,11 @@ async function getMaximumScalingFactor(exportData: ProcessesExportData) {
  */
 async function ensureProcessInfo(
   exportData: ExportMap,
-  { definitionId, processVersion }: { definitionId: string; processVersion?: string | number },
+  {
+    definitionId,
+    processVersion,
+    selectedElements,
+  }: { definitionId: string; processVersion?: string | number; selectedElements?: string[] },
   isImport = false,
 ) {
   if (!exportData[definitionId]) {
@@ -217,6 +228,7 @@ async function ensureProcessInfo(
       isImport,
       subprocesses: [],
       imports: [],
+      selectedElements,
     };
   }
 }
@@ -244,16 +256,40 @@ export async function prepareExport(
   while (processVersionsToAdd.length) {
     let newProcessVersionsToAdd: typeof processVersionsToAdd = [];
     // get the bpmn for all processes and their versions to export
-    for (const { definitionId, processVersion, isImport } of processVersionsToAdd) {
-      await ensureProcessInfo(exportData, { definitionId, processVersion }, isImport);
+    for (const {
+      definitionId,
+      processVersion,
+      selectedElements,
+      isImport,
+    } of processVersionsToAdd) {
+      await ensureProcessInfo(
+        exportData,
+        { definitionId, processVersion, selectedElements },
+        isImport,
+      );
 
       // if the option to export referenced processes is selected make sure to fetch their information as well
       if (options.imports) {
         const versionName = getVersionName(processVersion);
-        const { bpmn, imports } = exportData[definitionId].versions[versionName];
+        const { bpmn, imports, selectedElements } = exportData[definitionId].versions[versionName];
 
         // check the bpmn for referenced processes
         const importInfo = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
+
+        // if the export is limited to selected elements remove all imports that are not used by (indirectly) selected call-activities
+        if (options.exportSelectionOnly && selectedElements) {
+          const bpmnObj = await toBpmnObject(bpmn);
+          for (const callActivityId in importInfo) {
+            const test = !(await isSelectedOrInsideSelected(
+              bpmnObj,
+              callActivityId,
+              selectedElements,
+            ));
+            if (test) {
+              delete importInfo[callActivityId];
+            }
+          }
+        }
 
         for (const { definitionId: importDefinitionId, version: importVersion } of Object.values(
           importInfo,
@@ -279,10 +315,21 @@ export async function prepareExport(
   for (const definitionId of Object.keys(exportData)) {
     // get the ids of all collapsed subprocesses so they can be used later during export
     if (options.subprocesses) {
-      for (const [version, { bpmn }] of Object.entries(exportData[definitionId].versions)) {
+      for (const [version, { bpmn, selectedElements }] of Object.entries(
+        exportData[definitionId].versions,
+      )) {
+        const bpmnObj = await toBpmnObject(bpmn);
+
         exportData[definitionId].versions[version].subprocesses = (
-          await getCollapsedSubprocessInfos(bpmn)
+          await asyncFilter(await getCollapsedSubprocessInfos(bpmn), async ({ id }) => {
+            if (!options.exportSelectionOnly || !selectedElements || !selectedElements.length)
+              return true;
+
+            // if the user selected the option to limit the exports to (indirectly) selected elements remove subprocesses that are not (indirectly) selected
+            return await isSelectedOrInsideSelected(bpmnObj, id, selectedElements || []);
+          })
         )
+
           // the subprocess info is returned in the reversed order from what we want (we want from the outmost subprocess to the most nested)
           .reverse();
       }

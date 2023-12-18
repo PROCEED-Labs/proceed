@@ -85,7 +85,14 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     if (options.type === 'pdf') {
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
-        await pdfExport(exportData, processData, options.metaData, options.a4, zip);
+        await pdfExport(
+          exportData,
+          processData,
+          options.metaData,
+          options.a4,
+          options.exportSelectionOnly,
+          zip,
+        );
       }
     } else {
       if (options.type === 'bpmn') {
@@ -95,11 +102,17 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {
         const folder = zip?.folder(processData.definitionName);
-        await svgExport(exportData, processData, folder);
+        await svgExport(exportData, processData, options.exportSelectionOnly, folder);
       }
       if (options.type === 'png' && !processData.isImport) {
         const folder = zip?.folder(processData.definitionName);
-        await pngExport(exportData, processData, options.scaling, folder);
+        await pngExport(
+          exportData,
+          processData,
+          options.scaling,
+          options.exportSelectionOnly,
+          folder,
+        );
       }
     }
   }

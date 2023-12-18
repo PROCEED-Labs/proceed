@@ -3,7 +3,7 @@ import { FC } from 'react';
 import ProjectStats from './project-stats';
 import Content from '@/components/content';
 import { Space } from 'antd';
-import Auth from '@/lib/serverAuthComponents';
+import Auth from '@/components/auth';
 
 const Projects: FC = () => {
   return (

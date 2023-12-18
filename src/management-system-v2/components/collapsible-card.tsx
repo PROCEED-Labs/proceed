@@ -24,7 +24,7 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
       className={classNames({ 'Hide-Scroll-Bar': !show })}
       style={{
         scrollBehavior: 'smooth',
-        overflowY: 'scroll',
+        overflowY: 'auto',
         height: '100%',
         scrollbarWidth: 'none',
         width: show ? '100%' : collapsedWidth,

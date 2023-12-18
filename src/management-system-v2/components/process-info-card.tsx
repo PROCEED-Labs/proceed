@@ -15,19 +15,20 @@ type MetaDataType = {
   selection: Key[];
 };
 
+const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
+
+/** NEEDS TO BE PLACED IN A FLEX CONTAINER */
 const MetaData: FC<MetaDataType> = ({ data, selection }) => {
-  /* NEEDS TO BE PLACED IN A FLEX CONTAINER */
-
-  const { preferences, addPreferences } = useUserPreferences();
-
-  const showInfo = preferences['show-process-meta-data'];
-  // const [showInfo, setShowInfo] = useState(preferences['show-process-meta-data']);
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
+  const hydrated = useUserPreferences.use._hydrated();
 
   /* Necessary for Firefox BPMN.js Viewer fix */
-  const [showViewer, setShowViewer] = useState(showInfo);
+  /* const [showViewer, setShowViewer] = useState(showInfo); */
 
   /* Fix for firefox: */
-  useEffect(() => {
+  /* useEffect(() => {
+    const panelWidth = getWidth();
     let timeoutId: ReturnType<typeof setTimeout>;
     if (showInfo) {
       // Delay the rendering of Viewer
@@ -36,7 +37,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
         //  set width of parent component (resizable element) to 450 which is the desired with of the collapsed card
         if (resizableElementRef.current) {
-          resizableElementRef.current(300);
+          resizableElementRef.current(panelWidth);
         }
       }, 350); // Transition duration + 50ms
     } else {
@@ -44,19 +45,25 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
       //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
       if (resizableElementRef.current) {
-        resizableElementRef.current(40);
+        resizableElementRef.current(30);
       }
     }
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [showInfo]);
+  }, [showInfo]); */
+
+  const resizableElementRef = useRef<ResizableElementRefType>(null);
+
+  if (!hydrated) return null;
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   return (
     <ResizableElement
-      initialWidth={300}
+      initialWidth={
+        showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
+      }
       minWidth={300}
       maxWidth={600}
       style={{
@@ -66,6 +73,14 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         marginLeft: '20px',
         maxWidth: '33%',
       }}
+      onWidthChange={(width) =>
+        addPreferences({
+          'process-meta-data': {
+            open: showInfo,
+            width: width,
+          },
+        })
+      }
       ref={resizableElementRef}
     >
       <CollapsibleCard
@@ -74,9 +89,22 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
             ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value!
             : 'How to PROCEED?'
         }
-        show={showViewer}
+        show={showInfo}
         onCollapse={() => {
-          addPreferences({ 'show-process-meta-data': !showViewer });
+          const resizeCard = resizableElementRef.current;
+          const sidepanelWidth =
+            useUserPreferences.getState().preferences['process-meta-data'].width;
+
+          if (resizeCard) {
+            if (showInfo) resizeCard(30);
+            else resizeCard(sidepanelWidth);
+          }
+          addPreferences({
+            'process-meta-data': {
+              open: !showInfo,
+              width: sidepanelWidth,
+            },
+          });
         }}
       >
         {/* Viewer */}
@@ -86,18 +114,17 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
             width: '100%',
           }}
         >
-          {Boolean(selection.length) && showViewer ? (
+          {Boolean(selection.length) ? (
             <>
-              {showViewer && (
-                <Viewer
-                  selectedElementId={
-                    data?.find((item) => item.definitionId === selection[0])?.definitionId
-                  }
-                  reduceLogo={true}
-                />
-              )}
+              <Viewer
+                selectedElementId={
+                  data?.find((item) => item.definitionId === selection[0])?.definitionId
+                }
+                reduceLogo={true}
+                resizeOnWidthChange={true}
+              />
 
-              <Divider style={{ width: '140%', marginLeft: '-20%' }} />
+              <Divider style={{ width: '100%', marginLeft: '-20%' }} />
               <h3>Meta Data</h3>
               <h5>
                 <b>Last Edited</b>
@@ -130,12 +157,12 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
               </h5>
               <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
 
-              <Divider style={{ width: '140%', marginLeft: '-20%' }} />
+              <Divider style={{ width: '100%', marginLeft: '-20%' }} />
               <h3>Access Rights</h3>
               <p>Test</p>
             </>
           ) : (
-            showViewer && <div>Please select a process.</div>
+            <div>Please select a process.</div>
           )}
         </div>
       </CollapsibleCard>

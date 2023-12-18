@@ -52,6 +52,10 @@
     {
       "name": "Resources",
       "description": "All endpoints that deal with system resources as viewed by the authorization system."
+    },
+    {
+      "name": "Settings",
+      "description": "All endpoints that deal with Management System's settings"
     }
   ],
   "security": [
@@ -1701,6 +1705,64 @@
         "operationId": "getResourceById",
         "description": "Get a specific resource."
       }
+    },
+    "/settings": {
+      "get": {
+        "tags": ["Settings"],
+        "operationId": "getSettings",
+        "description": "Get all of the Management System's settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSettings",
+        "tags": ["Settings"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/settings"
+                  }
+                ],
+                "description": "Partial set of key:value properties of the Settings scheme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Process updated succesfuly",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2485,6 +2547,57 @@
                 "type": "object"
               }
             ]
+          }
+        }
+      },
+      "settings": {
+        "title": "settings",
+        "type": "object",
+        "properties": {
+          "startEngineAtStartup": {
+            "type": "boolean"
+          },
+          "logLevel": {
+            "enum": ["error", "warn", "info", "http", "verbose", "debug", "silly"]
+          },
+          "machinePollingInterval": {
+            "type": "number"
+          },
+          "deploymentsPollingInterval": {
+            "type": "number"
+          },
+          "activeUserTasksPollingInterval": {
+            "type": "number"
+          },
+          "instancePollingInterval": {
+            "type": "number"
+          },
+          "deploymentStorageTime": {
+            "type": "number"
+          },
+          "activeUserTaskStorageTime": {
+            "type": "number"
+          },
+          "instanceStorageTime": {
+            "type": "number"
+          },
+          "closeOpenEditorsInMs": {
+            "type": "number"
+          },
+          "processEngineUrl": {
+            "type": "string"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "trustedOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

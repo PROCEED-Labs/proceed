@@ -30,7 +30,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
 
     useImperativeHandle(ref, () => (size: CssSize) => setWidth(cssSizeToPixel(size)));
 
-    const onMouseDown = (e: React.MouseEvent) => {
+    const onMouseDown = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
       e.stopPropagation();
       e.preventDefault();
       isResizing = true;
@@ -40,13 +40,12 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
       isResizing = false;
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onUserMovement = (clientX: number) => {
       if (isResizing) {
-        let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+        let offsetRight = document.body.offsetWidth - (clientX - document.body.offsetLeft);
 
         const minPixels = cssSizeToPixel(minWidth);
         const maxPixels = cssSizeToPixel(maxWidth);
-        console.log({ minPixels, maxPixels, offsetRight });
 
         if (offsetRight > minPixels && offsetRight < maxPixels) {
           setWidth(offsetRight);
@@ -56,11 +55,17 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
     };
 
     useEffect(() => {
+      const onMouseMove = (e: MouseEvent) => onUserMovement(e.clientX);
+      const onTouchMove = (e: TouchEvent) =>
+        onUserMovement(e.touches[e.touches.length - 1].clientX);
+
       document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('touchmove', onTouchMove);
       document.addEventListener('mouseup', onMouseUp);
 
       return () => {
         document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('mouseup', onMouseUp);
       };
     });
@@ -93,6 +98,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
               cursor: 'ew-resize',
             }}
             onMouseDown={onMouseDown}
+            onTouchStart={onMouseDown}
           />
           {children}
         </div>

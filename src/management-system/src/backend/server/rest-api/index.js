@@ -11,6 +11,7 @@ import resourcesRouter from '../iam/rest-api/resources.js';
 import sharesRouter from '../iam/rest-api/shares.js';
 import { validateRequest } from '../iam/middleware/requestValidation.js';
 import abilityRouter from '../iam/rest-api/ability.js';
+import settingsRouter from './settings.js';
 
 // middleware for all routes to refactor the code
 const createApiRouter = (config, client) => {
@@ -20,6 +21,7 @@ const createApiRouter = (config, client) => {
   apiRouter.use('/process', processRouter);
   apiRouter.use('/machines', machinesRouter);
   apiRouter.use('/speech', speechAssistantRouter);
+  apiRouter.use('/settings', settingsRouter);
   if (config.useAuthorization) {
     if (config.useAuth0)
       url.parse(client.issuer.issuer).hostname.match('\\.auth0\\.com$')

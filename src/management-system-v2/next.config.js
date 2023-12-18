@@ -12,7 +12,7 @@ try {
 
   oauthProvidersConfig = {
     NEXTAUTH_SECRET: environmentsContent.nextAuthSecret,
-    USE_AUTH0: environmentsContent.useAuth0,
+    USE_AUTH0: environmentsContent.useAuth0 ? 'true' : 'false',
     AUTH0_CLIENT_ID: environmentsContent.clientID,
     AUTH0_CLIENT_SECRET: environmentsContent.clientSecret,
     AUTH0_clientCredentialScope: environmentsContent.clientCredentialScope,
@@ -32,11 +32,18 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['antd'],
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+    // This is due to needing to init our in-memory db before accesing the getters.
+    // Can probably be removed once we switch to a real db.
+    config.experiments.topLevelAwait = true;
+    // Important: return the modified config
+    return config;
+  },
   env: {
     API_URL:
       process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',
-    NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true',
+    NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true' ? 'true' : 'false',
     NEXTAUTH_SECRET:
       process.env.NODE_ENV === 'development'
         ? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='

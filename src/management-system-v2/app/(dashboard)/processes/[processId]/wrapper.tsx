@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './page.module.scss';
-import { FC, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Modeler from '@/components/modeler';
 import cn from 'classnames';
@@ -23,15 +23,17 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import ProcessCreationButton from '@/components/process-creation-button';
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 
-type ProcessProps = {
-  params: { processId: string };
-};
+type WrapperProps = PropsWithChildren<{
+  processName: string;
+  versions: { version: number; name: string; description: string }[];
+  processes: { definitionId: string; definitionName: string }[];
+}>;
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
-const Processes: FC<ProcessProps> = () => {
+const Wrapper = ({ children, processName, versions, processes }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -40,14 +42,6 @@ const Processes: FC<ProcessProps> = () => {
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
-  const { data: process, isLoading: processIsLoading } = useGetAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
-  const { data: processes } = useGetAsset('/process', {
-    params: {
-      query: { noBpmn: true },
-    },
-  });
 
   const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
     params: { path: { definitionId: processId as string } },
@@ -66,7 +60,7 @@ const Processes: FC<ProcessProps> = () => {
   const minimized = pathname !== `/processes/${processId}`;
   const selectedVersionId = parseInt(query.get('version') ?? '-1');
   const selectedVersion =
-    process?.versions.find((version) => version.version === selectedVersionId) ?? LATEST_VERSION;
+    versions.find((version) => version.version === selectedVersionId) ?? LATEST_VERSION;
 
   useEffect(() => {
     // Reset closed state when page is not minimized anymore.
@@ -106,8 +100,8 @@ const Processes: FC<ProcessProps> = () => {
           showSearch
           filterOption={filterOption}
           value={{
-            value: process?.definitionId,
-            label: process?.definitionName,
+            value: processId,
+            label: processName,
           }}
           onSelect={(_, option) => {
             router.push(`/processes/${option.value}`);
@@ -167,7 +161,7 @@ const Processes: FC<ProcessProps> = () => {
               </Space>
             </>
           )}
-          options={[LATEST_VERSION].concat(process?.versions ?? []).map(({ version, name }) => ({
+          options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
             value: version,
             label: name,
           }))}
@@ -183,19 +177,17 @@ const Processes: FC<ProcessProps> = () => {
   return (
     <Content
       title={
-        !processIsLoading && (
-          <Breadcrumb
-            style={{ fontSize: fontSizeHeading1, color: 'black' }}
-            separator={<span style={{ fontSize: '20px' }}>/</span>}
-            items={breadcrumItems}
-          />
-        )
+        <Breadcrumb
+          style={{ fontSize: fontSizeHeading1, color: 'black' }}
+          separator={<span style={{ fontSize: '20px' }}>/</span>}
+          items={breadcrumItems}
+        />
       }
       compact
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}
       headerClass={cn(styles.HF, { [styles.minimizedHF]: minimized })}
     >
-      <Modeler className={styles.Modeler} minimized={minimized} />
+      {children}
       {minimized ? (
         <Overlay processId={processId as string} onClose={() => setClosed(true)} />
       ) : null}
@@ -203,4 +195,4 @@ const Processes: FC<ProcessProps> = () => {
   );
 };
 
-export default Processes;
+export default Wrapper;

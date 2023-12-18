@@ -12,6 +12,8 @@ type ConfirmationModalProps = {
   >;
   buttonProps?: ComponentProps<typeof Button>;
   tooltip?: string;
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
 };
 
 const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
@@ -23,12 +25,15 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
   modalProps,
   buttonProps,
   tooltip,
+  externalOpen,
+  onExternalClose,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const clearModal = () => {
     setModalOpen(false);
+    onExternalClose?.();
     setLoading(false);
   };
 
@@ -48,10 +53,12 @@ const ConfirmationButton: FC<PropsWithChildren<ConfirmationModalProps>> = ({
         closeIcon={null}
         {...modalProps}
         title={title}
-        open={modalOpen}
+        open={externalOpen || modalOpen}
         onOk={onConfirmWrapper}
         confirmLoading={loading}
-        onCancel={() => (canCloseWhileLoading || !loading) && setModalOpen(false)}
+        onCancel={() =>
+          ((canCloseWhileLoading || !loading) && setModalOpen(false)) || onExternalClose?.()
+        }
         cancelButtonProps={{ disabled: !canCloseWhileLoading && loading }}
       >
         <p>{description}</p>

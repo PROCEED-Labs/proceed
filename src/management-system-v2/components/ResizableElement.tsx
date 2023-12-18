@@ -13,6 +13,7 @@ type ResizableElementProps = PropsWithChildren<{
   initialWidth: number;
   minWidth: number;
   maxWidth: number;
+  onWidthChange?: (width: number) => void;
   style?: CSSProperties;
 }>;
 
@@ -20,7 +21,10 @@ export type ResizableElementRefType = Dispatch<SetStateAction<number>>;
 
 let isResizing = false;
 const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementProps>(
-  function ResizableElement({ children, initialWidth, minWidth, maxWidth, style = {} }, ref) {
+  function ResizableElement(
+    { children, initialWidth, minWidth, maxWidth, style = {}, onWidthChange },
+    ref,
+  ) {
     const [width, setWidth] = useState(initialWidth);
 
     useImperativeHandle(ref, () => setWidth);
@@ -41,6 +45,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
 
         if (offsetRight > minWidth && offsetRight < maxWidth) {
           setWidth(offsetRight);
+          if (onWidthChange) onWidthChange(width);
         }
       }
     };

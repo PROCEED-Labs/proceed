@@ -1,6 +1,6 @@
 'use client';
 
-import { AuthCan } from '@/lib/clientAuthComponents';
+import { AuthCan } from '@/components/auth-can';
 import { ApiRequestBody, usePostAsset } from '@/lib/fetch-data';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, App, Input, Modal } from 'antd';

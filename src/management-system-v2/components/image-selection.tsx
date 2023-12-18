@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { Space, Upload, Image } from 'antd';
 
 import { useParams } from 'next/navigation';
-import { usePostAsset, usePutAsset } from '@/lib/fetch-data';
+import { useGetAsset, usePostAsset, usePutAsset } from '@/lib/fetch-data';
 
 type ImageSelectionSectionProperties = {
   metaData: { [key: string]: any };
@@ -20,6 +20,8 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({ meta
     '/process/{definitionId}/images/{imageFileName}',
   );
 
+  const [base64Image, setBase64Image] = useState(fallbackImage);
+
   const { mutateAsync: postImage } = usePostAsset('/process/{definitionId}/images');
 
   const imageFileName = useMemo(() => {
@@ -31,51 +33,74 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({ meta
 
   const imageURL = useMemo(() => {
     const BASE_URL = process.env.API_URL;
-    return `${BASE_URL}/process/${processId as string}/images/${imageFileName}`;
+
+    if (imageFileName) {
+      return `${BASE_URL}/process/${processId as string}/images/${imageFileName}`;
+    }
   }, [imageFileName, processId]);
 
+  const { data: imageFile } = useGetAsset('/process/{definitionId}/images/{imageFileName}', {
+    params: { path: { definitionId: processId as string, imageFileName } },
+    parseAs: 'blob',
+  });
+
+  useEffect(() => {
+    if (imageURL && imageFile) {
+      const reader = new FileReader();
+      reader.readAsDataURL(imageFile as unknown as Blob);
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        setBase64Image(base64data);
+      };
+    } else {
+      setBase64Image(fallbackImage);
+    }
+  }, [imageFile, imageURL]);
+
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <b>Image</b>
-      <Upload
-        showUploadList={false}
-        action={(file) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (imageURL) {
-              updateImage({
-                params: { path: { definitionId: processId as string, imageFileName } },
-                body: e.target!.result,
-                headers: new Headers({ 'Content-Type': file.type! }),
-              });
-            } else {
-              postImage({
-                params: { path: { definitionId: processId as string } },
-                body: e.target!.result,
-                headers: new Headers({ 'Content-Type': file.type! }),
-              });
-            }
-          };
-          reader.readAsText(file);
-          return '';
+    <Upload
+      showUploadList={false}
+      action={(file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (imageURL) {
+            updateImage({
+              params: { path: { definitionId: processId as string, imageFileName } },
+              body: e.target!.result,
+              headers: new Headers({ 'Content-Type': file.type! }),
+            });
+          } else {
+            postImage({
+              params: { path: { definitionId: processId as string } },
+              body: e.target!.result,
+              headers: new Headers({ 'Content-Type': file.type! }),
+            });
+          }
+        };
+        reader.readAsText(file);
+        return '';
+      }}
+    >
+      <Image
+        src={base64Image}
+        alt="Image"
+        fallback={fallbackImage}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '6px',
+          border: '1px solid #d9d9d9',
         }}
-      >
-        <Image
-          src={imageURL}
-          alt="Image"
-          fallback={fallbackImage}
-          style={{ width: '100%', height: '100%' }}
-          preview={{
-            visible: false,
-            mask: (
-              <div>
-                {imageURL ? 'Edit ' : 'Add '} <span> Image</span>
-              </div>
-            ),
-          }}
-        ></Image>
-      </Upload>
-    </Space>
+        preview={{
+          visible: false,
+          mask: (
+            <div>
+              {imageURL ? 'Edit ' : 'Add '} <span> Image</span>
+            </div>
+          ),
+        }}
+      ></Image>
+    </Upload>
   );
 };
 

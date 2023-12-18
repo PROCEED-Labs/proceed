@@ -8,6 +8,8 @@ import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
 
+import styles from './modeler-toolbar.module.scss';
+
 import Icon, {
   ExportOutlined,
   SettingOutlined,
@@ -149,7 +151,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
 
   return (
     <>
-      <Toolbar>
+      <Toolbar className={styles.Toolbar}>
         <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
           <ToolbarGroup>
             <Select

@@ -6,7 +6,7 @@ export const developmentRoleMappingsMigrations = [
     userId: 'development-id|johndoe',
   },
   {
-    roleName: '@process_admin',
+    roleName: '@admin',
     userId: 'development-id|admin',
   },
 ];

@@ -58,12 +58,9 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
   if (!hydrated) return null;
 
-  const resizableElementRef = useRef<ResizableElementRefType>(null);
   return (
     <ResizableElement
-      initialWidth={
-        showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
-      }
+      initialWidth={showInfo ? getWidth() : 30}
       minWidth={300}
       maxWidth={600}
       style={{
@@ -92,8 +89,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         show={showInfo}
         onCollapse={() => {
           const resizeCard = resizableElementRef.current;
-          const sidepanelWidth =
-            useUserPreferences.getState().preferences['process-meta-data'].width;
+          const sidepanelWidth = getWidth();
 
           if (resizeCard) {
             if (showInfo) resizeCard(30);

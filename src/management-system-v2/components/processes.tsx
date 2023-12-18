@@ -11,7 +11,8 @@ import {
   AppstoreOutlined,
   CloseOutlined,
   InfoCircleOutlined,
-  PlusOutlined
+  PlusOutlined,
+  ImportOutlined
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -258,22 +259,25 @@ const Processes = ({ processes }: ProcessesProps) => {
                 </Space>
                 ) :
                 undefined }
-                <FloatButton
+                {/* <FloatButton
                 type="primary"
+                shape="square"
                 style={{ marginBottom: "100px", marginRight: "16px"}}
                 icon={<ProcessCreationButton type="primary" icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>} />}
-                />
-                {/* <FloatButton.Group
+                /> */}
+                <FloatButton.Group
                   trigger="click"
                   type="primary"
                   style={{ marginBottom: "100px", marginRight: "16px"}}
                   icon={<PlusOutlined />}
                 >
-                  <FloatButton icon={<Button type="default">
+                  <Tooltip title="Create a process">
+                    <FloatButton icon={<ProcessCreationButton type="text" icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>} />} />
+                  </Tooltip>
+                  <FloatButton icon={<Button type="text" icon={<ImportOutlined style={{marginLeft: "-0.81rem"}}/>}>
                   <ProcessImportButton></ProcessImportButton>
                 </Button>} />
-                  <FloatButton icon={<ProcessCreationButton />} />
-                </FloatButton.Group> */}
+                </FloatButton.Group>
               </>
                 }
                 <Space.Compact>
@@ -300,56 +304,6 @@ const Processes = ({ processes }: ProcessesProps) => {
               </Space>
             }
           />
-
-          {/* New Process and Import on the left */}
-          {/* {selectedRowKeys.length ? (
-            <Space size={20}>
-              <Button onClick={deselectAll} type="text">
-                <CloseOutlined />
-              </Button>
-              {selectedRowKeys.length} selected:
-              <span className={styles.Icons}>{actionBar}</span>
-            </Space>
-            ) : undefined}
-          <Bar
-            leftNode={
-              <>
-              <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
-                <Button type="default">
-                  <ProcessImportButton></ProcessImportButton>
-                </Button></>
-            }
-            searchProps={{
-              onChange: (e) => setSearchTerm(e.target.value),
-              onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
-              placeholder: 'Search Processes ...',
-            }}
-            rightNode={
-              <Space size={16} style={{ paddingLeft: 8 }}>
-                <Space.Compact>
-                  <Button
-                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                    onClick={() => {
-                      addPreferences({ 'icon-view-in-process-list': false });
-                    }}
-                  >
-                    <UnorderedListOutlined />
-                  </Button>
-                  <Button
-                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                    onClick={() => {
-                      addPreferences({ 'icon-view-in-process-list': true });
-                    }}
-                  >
-                    <AppstoreOutlined />
-                  </Button>
-                </Space.Compact>
-                  {breakpoint.sm ? <Button type="text" style={{marginLeft: "-16px"}}>
-                    <InfoCircleOutlined />
-                  </Button> : null}
-              </Space>
-            }
-          /> */}
 
           {iconView ? (
             <IconView
@@ -388,22 +342,22 @@ const Processes = ({ processes }: ProcessesProps) => {
         </div>
         {/*Meta Data Panel*/}
           {breakpoint.xs ? <Drawer
-          style={{marginLeft: "-19px"}}
-          width={'100dvw'}
+          // width={'100dvw'}
+          onClose={closeMobileMetaData}
           title={
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          // <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>
             {filteredData?.find((item) => item.definitionId === selectedRowKeys[0])?.definitionName.value!}
           </span>
-          <CloseOutlined
-            onClick={() => {
-              closeMobileMetaData();
-            }}
-          />
-          </div>
+          // <CloseOutlined
+          //   onClick={() => {
+          //     closeMobileMetaData();
+          //   }}
+          // />
+          // </div>
           }
           open={showMobileMetaData}
-          closeIcon={false}
+          // closeIcon={false}
         ><MetaDataContent data={filteredData} selection={selectedRowKeys}/></Drawer>
         : <MetaData data={filteredData} selection={selectedRowKeys} />
         }

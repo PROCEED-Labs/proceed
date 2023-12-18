@@ -19,6 +19,9 @@ import { addDocumentation, generateDefinitionsId, setDefinitionsName } from '@pr
 import { createProcess, getFinalBpmn } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
 import { ApiData } from '../fetch-data';
+// Antd uses barrel files, which next optimizes away. That requires us to import
+// antd components directly from their files in this server actions file.
+import Button from 'antd/es/button';
 
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
@@ -26,14 +29,19 @@ export const deleteProcesses = async (definitionIds: string[]) => {
   // Get ability again since it might have changed.
   const { ability } = await getCurrentUser();
 
-  await Promise.all(
-    definitionIds.map(async (definitionId) => {
-      const process = processMetaObjects[definitionId];
-      if (process && ability.can('delete', toCaslResource('Process', process))) {
-        await removeProcess(definitionId);
-      }
-    }),
-  );
+  for (const definitionId of definitionIds) {
+    const process = processMetaObjects[definitionId];
+
+    if (!process) {
+      return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+    }
+
+    if (!ability.can('delete', toCaslResource('Process', process))) {
+      return userError('Not allowed to delete this process', UserErrorType.PermissionError);
+    }
+
+    await removeProcess(definitionId);
+  }
 };
 
 export const addProcesses = async (
@@ -101,6 +109,30 @@ export const updateProcess = async (
 
   const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
   return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });
+};
+
+export const updateProcesses = async (
+  processes: {
+    definitionName?: string;
+    description?: string;
+    bpmn?: string;
+    definitionId: string;
+  }[],
+) => {
+  const res = await Promise.all(
+    processes.map(async (process) => {
+      return await updateProcess(
+        process.definitionId,
+        process.bpmn,
+        process.description,
+        process.definitionName,
+      );
+    }),
+  );
+
+  const firstError = res.find((r) => 'error' in r);
+
+  return firstError ?? res;
 };
 
 export const copyProcesses = async (

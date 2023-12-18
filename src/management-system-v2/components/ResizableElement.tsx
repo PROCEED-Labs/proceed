@@ -1,3 +1,6 @@
+'use client';
+
+import { CssSize, cssSizeToPixel } from '@/lib/css-units-helper';
 import React, {
   useState,
   useEffect,
@@ -5,19 +8,17 @@ import React, {
   CSSProperties,
   forwardRef,
   useImperativeHandle,
-  Dispatch,
-  SetStateAction,
 } from 'react';
 
 type ResizableElementProps = PropsWithChildren<{
   initialWidth: number;
-  minWidth: number;
-  maxWidth: number;
+  minWidth: CssSize;
+  maxWidth: CssSize;
   onWidthChange?: (width: number) => void;
   style?: CSSProperties;
 }>;
 
-export type ResizableElementRefType = Dispatch<SetStateAction<number>>;
+export type ResizableElementRefType = (size: CssSize) => void;
 
 let isResizing = false;
 const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementProps>(
@@ -27,7 +28,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
   ) {
     const [width, setWidth] = useState(initialWidth);
 
-    useImperativeHandle(ref, () => setWidth);
+    useImperativeHandle(ref, () => (size: CssSize) => setWidth(cssSizeToPixel(size)));
 
     const onMouseDown = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -35,7 +36,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
       isResizing = true;
     };
 
-    const onMouseUp = (e: MouseEvent) => {
+    const onMouseUp = () => {
       isResizing = false;
     };
 
@@ -43,7 +44,11 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
       if (isResizing) {
         let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
 
-        if (offsetRight > minWidth && offsetRight < maxWidth) {
+        const minPixels = cssSizeToPixel(minWidth);
+        const maxPixels = cssSizeToPixel(maxWidth);
+        console.log({ minPixels, maxPixels, offsetRight });
+
+        if (offsetRight > minPixels && offsetRight < maxPixels) {
           setWidth(offsetRight);
           if (onWidthChange) onWidthChange(width);
         }
@@ -64,7 +69,9 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
       <div
         style={{
           ...style,
-          width: width,
+          width,
+          maxWidth,
+          minWidth,
         }}
       >
         <div

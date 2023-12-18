@@ -28,7 +28,6 @@ export function init() {
 
   // migrate roles
   roleMigrations.forEach((role) => {
-    debugger;
     const index = storedRoles.findIndex((storedRole) => storedRole.name === role.name);
     if (index >= 0) return;
 
@@ -94,7 +93,6 @@ export function getRoleById(roleId, ability) {
  * @returns {ApiData<'/roles/{id}','get'> } - role object
  */
 export function addRole(roleRepresentation, ability) {
-  debugger;
   if (!ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
 

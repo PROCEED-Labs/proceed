@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
+import { useRouter } from 'next/navigation';
 
 type Role = ApiData<'/roles/{id}', 'get'>;
 
@@ -15,6 +16,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
+  const router = useRouter();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -40,6 +42,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
 
     try {
       await updateRole(role.id, values);
+      router.refresh();
       message.open({ type: 'success', content: 'Role updated' });
     } catch (e) {
       let msg = 'Something went wrong';

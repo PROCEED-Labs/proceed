@@ -17,6 +17,7 @@ type TabCardProps = {
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
   completeList: ProcessListProcess[];
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
 const tabList = [
@@ -102,7 +103,7 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList, setShowMobileMetaData }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
@@ -111,6 +112,10 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
+
+  const showMobileMetaData = () => {
+    setShowMobileMetaData(true)
+  }
 
   const onTabChange = (key: string) => {
     setActiveTabKey(key as Tab);
@@ -127,7 +132,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
           {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
           {breakpoint.xs ? <Button type="text">
-            <InfoCircleOutlined />
+            <InfoCircleOutlined onClick={showMobileMetaData}/>
           </Button> : null}
         </div>
       }

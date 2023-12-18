@@ -2,7 +2,7 @@
 
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer } from 'antd';
+import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
 import { ApiData, usePostAsset } from '@/lib/fetch-data';
 import {
   ExportOutlined,
@@ -10,6 +10,8 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   CloseOutlined,
+  InfoCircleOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -34,7 +36,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { AuthCan } from './auth-can';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
-import MobileMetaData from './mobile-process-info-card';
+import MetaDataContent from './process-info-card-content';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -80,6 +82,8 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
+  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
+  const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
 
   const ability = useAbilityStore((state) => state.ability);
 
@@ -111,6 +115,15 @@ const Processes = ({ processes }: ProcessesProps) => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [showMobileMetaData, setShowMobileMetaData] = useState(false)
+
+  const changeShowMetaData = () => {
+    addPreferences({
+      'process-meta-data': {
+        open: !showInfo,
+        width: getWidth()
+      }
+    })
+  }
 
   const closeMobileMetaData = () => {
     setShowMobileMetaData(false)
@@ -208,18 +221,13 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
-    {showMobileMetaData ? <div>show mobile meta data = true</div> : <div>show mobile meta data = false</div>}
-      <div style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
+      <div className={breakpoint.xs ? styles.MobileView : ""} style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div
-          style={{
-            /* width: '75%', */
-            flex: 1,
-          }}
-        >
+        <div style={{flex: "1"}}>
+          {/* New Process and Import on the right side */}
           <Bar
-            leftNode={
-              selectedRowKeys.length ? (
+            leftNode={breakpoint.sm ?
+              (selectedRowKeys.length ? (
                 <Space size={20}>
                   <Button onClick={deselectAll} type="text">
                     <CloseOutlined />
@@ -228,6 +236,88 @@ const Processes = ({ processes }: ProcessesProps) => {
                   <span className={styles.Icons}>{actionBar}</span>
                 </Space>
               ) : undefined
+            ) : null }
+            searchProps={{
+              onChange: (e) => setSearchTerm(e.target.value),
+              onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
+              placeholder: 'Search Processes ...',
+            }}
+            rightNode={
+              <Space size={16} style={{ paddingLeft: 8 }}>
+                {breakpoint.sm ? <><Button type="default">
+                  <ProcessImportButton></ProcessImportButton>
+                </Button>
+                <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+                </> : <>{selectedRowKeys.length ? (
+                <Space size={20}>
+                  <Button onClick={deselectAll} type="text">
+                    <CloseOutlined />
+                  </Button>
+                  {selectedRowKeys.length} selected:
+                  <span className={styles.Icons}>{actionBar}</span>
+                </Space>
+                ) :
+                undefined }
+                <FloatButton
+                type="primary"
+                style={{ marginBottom: "100px", marginRight: "16px"}}
+                icon={<ProcessCreationButton type="primary" icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>} />}
+                />
+                {/* <FloatButton.Group
+                  trigger="click"
+                  type="primary"
+                  style={{ marginBottom: "100px", marginRight: "16px"}}
+                  icon={<PlusOutlined />}
+                >
+                  <FloatButton icon={<Button type="default">
+                  <ProcessImportButton></ProcessImportButton>
+                </Button>} />
+                  <FloatButton icon={<ProcessCreationButton />} />
+                </FloatButton.Group> */}
+              </>
+                }
+                <Space.Compact>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': false });
+                    }}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => {
+                      addPreferences({ 'icon-view-in-process-list': true });
+                    }}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+                {breakpoint.sm ? <Button type="text" style={{marginLeft: "-16px"}} onClick={changeShowMetaData}>
+                    <InfoCircleOutlined />
+                  </Button> : null}
+              </Space>
+            }
+          />
+
+          {/* New Process and Import on the left */}
+          {/* {selectedRowKeys.length ? (
+            <Space size={20}>
+              <Button onClick={deselectAll} type="text">
+                <CloseOutlined />
+              </Button>
+              {selectedRowKeys.length} selected:
+              <span className={styles.Icons}>{actionBar}</span>
+            </Space>
+            ) : undefined}
+          <Bar
+            leftNode={
+              <>
+              <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
+                <Button type="default">
+                  <ProcessImportButton></ProcessImportButton>
+                </Button></>
             }
             searchProps={{
               onChange: (e) => setSearchTerm(e.target.value),
@@ -254,19 +344,19 @@ const Processes = ({ processes }: ProcessesProps) => {
                     <AppstoreOutlined />
                   </Button>
                 </Space.Compact>
-                <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
-                <Button type="default">
-                  <ProcessImportButton></ProcessImportButton>
-                </Button>
+                  {breakpoint.sm ? <Button type="text" style={{marginLeft: "-16px"}}>
+                    <InfoCircleOutlined />
+                  </Button> : null}
               </Space>
             }
-          />
+          /> */}
 
           {iconView ? (
             <IconView
               data={filteredData}
               selection={selectedRowKeys}
               setSelection={setSelectedRowKeys}
+              setShowMobileMetaData={setShowMobileMetaData}
             />
           ) : (
             <ProcessList
@@ -296,11 +386,9 @@ const Processes = ({ processes }: ProcessesProps) => {
             />
           )}
         </div>
-        {/* Meta Data Panel */}
-        {breakpoint.sm ? <MetaData data={filteredData} selection={selectedRowKeys} /> : null}
-        </div>
-        {/* Mobile View Meta Data Panel*/}
-        {breakpoint.xs ? <Drawer
+        {/*Meta Data Panel*/}
+          {breakpoint.xs ? <Drawer
+          style={{marginLeft: "-19px"}}
           width={'100dvw'}
           title={
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -316,8 +404,10 @@ const Processes = ({ processes }: ProcessesProps) => {
           }
           open={showMobileMetaData}
           closeIcon={false}
-        ><MobileMetaData data={filteredData} selection={selectedRowKeys}/></Drawer>
-        : null }
+        ><MetaDataContent data={filteredData} selection={selectedRowKeys}/></Drawer>
+        : <MetaData data={filteredData} selection={selectedRowKeys} />
+        }
+      </div>
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,

@@ -11,6 +11,7 @@ import MobileMenu from './menu-mobile'
 import { UserOutlined } from '@ant-design/icons';
 import router, { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
+import SiderMenu from './sider-menu';
 
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */

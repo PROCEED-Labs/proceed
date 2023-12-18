@@ -388,7 +388,7 @@ const ProcessList: FC<ProcessListProps> = ({
       key: '',
       title: '',
       render: () => (
-          <Button style={{float: "right", marginRight: "16px"}} type="text" onClick={showMobileMetaData}><InfoCircleOutlined /></Button>
+          <Button style={{float: "right"}} type="text" onClick={showMobileMetaData}><InfoCircleOutlined /></Button>
       ),
       responsive: ['xs'],
     },

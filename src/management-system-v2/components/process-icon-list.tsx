@@ -11,9 +11,10 @@ type IconViewProps = {
   data?: ProcessListProcess[];
   selection: Key[];
   setSelection: Dispatch<SetStateAction<Key[]>>;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
+const IconView: FC<IconViewProps> = ({ data, selection, setSelection, setShowMobileMetaData }) => {
   return (
     <>
       <ScrollBar width="12px">
@@ -28,6 +29,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
         >
           {data?.map((item) => (
             <TabCard
+              setShowMobileMetaData={setShowMobileMetaData}
               key={item.definitionId}
               item={item}
               completeList={data!}

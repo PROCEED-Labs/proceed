@@ -1,5 +1,13 @@
 import React, { useState, FC, PropsWithChildren } from 'react';
 import { Button, Divider, Drawer, Menu } from 'antd';
+import {
+  FileOutlined,
+  ProfileOutlined,
+  UnlockOutlined,
+  UserOutlined,
+  SettingOutlined,
+  ApiOutlined,
+} from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { useAbilityStore } from '@/lib/abilityStore';import Link from 'next/link';
@@ -22,6 +30,7 @@ const MobileMenu: FC<PropsWithChildren> = () => {
               <Item
                 key="oricesses"
                 title="Processes"
+                icon={<FileOutlined />}
                 hidden={!ability.can('view', 'Process')}
               >
                   <Link href="/processes">Process List</Link>
@@ -29,7 +38,7 @@ const MobileMenu: FC<PropsWithChildren> = () => {
             ) : null}
 
             {ability.can('view', 'Template') ? (
-              <Item key="template">
+              <Item key="template" icon={<ProfileOutlined />}>
                 Templates
               </Item>
             ) : null}
@@ -45,6 +54,7 @@ const MobileMenu: FC<PropsWithChildren> = () => {
             {/* <ItemGroup key="IAM" title="IAM"> */}
               <Item
                 key="iam/users"
+                icon={<UserOutlined />}
                 hidden={!ability.can('manage', 'User')}
               >
                 <Link href="/iam/users">Users</Link>
@@ -52,6 +62,7 @@ const MobileMenu: FC<PropsWithChildren> = () => {
 
               <Item
                 key="iam/roles"
+                icon={<UnlockOutlined />}
                 hidden={
                   !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
                 }
@@ -59,7 +70,7 @@ const MobileMenu: FC<PropsWithChildren> = () => {
                 <Link href="/iam/roles">Roles</Link>
               </Item>
             {/* </ItemGroup> */}
-            {/* <Divider style={{margin: "0px"}}/> */}
+            <Divider style={{marginBottom: "16px"}}/>
           </>
         ) : null}
 

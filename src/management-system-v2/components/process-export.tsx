@@ -16,7 +16,7 @@ import {
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -105,11 +105,7 @@ function getSubOptions(giveSelectionOption?: boolean) {
 }
 
 type ProcessExportModalProps = {
-  processes: {
-    definitionId: string;
-    processVersion?: number | string;
-    selectedElements?: string[];
-  }[]; // the processes to export; also used to decide if the modal should be opened
+  processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
   giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
@@ -136,6 +132,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
 
   const handleClose = () => {
     setIsExporting(false);
+    setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
     onClose();
   };
 
@@ -144,13 +141,13 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     await exportProcesses(
       {
         type: selectedType!,
-        artefacts: selectedOptions.some((el) => el === 'artefacts'),
-        subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
-        imports: selectedOptions.some((el) => el === 'imports'),
-        metaData: selectedOptions.some((el) => el === 'metaData'),
-        a4: selectedOptions.some((el) => el === 'a4'),
+        artefacts: selectedOptions.includes('artefacts'),
+        subprocesses: selectedOptions.includes('subprocesses'),
+        imports: selectedOptions.includes('imports'),
+        metaData: selectedOptions.includes('metaData'),
+        a4: selectedOptions.includes('a4'),
         scaling: pngScalingFactor,
-        exportSelectionOnly: selectedOptions.some((el) => el === 'onlySelection'),
+        exportSelectionOnly: selectedOptions.includes('onlySelection'),
       },
       processes,
     );

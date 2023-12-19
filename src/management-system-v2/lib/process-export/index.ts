@@ -74,7 +74,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
     const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
     // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
-    const withSubprocesses = Object.values(exportData[0].versions)[0].subprocesses.length > 0;
+    const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
 
     needsZip = numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses;
   }

@@ -154,7 +154,7 @@ export async function isSelectedOrInsideSelected(
   }
 
   const participants = getElementsByTagName(bpmnObj, 'bpmn:Participant');
-  console.log(participants.some(() => false));
+
   // this handles all elements that are children of a selected participant
   return (
     !!el &&

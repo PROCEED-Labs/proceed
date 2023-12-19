@@ -84,20 +84,9 @@ async function handleProcessVersionExport(
   showOnlySelected?: boolean,
   zipFolder?: jsZip | null,
 ) {
-  // add the main process (version) file
-  await addImageFile(
-    processData,
-    version,
-    generateBlobFromSvgString,
-    filetype,
-    isImport,
-    showOnlySelected,
-    zipFolder,
-  );
-
   const versionData = processData.versions[version];
-  // add collapsed subprocesses as additional files
-  for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
+  // add the main process (version) file (layer with id === undefined) and collapsed subprocesses as additional files
+  for (const { id: subprocessId, name: subprocessName } of versionData.layers) {
     await addImageFile(
       processData,
       version,

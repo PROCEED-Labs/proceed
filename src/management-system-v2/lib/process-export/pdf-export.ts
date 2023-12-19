@@ -107,12 +107,9 @@ async function handleProcessVersionPdfExport(
   showOnlySelected?: boolean,
   isImport = false,
 ) {
-  // add the main process (version) data
-  await addPDFPage(processData, version, pdf, withMetaData, forceA4, isImport, showOnlySelected);
-
   const versionData = processData.versions[version];
-  // add all collapsed subprocesses
-  for (const { id: subprocessId, name: subprocessName } of versionData.subprocesses) {
+  // add the main process (version) (layer with id === undefined) and all collapsed subprocesses
+  for (const { id: subprocessId, name: subprocessName } of versionData.layers) {
     await addPDFPage(
       processData,
       version,

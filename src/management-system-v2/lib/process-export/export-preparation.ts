@@ -11,13 +11,18 @@ import {
   getMetaDataFromElement,
   getElementsByTagName,
   toBpmnObject,
+  getElementById,
   getElementDI,
   getDefinitionsVersionInformation,
   getDefinitionsAndProcessIdForEveryCallActivity,
 } from '@proceed/bpmn-helper';
 
-import { asyncForEach, asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
+import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
 import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from './util';
+
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+
+import { ArrayEntryType } from '../typescript-utils';
 
 /**
  * The options that can be used to select what should be exported
@@ -40,6 +45,7 @@ export type ExportProcessInfo = {
   definitionId: string;
   processVersion?: number | string;
   selectedElements?: string[];
+  rootSubprocessLayerId?: string;
 }[];
 
 /**
@@ -54,7 +60,7 @@ export type ProcessExportData = {
       name?: string;
       bpmn: string;
       isImport: boolean;
-      subprocesses: { id: string; name?: string }[];
+      layers: { id?: string; name?: string }[];
       imports: { definitionId: string; processVersion: string }[];
       selectedElements?: string[];
     };
@@ -146,7 +152,7 @@ type ExportMap = {
         name?: string;
         bpmn: string;
         isImport: boolean;
-        subprocesses: { id: string; name?: string }[];
+        layers: { id?: string; name?: string }[];
         imports: { definitionId: string; processVersion: string }[];
         selectedElements?: string[];
       };
@@ -194,7 +200,8 @@ async function ensureProcessInfo(
     definitionId,
     processVersion,
     selectedElements,
-  }: { definitionId: string; processVersion?: string | number; selectedElements?: string[] },
+    rootSubprocessLayerId,
+  }: ArrayEntryType<ExportProcessInfo>,
   isImport = false,
 ) {
   if (!exportData[definitionId]) {
@@ -222,11 +229,20 @@ async function ensureProcessInfo(
     const versionBpmn = await getVersionBpmn(definitionId, processVersion);
     const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
 
+    // add the default root process layer if there is no rootSubprocessLayer given
+    let rootLayer = { id: undefined };
+    if (rootSubprocessLayerId) {
+      // get the info for the selected root subprocess layer and add it as the default layer (regardless of collapsed subprocesses being selected in the options)
+      const subprocessInfos = await getCollapsedSubprocessInfos(versionBpmn);
+      const rootLayerInfo = subprocessInfos.find(({ id }) => id === rootSubprocessLayerId);
+      if (rootLayerInfo) rootLayer = rootLayerInfo;
+    }
+
     exportData[definitionId].versions[versionName] = {
       name: versionInformation.name,
       bpmn: versionBpmn,
       isImport,
-      subprocesses: [],
+      layers: [rootLayer],
       imports: [],
       selectedElements,
     };
@@ -260,32 +276,45 @@ export async function prepareExport(
       definitionId,
       processVersion,
       selectedElements,
+      rootSubprocessLayerId,
       isImport,
     } of processVersionsToAdd) {
       await ensureProcessInfo(
         exportData,
-        { definitionId, processVersion, selectedElements },
+        { definitionId, processVersion, selectedElements, rootSubprocessLayerId },
         isImport,
       );
 
       // if the option to export referenced processes is selected make sure to fetch their information as well
       if (options.imports) {
         const versionName = getVersionName(processVersion);
-        const { bpmn, imports, selectedElements } = exportData[definitionId].versions[versionName];
+        const { bpmn, imports, selectedElements, layers } =
+          exportData[definitionId].versions[versionName];
 
         // check the bpmn for referenced processes
         const importInfo = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
         // if the export is limited to selected elements remove all imports that are not used by (indirectly) selected call-activities
-        if (options.exportSelectionOnly && selectedElements) {
+        if (options.type !== 'bpmn') {
           const bpmnObj = await toBpmnObject(bpmn);
+
           for (const callActivityId in importInfo) {
-            const test = !(await isSelectedOrInsideSelected(
-              bpmnObj,
-              callActivityId,
-              selectedElements,
-            ));
-            if (test) {
+            const callActivity = getElementById(bpmnObj, callActivityId) as any;
+
+            const inUnexportedLayer =
+              // exlude if the importing call activity is in a nested collapsed subprocess but they are not exported
+              (!options.subprocesses &&
+                bpmnIs(callActivity.$parent, 'bpmn:SubProcess') &&
+                callActivity.$parent.id !== layers[0].id) ||
+              // exlude if the call activity importing this is not nested under the current layer
+              (layers.length &&
+                layers[0].id &&
+                !(await isSelectedOrInsideSelected(bpmnObj, callActivityId, [layers[0].id])));
+            // exclude if only selected elements should be exported and the importing call acitivity is not (indirectly) selected
+            const notInSelection =
+              options.exportSelectionOnly &&
+              !(await isSelectedOrInsideSelected(bpmnObj, callActivityId, selectedElements || []));
+            if (inUnexportedLayer || notInSelection) {
               delete importInfo[callActivityId];
             }
           }
@@ -315,23 +344,30 @@ export async function prepareExport(
   for (const definitionId of Object.keys(exportData)) {
     // get the ids of all collapsed subprocesses so they can be used later during export
     if (options.subprocesses) {
-      for (const [version, { bpmn, selectedElements }] of Object.entries(
+      for (const { bpmn, selectedElements, layers } of Object.values(
         exportData[definitionId].versions,
       )) {
         const bpmnObj = await toBpmnObject(bpmn);
 
-        exportData[definitionId].versions[version].subprocesses = (
-          await asyncFilter(await getCollapsedSubprocessInfos(bpmn), async ({ id }) => {
-            if (!options.exportSelectionOnly || !selectedElements || !selectedElements.length)
-              return true;
-
-            // if the user selected the option to limit the exports to (indirectly) selected elements remove subprocesses that are not (indirectly) selected
-            return await isSelectedOrInsideSelected(bpmnObj, id, selectedElements || []);
-          })
-        )
-
-          // the subprocess info is returned in the reversed order from what we want (we want from the outmost subprocess to the most nested)
-          .reverse();
+        layers.push(
+          ...(
+            await asyncFilter(await getCollapsedSubprocessInfos(bpmn), async ({ id }) => {
+              return (
+                // prevent a layer from being added a second time (might have already been added as the root layer of the export)
+                !layers.some((layer) => layer.id === id) &&
+                // if the root layer is not the complete process filter out any subprocesses not nested under the root layer
+                (!layers.length ||
+                  !layers[0].id ||
+                  (await isSelectedOrInsideSelected(bpmnObj, id, [layers[0].id]))) &&
+                // if the user selected the option to limit the exports to (indirectly) selected elements remove subprocesses that are not (indirectly) selected
+                (!options.exportSelectionOnly ||
+                  (await isSelectedOrInsideSelected(bpmnObj, id, selectedElements || [])))
+              );
+            })
+          )
+            // the subprocess info is returned in the reversed order from what we want (we want from the outmost subprocess to the most nested)
+            .reverse(),
+        );
       }
     }
 

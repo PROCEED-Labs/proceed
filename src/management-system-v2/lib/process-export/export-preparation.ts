@@ -294,7 +294,6 @@ export async function prepareExport(
         // check the bpmn for referenced processes
         const importInfo = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
-        // if the export is limited to selected elements remove all imports that are not used by (indirectly) selected call-activities
         if (options.type !== 'bpmn') {
           const bpmnObj = await toBpmnObject(bpmn);
 
@@ -310,10 +309,12 @@ export async function prepareExport(
               (layers.length &&
                 layers[0].id &&
                 !(await isSelectedOrInsideSelected(bpmnObj, callActivityId, [layers[0].id])));
+
             // exclude if only selected elements should be exported and the importing call acitivity is not (indirectly) selected
             const notInSelection =
               options.exportSelectionOnly &&
               !(await isSelectedOrInsideSelected(bpmnObj, callActivityId, selectedElements || []));
+
             if (inUnexportedLayer || notInSelection) {
               delete importInfo[callActivityId];
             }

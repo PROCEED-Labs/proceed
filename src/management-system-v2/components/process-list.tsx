@@ -27,13 +27,11 @@ import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
-import ProcessEditButton from './process-edit-button';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { useDeleteAsset, useInvalidateAsset, usePostAsset } from '@/lib/fetch-data';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { useAbilityStore } from '@/lib/abilityStore';
 import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
+import ConfirmationButton from './confirmation-button';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -42,9 +40,9 @@ type ProcessListProps = PropsWithChildren<{
   isLoading?: boolean;
   onExportProcess: (processId: string) => void;
   onDeleteProcess: (processId: string) => void;
+  onEditProcess: (processId: string) => void;
+  onCopyProcess: (processId: string) => void;
 }>;
-
-const ProcessActions = () => {};
 
 const ColumnHeader = [
   'Process Name',
@@ -65,19 +63,13 @@ const ProcessList: FC<ProcessListProps> = ({
   isLoading,
   onExportProcess,
   onDeleteProcess,
+  onEditProcess,
+  onCopyProcess,
 }) => {
   const router = useRouter();
-
-  const refreshData = useInvalidateAsset('/process');
-
   const [previewerOpen, setPreviewerOpen] = useState(false);
-
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const favourites = [0];
-
   const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
@@ -85,15 +77,8 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
-  const openModalWhenDeleteSingle = useUserPreferences.use['ask-before-deleting-single']();
 
-  const ability = useAbilityStore((state) => state.ability);
-
-  const { mutateAsync: createProcess } = usePostAsset('/process');
-
-  const { mutateAsync: deleteProcess } = useDeleteAsset('/process/{definitionId}', {
-    onSettled: refreshData,
-  });
+  const favourites = [0];
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -107,28 +92,16 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip>
-          <Tooltip placement="top" title={'Copy'}>
-            <CopyOutlined
-              onClick={() => {
-                createProcess({
-                  body: {
-                    ...{
-                      ...record,
-                      description: record.description.value,
-                      definitionName: record.definitionName.value,
-                    },
-                    bpmn: record.bpmn || '',
-                    variables: [
-                      {
-                        name: `${record.definitionName.value} Copy`,
-                        type: '',
-                      },
-                    ],
-                  },
-                });
-              }}
-            />
-          </Tooltip>
+          <AuthCan resource={toCaslResource('Process', record)} action="create">
+            <Tooltip placement="top" title={'Copy'}>
+              <CopyOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyProcess(record.definitionId);
+                }}
+              />
+            </Tooltip>
+          </AuthCan>
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined
               onClick={() => {
@@ -137,51 +110,34 @@ const ProcessList: FC<ProcessListProps> = ({
             />
           </Tooltip>
           <AuthCan resource={toCaslResource('Process', record)} action="update">
-            <ProcessEditButton
-              process={record}
-              wrapperElement={
-                <Tooltip placement="top" title={'Edit'}>
-                  <EditOutlined />
-                </Tooltip>
-              }
-            />
-          </AuthCan>
-          {ability.can('delete', 'Process') && (
-            <Tooltip placement="top" title={'Delete'}>
-              <DeleteOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (openModalWhenDeleteSingle) {
-                    onDeleteProcess(record.definitionId);
-                  } else {
-                    deleteProcess({
-                      params: {
-                        path: {
-                          definitionId: record.definitionId as string,
-                        },
-                      },
-                    });
-                  }
-
-                  setSelection(selection.filter((id) => id !== record.definitionId));
+            <Tooltip placement="top" title={'Edit'}>
+              <EditOutlined
+                onClick={() => {
+                  onEditProcess(record.definitionId);
                 }}
               />
             </Tooltip>
-          )}
+          </AuthCan>
+
+          {/*TODO: errors regarding query */}
+
+          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+            <Tooltip placement="top" title={'Delete'}>
+              <ConfirmationButton
+                title="Delete Process"
+                description="Are you sure you want to delete the selected process?"
+                onConfirm={() => onDeleteProcess(record.definitionId)}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
+            </Tooltip>
+          </AuthCan>
         </>
       );
     },
-    [
-      ability,
-      createProcess,
-      deleteProcess,
-      onDeleteProcess,
-      onExportProcess,
-      openModalWhenDeleteSingle,
-      router,
-      selection,
-      setSelection,
-    ],
+    [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
   );
 
   // rowSelection object indicates the need for row selection
@@ -281,7 +237,9 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.definitionName.highlighted}
         </span>
       ),
+      responsive: ['xs', 'sm'],
     },
+
     {
       title: 'Description',
       dataIndex: 'description',
@@ -308,6 +266,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.description.highlighted}
         </div>
       ),
+      responsive: ['sm'],
     },
 
     {
@@ -325,7 +284,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md'],
     },
+
     {
       title: 'Created On',
       dataIndex: 'createdOn',
@@ -341,7 +302,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md'],
     },
+
     {
       title: 'File Size',
       key: 'File Size',
@@ -355,7 +318,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md'],
     },
+
     {
       title: 'Owner',
       dataIndex: 'owner',
@@ -370,7 +335,9 @@ const ProcessList: FC<ProcessListProps> = ({
         //   router.push(`/processes/${record.definitionId}`);
         // },
       }),
+      responsive: ['md'],
     },
+
     {
       fixed: 'right',
       width: 160,

@@ -91,9 +91,9 @@ const SiderMenu: FC<PropsWithChildren> = () => {
               <Link href="/general-settings">General Settings</Link>
             </Item>
           ) : null}
-          <Item key="plugins" icon={<ApiOutlined />}>
+          {/* <Item key="plugins" icon={<ApiOutlined />}>
             Plugins
-          </Item>
+          </Item> */}
         </ItemGroup>
       </Menu>
   );

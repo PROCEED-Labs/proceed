@@ -80,9 +80,9 @@ const MobileMenu: FC<PropsWithChildren> = () => {
               <Link href="/general-settings">General Settings</Link>
             </Item>
           ) : null}
-          <Item key="plugins">
+          {/* <Item key="plugins">
             Plugins
-          </Item>
+          </Item> */}
           <Item onClick={() => signOut()}>
             Logout
           </Item>

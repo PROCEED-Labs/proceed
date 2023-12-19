@@ -222,7 +222,8 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
-      <div className={breakpoint.xs ? styles.MobileView : ""} style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
+    {/* TODO: fix footer width / main width for breakpoint.sm - breakpoint.lg */}
+      <div className={breakpoint.xs ? styles.MobileView : ''} style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{flex: "1"}}>
           {/* New Process and Import on the right side */}
@@ -245,9 +246,8 @@ const Processes = ({ processes }: ProcessesProps) => {
             }}
             rightNode={
               <Space size={16} style={{ paddingLeft: 8 }}>
-                {breakpoint.sm ? <><Button type="default">
-                  <ProcessImportButton></ProcessImportButton>
-                </Button>
+                {breakpoint.sm ? <>
+                  <ProcessImportButton type="default">Import Process</ProcessImportButton>
                 <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
                 </> : <>{selectedRowKeys.length ? (
                 <Space size={20}>
@@ -259,24 +259,32 @@ const Processes = ({ processes }: ProcessesProps) => {
                 </Space>
                 ) :
                 undefined }
-                {/* <FloatButton
-                type="primary"
-                shape="square"
-                style={{ marginBottom: "100px", marginRight: "16px"}}
-                icon={<ProcessCreationButton type="primary" icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>} />}
-                /> */}
+                 {/* <!-- FloatButtonGroup needs a z-index of 101
+                 since BPMN Logo of the viewer has an z-index of 100 --> */}
                 <FloatButton.Group
                   trigger="click"
                   type="primary"
-                  style={{ marginBottom: "80px", marginRight: "5px"}}
+                  style={{ marginBottom: "100px", marginRight: "5px", zIndex: "101"}}
                   icon={<PlusOutlined />}
                 >
-                  <Tooltip title="Create a process">
-                    <FloatButton icon={<ProcessCreationButton type="text" icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>} />} />
+                  <Tooltip trigger="hover" placement="left" title="Create a process">
+                    <FloatButton
+                      icon={
+                      <ProcessCreationButton
+                        type="text"
+                        icon={<PlusOutlined style={{marginLeft: "-0.81rem"}}/>}
+                        />}
+                      />
                   </Tooltip>
-                  <FloatButton icon={<Button type="text" icon={<ImportOutlined style={{marginLeft: "-0.81rem"}}/>}>
-                  <ProcessImportButton></ProcessImportButton>
-                </Button>} />
+                  <Tooltip trigger="hover" placement="left" title="Import a process">
+                    <FloatButton
+                      icon={
+                        <ProcessImportButton
+                        type="text"
+                        icon={<ImportOutlined style={{marginLeft: "-0.81rem"}}/>}
+                      />}
+                    />
+                  </Tooltip>
                 </FloatButton.Group>
               </>
                 }

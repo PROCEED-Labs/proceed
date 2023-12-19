@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 
-import { Upload } from 'antd';
+import { Button, Upload } from 'antd';
+import type { ButtonProps } from 'antd';
 
 import {
   getDefinitionsId,
@@ -20,11 +21,14 @@ export type ProcessData = {
   bpmn: string;
 };
 
+type ProcessImportButtonProps = ButtonProps
+
 // TODO: maybe show import errors and warnings like in the old MS (e.g. id collisions if an existing process is reimported or two imports use the same id)
 
-const ProcessImportButton: React.FC = () => {
+const ProcessImportButton: React.FC<ProcessImportButtonProps> = ({...props}) => {
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
+  console.log(importProcessData)
 
   return (
     <>
@@ -51,7 +55,11 @@ const ProcessImportButton: React.FC = () => {
           return false;
         }}
       >
-        <span>Import Process</span>
+        {/* <span>Import Process</span> */}
+        <Button
+         {...props}>
+
+        </Button>
       </Upload>
       <ProcessModal
         open={importProcessData.length > 0}

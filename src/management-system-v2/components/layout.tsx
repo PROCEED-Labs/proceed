@@ -10,7 +10,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Link from 'next/link';
-import SiderMenu from './sider-menu';
+import SiderMenu from './menu-sider';
 import { useSession } from 'next-auth/react';
 
 /**

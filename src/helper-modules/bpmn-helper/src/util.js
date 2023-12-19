@@ -59,6 +59,8 @@ function getChildren(travObj) {
     'imports',
     'extensionElements',
     'participants',
+    'laneSets',
+    'lanes',
   ];
 
   const allChildren = childNodeTypes
@@ -120,7 +122,7 @@ function getElementDI(element, definitions) {
   }
 
   for (const diagram of definitions.diagrams) {
-    for (const planeElement of diagram.plane.planeElement) {
+    for (const planeElement of diagram.plane.planeElement || []) {
       if (planeElement.bpmnElement === element) {
         return planeElement;
       }

@@ -1,6 +1,11 @@
 import { v4 } from 'uuid';
 
-import { toBpmnObject, toBpmnXml, getElementById } from '@proceed/bpmn-helper';
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+
+import { toBpmnObject, getElementById, getRootFromElement } from '@proceed/bpmn-helper';
+import { asyncFilter } from '../helpers/javascriptHelpers';
+import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
 /**
  * Downloads the data onto the device of the user
@@ -48,36 +53,6 @@ export async function getSVGFromBPMN(
   viewerElement.id = 'canvas_' + v4();
   document.body.appendChild(viewerElement);
 
-  // if specific elements are selected for export make sure to filter out all other elements
-  if (flowElementsToExportIds.length) {
-    const bpmnObj: any = await toBpmnObject(bpmn!);
-    // remove connections where the source or target or both are not selected
-    flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
-      const el = getElementById(bpmnObj, id) as any;
-      return (
-        el &&
-        (!el.sourceRef || flowElementsToExportIds.includes(el.sourceRef.id)) &&
-        (!el.targetRef || flowElementsToExportIds.includes(el.targetRef.id))
-      );
-    });
-
-    if (flowElementsToExportIds.length) {
-      // find the correct plane (either the root process/collaboration or a subprocess)
-      const { plane } = bpmnObj.diagrams.find((el: any) =>
-        subprocessId
-          ? // either find the subprocess plane
-            el.plane.bpmnElement.id === subprocessId
-          : // or the root process/collaboration plane
-            el.plane.bpmnElement.$type !== 'bpmn:SubProcess',
-      );
-      // remove the visualisation of the elements that are not selected
-      plane.planeElement = plane.planeElement.filter((diEl: any) =>
-        flowElementsToExportIds.some((id) => id === diEl.bpmnElement.id),
-      );
-      bpmn = await toBpmnXml(bpmnObj);
-    }
-  }
-
   //Create a viewer to transform the bpmn into an svg
   const viewer = new Viewer({ container: '#' + viewerElement.id });
   await viewer.importXML(bpmn);
@@ -90,6 +65,39 @@ export async function getSVGFromBPMN(
   }
 
   canvas.zoom('fit-viewport', 'auto');
+
+  const elementRegistry = viewer.get('elementRegistry') as ElementRegistry;
+
+  // if specific elements are selected for export make sure to filter out all other elements
+  if (flowElementsToExportIds.length) {
+    // remove connections where the source or target or both are not selected
+    flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
+      const el = elementRegistry.get(id);
+      return (
+        el &&
+        (!el.source || flowElementsToExportIds.includes(el.source.id)) &&
+        (!el.target || flowElementsToExportIds.includes(el.target.id))
+      );
+    });
+    if (flowElementsToExportIds.length) {
+      // hide all elements that are not directly selected and that are not indirectly selected due to a parent being selected
+      const allElements = elementRegistry.getAll();
+
+      const unselectedElements = await asyncFilter(allElements, async ({ businessObject }) => {
+        return (
+          !businessObject ||
+          !(await isSelectedOrInsideSelected(
+            getRootFromElement(businessObject),
+            businessObject.id,
+            flowElementsToExportIds,
+          ))
+        );
+      });
+      unselectedElements.forEach((el: any) => {
+        elementRegistry.getGraphics(el).style.setProperty('display', 'none');
+      });
+    }
+  }
 
   const { svg } = await viewer.saveSVG();
 
@@ -121,4 +129,38 @@ export function getImageDimensions(svg: string) {
     width,
     height,
   };
+}
+
+/**
+ * Checks for a moddle element if it is selected or if an element it is nested in is selected
+ *
+ * @param bpmnOrObj the bpmn that should contain the element either as a string or as an object
+ * @param id the id of the moddle element
+ * @param selectedElementIds the ids of the elements that are considered selected
+ */
+export async function isSelectedOrInsideSelected(
+  bpmnOrObj: string | object,
+  id: string,
+  selectedElementIds: string[],
+) {
+  const bpmnObj = typeof bpmnOrObj === 'string' ? await toBpmnObject(bpmnOrObj) : bpmnOrObj;
+
+  let el = getElementById(bpmnObj, id) as any;
+
+  // this handles all elements that are directly selected or insided a selected subprocess
+  while (el && !bpmnIs(el, 'bpmn:Process')) {
+    if (selectedElementIds.includes(el.id)) return true;
+    el = el.$parent;
+  }
+
+  const participants = getElementsByTagName(bpmnObj, 'bpmn:Participant');
+
+  // this handles all elements that are children of a selected participant
+  return (
+    !!el &&
+    participants.some(
+      (participant) =>
+        selectedElementIds.includes(participant.id) && participant.processRef?.id === el?.id,
+    )
+  );
 }

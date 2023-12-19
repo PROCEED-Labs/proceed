@@ -268,7 +268,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                 <FloatButton.Group
                   trigger="click"
                   type="primary"
-                  style={{ marginBottom: "100px", marginRight: "16px"}}
+                  style={{ marginBottom: "80px", marginRight: "5px"}}
                   icon={<PlusOutlined />}
                 >
                   <Tooltip title="Create a process">

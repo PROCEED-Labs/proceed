@@ -11,6 +11,7 @@ import jsZip from 'jszip';
 import 'svg2pdf.js';
 
 import pdfExport from './pdf-export';
+import newPdfExport from './pdf-export-2';
 import { pngExport, svgExport } from './image-export';
 
 async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
@@ -86,6 +87,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
         await pdfExport(exportData, processData, options.metaData, options.a4, zip);
+        await newPdfExport(exportData, processData, options.metaData, options.a4, zip);
       }
     } else {
       if (options.type === 'bpmn') {

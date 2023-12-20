@@ -23,7 +23,7 @@ import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import CollapsibleCard from './collapsible-card';
 import DescriptionSection from './description-section';
-import ImageSelectionSection from './image-selection-section';
+import ImageSelectionSection from './image-selection';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;

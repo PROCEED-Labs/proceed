@@ -44,13 +44,14 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
 
   async function deleteRoles(roleIds: string[]) {
     try {
-      await serverDeleteRoles(roleIds);
+      const result = await serverDeleteRoles(roleIds);
+      if (result && 'error' in result) throw new Error();
 
       setSelectedRowKeys([]);
       setSelectedRows([]);
       router.refresh();
     } catch (e) {
-      messageApi.error((e as Error).message);
+      messageApi.error({ content: 'Something went wrong' });
     }
   }
 

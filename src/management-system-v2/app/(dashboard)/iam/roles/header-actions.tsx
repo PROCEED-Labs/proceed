@@ -44,7 +44,8 @@ const CreateRoleModal: FC<{
       expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
 
     try {
-      await serverAddRoles(values);
+      const result = await serverAddRoles(values);
+      if (result && 'error' in result) throw new Error();
     } catch (e) {
       messageApi.error({ content: 'Something went wrong' });
     }

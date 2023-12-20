@@ -41,14 +41,12 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
     }
 
     try {
-      await updateRole(role.id, values);
+      const result = await updateRole(role.id, values);
+      if (result && 'error' in result) throw new Error();
       router.refresh();
       message.open({ type: 'success', content: 'Role updated' });
-    } catch (e) {
-      let msg = 'Something went wrong';
-      if (e instanceof Error && e.message) msg += `: ${e.message}`;
-
-      message.open({ type: 'error', content: msg });
+    } catch (_) {
+      message.open({ type: 'error', content: 'Something went wrong' });
     }
   }
 

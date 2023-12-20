@@ -269,9 +269,10 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   async function updateRole() {
     setLoading(true);
     try {
-      await serverUpdateRole(role.id, {
+      const result = await serverUpdateRole(role.id, {
         permissions,
       });
+      if (result && 'error' in result) throw new Error();
 
       message.open({ content: 'Role updated', type: 'success' });
     } catch (e) {

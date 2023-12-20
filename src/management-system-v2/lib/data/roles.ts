@@ -2,33 +2,41 @@
 
 import { getCurrentUser } from '@/components/auth';
 import { deleteRole, addRole as _addRole, updateRole as _updateRole } from './legacy/iam/roles.js';
-import { redirect } from 'next/navigation.js';
+import { redirect } from 'next/navigation';
+import { userError } from '../user-error';
+
+import { RedirectType } from 'next/dist/client/components/redirect';
 
 export async function deleteRoles(roleIds: string[]) {
   const { ability } = await getCurrentUser();
 
-  const errors: { roleId: string; error: Error }[] = [];
-
-  for (const roleId of roleIds) {
-    try {
+  try {
+    for (const roleId of roleIds) {
       deleteRole(roleId, ability);
-    } catch (error) {
-      errors.push({ roleId, error: error as Error });
     }
+  } catch (_) {
+    return userError('Error deleting roles');
   }
-
-  return errors;
 }
 
 export async function addRole(role: Parameters<typeof _addRole>[0]) {
-  const { ability } = await getCurrentUser();
+  let newRoleId;
+  try {
+    const { ability } = await getCurrentUser();
 
-  const newRole = _addRole(role, ability);
-  redirect(`/iam/roles/${newRole.id}`);
+    const newRole = _addRole(role, ability);
+    newRoleId = newRole.id;
+  } catch (e) {
+    return userError('Error adding role');
+  }
+  redirect(`/iam/roles/${newRoleId}`, RedirectType.push);
 }
 
 export async function updateRole(roleId: string, updatedRole: Parameters<typeof _updateRole>[1]) {
-  const { ability } = await getCurrentUser();
-
-  _updateRole(roleId, updatedRole, ability);
+  try {
+    const { ability } = await getCurrentUser();
+    _updateRole(roleId, updatedRole, ability);
+  } catch (e) {
+    return userError('Error updating role');
+  }
 }

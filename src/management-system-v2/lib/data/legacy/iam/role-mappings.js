@@ -4,8 +4,6 @@ import { roleMetaObjects } from './roles.js';
 import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { developmentRoleMappingsMigrations } from './migrations/role-mappings-migrations.js';
-import { adminRules } from '@/lib/authorization/caslRules';
 
 let firstInit = !global.roleMappingsMetaObjects;
 
@@ -63,7 +61,7 @@ export function getRoleMappingByUserId(userId, ability) {
  * @param {ApiRequestBody<'/role-mappings','post'>} roleMappings - role mapping object containing userId & roleId
  * @param {Ability} [ability]
  */
-export async function addRoleMappings(roleMappings, ability) {
+export function addRoleMappings(roleMappings, ability) {
   const allowedRoleMappings = ability
     ? ability.filter('create', 'RoleMapping', roleMappings)
     : roleMappings;
@@ -134,7 +132,7 @@ export async function addRoleMappings(roleMappings, ability) {
  *
  * @returns {Object} - new mapping object without removed element
  */
-export async function deleteRoleMapping(userId, roleId, ability) {
+export function deleteRoleMapping(userId, roleId, ability) {
   const roleMapping = roleMappingsMetaObjects.users[userId].find(
     (roleMapping) => roleMapping.roleId === roleId,
   );

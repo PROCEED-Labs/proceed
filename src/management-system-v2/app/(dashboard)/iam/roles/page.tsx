@@ -23,5 +23,3 @@ export default Auth(
   },
   Page,
 );
-
-export const dynamic = 'force-dynamic';

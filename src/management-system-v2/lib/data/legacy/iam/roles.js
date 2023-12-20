@@ -212,9 +212,4 @@ export async function deleteRole(roleId, ability) {
       users: { ...roleMappingsMetaObjects.users },
     },
   });
-
-  console.log(
-    'leftkeys',
-    Object.keys(roleMetaObjects).map((r) => roleMetaObjects[r].name),
-  );
 }

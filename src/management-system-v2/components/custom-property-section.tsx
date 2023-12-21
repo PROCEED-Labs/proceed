@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { Button, Col, Form, Input, Row, Space } from 'antd';
+import { Button, Col, Divider, Form, Input, Row, Space } from 'antd';
 
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -52,41 +52,39 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
       initialValues={initialValues}
       style={{ flexGrow: 1 }}
     >
-      <Row style={{ flexGrow: 1 }}>
-        <Col span={12}>
-          <Form.Item
-            name="name"
-            rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
-          >
-            <Input
-              size="large"
-              placeholder="Name"
-              onBlur={() => {
-                if (submittable) {
-                  // delete custom property with old name
-                  if (initialValues.name && initialValues.name !== values.name) {
-                    onChange(initialValues.name, null);
-                  }
-                  onChange(values.name, values.value);
+      <Space direction="vertical" size={0} style={{ width: '100%' }}>
+        <Form.Item
+          name="name"
+          rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
+          style={{ margin: 0, flexGrow: 1 }}
+        >
+          <Input
+            addonBefore="Name"
+            placeholder="Custom Name"
+            onBlur={() => {
+              if (submittable) {
+                // delete custom property with old name
+                if (initialValues.name && initialValues.name !== values.name) {
+                  onChange(initialValues.name, null);
                 }
-              }}
-            />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item name="value" rules={[{ required: true }]}>
-            <Input
-              size="large"
-              placeholder="Value"
-              onBlur={() => {
-                if (submittable) {
-                  onChange(values.name, values.value);
-                }
-              }}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
+                onChange(values.name, values.value);
+              }
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item name="value" rules={[{ required: true }]} style={{ margin: 0, width: '100%' }}>
+          <Input
+            addonBefore="Value"
+            placeholder="Custom Value"
+            onBlur={() => {
+              if (submittable) {
+                onChange(values.name, values.value);
+              }
+            }}
+          />
+        </Form.Item>
+      </Space>
     </Form>
   );
 };
@@ -103,6 +101,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
 
   const customMetaData = useMemo(() => {
     const {
+      overviewImage,
       costsPlanned,
       timePlannedDuration,
       timePlannedOccurrence,
@@ -151,12 +150,18 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <b>Custom Properties</b>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Divider style={{ fontSize: '0.85rem' }}>Custom Properties</Divider>
       {customProperties.map((element: { name: string; value: any }, index) => (
         <div
           key={element.name || 'newCustomProperty'}
-          style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
         >
           <CustomPropertyForm
             customMetaData={customMetaData}
@@ -169,13 +174,14 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
               }
             }}
           ></CustomPropertyForm>
-          <Button
-            style={{ visibility: index !== customProperties.length - 1 ? 'visible' : 'hidden' }}
-            size="large"
-            type="text"
-            icon={<DeleteOutlined />}
+          <DeleteOutlined
+            style={{
+              visibility: index !== customProperties.length - 1 ? 'visible' : 'hidden',
+              marginLeft: '1rem',
+              fontSize: '1rem',
+            }}
             onClick={() => deleteProperty(element.name)}
-          ></Button>
+          ></DeleteOutlined>
         </div>
       ))}
     </Space>

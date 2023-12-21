@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 interface ModelerShareModalOptionProps {
   optionIcon: ReactNode;
   optionName: string;
+  optionTitle: string;
   optionOnClick: () => void;
   isActive: boolean;
 }
@@ -12,6 +13,7 @@ interface ModelerShareModalOptionProps {
 const ModelerShareModalOption = ({
   optionIcon,
   optionName,
+  optionTitle,
   optionOnClick,
   isActive,
 }: ModelerShareModalOptionProps) => {
@@ -23,11 +25,11 @@ const ModelerShareModalOption = ({
 
   return (
     <>
-      <Tooltip title={optionName}>
+      <Tooltip title={optionTitle}>
         <Button
           size="large"
           style={{
-            boxShadow: isActive ? '2px 2px 2px #3D91DB' : '3px 2px 2px gray',
+            boxShadow: isActive ? '3px 2px 2px #3D91DB' : '3px 2px 2px gray',
             border: '1px solid black',
             width: '124px',
             height: '90px',

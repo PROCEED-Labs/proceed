@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+
 export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
   if (!date) {
     return '';
@@ -16,6 +18,19 @@ export function generateDateString(date?: Date | string, includeTime: boolean = 
 type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
 type JSONObject = { [key: string]: JSONValue };
 type JSONArray = JSONValue[];
+
+export interface TokenPayload {
+  registeredUsersOnly: boolean;
+  processId: string;
+}
+
+export function generateToken(payload: TokenPayload): string {
+  const secretKey = process.env.JWT_KEY;
+
+  const token = jwt.sign(payload, secretKey!);
+
+  return token;
+}
 
 /**
  * Allows to create a function that will only run its logic if it has not been called for a specified amount of time

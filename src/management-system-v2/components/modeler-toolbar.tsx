@@ -173,6 +173,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
             : []
         }
         onClose={() => setShowProcessExportModal(false)}
+        open={showProcessExportModal}
       />
     </>
   );

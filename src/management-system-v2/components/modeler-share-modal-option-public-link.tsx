@@ -1,22 +1,66 @@
-import { Button, Checkbox, Flex, Input, message, QRCode, Space, Typography } from 'antd';
-import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
-import { SetStateAction, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
-const { Password } = Input;
+import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
+import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
+import { SetStateAction, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
 const ModelerShareModalOptionPublicLink = () => {
-  const pathname = usePathname();
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [publicLinkValue, setPublicLinkValue] = useState(`${window.location.origin}${pathname}`);
+  const { processId } = useParams();
+  const [token, setToken] = useState(null);
+  const [isShareLinkChecked, setIsShareLinkChecked] = useState(false);
+  const [onlyAsRegisteredUser, setOnlyAsRegisteredUser] = useState(false);
+  const [publicLinkValue, setPublicLinkValue] = useState(
+    `${window.location.origin}/shared-viewer?token=`,
+  );
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(publicLinkValue);
       message.success('Link Copied');
     } catch (err) {
-      console.error(err);
       message.error('Error copying link');
     }
+  };
+
+  const generateToken = async () => {
+    try {
+      const response = await fetch('/api/share/generate-share-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registeredUsersOnly: onlyAsRegisteredUser,
+          processId: processId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate token');
+      }
+
+      const { token } = await response.json();
+      message.success('Token generated successfully');
+      setToken(token);
+      setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
+    } catch (error) {
+      message.error('Error generating token');
+    }
+  };
+
+  useEffect(() => {
+    if (isShareLinkChecked) generateToken();
+  }, [onlyAsRegisteredUser, isShareLinkChecked]);
+
+  const handlePermissionChanged = (e: {
+    target: { checked: boolean | ((prevState: boolean) => boolean) };
+  }) => {
+    setOnlyAsRegisteredUser(e.target.checked);
+  };
+
+  const handleShareLinkChecked = (e: {
+    target: { checked: boolean | ((prevState: boolean) => boolean) };
+  }) => {
+    setIsShareLinkChecked(e.target.checked);
   };
 
   const handleLinkChange = (e: { target: { value: SetStateAction<string> } }) => {
@@ -59,65 +103,103 @@ const ModelerShareModalOptionPublicLink = () => {
   return (
     <>
       <div style={{ marginBottom: '5px' }}>
-        <Checkbox>Share Link</Checkbox>
+        <Checkbox onChange={handleShareLinkChecked}>Share Process with Public Link</Checkbox>
       </div>
-
-      <Flex
-        vertical={false}
-        style={{
-          marginBottom: '40px',
-        }}
-      >
-        <Input
-          type={'text'}
-          value={publicLinkValue}
-          contentEditable={true}
-          bordered
-          onChange={handleLinkChange}
-        />
-        <Button
-          style={{
-            marginLeft: '10px',
-            border: '1px solid black',
-            borderRadius: '50px',
-          }}
-          onClick={handleCopyLink}
-        >
-          Copy link
-        </Button>
-      </Flex>
-
-      <Flex vertical={false}>
-        <Flex vertical gap="middle" style={{ flexGrow: '0.75' }}>
-          <Typography.Text strong>Permissions</Typography.Text>
-          <Checkbox>Allow Editing</Checkbox>
-          <Checkbox>Allow Editing only as registered User</Checkbox>
-          <Checkbox onChange={(e) => setIsPasswordProtected(e.target.checked)}>
-            Password Protected
-          </Checkbox>
-          {isPasswordProtected && (
-            <Space>
-              <Password visibilityToggle={true} width={10} />
-            </Space>
-          )}
+      {isShareLinkChecked && !token ? (
+        <Flex justify="center">
+          <LoadingOutlined style={{ fontSize: '40px' }} />
         </Flex>
-        <div id="qrcode" style={{ display: 'flex', flexDirection: 'row-reverse' }}>
-          <Flex vertical>
-            <Button
-              icon={<DownloadOutlined />}
-              title="Save as PNG"
-              onClick={() => handleQRCodeAction('download')}
-            />
-            <Button
-              icon={<CopyOutlined />}
-              title="Copy as PNG"
-              onClick={() => handleQRCodeAction('copy')}
-            />
-          </Flex>
-
-          <QRCode value={publicLinkValue} bgColor="#fff" />
+      ) : (
+        <div style={{ padding: '10px' }}>
+          <Row>
+            <Col span={18}>
+              <Input
+                type={'text'}
+                value={publicLinkValue}
+                disabled={!isShareLinkChecked}
+                style={{ border: '1px solid #000' }}
+                onChange={handleLinkChange}
+              />
+              <Flex
+                vertical={false}
+                style={{ paddingTop: '10px', flexWrap: 'wrap-reverse' }}
+                justify="space-between"
+                align="start"
+              >
+                <Flex vertical gap="small">
+                  <Typography.Text strong>Permissions</Typography.Text>
+                  <Checkbox onChange={handlePermissionChanged} disabled={!isShareLinkChecked}>
+                    Visible only as registered user
+                  </Checkbox>
+                </Flex>
+                {isShareLinkChecked && (
+                  <div id="qrcode">
+                    <QRCode
+                      style={{
+                        border: '1px solid #000',
+                      }}
+                      value={publicLinkValue}
+                      size={140}
+                    />
+                  </div>
+                )}
+              </Flex>
+            </Col>
+            <Col span={6}>
+              <Flex vertical gap={10}>
+                <Button
+                  style={{
+                    marginLeft: '10px',
+                    border: '1px solid black',
+                    borderRadius: '50px',
+                    overflow: 'hidden',
+                    whiteSpace: 'normal',
+                    textOverflow: 'ellipsis',
+                  }}
+                  onClick={handleCopyLink}
+                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                >
+                  Copy link
+                </Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  title="Save as PNG"
+                  style={{
+                    marginLeft: '10px',
+                    border: '1px solid black',
+                    borderRadius: '50px',
+                    overflow: 'hidden',
+                    whiteSpace: 'normal',
+                    textOverflow: 'ellipsis',
+                  }}
+                  hidden={!isShareLinkChecked}
+                  onClick={() => handleQRCodeAction('download')}
+                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                >
+                  Save QR Code
+                </Button>
+                <Button
+                  icon={<CopyOutlined />}
+                  title="Copy as PNG"
+                  style={{
+                    marginLeft: '10px',
+                    border: '1px solid black',
+                    borderRadius: '50px',
+                    overflow: 'hidden',
+                    whiteSpace: 'normal',
+                    textOverflow: 'ellipsis',
+                  }}
+                  hidden={!isShareLinkChecked}
+                  onClick={() => handleQRCodeAction('copy')}
+                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                >
+                  Copy QR Code
+                </Button>
+              </Flex>
+            </Col>
+          </Row>
         </div>
-      </Flex>
+      )}
     </>
   );
 };

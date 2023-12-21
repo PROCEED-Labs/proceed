@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import React, { FC, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message } from 'antd';
 import {
   ShareAltOutlined,
@@ -21,12 +21,11 @@ type ShareModalProps = {
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
-
   const modeler = useModelerStateStore((state) => state.modeler);
 
   const handleClose = () => {
     setIsOpen(false);
-    setActiveIndex(null);
+    setActiveIndex(0);
   };
 
   const handleCopyXMLToClipboard = async () => {
@@ -47,6 +46,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Public Link',
+      optionTitle: 'Share Public Link',
       optionOnClick: () => handleOptionClick(0),
       subOption: <ModelerShareModalOptionPublicLink />,
     },
@@ -58,12 +58,14 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
         </span>
       ),
       optionName: 'Embed in Website',
+      optionTitle: 'Embed in Website',
       optionOnClick: () => handleOptionClick(1),
       subOption: <ModelerShareModalOptionEmdedInWeb />,
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Copy Diagram to Clipboard (PNG)',
+      optionTitle: 'Copy Diagram to Clipboard (PNG)',
+      optionName: 'Copy Diagram as PNG',
       optionOnClick: () => {
         handleOptionClick(2);
         copyProcessImage(modeler);
@@ -71,7 +73,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Copy BPMN to Clipboard (XML)',
+      optionName: 'Copy Diagram as XML',
+      optionTitle: 'Copy BPMN to Clipboard (XML)',
       optionOnClick: () => {
         handleOptionClick(3);
         handleCopyXMLToClipboard();
@@ -80,6 +83,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
     {
       optionIcon: <ExportOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Export as file',
+      optionTitle: 'Export as file',
       optionOnClick: () => {
         handleOptionClick(4);
         onExport();
@@ -114,16 +118,19 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
               key={index}
               optionIcon={option.optionIcon}
               optionName={option.optionName}
+              optionTitle={option.optionTitle}
               optionOnClick={option.optionOnClick}
               isActive={index === activeIndex}
             />
           ))}
         </Space>
 
-        <>
-          <Divider style={{ backgroundColor: 'black' }} />
-          {activeIndex !== null ? options[activeIndex].subOption : null}
-        </>
+        {activeIndex !== null && options[activeIndex].subOption && (
+          <>
+            <Divider style={{ backgroundColor: '#000' }} />
+            {options[activeIndex].subOption}
+          </>
+        )}
       </Modal>
       <Tooltip title="Share">
         <Button icon={<ShareAltOutlined />} onClick={() => setIsOpen(true)} />

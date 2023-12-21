@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloseOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import {
   Button,
@@ -13,8 +13,8 @@ import {
   Grid,
   Input,
   Modal,
-  Select,
   Space,
+  Table,
 } from 'antd';
 import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -23,15 +23,28 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 import FormSubmitButton from './form-submit-button';
 import { Editor } from '@toast-ui/react-editor';
 import TextEditor from './text-editor';
+import TextViewer from './text-viewer';
 
-const MilestoneDescriptionEditor: React.FC<{ onChange: (content: string) => void }> = ({
-  onChange,
-}) => {
+const MilestoneDescriptionEditor: React.FC<{
+  onChange: (content: string) => void;
+  initialValue?: string;
+}> = ({ onChange, initialValue }) => {
   const editorRef = React.useRef<Editor>(null);
+
+  useEffect(() => {
+    if (editorRef.current && initialValue) {
+      const editor = editorRef.current as Editor;
+      const editorInstance = editor.getInstance();
+
+      editorInstance.setMarkdown(initialValue);
+    }
+  }, [initialValue, editorRef]);
+
   return (
     <TextEditor
       ref={editorRef}
       placeholder="Milestone Description"
+      initialValue={initialValue}
       onChange={() => {
         const editor = editorRef.current as Editor;
         const editorInstance = editor.getInstance();
@@ -42,9 +55,16 @@ const MilestoneDescriptionEditor: React.FC<{ onChange: (content: string) => void
   );
 };
 
-const MilestoneForm: React.FC<{ form: FormInstance }> = ({ form }) => {
+const MilestoneForm: React.FC<{
+  form: FormInstance;
+  initialValues?: { id: string; name: string; description?: string };
+}> = ({ form, initialValues }) => {
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
   return (
-    <Form form={form} name="name" className="milestone-form">
+    <Form form={form} name="name" className="milestone-form" initialValues={initialValues}>
       <Form.Item name="id" rules={[{ required: true, message: 'Please input the Milestone ID!' }]}>
         <Input placeholder="Milestone ID" />
       </Form.Item>
@@ -56,6 +76,7 @@ const MilestoneForm: React.FC<{ form: FormInstance }> = ({ form }) => {
       </Form.Item>
       <Form.Item name="description" className="milestone-description">
         <MilestoneDescriptionEditor
+          initialValue={initialValues?.description}
           onChange={(content) => {
             form.setFieldValue('description', content);
           }}
@@ -65,7 +86,45 @@ const MilestoneForm: React.FC<{ form: FormInstance }> = ({ form }) => {
   );
 };
 
-const MilestoneDrawer: React.FC<MilestoneModalProperties> = ({ show, close }) => {
+type MilestoneModalProperties = {
+  show: boolean;
+  close: (values?: { id: string; name: string; description?: string }) => void;
+  initialValues?: { id: string; name: string; description?: string };
+};
+
+const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close, initialValues }) => {
+  const [form] = Form.useForm();
+
+  return (
+    <Modal
+      title={initialValues ? 'Edit Milestone' : 'Create new Milestone'}
+      width="50vw"
+      open={show}
+      onCancel={() => close()}
+      footer={[
+        <Button
+          key="cancel"
+          onClick={() => {
+            close();
+          }}
+        >
+          Cancel
+        </Button>,
+        <FormSubmitButton
+          key="submit"
+          form={form}
+          onSubmit={close}
+          submitText={initialValues ? 'Edit Milestone' : 'Create Milestone'}
+        ></FormSubmitButton>,
+      ]}
+    >
+      <MilestoneForm form={form} initialValues={initialValues}></MilestoneForm>
+    </Modal>
+  );
+};
+
+type MilestoneDrawerProperties = MilestoneModalProperties;
+const MilestoneDrawer: React.FC<MilestoneDrawerProperties> = ({ show, close }) => {
   const [form] = Form.useForm();
   return (
     <Drawer
@@ -104,42 +163,6 @@ const MilestoneDrawer: React.FC<MilestoneModalProperties> = ({ show, close }) =>
   );
 };
 
-type MilestoneModalProperties = {
-  show: boolean;
-  close: (values?: { id: string; name: string; description?: string }) => void;
-};
-
-const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close }) => {
-  const [form] = Form.useForm();
-
-  return (
-    <Modal
-      title="Create new Milestone"
-      width="50vw"
-      open={show}
-      onCancel={() => close()}
-      footer={[
-        <Button
-          key="cancel"
-          onClick={() => {
-            close();
-          }}
-        >
-          Cancel
-        </Button>,
-        <FormSubmitButton
-          key="submit"
-          form={form}
-          onSubmit={close}
-          submitText="Create Milestone"
-        ></FormSubmitButton>,
-      ]}
-    >
-      <MilestoneForm form={form}></MilestoneForm>
-    </Modal>
-  );
-};
-
 type MilestoneSelectionProperties = {
   milestones: { id: string; name: string; description?: string }[];
   selectedElement: ElementLike;
@@ -150,34 +173,46 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   selectedElement,
 }) => {
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+  const [initialMilestoneValues, setInitialMilestoneValues] = useState<
+    | {
+        id: string;
+        name: string;
+        description?: string;
+      }
+    | undefined
+  >(undefined);
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
   const breakpoint = Grid.useBreakpoint();
 
-  const updateMilestones = (
-    newMilestones: { id: string; name: string; description?: string }[],
-  ) => {
+  const closeMilestoneModal = () => {
+    setInitialMilestoneValues(undefined);
+    setIsMilestoneModalOpen(false);
+  };
+
+  const openMilestoneModal = (initialMilestoneValues: {
+    id: string;
+    name: string;
+    description?: string;
+  }) => {
+    setInitialMilestoneValues(initialMilestoneValues);
+    setIsMilestoneModalOpen(true);
+  };
+
+  const addMilestone = (newMilestone: { id: string; name: string; description?: string }) => {
     const modeling = modeler!.get('modeling') as Modeling;
-    newMilestones.forEach((milestone) => {
-      const milestoneExisting = !!milestones.find(
-        (oldMilestone) => oldMilestone.id === milestone.id,
-      );
-
-      if (!milestoneExisting) {
-        setProceedElement(selectedElement.businessObject, 'Milestone', undefined, milestone);
-      }
+    setProceedElement(selectedElement.businessObject, 'Milestone', undefined, newMilestone);
+    modeling.updateProperties(selectedElement as any, {
+      extensionElements: selectedElement.businessObject.extensionElements,
     });
+  };
 
-    // remove milestones that do not exist anymore
-    milestones.forEach((oldMilestone) => {
-      if (!newMilestones.find((milestone) => milestone.id === oldMilestone.id)) {
-        setProceedElement(selectedElement.businessObject, 'Milestone', null, {
-          id: oldMilestone.id,
-        });
-      }
+  const removeMilestone = (milestoneId: string) => {
+    const modeling = modeler!.get('modeling') as Modeling;
+    setProceedElement(selectedElement.businessObject, 'Milestone', null, {
+      id: milestoneId,
     });
-
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
     });
@@ -185,47 +220,64 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
 
   return (
     <>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <b>Milestones</b>
-        <Select
-          style={{ width: '100%' }}
-          mode="multiple"
-          fieldNames={{ label: 'name', value: 'id' }}
-          options={milestones}
-          value={milestones.map((milestone) => ({ value: milestone.id, label: milestone.name }))}
-          allowClear
-          placeholder="Select Milestones"
-          onChange={(_, selectedMilestones) => {
-            updateMilestones(
-              Array.isArray(selectedMilestones) ? selectedMilestones : [selectedMilestones],
-            );
-          }}
-          dropdownRender={(menu) => (
-            <>
-              {menu}
-              <Divider style={{ margin: '8px 0' }} />
-              <Space style={{ padding: '0 8px 4px', display: 'flex', justifyContent: 'center' }}>
-                <Button
-                  type="text"
-                  icon={<PlusOutlined />}
-                  onClick={() => setIsMilestoneModalOpen(true)}
-                >
-                  Create new Milestone
-                </Button>
-              </Space>
-            </>
-          )}
-        ></Select>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+          <span style={{ marginRight: '0.3em' }}>Milestones</span>
+          <PlusOutlined
+            onClick={() => {
+              setIsMilestoneModalOpen(true);
+            }}
+          ></PlusOutlined>
+        </Divider>
+        <Table
+          pagination={{ pageSize: 5 }}
+          columns={[
+            { title: 'ID', dataIndex: 'id', key: 'id' },
+            { title: 'Name', dataIndex: 'name', key: 'name' },
+            {
+              title: 'Description',
+              dataIndex: 'description',
+              key: 'description',
+              render: (description) => {
+                return <TextViewer initialValue={description}></TextViewer>;
+              },
+            },
+            {
+              title: '',
+              dataIndex: 'edit',
+              key: 'edit',
+              render: (_, record) => (
+                <Space size="small">
+                  <EditOutlined
+                    onClick={() => {
+                      openMilestoneModal(record);
+                    }}
+                  />
+                  <DeleteOutlined
+                    onClick={() => {
+                      removeMilestone(record.id);
+                    }}
+                  />
+                </Space>
+              ),
+            },
+          ]}
+          dataSource={milestones}
+        ></Table>
       </Space>
       {breakpoint.md ? (
         <MilestoneModal
           show={isMilestoneModalOpen}
+          initialValues={initialMilestoneValues}
           close={(values) => {
             if (values) {
-              updateMilestones([...milestones, values]);
+              if (initialMilestoneValues) {
+                removeMilestone(initialMilestoneValues.id);
+              }
+              addMilestone(values);
             }
 
-            setIsMilestoneModalOpen(false);
+            closeMilestoneModal();
           }}
         ></MilestoneModal>
       ) : (
@@ -233,10 +285,13 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
           show={isMilestoneModalOpen}
           close={(values) => {
             if (values) {
-              updateMilestones([...milestones, values]);
+              if (initialMilestoneValues) {
+                removeMilestone(initialMilestoneValues.id);
+              }
+              addMilestone(values);
             }
 
-            setIsMilestoneModalOpen(false);
+            closeMilestoneModal();
           }}
         ></MilestoneDrawer>
       )}

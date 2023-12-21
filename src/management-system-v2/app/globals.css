@@ -9,6 +9,13 @@
   font-size: 20px;
 }
 
+.properties-panel .ant-input,
+.properties-panel .ant-input-group-addon,
+.properties-panel .ant-select-selection-item,
+.properties-panel .ant-table.ant-table-middle {
+  font-size: 0.75rem !important;
+}
+
 .editor-container {
   display: flex;
   flex-direction: column;
@@ -43,6 +50,10 @@
   .toastui-editor-toolbar
   .toastui-editor-popup.toastui-editor-popup-add-heading {
   margin-left: 0 !important;
+}
+
+.ant-input-group-addon {
+  width: 4rem !important;
 }
 
 .milestone-drawer .milestone-form {

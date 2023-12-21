@@ -1,7 +1,5 @@
 'use client';
 
-import styles from './properties-panel.module.scss';
-
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
 import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
@@ -88,18 +86,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const milestones = useMemo(() => {
     return getMilestonesFromElement(selectedElement.businessObject);
   }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
-
-  const description = useMemo(() => {
-    if (!selectedElement.businessObject) {
-      return '';
-    }
-
-    if (selectedElement.businessObject.documentation) {
-      return selectedElement.businessObject.documentation[0]?.text;
-    } else {
-      return '';
-    }
-  }, [JSON.stringify(selectedElement.businessObject)]);
 
   useEffect(() => {
     if (selectedElement) {
@@ -188,7 +174,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       </Space>
 
       <DescriptionSection
-        description={description}
+        description={
+          (selectedElement.businessObject.documentation &&
+            selectedElement.businessObject.documentation[0]?.text) ||
+          ''
+        }
         selectedElement={selectedElement}
       ></DescriptionSection>
 
@@ -222,15 +212,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           }}
         />
       </Space>
-      {/* <Input.TextArea
-      size="large"
-      placeholder={
-        selectedElement.type !== 'bpmn:Process'
-          ? 'Element Documentation'
-          : 'Process Documentation'
-      }
-      onChange={(event) => updateDescription(event.target.value)}
-    ></Input.TextArea> */}
 
       <CustomPropertySection
         metaData={metaData}

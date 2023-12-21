@@ -8,7 +8,7 @@ import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
 import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 
-import { Button, Drawer, Grid, Modal, Space } from 'antd';
+import { Button, Divider, Drawer, Grid, Modal, Space } from 'antd';
 import TextEditor from './text-editor';
 
 const DescriptionSection: React.FC<{ description: string; selectedElement: any }> = ({
@@ -58,14 +58,14 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <b style={{ marginRight: '0.3em' }}>Description</b>
+      <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+        <span style={{ marginRight: '0.3em' }}>Description</span>
         <EditOutlined
           onClick={() => {
             setShowPopupEditor(true);
           }}
         ></EditOutlined>
-      </div>
+      </Divider>
       <div style={{ maxHeight: '30vh', overflowY: 'auto' }}>
         <Viewer ref={viewerRef} initialValue={description}></Viewer>
       </div>

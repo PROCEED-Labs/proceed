@@ -1,5 +1,7 @@
 'use client';
 
+import styles from './properties-panel.module.scss';
+
 import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
 import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
@@ -10,7 +12,7 @@ import useModelerStateStore from '@/lib/use-modeler-state-store';
 
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Input, ColorPicker, Space, Grid, Drawer } from 'antd';
+import { Input, ColorPicker, Space, Grid, Drawer, Divider } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import {
@@ -23,7 +25,7 @@ import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import CollapsibleCard from './collapsible-card';
 import DescriptionSection from './description-section';
-import ImageSelectionSection from './image-selection-section';
+import ImageSelection from './image-selection';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -152,10 +154,16 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <b>General</b>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%', fontSize: '0.75rem' }}
+      className="properties-panel"
+    >
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Divider style={{ fontSize: '0.85rem' }}>General</Divider>
         <Input
+          style={{ fontSize: '0.85rem' }}
           addonBefore="Name"
           placeholder={selectedElement.businessObject.name}
           value={name}
@@ -164,20 +172,35 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           disabled={selectedElement.type === 'bpmn:Process'}
         />
 
-        <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
+        <Input addonBefore="Type" placeholder={selectedElement.type} disabled />
+
+        <div
+          style={{
+            width: '75%',
+            display: 'flex',
+            justifyContent: 'center',
+            margin: 'auto',
+            marginTop: '1rem',
+          }}
+        >
+          <ImageSelection metaData={metaData}></ImageSelection>
+        </div>
       </Space>
 
-      <ImageSelectionSection metaData={metaData}></ImageSelectionSection>
+      <DescriptionSection
+        description={description}
+        selectedElement={selectedElement}
+      ></DescriptionSection>
 
       <MilestoneSelectionSection
         milestones={milestones}
         selectedElement={selectedElement}
       ></MilestoneSelectionSection>
 
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <b>Properties</b>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
         <Input
-          prefix={<EuroCircleOutlined className="clock-icon" />}
+          addonBefore={<EuroCircleOutlined className="clock-icon" />}
           placeholder="Planned Cost"
           value={costsPlanned}
           onChange={(event) => {
@@ -188,7 +211,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           }}
         />
         <Input
-          prefix={<ClockCircleOutlined className="clock-icon" />}
+          addonBefore={<ClockCircleOutlined className="clock-icon" />}
           placeholder="Planned Duration"
           value={timePlannedDuration}
           onChange={(event) => {
@@ -199,11 +222,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           }}
         />
       </Space>
-
-      <DescriptionSection
-        description={description}
-        selectedElement={selectedElement}
-      ></DescriptionSection>
       {/* <Input.TextArea
       size="large"
       placeholder={
@@ -222,10 +240,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       ></CustomPropertySection>
 
       {selectedElement.type !== 'bpmn:Process' && (
-        <Space direction="vertical" size="large">
-          <b>Colors</b>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
           <Space>
             <ColorPicker
+              size="small"
               presets={colorPickerPresets}
               value={backgroundColor}
               onChange={(_, hex) => updateBackgroundColor(hex)}
@@ -234,6 +253,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           </Space>
           <Space>
             <ColorPicker
+              size="small"
               presets={colorPickerPresets}
               value={strokeColor}
               onChange={(_, hex) => updateStrokeColor(hex)}
@@ -267,7 +287,12 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
       initialWidth={450}
       minWidth={450}
       maxWidth={600}
-      style={{ position: 'absolute', top: '65px', right: '12px', height: '70vh' }}
+      style={{
+        position: 'absolute',
+        top: '65px',
+        right: '12px',
+        height: '70vh',
+      }}
       ref={resizableElementRef}
     >
       <CollapsibleCard

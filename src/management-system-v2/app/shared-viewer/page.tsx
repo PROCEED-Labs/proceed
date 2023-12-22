@@ -16,8 +16,7 @@ const SharedViewer = ({ searchParams }: PageProps) => {
   const pathname = usePathname();
 
   const session = useSession();
-  const [xml, setXml] = useState<string | null>(null);
-  const [registeredUsersOnly, setOnlyAsRegisteredUser] = useState<boolean>(false);
+  const [process, setProcess] = useState(null);
   useEffect(() => {
     const validateToken = async () => {
       try {
@@ -36,15 +35,14 @@ const SharedViewer = ({ searchParams }: PageProps) => {
             throw new Error(`Failed to validate token - ${response.status} ${response.statusText}`);
           }
 
-          const { bpmnXML, registeredUsersOnly } = await response.json();
-          setOnlyAsRegisteredUser(registeredUsersOnly);
+          const { process, registeredUsersOnly } = await response.json();
           if (registeredUsersOnly && session.status === 'unauthenticated') {
             const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.token}`;
             const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
             router.replace(loginPath);
           }
-          setXml(bpmnXML);
+          setProcess(process);
         }
       } catch (error) {
         throw new Error('Internal Server Error');
@@ -56,8 +54,8 @@ const SharedViewer = ({ searchParams }: PageProps) => {
 
   return (
     <div>
-      {xml ? (
-        <EmbeddedModeler processBpmn={xml} registeredUsersOnly={registeredUsersOnly} />
+      {process ? (
+        <EmbeddedModeler processData={process} />
       ) : (
         <p style={{ color: 'red' }}>Loading...</p>
       )}

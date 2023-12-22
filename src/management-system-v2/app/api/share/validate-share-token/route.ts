@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { TokenPayload } from '@/lib/utils';
-import { getProcessBpmn } from '@/lib/data/legacy/_process';
+import { getProcess } from '@/lib/data/legacy/_process';
 
 const TOKENS_DIRECTORY_PATH = path.join(process.cwd(), 'tokens');
 
@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
     const { registeredUsersOnly, processId } = decodedToken;
 
     if (processId) {
-      const xml = await getProcessBpmn(processId);
+      const process = await getProcess(processId, true);
       return NextResponse.json(
-        { bpmnXML: xml, registeredUsersOnly: registeredUsersOnly },
+        { process: process, registeredUsersOnly: registeredUsersOnly },
         { status: 200 },
       );
     } else {

@@ -157,7 +157,7 @@ const ModelerShareModalOptionPublicLink = () => {
                     textOverflow: 'ellipsis',
                   }}
                   onClick={handleCopyLink}
-                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                  disabled={!isShareLinkChecked}
                 >
                   Copy link
                 </Button>
@@ -174,7 +174,7 @@ const ModelerShareModalOptionPublicLink = () => {
                   }}
                   hidden={!isShareLinkChecked}
                   onClick={() => handleQRCodeAction('download')}
-                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                  disabled={!isShareLinkChecked}
                 >
                   Save QR Code
                 </Button>
@@ -191,7 +191,7 @@ const ModelerShareModalOptionPublicLink = () => {
                   }}
                   hidden={!isShareLinkChecked}
                   onClick={() => handleQRCodeAction('copy')}
-                  disabled={!isShareLinkChecked} // Disable based on whether "Share Process with Public Link" is checked
+                  disabled={!isShareLinkChecked}
                 >
                   Copy QR Code
                 </Button>

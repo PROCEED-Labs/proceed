@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useEffect, useRef, useState, useTransition } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
@@ -9,7 +9,13 @@ import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import schema from '@/lib/schema';
-import { Button } from 'antd';
+import { Button, message } from 'antd';
+import { addProcesses } from '@/lib/data/processes';
+import { getFinalBpmn } from '@/lib/helpers/processHelpers';
+import { ApiData } from '@/lib/fetch-data';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { generateDefinitionsId } from '@proceed/bpmn-helper';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -24,24 +30,56 @@ const BPMNViewer =
     : null;
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
-  processBpmn: string;
-  registeredUsersOnly: boolean;
+  processData: ApiData<'/process/{definitionId}', 'get'>;
 };
 
-const EmbeddedModeler = ({ processBpmn, registeredUsersOnly }: ModelerProps) => {
+const EmbeddedModeler = ({ processData }: ModelerProps) => {
+  const router = useRouter();
+  const session = useSession();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const processBpmn = processData.bpmn;
   const [initialized, setInitialized] = useState(false);
   const canvas = useRef<HTMLDivElement>(null);
   const modeler = useRef<ModelerType | ViewerType | null>(null);
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
-  const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setEditingDisabled = useModelerStateStore((state) => state.setEditingDisabled);
+
+  const handleCopyToOwnWorkspace = async () => {
+    if (session.status === 'unauthenticated') {
+      const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}`;
+      const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+      router.replace(loginPath);
+    }
+    const newDefinitionID = generateDefinitionsId();
+    const processToAdd = [
+      {
+        definitionName: processData.definitionName + 'Copy',
+        description: processData.description,
+        bpmn: await getFinalBpmn({
+          ...processData,
+          definitionId: newDefinitionID,
+        }),
+      },
+    ];
+    const res = await addProcesses(processToAdd);
+    if ('error' in res) {
+      message.error(res.error.message);
+      return res;
+    } else {
+      message.success('Diagram has been successfully copied to your workspace');
+      router.push(`/processes/${newDefinitionID}`);
+    }
+  };
 
   useEffect(() => {
     if (!canvas.current) return;
     const active = { destroy: () => {} };
     modeler.current = active as ModelerType | ViewerType;
-    Promise.all([BPMNModeler, BPMNViewer]).then(([Modeler, Viewer]) => {
+    Promise.all([BPMNViewer]).then(([Viewer]) => {
       if (active !== modeler.current) return;
 
       modeler.current = new Viewer!({
@@ -59,27 +97,16 @@ const EmbeddedModeler = ({ processBpmn, registeredUsersOnly }: ModelerProps) => 
     return () => {
       modeler.current?.destroy();
     };
-    // only reset the modeler if we switch between editing being enabled or disabled
-  }, [processBpmn]);
+  }, [processBpmn, setEditingDisabled, setModeler]);
 
   useEffect(() => {
-    // only import the bpmn once (the effect will be retriggered when initialized is set to false at its end)
     if (!initialized && modeler.current?.importXML && processBpmn) {
-      // import the diagram that was returned by the request
       modeler.current.importXML(processBpmn).then(() => {
         (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
       });
-
-      modeler.current.on('selection.changed', (event) => {
-        const { newSelection } = event as unknown as { newSelection: any[] };
-
-        if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
-        else setSelectedElementId(null);
-      });
     }
-    // set the initialized flag (back) to false so this effect can be retriggered every time the modeler is swapped with a viewer or the viewer with a modeler
     setInitialized(false);
-  }, [initialized, setSelectedElementId, processBpmn]);
+  }, [initialized, processBpmn]);
 
   return (
     <>
@@ -93,13 +120,7 @@ const EmbeddedModeler = ({ processBpmn, registeredUsersOnly }: ModelerProps) => 
           width: '100vw',
         }}
       >
-        <Button
-          onClick={() => {
-            alert('Need to implement it');
-          }}
-        >
-          Copy to own workspace
-        </Button>
+        <Button onClick={handleCopyToOwnWorkspace}>Copy to own workspace</Button>
         <div className="modeler" style={{ height: '90vh', width: '90vw' }} ref={canvas} />
       </div>
     </>

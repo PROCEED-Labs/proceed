@@ -49,7 +49,8 @@
     "bcryptjs": "^2.4.3",
     "js-md5": "^0.7.3",
     "yup": "^0.32.9",
-    "ioredis": "^5.0.1"
+    "ioredis": "^5.0.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "4.36.0",

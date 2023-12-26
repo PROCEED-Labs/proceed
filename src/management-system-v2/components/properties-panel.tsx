@@ -282,9 +282,9 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
           //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
           if (resizableElementRef.current) {
             if (showInfo) {
-              resizableElementRef.current(40);
+              resizableElementRef.current({ width: 40, minWidth: 40, maxWidth: 40 });
             } else {
-              resizableElementRef.current(450);
+              resizableElementRef.current({ width: 450, minWidth: 450, maxWidth: 600 });
             }
           }
           setShowInfo(!showInfo);

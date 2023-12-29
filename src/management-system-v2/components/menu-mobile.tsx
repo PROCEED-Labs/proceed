@@ -25,7 +25,6 @@ const MobileMenu: FC<PropsWithChildren> = () => {
       <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
         {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
           <>
-          {/* <ItemGroup key="processes" title="Processes"> */}
             {ability.can('view', 'Process') ? (
               <Item
                 key="oricesses"
@@ -42,8 +41,6 @@ const MobileMenu: FC<PropsWithChildren> = () => {
                 Templates
               </Item>
             ) : null}
-          {/* </ItemGroup> */}
-            {/* <Divider style={{margin: "0px"}}/> */}
           </>
         ) : null}
 
@@ -51,7 +48,6 @@ const MobileMenu: FC<PropsWithChildren> = () => {
         ability.can('manage', 'RoleMapping') ||
         ability.can('manage', 'Role') ? (
           <>
-            {/* <ItemGroup key="IAM" title="IAM"> */}
               <Item
                 key="iam/users"
                 icon={<UserOutlined />}
@@ -69,7 +65,6 @@ const MobileMenu: FC<PropsWithChildren> = () => {
               >
                 <Link href="/iam/roles">Roles</Link>
               </Item>
-            {/* </ItemGroup> */}
             <Divider style={{marginBottom: "16px"}}/>
           </>
         ) : null}

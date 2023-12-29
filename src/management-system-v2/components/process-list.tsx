@@ -20,6 +20,7 @@ import {
   MoreOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
+import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
@@ -56,7 +57,7 @@ const ColumnHeader = [
 ];
 
 const numberOfRows =
-  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
+  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -128,7 +129,6 @@ const ProcessList: FC<ProcessListProps> = ({
           </AuthCan>
 
           {/*TODO: errors regarding query */}
-
           <AuthCan action="delete" resource={toCaslResource('Process', process)}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
@@ -227,23 +227,23 @@ const ProcessList: FC<ProcessListProps> = ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
           // another process. (needs upstream fix)
-          //   //    TODO:
+          //   // TODO:
           //   setSelectedProcess(record);
           //   router.refresh();
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
       render: (_, record) => (
-        <span
+        <div
+        className={breakpoint.xs ? styles.MobileTitleTruncation : styles.TitleTruncation}
           style={{
-            width: '10vw',
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
           }}
         >
           {record.definitionName.highlighted}
-        </span>
+        </div>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -484,7 +484,7 @@ const ProcessList: FC<ProcessListProps> = ({
         columns={columnsFiltered}
         dataSource={data}
         loading={isLoading}
-        className={classNames('no-select')}
+        className={cn(breakpoint.xs ? styles.MobileTable : "")}
         size={breakpoint.xs ? "large" : "middle"}
       />
 

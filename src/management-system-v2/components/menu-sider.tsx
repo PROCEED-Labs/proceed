@@ -38,13 +38,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
                 icon={<FileOutlined />}
                 hidden={!ability.can('view', 'Process')}
               >
-                <span
-                  onClick={() => {
-                    router.push(`/processes`);
-                  }}
-                >
-                  Process List
-                </span>
+                <Link href="/processes">Process List</Link>
               </Item>
             ) : null}
 

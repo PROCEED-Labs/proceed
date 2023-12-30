@@ -23,11 +23,13 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
           {leftNode}
         </Col>
       )}
-      <Col xs={23} lg={{ flex: 'auto' }}>
+      <Col xs={23} sm={24} xl={{ flex: 'auto' }}>
         {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
       </Col>
       {rightNode && (
-        <Col xs={23} lg={{ flex: 'none' }} style={breakpoint.xs ? {display: "flex", justifyContent: "flex-end"} : {}}>
+        <Col xs={23} sm={24} xl={{ flex: 'none' }}
+        style={breakpoint.xl ? {} : {display: "flex", justifyContent: "flex-end"} }
+        >
           {rightNode}
         </Col>
       )}

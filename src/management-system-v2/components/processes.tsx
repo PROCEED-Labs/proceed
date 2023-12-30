@@ -228,7 +228,7 @@ const Processes = ({ processes }: ProcessesProps) => {
         <div style={{flex: "1"}}>
           {/* New Process and Import on the right side */}
           <Bar
-            leftNode={breakpoint.sm ?
+            leftNode={breakpoint.xl ?
               (selectedRowKeys.length ? (
                 <Space size={20}>
                   <Button onClick={deselectAll} type="text">
@@ -244,19 +244,21 @@ const Processes = ({ processes }: ProcessesProps) => {
               onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
               placeholder: 'Search Processes ...',
             }}
+
+            // TODO: make selected space go the beginning while the view button goes to the end of the row
             rightNode={
               <Space size={16} style={{ paddingLeft: 8 }}>
-                {breakpoint.sm ? <>
+                {breakpoint.xl ? <>
                   <ProcessImportButton type="default">Import Process</ProcessImportButton>
                 <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
                 </> : <>{selectedRowKeys.length ? (
-                <Space size={20}>
+                <span><Space size={20}>
                   <Button onClick={deselectAll} type="text">
                     <CloseOutlined />
                   </Button>
                   {selectedRowKeys.length} selected:
                   <span className={styles.Icons}>{actionBar}</span>
-                </Space>
+                </Space></span>
                 ) :
                 undefined }
                  {/* <!-- FloatButtonGroup needs a z-index of 101
@@ -306,7 +308,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                     <AppstoreOutlined />
                   </Button>
                 </Space.Compact>
-                {breakpoint.sm ? <Button type="text" style={{marginLeft: "-16px"}} onClick={changeShowMetaData}>
+                {breakpoint.xl ? <Button type="text" style={{marginLeft: "-16px"}} onClick={changeShowMetaData}>
                     <InfoCircleOutlined />
                   </Button> : null}
               </Space>
@@ -349,7 +351,9 @@ const Processes = ({ processes }: ProcessesProps) => {
           )}
         </div>
         {/*Meta Data Panel*/}
-          {breakpoint.xs ? <Drawer
+          {breakpoint.xl ? <MetaData data={filteredData} selection={selectedRowKeys} />
+        :
+        <Drawer
           // width={'100dvw'}
           onClose={closeMobileMetaData}
           title={
@@ -367,7 +371,6 @@ const Processes = ({ processes }: ProcessesProps) => {
           open={showMobileMetaData}
           // closeIcon={false}
         ><MetaDataContent data={filteredData} selection={selectedRowKeys}/></Drawer>
-        : <MetaData data={filteredData} selection={selectedRowKeys} />
         }
       </div>
       <ProcessExportModal

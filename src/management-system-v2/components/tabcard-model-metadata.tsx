@@ -131,9 +131,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
           {/* <span>{item?.definitionName}</span> */}
           {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
-          {breakpoint.xs ?
-            <InfoCircleOutlined onClick={showMobileMetaData}/>
-          : null}
+          {breakpoint.xl ?
+            null
+          : <InfoCircleOutlined onClick={showMobileMetaData}/>}
         </div>
       }
       style={{

@@ -235,7 +235,7 @@ const ProcessList: FC<ProcessListProps> = ({
       }),
       render: (_, record) => (
         <div
-        className={breakpoint.xs ? styles.MobileTitleTruncation : styles.TitleTruncation}
+        className={breakpoint.xs ? styles.MobileTitleTruncation : breakpoint.xl ? styles.TitleTruncation : styles.TabletTitleTruncation}
           style={{
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -378,7 +378,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {actionBarGenerator(record)}
         </Row>
       ),
-      responsive: ['sm']
+      responsive: ['xl']
     },
 
     {
@@ -390,7 +390,7 @@ const ProcessList: FC<ProcessListProps> = ({
       render: () => (
           <Button style={{float: "right"}} type="text" onClick={showMobileMetaData}><InfoCircleOutlined /></Button>
       ),
-      responsive: ['xs'],
+      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
   ];
 

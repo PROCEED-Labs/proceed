@@ -16,7 +16,6 @@ export const nextAuthOptions: AuthOptions = {
         const provider = account?.provider ?? 'none';
         const nameSpacedId = `${provider}:${user.id}`;
         user.id = nameSpacedId;
-        console.log(user);
       }
 
       if (

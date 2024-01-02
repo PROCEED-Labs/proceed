@@ -3,10 +3,10 @@
 export const developmentRoleMappingsMigrations = [
   {
     roleName: '@process_admin',
-    userId: 'development-id|johndoe',
+    userId: 'credentials:development-id|johndoe',
   },
   {
     roleName: '@admin',
-    userId: 'development-id|admin',
+    userId: 'credentials:development-id|admin',
   },
 ];

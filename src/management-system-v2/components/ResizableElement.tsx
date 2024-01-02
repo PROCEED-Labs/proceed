@@ -1,3 +1,6 @@
+'use client';
+
+import { CssSize, cssSizeToPixel } from '@/lib/css-units-helper';
 import React, {
   useState,
   useEffect,
@@ -5,19 +8,17 @@ import React, {
   CSSProperties,
   forwardRef,
   useImperativeHandle,
-  Dispatch,
-  SetStateAction,
 } from 'react';
 
 type ResizableElementProps = PropsWithChildren<{
   initialWidth: number;
-  minWidth: number;
-  maxWidth: number;
+  minWidth: CssSize;
+  maxWidth: CssSize;
   onWidthChange?: (width: number) => void;
   style?: CSSProperties;
 }>;
 
-export type ResizableElementRefType = Dispatch<SetStateAction<number>>;
+export type ResizableElementRefType = (size: CssSize) => void;
 
 let isResizing = false;
 const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementProps>(
@@ -27,23 +28,26 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
   ) {
     const [width, setWidth] = useState(initialWidth);
 
-    useImperativeHandle(ref, () => setWidth);
+    useImperativeHandle(ref, () => (size: CssSize) => setWidth(cssSizeToPixel(size)));
 
-    const onMouseDown = (e: React.MouseEvent) => {
+    const onMouseDown = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
       e.stopPropagation();
       e.preventDefault();
       isResizing = true;
     };
 
-    const onMouseUp = (e: MouseEvent) => {
+    const onMouseUp = () => {
       isResizing = false;
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onUserMovement = (clientX: number) => {
       if (isResizing) {
-        let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+        let offsetRight = document.body.offsetWidth - (clientX - document.body.offsetLeft);
 
-        if (offsetRight > minWidth && offsetRight < maxWidth) {
+        const minPixels = cssSizeToPixel(minWidth);
+        const maxPixels = cssSizeToPixel(maxWidth);
+
+        if (offsetRight > minPixels && offsetRight < maxPixels) {
           setWidth(offsetRight);
           if (onWidthChange) onWidthChange(width);
         }
@@ -51,11 +55,17 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
     };
 
     useEffect(() => {
+      const onMouseMove = (e: MouseEvent) => onUserMovement(e.clientX);
+      const onTouchMove = (e: TouchEvent) =>
+        onUserMovement(e.touches[e.touches.length - 1].clientX);
+
       document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('touchmove', onTouchMove);
       document.addEventListener('mouseup', onMouseUp);
 
       return () => {
         document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('mouseup', onMouseUp);
       };
     });
@@ -64,7 +74,9 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
       <div
         style={{
           ...style,
-          width: width,
+          width,
+          maxWidth,
+          minWidth,
         }}
       >
         <div
@@ -86,6 +98,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
               cursor: 'ew-resize',
             }}
             onMouseDown={onMouseDown}
+            onTouchStart={onMouseDown}
           />
           {children}
         </div>

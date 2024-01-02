@@ -35,3 +35,8 @@ export type RemoveReadOnly<T> = T extends Record<any, any>
       -readonly [Key in keyof T]: RemoveReadOnly<T[Key]>;
     }
   : T;
+
+/**
+ * When given an array type returns the type of an element inside the array
+ */
+export type ArrayEntryType<T extends any[]> = T extends Array<infer EntryType> ? EntryType : never;

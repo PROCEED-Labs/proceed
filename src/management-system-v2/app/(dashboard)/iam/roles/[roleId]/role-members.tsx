@@ -2,35 +2,31 @@
 
 import { FC, useMemo, useState } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import {
-  ApiData,
-  useDeleteAsset,
-  useGetAsset,
-  useInvalidateAsset,
-  usePostAsset,
-} from '@/lib/fetch-data';
+import { ApiData, useGetAsset } from '@/lib/fetch-data';
 import UserList, { UserListProps } from '@/components/user-list';
 import { Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
+import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
+import { useRouter } from 'next/navigation';
 
 type Role = ApiData<'/roles', 'get'>[number];
+type Users = ApiData<'/users', 'get'>;
 
 const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
   role,
   open,
   close,
 }) => {
-  const { data: users, isLoading: isLoadingUsers } = useGetAsset('/users', {});
-  const invalidateRole = useInvalidateAsset('/roles/{id}', { params: { path: { id: role.id } } });
-  const { mutateAsync, isLoading: isLoadingMutation } = usePostAsset('/role-mappings', {
-    onSuccess: invalidateRole,
-  });
+  const [loading, setLoading] = useState(false);
+  const { data: users, refetch: refetchUsers, isLoading: usersLoading } = useGetAsset('/users', {});
+  const router = useRouter();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
   const addUsers = async (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     if (clearIds) clearIds();
-    await mutateAsync({
-      body: users.map((user) => ({
+    setLoading(true);
+    await addRoleMappings(
+      users.map((user) => ({
         userId: user.id,
         roleId: role.id,
         email: user.email.value,
@@ -38,8 +34,10 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
         firstName: user.firstName.value,
         username: user.username.value,
       })),
-      parseAs: 'text',
-    });
+    );
+    setLoading(false);
+    refetchUsers();
+    router.refresh();
   };
 
   const usersNotInRole = useMemo(() => {
@@ -60,7 +58,7 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
     >
       <UserList
         users={usersNotInRole}
-        loading={isLoadingUsers || isLoadingMutation}
+        loading={loading || usersLoading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
@@ -88,34 +86,33 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
   );
 };
 
-const RoleMembers: FC<{ role: Role; isLoadingRole?: boolean }> = ({ role, isLoadingRole }) => {
+const RoleMembers: FC<{ role: Role }> = ({ role }) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const refetchRole = useInvalidateAsset('/roles/{id}', { params: { path: { id: role.id } } });
-  const { mutateAsync: deleteUser, isLoading: isLoadingDelete } = useDeleteAsset(
-    '/role-mappings/users/{userId}/roles/{roleId}',
-    { onSuccess: refetchRole },
-  );
+  async function deleteMembers(userIds: string[], clearIds: () => void) {
+    clearIds();
+    setLoading(true);
 
-  async function deleteMembers(userIds: string[], clearIds?: () => void) {
-    if (clearIds) clearIds();
-
-    await Promise.allSettled(
-      userIds.map((userId) =>
-        deleteUser({
-          parseAs: 'text',
-          params: { path: { roleId: role.id, userId: userId } },
-        }),
-      ),
+    await deleteRoleMappings(
+      userIds.map((userId) => ({
+        roleId: role.id,
+        userId: userId,
+      })),
     );
+
+    setLoading(false);
+    router.refresh();
   }
 
   return (
     <>
       <AddUserModal role={role} open={addUserModalOpen} close={() => setAddUserModalOpen(false)} />
+
       <UserList
         users={role.members.map((member) => ({ ...member, id: member.userId }))}
-        loading={isLoadingDelete || isLoadingRole}
+        loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',

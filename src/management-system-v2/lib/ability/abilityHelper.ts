@@ -25,10 +25,10 @@ export default class Ability {
     return true;
   }
 
-  filter(action: CanParams[0] | CanParams[0][], resource: ResourceType, array: any[]) {
+  filter<T extends {}>(action: CanParams[0] | CanParams[0][], resource: ResourceType, array: T[]) {
     return array.filter((resourceInstance) =>
       this.can(action, toCaslResource(resource, resourceInstance)),
-    );
+    ) as T[];
   }
 
   checkInputFields(
@@ -37,7 +37,7 @@ export default class Ability {
     input: any,
     prefix: string = '',
   ) {
-    if (typeof input !== 'object') return this.can(action, resourceObj, prefix);
+    if (typeof input !== 'object' || input === null) return this.can(action, resourceObj, prefix);
 
     for (const key of Object.keys(input)) {
       if (
@@ -47,5 +47,12 @@ export default class Ability {
     }
 
     return true;
+  }
+}
+
+export class UnauthorizedError extends Error {
+  constructor(message: string | undefined) {
+    super(message ?? 'Unauthorized');
+    this.name = 'UnauthorizedError';
   }
 }

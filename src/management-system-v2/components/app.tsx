@@ -6,16 +6,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntDesignApp } from 'antd';
 import { SessionProvider } from 'next-auth/react';
-import { FetchAbility } from './auth-can';
-
+import { SetCsrfToken } from '@/lib/csrfTokenStore';
 const queryClient = new QueryClient();
 
 const App: FC<PropsWithChildren> = ({ children }) => {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        <FetchAbility />
         <ReactQueryDevtools initialIsOpen={false} />
+        <SetCsrfToken />
         <AntDesignApp>
           <Theme>{children}</Theme>
         </AntDesignApp>

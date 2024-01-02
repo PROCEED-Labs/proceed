@@ -31,6 +31,13 @@ export function addUser(inputUser: UserInput, ability?: Ability) {
   if (ability && !ability.can('create', toCaslResource('User', user)))
     throw new UnauthorizedError();
 
+  if (
+    Object.values(usersMetaObject).find(
+      ({ email, username }) => email === user.email || username === user.username,
+    )
+  )
+    throw new Error('User with this email or username already exists');
+
   if (!user.id) user.id = `${user.oauthProvider}:${v4()}`;
 
   if (usersMetaObject[user.id]) throw new Error('User already exists');

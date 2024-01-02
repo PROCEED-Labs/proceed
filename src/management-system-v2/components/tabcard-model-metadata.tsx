@@ -103,7 +103,14 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList, setShowMobileMetaData }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelection,
+  tabcard,
+  completeList,
+  setShowMobileMetaData,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
@@ -112,10 +119,6 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
-
-  const showMobileMetaData = () => {
-    setShowMobileMetaData(true)
-  }
 
   const onTabChange = (key: string) => {
     setActiveTabKey(key as Tab);
@@ -131,9 +134,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
           {/* <span>{item?.definitionName}</span> */}
           {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
-          {breakpoint.xl ?
-            null
-          : <InfoCircleOutlined onClick={showMobileMetaData}/>}
+          {breakpoint.xl ? null : (
+            <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />
+          )}
         </div>
       }
       style={{

@@ -2,24 +2,10 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { z } from 'zod';
-import { WithRequired } from '@/lib/typescript-utils.js';
+import { User, UserInput, UserSchema } from '../../user-schema';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
-
-const UserSchema = z.object({
-  id: z.string().optional(),
-  oauthProvider: z.string(),
-  email: z.string(),
-  image: z.string().optional(),
-  firstName: z.string(),
-  lastName: z.string(),
-  username: z.string(),
-});
-
-type UserInput = z.infer<typeof UserSchema>;
-export type User = WithRequired<UserInput, 'id'>;
 
 export let usersMetaObject: { [Id: string]: User } =
   // @ts-ignore

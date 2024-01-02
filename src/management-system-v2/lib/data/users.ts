@@ -1,11 +1,10 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { User, deleteuser, addUser as _addUser } from './legacy/iam/users';
+import { deleteuser, addUser as _addUser } from './legacy/iam/users';
 import { userError } from '../user-error';
 
 export async function deleteUsers(userIds: string[]) {
-  await new Promise((resolve) => setTimeout(resolve, 5000));
   const { ability } = await getCurrentUser();
 
   try {

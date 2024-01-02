@@ -443,7 +443,7 @@ const ProcessList: FC<ProcessListProps> = ({
           onDoubleClick: () => {
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
-            router.refresh();
+            //router.refresh();
             router.push(`/processes/${record.definitionId}`);
           },
           onMouseEnter: (event) => {

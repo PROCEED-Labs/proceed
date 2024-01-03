@@ -1,13 +1,13 @@
 import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { SetStateAction, useEffect, useState } from 'react';
+import { SetStateAction, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
 
 const ModelerShareModalOptionPublicLink = () => {
   const { processId } = useParams();
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState<String | null>(null);
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(false);
-  const [onlyAsRegisteredUser, setOnlyAsRegisteredUser] = useState(false);
   const [publicLinkValue, setPublicLinkValue] = useState(
     `${window.location.origin}/shared-viewer?token=`,
   );
@@ -21,46 +21,33 @@ const ModelerShareModalOptionPublicLink = () => {
     }
   };
 
-  const generateToken = async () => {
-    try {
-      const response = await fetch('/api/share/generate-share-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          registeredUsersOnly: onlyAsRegisteredUser,
-          processId: processId,
-        }),
-      });
+  const handlePermissionChanged = async (e: {
+    target: { checked: boolean | ((prevState: boolean) => boolean) };
+  }) => {
+    const isChecked = e.target.checked as boolean;
 
-      if (!response.ok) {
-        throw new Error('Failed to generate token');
-      }
-
-      const { token } = await response.json();
-      message.success('Token generated successfully');
-      setToken(token);
-      setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
-    } catch (error) {
-      message.error('Error generating token');
+    if (isShareLinkChecked) {
+      const sharedAsValue = isChecked ? 'protected' : 'public';
+      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAsValue });
     }
   };
 
-  useEffect(() => {
-    if (isShareLinkChecked) generateToken();
-  }, [onlyAsRegisteredUser, isShareLinkChecked]);
-
-  const handlePermissionChanged = (e: {
+  const handleShareLinkChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
   }) => {
-    setOnlyAsRegisteredUser(e.target.checked);
-  };
+    const isChecked = e.target.checked;
 
-  const handleShareLinkChecked = (e: {
-    target: { checked: boolean | ((prevState: boolean) => boolean) };
-  }) => {
-    setIsShareLinkChecked(e.target.checked);
+    setIsShareLinkChecked(isChecked);
+
+    if (isChecked) {
+      const token = await generateToken({ processId: processId });
+      setToken(token);
+      setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
+
+      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+    } else {
+      await updateProcessGuestAccessRights(processId, { shared: false });
+    }
   };
 
   const handleLinkChange = (e: { target: { value: SetStateAction<string> } }) => {
@@ -95,7 +82,6 @@ const ModelerShareModalOptionPublicLink = () => {
         throw new Error('QR Code canvas not found');
       }
     } catch (err) {
-      console.error(err);
       message.error(`Error ${action === 'copy' ? 'copying' : 'downloading'} QR Code`);
     }
   };
@@ -103,7 +89,9 @@ const ModelerShareModalOptionPublicLink = () => {
   return (
     <>
       <div style={{ marginBottom: '5px' }}>
-        <Checkbox onChange={handleShareLinkChecked}>Share Process with Public Link</Checkbox>
+        <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
+          Share Process with Public Link
+        </Checkbox>
       </div>
       {isShareLinkChecked && !token ? (
         <Flex justify="center">

@@ -1,9 +1,12 @@
-'use client';
-import { useEffect, useState } from 'react';
 import EmbeddedModeler from '@/components/embedded-modeler';
-import { useRouter, usePathname } from 'next/navigation';
-
-import { useSession } from 'next-auth/react';
+import jwt from 'jsonwebtoken';
+import { getCurrentUser } from '@/components/auth';
+import { getProcess } from '@/lib/data/legacy/process';
+import { headers } from 'next/headers';
+import { TokenPayload } from '@/actions/actions';
+import { redirect } from 'next/navigation';
+import { error } from 'console';
+import { Typography } from 'antd';
 
 interface PageProps {
   searchParams: {
@@ -11,54 +14,30 @@ interface PageProps {
   };
 }
 
-const SharedViewer = ({ searchParams }: PageProps) => {
-  const router = useRouter();
-  const pathname = usePathname();
+const SharedViewer = async ({ searchParams }: PageProps) => {
+  const token = searchParams.token;
+  const { session } = await getCurrentUser();
+  if (typeof token !== 'string') {
+    return <h1>Invalid Token</h1>;
+  }
 
-  const session = useSession();
-  const [process, setProcess] = useState(null);
-  useEffect(() => {
-    const validateToken = async () => {
-      try {
-        if (searchParams.token) {
-          const response = await fetch('/api/share/validate-share-token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              token: searchParams.token,
-            }),
-          });
+  const key = process.env.JWT_KEY;
 
-          if (!response.ok) {
-            throw new Error(`Failed to validate token - ${response.status} ${response.statusText}`);
-          }
+  const { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
+  const processData = await getProcess(processId, true);
 
-          const { process, registeredUsersOnly } = await response.json();
-          if (registeredUsersOnly && session.status === 'unauthenticated') {
-            const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.token}`;
-            const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  if (processData.shared && processData.sharedAs === 'protected' && !session?.user.id) {
+    const callbackUrl = `/shared-viewer?token=${searchParams.token}`;
+    const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    redirect(loginPath);
+  }
 
-            router.replace(loginPath);
-          }
-          setProcess(process);
-        }
-      } catch (error) {
-        throw new Error('Internal Server Error');
-      }
-    };
-
-    validateToken();
-  }, [pathname, router, searchParams.token, session.status]);
-
+  if (!processData.shared) {
+    return <h1 style={{ color: 'red' }}>Process is no longer shared</h1>;
+  }
   return (
     <div>
-      {process ? (
-        <EmbeddedModeler processData={process} />
-      ) : (
-        <p style={{ color: 'red' }}>Loading...</p>
-      )}
+      <EmbeddedModeler processData={processData} embeddedMode={embeddedMode} />
     </div>
   );
 };

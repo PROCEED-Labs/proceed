@@ -31,9 +31,10 @@ const BPMNViewer =
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: ApiData<'/process/{definitionId}', 'get'>;
+  embeddedMode?: boolean;
 };
 
-const EmbeddedModeler = ({ processData }: ModelerProps) => {
+const EmbeddedModeler = ({ processData, embeddedMode }: ModelerProps) => {
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
@@ -120,7 +121,9 @@ const EmbeddedModeler = ({ processData }: ModelerProps) => {
           width: '100vw',
         }}
       >
-        <Button onClick={handleCopyToOwnWorkspace}>Copy to own workspace</Button>
+        {!embeddedMode ? (
+          <Button onClick={handleCopyToOwnWorkspace}>Copy to own workspace</Button>
+        ) : null}
         <div className="modeler" style={{ height: '90vh', width: '90vw' }} ref={canvas} />
       </div>
     </>

@@ -60,6 +60,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       optionName: 'Embed in Website',
       optionTitle: 'Embed in Website',
       optionOnClick: () => handleOptionClick(1),
+
       subOption: <ModelerShareModalOptionEmdedInWeb />,
     },
     {

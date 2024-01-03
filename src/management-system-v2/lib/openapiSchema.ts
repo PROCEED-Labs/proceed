@@ -236,6 +236,8 @@ export interface components {
       }[];
       /** @description If true, then a share link was created for the process */
       shared?: boolean;
+      /** @description If protected, only registered users can access the process with the share link */
+      sharedAs?: 'public' | 'protected';
       owner?: string;
     };
     /** @description BPMN XML of the process */

@@ -1,15 +1,27 @@
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 import { CopyOutlined } from '@ant-design/icons';
 import { Button, message, Input } from 'antd';
 import { useParams } from 'next/navigation';
 import { TextAreaRef } from 'antd/es/input/TextArea';
+import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
 
 const { TextArea } = Input;
 
 const ModelerShareModalOptionEmdedInWeb = () => {
   const { processId } = useParams();
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    const generateAccessToken = async () => {
+      const newToken = await generateToken({ processId: processId, embeddedMode: true });
+      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      setToken(newToken);
+    };
+
+    generateAccessToken();
+  }, []);
+
   const codeSection = useRef<TextAreaRef>(null);
 
   const handleCopyCodeSection = async () => {
@@ -34,7 +46,7 @@ const ModelerShareModalOptionEmdedInWeb = () => {
         <TextArea
           rows={2}
           style={{ backgroundColor: 'rgb(245,245,245)' }}
-          value={`<iframe src='http://localhost:3000/embedded-viewer/${processId}' height="100%" width="100%" />`} /* TODO: implement iframe logic */
+          value={`<iframe src='${window.location.origin}/shared-viewer?token=${token}' height="100%" width="100%"></iframe>`}
           ref={codeSection}
         />
       </div>

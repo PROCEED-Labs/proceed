@@ -35,6 +35,7 @@ interface ProceedProcess {
   createdOn?: string;
   lastEdited?: string;
   shared?: boolean;
+  sharedAs?: 'public' | 'protected';
   versions?: Array<string | number>;
 }
 
@@ -63,6 +64,7 @@ export function getDefaultProcessMetaInfo() {
     createdOn: date,
     lastEdited: date,
     shared: false,
+    sharedAs: 'public',
     versions: [],
   } as ProceedProcess;
 }

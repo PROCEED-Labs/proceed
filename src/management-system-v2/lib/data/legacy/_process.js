@@ -75,7 +75,6 @@ export async function getProcesses(ability, includeBPMN = false) {
 
 export async function getProcess(processDefinitionsId, includeBPMN = false) {
   const process = processMetaObjects[processDefinitionsId];
-
   if (!process) {
     throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
   }
@@ -205,6 +204,11 @@ export async function updateProcessMetaData(processDefinitionsId, metaChanges) {
   // remove shared_with if not shared anymore
   if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
     delete newMetaData.shared_with;
+  }
+
+  if (metaChanges.shared) {
+    newMetaData.shared = metaChanges.shared;
+    newMetaData.sharedAs = metaChanges.sharedAs;
   }
 
   processMetaObjects[processDefinitionsId] = newMetaData;

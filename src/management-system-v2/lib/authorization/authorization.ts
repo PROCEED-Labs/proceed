@@ -1,79 +1,57 @@
-import createConfig, { config as _config } from '../data/legacy/iam/config';
-import { PackedRulesForUser, rulesForUser } from './caslRules';
-import logger from '../data/legacy/logging';
-
-import Redis from 'ioredis';
+import { PackedRulesForUser, computeRulesForUser } from './caslRules';
 import Ability from '../ability/abilityHelper';
+import { LRUCache } from 'lru-cache';
 
-const config = _config as any;
+type PackedRules = PackedRulesForUser['rules'];
 
-let rulesCache: Redis;
+const rulesCache =
+  // @ts-ignore
+  (global.rulesCache as LRUCache<string, PackedRules>) ||
+  // @ts-ignore
+  (global.rulesCache = new LRUCache<string, PackedRules>({
+    max: 500,
+    allowStale: false,
+    updateAgeOnGet: true,
+    updateAgeOnHas: true,
+  }));
 
-export function initialiazeRulesCache(msConfig: typeof config) {
-  if (msConfig.useAuthorization)
-    rulesCache = new Redis(config.redisPort || 6379, config.redisHost || 'localhost', {
-      password: config.redisPassword || 'password',
-      db: 1,
-    });
+export function deleteCachedRulesForUser(userId: string) {
+  rulesCache.delete(userId);
 }
 
-export async function deleteRulesForUsers(userId: string) {
-  await rulesCache.del(userId);
+export function rulesCacheDeleteAll() {
+  rulesCache.clear();
 }
 
-export async function abilityCacheDeleteAll() {
-  await rulesCache.flushdb();
-}
-
-export async function setRulesForUser(
+export function cacheRulesForUser(
   userId: string,
-  rules: PackedRulesForUser['rules'],
+  rules: PackedRules,
   expiration?: PackedRulesForUser['expiration'],
 ) {
   if (expiration) {
-    const secondsToExpiration = Math.round((+expiration - Date.now()) / 1000);
-    await rulesCache.set(userId, JSON.stringify(rules), 'EX', secondsToExpiration);
+    // TODO ttl is reset on get, it isn't a security issue since abilities check themselves if they're expired
+    // but it still should be fixed
+    const ttl = Math.round(+expiration - Date.now());
+    rulesCache.set(userId, rules, { ttl });
   } else {
-    await rulesCache.set(userId, JSON.stringify(rules));
+    rulesCache.set(userId, rules);
   }
 }
 
-export async function getRulesForUser(
-  userId: string,
-): Promise<PackedRulesForUser['rules'] | undefined> {
-  try {
-    const rulesJson = await rulesCache.get(userId);
-    if (rulesJson === null) return undefined;
-    return JSON.parse(rulesJson);
-  } catch (e) {
-    return undefined;
-  }
-}
-
-export async function getAbilityForUser(userId: string) {
-  let userRules = await getRulesForUser(userId);
+export async function getUserRules(userId: string) {
+  let userRules = rulesCache.get(userId);
 
   if (userRules === undefined) {
-    const { rules, expiration } = await rulesForUser(userId);
-    setRulesForUser(userId, rules, expiration);
+    const { rules, expiration } = await computeRulesForUser(userId);
+    cacheRulesForUser(userId, rules, expiration);
     userRules = rules;
   }
 
+  return userRules;
+}
+
+export async function getAbilityForUser(userId: string) {
+  const userRules = await getUserRules(userId);
   const userAbility = new Ability(userRules);
   return userAbility;
 }
-
-let msConfig;
-
-try {
-  const c = require(
-    `../../../management-system/src/backend/server/environment-configurations/${process.env.NODE_ENV}/config_iam.json`,
-  );
-  msConfig = createConfig(c);
-} catch (e) {
-  console.log('FAILED', e);
-  msConfig = createConfig();
-  logger.info('Started MS without Authentication and Authorization.');
-}
-
-initialiazeRulesCache(msConfig);

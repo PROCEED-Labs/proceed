@@ -16,8 +16,8 @@ type ProcessProps = {
 const Process = async ({ params: { processId }, searchParams }: ProcessProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
-  console.log('processId', processId);
-  console.log('query', searchParams);
+  //console.log('processId', processId);
+  //console.log('query', searchParams);
   const selectedVersionId = searchParams.version ? searchParams.version : undefined;
   const { ability } = await getCurrentUser();
   // Only load bpmn if no version selected.

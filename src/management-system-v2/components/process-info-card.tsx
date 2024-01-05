@@ -2,9 +2,8 @@
 
 import { generateDateString } from '@/lib/utils';
 import { Divider } from 'antd';
-import React, { FC, Key, useEffect, useRef, useState } from 'react';
+import React, { FC, Key, useRef } from 'react';
 import Viewer from './bpmn-viewer';
-import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';
@@ -115,13 +114,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         >
           {Boolean(selection.length) ? (
             <>
-              <Viewer
-                selectedElementId={
-                  data?.find((item) => item.definitionId === selection[0])?.definitionId
-                }
-                reduceLogo={true}
-                resizeOnWidthChange={true}
-              />
+              <Viewer definitionId={selection[0] as string} reduceLogo={true} fitOnResize />
 
               <Divider style={{ width: '100%', marginLeft: '-20%' }} />
               <h3>Meta Data</h3>

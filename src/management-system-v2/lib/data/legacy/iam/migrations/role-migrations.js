@@ -8,6 +8,7 @@ export const roleMigrations = [
     description: 'Default role for all authenticated PROCEED users.',
     note: 'This role cannot be removed!',
     permissions: {},
+    exipiration: null,
   },
   {
     name: '@guest',
@@ -15,6 +16,7 @@ export const roleMigrations = [
     description: 'Default role for all unauthenticated PROCEED users.',
     note: 'This role cannot be removed!',
     permissions: {},
+    exipiration: null,
   },
   {
     name: '@admin',
@@ -24,6 +26,7 @@ export const roleMigrations = [
     permissions: {
       All: PERMISSION_ADMIN,
     },
+    exipiration: null,
   },
   {
     name: '@process_admin',
@@ -35,6 +38,7 @@ export const roleMigrations = [
       Project: PERMISSION_ADMIN,
       Template: PERMISSION_ADMIN,
     },
+    exipiration: null,
   },
   {
     name: '@environment_admin',
@@ -45,5 +49,6 @@ export const roleMigrations = [
       Setting: PERMISSION_ADMIN,
       EnvConfig: PERMISSION_ADMIN,
     },
+    exipiration: null,
   },
 ];

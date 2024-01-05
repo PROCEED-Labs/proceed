@@ -11,7 +11,7 @@ import {
   getProcessMetaObjects,
   toExternalFormat,
   addProcess as _addProcess,
-  getProcessBpmn,
+  getProcessBpmn as _getProcessBpmn,
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
 } from './legacy/_process';
@@ -22,6 +22,19 @@ import { ApiData } from '../fetch-data';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import Button from 'antd/es/button';
+
+export const getProcessBPMN = async (definitionId: string) => {
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  const bpmn = await _getProcessBpmn(definitionId);
+
+  return bpmn;
+};
 
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();

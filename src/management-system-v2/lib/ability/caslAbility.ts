@@ -65,7 +65,7 @@ type ConditionOperator = keyof typeof conditions;
 type ConditionsObject = {
   conditions: {
     [path: string]: {
-      [C in ConditionOperator]?: Parameters<(typeof conditions)[C]>[0];
+      [C in ConditionOperator]?: Parameters<(typeof conditions)[C]>[0] | null;
     };
   };
   wildcardOperator?: 'or' | 'and';

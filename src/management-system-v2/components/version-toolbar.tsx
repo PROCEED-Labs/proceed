@@ -18,7 +18,7 @@ import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { get, del, put, usePostAsset } from '@/lib/fetch-data';
+import { get, del, put } from '@/lib/fetch-data';
 import { convertToEditableBpmn } from '@/lib/helpers/processVersioning';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import ProcessCreationButton from './process-creation-button';
@@ -34,7 +34,6 @@ const VersionToolbar: React.FC<VersionToolbarProps> = () => {
   const query = useSearchParams();
   // This component should only be rendered when a version is selected
   const selectedVersionId = query.get('version') as string;
-  const { mutateAsync: postProcess } = usePostAsset('/process');
 
   // const [index, setIndex] = useState(0);
   const { processId } = useParams();

@@ -15,6 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import ProcessCreationButton from './process-creation-button';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ProcessImportButton from './process-import';
+import Link from 'next/link';
 
 const ProcessSider: FC<PropsWithChildren> = () => {
   const router = useRouter();
@@ -31,13 +32,7 @@ const ProcessSider: FC<PropsWithChildren> = () => {
             icon={<FileOutlined />}
             hidden={!ability.can('view', 'Process')}
           >
-            <span
-              onClick={() => {
-                router.push(`/processes`);
-              }}
-            >
-              Process List
-            </span>
+            <Link href="/processes">Process List</Link>
           </Item>
         ) : // <SubMenu
         //   key="processes"

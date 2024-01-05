@@ -1,88 +1,51 @@
 'use client';
 
-import { useProcessBpmn } from '@/lib/process-queries';
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import cn from 'classnames';
+import BPMNCanvas from './bpmn-canvas';
+import { getProcessBPMN } from '@/lib/data/processes';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
-import type ViewerType from 'bpmn-js/lib/Viewer';
-import classNames from 'classnames';
-import { ApiData } from '@/lib/fetch-data';
-
-type Processes = ApiData<'/process', 'get'>;
-type Process = Processes[number];
-
-const BPMNViewer =
-  typeof window !== 'undefined' ? import('bpmn-js/lib/Viewer').then((mod) => mod.default) : null;
-
-type ViewerProps = {
-  selectedElementId?: string;
-  rerenderTrigger?: any;
+type BPMNViewerProps = {
+  definitionId: string;
   reduceLogo?: boolean;
-  resizeOnWidthChange?: boolean;
+  fitOnResize?: boolean;
 };
 
-const Viewer: FC<ViewerProps> = ({
-  selectedElementId,
-  rerenderTrigger,
-  reduceLogo,
-  resizeOnWidthChange,
-}) => {
-  const [initialized, setInitialized] = useState(false);
-  const { data: bpmn, isSuccess } = useProcessBpmn(selectedElementId ?? '');
-  const canvas = useRef<HTMLDivElement>(null);
-  const previewer = useRef<ViewerType | null>(null);
+const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) => {
+  const viewer = useRef();
 
-  useEffect(() => {
-    if (!canvas.current) return;
-    BPMNViewer!.then((Viewer) => {
-      if (!previewer.current) {
-        const viewer = new Viewer!({
-          container: canvas.current!,
-        });
+  const { data } = useSuspenseQuery({
+    queryKey: ['process', definitionId, 'bpmn'],
+    queryFn: async () => {
+      // Without this, we would call a server action as the first thing after
+      // suspending. Apparently, this leads to an error that you can't call
+      // setState while rendering. This little delay is already enough to
+      // prevent that.
+      await Promise.resolve();
 
-        previewer.current = viewer;
-        setInitialized(true);
+      const res = await getProcessBPMN(definitionId);
+      if (typeof res === 'object' && 'error' in res) {
+        throw res.error;
       }
-    });
-  }, [bpmn]);
+      return res;
+    },
+  });
 
   useEffect(() => {
-    function fitViewport() {
-      if (initialized && bpmn && selectedElementId) {
-        previewer.current!.importXML(bpmn).then(() => {
-          (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-        });
-      }
-    }
-
-    fitViewport();
-
-    if (resizeOnWidthChange) {
-      const resizeObserver = new ResizeObserver(() => {
-        if (initialized && bpmn && selectedElementId) {
-          previewer.current!.importXML(bpmn).then(() => {
-            (previewer.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-          });
-        }
-      });
-
-      resizeObserver.observe(canvas.current!);
-      return () => resizeObserver.disconnect();
-    }
-  }, [initialized, bpmn, selectedElementId, resizeOnWidthChange]);
-
-  useEffect(() => {
-    if (initialized && selectedElementId) {
-      (previewer.current!.get('canvas') as any)?.zoom('fit-viewport', 'auto');
-    }
-  }, [initialized, rerenderTrigger, selectedElementId]);
+    console.log('viewer', viewer.current);
+    //viewer.current!.fitViewport();
+  }, []);
 
   return (
-    <div
-      className={classNames({ reduceLogo: reduceLogo })}
-      style={{ height: '100%' }}
-      ref={canvas}
-    ></div>
+    <BPMNCanvas
+      ref={viewer}
+      bpmn={data}
+      type="viewer"
+      className={cn({ reduceLogo: reduceLogo })}
+      resizeWithContainer={fitOnResize}
+    />
   );
 };
 
-export default Viewer;
+export default BPMNViewer;

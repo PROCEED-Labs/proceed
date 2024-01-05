@@ -57,6 +57,13 @@
       }
     },
     {
+      "name": "MS2: Attach to web client",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/src/management-system-v2"
+    },
+    {
       "type": "chrome",
       "request": "attach",
       "name": "Attach to puppeteer client",

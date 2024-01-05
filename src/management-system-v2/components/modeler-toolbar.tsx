@@ -4,6 +4,10 @@ import React, { useEffect, useState } from 'react';
 
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
+import type Selection from 'diagram-js/lib/features/selection/Selection';
+import type Canvas from 'diagram-js/lib/core/Canvas';
+
+import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
 import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
@@ -49,6 +53,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
+  const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
+  const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -116,6 +122,22 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
   };
 
   const handleProcessExportModalToggle = async () => {
+    if (!showProcessExportModal && modeler?.get) {
+      // provide additional information for the export that is used if the user decides to only export selected elements (also controls if the option is given in the first place)
+      const selectedElementIds = (modeler.get('selection') as Selection).get().map(({ id }) => id);
+      setElementsSelectedForExport(selectedElementIds);
+      // provide additional information for the export so only the parts of the process that can be reached from the currently open layer are exported
+      const currentRootElement = (modeler.get('canvas') as Canvas).getRootElement();
+      setRootLayerIdForExport(
+        bpmnIs(currentRootElement, 'bpmn:SubProcess')
+          ? currentRootElement.businessObject?.id
+          : undefined,
+      );
+    } else {
+      setElementsSelectedForExport([]);
+      setRootLayerIdForExport(undefined);
+    }
+
     setShowProcessExportModal(!showProcessExportModal);
   };
 
@@ -242,6 +264,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
             : []
         }
         onClose={() => setShowProcessExportModal(false)}
+        giveSelectionOption={!!elementsSelectedForExport.length}
       />
     </>
   );

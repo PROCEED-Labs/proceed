@@ -120,16 +120,17 @@ const Modeler = ({ processBpmn, versionName, process, versions, ...divProps }: M
 
         setEditingDisabled(false);
       }
+
       // allow keyboard shortcuts like copy (ctrl+c) and paste (ctrl+v) etc.
       (modeler.current.get('keyboard') as any).bind(document);
 
       // create a custom copy behaviour where the whole process or selected parts can be copied to the clipboard as an image
       (modeler.current.get('keyboard') as any).addListener(
-        async (_: any, events: { keyEvent: KeyboardEvent }) => {
+        (_: any, events: { keyEvent: KeyboardEvent }) => {
           const { keyEvent } = events;
           // handle the copy shortcut
           if (keyEvent.ctrlKey && keyEvent.key === 'c' && modeler.current) {
-            await copyProcessImage(modeler.current);
+            copyProcessImage(modeler.current);
           }
         },
         'keyboard.keyup',

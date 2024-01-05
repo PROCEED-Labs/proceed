@@ -9,8 +9,10 @@ import type Canvas from 'diagram-js/lib/core/Canvas';
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
-import { Tooltip, Button, Space } from 'antd';
+import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from './toolbar';
+
+import styles from './modeler-toolbar.module.scss';
 
 import Icon, {
   ExportOutlined,
@@ -18,14 +20,15 @@ import Icon, {
   PlusOutlined,
   UndoOutlined,
   RedoOutlined,
+  ArrowUpOutlined,
 } from '@ant-design/icons';
 
-import { SvgXML, SvgShare } from '@/components/svg';
+import { SvgXML } from '@/components/svg';
 
 import PropertiesPanel from './properties-panel';
 
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import ProcessExportModal from './process-export';
 
@@ -34,13 +37,19 @@ import VersionCreationButton from './version-creation-button';
 
 import { useInvalidateAsset } from '@/lib/fetch-data';
 
+import useMobileModeler from '@/lib/useMobileModeler';
+
+const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
+
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
+  versions: { version: number; name: string; description: string }[];
 };
-const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
+const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versions }) => {
   /* ICONS: */
   const svgXML = <Icon component={SvgXML} />;
-  const svgShare = <Icon component={SvgShare} />;
+
+  const router = useRouter();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -51,7 +60,6 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   const [canRedo, setCanRedo] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
-  const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
   const { processId } = useParams();
@@ -73,7 +81,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
     selectedElement = selectedElementId
       ? elementRegistry.get(selectedElementId)!
-      : elementRegistry.getAll().filter((el) => el.businessObject.$type === 'bpmn:Process')[0];
+      : elementRegistry.getAll().filter((el) => el.businessObject?.$type === 'bpmn:Process')[0];
   }
 
   useEffect(() => {
@@ -133,7 +141,9 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     setShowProcessExportModal(!showProcessExportModal);
   };
 
-  const selectedVersion = useSearchParams().get('version');
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
+  const subprocessId = query.get('subprocess');
 
   const handleUndo = () => {
     if (modeler) (modeler.get('commandStack') as CommandStack).undo();
@@ -143,44 +153,99 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     if (modeler) (modeler.get('commandStack') as CommandStack).redo();
   };
 
+  const handleReturnToParent = async () => {
+    if (modeler) {
+      const canvas = modeler.get('canvas') as any;
+
+      canvas.setRootElement(canvas.findRoot(subprocessId));
+      canvas.zoom('fit-viewport', 'auto');
+    }
+  };
+
+  const filterOption: SelectProps['filterOption'] = (input, option) =>
+    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
+
+  const selectedVersion =
+    versions.find((version) => version.version === parseInt(selectedVersionId ?? '-1')) ??
+    LATEST_VERSION;
+
+  const showMobileView = useMobileModeler();
+
   return (
     <>
-      <Toolbar>
-        <Space style={{ width: '100%', justifyContent: 'end' }} wrap>
+      <Toolbar className={styles.Toolbar}>
+        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
           <ToolbarGroup>
-            {/* <Button>Test</Button>
-              <Button
-                icon={showPropertiesPanel ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                onClick={handlePropertiesPanelToggle}
-              /> */}
-            <Tooltip title="Show XML">
-              <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
-            </Tooltip>
-            <Tooltip title="Export">
-              <Button icon={<ExportOutlined />} onClick={handleProcessExportModalToggle}></Button>
-            </Tooltip>
+            <Select
+              popupMatchSelectWidth={false}
+              placeholder="Select Version"
+              showSearch
+              filterOption={filterOption}
+              value={{
+                value: selectedVersion.version,
+                label: selectedVersion.name,
+              }}
+              onSelect={(_, option) => {
+                // change the version info in the query but keep other info (e.g. the currently open subprocess)
+                const searchParams = new URLSearchParams(query);
+                if (!option.value || option.value === -1) searchParams.delete('version');
+                else searchParams.set(`version`, `${option.value}`);
+                router.push(
+                  `/processes/${processId as string}${
+                    searchParams.size ? '?' + searchParams.toString() : ''
+                  }`,
+                );
+              }}
+              options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
+                value: version,
+                label: name,
+              }))}
+            />
+            {!showMobileView && (
+              <>
+                <Tooltip title="Create New Version">
+                  <VersionCreationButton
+                    icon={<PlusOutlined />}
+                    createVersion={createProcessVersion}
+                  ></VersionCreationButton>
+                </Tooltip>
+                <Tooltip title="Back to parent">
+                  <Button
+                    icon={<ArrowUpOutlined />}
+                    disabled={!subprocessId}
+                    onClick={handleReturnToParent}
+                  />
+                </Tooltip>
+                <Tooltip title="Undo">
+                  <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
+                </Tooltip>
+                <Tooltip title="Redo">
+                  <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
+                </Tooltip>
+              </>
+            )}
+          </ToolbarGroup>
+
+          <ToolbarGroup>
             <Tooltip
               title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
             >
               <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
             </Tooltip>
-            <Tooltip title="Create New Version">
-              <VersionCreationButton
-                icon={<PlusOutlined />}
-                createVersion={createProcessVersion}
-              ></VersionCreationButton>
-            </Tooltip>
+            {!showMobileView && (
+              <>
+                <Tooltip title="Show XML">
+                  <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
+                </Tooltip>
+                <Tooltip title="Export">
+                  <Button
+                    icon={<ExportOutlined />}
+                    onClick={handleProcessExportModalToggle}
+                  ></Button>
+                </Tooltip>
+              </>
+            )}
           </ToolbarGroup>
-          {!editingDisabled && modeler && (
-            <ToolbarGroup>
-              <Tooltip title="Undo">
-                <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
-              </Tooltip>
-              <Tooltip title="Redo">
-                <Button icon={<RedoOutlined />} onClick={handleRedo} disabled={!canRedo}></Button>
-              </Tooltip>
-            </ToolbarGroup>
-          )}
         </Space>
         {showPropertiesPanel && selectedElement && (
           <PropertiesPanel selectedElement={selectedElement} />
@@ -193,9 +258,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
             ? [
                 {
                   definitionId: processId as string,
-                  processVersion: selectedVersion || undefined,
-                  selectedElements: elementsSelectedForExport,
-                  rootSubprocessLayerId: rootLayerIdForExport,
+                  processVersion: selectedVersionId || undefined,
                 },
               ]
             : []

@@ -11,6 +11,10 @@ import Link from 'next/link';
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */
   title?: ReactNode;
+  /** Center element in the header (overrides title) */
+  headerLeft?: ReactNode;
+  /** Center element in the header */
+  headerCenter?: ReactNode;
   /** If true, the content won't have any padding. */
   compact?: boolean;
   /** If true, the content won't have a header. */
@@ -28,6 +32,8 @@ type ContentProps = PropsWithChildren<{
 const Content: FC<ContentProps> = ({
   children,
   title,
+  headerLeft,
+  headerCenter,
   compact = false,
   noHeader = false,
   wrapperClass,
@@ -55,7 +61,8 @@ const Content: FC<ContentProps> = ({
             </div>
           ) : null}
 
-          <div className={styles.Title}>{title}</div>
+          {headerLeft || <div className={styles.Title}>{title}</div>}
+          {headerCenter || null}
           {breakpoint.xs ? (
             // Hamburger menu for mobile view
             <div>

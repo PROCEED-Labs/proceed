@@ -23,6 +23,8 @@ import { ApiData } from '../fetch-data';
 // antd components directly from their files in this server actions file.
 import Button from 'antd/es/button';
 
+type a = ApiData<'/process/{definitionId}', 'get'>;
+
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
 

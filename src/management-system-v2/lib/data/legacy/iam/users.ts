@@ -3,6 +3,7 @@ import store from '../store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { User, UserInput, UserSchema } from '../../user-schema';
+import { addEnvironment } from './environments.js';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -41,6 +42,11 @@ export function addUser(inputUser: UserInput, ability?: Ability) {
   if (!user.id) user.id = `${user.oauthProvider}:${v4()}`;
 
   if (usersMetaObject[user.id]) throw new Error('User already exists');
+
+  addEnvironment({
+    ownerId: user.id,
+    organization: false,
+  });
 
   usersMetaObject[user.id as string] = user as User;
   store.add('users', user);

@@ -107,7 +107,7 @@ function getUserTaskDir(id) {
  * @param {String} processDefinitionsId
  * @returns {String} the process description
  */
-export async function getBPMN(processDefinitionsId) {
+export function getBPMN(processDefinitionsId) {
   const folder = getFolder(processDefinitionsId);
   const bpmnFilePath = path.join(folder, processDefinitionsId.concat('.bpmn'));
   return fse.readFileSync(bpmnFilePath, 'utf-8');
@@ -166,7 +166,7 @@ function getVersionFileName(definitionId, version) {
  * Saves the bpmn of a specific process version
  *
  * @param {String} definitionId
- * @param {String} version the identifier of the version
+ * @param {number} version the identifier of the version
  * @param {String} bpmn
  */
 export async function saveProcessVersion(definitionId, version, bpmn) {
@@ -182,7 +182,7 @@ export async function saveProcessVersion(definitionId, version, bpmn) {
  * Will return the bpmn of a specific version of a process
  *
  * @param {String} definitionId
- * @param {String} version
+ * @param {number} version
  * @returns {String} the bpmn of the specific process version
  */
 export async function getProcessVersion(definitionId, version) {

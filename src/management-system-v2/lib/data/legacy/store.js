@@ -24,6 +24,13 @@ function getStore(storeName, defaultVal, subDir = 'Storage') {
       defaults: { [storeName]: { users: {} } },
     });
 
+  if (storeName === 'environmentMemberships')
+    return new Conf({
+      configName: storeName,
+      cwd: storageDir,
+      defaults: { [storeName]: {} },
+    });
+
   return new Conf({
     configName: storeName,
     cwd: storageDir,
@@ -51,6 +58,7 @@ if (!global.stores) {
   stores.roles = { store: getStore('roles') };
   stores.roleMappings = { store: getStore('roleMappings') };
   stores.users = { store: getStore('users') };
+  stores.environmentMemberships = { store: getStore('environmentMemberships') };
 }
 
 /**

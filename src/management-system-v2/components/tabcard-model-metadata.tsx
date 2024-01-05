@@ -88,7 +88,7 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
           borderRadius: '8px',
         }}
       >
-        {showViewer && <Viewer selectedElementId={data.definitionId} reduceLogo={true} />}
+        {showViewer && <Viewer definitionId={data.definitionId} reduceLogo={true} />}
       </div>
     ),
     meta: (
@@ -105,7 +105,6 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
 const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
-
   const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
 

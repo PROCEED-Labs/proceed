@@ -197,20 +197,20 @@ export const useLazyLoading = (
 ) => {
   const [isVisible, setIsVisible] = useState(false);
   const viewport = useRef<HTMLElement | null>(null);
-  const thisElement = watchElement!.current;
 
   /* viewport = null -> defaults to the browser viewport */
 
   useEffect(() => {
-    if (!thisElement) return;
+    const element = watchElement.current;
+    if (!element) return;
 
-    viewport.current = findParentWithAttribute(thisElement, 'data-proceed-scroll');
+    viewport.current = findParentWithAttribute(element, 'data-proceed-scroll');
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsVisible(entry.isIntersecting || entry.intersectionRatio > 0);
         if (once && (entry.isIntersecting || entry.intersectionRatio > 0)) {
-          observer.unobserve(thisElement);
+          observer.unobserve(element);
         }
       },
       {
@@ -220,12 +220,12 @@ export const useLazyLoading = (
       },
     );
 
-    observer.observe(thisElement);
+    observer.observe(element);
 
     return () => {
-      observer.unobserve(thisElement);
+      observer.unobserve(element);
     };
-  }, [thisElement, margin, once]);
+  }, [margin, once, watchElement]);
 
   return isVisible;
 };

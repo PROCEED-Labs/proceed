@@ -14,7 +14,6 @@ import * as monaco from 'monaco-editor';
 import { moddle } from '@proceed/bpmn-helper';
 
 import { debounce } from '@/lib/utils';
-import { useGetAsset } from '@/lib/fetch-data';
 import { downloadFile } from '@/lib/process-export/util';
 
 type XmlEditorProps = {

@@ -23,11 +23,11 @@
     "@casl/ability": "6.5.0",
     "@monaco-editor/react": "^4.5.2",
     "@proceed/bpmn-helper": "1.0.0",
-    "@tanstack/react-query": "4.35.7",
-    "antd": "5.12.2",
+    "@tanstack/react-query": "5.17.1",
+    "antd": "5.12.7",
     "bpmn-js": "13.2.0",
     "bpmn-js-differ": "2.0.2",
-    "classnames": "2.3.2",
+    "classnames": "2.5.1",
     "fuse.js": "6.6.2",
     "immer": "10.0.3",
     "jspdf": "^2.5.1",
@@ -52,8 +52,8 @@
     "lru-cache": "^10.1.0"
   },
   "devDependencies": {
-    "@tanstack/eslint-plugin-query": "4.36.0",
-    "@tanstack/react-query-devtools": "4.35.7",
+    "@tanstack/eslint-plugin-query": "5.17.1",
+    "@tanstack/react-query-devtools": "5.17.1",
     "@types/node": "20.8.2",
     "@types/react": "18.2.24",
     "@types/react-dom": "18.2.8",
@@ -63,9 +63,9 @@
     "eslint-config-next": "13.5.3",
     "eslint-config-prettier": "9.0.0",
     "openapi-typescript": "6.7.0",
-    "prettier": "3.0.3",
+    "prettier": "3.1.1",
     "sass": "1.68.0",
-    "ts-node": "10.9.1",
-    "typescript": "5.2.2"
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
   }
 }

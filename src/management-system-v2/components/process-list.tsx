@@ -466,7 +466,7 @@ const ProcessList: FC<ProcessListProps> = ({
         className={classNames('no-select')}
       />
 
-      {previewerOpen && (
+      {previewerOpen && previewProcess && (
         <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
       )}
     </>

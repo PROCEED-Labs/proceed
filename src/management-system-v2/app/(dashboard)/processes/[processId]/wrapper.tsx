@@ -7,7 +7,7 @@ import Modeler from '@/components/modeler';
 import cn from 'classnames';
 import Content from '@/components/content';
 import Overlay from './overlay';
-import { useGetAsset, useInvalidateAsset } from '@/lib/fetch-data';
+import { useInvalidateAsset } from '@/lib/fetch-data';
 import {
   Breadcrumb,
   BreadcrumbProps,

@@ -31,6 +31,7 @@ const SettingsForm = ({ settings, updateSettings }: SettingsFormProps) => {
       <Table
         dataSource={[
           {
+            key: 'Log Level',
             title: 'Log Level',
             value: (
               <Form.Item

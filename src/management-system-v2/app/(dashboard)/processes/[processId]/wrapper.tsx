@@ -58,7 +58,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   useEffect(() => {
-    if (modeler) {
+    if (false) {
       modeler.on('root.set', (event: any) => {
         const newSubprocessChain = [] as SubprocessInfo[];
 

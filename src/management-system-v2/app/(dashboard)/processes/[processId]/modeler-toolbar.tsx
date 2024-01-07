@@ -1,19 +1,11 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-
-import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import React, { useEffect, useMemo, useState } from 'react';
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type Canvas from 'diagram-js/lib/core/Canvas';
-
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-
 import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
-import { Toolbar, ToolbarGroup } from './toolbar';
-
+import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
-
 import Icon, {
   ExportOutlined,
   SettingOutlined,
@@ -22,33 +14,32 @@ import Icon, {
   RedoOutlined,
   ArrowUpOutlined,
 } from '@ant-design/icons';
-
 import { SvgXML } from '@/components/svg';
-
 import PropertiesPanel from './properties-panel';
-
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-
-import ProcessExportModal from './process-export';
-
+import ProcessExportModal from '@/components/process-export';
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
-import VersionCreationButton from './version-creation-button';
-
-import { useInvalidateAsset } from '@/lib/fetch-data';
-
+import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
+import { createVersion, updateProcess } from '@/lib/data/processes';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
+  processId: string;
   onOpenXmlEditor: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   versions: { version: number; name: string; description: string }[];
 };
-const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versions }) => {
-  /* ICONS: */
-  const svgXML = <Icon component={SvgXML} />;
-
+const ModelerToolbar = ({
+  processId,
+  onOpenXmlEditor,
+  canUndo,
+  canRedo,
+  versions,
+}: ModelerToolbarProps) => {
   const router = useRouter();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
@@ -56,66 +47,29 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
 
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
-  const { processId } = useParams();
+  console.log('modeler-toolbar', modeler);
 
-  const invalidateVersions = useInvalidateAsset('/process/{definitionId}/versions', {
-    params: { path: { definitionId: processId as string } },
-  });
-
-  const invalidateProcesses = useInvalidateAsset('/process/{definitionId}', {
-    params: { path: { definitionId: processId as string } },
-  });
-
-  // const [index, setIndex] = useState(0);
-
-  let selectedElement;
-
-  if (modeler) {
-    const elementRegistry = modeler.get('elementRegistry') as ElementRegistry;
-
-    selectedElement = selectedElementId
-      ? elementRegistry.get(selectedElementId)!
-      : elementRegistry.getAll().filter((el) => el.businessObject?.$type === 'bpmn:Process')[0];
-  }
-
-  useEffect(() => {
+  const selectedElement = useMemo(() => {
     if (modeler) {
-      const commandStack = modeler.get('commandStack', false) as CommandStack;
-      // check if there is a commandStack (does not exist on the viewer used when editing is disabled)
-      if (commandStack) {
-        // init canUndo and canRedo
-        setCanUndo(commandStack.canUndo());
-        setCanRedo(commandStack.canRedo());
-      }
-      modeler.on('commandStack.changed', () => {
-        // update canUndo and canRedo when the state of the modelers commandStack changes
-        setCanUndo(commandStack.canUndo());
-        setCanRedo(commandStack.canRedo());
-      });
+      return selectedElementId
+        ? modeler.getElement(selectedElementId)
+        : modeler.getProcessElement();
     }
-  }, [modeler]);
+  }, [modeler, selectedElementId]);
 
   const createProcessVersion = async (values: {
     versionName: string;
     versionDescription: string;
   }) => {
-    const saveXMLResult = await modeler?.saveXML({ format: true });
+    // Ensure latest BPMN on server.
+    const xml = (await modeler?.getXML()) as string;
+    await updateProcess(processId, xml);
 
-    if (saveXMLResult?.xml) {
-      await createNewProcessVersion(
-        saveXMLResult.xml,
-        values.versionName,
-        values.versionDescription,
-      );
-      await invalidateVersions();
-      await invalidateProcesses();
-    }
+    await createVersion(values.versionName, values.versionDescription, processId);
+    router.refresh();
   };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
@@ -235,7 +189,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
             {!showMobileView && (
               <>
                 <Tooltip title="Show XML">
-                  <Button icon={svgXML} onClick={onOpenXmlEditor}></Button>
+                  <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
                 </Tooltip>
                 <Tooltip title="Export">
                   <Button
@@ -259,6 +213,8 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor, versio
                 {
                   definitionId: processId as string,
                   processVersion: selectedVersionId || undefined,
+                  selectedElements: elementsSelectedForExport,
+                  rootSubprocessLayerId: rootLayerIdForExport,
                 },
               ]
             : []

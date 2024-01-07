@@ -4,6 +4,7 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
 import type { RootLike, ElementLike } from 'diagram-js/lib/model/Types';
 import 'bpmn-js/dist/assets/bpmn-js.css';
@@ -11,6 +12,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
+import { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -29,9 +31,13 @@ const BPMNViewer: Promise<typeof ViewerType> =
 
 const BPMNJs = Promise.all([BPMNModeler, BPMNViewer]);
 
-type BPMNCanvasProps = {
-  /** The BPMN data to load. */
-  bpmn: string;
+export type BPMNCanvasProps = {
+  /** The BPMN data to load.
+   *
+   * Note the object wrapper to force a rerender when the process changes but
+   * not the BPMN.
+   */
+  bpmn: { bpmn: string };
   /** Wether the modeler should have editing capabilities or just be a viewer. */
   type: 'modeler' | 'viewer';
   /** Called once the new BPMN has been fully loaded by the modeler. */
@@ -40,8 +46,8 @@ type BPMNCanvasProps = {
   onChange?: () => void;
   /** Called when the root element changes. */
   onRootChange?: (root: RootLike) => void;
-  /** Called before the BPMN-JS instance is destroyed. */
-  onBeforeInstanceDestroy?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
+  /** Called before the BPMN unloads. */
+  onUnload?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
   /** Called when the BPMN selection changes. */
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
@@ -49,28 +55,67 @@ type BPMNCanvasProps = {
   className?: string;
 };
 
-const BPMNCanvas = forwardRef(
+const fitViewport = (modeler: ModelerType | ViewerType) => {
+  // The second argument is actually a boolean to center, but typed as a Point.
+  modeler.get<Canvas>('canvas').zoom('fit-viewport', { x: 0, y: 0 });
+};
+
+export interface BPMNCanvasRef {
+  fitViewport: () => void;
+  getXML: () => Promise<string | undefined>;
+  canUndo: () => boolean | undefined;
+  canRedo: () => boolean | undefined;
+  getElement: (id: string) => ElementLike | undefined;
+  getProcessElement: () => ElementLike | undefined;
+  loadBPMN: (bpmn: string) => Promise<void>;
+}
+
+const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
   (
     {
       bpmn,
       type,
       onLoaded,
       onChange,
+      onUnload,
       onRootChange,
-      onBeforeInstanceDestroy,
       onSelectionChange,
       resizeWithContainer,
       className,
-    }: BPMNCanvasProps,
+    },
     ref,
   ) => {
     const canvas = useRef<HTMLDivElement>(null);
     const modeler = useRef<ModelerType | ViewerType | null>(null);
+    const unloadPromise = useRef<Promise<void> | undefined>();
 
     // Expose explicit methods to the parent component.
     useImperativeHandle(ref, () => ({
       fitViewport: () => {
-        modeler.current?.get<Canvas>('canvas').zoom('fit-viewport');
+        fitViewport(modeler.current!);
+      },
+      getXML: async () => {
+        const { xml } = await modeler.current!.saveXML({ format: true });
+        return xml;
+      },
+      canUndo: () => {
+        return modeler.current!.get<CommandStack | null>('commandStack', false)?.canUndo();
+      },
+      canRedo: () => {
+        return modeler.current!.get<CommandStack | null>('commandStack', false)?.canRedo();
+      },
+      getElement: (id: string) => {
+        return modeler.current!.get<ElementRegistry>('elementRegistry').get(id);
+      },
+      getProcessElement: () => {
+        return modeler
+          .current!.get<ElementRegistry>('elementRegistry')
+          .getAll()
+          .filter((el) => el.businessObject?.$type === 'bpmn:Process')[0];
+      },
+      loadBPMN: async (bpmn: string) => {
+        await modeler.current!.importXML(bpmn);
+        fitViewport(modeler.current!);
       },
     }));
 
@@ -88,7 +133,6 @@ const BPMNCanvas = forwardRef(
       console.log('modeler.current', modeler.current);
 
       if (type === 'modeler') {
-        modeler.current.on('commandStack.changed', () => onChange?.());
         // Allow keyboard shortcuts like copy (ctrl+c) and paste (ctrl+v) etc.
         modeler.current.get<Keyboard>('keyboard').bind(document);
       }
@@ -104,49 +148,92 @@ const BPMNCanvas = forwardRef(
           }
         }, 'keyboard.keyup');
 
-      // Zoom new root and notify parent.
-      modeler.current.on<{ element: RootLike }>('root.set', (event) => {
-        modeler.current!.get<Canvas>('canvas').zoom('fit-viewport');
-        onRootChange?.(event.element);
-      });
-
-      modeler.current.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
-        'selection.changed',
-        (event) => {
-          onSelectionChange?.(event.oldSelection, event.newSelection);
-        },
-      );
-
       return () => {
         const m = modeler.current!;
-        // Give the parent a chance to save before the instance is destroyed.
-        (onBeforeInstanceDestroy?.(m) ?? Promise.resolve()).then(() => {
+
+        // This ensures that we can await the unloadPromise before we destroy.
+        // It gets set in the effect cleanup function below.
+        Promise.resolve().then(async () => {
+          // Give the parent a chance to save before the instance is destroyed.
+          await unloadPromise.current;
           m.destroy();
         });
       };
-      // Only reset the modeler if we switch between editing being enabled or disabled
-    }, [Modeler, Viewer, onBeforeInstanceDestroy, onChange, onRootChange, onSelectionChange, type]);
+    }, [Modeler, Viewer, type]);
 
     useEffect(() => {
-      console.log('importing');
+      // Store handlers so we can remove them later.
+      const commandStackChanged = () => onChange?.();
+      const rootSet = (event: { element: RootLike }) => {
+        fitViewport(modeler.current!);
+        onRootChange?.(event.element);
+      };
+      const selectionChanged = (event: {
+        oldSelection: ElementLike[];
+        newSelection: ElementLike[];
+      }) => {
+        onSelectionChange?.(event.oldSelection, event.newSelection);
+      };
+
+      if (type === 'modeler') {
+        modeler.current!.on('commandStack.changed', commandStackChanged);
+      }
+
+      // Zoom new root and notify parent.
+      modeler.current!.on<{ element: RootLike }>('root.set', rootSet);
+
+      modeler.current!.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
+        'selection.changed',
+        selectionChanged,
+      );
+
+      return () => {
+        modeler.current!.off('commandStack.changed', commandStackChanged);
+        modeler.current!.off('root.set', rootSet);
+        modeler.current!.off('selection.changed', selectionChanged);
+      };
+    }, [type, onChange, onRootChange, onSelectionChange]);
+
+    useEffect(() => {
       const m = modeler.current!;
-      // Import the new bpmn.
-      m.importXML(bpmn).then(() => {
+
+      async function load() {
+        await unloadPromise.current;
+        if (m !== modeler.current) {
+          // The modeler was reset in the meantime.
+          return;
+        }
+
+        console.log('importing');
+
+        // Import the new bpmn.
+        await m.importXML(bpmn.bpmn);
         if (m !== modeler.current) {
           // The modeler was reset in the meantime.
           return;
         }
         onLoaded?.();
-        modeler.current!.get<Canvas>('canvas').zoom('fit-viewport');
-      });
-    }, [bpmn, onLoaded, type]); // Also load if the type changed.
+        fitViewport(m);
+      }
+
+      load();
+
+      return () => {
+        // We store the callback so we can await it before we load the next
+        // BPMN. This gives the parent a chance to save before throwing away the
+        // current BPMN.
+        console.log('unload');
+
+        unloadPromise.current = onUnload?.(modeler.current!);
+      };
+    }, [bpmn, onLoaded, onUnload, type]); // Also load if the type changed.
 
     // Resize the modeler to fit the container.
     useEffect(() => {
       if (!resizeWithContainer) return;
 
       const resizeObserver = new ResizeObserver(() => {
-        modeler.current?.get<Canvas>('canvas').zoom('fit-viewport');
+        fitViewport(modeler.current!);
       });
 
       resizeObserver.observe(canvas.current!);

@@ -21,8 +21,8 @@ import {
 } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
-import ResizableElement, { ResizableElementRefType } from './ResizableElement';
-import CollapsibleCard from './collapsible-card';
+import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
+import CollapsibleCard from '@/components/collapsible-card';
 
 type PropertiesPanelProperties = {
   selectedElement: ElementLike;

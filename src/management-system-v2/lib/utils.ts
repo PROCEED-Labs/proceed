@@ -38,9 +38,9 @@ export function debounce(func: Function, timeout = 1000) {
   /**
    * Immediatly execute the debounced function and cancel any pending executions
    */
-  debounced.immediate = () => {
+  debounced.immediate = (...args: any[]) => {
     clearTimeout(timer);
-    func();
+    func(...args);
   };
 
   /**
@@ -48,9 +48,9 @@ export function debounce(func: Function, timeout = 1000) {
    *
    * Allows the function to be awaited
    */
-  debounced.asyncImmediate = async () => {
+  debounced.asyncImmediate = async (...args: any[]) => {
     clearTimeout(timer);
-    await func();
+    await func(...args);
   };
 
   return debounced;

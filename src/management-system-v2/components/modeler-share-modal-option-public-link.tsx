@@ -8,6 +8,8 @@ const ModelerShareModalOptionPublicLink = () => {
   const { processId } = useParams();
   const [token, setToken] = useState<String | null>(null);
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(false);
+  const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(false);
+
   const [publicLinkValue, setPublicLinkValue] = useState(
     `${window.location.origin}/shared-viewer?token=`,
   );
@@ -25,7 +27,7 @@ const ModelerShareModalOptionPublicLink = () => {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
   }) => {
     const isChecked = e.target.checked as boolean;
-
+    setRegisteredUsersonlyChecked(isChecked);
     if (isShareLinkChecked) {
       const sharedAsValue = isChecked ? 'protected' : 'public';
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAsValue });
@@ -40,13 +42,16 @@ const ModelerShareModalOptionPublicLink = () => {
     setIsShareLinkChecked(isChecked);
 
     if (isChecked) {
-      const token = await generateToken({ processId: processId });
+      const { token } = await generateToken({ processId: processId });
       setToken(token);
       setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
 
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      message.success('Process shared');
     } else {
       await updateProcessGuestAccessRights(processId, { shared: false });
+      setRegisteredUsersonlyChecked(false);
+      message.success('Process unshared');
     }
   };
 
@@ -116,8 +121,12 @@ const ModelerShareModalOptionPublicLink = () => {
               >
                 <Flex vertical gap="small">
                   <Typography.Text strong>Permissions</Typography.Text>
-                  <Checkbox onChange={handlePermissionChanged} disabled={!isShareLinkChecked}>
-                    Visible only as registered user
+                  <Checkbox
+                    checked={registeredUsersonlyChecked}
+                    onChange={handlePermissionChanged}
+                    disabled={!isShareLinkChecked}
+                  >
+                    Visible only for registered user
                   </Checkbox>
                 </Flex>
                 {isShareLinkChecked && (

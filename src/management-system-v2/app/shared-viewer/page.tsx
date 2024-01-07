@@ -2,11 +2,8 @@ import EmbeddedModeler from '@/components/embedded-modeler';
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/legacy/process';
-import { headers } from 'next/headers';
 import { TokenPayload } from '@/actions/actions';
 import { redirect } from 'next/navigation';
-import { error } from 'console';
-import { Typography } from 'antd';
 
 interface PageProps {
   searchParams: {
@@ -33,7 +30,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   }
 
   if (!processData.shared) {
-    return <h1 style={{ color: 'red' }}>Process is no longer shared</h1>;
+    return <h1 style={{ color: 'red', textAlign: 'center' }}>Process is no longer shared</h1>;
   }
   return (
     <div>

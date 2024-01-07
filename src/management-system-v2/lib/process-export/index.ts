@@ -13,7 +13,11 @@ import 'svg2pdf.js';
 import pdfExport from './pdf-export';
 import { pngExport, svgExport } from './image-export';
 
-async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
+async function bpmnExport(
+  processData: ProcessExportData,
+  zipFolder?: jsZip | null,
+  useWebshareApi?: boolean,
+) {
   for (let [versionName, versionData] of Object.entries(processData.versions)) {
     // if the version data contains an explicit name use that instead of the the current versionName which is just the version id
     if (versionData.name) {
@@ -28,6 +32,20 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
       zipFolder.file(`${filename}.bpmn`, bpmnBlob);
+    } else if (useWebshareApi && navigator.share !== undefined) {
+      try {
+        await navigator.share({
+          files: [
+            new File([bpmnBlob], `${processData.definitionName}.bpmn`, {
+              type: 'application/xml',
+            }),
+          ],
+        });
+      } catch (err: any) {
+        if (!err.toString().includes('AbortError')) {
+          throw new Error('Error: ', { cause: err });
+        }
+      }
     } else {
       downloadFile(`${filename}.bpmn`, bpmnBlob);
     }
@@ -85,12 +103,19 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     if (options.type === 'pdf') {
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
-        await pdfExport(exportData, processData, options.metaData, options.a4, zip);
+        await pdfExport(
+          exportData,
+          processData,
+          options.metaData,
+          options.a4,
+          zip,
+          options.useWebshareApi,
+        );
       }
     } else {
       if (options.type === 'bpmn') {
         const folder = zip?.folder(processData.definitionName);
-        await bpmnExport(processData, folder);
+        await bpmnExport(processData, folder, options.useWebshareApi);
       }
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {

@@ -30,6 +30,7 @@ export type ProcessExportOptions = {
   metaData: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
   a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
   scaling: number; // the scaling factor that should be used for png export
+  useWebshareApi: boolean; // if true, the process is shared using web share api
 };
 
 /**

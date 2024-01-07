@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { Button, Tooltip, Typography } from 'antd';
 import { ReactNode } from 'react';
 
@@ -7,7 +7,7 @@ interface ModelerShareModalOptionProps {
   optionName: string;
   optionTitle: string;
   optionOnClick: () => void;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 const ModelerShareModalOption = ({
@@ -18,9 +18,7 @@ const ModelerShareModalOption = ({
   isActive,
 }: ModelerShareModalOptionProps) => {
   const handleButtonClick = () => {
-    if (!isActive) {
-      optionOnClick();
-    }
+    optionOnClick();
   };
 
   return (

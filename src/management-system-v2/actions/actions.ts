@@ -1,7 +1,7 @@
 'use server';
 
 import jwt from 'jsonwebtoken';
-import { updateProcessMetaData } from '@/lib/data/legacy/_process';
+import { getProcess, updateProcessMetaData } from '@/lib/data/legacy/_process';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -10,10 +10,10 @@ export interface TokenPayload {
 
 export async function generateToken(payload: TokenPayload) {
   const secretKey = process.env.JWT_KEY;
-
+  const processData = await getProcess(payload.processId);
   const token = jwt.sign(payload, secretKey!);
 
-  return token;
+  return { token, processData };
 }
 
 export interface ProcessGuestAccessRights {

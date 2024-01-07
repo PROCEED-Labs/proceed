@@ -30,6 +30,8 @@ import VersionCreationButton from './version-creation-button';
 import ModelerShareModalButton from './modeler-share-modal';
 
 import { useInvalidateAsset } from '@/lib/fetch-data';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import useExportTypeStore from '@/lib/use-export-type-store';
 
 type ModelerToolbarProps = {
   onOpenXmlEditor: () => void;
@@ -44,6 +46,7 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const { preselectedExportType, setPreselectedExportType } = useExportTypeStore();
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const editingDisabled = useModelerStateStore((state) => state.editingDisabled);
@@ -112,6 +115,13 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
     setShowProcessExportModal(!showProcessExportModal);
   };
 
+  const handleProcessExportModalToggleMobile = async (
+    preselectedExportType: ProcessExportOptions['type'],
+  ) => {
+    setPreselectedExportType(preselectedExportType);
+    setShowProcessExportModal(!showProcessExportModal);
+  };
+
   const selectedVersion = useSearchParams().get('version');
 
   const handleUndo = () => {
@@ -149,7 +159,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
                 createVersion={createProcessVersion}
               ></VersionCreationButton>
             </Tooltip>
-            <ModelerShareModalButton onExport={handleProcessExportModalToggle} />
+            <ModelerShareModalButton
+              onExport={handleProcessExportModalToggle}
+              onExportMobile={handleProcessExportModalToggleMobile}
+            />
           </ToolbarGroup>
           {!editingDisabled && modeler && (
             <ToolbarGroup>

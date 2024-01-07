@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Modal,
@@ -17,6 +17,7 @@ import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import useExportTypeStore from '@/lib/use-export-type-store';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -98,7 +99,13 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   onClose,
   open,
 }) => {
+  const { preselectedExportType, resetPreselectedExportType } = useExportTypeStore();
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
+
+  useEffect(() => {
+    setSelectedType(preselectedExportType);
+  }, [preselectedExportType]);
+
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
@@ -113,6 +120,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
 
   const handleClose = () => {
     setIsExporting(false);
+    resetPreselectedExportType();
+    setSelectedType(undefined);
     onClose();
   };
 
@@ -127,6 +136,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         metaData: selectedOptions.some((el) => el === 'metaData'),
         a4: selectedOptions.some((el) => el === 'a4'),
         scaling: pngScalingFactor,
+        useWebshareApi: preselectedExportType !== undefined,
       },
       processes,
     );
@@ -189,7 +199,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   return (
     <>
       <Modal
-        title={`Export selected Processes`}
+        title={
+          preselectedExportType
+            ? `Share selected Processes as ${preselectedExportType.toUpperCase()}`
+            : `Export selected Processes`
+        }
         open={open}
         onOk={handleOk}
         onCancel={handleClose}
@@ -198,7 +212,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         width={540}
       >
         <Flex>
-          {typeSelection}
+          {preselectedExportType ? null : typeSelection}
           <Divider type="vertical" style={{ height: 'auto' }} />
           {!!selectedType && optionSelection}
         </Flex>

@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Divider, message } from 'antd';
+import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -7,21 +7,34 @@ import {
   LeftOutlined,
   RightOutlined,
   CopyOutlined,
+  FileImageOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
+import Image from 'next/image';
+import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
+import { useParams, useSearchParams } from 'next/navigation';
+import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
+import { exportProcesses } from '@/lib/process-export';
 import ModelerShareModalOption from './modeler-share-modal-option';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
 type ShareModalProps = {
   onExport: () => void;
+  onExportMobile: (type: ProcessExportOptions['type']) => void;
 };
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
+const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
+  const { processId } = useParams();
+  const selectedVersion = useSearchParams().get('version');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
+  const breakpoint = Grid.useBreakpoint();
+  const [token, setToken] = useState('');
 
   const handleClose = () => {
     setIsOpen(false);
@@ -42,7 +55,62 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
     setActiveIndex(index);
   };
 
-  const options = [
+  const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
+    if (navigator.share) {
+      try {
+        const { token, processData } = await generateToken({ processId });
+        await navigator.share({
+          title: `${processData.definitionName} | PROCEED`,
+          text: 'Here is a shared process for you',
+          url: `${window.location.origin}/shared-viewer?token=${token}`,
+        });
+        await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+      } catch (err: any) {
+        if (!err.toString().includes('AbortError')) {
+          throw new Error('Error: ', { cause: err });
+        }
+      }
+    } else {
+      message.error('Web Share API not supported. Implement your own fallback here.');
+    }
+  };
+
+  const optionsMobile = [
+    {
+      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Share Process with Public Link',
+      optionTitle: 'Share Process with Public Link',
+      optionOnClick: () => handleShareMobile('public'),
+    },
+    {
+      optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Share Process for Registered Users',
+      optionTitle: 'Share Process for Registered Users',
+      optionOnClick: () => handleShareMobile('protected'),
+    },
+    {
+      optionIcon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Share Process as PDF',
+      optionTitle: 'Share Process as PDF',
+      optionOnClick: () => onExportMobile('pdf'),
+    },
+    {
+      optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
+      optionName: 'Share Process as Image',
+      optionTitle: 'Share Process as Image',
+      optionOnClick: () => shareProcessImage(modeler),
+    },
+    {
+      optionIcon: (
+        <Image priority src="/proceed-icon.png" height={24} width={40} alt="Follow us on Twitter" />
+      ),
+      optionName: 'Share Process as BPMN File',
+      optionTitle: 'Share Process as BPMN File',
+      optionOnClick: () => onExportMobile('bpmn'),
+    },
+  ];
+
+  const optionsDesktop = [
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Public Link',
@@ -59,9 +127,14 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       ),
       optionName: 'Embed in Website',
       optionTitle: 'Embed in Website',
-      optionOnClick: () => handleOptionClick(1),
+      optionOnClick: async () => {
+        handleOptionClick(1);
+        const { token } = await generateToken({ processId });
+        setToken(token);
+        updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      },
 
-      subOption: <ModelerShareModalOptionEmdedInWeb />,
+      subOption: <ModelerShareModalOptionEmdedInWeb accessToken={token} />,
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
@@ -70,6 +143,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       optionOnClick: () => {
         handleOptionClick(2);
         copyProcessImage(modeler);
+        setActiveIndex(null);
       },
     },
     {
@@ -79,6 +153,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       optionOnClick: () => {
         handleOptionClick(3);
         handleCopyXMLToClipboard();
+        setActiveIndex(null);
       },
     },
     {
@@ -88,6 +163,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       optionOnClick: () => {
         handleOptionClick(4);
         onExport();
+        setActiveIndex(null);
       },
     },
   ];
@@ -97,7 +173,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
       <Modal
         title={<div style={{ textAlign: 'center' }}>Share</div>}
         open={isOpen}
-        width={800}
+        width={750}
         closeIcon={false}
         onCancel={handleClose}
         footer={
@@ -111,25 +187,36 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport }) => {
             display: 'flex',
             flexDirection: 'row',
             flexWrap: 'wrap',
-            justifyContent: 'space-evenly',
+            justifyContent: breakpoint.lg ? 'center' : 'space-evenly',
+            gap: 15,
           }}
         >
-          {options.map((option, index) => (
-            <ModelerShareModalOption
-              key={index}
-              optionIcon={option.optionIcon}
-              optionName={option.optionName}
-              optionTitle={option.optionTitle}
-              optionOnClick={option.optionOnClick}
-              isActive={index === activeIndex}
-            />
-          ))}
+          {breakpoint.lg
+            ? optionsDesktop.map((option, index) => (
+                <ModelerShareModalOption
+                  key={index}
+                  optionIcon={option.optionIcon}
+                  optionName={option.optionName}
+                  optionTitle={option.optionTitle}
+                  optionOnClick={option.optionOnClick}
+                  isActive={index === activeIndex}
+                />
+              ))
+            : optionsMobile.map((option, index) => (
+                <ModelerShareModalOption
+                  key={index}
+                  optionIcon={option.optionIcon}
+                  optionName={option.optionName}
+                  optionTitle={option.optionTitle}
+                  optionOnClick={option.optionOnClick}
+                />
+              ))}
         </Space>
 
-        {activeIndex !== null && options[activeIndex].subOption && (
+        {breakpoint.lg && activeIndex !== null && optionsDesktop[activeIndex].subOption && (
           <>
             <Divider style={{ backgroundColor: '#000' }} />
-            {options[activeIndex].subOption}
+            {optionsDesktop[activeIndex].subOption}
           </>
         )}
       </Modal>

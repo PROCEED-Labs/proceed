@@ -8,27 +8,20 @@ import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions
 
 const { TextArea } = Input;
 
-const ModelerShareModalOptionEmdedInWeb = () => {
-  const { processId } = useParams();
-  const [token, setToken] = useState('');
+interface ModelerShareModalOptionEmdedInWebProps {
+  accessToken: string;
+}
 
-  useEffect(() => {
-    const generateAccessToken = async () => {
-      const newToken = await generateToken({ processId: processId, embeddedMode: true });
-      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
-      setToken(newToken);
-    };
-
-    generateAccessToken();
-  }, []);
-
+const ModelerShareModalOptionEmdedInWeb = ({
+  accessToken,
+}: ModelerShareModalOptionEmdedInWebProps) => {
   const codeSection = useRef<TextAreaRef>(null);
 
   const handleCopyCodeSection = async () => {
     const codeToEmbed = codeSection.current?.resizableTextArea?.textArea?.value;
     if (codeToEmbed) {
       await navigator.clipboard.writeText(codeToEmbed);
-      message.success('Code copied successfully');
+      message.success('Code copied to you clipboard');
     }
   };
 
@@ -46,7 +39,7 @@ const ModelerShareModalOptionEmdedInWeb = () => {
         <TextArea
           rows={2}
           style={{ backgroundColor: 'rgb(245,245,245)' }}
-          value={`<iframe src='${window.location.origin}/shared-viewer?token=${token}' height="100%" width="100%"></iframe>`}
+          value={`<iframe src='${window.location.origin}/shared-viewer?token=${accessToken}' height="100%" width="100%"></iframe>`}
           ref={codeSection}
         />
       </div>

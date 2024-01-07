@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import cn from 'classnames';
-import BPMNCanvas from './bpmn-canvas';
+import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
@@ -13,7 +13,7 @@ type BPMNViewerProps = {
 };
 
 const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) => {
-  const viewer = useRef();
+  const viewer = useRef<BPMNCanvasRef | null>(null);
 
   const { data } = useSuspenseQuery({
     queryKey: ['process', definitionId, 'bpmn'],
@@ -32,6 +32,9 @@ const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) 
     },
   });
 
+  // Allows for rerendering when the process changes but not the BPMN.
+  const bpmn = useMemo(() => ({ bpmn: data }), [data]);
+
   useEffect(() => {
     console.log('viewer', viewer.current);
     //viewer.current!.fitViewport();
@@ -40,7 +43,7 @@ const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) 
   return (
     <BPMNCanvas
       ref={viewer}
-      bpmn={data}
+      bpmn={bpmn}
       type="viewer"
       className={cn({ reduceLogo: reduceLogo })}
       resizeWithContainer={fitOnResize}

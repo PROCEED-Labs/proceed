@@ -16,9 +16,8 @@ import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-publ
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
 import Image from 'next/image';
 import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
-import { exportProcesses } from '@/lib/process-export';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
@@ -29,12 +28,12 @@ type ShareModalProps = {
 
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
   const { processId } = useParams();
-  const selectedVersion = useSearchParams().get('version');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
   const [token, setToken] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -98,7 +97,12 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Process as Image',
       optionTitle: 'Share Process as Image',
-      optionOnClick: () => shareProcessImage(modeler),
+      optionOnClick: async () => {
+        if (isSharing) return;
+        setIsSharing(true);
+        await shareProcessImage(modeler);
+        setIsSharing(false);
+      },
     },
     {
       optionIcon: (

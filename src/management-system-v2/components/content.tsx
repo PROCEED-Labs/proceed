@@ -7,7 +7,6 @@ import { MenuOutlined } from '@ant-design/icons';
 import cn from 'classnames';
 import HeaderActions from './header-actions';
 import Link from 'next/link';
-import MobileMenu from './menu-mobile';
 import { UserOutlined } from '@ant-design/icons';
 import router, { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
@@ -117,7 +116,7 @@ const Content: FC<ContentProps> = ({
         onClose={() => setOpenMobileMenu(false)}
         open={openMobileMenu}
       >
-        <MobileMenu />
+        <SiderMenu />
       </Drawer>
     </>
   );

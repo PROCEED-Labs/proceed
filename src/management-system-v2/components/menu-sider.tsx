@@ -1,8 +1,9 @@
 'use client';
 
 import { FC, PropsWithChildren } from 'react';
-import { Divider, Menu } from 'antd';
+import { Divider, Grid, Menu } from 'antd';
 const { SubMenu, Item, ItemGroup } = Menu;
+import cn from 'classnames';
 import {
   FileOutlined,
   ProfileOutlined,
@@ -20,11 +21,15 @@ import ProcessCreationButton from './process-creation-button';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ProcessImportButton from './process-import';
 import Link from 'next/link';
+import styles from './menu-sider.module.scss'
+import { signOut } from 'next-auth/react';
 
 const SiderMenu: FC<PropsWithChildren> = () => {
   const router = useRouter();
   const activeSegment = usePathname().slice(1) || 'processes';
   const ability = useAbilityStore((state) => state.ability);
+
+  const breakpoint = Grid.useBreakpoint();
 
   return (
       <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
@@ -48,7 +53,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
               </Item>
             ) : null}
           </ItemGroup>
-            <Divider style={{margin: "0px"}}/>
+            {breakpoint.xs ? null : <Divider style={{margin: "0px"}}/>}
           </>
         ) : null}
 
@@ -75,20 +80,30 @@ const SiderMenu: FC<PropsWithChildren> = () => {
                 <Link href="/iam/roles">Roles</Link>
               </Item>
             </ItemGroup>
-            <Divider style={{margin: "0px"}}/>
+            <Divider className={cn(breakpoint.xs ? styles.MarginDivider : styles.NoMarginDivider)}/>
           </>
         ) : null}
 
-        <ItemGroup key="settings" title="Settings">
+        {breakpoint.xs ?
+        <>
           {ability.can('view', 'Setting') ? (
-            <Item key="generalSettings" icon={<SettingOutlined />}>
-              <Link href="/general-settings">General Settings</Link>
-            </Item>
+          <Item key="generalSettings">
+            <Link href="/general-settings">General Settings</Link>
+          </Item>
           ) : null}
-          {/* <Item key="plugins" icon={<ApiOutlined />}>
-            Plugins
-          </Item> */}
-        </ItemGroup>
+          <Item onClick={() => signOut()}>
+            Logout
+          </Item>
+          </>
+        :
+        <ItemGroup key="settings" title="Settings">
+        {ability.can('view', 'Setting') ? (
+          <Item key="generalSettings" icon={<SettingOutlined />}>
+            <Link href="/general-settings">General Settings</Link>
+          </Item>
+        ) : null}
+      </ItemGroup>}
+
       </Menu>
   );
 };

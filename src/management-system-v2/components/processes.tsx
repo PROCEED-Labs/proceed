@@ -222,11 +222,9 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
-    {/* TODO: fix footer width / main width for breakpoint.sm - breakpoint.lg */}
       <div className={breakpoint.xs ? styles.MobileView : ''} style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}>
         {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{flex: "1"}}>
-          {/* New Process and Import on the right side */}
           <Bar
             leftNode={breakpoint.xl ?
               (selectedRowKeys.length ? (
@@ -266,7 +264,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                 <FloatButton.Group
                   trigger="click"
                   type="primary"
-                  style={{ marginBottom: "100px", marginRight: "5px", zIndex: "101"}}
+                  style={{ marginBottom: "90px", marginRight: "5px", zIndex: "101"}}
                   icon={<PlusOutlined />}
                 >
                   <Tooltip trigger="hover" placement="left" title="Create a process">

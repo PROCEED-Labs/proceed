@@ -32,12 +32,12 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
       headStyle={{ padding: 0 }}
       title={
         show ? (
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
             <Button
               type="text"
               style={{
-                padding: '2px',
                 marginInline: '6px',
+                padding: '0',
               }}
               onClick={() => {
                 onCollapse();
@@ -51,8 +51,9 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
           <Button
             type="text"
             style={{
-              padding: '2px',
               width: '100%',
+              fontSize: '0.875rem',
+              padding: '0',
             }}
             onClick={() => {
               onCollapse();

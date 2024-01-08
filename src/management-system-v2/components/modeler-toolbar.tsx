@@ -146,7 +146,10 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
   return (
     <>
       <Toolbar>
-        <Space style={{ width: '100%', justifyContent: 'end' }} wrap>
+        <Space
+          style={{ display: 'flex', flexWrap: 'nowrap', justifyContent: 'end', height: '3rem' }}
+          wrap
+        >
           <ToolbarGroup>
             {/* <Button>Test</Button>
               <Button
@@ -181,14 +184,14 @@ const ModelerToolbar: React.FC<ModelerToolbarProps> = ({ onOpenXmlEditor }) => {
               </Tooltip>
             </ToolbarGroup>
           )}
+          {showPropertiesPanel && selectedElement && (
+            <PropertiesPanel
+              isOpen={showPropertiesPanel}
+              close={handlePropertiesPanelToggle}
+              selectedElement={selectedElement}
+            />
+          )}
         </Space>
-        {showPropertiesPanel && selectedElement && (
-          <PropertiesPanel
-            isOpen={showPropertiesPanel}
-            close={handlePropertiesPanelToggle}
-            selectedElement={selectedElement}
-          />
-        )}
       </Toolbar>
       <ProcessExportModal
         open={showProcessExportModal}

@@ -1,12 +1,11 @@
 .bpmn-js-modeler-with-toolbar .djs-palette {
-  top: 70px;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .bpmn-js-modeler-with-toolbar .bjs-breadcrumbs {
-  top: unset;
-  left: 15px !important;
-  bottom: 10px;
-  font-size: 20px;
+  display: none !important;
 }
 
 .properties-panel .ant-input,

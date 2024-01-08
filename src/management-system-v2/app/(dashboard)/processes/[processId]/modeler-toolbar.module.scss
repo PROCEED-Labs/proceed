@@ -1,0 +1,5 @@
+.Toolbar {
+  :global(.ant-btn-default:disabled) {
+    background-color: rgba($color: #eee, $alpha: 1);
+  }
+}

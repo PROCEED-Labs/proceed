@@ -1,30 +1,18 @@
 'use client';
 
-import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
+import React, { useCallback, useRef, useState } from 'react';
 
-import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { Drawer } from 'antd';
 
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-
-import React, { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
-
-import { Card, Input, ColorPicker, Drawer, Space, Image } from 'antd';
-
-import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { ApiData } from '@/lib/fetch-data';
-import { useProcessBpmn } from '@/lib/process-queries';
-
-import type ViewerType from 'bpmn-js/lib/Viewer';
 import Viewer from './bpmn-viewer';
 import { ProcessListProcess } from './processes';
 
 type PropertiesPanelProperties = {
-  selectedElement?: ProcessListProcess;
+  selectedElement: ProcessListProcess;
   setOpen: (open: boolean) => void;
 };
 
 const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen }) => {
-  const [name, setName] = useState('');
   const [drawerHeight, setDrawerHeight] = useState(200);
 
   let resizingDrawer = useRef(false);
@@ -61,7 +49,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
   const Panel = (
     <Drawer
       height={drawerHeight}
-      title={name}
+      title=""
       placement="bottom"
       onClose={(e) => {
         setOpen(false);
@@ -82,7 +70,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
         }}
         onMouseDown={handleMouseDown}
       ></div>
-      <Viewer selectedElementId={selectedElement?.definitionId} rerenderTrigger={drawerHeight} />
+      <Viewer definitionId={selectedElement.definitionId} fitOnResize />
     </Drawer>
   );
 

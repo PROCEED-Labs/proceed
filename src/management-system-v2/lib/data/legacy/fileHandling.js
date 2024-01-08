@@ -367,7 +367,7 @@ export async function deleteImage(processDefinitionsId, imageFileName) {
  * @param {String} processDefinitionsId
  * @param {String} taskId
  */
-export async function getUserTaskHTML(processDefinitionsId, taskId) {
+export function getUserTaskHTML(processDefinitionsId, taskId) {
   const userTaskDir = getUserTaskDir(processDefinitionsId);
   const userTaskFile = `${taskId}.html`;
   const userTaskPath = path.join(userTaskDir, userTaskFile);

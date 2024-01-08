@@ -1,9 +1,9 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { useCallback, useEffect, useState, useTransition } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Space, Button, Tooltip, Grid, App } from 'antd';
-import { ApiData, usePostAsset } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,

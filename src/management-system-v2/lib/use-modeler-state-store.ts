@@ -1,34 +1,26 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import type Modeler from 'bpmn-js/lib/Modeler';
-import type Viewer from 'bpmn-js/lib/NavigatedViewer';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 type ModelerStateStore = {
-  modeler: Modeler | Viewer | null;
+  modeler: BPMNCanvasRef | null;
   selectedElementId: null | string;
-  editingDisabled: boolean;
-  setModeler: (newModeler: Modeler | Viewer | null) => void;
+  setModeler: (newModeler: BPMNCanvasRef | null) => void;
   setSelectedElementId: (newId: null | string) => void;
-  setEditingDisabled: (isDisabled: boolean) => void;
 };
 
 const useModelerStateStore = create<ModelerStateStore>()(
   immer((set) => ({
     modeler: null,
     selectedElementId: null,
-    editingDisabled: false,
-    setModeler: (newModeler: Modeler | Viewer | null) =>
+    setModeler: (newModeler) =>
       set((state) => {
         state.modeler = newModeler;
       }),
-    setSelectedElementId: (newId: null | string) =>
+    setSelectedElementId: (newId) =>
       set((state) => {
         state.selectedElementId = newId;
-      }),
-    setEditingDisabled: (isDisabled: boolean) =>
-      set((state) => {
-        state.editingDisabled = isDisabled;
       }),
   })),
 );

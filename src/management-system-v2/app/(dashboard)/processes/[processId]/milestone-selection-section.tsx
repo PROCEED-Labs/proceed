@@ -20,10 +20,10 @@ import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 import useModelerStateStore from '@/lib/use-modeler-state-store';
-import FormSubmitButton from './form-submit-button';
+import FormSubmitButton from '@/components/form-submit-button';
 import { Editor } from '@toast-ui/react-editor';
-import TextEditor from './text-editor';
-import TextViewer from './text-viewer';
+import TextEditor from '@/components/text-editor';
+import TextViewer from '@/components/text-viewer';
 
 const MilestoneDescriptionEditor: React.FC<{
   onChange: (content: string) => void;

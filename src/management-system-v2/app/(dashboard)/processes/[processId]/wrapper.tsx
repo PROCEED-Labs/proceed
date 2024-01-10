@@ -26,8 +26,6 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
 import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
-import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import type Canvas from 'diagram-js/lib/core/Canvas';
 import { Root } from 'bpmn-js/lib/model/Types';
 
 type SubprocessInfo = {

@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import React, {
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
@@ -9,8 +17,8 @@ import { debounce } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
-import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App } from 'antd';
+import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -150,6 +158,26 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       }
     }
   }, [messageApi, subprocessId]);
+
+  useEffect(() => {
+    if (modeler.current) {
+      const canvas = modeler.current.getCanvas();
+      const subprocessPlane = canvas
+        .getRootElements()
+        .find((el: any) => el.businessObject.id === subprocessId);
+      if (subprocessPlane) {
+        canvas.setRootElement(subprocessPlane);
+      } else {
+        const processPlane = canvas
+          .getRootElements()
+          .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
+        if (!processPlane) {
+          return;
+        }
+        canvas.setRootElement(processPlane);
+      }
+    }
+  }, [subprocessId]);
 
   const handleOpenXmlEditor = async () => {
     // Undefined can maybe happen when click happens during router transition?

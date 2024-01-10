@@ -21,7 +21,7 @@ import { Tooltip, Space } from 'antd';
 
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 
-import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { get, del, put } from '@/lib/fetch-data';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';

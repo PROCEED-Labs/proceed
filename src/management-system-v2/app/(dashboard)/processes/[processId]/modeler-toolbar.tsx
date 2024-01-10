@@ -1,7 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type CommandStack from 'diagram-js/lib/command/CommandStack';
-import type Selection from 'diagram-js/lib/features/selection/Selection';
-import type Canvas from 'diagram-js/lib/core/Canvas';
+import React, { useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -16,13 +13,13 @@ import Icon, {
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import useModelerStateStore from './use-modeler-state-store';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
-import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess } from '@/lib/data/processes';
+import { Root } from 'bpmn-js/lib/model/Types';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -50,8 +47,6 @@ const ModelerToolbar = ({
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
-  console.log('modeler-toolbar', modeler);
-
   const selectedElement = useMemo(() => {
     if (modeler) {
       return selectedElementId
@@ -76,12 +71,15 @@ const ModelerToolbar = ({
   };
 
   const handleProcessExportModalToggle = async () => {
-    if (!showProcessExportModal && modeler?.get) {
+    if (!showProcessExportModal && modeler) {
       // provide additional information for the export that is used if the user decides to only export selected elements (also controls if the option is given in the first place)
-      const selectedElementIds = (modeler.get('selection') as Selection).get().map(({ id }) => id);
+      const selectedElementIds = modeler
+        .getSelection()
+        .get()
+        .map(({ id }) => id);
       setElementsSelectedForExport(selectedElementIds);
       // provide additional information for the export so only the parts of the process that can be reached from the currently open layer are exported
-      const currentRootElement = (modeler.get('canvas') as Canvas).getRootElement();
+      const currentRootElement = modeler.getCanvas().getRootElement();
       setRootLayerIdForExport(
         bpmnIs(currentRootElement, 'bpmn:SubProcess')
           ? currentRootElement.businessObject?.id
@@ -100,19 +98,18 @@ const ModelerToolbar = ({
   const subprocessId = query.get('subprocess');
 
   const handleUndo = () => {
-    if (modeler) (modeler.get('commandStack') as CommandStack).undo();
+    modeler?.undo();
   };
 
   const handleRedo = () => {
-    if (modeler) (modeler.get('commandStack') as CommandStack).redo();
+    modeler?.redo();
   };
 
   const handleReturnToParent = async () => {
     if (modeler) {
-      const canvas = modeler.get('canvas') as any;
-
-      canvas.setRootElement(canvas.findRoot(subprocessId));
-      canvas.zoom('fit-viewport', 'auto');
+      const canvas = modeler.getCanvas();
+      canvas.setRootElement(canvas.findRoot(subprocessId as string) as Root);
+      modeler.fitViewport();
     }
   };
 

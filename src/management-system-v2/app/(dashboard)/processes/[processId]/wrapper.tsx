@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './page.module.scss';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import Content from '@/components/content';
@@ -17,7 +17,7 @@ import {
   Typography,
 } from 'antd';
 import { PlusOutlined, LeftOutlined } from '@ant-design/icons';
-import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan } from '@/components/auth-can';
@@ -28,6 +28,7 @@ import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
 import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import { Root } from 'bpmn-js/lib/model/Types';
 
 type SubprocessInfo = {
   id?: string;
@@ -45,9 +46,9 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   const { processId } = useParams();
   const pathname = usePathname();
   const [closed, setClosed] = useState(false);
-  const [subprocessChain, setSubprocessChain] = useState<SubprocessInfo[]>([]);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
+  const rootElement = useModelerStateStore((state) => state.rootElement);
 
   const {
     token: { fontSizeHeading1 },
@@ -57,33 +58,29 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   const minimized = pathname !== `/processes/${processId}`;
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
-  useEffect(() => {
-    if (false) {
-      modeler.on('root.set', (event: any) => {
-        const newSubprocessChain = [] as SubprocessInfo[];
+  const subprocessChain = useMemo(() => {
+    const newSubprocessChain = [] as SubprocessInfo[];
 
-        if (isPlane(event.element)) {
-          const elementRegistry = modeler.get('elementRegistry') as ElementRegistry;
-          let element = event.element?.businessObject;
-          while (bpmnIs(element, 'bpmn:SubProcess')) {
-            const shape = elementRegistry.get(element.id);
-            // ignore expanded sub-processes that might be in the hierarchy chain
-            if (shape && !isExpanded(shape as any)) {
-              newSubprocessChain.unshift({ id: element.id, name: element.name });
-            }
-            element = element.$parent;
-          }
+    if (isPlane(rootElement)) {
+      let element = rootElement!.businessObject;
+      while (bpmnIs(element, 'bpmn:SubProcess')) {
+        const shape = modeler?.getElement(element.id);
+        // ignore expanded sub-processes that might be in the hierarchy chain
+        if (shape && !isExpanded(shape)) {
+          newSubprocessChain.unshift({ id: element.id, name: element.name });
         }
-
-        // push a dummy element that represents the root process to generalize the subprocess handling to all possible layers in the modeler
-        newSubprocessChain.unshift({
-          id: undefined,
-          name: undefined,
-        });
-        setSubprocessChain(newSubprocessChain);
-      });
+        element = element.$parent;
+      }
     }
-  }, [process, modeler]);
+
+    // push a dummy element that represents the root process to generalize the subprocess handling to all possible layers in the modeler
+    newSubprocessChain.unshift({
+      id: undefined,
+      name: undefined,
+    });
+
+    return newSubprocessChain;
+  }, [rootElement, modeler]);
 
   useEffect(() => {
     // Reset closed state when page is not minimized anymore.
@@ -148,29 +145,35 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
               </Typography.Text>
             ),
             onClick: async () => {
-              // move to the view of another subprocess or the one of the root process
-              if (modeler) {
-                const canvas = modeler.get('canvas') as Canvas;
-
-                if (id) {
-                  // a specific subprocess is supposed to be displayed
-                  const subprocessPlane = canvas
-                    .getRootElements()
-                    .find((el) => el.businessObject.id === id);
-                  if (!subprocessPlane) return;
-                  canvas.setRootElement(subprocessPlane);
-                } else {
-                  // no id => show the root process
-                  const processPlane = canvas
-                    .getRootElements()
-                    .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
-                  if (!processPlane) return;
-                  canvas.setRootElement(processPlane);
-                }
-
-                // the logic in zoom does not match the possible argument types (if the second argument is defined but not an object the canvas will automatically define center)
-                canvas.zoom('fit-viewport', 'auto' as any);
+              if (!modeler) {
+                return;
               }
+
+              // Move to the view of another subprocess or the one of the root
+              // process.
+              const canvas = modeler.getCanvas();
+
+              if (id) {
+                // a specific subprocess is supposed to be displayed
+                const subprocessPlane = canvas
+                  .getRootElements()
+                  .find((el) => el.businessObject.id === id);
+                if (!subprocessPlane) {
+                  return;
+                }
+                canvas.setRootElement(subprocessPlane);
+              } else {
+                // no id => show the root process
+                const processPlane = canvas
+                  .getRootElements()
+                  .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
+                if (!processPlane) {
+                  return;
+                }
+                canvas.setRootElement(processPlane);
+              }
+
+              modeler.fitViewport();
             },
           };
         }),
@@ -204,15 +207,16 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   const currentSubprocess = subprocessChain.slice(-1)[0];
 
   const handleBackButtonClick = () => {
-    if (modeler) {
-      const canvas = modeler.get('canvas') as any;
+    if (!modeler) {
+      return;
+    }
 
-      if (currentSubprocess.id) {
-        canvas.setRootElement(canvas.findRoot(currentSubprocess.id));
-        canvas.zoom('fit-viewport', 'auto');
-      } else {
-        router.push('/processes');
-      }
+    if (currentSubprocess.id) {
+      const canvas = modeler.getCanvas();
+      canvas.setRootElement(canvas.findRoot(currentSubprocess.id) as Root);
+      modeler.fitViewport();
+    } else {
+      router.push('/processes');
     }
   };
 

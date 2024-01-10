@@ -4,15 +4,18 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
-import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
-import type { RootLike, ElementLike } from 'diagram-js/lib/model/Types';
+import type Selection from 'diagram-js/lib/features/selection/Selection';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import type Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
+import type BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
+import type { ElementLike } from 'diagram-js/lib/model/Types';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
+import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
+import { Root, Element } from 'bpmn-js/lib/model/Types';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -45,7 +48,7 @@ export type BPMNCanvasProps = {
   /** Called when a commandstack.change event is fired. */
   onChange?: () => void;
   /** Called when the root element changes. */
-  onRootChange?: (root: RootLike) => void;
+  onRootChange?: (root: Root) => void;
   /** Called before the BPMN unloads. */
   onUnload?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
   /** Called when the BPMN selection changes. */
@@ -65,8 +68,14 @@ export interface BPMNCanvasRef {
   getXML: () => Promise<string | undefined>;
   canUndo: () => boolean | undefined;
   canRedo: () => boolean | undefined;
-  getElement: (id: string) => ElementLike | undefined;
-  getProcessElement: () => ElementLike | undefined;
+  undo: () => void;
+  redo: () => void;
+  getElement: (id: string) => Element | undefined;
+  getProcessElement: () => Element | undefined;
+  getCanvas: () => Canvas;
+  getSelection: () => Selection;
+  getModeling: () => Modeling;
+  getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
 }
 
@@ -104,16 +113,36 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       canRedo: () => {
         return modeler.current!.get<CommandStack | null>('commandStack', false)?.canRedo();
       },
+      undo: () => {
+        modeler.current!.get<CommandStack | null>('commandStack', false)?.undo();
+      },
+      redo: () => {
+        modeler.current!.get<CommandStack | null>('commandStack', false)?.redo();
+      },
       getElement: (id: string) => {
-        return modeler.current!.get<ElementRegistry>('elementRegistry').get(id);
+        return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
       },
       getProcessElement: () => {
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
           .getAll()
-          .filter((el) => el.businessObject?.$type === 'bpmn:Process')[0];
+          .filter((el) => el.businessObject?.$type === 'bpmn:Process')[0] as Element;
+      },
+      getCanvas: () => {
+        return modeler.current!.get<Canvas>('canvas');
+      },
+      getSelection: () => {
+        return modeler.current!.get<Selection>('selection');
+      },
+      getModeling: () => {
+        return modeler.current!.get<Modeling>('modeling');
+      },
+      getFactory: () => {
+        return modeler.current!.get<BpmnFactory>('bpmnFactory');
       },
       loadBPMN: async (bpmn: string) => {
+        // Note: No onUnload here, because this is only meant as a XML "change"
+        // to the same process. Like a user modeling reguraly with the UI.
         await modeler.current!.importXML(bpmn);
         fitViewport(modeler.current!);
       },
@@ -163,11 +192,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
     useEffect(() => {
       // Store handlers so we can remove them later.
+      const _onLoaded = () => onLoaded?.();
       const commandStackChanged = () => onChange?.();
-      const rootSet = (event: { element: RootLike }) => {
-        fitViewport(modeler.current!);
-        onRootChange?.(event.element);
-      };
       const selectionChanged = (event: {
         oldSelection: ElementLike[];
         newSelection: ElementLike[];
@@ -179,23 +205,26 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on('commandStack.changed', commandStackChanged);
       }
 
-      // Zoom new root and notify parent.
-      modeler.current!.on<{ element: RootLike }>('root.set', rootSet);
-
+      modeler.current!.on('import.done', _onLoaded);
       modeler.current!.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
         'selection.changed',
         selectionChanged,
       );
 
       return () => {
+        modeler.current!.off('import.done', _onLoaded);
         modeler.current!.off('commandStack.changed', commandStackChanged);
-        modeler.current!.off('root.set', rootSet);
         modeler.current!.off('selection.changed', selectionChanged);
       };
-    }, [type, onChange, onRootChange, onSelectionChange]);
+    }, [type, onLoaded, onChange, onSelectionChange]);
 
     useEffect(() => {
       const m = modeler.current!;
+      let loaded = false;
+      const rootSet = (event: { element: Root }) => {
+        fitViewport(modeler.current!);
+        onRootChange?.(event.element);
+      };
 
       async function load() {
         await unloadPromise.current;
@@ -212,21 +241,29 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           // The modeler was reset in the meantime.
           return;
         }
-        onLoaded?.();
-        fitViewport(m);
+        loaded = true;
+        // This handler is added here because it would fire before the onLoaded
+        // callback. Since we set the root for subprocesses in the onLoaded, the
+        // URL check in onRootChange would fire too early.
+        rootSet({ element: m.get<Canvas>('canvas').getRootElement() as Root });
+        modeler.current!.on<{ element: Root }>('root.set', rootSet);
       }
 
       load();
 
       return () => {
+        if (!loaded) return;
+
         // We store the callback so we can await it before we load the next
         // BPMN. This gives the parent a chance to save before throwing away the
         // current BPMN.
         console.log('unload');
 
         unloadPromise.current = onUnload?.(modeler.current!);
+
+        modeler.current!.off('root.set', rootSet);
       };
-    }, [bpmn, onLoaded, onUnload, type]); // Also load if the type changed.
+    }, [bpmn, onRootChange, onUnload, type]); // Also load if the type changed.
 
     // Resize the modeler to fit the container.
     useEffect(() => {

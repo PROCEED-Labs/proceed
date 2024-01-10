@@ -1,8 +1,10 @@
 // first seed of roles db
 import { PERMISSION_ADMIN } from '../../iam-constants';
 
+//TODO update environmentId
 export const roleMigrations = [
   {
+    environmentId: '1',
     name: '@everyone',
     default: true,
     description: 'Default role for all authenticated PROCEED users.',
@@ -11,6 +13,7 @@ export const roleMigrations = [
     exipiration: null,
   },
   {
+    environmentId: '1',
     name: '@guest',
     default: true,
     description: 'Default role for all unauthenticated PROCEED users.',
@@ -19,6 +22,8 @@ export const roleMigrations = [
     exipiration: null,
   },
   {
+    environmentId: '1',
+
     name: '@admin',
     default: true,
     description: 'Admin role',
@@ -29,6 +34,7 @@ export const roleMigrations = [
     exipiration: null,
   },
   {
+    environmentId: '1',
     name: '@process_admin',
     default: true,
     description: 'Admin role for managing processes',
@@ -41,6 +47,7 @@ export const roleMigrations = [
     exipiration: null,
   },
   {
+    environmentId: '1',
     name: '@environment_admin',
     default: true,
     description: 'Admin role for managing environment configurations',

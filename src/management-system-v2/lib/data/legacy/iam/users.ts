@@ -3,7 +3,7 @@ import store from '../store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { User, UserInput, UserSchema } from '../../user-schema';
-import { addEnvironment } from './environments.js';
+import { addEnvironment } from './environments';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;

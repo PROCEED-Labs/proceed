@@ -1,7 +1,7 @@
 import store from '../store.js';
 import Ability from '@/lib/ability/abilityHelper';
 import { z } from 'zod';
-import { environmentsMetaObject } from './environments.js';
+import { environmentsMetaObject } from './environments';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;

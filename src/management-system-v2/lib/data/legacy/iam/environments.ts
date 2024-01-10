@@ -65,7 +65,7 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
 export function init() {
   if (!firstInit) return;
 
-  const storedEnvironemnts = store.get('environments');
+  const storedEnvironemnts = store.get('environments') as any[];
 
   // set roles store cache for quick access
   storedEnvironemnts.forEach(

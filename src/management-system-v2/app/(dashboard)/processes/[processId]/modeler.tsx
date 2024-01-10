@@ -73,12 +73,12 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     return () => {
       setModeler(null);
     };
-  }, [canEdit, process, setModeler]);
+  }, [canEdit, setModeler]);
 
   const onSelectionChange = useCallback<Required<BPMNCanvasProps>['onSelectionChange']>(
-    (selection) => {
-      if (selection.length === 1) {
-        setSelectedElementId(selection[0].id);
+    (oldSelection, newSelection) => {
+      if (newSelection.length === 1) {
+        setSelectedElementId(newSelection[0].id);
       } else {
         setSelectedElementId(null);
       }
@@ -204,14 +204,14 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   };
 
   useEffect(() => {
-    // Wipe router cache to ensure changes are loaded next time. subprocessId is
-    // included because browser back button would reload old bpmn from
-    // subprocess -> main process.
+    // Wipe router cache to ensure changes are loaded next time.
     router.refresh();
-  }, [router, process.definitionId, selectedVersionId, subprocessId]);
+  }, [router, process.definitionId, selectedVersionId]);
 
+  // Create a new object to force rerendering when the bpmn doesn't change.
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [process.definitionId, process.bpmn, selectedVersionId],
   );
 

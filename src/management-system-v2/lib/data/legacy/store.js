@@ -21,7 +21,7 @@ function getStore(storeName, defaultVal, subDir = 'Storage') {
     return new Conf({
       configName: storeName,
       cwd: storageDir,
-      defaults: { [storeName]: { users: {} } },
+      defaults: { [storeName]: {} },
     });
 
   if (storeName === 'environmentMemberships')

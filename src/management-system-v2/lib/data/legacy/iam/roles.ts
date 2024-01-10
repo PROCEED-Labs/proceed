@@ -3,16 +3,19 @@ import store from '../store.js';
 import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
 import { addRoleMappings, roleMappingsMetaObjects } from './role-mappings.js';
-import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { toCaslResource } from '@/lib/ability/caslAbility';
-import { adminRules } from '@/lib/authorization/caslRules.ts';
+import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
+import { adminRules } from '@/lib/authorization/caslRules';
 import { developmentRoleMappingsMigrations } from './migrations/role-mappings-migrations.js';
+import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 
+// @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
 /** @type {any} - object containing all roles */
-export let roleMetaObjects = global.roleMetaObjects || (global.roleMetaObjects = {});
+export let roleMetaObjects: Record<string, Role> =
+  // @ts-ignore
+  global.roleMetaObjects || (global.roleMetaObjects = {});
 
 /**
  * initializes the roles meta information objects
@@ -21,7 +24,7 @@ export function init() {
   if (!firstInit) return;
 
   // get roles that were persistently stored
-  const storedRoles = store.get('roles');
+  const storedRoles = store.get('roles') as Role[];
 
   // set roles store
   store.set('roles', 'roles', storedRoles);
@@ -41,6 +44,8 @@ export function init() {
           userId: mapping.userId,
         }));
 
+      // TODO remove ts ignore
+      // @ts-ignore
       addRoleMappings(roleMappings, new Ability(adminRules()));
     }
   });
@@ -50,14 +55,8 @@ export function init() {
 }
 init();
 
-/**
- * Returns all roles in form of an array
- *
- * @param {Ability} [ability]
- *
- * @returns {ApiData<'/roles','get'>} - array containing all roles
- */
-export function getRoles(ability) {
+/** Returns all roles in form of an array */
+export function getRoles(ability: Ability) {
   const roles = Object.values(roleMetaObjects);
 
   return ability ? ability.filter('view', 'Process', roles) : roles;
@@ -67,13 +66,8 @@ export function getRoles(ability) {
  * Returns a role based on role id
  *
  * @throws {UnauthorizedError}
- *
- * @param {String} roleId - the id of a role
- * @param {Ability} ability
- *
- * @returns {ApiData<'/roles/{id}','get'> | undefined} - role object
  */
-export function getRoleById(roleId, ability) {
+export function getRoleById(roleId: string, ability: Ability) {
   const role = roleMetaObjects[roleId];
 
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
@@ -86,17 +80,14 @@ export function getRoleById(roleId, ability) {
  *
  * @throws {UnauthorizedError}
  * @throws {Error}
- *
- * @param {ApiRequestBody<'/roles','post'> } roleRepresentation - role representation
- * @param {Ability} ability
- *
- * @returns {ApiData<'/roles/{id}','get'> } - role object
  */
-export function addRole(roleRepresentation, ability) {
+export function addRole(roleRepresentationInput: RoleInput, ability: Ability) {
+  const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
+
   if (!ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
 
-  const { name, description, note, permissions, expiration } = roleRepresentation;
+  const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
 
   const index = Object.values(roleMetaObjects).findIndex((role) => role.name === name);
   if (index > -1) throw new Error('Role already exists');
@@ -107,6 +98,7 @@ export function addRole(roleRepresentation, ability) {
 
   const role = {
     name,
+    environmentId,
     description: description || null,
     note: note || null,
     permissions: permissions || {},
@@ -137,17 +129,12 @@ export function addRole(roleRepresentation, ability) {
  *
  * @throws {UnauthorizedError}
  * @throws {Error}
- *
- * @param {String} roleId - if of role
- * @param {ApiRequestBody<'/roles/{id}','put'> } roleRepresentation - role representation
- * @param {Ability} ability
- *
- * @returns {ApiData<'/roles/{id}','get'> } - updated role
  */
-export function updateRole(roleId, roleRepresentation, ability) {
+export function updateRole(roleId: string, roleRepresentationInput: RoleInput, ability: Ability) {
   const targetRole = roleMetaObjects[roleId];
-
   if (!targetRole) throw new Error('Role not found');
+
+  const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
   // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
   if (
@@ -159,12 +146,13 @@ export function updateRole(roleId, roleRepresentation, ability) {
     throw new UnauthorizedError();
 
   // merge and save at local cache
+  // @ts-ignore
   mergeIntoObject(roleMetaObjects[roleId], roleRepresentation, true);
   roleMetaObjects[roleId].lastEdited = new Date().toUTCString();
 
   Object.keys(roleMetaObjects[roleId].permissions).forEach((key) => {
-    if (roleMetaObjects[roleId].permissions[key] === 0)
-      delete roleMetaObjects[roleId].permissions[key];
+    if (roleMetaObjects[roleId].permissions[key as ResourceType] === 0)
+      delete roleMetaObjects[roleId].permissions[key as ResourceType];
   });
 
   // persist updated role on file system
@@ -178,11 +166,8 @@ export function updateRole(roleId, roleRepresentation, ability) {
  *
  * @throws {UnauthorizedError}
  * @throws {Error}
- *
- * @param {String} roleId - the id of a role
- * @param {Ability} ability
  */
-export async function deleteRole(roleId, ability) {
+export async function deleteRole(roleId: string, ability: Ability) {
   const role = roleMetaObjects[roleId];
   if (!role) throw new Error('Role not found');
 
@@ -196,7 +181,8 @@ export async function deleteRole(roleId, ability) {
 
   Object.keys(roleMappingsMetaObjects.users).forEach((userId) => {
     const index = roleMappingsMetaObjects.users[userId].findIndex(
-      (mapping) => mapping.roleId === roleId,
+      //TODO remove any
+      (mapping: any) => mapping.roleId === roleId,
     );
     if (index > -1) {
       roleMappingsMetaObjects.users[userId].splice(index, 1);

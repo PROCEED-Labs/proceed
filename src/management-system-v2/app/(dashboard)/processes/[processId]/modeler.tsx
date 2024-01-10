@@ -104,18 +104,33 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       const searchParams = new URLSearchParams(window.location.search);
       const before = searchParams.toString();
 
+      let replace = false;
       if (bpmnIs(root, 'bpmn:SubProcess')) {
         searchParams.set(`subprocess`, `${root.businessObject.id}`);
       } else {
+        const canvas = modeler.current!.getCanvas();
+        const subprocessPlane = canvas
+          .getRootElements()
+          .find((el: any) => el.businessObject.id === searchParams.get('subprocess'));
+        if (searchParams.has('subprocess') && !subprocessPlane) {
+          // The subprocess that was open does not exist anymore in this
+          // version. Switch to the main process view and replace history
+          // instead of push.
+          replace = true;
+        }
         searchParams.delete('subprocess');
       }
 
       if (before !== searchParams.toString()) {
-        router.push(
-          `/processes/${process.definitionId}${
-            searchParams.size ? '?' + searchParams.toString() : ''
-          }`,
-        );
+        if (replace) {
+          router.replace(pathname + '?' + searchParams.toString());
+        } else {
+          router.push(
+            `/processes/${process.definitionId}${
+              searchParams.size ? '?' + searchParams.toString() : ''
+            }`,
+          );
+        }
       }
     },
     [process.definitionId, router, setRootElement],

@@ -22,10 +22,10 @@ export type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof 
 export type ToPrimitive<T> = T extends number
   ? number
   : T extends boolean
-  ? boolean
-  : T extends string
-  ? string
-  : T;
+    ? boolean
+    : T extends string
+      ? string
+      : T;
 
 /**
  * Recursively removes readonly.

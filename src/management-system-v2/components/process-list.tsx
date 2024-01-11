@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, Grid, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Grid,
+  MenuProps,
+  Row,
+  Table,
+  TableColumnsType,
+  Tooltip,
+} from 'antd';
 import React, {
   useCallback,
   useState,
@@ -86,8 +96,8 @@ const ProcessList: FC<ProcessListProps> = ({
   const favourites = [0];
 
   const showMobileMetaData = () => {
-    setShowMobileMetaData(true)
-  }
+    setShowMobileMetaData(true);
+  };
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -235,7 +245,13 @@ const ProcessList: FC<ProcessListProps> = ({
       }),
       render: (_, record) => (
         <div
-        className={breakpoint.xs ? styles.MobileTitleTruncation : breakpoint.xl ? styles.TitleTruncation : styles.TabletTitleTruncation}
+          className={
+            breakpoint.xs
+              ? styles.MobileTitleTruncation
+              : breakpoint.xl
+                ? styles.TitleTruncation
+                : styles.TabletTitleTruncation
+          }
           style={{
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -378,7 +394,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {actionBarGenerator(record)}
         </Row>
       ),
-      responsive: ['xl']
+      responsive: ['xl'],
     },
 
     {
@@ -388,7 +404,9 @@ const ProcessList: FC<ProcessListProps> = ({
       key: '',
       title: '',
       render: () => (
-          <Button style={{float: "right"}} type="text" onClick={showMobileMetaData}><InfoCircleOutlined /></Button>
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+          <InfoCircleOutlined />
+        </Button>
       ),
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
@@ -484,13 +502,9 @@ const ProcessList: FC<ProcessListProps> = ({
         columns={columnsFiltered}
         dataSource={data}
         loading={isLoading}
-        className={cn(breakpoint.xs ? styles.MobileTable : "")}
-        size={breakpoint.xs ? "large" : "middle"}
+        className={cn(breakpoint.xs ? styles.MobileTable : '')}
+        size={breakpoint.xs ? 'large' : 'middle'}
       />
-
-      {/* {previewerOpen && (
-        <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
-      )} */}
     </>
   );
 };

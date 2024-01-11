@@ -18,8 +18,8 @@
           resource.type === 'User'
             ? resource.name
             : resource.type === 'Role'
-            ? resource.name
-            : resource.title
+              ? resource.name
+              : resource.title
         }}
       </p>
       <div

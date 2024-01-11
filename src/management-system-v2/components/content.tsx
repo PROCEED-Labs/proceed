@@ -70,7 +70,8 @@ const Content: FC<ContentProps> = ({
               </div>
             ) : null}
 
-            <div className={styles.Title}>{title}</div>
+            {headerLeft || <div className={styles.Title}>{title}</div>}
+            {headerCenter || null}
             {breakpoint.xs ? (
               // Hamburger menu for mobile view
               <div>
@@ -92,8 +93,6 @@ const Content: FC<ContentProps> = ({
           {children}
         </AntLayout.Content>
       </AntLayout>
-      {headerLeft || <div className={styles.Title}>{title}</div>}
-      {headerCenter || null}
       <Drawer
         title={
           loggedIn ? (
@@ -106,6 +105,7 @@ const Content: FC<ContentProps> = ({
                       session.data?.user.lastName.slice(0, 1)}
                 </Avatar>
               </Tooltip>
+            </>
           ) : (
             <>
               <Button type="text" onClick={() => signIn()}>

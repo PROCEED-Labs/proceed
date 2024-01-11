@@ -17,14 +17,14 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
 
   if (!hydrated) return null;
 
-    return (
-      // Viewer
-      <div
+  return (
+    // Viewer
+    <div
       style={{
         height: '200px',
         width: '100%',
       }}
-      >
+    >
       {Boolean(selection.length) ? (
         <>
           <Viewer
@@ -75,8 +75,8 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
       ) : (
         <div>Please select a process.</div>
       )}
-      </div>
-    )
-      }
+    </div>
+  );
+};
 
 export default MetaDataContent;

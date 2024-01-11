@@ -21,7 +21,7 @@ import ProcessCreationButton from './process-creation-button';
 import { useAbilityStore } from '@/lib/abilityStore';
 import ProcessImportButton from './process-import';
 import Link from 'next/link';
-import styles from './menu-sider.module.scss'
+import styles from './menu-sider.module.scss';
 import { signOut } from 'next-auth/react';
 
 const SiderMenu: FC<PropsWithChildren> = () => {
@@ -32,9 +32,9 @@ const SiderMenu: FC<PropsWithChildren> = () => {
   const breakpoint = Grid.useBreakpoint();
 
   return (
-      <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
-        {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
-          <>
+    <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
+      {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
+        <>
           <ItemGroup key="processes" title="Processes">
             {ability.can('view', 'Process') ? (
               <Item
@@ -53,58 +53,50 @@ const SiderMenu: FC<PropsWithChildren> = () => {
               </Item>
             ) : null}
           </ItemGroup>
-            {breakpoint.xs ? null : <Divider style={{margin: "0px"}}/>}
-          </>
-        ) : null}
+          {breakpoint.xs ? null : <Divider style={{ margin: '0px' }} />}
+        </>
+      ) : null}
 
-        {ability.can('manage', 'User') ||
-        ability.can('manage', 'RoleMapping') ||
-        ability.can('manage', 'Role') ? (
-          <>
-            <ItemGroup key="IAM" title="IAM">
-              <Item
-                key="iam/users"
-                icon={<UserOutlined />}
-                hidden={!ability.can('manage', 'User')}
-              >
-                <Link href="/iam/users">Users</Link>
-              </Item>
+      {ability.can('manage', 'User') ||
+      ability.can('manage', 'RoleMapping') ||
+      ability.can('manage', 'Role') ? (
+        <>
+          <ItemGroup key="IAM" title="IAM">
+            <Item key="iam/users" icon={<UserOutlined />} hidden={!ability.can('manage', 'User')}>
+              <Link href="/iam/users">Users</Link>
+            </Item>
 
-              <Item
-                key="iam/roles"
-                icon={<UnlockOutlined />}
-                hidden={
-                  !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
-                }
-              >
-                <Link href="/iam/roles">Roles</Link>
-              </Item>
-            </ItemGroup>
-            <Divider className={cn(breakpoint.xs ? styles.MarginDivider : styles.NoMarginDivider)}/>
-          </>
-        ) : null}
+            <Item
+              key="iam/roles"
+              icon={<UnlockOutlined />}
+              hidden={!(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))}
+            >
+              <Link href="/iam/roles">Roles</Link>
+            </Item>
+          </ItemGroup>
+          <Divider className={cn(breakpoint.xs ? styles.MarginDivider : styles.NoMarginDivider)} />
+        </>
+      ) : null}
 
-        {breakpoint.xs ?
+      {breakpoint.xs ? (
         <>
           {ability.can('view', 'Setting') ? (
-          <Item key="generalSettings">
-            <Link href="/general-settings">General Settings</Link>
-          </Item>
+            <Item key="generalSettings">
+              <Link href="/general-settings">General Settings</Link>
+            </Item>
           ) : null}
-          <Item onClick={() => signOut()}>
-            Logout
-          </Item>
-          </>
-        :
+          <Item onClick={() => signOut()}>Logout</Item>
+        </>
+      ) : (
         <ItemGroup key="settings" title="Settings">
-        {ability.can('view', 'Setting') ? (
-          <Item key="generalSettings" icon={<SettingOutlined />}>
-            <Link href="/general-settings">General Settings</Link>
-          </Item>
-        ) : null}
-      </ItemGroup>}
-
-      </Menu>
+          {ability.can('view', 'Setting') ? (
+            <Item key="generalSettings" icon={<SettingOutlined />}>
+              <Link href="/general-settings">General Settings</Link>
+            </Item>
+          ) : null}
+        </ItemGroup>
+      )}
+    </Menu>
   );
 };
 

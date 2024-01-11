@@ -23,7 +23,7 @@ export type ProcessData = {
 
 // TODO: maybe show import errors and warnings like in the old MS (e.g. id collisions if an existing process is reimported or two imports use the same id)
 
-const ProcessImportButton: React.FC<ButtonProps> = ({...props}) => {
+const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
 
@@ -53,10 +53,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({...props}) => {
         }}
       >
         {/* <span>Import Process</span> */}
-        <Button
-         {...props}>
-
-        </Button>
+        <Button {...props}></Button>
       </Upload>
       <ProcessModal
         open={importProcessData.length > 0}

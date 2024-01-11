@@ -14,7 +14,7 @@ type BarProps = {
  * screens, the nodes are full width. All nodes are optional.
  */
 const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
-  const breakpoint = Grid.useBreakpoint()
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
@@ -27,8 +27,11 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
         {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
       </Col>
       {rightNode && (
-        <Col xs={23} sm={24} xl={{ flex: 'none' }}
-        style={breakpoint.xl ? {} : {display: "flex", justifyContent: "flex-end"} }
+        <Col
+          xs={23}
+          sm={24}
+          xl={{ flex: 'none' }}
+          style={breakpoint.xl ? {} : { display: 'flex', justifyContent: 'flex-end' }}
         >
           {rightNode}
         </Col>

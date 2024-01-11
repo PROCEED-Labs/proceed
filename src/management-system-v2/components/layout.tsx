@@ -61,9 +61,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               />
             </Link>
           </div>
-          {loggedIn ? (
-            <SiderMenu />
-          ) : null}
+          {loggedIn ? <SiderMenu /> : null}
         </AntLayout.Sider>
         <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
       </AntLayout>

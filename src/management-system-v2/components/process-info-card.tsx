@@ -2,7 +2,15 @@
 
 import { generateDateString } from '@/lib/utils';
 import { Divider } from 'antd';
-import React, { FC, Key, useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, {
+  FC,
+  Key,
+  useEffect,
+  useRef,
+  useState,
+  useImperativeHandle,
+  forwardRef,
+} from 'react';
 import Viewer from './bpmn-viewer';
 import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
@@ -26,8 +34,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
   const collapseCard = () => {
     const resizeCard = resizableElementRef.current;
-    const sidepanelWidth =
-      useUserPreferences.getState().preferences['process-meta-data'].width;
+    const sidepanelWidth = useUserPreferences.getState().preferences['process-meta-data'].width;
 
     if (resizeCard) {
       if (showInfo) resizeCard(30);
@@ -39,8 +46,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         width: sidepanelWidth,
       },
     });
-  }
-
+  };
 
   /* Necessary for Firefox BPMN.js Viewer fix */
   /* const [showViewer, setShowViewer] = useState(showInfo); */
@@ -75,9 +81,9 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
-    if (!hydrated) return null;
+  if (!hydrated) return null;
 
-    return (
+  return (
     <ResizableElement
       initialWidth={
         showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
@@ -110,7 +116,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         show={showInfo}
         onCollapse={collapseCard}
       >
-      <MetaDataContent data={data} selection={selection} />
+        <MetaDataContent data={data} selection={selection} />
       </CollapsibleCard>
     </ResizableElement>
   );

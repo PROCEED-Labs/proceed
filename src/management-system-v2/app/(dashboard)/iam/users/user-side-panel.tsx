@@ -60,8 +60,8 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
       >
         {user ? (
           <>
-            <Avatar src={user.picture} size={60} style={{ marginBottom: 20 }}>
-              {user.picture
+            <Avatar src={user.image} size={60} style={{ marginBottom: 20 }}>
+              {user.image
                 ? null
                 : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
             </Avatar>

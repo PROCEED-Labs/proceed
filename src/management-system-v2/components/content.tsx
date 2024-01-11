@@ -15,6 +15,10 @@ import SiderMenu from './menu-sider';
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */
   title?: ReactNode;
+  /** Center element in the header (overrides title) */
+  headerLeft?: ReactNode;
+  /** Center element in the header */
+  headerCenter?: ReactNode;
   /** If true, the content won't have any padding. */
   compact?: boolean;
   /** If true, the content won't have a header. */
@@ -30,6 +34,8 @@ type ContentProps = PropsWithChildren<{
 const Content: FC<ContentProps> = ({
   children,
   title,
+  headerLeft,
+  headerCenter,
   compact = false,
   noHeader = false,
   wrapperClass,
@@ -86,7 +92,8 @@ const Content: FC<ContentProps> = ({
           {children}
         </AntLayout.Content>
       </AntLayout>
-
+      {headerLeft || <div className={styles.Title}>{title}</div>}
+      {headerCenter || null}
       <Drawer
         title={
           loggedIn ? (
@@ -99,7 +106,6 @@ const Content: FC<ContentProps> = ({
                       session.data?.user.lastName.slice(0, 1)}
                 </Avatar>
               </Tooltip>
-            </>
           ) : (
             <>
               <Button type="text" onClick={() => signIn()}>

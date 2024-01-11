@@ -8,8 +8,8 @@ import { Button, Divider, Form, FormInstance, Input, Modal, Select, Space } from
 import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-import FormSubmitButton from './form-submit-button';
+import useModelerStateStore from './use-modeler-state-store';
+import FormSubmitButton from '@/components/form-submit-button';
 
 type MilestoneModalProperties = {
   show: boolean;
@@ -83,7 +83,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   const updateMilestones = (
     newMilestones: { id: string; name: string; description?: string }[],
   ) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     newMilestones.forEach((milestone) => {
       const milestoneExisting = !!milestones.find(
         (oldMilestone) => oldMilestone.id === milestone.id,

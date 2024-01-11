@@ -11,17 +11,45 @@ import {
   getProcessMetaObjects,
   toExternalFormat,
   addProcess as _addProcess,
-  getProcessBpmn,
+  getProcessBpmn as _getProcessBpmn,
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
+  addProcessVersion,
 } from './legacy/_process';
-import { addDocumentation, generateDefinitionsId, setDefinitionsName } from '@proceed/bpmn-helper';
+import {
+  addDocumentation,
+  generateDefinitionsId,
+  getDefinitionsVersionInformation,
+  setDefinitionsName,
+  setDefinitionsVersionInformation,
+  toBpmnObject,
+  toBpmnXml,
+} from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
 import { ApiData } from '../fetch-data';
+import {
+  areVersionsEqual,
+  getLocalVersionBpmn,
+  updateProcessVersionBasedOn,
+  versionUserTasks,
+} from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import Button from 'antd/es/button';
+
+export const getProcessBPMN = async (definitionId: string) => {
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  const bpmn = await _getProcessBpmn(definitionId);
+
+  return bpmn;
+};
 
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
@@ -99,7 +127,7 @@ export const updateProcess = async (
   }
 
   // Either replace or update the old BPMN.
-  let newBpmn = bpmn ?? (await getProcessBpmn(definitionsId));
+  let newBpmn = bpmn ?? (await _getProcessBpmn(definitionsId));
   if (description !== undefined) {
     newBpmn = (await addDocumentation(newBpmn, description)) as string;
   }
@@ -153,7 +181,7 @@ export const copyProcesses = async (
     // Copy either a process or a specific version.
     const originalBpmn = cpyProcess.originalVersion
       ? await getProcessVersionBpmn(cpyProcess.originalId, cpyProcess.originalVersion)
-      : await getProcessBpmn(cpyProcess.originalId);
+      : await _getProcessBpmn(cpyProcess.originalId);
 
     // TODO: Does createProcess() do the same as this function?
     const newBpmn = await getFinalBpmn({ ...cpyProcess, definitionId: newId, bpmn: originalBpmn });
@@ -178,4 +206,56 @@ export const copyProcesses = async (
   }
 
   return copiedProcesses;
+};
+
+export const createVersion = async (
+  versionName: string,
+  versionDescription: string,
+  processId: string,
+) => {
+  const { ability, session } = await getCurrentUser();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update this process', UserErrorType.PermissionError);
+  }
+
+  const bpmn = await _getProcessBpmn(processId);
+  const bpmnObj = await toBpmnObject(bpmn);
+
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
+
+  // add process version to bpmn
+  const epochTime = +new Date();
+  await setDefinitionsVersionInformation(bpmnObj, {
+    version: epochTime,
+    versionName,
+    versionDescription,
+    versionBasedOn,
+  });
+
+  await versionUserTasks(process, epochTime, bpmnObj);
+
+  const versionedBpmn = await toBpmnXml(bpmnObj);
+
+  // if the new version has no changes to the version it is based on don't create a new version and return the previous version
+  const basedOnBPMN =
+    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionBasedOn) : undefined;
+
+  if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
+    return versionBasedOn;
+  }
+
+  // send final process version bpmn to the backend
+  addProcessVersion(processId, versionedBpmn);
+
+  await updateProcessVersionBasedOn(process, epochTime);
+
+  return epochTime;
 };

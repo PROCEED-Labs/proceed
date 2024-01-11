@@ -17,6 +17,7 @@ import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import { R } from '@tanstack/react-query-devtools/build/legacy/devtools-0Hr18ibL';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -177,9 +178,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         <Space direction="vertical">
           {(selectedType ? getSubOptions(giveSelectionOption)[selectedType] : []).map(
             ({ label, value, tooltip }) => (
-              <Tooltip placement="left" title={tooltip} key={label}>
-                <Checkbox value={value}>{label}</Checkbox>
-              </Tooltip>
+              <Checkbox value={value} key={label}>
+                <Tooltip placement="right" title={tooltip}>
+                  {label}
+                </Tooltip>
+              </Checkbox>
             ),
           )}
         </Space>
@@ -194,15 +197,21 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
             onChange={(e) => setPngScalingFactor(e.target.value)}
             value={pngScalingFactor}
           >
-            <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
-              <Radio value={1.5}>Normal</Radio>
-            </Tooltip>
-            <Tooltip placement="bottom" title="Medium resolution and medium file size">
-              <Radio value={2.5}>Good</Radio>
-            </Tooltip>
-            <Tooltip placement="bottom" title="Highest resolution and biggest file size">
-              <Radio value={4}>Excellent</Radio>
-            </Tooltip>
+            <Radio value={1.5}>
+              <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
+                Normal
+              </Tooltip>
+            </Radio>
+            <Radio value={2.5}>
+              <Tooltip placement="bottom" title="Medium resolution and medium file size">
+                Good
+              </Tooltip>
+            </Radio>
+            <Radio value={4}>
+              <Tooltip placement="bottom" title="Highest resolution and biggest file size">
+                Excellent
+              </Tooltip>
+            </Radio>
           </Radio.Group>
         </div>
       )}

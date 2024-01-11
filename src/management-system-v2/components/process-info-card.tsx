@@ -12,7 +12,6 @@ import React, {
   forwardRef,
 } from 'react';
 import Viewer from './bpmn-viewer';
-import { ApiData } from '@/lib/fetch-data';
 import CollapsibleCard from './collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { ProcessListProcess } from './processes';

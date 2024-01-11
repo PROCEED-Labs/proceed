@@ -64,6 +64,7 @@ const ModelerToolbar = ({
     await updateProcess(processId, xml);
 
     await createVersion(values.versionName, values.versionDescription, processId);
+    // TODO: navigate to new version?
     router.refresh();
   };
   const handlePropertiesPanelToggle = () => {

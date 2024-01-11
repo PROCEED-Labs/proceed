@@ -218,11 +218,6 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   };
 
-  useEffect(() => {
-    // Wipe router cache to ensure changes are loaded next time.
-    router.refresh();
-  }, [router, process.definitionId, selectedVersionId]);
-
   // Create a new object to force rerendering when the bpmn doesn't change.
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),

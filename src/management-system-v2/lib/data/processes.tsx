@@ -37,6 +37,7 @@ import {
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import Button from 'antd/es/button';
+import { revalidatePath } from 'next/cache';
 
 export const getProcessBPMN = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
@@ -134,6 +135,12 @@ export const updateProcess = async (
   if (name !== undefined) {
     newBpmn = (await setDefinitionsName(newBpmn, name)) as string;
   }
+
+  // This invalidates the client-side router cache. Since we don't call
+  // router.refresh() in the modeler for every change, we need to invalidate the
+  // cache here so that the old BPMN isn't reused within 30s. See:
+  // https://nextjs.org/docs/app/building-your-application/caching#invalidation-1
+  revalidatePath(`/processes/${definitionsId}`);
 
   const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
   return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });

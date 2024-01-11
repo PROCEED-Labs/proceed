@@ -27,13 +27,7 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
     >
       {Boolean(selection.length) ? (
         <>
-          <Viewer
-            selectedElementId={
-              data?.find((item) => item.definitionId === selection[0])?.definitionId
-            }
-            reduceLogo={true}
-            resizeOnWidthChange={true}
-          />
+          <Viewer definitionId={selection[0] as string} reduceLogo={true} fitOnResize />
 
           <Divider style={{ width: '100%', marginLeft: '-20%' }} />
           <h3>Meta Data</h3>

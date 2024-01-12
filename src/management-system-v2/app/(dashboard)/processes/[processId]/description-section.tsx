@@ -1,15 +1,14 @@
-import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
 import { Editor, Viewer } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
-import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 
 import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 
 import { Button, Divider, Drawer, Grid, Modal, Space } from 'antd';
-import TextEditor from './text-editor';
+import TextEditor from '@/components/text-editor';
 
 const DescriptionSection: React.FC<{ description: string; selectedElement: any }> = ({
   description,
@@ -43,7 +42,7 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
   };
 
   const updateDescription = (text: string) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
 
     if (text) {

@@ -1,7 +1,7 @@
-import { Button, Card, Descriptions, DescriptionsProps } from 'antd';
+import { Button, Card, Descriptions, DescriptionsProps, Grid } from 'antd';
 import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useRef, useState } from 'react';
 
-import { MoreOutlined } from '@ant-design/icons';
+import { MoreOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
 import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
@@ -17,6 +17,7 @@ type TabCardProps = {
   setSelection: Dispatch<SetStateAction<Key[]>>;
   tabcard?: boolean;
   completeList: ProcessListProcess[];
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
 const tabList = [
@@ -102,7 +103,14 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelection,
+  tabcard,
+  completeList,
+  setShowMobileMetaData,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
   const cardRef = useRef<HTMLDivElement>(null);
@@ -114,6 +122,7 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
   const onTabChange = (key: string) => {
     setActiveTabKey(key as Tab);
   };
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <Card
@@ -124,9 +133,9 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
           {/* <span>{item?.definitionName}</span> */}
           {item?.definitionName.highlighted}
           <span style={{ flex: 1 }}></span>
-          <Button type="text">
-            <MoreOutlined />
-          </Button>
+          {breakpoint.xl ? null : (
+            <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />
+          )}
         </div>
       }
       style={{

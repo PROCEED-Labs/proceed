@@ -50,6 +50,7 @@ if (!global.stores) {
   stores.shares = { store: getStore('shares') };
   stores.roles = { store: getStore('roles') };
   stores.roleMappings = { store: getStore('roleMappings') };
+  stores.users = { store: getStore('users') };
 }
 
 /**

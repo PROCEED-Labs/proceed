@@ -22,10 +22,10 @@ export type Prettify<T> = T extends (infer L)[] ? Prettify<L>[] : { [K in keyof 
 export type ToPrimitive<T> = T extends number
   ? number
   : T extends boolean
-  ? boolean
-  : T extends string
-  ? string
-  : T;
+    ? boolean
+    : T extends string
+      ? string
+      : T;
 
 /**
  * Recursively removes readonly.
@@ -40,3 +40,8 @@ export type RemoveReadOnly<T> = T extends Record<any, any>
  * When given an array type returns the type of an element inside the array
  */
 export type ArrayEntryType<T extends any[]> = T extends Array<infer EntryType> ? EntryType : never;
+
+/**
+ * Makes specific properties of a type required.
+ */
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };

@@ -1,28 +1,24 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import 'bpmn-js/dist/assets/bpmn-js.css';
-import 'bpmn-js/dist/assets/diagram-js.css';
-import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
-import type ModelerType from 'bpmn-js/lib/Modeler';
-import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-
+import React, {
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
-
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-import schema from '@/lib/schema';
+import useModelerStateStore from './use-modeler-state-store';
 import { debounce } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
-
 import useMobileModeler from '@/lib/useMobileModeler';
-
-import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import { updateProcess } from '@/lib/data/processes';
-
-import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App } from 'antd';
+import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -31,15 +27,12 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versions: { version: number; name: string; description: string }[];
 };
 
-type ModelerTypes = 'viewer' | 'modeler' | 'none';
-
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
-  const [currentModelerType, setCurrentModelerType] = useState<ModelerTypes>('none');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -47,10 +40,12 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
+  const setRootElement = useModelerStateStore((state) => state.setRootElement);
 
   /// Derived State
   const minimized = pathname !== `/processes/${process.definitionId}`;
   const selectedVersionId = query.get('version');
+  const subprocessId = query.get('subprocess');
 
   const showMobileView = useMobileModeler();
 
@@ -78,39 +73,18 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     return () => {
       setModeler(null);
     };
-  }, [canEdit, process, setModeler]);
+  }, [canEdit, setModeler]);
 
-  /*useEffect(() => {
-    // only import the bpmn once (the effect will be retriggered when the modeler is changed or when another process or version was selected)
-    if (modeler.current?.importXML && processBpmn) {
-      // import the new bpmn
-      modeler.current.importXML(processBpmn).then(() => {
-        // stay in the current subprocess when the page or the modeler reloads (unless the subprocess does not exist anymore because the process changed)
-        const subprocessId = query.get('subprocess');
-        if (subprocessId && modeler.current) {
-          const canvas = modeler.current.get('canvas') as any;
-          const subprocessPlane = canvas
-            .getRootElements()
-            .find((el: any) => el.businessObject.id === subprocessId);
-          if (subprocessPlane) canvas.setRootElement(subprocessPlane);
-          else
-            messageApi.info(
-              'The sub-process that was open does not exist anymore. Switched to the main process view.',
-            );
-        }
-
-        (modeler.current!.get('canvas') as any).zoom('fit-viewport', 'auto');
-      });
-
-      modeler.current.on('selection.changed', (event) => {
-        const { newSelection } = event as unknown as { newSelection: any[] };
-
-        if (newSelection.length === 1) setSelectedElementId(newSelection[0].id);
-        else setSelectedElementId(null);
-      });
-    }
-  }, [setSelectedElementId, currentModelerType, processId, selectedVersionId]);
-  };*/
+  const onSelectionChange = useCallback<Required<BPMNCanvasProps>['onSelectionChange']>(
+    (oldSelection, newSelection) => {
+      if (newSelection.length === 1) {
+        setSelectedElementId(newSelection[0].id);
+      } else {
+        setSelectedElementId(null);
+      }
+    },
+    [setSelectedElementId],
+  );
 
   const onChange = useCallback<Required<BPMNCanvasProps>['onChange']>(async () => {
     // Save in the background when the BPMN changes.
@@ -121,44 +95,104 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   }, [saveDebounced]);
 
   const onRootChange = useCallback<Required<BPMNCanvasProps>['onRootChange']>(
-    (root) => {
+    async (root) => {
+      console.log('root changed');
+      setRootElement(root);
       // When the current root (the visible layer [the main
       // process/collaboration or some collapsed subprocess]) is changed to a
       // subprocess add its id to the query
       const searchParams = new URLSearchParams(window.location.search);
+      const before = searchParams.toString();
+
+      let replace = false;
       if (bpmnIs(root, 'bpmn:SubProcess')) {
         searchParams.set(`subprocess`, `${root.businessObject.id}`);
       } else {
+        const canvas = modeler.current!.getCanvas();
+        const subprocessPlane = canvas
+          .getRootElements()
+          .find((el: any) => el.businessObject.id === searchParams.get('subprocess'));
+        if (searchParams.has('subprocess') && !subprocessPlane) {
+          // The subprocess that was open does not exist anymore in this
+          // version. Switch to the main process view and replace history
+          // instead of push.
+          replace = true;
+        }
         searchParams.delete('subprocess');
       }
 
-      router.push(
-        `/processes/${process.definitionId as string}${
-          searchParams.size ? '?' + searchParams.toString() : ''
-        }`,
-      );
+      if (before !== searchParams.toString()) {
+        if (replace) {
+          router.replace(pathname + '?' + searchParams.toString());
+        } else {
+          router.push(
+            `/processes/${process.definitionId}${
+              searchParams.size ? '?' + searchParams.toString() : ''
+            }`,
+          );
+        }
+      }
     },
-    [process.definitionId, router],
+    [process.definitionId, router, setRootElement],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(
     async (oldInstance) => {
       // TODO: early return if no changes were made.
 
-      // Wipe router cache to ensure changes are loaded next time.
-      router.refresh();
-
-      // Save the BPMN when the modeler is destroyed (usually when the component is unmounted).
+      // Save the BPMN when the modeler is destroyed (usually when the component
+      // is unmounted).
       try {
-        // Since this is in cleanup, we can't use ref because it is already null or uses the new instance.
+        // Since this is in cleanup, we can't use ref because it is already null
+        // or uses the new instance.
         const { xml } = await oldInstance.saveXML({ format: true });
         await saveDebounced.asyncImmediate(xml).catch((err) => {});
       } catch (err) {
         // Most likely called before the modeler loaded anything. Can ignore.
       }
     },
-    [router, saveDebounced],
+    [saveDebounced],
   );
+
+  const onLoaded = useCallback<Required<BPMNCanvasProps>['onLoaded']>(() => {
+    // stay in the current subprocess when the page or the modeler reloads
+    // (unless the subprocess does not exist anymore because the process
+    // changed)
+    console.log('onLoaded');
+    if (subprocessId && modeler.current) {
+      const canvas = modeler.current.getCanvas();
+      const subprocessPlane = canvas
+        .getRootElements()
+        .find((el: any) => el.businessObject.id === subprocessId);
+      if (subprocessPlane) {
+        canvas.setRootElement(subprocessPlane);
+      } else {
+        messageApi.info(
+          'The sub-process that was open does not exist anymore. Switched to the main process view.',
+        );
+      }
+    }
+  }, [messageApi, subprocessId]);
+
+  useEffect(() => {
+    if (modeler.current) {
+      const canvas = modeler.current.getCanvas();
+      const subprocessPlane = canvas
+        .getRootElements()
+        .find((el: any) => el.businessObject.id === subprocessId);
+      if (subprocessPlane) {
+        canvas.setRootElement(subprocessPlane);
+      } else {
+        const processPlane = canvas
+          .getRootElements()
+          .find((el) => bpmnIsAny(el, ['bpmn:Process', 'bpmn:Collaboration']));
+        if (!processPlane) {
+          return;
+        }
+        canvas.setRootElement(processPlane);
+      }
+    }
+  }, [subprocessId]);
 
   const handleOpenXmlEditor = async () => {
     // Undefined can maybe happen when click happens during router transition?
@@ -183,6 +217,13 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       await updateProcess(process.definitionId, cleanedBpmn);
     }
   };
+
+  // Create a new object to force rerendering when the bpmn doesn't change.
+  const bpmn = useMemo(
+    () => ({ bpmn: process.bpmn }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [process.definitionId, process.bpmn, selectedVersionId],
+  );
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
@@ -213,11 +254,13 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       <BPMNCanvas
         ref={modeler}
         type={canEdit ? 'modeler' : 'viewer'}
-        bpmn={process}
+        bpmn={bpmn}
         className={divProps.className}
+        onLoaded={onLoaded}
         onUnload={canEdit ? onUnload : undefined}
         onRootChange={onRootChange}
         onChange={canEdit ? onChange : undefined}
+        onSelectionChange={onSelectionChange}
       />
     </div>
   );

@@ -19,7 +19,7 @@ import {
 import { setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
-import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
 import { Editor } from '@toast-ui/react-editor';
 import TextEditor from '@/components/text-editor';
@@ -201,7 +201,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   };
 
   const addMilestone = (newMilestone: { id: string; name: string; description?: string }) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     setProceedElement(selectedElement.businessObject, 'Milestone', undefined, newMilestone);
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
@@ -209,7 +209,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   };
 
   const removeMilestone = (milestoneId: string) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     setProceedElement(selectedElement.businessObject, 'Milestone', null, {
       id: milestoneId,
     });

@@ -1,13 +1,8 @@
 'use client';
 
-import type Modeling from 'bpmn-js/lib/features/modeling/Modeling';
-
 import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-
-import useModelerStateStore from '@/lib/use-modeler-state-store';
-
+import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Input, ColorPicker, Space, Grid, Drawer, Divider } from 'antd';
@@ -22,7 +17,7 @@ import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
-import DescriptionSection from '@/components/description-section';
+import DescriptionSection from '@/app/(dashboard)/processes/[processId]/description-section';
 import ImageSelection from '@/components/image-selection';
 
 type PropertiesPanelContentProperties = {
@@ -107,26 +102,26 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   }, [selectedElement]);
 
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
     setName('');
   };
 
   const updateBackgroundColor = (backgroundColor: string) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     modeling.setColor(selectedElement as any, {
       fill: backgroundColor,
     });
   };
   const updateStrokeColor = (frameColor: string) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
     modeling.setColor(selectedElement as any, {
       stroke: frameColor,
     });
   };
 
   const updateMetaData = (name: string, value: any) => {
-    const modeling = modeler!.get('modeling') as Modeling;
+    const modeling = modeler!.getModeling();
 
     if (name === 'property') {
       setProceedElement(selectedElement.businessObject, name, value.value, value.attributes);

@@ -1,80 +1,78 @@
 'use client';
 
-import { FC, useState } from 'react';
+import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Tooltip, App } from 'antd';
-import { useGetAsset, useDeleteAsset } from '@/lib/fetch-data';
-import Content from '@/components/content';
 import HeaderActions from './header-actions';
 import UserList, { ListUser } from '@/components/user-list';
-import { useQueryClient } from '@tanstack/react-query';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserSidePanel from './user-side-panel';
+import { deleteUsers as serverActionDeleteUsers } from '@/lib/data/users';
+import { useRouter } from 'next/navigation';
+import { User } from '@/lib/data/user-schema';
 
-const UsersPage: FC = () => {
+const UsersPage: FC<{ users: User[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
-  const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
+  const [deletingUser, startTransition] = useTransition();
+  const router = useRouter();
 
-  const { error, data, isLoading } = useGetAsset('/users', {});
-  const { mutateAsync: deleteUser, isLoading: deletingUser } = useDeleteAsset('/users/{id}', {
-    onError: () => messageApi.open({ type: 'error', content: 'Something went wrong' }),
-    onSuccess: async () => await queryClient.invalidateQueries(['/users']),
-  });
+  async function deleteUsers(ids: string[], unsetIds: () => void) {
+    startTransition(async () => {
+      unsetIds();
 
-  async function deleteUsers(ids: string[], unsetIds?: () => void) {
-    if (unsetIds) unsetIds();
-    const promises = ids.map((id) => deleteUser({ params: { path: { id } } }));
-    await Promise.allSettled(promises);
+      const result = await serverActionDeleteUsers(ids);
+
+      if (result && 'error' in result)
+        messageApi.open({ type: 'error', content: 'Something went wrong' });
+
+      router.refresh();
+    });
   }
 
   return (
-    <Content title="Identity and Access Management">
-      <UserList
-        users={data || []}
-        error={!!error}
-        columns={(clearSelected, hoveredId, selectedRowKeys) => [
-          {
-            dataIndex: 'id',
-            key: 'tooltip',
-            title: '',
-            width: 100,
-            render: (id: string) => (
-              <Tooltip placement="top" title="Delete">
-                <ConfirmationButton
-                  title="Delete User"
-                  description="Are you sure you want to delete this user?"
-                  onConfirm={() => deleteUsers([id], clearSelected)}
-                  buttonProps={{
-                    icon: <DeleteOutlined />,
-                    type: 'text',
-                    style: { opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0 },
-                  }}
-                />
-              </Tooltip>
-            ),
-          },
-        ]}
-        loading={deletingUser || isLoading}
-        selectedRowActions={(ids, clearIds) => (
-          <ConfirmationButton
-            title="Delete Users"
-            description="Are you sure you want to delete the selected users?"
-            onConfirm={() => deleteUsers(ids, clearIds)}
-            buttonProps={{
-              type: 'text',
-              icon: <DeleteOutlined />,
-            }}
-          />
-        )}
-        searchBarRightNode={<HeaderActions />}
-        onSelectedRows={(users) => {
-          console.log(users);
-          setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
-        }}
-        sidePanel={<UserSidePanel user={selectedUser} />}
-      />
-    </Content>
+    <UserList
+      users={users}
+      columns={(clearSelected, hoveredId, selectedRowKeys) => [
+        {
+          dataIndex: 'id',
+          key: 'tooltip',
+          title: '',
+          width: 100,
+          render: (id: string) => (
+            <Tooltip placement="top" title="Delete">
+              <ConfirmationButton
+                title="Delete User"
+                description="Are you sure you want to delete this user?"
+                onConfirm={() => deleteUsers([id], clearSelected)}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                  style: { opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0 },
+                }}
+              />
+            </Tooltip>
+          ),
+        },
+      ]}
+      loading={deletingUser}
+      selectedRowActions={(ids, clearIds) => (
+        <ConfirmationButton
+          title="Delete Users"
+          description="Are you sure you want to delete the selected users?"
+          onConfirm={() => deleteUsers(ids, clearIds)}
+          buttonProps={{
+            type: 'text',
+            icon: <DeleteOutlined />,
+          }}
+        />
+      )}
+      searchBarRightNode={<HeaderActions />}
+      onSelectedRows={(users) => {
+        setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
+      }}
+      sidePanel={<UserSidePanel user={selectedUser} />}
+    />
   );
 };
 

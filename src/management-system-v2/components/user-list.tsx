@@ -5,9 +5,8 @@ import { Space, Avatar, Button, Table, Result } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { ApiData } from '@/lib/fetch-data';
+import { User } from '@/lib/data/user-schema';
 
-type User = ApiData<'/users', 'get'>[number];
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
 export type ListUser = ReplaceKeysWithHighlighted<
@@ -26,11 +25,13 @@ const defaultColumns = [
     title: 'Username',
     dataIndex: 'username',
     key: 'username',
+    render: (username: any) => username.highlighted,
   },
   {
     title: 'Email Adress',
     dataIndex: 'email',
     key: 'email',
+    render: (email: any) => email.highlighted,
   },
 ];
 
@@ -69,8 +70,8 @@ const UserList: FC<UserListProps> = ({
           ...user,
           display: (
             <Space size={16}>
-              <Avatar src={user.picture}>
-                {user.picture
+              <Avatar src={user.image}>
+                {user.image
                   ? null
                   : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
               </Avatar>

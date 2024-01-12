@@ -3,7 +3,6 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 
 import { Editor, Viewer } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
-import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 
 import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 
@@ -43,7 +42,7 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
 
   const updateDescription = (text: string) => {
     const modeling = modeler!.getModeling();
-    const bpmnFactory = modeler!.get('bpmnFactory') as BpmnFactory;
+    const bpmnFactory = modeler!.getFactory();
 
     if (text) {
       const documentationElement = bpmnFactory.create('bpmn:Documentation', {

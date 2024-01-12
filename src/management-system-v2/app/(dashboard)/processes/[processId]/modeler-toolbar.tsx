@@ -131,7 +131,6 @@ const ModelerToolbar = ({
             width: '100%',
             justifyContent: 'space-between',
             flexWrap: 'nowrap',
-            height: '3rem',
           }}
         >
           <ToolbarGroup>
@@ -185,33 +184,35 @@ const ModelerToolbar = ({
             )}
           </ToolbarGroup>
 
-          <ToolbarGroup>
-            <Tooltip
-              title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
-            >
-              <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
-            </Tooltip>
-            {!showMobileView && (
-              <>
-                <Tooltip title="Show XML">
-                  <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
-                </Tooltip>
-                <Tooltip title="Export">
-                  <Button
-                    icon={<ExportOutlined />}
-                    onClick={handleProcessExportModalToggle}
-                  ></Button>
-                </Tooltip>
-              </>
+          <Space style={{ height: '3rem' }}>
+            <ToolbarGroup>
+              <Tooltip
+                title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
+              >
+                <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
+              </Tooltip>
+              {!showMobileView && (
+                <>
+                  <Tooltip title="Show XML">
+                    <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
+                  </Tooltip>
+                  <Tooltip title="Export">
+                    <Button
+                      icon={<ExportOutlined />}
+                      onClick={handleProcessExportModalToggle}
+                    ></Button>
+                  </Tooltip>
+                </>
+              )}
+            </ToolbarGroup>
+            {showPropertiesPanel && selectedElement && (
+              <PropertiesPanel
+                isOpen={showPropertiesPanel}
+                close={handlePropertiesPanelToggle}
+                selectedElement={selectedElement}
+              />
             )}
-          </ToolbarGroup>
-          {showPropertiesPanel && selectedElement && (
-            <PropertiesPanel
-              isOpen={showPropertiesPanel}
-              close={handlePropertiesPanelToggle}
-              selectedElement={selectedElement}
-            />
-          )}
+          </Space>
         </Space>
       </Toolbar>
       <ProcessExportModal

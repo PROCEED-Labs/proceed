@@ -377,7 +377,7 @@ export async function getProcessUserTaskHtml(processDefinitionsId, taskFileName)
  * Return object mapping from user tasks fileNames to their html
  *
  * @param {String} processDefinitionsId
- * @returns {Object} - contains the html for all user tasks in the process
+ * @returns {Pomise<Object>} - contains the html for all user tasks in the process
  */
 export async function getProcessUserTasksHtml(processDefinitionsId) {
   checkIfProcessExists(processDefinitionsId);

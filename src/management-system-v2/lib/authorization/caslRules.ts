@@ -6,6 +6,7 @@ import {
   ResourceActionType,
   ResourceType,
   buildAbility,
+  resourceAction,
   resources,
 } from '@/lib/ability/caslAbility';
 import { getAppliedRolesForUser } from './rolesHelper';
@@ -288,8 +289,11 @@ type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? 
 export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
 
 /** If possible don't use this function directly, use rulesForUser which caches the rules */
-export async function computeRulesForUser(userId: string) {
-  const roles = getAppliedRolesForUser(userId);
+export async function computeRulesForUser(userId: string, environmentId: string) {
+  if (!userId || !environmentId) return { rules: [] };
+
+  const roles = getAppliedRolesForUser(userId, environmentId);
+  console.log('roles', roles);
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
@@ -373,6 +377,19 @@ export async function computeRulesForUser(userId: string) {
   // casl uses the ordering of the rules to decide
   // this way inverted rules allways decide over normal rules
   translatedRules.sort((a, b) => Number(a.inverted) - Number(b.inverted));
+
+  // Disallow every action on other environments
+  translatedRules.push({
+    inverted: true,
+    subject: 'All',
+    action: [...resourceAction],
+    conditions: {
+      conditions: {
+        environmentId: { $neq: environmentId },
+      },
+    },
+  });
+  console.log('translatedRules', translatedRules);
 
   return { rules: packRules(translatedRules), expiration: firstExpiration };
 }

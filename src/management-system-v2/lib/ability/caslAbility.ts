@@ -44,6 +44,7 @@ export type PermissionNumber = number;
 const conditions = {
   $in: (valueInCondition: any[]) => (inputValue: any) => valueInCondition.includes(inputValue),
   $eq: (valueInCondition: any) => (inputValue: any) => valueInCondition === inputValue,
+  $neq: (valueInCondition: any) => (inputValue: any) => valueInCondition !== inputValue,
   $eq_string_case_insensitive: (valueInCondition: string) => (inputValue: string) =>
     valueInCondition.toLowerCase() === inputValue.toLowerCase(),
   $gte: (valueInCondition: number) => (inputValue: number) => inputValue >= valueInCondition,

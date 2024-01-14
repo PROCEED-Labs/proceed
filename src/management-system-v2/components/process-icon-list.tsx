@@ -10,10 +10,10 @@ import { ProcessListProcess } from './processes';
 type IconViewProps = {
   data?: ProcessListProcess[];
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
+const IconView: FC<IconViewProps> = ({ data, selection, setSelectionElements }) => {
   return (
     <>
       <ScrollBar width="12px">
@@ -32,7 +32,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection }) => {
               item={item}
               completeList={data!}
               selection={selection}
-              setSelection={setSelection}
+              setSelectionElements={setSelectionElements}
               tabcard={false}
             />
           ))}

@@ -14,7 +14,7 @@ import { ProcessListProcess } from './processes';
 type TabCardProps = {
   item: ProcessListProcess;
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   tabcard?: boolean;
   completeList: ProcessListProcess[];
 };
@@ -102,7 +102,13 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
   } as { [key in Tab]: ReactNode };
 };
 
-const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, completeList }) => {
+const TabCard: FC<TabCardProps> = ({
+  item,
+  selection,
+  setSelectionElements,
+  tabcard,
+  completeList,
+}) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
 
@@ -147,10 +153,12 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
         if (event.ctrlKey) {
           /* Not selected yet -> Add to selection */
           if (!selection.includes(item?.definitionId)) {
-            setSelection([item?.definitionId, ...selection]);
+            setSelectionElements((selection) => [item, ...selection]);
             /* Already in selection -> deselect */
           } else {
-            setSelection(selection.filter((id) => id !== item?.definitionId));
+            setSelectionElements((selection) =>
+              selection.filter(({ definitionId }) => definitionId !== item?.definitionId),
+            );
           }
           /* SHIFT */
         } else if (event.shiftKey) {
@@ -164,24 +172,20 @@ const TabCard: FC<TabCardProps> = ({ item, selection, setSelection, tabcard, com
             );
             /* Identical to last clicked */
             if (iLast === iCurr) {
-              setSelection([item?.definitionId]);
+              setSelectionElements([item]);
             } else if (iLast < iCurr) {
               /* Clicked comes after last slected */
-              setSelection(
-                completeList.slice(iLast, iCurr + 1).map((process) => process.definitionId),
-              );
+              setSelectionElements(completeList.slice(iLast, iCurr + 1));
             } else if (iLast > iCurr) {
               /* Clicked comes before last slected */
-              setSelection(
-                completeList.slice(iCurr, iLast + 1).map((process) => process.definitionId),
-              );
+              setSelectionElements(completeList.slice(iCurr, iLast + 1));
             }
           } else {
             /* Nothing selected */
-            setSelection([item?.definitionId]);
+            setSelectionElements([item]);
           }
         } else {
-          setSelection([item?.definitionId]);
+          setSelectionElements([item]);
         }
 
         /* Always */

@@ -36,12 +36,12 @@ import ConfirmationButton from './confirmation-button';
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
-  onExportProcess: (processId: string) => void;
-  onDeleteProcess: (processId: string) => void;
-  onEditProcess: (processId: string) => void;
-  onCopyProcess: (processId: string) => void;
+  onExportProcess: (process: ProcessListProcess) => void;
+  onDeleteProcess: (process: ProcessListProcess) => void;
+  onEditProcess: (process: ProcessListProcess) => void;
+  onCopyProcess: (process: ProcessListProcess) => void;
 }>;
 
 const ColumnHeader = [
@@ -59,7 +59,7 @@ const numberOfRows =
 const ProcessList: FC<ProcessListProps> = ({
   data,
   selection,
-  setSelection,
+  setSelectionElements,
   isLoading,
   onExportProcess,
   onDeleteProcess,
@@ -97,7 +97,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <CopyOutlined
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCopyProcess(record.definitionId);
+                  onCopyProcess(record);
                 }}
               />
             </Tooltip>
@@ -105,7 +105,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined
               onClick={() => {
-                onExportProcess(record.definitionId);
+                onExportProcess(record);
               }}
             />
           </Tooltip>
@@ -113,7 +113,7 @@ const ProcessList: FC<ProcessListProps> = ({
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined
                 onClick={() => {
-                  onEditProcess(record.definitionId);
+                  onEditProcess(record);
                 }}
               />
             </Tooltip>
@@ -121,12 +121,12 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+          <AuthCan action="delete" resource={toCaslResource('Process', record)}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteProcess(record.definitionId)}
+                onConfirm={() => onDeleteProcess(record)}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -144,22 +144,22 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const rowSelection: TableRowSelection<ProcessListProcess> = {
     selectedRowKeys: selection,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelection(selectedRowKeys);
+    onChange: (selectedRowKeys: React.Key[], selectedRows) => {
+      setSelectionElements(selectedRows);
     },
     getCheckboxProps: (record: ProcessListProcess) => ({
       name: record.definitionId,
     }),
     onSelect: (_, __, selectedRows) => {
       // setSelection(selectedRows);
-      setSelection(selectedRows.map((row) => row.definitionId));
+      setSelectionElements(selectedRows);
     },
     onSelectNone: () => {
-      setSelection([]);
+      setSelectionElements([]);
     },
     onSelectAll: (_, selectedRows) => {
-      // setSelection(selectedRows);
-      setSelection(selectedRows.map((row) => row.definitionId));
+      // setSelection(selectedRows)
+      setSelectionElements(selectedRows);
     },
   };
 
@@ -390,10 +390,12 @@ const ProcessList: FC<ProcessListProps> = ({
             if (event.ctrlKey) {
               /* Not selected yet -> Add to selection */
               if (!selection.includes(record?.definitionId)) {
-                setSelection([record?.definitionId, ...selection]);
+                setSelectionElements((prev) => [record, ...prev]);
                 /* Already in selection -> deselect */
               } else {
-                setSelection(selection.filter((id) => id !== record?.definitionId));
+                setSelectionElements((prev) =>
+                  prev.filter(({ definitionId }) => definitionId !== record.definitionId),
+                );
               }
               /* SHIFT */
             } else if (event.shiftKey) {
@@ -405,25 +407,21 @@ const ProcessList: FC<ProcessListProps> = ({
                 );
                 /* Identical to last clicked */
                 if (iLast === iCurr) {
-                  setSelection([record?.definitionId]);
+                  setSelectionElements([record]);
                 } else if (iLast < iCurr) {
                   /* Clicked comes after last slected */
-                  setSelection(
-                    data!.slice(iLast, iCurr + 1).map((process) => process.definitionId),
-                  );
+                  setSelectionElements(data!.slice(iLast, iCurr + 1));
                 } else if (iLast > iCurr) {
                   /* Clicked comes before last slected */
-                  setSelection(
-                    data!.slice(iCurr, iLast + 1).map((process) => process.definitionId),
-                  );
+                  setSelectionElements(data!.slice(iCurr, iLast + 1));
                 }
               } else {
                 /* Nothing selected */
-                setSelection([record?.definitionId]);
+                setSelectionElements([record]);
               }
               /* Normal Click */
             } else {
-              setSelection([record?.definitionId]);
+              setSelectionElements([record]);
             }
 
             /* Always */

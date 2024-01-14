@@ -13,7 +13,7 @@ export const RoleInputSchema = z.object({
   note: z.string().nullish().optional(),
   permissions: z.object(perms as Permissions).partial(),
   expiration: z.string().nullish().optional(),
-  default: z.boolean(),
+  default: z.boolean().optional(),
 });
 
 export type RoleInput = z.infer<typeof RoleInputSchema>;

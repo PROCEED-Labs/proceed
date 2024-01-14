@@ -4,8 +4,8 @@ import { roleMetaObjects } from './roles';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
-import { usersMetaObject } from './users.js';
-import { environmentsMetaObject } from './environments.js';
+import { usersMetaObject } from './users';
+import { environmentsMetaObject } from './environments';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),
@@ -64,7 +64,7 @@ export function getRoleMappings(ability?: Ability, environmentId?: string) {
 }
 
 /** Returns a role mapping by user id */
-export function getRoleMappingByUserId(userId: string, environmentId: string, ability: Ability) {
+export function getRoleMappingByUserId(userId: string, environmentId: string, ability?: Ability) {
   const environmentMappings = roleMappingsMetaObjects[environmentId];
   if (!environmentMappings) return [];
 
@@ -88,8 +88,11 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability: 
   allowedRoleMappings.forEach((roleMapping) => {
     const { roleId, userId, environmentId } = roleMapping;
 
-    if (!environmentsMetaObject[environmentId])
-      throw new Error(`Environment ${environmentId} doesn't exist`);
+    const environment = environmentsMetaObject[environmentId];
+    if (!environment) throw new Error(`Environment ${environmentId} doesn't exist`);
+
+    if (!environment.organization)
+      throw new Error('Cannot add role mapping to personal environment');
 
     let role = roleMetaObjects[roleId];
     if (!role.hasOwnProperty('id')) {

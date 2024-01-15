@@ -5,12 +5,10 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
 import { Button, message } from 'antd';
-import { addProcesses, copyProcesses } from '@/lib/data/processes';
-import { getFinalBpmn } from '@/lib/helpers/processHelpers';
+import { copyProcesses } from '@/lib/data/processes';
 import { ApiData } from '@/lib/fetch-data';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { generateDefinitionsId } from '@proceed/bpmn-helper';
 import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {

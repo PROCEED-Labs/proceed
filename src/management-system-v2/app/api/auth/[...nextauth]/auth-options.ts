@@ -10,13 +10,16 @@ export const nextAuthOptions: AuthOptions = {
   providers: [],
   callbacks: {
     async jwt({ token, user: _user, trigger, account }) {
-      const user = _user as User;
+      if (trigger === 'signIn') token.csrfToken = randomUUID();
 
-      if (user) {
+      if (_user) {
+        token.user = { ..._user } as User;
         const provider = account?.provider ?? 'none';
-        const nameSpacedId = `${provider}:${user.id}`;
-        user.id = nameSpacedId;
+        const nameSpacedId = `${provider}:${_user.id}`;
+        token.user.id = nameSpacedId;
       }
+
+      const user = token.user;
 
       if (
         process.env.NODE_ENV === 'development' &&
@@ -46,8 +49,6 @@ export const nextAuthOptions: AuthOptions = {
           });
       }
 
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
-      if (user) token.user = user as User;
       return token;
     },
     session(args) {

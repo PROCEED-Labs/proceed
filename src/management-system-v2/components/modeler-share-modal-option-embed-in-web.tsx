@@ -1,10 +1,8 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef } from 'react';
 
 import { CopyOutlined } from '@ant-design/icons';
 import { Button, message, Input } from 'antd';
-import { useParams } from 'next/navigation';
 import { TextAreaRef } from 'antd/es/input/TextArea';
-import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
 
 const { TextArea } = Input;
 

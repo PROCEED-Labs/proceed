@@ -31,7 +31,7 @@ export const FetchAbility = () => {
       setCsrfToken(data.csrfToken);
       fetch(`${API_URL}/ability`, {
         credentials: 'include',
-        headers: { 'csrf-token': data.csrfToken },
+        headers: { 'x-csrf-token': data.csrfToken },
       })
         .then((r) => r.json())
         .then(({ rules }: { rules: PackRule<AbilityRule>[] }) => setAbility(rules));

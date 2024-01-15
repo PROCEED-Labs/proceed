@@ -70,7 +70,8 @@ const ModelerShareModalOptionPublicLink = () => {
 
         if (blob) {
           if (action === 'copy') {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
             message.success('QR Code copied as PNG');
           } else if (action === 'download') {
             const a = document.createElement('a');
@@ -87,7 +88,7 @@ const ModelerShareModalOptionPublicLink = () => {
         throw new Error('QR Code canvas not found');
       }
     } catch (err) {
-      message.error(`Error ${action === 'copy' ? 'copying' : 'downloading'} QR Code`);
+      message.error(`${err}`);
     }
   };
 
@@ -105,6 +106,17 @@ const ModelerShareModalOptionPublicLink = () => {
       ) : (
         <div style={{ padding: '10px' }}>
           <Row>
+            <Col span={18} style={{ paddingBottom: '10px' }}>
+              <Flex vertical gap="small" justify="center" align="center">
+                <Checkbox
+                  checked={registeredUsersonlyChecked}
+                  onChange={handlePermissionChanged}
+                  disabled={!isShareLinkChecked}
+                >
+                  Visible only for registered user
+                </Checkbox>
+              </Flex>
+            </Col>
             <Col span={18}>
               <Input
                 type={'text'}
@@ -113,22 +125,14 @@ const ModelerShareModalOptionPublicLink = () => {
                 style={{ border: '1px solid #000' }}
                 onChange={handleLinkChange}
               />
+            </Col>
+            <Col span={12}>
               <Flex
                 vertical={false}
                 style={{ paddingTop: '10px', flexWrap: 'wrap-reverse' }}
-                justify="space-between"
-                align="start"
+                justify="center"
+                align="center"
               >
-                <Flex vertical gap="small">
-                  <Typography.Text strong>Permissions</Typography.Text>
-                  <Checkbox
-                    checked={registeredUsersonlyChecked}
-                    onChange={handlePermissionChanged}
-                    disabled={!isShareLinkChecked}
-                  >
-                    Visible only for registered user
-                  </Checkbox>
-                </Flex>
                 {isShareLinkChecked && (
                   <div id="qrcode">
                     <QRCode
@@ -136,13 +140,13 @@ const ModelerShareModalOptionPublicLink = () => {
                         border: '1px solid #000',
                       }}
                       value={publicLinkValue}
-                      size={140}
+                      size={130}
                     />
                   </div>
                 )}
               </Flex>
             </Col>
-            <Col span={6}>
+            <Col span={6} style={{ paddingTop: '10px' }}>
               <Flex vertical gap={10}>
                 <Button
                   style={{

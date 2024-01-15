@@ -10,6 +10,7 @@ import roleMappingsRouter from '../iam/rest-api/role-mappings.js';
 import resourcesRouter from '../iam/rest-api/resources.js';
 import sharesRouter from '../iam/rest-api/shares.js';
 import { validateRequest } from '../iam/middleware/requestValidation.js';
+import getSessionFromCookie from '../iam/middleware/nextAuthMiddleware.js';
 import abilityRouter from '../iam/rest-api/ability.js';
 import settingsRouter from './settings.js';
 

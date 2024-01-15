@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Tooltip, Typography } from 'antd';
+import { Button, Grid, Tooltip, Typography } from 'antd';
 import { ReactNode } from 'react';
 
 interface ModelerShareModalOptionProps {
@@ -20,6 +20,8 @@ const ModelerShareModalOption = ({
   const handleButtonClick = () => {
     optionOnClick();
   };
+
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <>
@@ -45,7 +47,7 @@ const ModelerShareModalOption = ({
           <Typography.Text
             style={{
               textAlign: 'center',
-              fontSize: '0.75rem',
+              fontSize: breakpoint.lg ? '0.75rem' : '0.6rem',
             }}
           >
             {optionName}

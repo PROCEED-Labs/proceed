@@ -41,7 +41,9 @@ const nextConfig = {
   },
   env: {
     API_URL:
-      process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
+      process.env.NODE_ENV === 'development'
+        ? `${process.env.NEXTAUTH_URL || 'http://localhost:33080'}/proxy`
+        : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',
     NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true' ? 'true' : 'false',
     NEXTAUTH_SECRET:

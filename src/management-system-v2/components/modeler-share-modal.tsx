@@ -54,23 +54,39 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     setActiveIndex(index);
   };
 
+  const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
+    try {
+      if (isSharing) return;
+      setIsSharing(true);
+      await fn(args);
+    } catch (error) {
+      console.error('Sharing failed:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
+    const { token, processData } = await generateToken({ processId });
+    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+
+    const shareObject = {
+      title: `${processData.definitionName} | PROCEED`,
+      text: 'Here is a shared process for you',
+      url: `${window.location.origin}/shared-viewer?token=${token}`,
+    };
+
     if (navigator.share) {
       try {
-        const { token, processData } = await generateToken({ processId });
-        await navigator.share({
-          title: `${processData.definitionName} | PROCEED`,
-          text: 'Here is a shared process for you',
-          url: `${window.location.origin}/shared-viewer?token=${token}`,
-        });
-        await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+        await navigator.share(shareObject);
       } catch (err: any) {
         if (!err.toString().includes('AbortError')) {
           throw new Error('Error: ', { cause: err });
         }
       }
     } else {
-      message.error('Web Share API not supported. Implement your own fallback here.');
+      navigator.clipboard.writeText(shareObject.url);
+      message.success('Copied to clipboard');
     }
   };
 
@@ -79,13 +95,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Process with Public Link',
       optionTitle: 'Share Process with Public Link',
-      optionOnClick: () => handleShareMobile('public'),
+      optionOnClick: () => shareWrapper(handleShareMobile, 'public'),
     },
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process for Registered Users',
-      optionTitle: 'Share Process for Registered Users',
-      optionOnClick: () => handleShareMobile('protected'),
+      optionName: 'Share Process Link for Registered Users',
+      optionTitle: 'Share Process Link for Registered Users',
+      optionOnClick: () => shareWrapper(handleShareMobile, 'protected'),
     },
     {
       optionIcon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
@@ -97,16 +113,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Process as Image',
       optionTitle: 'Share Process as Image',
-      optionOnClick: async () => {
-        if (isSharing) return;
-        setIsSharing(true);
-        await shareProcessImage(modeler);
-        setIsSharing(false);
-      },
+      optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
     {
       optionIcon: (
-        <Image priority src="/proceed-icon.png" height={24} width={40} alt="Follow us on Twitter" />
+        <Image priority src="/proceed-icon.png" height={24} width={40} alt="proceed logo" />
       ),
       optionName: 'Share Process as BPMN File',
       optionTitle: 'Share Process as BPMN File',
@@ -133,7 +144,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Embed in Website',
       optionOnClick: async () => {
         handleOptionClick(1);
-        const { token } = await generateToken({ processId });
+        const { token } = await generateToken({ processId, embeddedMode: true });
         setToken(token);
         updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       },

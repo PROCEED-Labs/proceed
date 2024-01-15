@@ -26,9 +26,13 @@ export async function copyProcessImage(modeler: any) {
     selection.map((el) => el.id),
   );
   const blob = await getPNGFromSVG(svg, 3);
-  const data = [new ClipboardItem({ 'image/png': blob })];
-  navigator.clipboard.write(data).then(() => {
-    console.log('Copied to clipboard');
-    message.success('Diagram copied to clipboard');
-  });
+  try {
+    const data = [new ClipboardItem({ 'image/png': blob })];
+    await navigator.clipboard.write(data).then(() => {
+      console.log('Copied to clipboard');
+      message.success('Diagram copied to clipboard');
+    });
+  } catch (error) {
+    message.error(`${error}`);
+  }
 }

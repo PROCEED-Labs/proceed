@@ -66,6 +66,18 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     }
   };
 
+  const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
+    try {
+      if (isSharing) return;
+      setIsSharing(true);
+      await fn(args);
+    } catch (error) {
+      console.error('Sharing failed:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
     const { token, processData } = await generateToken({ processId });
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
@@ -99,9 +111,9 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     },
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process Link for Registered Users',
-      optionTitle: 'Share Process Link for Registered Users',
-      optionOnClick: () => shareWrapper(handleShareMobile, 'protected'),
+      optionName: 'Share Process for Registered Users',
+      optionTitle: 'Share Process for Registered Users',
+      optionOnClick: () => handleShareMobile('protected'),
     },
     {
       optionIcon: <FilePdfOutlined style={{ fontSize: '24px' }} />,

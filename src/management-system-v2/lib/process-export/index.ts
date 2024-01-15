@@ -104,18 +104,12 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
         await pdfExport(
-          
           exportData,
-         
           processData,
-         
           options.metaData,
-         
           options.a4,
           options.exportSelectionOnly,
-         
           zip,
-        ,
           options.useWebshareApi,
         );
       }

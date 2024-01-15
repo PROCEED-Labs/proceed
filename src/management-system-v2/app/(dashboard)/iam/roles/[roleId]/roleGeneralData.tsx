@@ -1,25 +1,22 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
-import { Alert, App, Button, DatePicker, Form, Input, Spin } from 'antd';
+import { ApiData } from '@/lib/fetch-data';
+import { Alert, App, Button, DatePicker, Form, Input } from 'antd';
 import { FC, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
+import { updateRole } from '@/lib/data/roles';
+import { useRouter } from 'next/navigation';
 
-const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
+type Role = ApiData<'/roles/{id}', 'get'>;
+
+const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
-
-  const { data, isLoading, error } = useGetAsset('/roles/{id}', {
-    params: { path: { id: roleId } },
-  });
-
-  const { mutateAsync: updateRole, isLoading: putLoading } = usePutAsset('/roles/{id}', {
-    onError: () => message.open({ type: 'error', content: 'Something went wrong' }),
-  });
+  const router = useRouter();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -35,9 +32,7 @@ const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
     );
   }, [form, values]);
 
-  if (isLoading || error || !data) return <Spin />;
-
-  const role = toCaslResource('Role', data);
+  const role = toCaslResource('Role', _role);
 
   async function submitChanges(values: Record<string, any>) {
     if (typeof values.expirationDayJs === 'object') {
@@ -46,15 +41,13 @@ const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
     }
 
     try {
-      await updateRole({
-        params: { path: { id: roleId } },
-        body: values,
-      });
-
-      // success message has to go here, or else the mutation will stop loading when the message
-      // disappears
+      const result = await updateRole(role.id, values);
+      if (result && 'error' in result) throw new Error();
+      router.refresh();
       message.open({ type: 'success', content: 'Role updated' });
-    } catch (e) {}
+    } catch (_) {
+      message.open({ type: 'error', content: 'Something went wrong' });
+    }
   }
 
   return (
@@ -93,7 +86,7 @@ const RoleGeneralData: FC<{ roleId: string }> = ({ roleId }) => {
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" htmlType="submit" loading={putLoading} disabled={!submittable}>
+        <Button type="primary" htmlType="submit" disabled={!submittable}>
           Update Role
         </Button>
       </Form.Item>

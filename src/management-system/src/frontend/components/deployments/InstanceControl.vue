@@ -176,8 +176,8 @@ export default {
           this.type === 'instance'
             ? 'Stop instance'
             : this.engineOffline
-            ? 'Project Engine is not reachable'
-            : 'Cancel project',
+              ? 'Project Engine is not reachable'
+              : 'Cancel project',
         confirm: this.type === 'instance' ? 'Stop Instance' : `Cancel Project`,
       };
     },

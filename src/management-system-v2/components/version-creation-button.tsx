@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 
 import { Button, Modal, Form, Input } from 'antd';
 import type { ButtonProps } from 'antd';
@@ -63,32 +63,34 @@ const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
 type VersionCreationButtonProps = ButtonProps & {
   createVersion: (values: { versionName: string; versionDescription: string }) => any;
 };
-const VersionCreationButton: React.FC<VersionCreationButtonProps> = ({
-  createVersion,
-  ...props
-}) => {
-  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+const VersionCreationButton = forwardRef<HTMLElement, VersionCreationButtonProps>(
+  ({ createVersion, ...props }, ref) => {
+    const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
 
-  return (
-    <>
-      <Button
-        {...props}
-        onClick={() => {
-          setIsVersionModalOpen(true);
-        }}
-      ></Button>
-      <VersionModal
-        close={(values) => {
-          setIsVersionModalOpen(false);
+    return (
+      <>
+        <Button
+          ref={ref}
+          {...props}
+          onClick={() => {
+            setIsVersionModalOpen(true);
+          }}
+        ></Button>
+        <VersionModal
+          close={(values) => {
+            setIsVersionModalOpen(false);
 
-          if (values) {
-            createVersion(values);
-          }
-        }}
-        show={isVersionModalOpen}
-      ></VersionModal>
-    </>
-  );
-};
+            if (values) {
+              createVersion(values);
+            }
+          }}
+          show={isVersionModalOpen}
+        ></VersionModal>
+      </>
+    );
+  },
+);
+
+VersionCreationButton.displayName = 'VersionCreationButton';
 
 export default VersionCreationButton;

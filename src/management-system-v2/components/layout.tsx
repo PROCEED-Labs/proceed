@@ -10,7 +10,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import cn from 'classnames';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Link from 'next/link';
-import ProcessSider from './ProcessSider';
+import SiderMenu from './menu-sider';
 import { useSession } from 'next-auth/react';
 
 /**
@@ -61,55 +61,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               />
             </Link>
           </div>
-          {loggedIn ? (
-            <Menu theme="light" mode="inline" selectedKeys={[activeSegment]}>
-              {ability.can('view', 'Process') || ability.can('view', 'Template') ? (
-                <>
-                  <ProcessSider></ProcessSider>
-                  <Divider />
-                </>
-              ) : null}
-
-              {ability.can('manage', 'User') ||
-              ability.can('manage', 'RoleMapping') ||
-              ability.can('manage', 'Role') ? (
-                <>
-                  <ItemGroup key="IAM" title="IAM">
-                    <Item
-                      key="iam/users"
-                      icon={<UserOutlined />}
-                      hidden={!ability.can('manage', 'User')}
-                    >
-                      <Link href="/iam/users">Users</Link>
-                    </Item>
-
-                    <Item
-                      key="iam/roles"
-                      icon={<UnlockOutlined />}
-                      hidden={
-                        !(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
-                      }
-                    >
-                      <Link href="/iam/roles">Roles</Link>
-                    </Item>
-                  </ItemGroup>
-
-                  <Divider />
-                </>
-              ) : null}
-
-              <ItemGroup key="settings" title="Settings">
-                {ability.can('view', 'Setting') ? (
-                  <Item key="generalSettings" icon={<SettingOutlined />}>
-                    <Link href="/general-settings">General Settings</Link>
-                  </Item>
-                ) : null}
-                <Item key="plugins" icon={<ApiOutlined />}>
-                  Plugins
-                </Item>
-              </ItemGroup>
-            </Menu>
-          ) : null}
+          {loggedIn ? <SiderMenu /> : null}
         </AntLayout.Sider>
         <div className={cn(styles.Main, { [styles.collapsed]: collapsed })}>{children}</div>
       </AntLayout>

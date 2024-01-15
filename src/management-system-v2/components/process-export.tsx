@@ -16,7 +16,8 @@ import {
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import { R } from '@tanstack/react-query-devtools/build/legacy/devtools-0Hr18ibL';
 import useExportTypeStore from '@/lib/use-export-type-store';
 
 const exportTypeOptions = [
@@ -26,78 +27,97 @@ const exportTypeOptions = [
   { label: 'PNG', value: 'png' },
 ];
 
-const exportSubOptions = {
-  bpmn: [
-    {
-      label: 'with artefacts',
-      value: 'artefacts',
-      tooltip:
-        'Also export html and images used in User-Tasks and images used for other process elements',
-    },
-    {
-      label: 'with referenced processes',
-      value: 'imports',
-      tooltip: 'Also export all referenced processes used in call-activities',
-    },
-  ],
-  pdf: [
-    {
-      label: 'with meta data',
-      value: 'metaData',
-      tooltip: 'Add process meta information to each page (process name, version, etc.)',
-    },
-    {
-      label: 'A4 pages',
-      value: 'a4',
-      tooltip: 'Use A4 format for all pages (Scales down the process image if necessary)',
-    },
-    {
-      label: 'with referenced processes',
-      value: 'imports',
-      tooltip: 'Also export all referenced processes used in call-activities',
-    },
-    {
-      label: 'with collapsed subprocesses',
-      value: 'subprocesses',
-      tooltip: 'Also export content of all collapsed subprocesses',
-    },
-  ],
-  svg: [
-    {
-      label: 'with referenced processes',
-      value: 'imports',
-      tooltip: 'Also export all referenced processes used in call-activities',
-    },
-    {
-      label: 'with collapsed subprocesses',
-      value: 'subprocesses',
-      tooltip: 'Also export content of all collapsed subprocesses',
-    },
-  ],
-  png: [
-    {
-      label: 'with referenced processes',
-      value: 'imports',
-      tooltip: 'Also export all referenced processes used in call-activities',
-    },
-    {
-      label: 'with collapsed subprocesses',
-      value: 'subprocesses',
-      tooltip: 'Also export content of all collapsed subprocesses',
-    },
-  ],
-};
+function getSubOptions(giveSelectionOption?: boolean) {
+  const exportSubOptions = {
+    bpmn: [
+      {
+        label: 'with artefacts',
+        value: 'artefacts',
+        tooltip:
+          'Also export html and images used in User-Tasks and images used for other process elements',
+      },
+      {
+        label: 'with referenced processes',
+        value: 'imports',
+        tooltip: 'Also export all referenced processes used in call-activities',
+      },
+    ],
+    pdf: [
+      {
+        label: 'with meta data',
+        value: 'metaData',
+        tooltip: 'Add process meta information to each page (process name, version, etc.)',
+      },
+      {
+        label: 'A4 pages',
+        value: 'a4',
+        tooltip: 'Use A4 format for all pages (Scales down the process image if necessary)',
+      },
+      {
+        label: 'with referenced processes',
+        value: 'imports',
+        tooltip: 'Also export all referenced processes used in call-activities',
+      },
+      {
+        label: 'with collapsed subprocesses',
+        value: 'subprocesses',
+        tooltip: 'Also export content of all collapsed subprocesses',
+      },
+    ],
+    svg: [
+      {
+        label: 'with referenced processes',
+        value: 'imports',
+        tooltip: 'Also export all referenced processes used in call-activities',
+      },
+      {
+        label: 'with collapsed subprocesses',
+        value: 'subprocesses',
+        tooltip: 'Also export content of all collapsed subprocesses',
+      },
+    ],
+    png: [
+      {
+        label: 'with referenced processes',
+        value: 'imports',
+        tooltip: 'Also export all referenced processes used in call-activities',
+      },
+      {
+        label: 'with collapsed subprocesses',
+        value: 'subprocesses',
+        tooltip: 'Also export content of all collapsed subprocesses',
+      },
+    ],
+  };
+
+  const selectionOption = {
+    label: 'limit to selection',
+    value: 'onlySelection',
+    tooltip:
+      'Exclude elements from the image(s) that are not selected and not inside a selected element',
+  };
+
+  if (giveSelectionOption) {
+    exportSubOptions.png.push(selectionOption);
+    exportSubOptions.svg.push(selectionOption);
+    exportSubOptions.pdf.push(selectionOption);
+  }
+
+  return exportSubOptions;
+}
 
 type ProcessExportModalProps = {
-  processes: { definitionId: string; processVersion?: number | string }[]; // the processes to export; also used to decide if the modal should be opened
+  processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
+  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   processes = [],
   onClose,
   open,
+  giveSelectionOption,
 }) => {
   const { preselectedExportType, resetPreselectedExportType } = useExportTypeStore();
   const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
@@ -120,6 +140,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
 
   const handleClose = () => {
     setIsExporting(false);
+    setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
     resetPreselectedExportType();
     setSelectedType(undefined);
     onClose();
@@ -130,12 +151,13 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     await exportProcesses(
       {
         type: selectedType!,
-        artefacts: selectedOptions.some((el) => el === 'artefacts'),
-        subprocesses: selectedOptions.some((el) => el === 'subprocesses'),
-        imports: selectedOptions.some((el) => el === 'imports'),
-        metaData: selectedOptions.some((el) => el === 'metaData'),
-        a4: selectedOptions.some((el) => el === 'a4'),
+        artefacts: selectedOptions.includes('artefacts'),
+        subprocesses: selectedOptions.includes('subprocesses'),
+        imports: selectedOptions.includes('imports'),
+        metaData: selectedOptions.includes('metaData'),
+        a4: selectedOptions.includes('a4'),
         scaling: pngScalingFactor,
+        exportSelectionOnly: selectedOptions.includes('onlySelection'),
         useWebshareApi: preselectedExportType !== undefined,
       },
       processes,
@@ -164,11 +186,15 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         style={{ width: '100%' }}
       >
         <Space direction="vertical">
-          {(selectedType ? exportSubOptions[selectedType] : []).map(({ label, value, tooltip }) => (
-            <Tooltip placement="left" title={tooltip} key={label}>
-              <Checkbox value={value}>{label}</Checkbox>
-            </Tooltip>
-          ))}
+          {(selectedType ? getSubOptions(giveSelectionOption)[selectedType] : []).map(
+            ({ label, value, tooltip }) => (
+              <Checkbox value={value} key={label}>
+                <Tooltip placement="right" title={tooltip}>
+                  {label}
+                </Tooltip>
+              </Checkbox>
+            ),
+          )}
         </Space>
       </Checkbox.Group>
       {selectedType === 'png' && (
@@ -181,15 +207,21 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
             onChange={(e) => setPngScalingFactor(e.target.value)}
             value={pngScalingFactor}
           >
-            <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
-              <Radio value={1.5}>Normal</Radio>
-            </Tooltip>
-            <Tooltip placement="bottom" title="Medium resolution and medium file size">
-              <Radio value={2.5}>Good</Radio>
-            </Tooltip>
-            <Tooltip placement="bottom" title="Highest resolution and biggest file size">
-              <Radio value={4}>Excellent</Radio>
-            </Tooltip>
+            <Radio value={1.5}>
+              <Tooltip placement="bottom" title="Smallest resolution and smallest file size">
+                Normal
+              </Tooltip>
+            </Radio>
+            <Radio value={2.5}>
+              <Tooltip placement="bottom" title="Medium resolution and medium file size">
+                Good
+              </Tooltip>
+            </Radio>
+            <Radio value={4}>
+              <Tooltip placement="bottom" title="Highest resolution and biggest file size">
+                Excellent
+              </Tooltip>
+            </Radio>
           </Radio.Group>
         </div>
       )}

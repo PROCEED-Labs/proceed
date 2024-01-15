@@ -92,7 +92,7 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
     const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
     const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
     // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
-    const withSubprocesses = Object.values(exportData[0].versions)[0].subprocesses.length > 0;
+    const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
 
     needsZip = numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses;
   }
@@ -104,11 +104,18 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       // handle imports inside the pdfExport function
       if (!processData.isImport) {
         await pdfExport(
+          
           exportData,
+         
           processData,
+         
           options.metaData,
+         
           options.a4,
+          options.exportSelectionOnly,
+         
           zip,
+        ,
           options.useWebshareApi,
         );
       }
@@ -120,11 +127,17 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {
         const folder = zip?.folder(processData.definitionName);
-        await svgExport(exportData, processData, folder);
+        await svgExport(exportData, processData, options.exportSelectionOnly, folder);
       }
       if (options.type === 'png' && !processData.isImport) {
         const folder = zip?.folder(processData.definitionName);
-        await pngExport(exportData, processData, options.scaling, folder);
+        await pngExport(
+          exportData,
+          processData,
+          options.scaling,
+          options.exportSelectionOnly,
+          folder,
+        );
       }
     }
   }

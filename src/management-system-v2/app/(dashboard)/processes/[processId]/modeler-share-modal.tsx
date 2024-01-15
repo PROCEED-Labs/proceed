@@ -188,7 +188,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       <Modal
         title={<div style={{ textAlign: 'center' }}>Share</div>}
         open={isOpen}
-        width={750}
+        width={breakpoint.lg ? 750 : 320}
         closeIcon={false}
         onCancel={handleClose}
         footer={
@@ -203,7 +203,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: breakpoint.lg ? 'center' : 'space-evenly',
-            gap: 15,
+            gap: 10,
           }}
         >
           {breakpoint.lg

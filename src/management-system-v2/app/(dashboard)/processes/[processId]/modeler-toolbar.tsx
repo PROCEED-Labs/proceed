@@ -103,8 +103,8 @@ const ModelerToolbar = ({
     preselectedExportType: ProcessExportOptions['type'],
   ) => {
     setPreselectedExportType(preselectedExportType);
-    //setShowProcessExportModal(!showProcessExportModal);
-    await handleProcessExportModalToggle();
+    setShowProcessExportModal(!showProcessExportModal);
+    //await handleProcessExportModalToggle();
   };
 
   const query = useSearchParams();
@@ -197,14 +197,14 @@ const ModelerToolbar = ({
             >
               <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
             </Tooltip>
+            <Tooltip title="Share Process">
+              <ModelerShareModalButton
+                onExport={handleProcessExportModalToggle}
+                onExportMobile={handleProcessExportModalToggleMobile}
+              />
+            </Tooltip>
             {!showMobileView && (
               <>
-                <Tooltip title="Share Process">
-                  <ModelerShareModalButton
-                    onExport={handleProcessExportModalToggle}
-                    onExportMobile={handleProcessExportModalToggleMobile}
-                  />
-                </Tooltip>
                 <Tooltip title="Show XML">
                   <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
                 </Tooltip>

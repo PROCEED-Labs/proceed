@@ -1,9 +1,10 @@
-import EmbeddedModeler from '@/components/embedded-modeler';
+import EmbeddedModeler from '@/components/bpmn-shared-viewer';
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/legacy/process';
 import { TokenPayload } from '@/actions/actions';
 import { redirect } from 'next/navigation';
+import BPMNSharedViewer from '@/components/bpmn-shared-viewer';
 
 interface PageProps {
   searchParams: {
@@ -34,7 +35,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   }
   return (
     <div>
-      <EmbeddedModeler processData={processData} embeddedMode={embeddedMode} />
+      <BPMNSharedViewer processData={processData} embeddedMode={embeddedMode} />
     </div>
   );
 };

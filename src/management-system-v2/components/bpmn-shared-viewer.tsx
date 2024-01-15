@@ -1,0 +1,82 @@
+'use client';
+import React, { useRef } from 'react';
+import 'bpmn-js/dist/assets/bpmn-js.css';
+import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+
+import { Button, message } from 'antd';
+import { addProcesses, copyProcesses } from '@/lib/data/processes';
+import { getFinalBpmn } from '@/lib/helpers/processHelpers';
+import { ApiData } from '@/lib/fetch-data';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { generateDefinitionsId } from '@proceed/bpmn-helper';
+import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
+
+type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
+  processData: ApiData<'/process/{definitionId}', 'get'>;
+  embeddedMode?: boolean;
+};
+
+const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNSharedViewerProps) => {
+  const router = useRouter();
+  const session = useSession();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const processBpmn = processData.bpmn;
+  const bpmnViewer = useRef<BPMNCanvasRef>(null);
+
+  const handleCopyToOwnWorkspace = async () => {
+    if (session.status === 'unauthenticated') {
+      const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}`;
+      const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+      router.replace(loginPath);
+    }
+    const res = await copyProcesses([
+      {
+        definitionName: processData.definitionName,
+        description: processData.description,
+        originalId: processData.definitionId,
+      },
+    ]);
+    if ('error' in res) {
+      message.error(res.error.message);
+      return res;
+    } else {
+      message.success('Diagram has been successfully copied to your workspace');
+      //router.push(`/processes/${newDefinitionID}`);
+      if (res.length == 1) router.push(`/processes/${res[0].definitionId}`);
+    }
+  };
+
+  return (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          width: '100vw',
+        }}
+      >
+        {!embeddedMode ? (
+          <Button onClick={handleCopyToOwnWorkspace}>Copy to own workspace</Button>
+        ) : null}
+        <div className="bpmn-viewer" style={{ height: '90vh', width: '90vw' }}>
+          <BPMNCanvas
+            ref={bpmnViewer}
+            className={divProps.className}
+            type={'viewer'}
+            bpmn={{ bpmn: processBpmn }}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default BPMNSharedViewer;

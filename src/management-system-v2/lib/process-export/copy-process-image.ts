@@ -1,24 +1,24 @@
 import { getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
 import { message } from 'antd';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 /**
  * Adds an image of a process or selected parts of a process to the clipboard
  *
  * @param modeler the modeler to copy the process image from
  */
-export async function copyProcessImage(modeler: any) {
-  let { xml } = await modeler.saveXML({ format: true });
-
+export async function copyProcessImage(modeler: BPMNCanvasRef) {
+  let xml = await modeler.getXML();
   // get the currently visible layer
-  const rootElement = (modeler.get('canvas') as any).getRootElement().businessObject;
+  const rootElement = modeler.getCanvas().getRootElement().businessObject;
   const subprocessId =
     rootElement.$type === 'bpmn:Process' || rootElement.$type === 'bpmn:Collaboration'
       ? undefined
       : rootElement.id;
 
   // get the selected elements
-  let selection: any[] = (modeler.get('selection') as any).get();
+  let selection: any[] = modeler.getSelection().get();
   // get the png and copy it to the clipboard
   const svg = await getSVGFromBPMN(
     xml!,

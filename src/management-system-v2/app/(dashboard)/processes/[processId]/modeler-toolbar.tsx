@@ -20,6 +20,9 @@ import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
+import useExportTypeStore from '@/lib/use-export-type-store';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import ModelerShareModalButton from '@/app/(dashboard)/processes/[processId]/modeler-share-modal';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -45,6 +48,8 @@ const ModelerToolbar = ({
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
 
   const modeler = useModelerStateStore((state) => state.modeler);
+  const { preselectedExportType, setPreselectedExportType } = useExportTypeStore();
+
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
   const selectedElement = useMemo(() => {
@@ -92,6 +97,14 @@ const ModelerToolbar = ({
     }
 
     setShowProcessExportModal(!showProcessExportModal);
+  };
+
+  const handleProcessExportModalToggleMobile = async (
+    preselectedExportType: ProcessExportOptions['type'],
+  ) => {
+    setPreselectedExportType(preselectedExportType);
+    //setShowProcessExportModal(!showProcessExportModal);
+    await handleProcessExportModalToggle();
   };
 
   const query = useSearchParams();
@@ -186,6 +199,12 @@ const ModelerToolbar = ({
             </Tooltip>
             {!showMobileView && (
               <>
+                <Tooltip title="Share Process">
+                  <ModelerShareModalButton
+                    onExport={handleProcessExportModalToggle}
+                    onExportMobile={handleProcessExportModalToggleMobile}
+                  />
+                </Tooltip>
                 <Tooltip title="Show XML">
                   <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
                 </Tooltip>

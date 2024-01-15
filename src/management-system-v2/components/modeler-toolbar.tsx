@@ -27,7 +27,7 @@ import ProcessExportModal from './process-export';
 
 import { createNewProcessVersion } from '@/lib/helpers/processVersioning';
 import VersionCreationButton from './version-creation-button';
-import ModelerShareModalButton from './modeler-share-modal';
+import ModelerShareModalButton from '../app/(dashboard)/processes/[processId]/modeler-share-modal';
 
 import { useInvalidateAsset } from '@/lib/fetch-data';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';

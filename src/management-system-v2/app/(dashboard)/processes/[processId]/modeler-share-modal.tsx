@@ -10,7 +10,7 @@ import {
   FileImageOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
-import useModelerStateStore from '@/lib/use-modeler-state-store';
+import useModelerStateStore from './use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
@@ -42,7 +42,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
 
   const handleCopyXMLToClipboard = async () => {
     if (modeler) {
-      const { xml } = await modeler.saveXML({ format: true });
+      const xml = await modeler.getXML();
       if (xml) {
         navigator.clipboard.writeText(xml);
         message.success('Copied to clipboard');
@@ -52,18 +52,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
 
   const handleOptionClick = (index: number) => {
     setActiveIndex(index);
-  };
-
-  const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
-    try {
-      if (isSharing) return;
-      setIsSharing(true);
-      await fn(args);
-    } catch (error) {
-      console.error('Sharing failed:', error);
-    } finally {
-      setIsSharing(false);
-    }
   };
 
   const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
@@ -169,7 +157,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Copy Diagram as PNG',
       optionOnClick: () => {
         handleOptionClick(2);
-        copyProcessImage(modeler);
+        copyProcessImage(modeler!);
         setActiveIndex(null);
       },
     },

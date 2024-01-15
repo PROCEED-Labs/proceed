@@ -237,9 +237,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
             : `Export selected Processes`
         }
         open={open}
+        style={{ position: 'relative', zIndex: '1 !important' }}
         onOk={handleOk}
         onCancel={handleClose}
         centered
+        zIndex={200}
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
         width={540}
       >

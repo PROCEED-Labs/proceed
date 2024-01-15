@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/* This middleware is to be used only with ngrok to inject the "ngrok-skip-browser-warning" header
+   inorder to bypass the CORS policy errors.
+   (Dev mode only)
+*/
 export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
 

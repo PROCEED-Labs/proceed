@@ -25,35 +25,34 @@ const ModelerShareModalOption = ({
 
   return (
     <>
-      <Tooltip title={optionTitle}>
-        <Button
-          size="large"
+      <Button
+        size="large"
+        style={{
+          boxShadow: isActive ? '3px 2px 2px #3D91DB' : '3px 2px 2px gray',
+          border: '1px solid black',
+          width: '124px',
+          height: '90px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflow: 'hidden',
+          whiteSpace: 'normal',
+          textOverflow: 'ellipsis',
+        }}
+        onClick={handleButtonClick}
+      >
+        {optionIcon}
+
+        <Typography.Text
           style={{
-            boxShadow: isActive ? '3px 2px 2px #3D91DB' : '3px 2px 2px gray',
-            border: '1px solid black',
-            width: '124px',
-            height: '90px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            overflow: 'hidden',
-            whiteSpace: 'normal',
-            textOverflow: 'ellipsis',
+            textAlign: 'center',
+            fontSize: breakpoint.lg ? '0.75rem' : '0.6rem',
           }}
-          onClick={handleButtonClick}
         >
-          {optionIcon}
-          <Typography.Text
-            style={{
-              textAlign: 'center',
-              fontSize: breakpoint.lg ? '0.75rem' : '0.6rem',
-            }}
-          >
-            {optionName}
-          </Typography.Text>
-        </Button>
-      </Tooltip>
+          <Tooltip title={optionTitle}>{optionName}</Tooltip>
+        </Typography.Text>
+      </Button>
     </>
   );
 };

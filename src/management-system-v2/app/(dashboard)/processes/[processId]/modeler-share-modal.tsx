@@ -191,6 +191,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         width={breakpoint.lg ? 750 : 320}
         closeIcon={false}
         onCancel={handleClose}
+        zIndex={200}
         footer={
           <Button onClick={handleClose} style={{ border: '1px solid black' }}>
             Close

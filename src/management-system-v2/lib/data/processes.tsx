@@ -146,8 +146,7 @@ export const updateProcess = async (
     revalidatePath(`/processes/${definitionsId}`);
   }
 
-  const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
-  return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });
+  await _updateProcess(definitionsId, { bpmn: newBpmn });
 };
 
 export const updateProcesses = async (

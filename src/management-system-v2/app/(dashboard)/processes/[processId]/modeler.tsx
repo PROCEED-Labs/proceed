@@ -16,7 +16,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { invalidateProcessCache, updateProcess } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';

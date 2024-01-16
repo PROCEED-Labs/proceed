@@ -168,7 +168,7 @@ export const updateProcesses = async (
     }),
   );
 
-  const firstError = res.find((r) => 'error' in r);
+  const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
 };

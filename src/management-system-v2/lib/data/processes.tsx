@@ -31,6 +31,7 @@ import { ApiData } from '../fetch-data';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
+  selectAsLatestVersion,
   updateProcessVersionBasedOn,
   versionUserTasks,
 } from '../helpers/processVersioning';
@@ -265,4 +266,21 @@ export const createVersion = async (
   await updateProcessVersionBasedOn(process, epochTime);
 
   return epochTime;
+};
+
+export const setVersionAsLatest = async (processId: string, version: number) => {
+  const { ability } = await getCurrentUser();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update this process', UserErrorType.PermissionError);
+  }
+
+  await selectAsLatestVersion(processId, version);
 };

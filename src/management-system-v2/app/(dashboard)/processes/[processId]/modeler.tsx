@@ -35,6 +35,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const { message: messageApi } = App.useApp();
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const modeler = useRef<BPMNCanvasRef>(null);
 
@@ -158,6 +159,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     // stay in the current subprocess when the page or the modeler reloads
     // (unless the subprocess does not exist anymore because the process
     // changed)
+    setLoaded(true);
     console.log('onLoaded');
     if (subprocessId && modeler.current) {
       const canvas = modeler.current.getCanvas();
@@ -229,13 +231,15 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
       {!minimized && (
         <>
-          <ModelerToolbar
-            processId={process.definitionId}
-            onOpenXmlEditor={handleOpenXmlEditor}
-            versions={versions}
-            canRedo={canRedo}
-            canUndo={canUndo}
-          />
+          {loaded && (
+            <ModelerToolbar
+              processId={process.definitionId}
+              onOpenXmlEditor={handleOpenXmlEditor}
+              versions={versions}
+              canRedo={canRedo}
+              canUndo={canUndo}
+            />
+          )}
           {selectedVersionId && !showMobileView && (
             <VersionToolbar processId={process.definitionId} />
           )}

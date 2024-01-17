@@ -2,7 +2,7 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
-import { addRoleMappings, roleMappingsMetaObjects } from './role-mappings.js';
+import { addRoleMappings, roleMappingsMetaObjects } from './role-mappings';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { adminRules } from '@/lib/authorization/caslRules';

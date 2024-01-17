@@ -9,12 +9,13 @@ import {
   getUserTaskFileNameMapping,
   setUserTaskData,
 } from '@proceed/bpmn-helper';
-
 import { ApiData } from '../fetch-data';
-
 import { asyncForEach, asyncMap } from './javascriptHelpers';
 import {
+  deleteProcessUserTask,
   getProcessUserTaskHtml,
+  getProcessBpmn,
+  getProcessUserTasksHtml,
   getProcessVersionBpmn,
   saveProcessUserTask,
   updateProcess,
@@ -178,4 +179,42 @@ export async function updateProcessVersionBasedOn(
 
     await updateProcess(processInfo.definitionId, { bpmn });
   }
+}
+
+const getUsedFileNames = async (bpmn: string) => {
+  const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmn);
+
+  const fileNames = new Set<string>();
+
+  Object.values(userTaskFileNameMapping).forEach(({ fileName }) => {
+    if (fileName) {
+      fileNames.add(fileName);
+    }
+  });
+
+  return [...fileNames];
+};
+
+export async function selectAsLatestVersion(processId: string, version: number) {
+  // make sure that the html is also rolled back
+  const processHtmlMapping = await getProcessUserTasksHtml(processId);
+
+  const editableBpmn = await getProcessBpmn(processId);
+  const versionBpmn = await getProcessVersionBpmn(processId, String(version));
+  const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
+
+  const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);
+
+  // Delete UserTasks stored for latest version
+  await asyncForEach(fileNamesinEditableVersion, async (taskFileName) => {
+    await deleteProcessUserTask(processId, taskFileName);
+  });
+
+  // Store UserTasks from this version as UserTasks from latest version
+  await asyncForEach(Object.entries(changedFileNames), async ([oldName, newName]) => {
+    await saveProcessUserTask(processId, newName, processHtmlMapping[oldName]);
+  });
+
+  // Store bpmn from this version as latest version
+  await updateProcess(processId, { bpmn: convertedBpmn });
 }

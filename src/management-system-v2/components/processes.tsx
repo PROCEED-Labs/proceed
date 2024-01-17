@@ -3,7 +3,7 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData, usePostAsset } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,

@@ -18,6 +18,11 @@ export default function useParseZodErrors<T extends ZodRawShape>(schema: z.ZodOb
   }
 
   function parseInput(input: unknown) {
+    if (!input) {
+      setErrors({});
+      return null;
+    }
+
     try {
       return schema.parse(input);
     } catch (e) {
@@ -25,8 +30,6 @@ export default function useParseZodErrors<T extends ZodRawShape>(schema: z.ZodOb
         return parseErrors(e.issues);
       }
     }
-    setErrors({});
-    return null;
   }
 
   return [errors, parseInput] as const;

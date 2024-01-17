@@ -2,8 +2,8 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { User, UserInput, UserSchema } from '../../user-schema';
 import { addEnvironment } from './environments';
+import { User, UserData, UserDataSchema, UserInput, UserSchema } from '../../user-schema';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -18,8 +18,10 @@ export function getUsers(ability?: Ability) {
   return ability ? ability.filter('view', 'User', users) : users;
 }
 
-export function getUserById(id: string, ability?: Ability) {
+export function getUserById(id: string, ability?: Ability, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
+
+  if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
   if (
     ability &&
@@ -74,6 +76,30 @@ export function deleteuser(userId: string, ability?: Ability) {
 
   delete usersMetaObject[userId];
   store.remove('users', userId);
+
+  return user;
+}
+
+export function updateUser(userId: string, inputUser: UserData, ability?: Ability) {
+  const newUserData = UserDataSchema.partial().parse(inputUser);
+
+  const user = getUserById(userId, undefined, { throwIfNotFound: true });
+
+  if (ability && !ability.can('update', toCaslResource('User', user)))
+    throw new UnauthorizedError();
+
+  if (
+    Object.values(usersMetaObject).find(
+      ({ email, username, id }) =>
+        id != userId && (email === userData.email || username === userData.username),
+    )
+  )
+    throw new Error('User with this email or username already exists');
+
+  const userData = { ...user, ...newUserData };
+
+  usersMetaObject[user.id as string] = userData;
+  store.update('users', userId, userData);
 
   return user;
 }

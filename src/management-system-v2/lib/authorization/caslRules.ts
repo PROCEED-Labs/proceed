@@ -9,8 +9,10 @@ import {
   resourceAction,
   resources,
 } from '@/lib/ability/caslAbility';
-import { getAppliedRolesForUser } from './rolesHelper';
+import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
+import { getEnvironmentById } from '../data/legacy/iam/environments';
+import { globalOrganizationRules, globalUserRules } from './globalRules';
 
 const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
@@ -285,6 +287,18 @@ function rulesForAlteringShares(ability: CaslAbility) {
   return rules;
 }
 
+const disallowOutsideOfEnvRule = (environmentId: string) =>
+  ({
+    inverted: true,
+    subject: 'All',
+    action: [...resourceAction],
+    conditions: {
+      conditions: {
+        environmentId: { $neq: environmentId },
+      },
+    },
+  }) as AbilityRule;
+
 type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
 export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
 
@@ -292,8 +306,23 @@ export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
 export async function computeRulesForUser(userId: string, environmentId: string) {
   if (!userId || !environmentId) return { rules: [] };
 
+  const environment = getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
+
+  if (!environment.organization) {
+    if (userId !== environmentId) throw new Error("Personal environment doesn't belong to user");
+
+    const personalEnvironmentRules = [
+      {
+        subject: 'All',
+        action: 'admin',
+      },
+      disallowOutsideOfEnvRule(userId),
+    ] as AbilityRule[];
+
+    return { rules: packRules(personalEnvironmentRules.concat(globalUserRules)) };
+  }
+
   const roles = getAppliedRolesForUser(userId, environmentId);
-  console.log('roles', roles);
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
@@ -379,17 +408,10 @@ export async function computeRulesForUser(userId: string, environmentId: string)
   translatedRules.sort((a, b) => Number(a.inverted) - Number(b.inverted));
 
   // Disallow every action on other environments
-  translatedRules.push({
-    inverted: true,
-    subject: 'All',
-    action: [...resourceAction],
-    conditions: {
-      conditions: {
-        environmentId: { $neq: environmentId },
-      },
-    },
-  });
-  console.log('translatedRules', translatedRules);
+  translatedRules.push(disallowOutsideOfEnvRule(environmentId));
 
-  return { rules: packRules(translatedRules), expiration: firstExpiration };
+  return {
+    rules: packRules(translatedRules.concat(globalOrganizationRules)),
+    expiration: firstExpiration,
+  };
 }

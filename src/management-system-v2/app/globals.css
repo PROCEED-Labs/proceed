@@ -51,6 +51,10 @@
   margin-left: 0 !important;
 }
 
+.toastui-editor-contents table {
+  width: 100% !important;
+}
+
 .ant-input-group-addon {
   width: 4rem !important;
 }

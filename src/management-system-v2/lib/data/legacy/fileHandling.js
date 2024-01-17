@@ -565,6 +565,7 @@ async function getProcessInfo(bpmn, process) {
     processIds,
     versions: [],
     owner: process.owner,
+    environmentId: process.environmentId,
   };
   if (newProcess.type === 'project') {
     newProcess = {

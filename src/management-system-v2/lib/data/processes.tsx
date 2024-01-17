@@ -22,6 +22,7 @@ import { ApiData } from '../fetch-data';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import Button from 'antd/es/button';
+import { ExternalProcess } from './process-schema';
 
 type a = ApiData<'/process/{definitionId}', 'get'>;
 
@@ -49,9 +50,9 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 export const addProcesses = async (
   values: { definitionName: string; description: string; bpmn?: string }[],
 ) => {
-  const { ability, session } = await getCurrentUser();
+  const { ability, session, activeEnvironment } = await getCurrentUser();
 
-  const newProcesses: ApiData<'/process/{definitionId}', 'get'>[] = [];
+  const newProcesses: ExternalProcess[] = [];
 
   for (const value of values) {
     const { bpmn } = await createProcess({
@@ -63,13 +64,15 @@ export const addProcesses = async (
     const newProcess = {
       bpmn,
       owner: session?.user.id || '',
+      environmentId: activeEnvironment,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
     }
+
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess(newProcess);
+    const process = await _addProcess({ ...newProcess });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');

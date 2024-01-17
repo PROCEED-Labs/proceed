@@ -22,11 +22,19 @@ import {
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
-import { z } from 'zod';
 
 import bpmnHelperEx from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper.js';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
+import {
+  ProcessMetadata,
+  ProcessInput,
+  ProcessInputSchema,
+  Process,
+  ProcessServerInput,
+  ProcessServerInputSchema,
+  ExternalProcess,
+} from '../process-schema';
 
 let firstInit = false;
 // @ts-ignore
@@ -34,60 +42,13 @@ if (!global.processMetaObjects) {
   firstInit = true;
 }
 
-let processMetaObjects: { [ProcessId: string]: Omit<Process, 'bpmn'> } =
+let processMetaObjects: {
+  [ProcessId: string]: Omit<ProcessMetadata, 'bpmn'>;
+} =
   // @ts-ignore
   global.processMetaObjects || (global.processMetaObjects = {});
 
 const { getDefinitionsVersionInformation } = bpmnHelperEx;
-
-export const ProcessInputScheme = z.object({
-  environmentId: z.string(),
-  name: z.string(),
-  description: z.string(),
-  type: z.enum(['process', 'project', 'process-instance']),
-  versions: z.array(
-    z.object({
-      version: z.number(),
-      name: z.string(),
-      description: z.string(),
-      versionBasedOn: z.number().optional(),
-    }),
-  ),
-  shared: z.boolean().optional(),
-  owner: z.string(),
-  departments: z.array(z.string()),
-  variables: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string().optional(),
-    }),
-  ),
-  bpmn: z.string(),
-});
-
-export const ProcessScheme = ProcessInputScheme.extend({
-  id: z.string(),
-  createdOn: z.string(),
-  lastEdited: z.string(),
-  inEditingBy: z
-    .array(
-      z.object({
-        id: z.string(),
-        task: z.string().optional(),
-      }),
-    )
-    .optional(),
-  originalId: z.string().optional(),
-  processIds: z.array(z.string()).optional(),
-});
-
-type ProcessInput = z.infer<typeof ProcessInputScheme>;
-type Process = z.infer<typeof ProcessScheme>;
-
-type ExternalProcess = Omit<Process, 'id' | 'name'> & {
-  definitionId: string;
-  definitionName: string;
-};
 
 export function getProcessMetaObjects() {
   return processMetaObjects;
@@ -143,11 +104,11 @@ export function checkIfProcessExists(processDefinitionsId: string) {
 }
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
-export async function addProcess(processInput: ProcessInput) {
-  const processData = ProcessInputScheme.parse(processInput) as OptionalKeys<ProcessInput, 'bpmn'>;
+export async function addProcess(processInput: ProcessServerInput & { bpmn: string }) {
+  // const processData = ProcessInputSchema.parse(processInput) as OptionalKeys<ProcessInput, 'bpmn'>;
+  const { bpmn } = processInput;
 
-  const { bpmn } = processData;
-  delete processData.bpmn;
+  const processData = ProcessServerInputSchema.parse(processInput);
 
   if (!bpmn) {
     throw new Error("Can't create a process without a bpmn!");
@@ -155,21 +116,7 @@ export async function addProcess(processInput: ProcessInput) {
 
   // create meta info object
   const metadata = {
-    ...(getDefaultProcessMetaInfo() as {
-      id: string;
-      type: string;
-      originalId: string;
-      name: string;
-      description: string;
-      owner: string;
-      processIds: [];
-      variables: [];
-      departments: [];
-      inEditingBy: [];
-      createdOn: string;
-      lastEdited: string;
-      versions: [];
-    }),
+    ...getDefaultProcessMetaInfo(),
     ...processData,
     ...(await getProcessInfo(bpmn)),
   };
@@ -183,6 +130,7 @@ export async function addProcess(processInput: ProcessInput) {
 
   // save process info
   processMetaObjects[processDefinitionsId] = metadata;
+
   // write meta data to store
   store.add('processes', removeExcessiveInformation(metadata));
   // save bpmn
@@ -196,13 +144,12 @@ export async function addProcess(processInput: ProcessInput) {
 /** Updates an existing process with the given bpmn */
 export async function updateProcess(
   processDefinitionsId: string,
-  newInfoInput: Partial<ProcessInput>,
+  newInfoInput: Partial<ProcessInput> & { bpmn?: string },
 ) {
-  const newInfo = ProcessInputScheme.partial().parse(newInfoInput);
-  checkIfProcessExists(processDefinitionsId);
+  const { bpmn: newBpmn } = newInfoInput;
 
-  const { bpmn: newBpmn } = newInfo;
-  delete newInfo.bpmn;
+  const newInfo = ProcessInputSchema.partial().parse(newInfoInput);
+  checkIfProcessExists(processDefinitionsId);
 
   let metaChanges = {
     ...newInfo,
@@ -234,9 +181,9 @@ export async function updateProcess(
  * parsing the bpmn unnecessarily */
 export async function updateProcessMetaData(
   processDefinitionsId: string,
-  metaChangesInput: Partial<Omit<Process, 'bpmn'>>,
+  metaChangesInput: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  const metaChanges = ProcessInputScheme.partial().parse(metaChangesInput);
+  const metaChanges = ProcessInputSchema.partial().parse(metaChangesInput);
 
   checkIfProcessExists(processDefinitionsId);
 
@@ -345,7 +292,7 @@ export function getProcessVersionBpmn(processDefinitionsId: string, version: num
 }
 
 /** Removes information from the meta data that would not be correct after a restart */
-function removeExcessiveInformation(processInfo: Omit<Process, 'bpmn'>) {
+function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) {
   const newInfo = { ...processInfo };
   delete newInfo.inEditingBy;
   return newInfo;
@@ -587,7 +534,7 @@ export function unblockTask(socketId: string, processDefinitionsId: string, task
 }
 
 /** Will remove all instance adaptation processes that are stored */
-function removeAdaptationProcesses(processes: Process[]) {
+function removeAdaptationProcesses(processes: ProcessMetadata[]) {
   for (const process of processes) {
     // delete the process data if it is an adaptation process
     if (process.type === 'process-instance') {
@@ -609,7 +556,7 @@ export async function init() {
 
   // get processes that were persistently stored
   const storedProcesses = store.get('processes');
-  let updatedProcesses = (await getUpdatedProcessesJSON(storedProcesses)) as Process[];
+  let updatedProcesses = (await getUpdatedProcessesJSON(storedProcesses)) as ProcessMetadata[];
 
   // remove all adaptation process that might still be stored for some reason
   updatedProcesses = removeAdaptationProcesses(updatedProcesses);

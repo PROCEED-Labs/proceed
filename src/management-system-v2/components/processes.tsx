@@ -3,7 +3,6 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Space, Button, Tooltip, Grid, App } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -30,14 +29,13 @@ import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
 import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
 import ProcessModal from './process-modal';
-import { toCaslResource } from '@/lib/ability/caslAbility';
-import { AuthCan } from './auth-can';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
+import { ExternalProcess } from '@/lib/data/process-schema';
 
-type Processes = ApiData<'/process', 'get'>;
+//TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
-  Processes[number],
+  ExternalProcess,
   'definitionName' | 'description'
 >;
 
@@ -69,18 +67,21 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
 };
 
 type ProcessesProps = {
-  processes: Processes;
+  processes: ExternalProcess[];
 };
 
 const Processes = ({ processes }: ProcessesProps) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const ability = useAbilityStore((state) => state.ability);
+
+  const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
+  const selectedRowKeys = selectedRowElements.map((element) => element.definitionId);
+  const canDeleteSelected = !selectedRowElements.some((element) => !ability.can('delete', element));
+
   const router = useRouter();
   const { message } = App.useApp();
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
-
-  const ability = useAbilityStore((state) => state.ability);
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
@@ -99,12 +100,11 @@ const Processes = ({ processes }: ProcessesProps) => {
         content: 'Someting went wrong while submitting the data',
       });
     }
-    setSelectedRowKeys([]);
+    setSelectedRowElements([]);
     router.refresh();
   }, [message, router, selectedRowKeys]);
 
   const breakpoint = Grid.useBreakpoint();
-
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -121,7 +121,7 @@ const Processes = ({ processes }: ProcessesProps) => {
         />
       </Tooltip>
 
-      <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+      {canDeleteSelected && (
         <Tooltip placement="top" title={'Delete'}>
           <ConfirmationButton
             title="Delete Processes"
@@ -135,7 +135,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             }}
           />
         </Tooltip>
-      </AuthCan>
+      )}
     </>
   );
 
@@ -151,7 +151,7 @@ const Processes = ({ processes }: ProcessesProps) => {
   });
 
   const deselectAll = () => {
-    setSelectedRowKeys([]);
+    setSelectedRowElements([]);
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
@@ -164,7 +164,7 @@ const Processes = ({ processes }: ProcessesProps) => {
       /* CTRL + A */
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
-        setSelectedRowKeys(filteredData?.map((item) => item.definitionId) ?? []);
+        setSelectedRowElements(filteredData ?? []);
         /* DEL */
       } else if (e.key === 'Delete' && selectedRowKeys.length) {
         if (ability.can('delete', 'Process')) {
@@ -259,31 +259,30 @@ const Processes = ({ processes }: ProcessesProps) => {
             <IconView
               data={filteredData}
               selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
+              setSelectionElements={setSelectedRowElements}
             />
           ) : (
             <ProcessList
               data={filteredData}
+              setSelectionElements={setSelectedRowElements}
               selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
               // TODO: Replace with server component loading state
               //isLoading={isLoading}
               onExportProcess={(id) => {
                 setOpenExportModal(true);
-                setSelectedRowKeys([id]);
               }}
-              onDeleteProcess={async (id) => {
-                await deleteProcesses([id]);
-                setSelectedRowKeys([]);
+              onDeleteProcess={async ({ definitionId }) => {
+                await deleteProcesses([definitionId]);
+                setSelectedRowElements([]);
                 router.refresh();
               }}
-              onCopyProcess={(id) => {
+              onCopyProcess={(process) => {
                 setOpenCopyModal(true);
-                setSelectedRowKeys([id]);
+                setSelectedRowElements([process]);
               }}
-              onEditProcess={(id) => {
+              onEditProcess={(process) => {
                 setOpenEditModal(true);
-                setSelectedRowKeys([id]);
+                setSelectedRowElements([process]);
               }}
             />
           )}

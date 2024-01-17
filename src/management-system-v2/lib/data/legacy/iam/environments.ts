@@ -41,9 +41,17 @@ export function getEnvironments(ability: Ability) {
   return environments;
 }
 
-export function getEnvironmentById(id: string, ability: Ability) {
+export function getEnvironmentById(
+  id: string,
+  ability?: Ability,
+  opts?: { throwOnNotFound?: boolean },
+) {
   // TODO: check ability
-  return environmentsMetaObject[id];
+  const environment = environmentsMetaObject[id];
+
+  if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
+
+  return environment;
 }
 
 export function addEnvironment(environmentInput: EnvironmentInput, ability?: Ability) {

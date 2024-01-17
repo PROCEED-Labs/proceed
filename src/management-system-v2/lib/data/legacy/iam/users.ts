@@ -76,8 +76,6 @@ export function init() {
 
   const storedUsers = store.get('users');
 
-  // TODO: user migrations
-
   // set roles store cache for quick access
   storedUsers.forEach((user: User) => (usersMetaObject[user.id] = user));
 }

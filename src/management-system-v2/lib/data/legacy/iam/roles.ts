@@ -29,27 +29,6 @@ export function init() {
   // set roles store
   store.set('roles', 'roles', storedRoles);
 
-  // migrate roles
-  roleMigrations.forEach((role) => {
-    const index = storedRoles.findIndex((storedRole) => storedRole.name === role.name);
-    if (index >= 0) return;
-
-    const { id: roleId, name } = addRole(role, new Ability(adminRules()));
-
-    if (process.env.NODE_ENV === 'development') {
-      const roleMappings = developmentRoleMappingsMigrations
-        .filter((mapping) => mapping.roleName === name)
-        .map((mapping) => ({
-          roleId,
-          userId: mapping.userId,
-        }));
-
-      // TODO remove ts ignore
-      // @ts-ignore
-      addRoleMappings(roleMappings, new Ability(adminRules()));
-    }
-  });
-
   // set roles store cache for quick access
   storedRoles.forEach((role) => (roleMetaObjects[role.id] = role));
 }

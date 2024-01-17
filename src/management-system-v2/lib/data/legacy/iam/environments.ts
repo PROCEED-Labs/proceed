@@ -53,8 +53,9 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
 
   if (environmentsMetaObject[id]) throw new Error('Role id already exists');
 
-  environmentsMetaObject[id] = { ...environment, id };
-  store.add('environments', environment);
+  const newEnvironment = { ...environment, id };
+  environmentsMetaObject[id] = newEnvironment;
+  store.add('environments', newEnvironment);
 
   return environment;
 }

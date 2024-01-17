@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Checkbox, Dropdown, MenuProps, Row, Table, TableColumnsType, Tooltip } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Grid,
+  MenuProps,
+  Row,
+  Table,
+  TableColumnsType,
+  Tooltip,
+} from 'antd';
 import React, {
   useCallback,
   useState,
@@ -18,7 +28,9 @@ import {
   StarOutlined,
   EyeOutlined,
   MoreOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
+import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
@@ -54,7 +66,7 @@ const ColumnHeader = [
 ];
 
 const numberOfRows =
-  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 340) / 47) : 10;
+  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -65,9 +77,11 @@ const ProcessList: FC<ProcessListProps> = ({
   onDeleteProcess,
   onEditProcess,
   onCopyProcess,
+  setShowMobileMetaData,
 }) => {
   const router = useRouter();
-  const [previewerOpen, setPreviewerOpen] = useState(false);
+  const breakpoint = Grid.useBreakpoint();
+  //const [previewerOpen, setPreviewerOpen] = useState(false);
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
@@ -80,18 +94,22 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const favourites = [0];
 
+  const showMobileMetaData = () => {
+    setShowMobileMetaData(true);
+  };
+
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       return (
         <>
-          <Tooltip placement="top" title={'Preview'}>
+          {/* <Tooltip placement="top" title={'Preview'}>
             <EyeOutlined
               onClick={() => {
                 setPreviewProcess(record);
                 setPreviewerOpen(true);
               }}
             />
-          </Tooltip>
+          </Tooltip> */}
           <AuthCan resource={toCaslResource('Process', record)} action="create">
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
@@ -219,23 +237,29 @@ const ProcessList: FC<ProcessListProps> = ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
           // another process. (needs upstream fix)
-          //   //    TODO:
+          //   // TODO:
           //   setSelectedProcess(record);
           //   router.refresh();
           //   router.push(`/processes/${record.definitionId}`);
         },
       }),
       render: (_, record) => (
-        <span
+        <div
+          className={
+            breakpoint.xs
+              ? styles.MobileTitleTruncation
+              : breakpoint.xl
+                ? styles.TitleTruncation
+                : styles.TabletTitleTruncation
+          }
           style={{
-            width: '10vw',
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
           }}
         >
           {record.definitionName.highlighted}
-        </span>
+        </div>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -370,6 +394,21 @@ const ProcessList: FC<ProcessListProps> = ({
           {actionBarGenerator(record)}
         </Row>
       ),
+      responsive: ['xl'],
+    },
+
+    {
+      fixed: 'right',
+      width: 160,
+      dataIndex: 'definitionId',
+      key: '',
+      title: '',
+      render: () => (
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+          <InfoCircleOutlined />
+        </Button>
+      ),
+      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
   ];
 
@@ -461,12 +500,9 @@ const ProcessList: FC<ProcessListProps> = ({
         columns={columnsFiltered}
         dataSource={data}
         loading={isLoading}
-        className={classNames('no-select')}
+        className={cn(breakpoint.xs ? styles.MobileTable : '')}
+        size={breakpoint.xs ? 'large' : 'middle'}
       />
-
-      {previewerOpen && (
-        <Preview selectedElement={previewProcess} setOpen={setPreviewerOpen}></Preview>
-      )}
     </>
   );
 };

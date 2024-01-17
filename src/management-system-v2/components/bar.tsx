@@ -1,4 +1,4 @@
-import { Row, Col, Input, InputProps } from 'antd';
+import { Row, Col, Input, InputProps, Grid } from 'antd';
 import styles from './bar.module.scss';
 import { ReactNode } from 'react';
 
@@ -14,6 +14,8 @@ type BarProps = {
  * screens, the nodes are full width. All nodes are optional.
  */
 const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
+  const breakpoint = Grid.useBreakpoint();
+
   return (
     <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
       {leftNode && (
@@ -21,11 +23,16 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
           {leftNode}
         </Col>
       )}
-      <Col xs={24} lg={{ flex: 'auto' }}>
+      <Col xs={23} sm={24} xl={{ flex: 'auto' }}>
         {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
       </Col>
       {rightNode && (
-        <Col xs={24} lg={{ flex: 'none' }}>
+        <Col
+          xs={23}
+          sm={24}
+          xl={{ flex: 'none' }}
+          style={breakpoint.xl ? {} : { display: 'flex', justifyContent: 'flex-end' }}
+        >
           {rightNode}
         </Col>
       )}

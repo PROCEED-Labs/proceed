@@ -1,11 +1,14 @@
 'use client';
 
 import React, { Dispatch, FC, Key, SetStateAction } from 'react';
+import styles from './process-icon-list.module.scss';
+import cn from 'classnames';
 
 import TabCard from './tabcard-model-metadata';
 
 import ScrollBar from './scrollbar';
 import { ProcessListProcess } from './processes';
+import { Grid } from 'antd';
 
 type IconViewProps = {
   data?: ProcessListProcess[];
@@ -13,13 +16,19 @@ type IconViewProps = {
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelectionElements }) => {
+const IconView: FC<IconViewProps> = ({
+  data,
+  selection,
+  setSelectionElements,
+  setShowMobileMetaDataElements,
+}) => {
+  const breakpoint = Grid.useBreakpoint();
   return (
     <>
       <ScrollBar width="12px">
         <div
+          className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
           style={{
-            width: '100%',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
             justifyContent: 'space-between',
@@ -28,6 +37,7 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelectionElements }) 
         >
           {data?.map((item) => (
             <TabCard
+              setShowMobileMetaData={setShowMobileMetaData}
               key={item.definitionId}
               item={item}
               completeList={data!}

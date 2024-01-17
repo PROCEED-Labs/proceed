@@ -4,9 +4,16 @@ import React, { PropsWithChildren } from 'react';
 
 import { Space } from 'antd';
 
-export const Toolbar: React.FC<PropsWithChildren> = ({ children }) => {
+type ToolbarProps = {
+  className?: string;
+};
+
+export const Toolbar: React.FC<PropsWithChildren<ToolbarProps>> = ({ children, className }) => {
   return (
-    <div style={{ position: 'absolute', zIndex: 10, padding: '12px', width: '100%' }}>
+    <div
+      className={className}
+      style={{ position: 'absolute', zIndex: 10, padding: '12px', width: '100%' }}
+    >
       {children}
     </div>
   );

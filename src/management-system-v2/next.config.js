@@ -31,7 +31,6 @@ try {
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  transpilePackages: ['antd'],
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // This is due to needing to init our in-memory db before accesing the getters.
     // Can probably be removed once we switch to a real db.

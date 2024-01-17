@@ -1,9 +1,7 @@
 import Auth, { getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
-import { FC, useEffect, useState } from 'react';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Modeler from '@/components/modeler';
+import Modeler from './modeler';
 import cn from 'classnames';
 import { getProcess, getProcessVersionBpmn, getProcesses } from '@/lib/data/legacy/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -38,11 +36,11 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   // Since the user is able to minimize and close the page, everyting is in a
   // client component from here.
   return (
-    <Wrapper processName={process.definitionName} versions={process.versions} processes={processes}>
+    <Wrapper processName={process.definitionName} processes={processes}>
       <Modeler
         className={styles.Modeler}
-        processBpmn={selectedVersionBpmn}
-        process={process}
+        process={{ ...process, bpmn: selectedVersionBpmn }}
+        versions={process.versions}
         versionName={selectedVersion?.name}
       />
     </Wrapper>

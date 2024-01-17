@@ -309,9 +309,8 @@ async function activateInspectionOrder(engine, userTask, _5iInformation) {
   try {
     // check if the inspection order is part of an existing plan and set a link to it in the user task
     const { inspectionReportID } = await getPlanInspectionOrder(engine, _5iInformation);
-    userTask[
-      '_5thIndustryInspectionOrderLink'
-    ] = `${_5iInformation.applicationAddress}/protocols/${_5iInformation.inspectionPlanId}/${inspectionReportID}`;
+    userTask['_5thIndustryInspectionOrderLink'] =
+      `${_5iInformation.applicationAddress}/protocols/${_5iInformation.inspectionPlanId}/${inspectionReportID}`;
 
     // set inspection order linked to the user task to being active
     await setInspectionOrderTokenState(engine, _5iInformation, true);

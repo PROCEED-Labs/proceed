@@ -21,7 +21,11 @@ export function getUsers(ability?: Ability) {
 export function getUserById(id: string, ability?: Ability) {
   const user = usersMetaObject[id];
 
-  if (ability && !ability?.can('view', toCaslResource('User', user))) throw new UnauthorizedError();
+  if (
+    ability &&
+    !ability?.can('view', toCaslResource('User', user), { environmentId: ability.environmentId })
+  )
+    throw new UnauthorizedError();
 
   return user;
 }
@@ -29,7 +33,10 @@ export function getUserById(id: string, ability?: Ability) {
 export function addUser(inputUser: UserInput, ability?: Ability) {
   const user = UserSchema.parse(inputUser);
 
-  if (ability && !ability.can('create', toCaslResource('User', user)))
+  if (
+    ability &&
+    !ability.can('create', toCaslResource('User', user), { environmentId: ability.environmentId })
+  )
     throw new UnauthorizedError();
 
   if (
@@ -57,7 +64,10 @@ export function addUser(inputUser: UserInput, ability?: Ability) {
 export function deleteuser(userId: string, ability?: Ability) {
   const user = usersMetaObject[userId];
 
-  if (ability && !ability.can('delete', toCaslResource('User', user)))
+  if (
+    ability &&
+    !ability.can('delete', toCaslResource('User', user), { environmentId: ability.environmentId })
+  )
     throw new UnauthorizedError();
 
   if (!user) throw new Error("User doesn't exist");

@@ -326,7 +326,7 @@ processRouter.use('/:definitionId/images/:imageFileName', async (req, res, next)
   try {
     // see if there already exists some data for this user task and make it accessible for later steps
     req.image = await getProcessImage(req.definitionsId, req.imageFileName);
-  } catch (err) { }
+  } catch (err) {}
   next();
 });
 
@@ -423,7 +423,7 @@ processRouter.use('/:definitionId/user-tasks/:userTaskFileName', async (req, res
   try {
     // see if there already exists some data for this user task and make it accessible for later steps
     req.userTaskHtml = await getProcessUserTaskHtml(req.definitionsId, req.userTaskFileName);
-  } catch (err) { }
+  } catch (err) {}
   next();
 });
 

@@ -10,9 +10,8 @@ import {
 type CanParams = Parameters<CaslAbility['can']>;
 
 type NeedsEnvId<T> = T extends string ? false : T extends { environmentId: string } ? false : true;
-type OptionalIfHasEnvId<TCheck, TParam> = NeedsEnvId<TCheck> extends true
-  ? [TParam & { environmentId: string }]
-  : [TParam?];
+type OptionalIfHasEnvId<TCheck, TParam> =
+  NeedsEnvId<TCheck> extends true ? [TParam & { environmentId: string }] : [TParam?];
 
 export default class Ability {
   caslAbility: CaslAbility;

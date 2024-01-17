@@ -54,7 +54,6 @@ export const getProcessBPMN = async (definitionId: string) => {
   return bpmn;
 };
 
-
 export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
 

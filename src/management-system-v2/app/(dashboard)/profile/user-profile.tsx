@@ -76,7 +76,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         <Card className={styles.Card} style={{ margin: 'auto' }}>
           <Typography.Title level={3}>Account Information</Typography.Title>
 
-          <Avatar size={64} src={userData.image} style={{ marginBottom: 16 }}>
+          <Avatar size={64} src={userData.image || undefined} style={{ marginBottom: 16 }}>
             {userData.image ? null : userData.firstName.slice(0, 1) + userData.lastName.slice(0, 1)}
           </Avatar>
 

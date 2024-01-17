@@ -114,6 +114,7 @@ export const updateProcess = async (
   bpmn?: string,
   description?: string,
   name?: string,
+  invalidate = false,
 ) => {
   const { ability } = await getCurrentUser();
 
@@ -141,10 +142,11 @@ export const updateProcess = async (
   // router.refresh() in the modeler for every change, we need to invalidate the
   // cache here so that the old BPMN isn't reused within 30s. See:
   // https://nextjs.org/docs/app/building-your-application/caching#invalidation-1
-  revalidatePath(`/processes/${definitionsId}`);
+  if (invalidate) {
+    revalidatePath(`/processes/${definitionsId}`);
+  }
 
-  const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
-  return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });
+  await _updateProcess(definitionsId, { bpmn: newBpmn });
 };
 
 export const updateProcesses = async (
@@ -166,7 +168,7 @@ export const updateProcesses = async (
     }),
   );
 
-  const firstError = res.find((r) => 'error' in r);
+  const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
 };

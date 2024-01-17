@@ -54,9 +54,9 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const saveDebounced = useMemo(
     () =>
-      debounce(async (xml: string) => {
+      debounce(async (xml: string, invalidate: boolean = false) => {
         try {
-          await updateProcess(process.definitionId, xml);
+          await updateProcess(process.definitionId, xml, undefined, undefined, invalidate);
         } catch (err) {
           console.log(err);
         }
@@ -147,7 +147,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         // Since this is in cleanup, we can't use ref because it is already null
         // or uses the new instance.
         const { xml } = await oldInstance.saveXML({ format: true });
-        await saveDebounced.asyncImmediate(xml).catch((err) => {});
+        // Last save before unloading, so invalidate the client router cache.
+        await saveDebounced.asyncImmediate(xml, true).catch((err) => {});
       } catch (err) {
         // Most likely called before the modeler loaded anything. Can ignore.
       }

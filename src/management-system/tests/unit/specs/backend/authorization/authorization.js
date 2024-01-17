@@ -2,7 +2,7 @@ export const processes = require('../../../../data/authorization/processes.json'
 export const roles = require('../../../../data/authorization/roles.json');
 export const shares = require('../../../../data/authorization/shares.json');
 export const users = require('../../../../data/authorization/users.json');
-import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
+import Ability from '../../../../../src/backend/server/iam/authorization/abilityHelper';
 import {
   rulesForUser,
   setGlobalRolesForAuthorization,

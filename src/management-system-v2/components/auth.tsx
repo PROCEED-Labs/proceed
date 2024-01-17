@@ -11,19 +11,25 @@ import { nextAuthOptions } from '@/app/api/auth/[...nextauth]/auth-options';
 // composability.
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
-  const ability = await getAbilityForUser(session?.user.id || '');
 
-  return { session, ability };
+  const userId = session?.user.id || '';
+  // TODO: environment defaults to user's personal envitonment
+  const activeEnvironment = userId;
+
+  const ability = await getAbilityForUser(userId, activeEnvironment);
+
+  return { session, ability, activeEnvironment };
 });
 
 // HOC for server-side auth checking
 const Auth = <P extends {}>(authOptions: AuthCanProps, Component: ComponentType<P>) => {
   async function WrappedComponent(props: ComponentProps<ComponentType<P>>) {
-    const { session } = await getCurrentUser();
+    const { session, ability } = await getCurrentUser();
 
     if (!session && authOptions.fallbackRedirect) {
       redirect(authOptions.fallbackRedirect);
     }
+    console.log('session', session, ability.can('view', 'Process'));
 
     return (
       <AuthCan {...authOptions}>

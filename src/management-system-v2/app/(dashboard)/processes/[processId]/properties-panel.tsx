@@ -78,9 +78,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     return getMetaDataFromElement(selectedElement.businessObject);
   }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
   // deep comparison of extentionElements object to track changes in array
-  const milestones = useMemo(() => {
-    return getMilestonesFromElement(selectedElement.businessObject);
-  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
 
   useEffect(() => {
     if (selectedElement) {
@@ -177,10 +174,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         selectedElement={selectedElement}
       ></DescriptionSection>
 
-      <MilestoneSelectionSection
-        milestones={milestones}
-        selectedElement={selectedElement}
-      ></MilestoneSelectionSection>
+      <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
 
       <Space direction="vertical" style={{ width: '100%' }}>
         <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
@@ -260,9 +254,9 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   return breakpoint.xl ? (
     <ResizableElement
-      initialWidth={450}
-      minWidth={450}
-      maxWidth={600}
+      initialWidth={400}
+      minWidth={300}
+      maxWidth={'40vw'}
       style={{
         // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 70px and Header with 64px, Padding of Toolbar 12px (=> Total 184px)
         height: 'calc(100vh - 190px)',

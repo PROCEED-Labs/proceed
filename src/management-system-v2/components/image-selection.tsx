@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Space, Upload, Image } from 'antd';
 
 import { useParams } from 'next/navigation';
-import { useGetAsset, usePostAsset, usePutAsset } from '@/lib/fetch-data';
+import { useGetAsset, usePutAsset } from '@/lib/fetch-data';
 
 type ImageSelectionSectionProperties = {
   metaData: { [key: string]: any };
@@ -21,8 +21,6 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({ meta
   );
 
   const [base64Image, setBase64Image] = useState(fallbackImage);
-
-  const { mutateAsync: postImage } = usePostAsset('/process/{definitionId}/images');
 
   const imageFileName = useMemo(() => {
     if (metaData.overviewImage) {
@@ -70,11 +68,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({ meta
               headers: new Headers({ 'Content-Type': file.type! }),
             });
           } else {
-            postImage({
-              params: { path: { definitionId: processId as string } },
-              body: e.target!.result,
-              headers: new Headers({ 'Content-Type': file.type! }),
-            });
+            // TODO: Send image to server
           }
         };
         reader.readAsText(file);

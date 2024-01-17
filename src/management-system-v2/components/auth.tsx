@@ -24,12 +24,11 @@ export const getCurrentUser = cache(async () => {
 // HOC for server-side auth checking
 const Auth = <P extends {}>(authOptions: AuthCanProps, Component: ComponentType<P>) => {
   async function WrappedComponent(props: ComponentProps<ComponentType<P>>) {
-    const { session, ability } = await getCurrentUser();
+    const { session } = await getCurrentUser();
 
     if (!session && authOptions.fallbackRedirect) {
       redirect(authOptions.fallbackRedirect);
     }
-    console.log('session', session, ability.can('view', 'Process'));
 
     return (
       <AuthCan {...authOptions}>

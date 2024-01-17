@@ -1,12 +1,9 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import { roleMigrations } from './migrations/role-migrations.js';
 import { mergeIntoObject } from '../../../helpers/javascriptHelpers';
-import { addRoleMappings, roleMappingsMetaObjects } from './role-mappings';
+import { roleMappingsMetaObjects } from './role-mappings';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
-import { adminRules } from '@/lib/authorization/caslRules';
-import { developmentRoleMappingsMigrations } from './migrations/role-mappings-migrations.js';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 
 // @ts-ignore
@@ -35,8 +32,10 @@ export function init() {
 init();
 
 /** Returns all roles in form of an array */
-export function getRoles(ability: Ability) {
-  const roles = Object.values(roleMetaObjects);
+export function getRoles(environmentId?: string, ability?: Ability) {
+  const roles = environmentId
+    ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
+    : Object.values(roleMetaObjects);
 
   return ability ? ability.filter('view', 'Process', roles) : roles;
 }
@@ -46,8 +45,9 @@ export function getRoles(ability: Ability) {
  *
  * @throws {UnauthorizedError}
  */
-export function getRoleById(roleId: string, ability: Ability) {
+export function getRoleById(roleId: string, ability?: Ability) {
   const role = roleMetaObjects[roleId];
+  if (!ability) return role;
 
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
 

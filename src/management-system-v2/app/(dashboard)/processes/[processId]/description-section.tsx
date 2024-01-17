@@ -64,7 +64,7 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
           }}
         ></EditOutlined>
       </Divider>
-      <div style={{ maxHeight: '30vh', overflowY: 'auto' }}>
+      <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
         <Viewer ref={viewerRef} initialValue={description}></Viewer>
       </div>
 

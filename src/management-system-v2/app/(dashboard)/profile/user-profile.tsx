@@ -84,8 +84,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
             dataSource={[
               {
                 title: 'Name',
-                value: `${(userData && userData.firstName) || ''} ${(userData && userData.lastName) || ''
-                  }`,
+                value: `${(userData && userData.firstName) || ''} ${
+                  (userData && userData.lastName) || ''
+                }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {

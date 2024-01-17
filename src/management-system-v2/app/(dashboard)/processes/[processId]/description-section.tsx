@@ -70,6 +70,7 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
 
       <Modal
         width={breakpoint.xs ? '100vw' : '75vw'}
+        style={{ maxWidth: '1200px' }}
         centered
         className="editor-modal"
         styles={{ body: { height: '75vh' } }}

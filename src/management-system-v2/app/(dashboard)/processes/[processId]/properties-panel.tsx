@@ -5,7 +5,7 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Input, ColorPicker, Space, Grid, Drawer, Divider } from 'antd';
+import { Input, ColorPicker, Space, Grid, Drawer, Divider, Modal } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
 import {
@@ -258,7 +258,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
   const breakpoint = Grid.useBreakpoint();
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  return breakpoint.md ? (
+  return breakpoint.xl ? (
     <ResizableElement
       initialWidth={450}
       minWidth={450}
@@ -289,10 +289,14 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
       </CollapsibleCard>
     </ResizableElement>
   ) : (
-    <Drawer
+    <Modal
       open={isOpen}
-      width={'100vw'}
+      width={breakpoint.xs ? '100vw' : '75vw'}
+      styles={{ body: { height: '75vh', overflowY: 'scroll', paddingRight: '1rem' } }}
+      centered
       closeIcon={false}
+      onCancel={close}
+      onOk={close}
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Properties</span>
@@ -305,7 +309,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
       }
     >
       <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
-    </Drawer>
+    </Modal>
   );
 };
 

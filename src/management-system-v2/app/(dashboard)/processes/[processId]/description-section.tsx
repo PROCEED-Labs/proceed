@@ -68,49 +68,19 @@ const DescriptionSection: React.FC<{ description: string; selectedElement: any }
         <Viewer ref={viewerRef} initialValue={description}></Viewer>
       </div>
 
-      {breakpoint.md ? (
-        <Modal
-          width="75vw"
-          className="editor-modal"
-          styles={{ body: { height: '75vh' } }}
-          open={showPopupEditor}
-          title="Edit Description"
-          okText="Save"
-          onOk={() => onSubmit(modalEditorRef)}
-          onCancel={() => setShowPopupEditor(false)}
-        >
-          <TextEditor ref={modalEditorRef} initialValue={description}></TextEditor>
-        </Modal>
-      ) : (
-        <Drawer
-          open={showPopupEditor}
-          width={'100vw'}
-          styles={{ body: { padding: 0, marginBottom: '1rem', overflowY: 'hidden' } }}
-          closeIcon={false}
-          title={
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Edit Description</span>
-              <CloseOutlined onClick={() => setShowPopupEditor(false)}></CloseOutlined>
-            </div>
-          }
-          footer={
-            <Space style={{ display: 'flex', justifyContent: 'end' }}>
-              <Button
-                onClick={() => {
-                  setShowPopupEditor(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="primary" onClick={() => onSubmit(drawerEditorRef)}>
-                Save
-              </Button>
-            </Space>
-          }
-        >
-          <TextEditor ref={drawerEditorRef} initialValue={description}></TextEditor>
-        </Drawer>
-      )}
+      <Modal
+        width={breakpoint.xs ? '100vw' : '75vw'}
+        centered
+        className="editor-modal"
+        styles={{ body: { height: '75vh' } }}
+        open={showPopupEditor}
+        title="Edit Description"
+        okText="Save"
+        onOk={() => onSubmit(modalEditorRef)}
+        onCancel={() => setShowPopupEditor(false)}
+      >
+        <TextEditor ref={modalEditorRef} initialValue={description}></TextEditor>
+      </Modal>
     </Space>
   );
 };

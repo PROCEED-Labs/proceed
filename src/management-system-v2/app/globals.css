@@ -55,21 +55,21 @@
   width: 4rem !important;
 }
 
-.milestone-drawer .milestone-form {
+.milestone-form {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.milestone-drawer .milestone-description {
+.milestone-form .milestone-description {
   flex-grow: 1;
   margin-bottom: 0 !important;
 }
 
-.milestone-drawer .ant-form-item-row,
-.milestone-drawer .ant-form-item-control,
-.milestone-drawer .ant-form-item-control-input,
-.milestone-drawer .ant-form-item-control-input-content {
+.milestone-form .ant-form-item-row,
+.milestone-form .ant-form-item-control,
+.milestone-form .ant-form-item-control-input,
+.milestone-form .ant-form-item-control-input-content {
   height: 100%;
 }
 

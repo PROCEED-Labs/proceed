@@ -131,6 +131,7 @@ const ModelerToolbar = ({
             width: '100%',
             justifyContent: 'space-between',
             flexWrap: 'nowrap',
+            alignItems: 'start',
           }}
         >
           <ToolbarGroup>

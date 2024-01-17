@@ -95,10 +95,26 @@ type MilestoneModalProperties = {
 const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close, initialValues }) => {
   const [form] = Form.useForm();
 
+  const breakpoint = Grid.useBreakpoint();
+
+  const getModalWidth = () => {
+    if (breakpoint.xl) {
+      return '50vw';
+    }
+
+    if (breakpoint.xs) {
+      return '100vw';
+    }
+
+    return '75vw';
+  };
+
   return (
     <Modal
       title={initialValues ? 'Edit Milestone' : 'Create new Milestone'}
-      width="50vw"
+      width={getModalWidth()}
+      styles={{ body: { height: breakpoint.xl ? '50vh' : '75vh' } }}
+      centered
       open={show}
       onCancel={() => close()}
       footer={[
@@ -265,36 +281,20 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
           dataSource={milestones}
         ></Table>
       </Space>
-      {breakpoint.md ? (
-        <MilestoneModal
-          show={isMilestoneModalOpen}
-          initialValues={initialMilestoneValues}
-          close={(values) => {
-            if (values) {
-              if (initialMilestoneValues) {
-                removeMilestone(initialMilestoneValues.id);
-              }
-              addMilestone(values);
+      <MilestoneModal
+        show={isMilestoneModalOpen}
+        initialValues={initialMilestoneValues}
+        close={(values) => {
+          if (values) {
+            if (initialMilestoneValues) {
+              removeMilestone(initialMilestoneValues.id);
             }
+            addMilestone(values);
+          }
 
-            closeMilestoneModal();
-          }}
-        ></MilestoneModal>
-      ) : (
-        <MilestoneDrawer
-          show={isMilestoneModalOpen}
-          close={(values) => {
-            if (values) {
-              if (initialMilestoneValues) {
-                removeMilestone(initialMilestoneValues.id);
-              }
-              addMilestone(values);
-            }
-
-            closeMilestoneModal();
-          }}
-        ></MilestoneDrawer>
-      )}
+          closeMilestoneModal();
+        }}
+      ></MilestoneModal>
     </>
   );
 };

@@ -9,21 +9,27 @@ import { useEffect } from 'react';
 type AbilityStoreType = {
   ability: Ability;
   abilityFetched: boolean;
-  setAbility: (rules: PackRule<AbilityRule>[]) => void;
+  setAbility: (rules: PackRule<AbilityRule>[], environmentId: string) => void;
 };
 
-export const SetAbility = ({ rules }: { rules: PackRule<AbilityRule>[] }) => {
+export const SetAbility = ({
+  rules,
+  environmentId,
+}: {
+  rules: PackRule<AbilityRule>[];
+  environmentId: string;
+}) => {
   useEffect(() => {
-    useAbilityStore.getState().setAbility(rules);
-  }, [rules]);
+    useAbilityStore.getState().setAbility(rules, environmentId);
+  }, [rules, environmentId]);
 
   return null;
 };
 
 export const useAbilityStore = create<AbilityStoreType>((set) => ({
-  ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[])),
+  ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[]), ''),
   abilityFetched: false,
-  setAbility(rules) {
-    set({ ability: new Ability(rules), abilityFetched: true });
+  setAbility(rules, environmentId) {
+    set({ ability: new Ability(rules, environmentId), abilityFetched: true });
   },
 }));

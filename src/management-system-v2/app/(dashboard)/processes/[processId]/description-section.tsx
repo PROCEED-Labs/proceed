@@ -4,18 +4,19 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 import { Editor, Viewer } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
 
-import { EditOutlined, CloseOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 
-import { Button, Divider, Drawer, Grid, Modal, Space } from 'antd';
+import { Divider, Grid, Modal, Space } from 'antd';
 import TextEditor from '@/components/text-editor';
 
-const DescriptionSection: React.FC<{ description: string; selectedElement: any }> = ({
-  description,
-  selectedElement,
-}) => {
+const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
+  const description =
+    (selectedElement.businessObject.documentation &&
+      selectedElement.businessObject.documentation[0]?.text) ||
+    '';
+
   const viewerRef = React.useRef<Viewer>(null);
   const modalEditorRef = React.useRef<Editor>(null);
-  const drawerEditorRef = React.useRef<Editor>(null);
 
   const modeler = useModelerStateStore((state) => state.modeler);
 

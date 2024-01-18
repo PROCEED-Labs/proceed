@@ -151,14 +151,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         </div>
       </Space>
 
-      <DescriptionSection
-        description={
-          (selectedElement.businessObject.documentation &&
-            selectedElement.businessObject.documentation[0]?.text) ||
-          ''
-        }
-        selectedElement={selectedElement}
-      ></DescriptionSection>
+      <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
 
       <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
 

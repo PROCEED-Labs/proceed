@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { Button, Col, Divider, Form, Input, Row, Space } from 'antd';
+import { Divider, Form, Input, Space } from 'antd';
 
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -97,49 +97,40 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   metaData,
   onChange,
 }) => {
-  const [customProperties, setCustomProperties] = useState([{ name: '', value: '' }]);
+  const {
+    overviewImage,
+    costsPlanned,
+    timePlannedDuration,
+    timePlannedOccurrence,
+    timePlannedEnd,
+    occurrenceProbability,
+    orderNumber,
+    orderName,
+    orderCode,
+    customerName,
+    customerId,
+    isUsing5i,
+    defaultPriority,
+    mqttServer,
+    '_5i-Inspection-Plan-ID': inspectionPlanId,
+    '_5i-Inspection-Plan-Title': inspectionPlanTitle,
+    '_5i-API-Address': apiAddress,
+    '_5i-Application-Address': applicationAddress,
+    '_5i-Inspection-Order-ID': inspectionOrderId,
+    '_5i-Inspection-Order-Code': inspectionOrderCode,
+    '_5i-Inspection-Order-Shortdescription': inspectionOrderDescription,
+    '_5i-Assembly-Group-ID': assemblyId,
+    '_5i-Assembly-Group-Name': assemblyName,
+    '_5i-Manufacturing-Step-ID': stepId,
+    '_5i-Manufacturing-Step-Name': stepName,
+    '_5i-Inspection-Plan-Template-ID': templateId,
+    ...customMetaData
+  } = metaData;
 
-  const customMetaData = useMemo(() => {
-    const {
-      overviewImage,
-      costsPlanned,
-      timePlannedDuration,
-      timePlannedOccurrence,
-      timePlannedEnd,
-      occurrenceProbability,
-      orderNumber,
-      orderName,
-      orderCode,
-      customerName,
-      customerId,
-      isUsing5i,
-      defaultPriority,
-      mqttServer,
-      '_5i-Inspection-Plan-ID': inspectionPlanId,
-      '_5i-Inspection-Plan-Title': inspectionPlanTitle,
-      '_5i-API-Address': apiAddress,
-      '_5i-Application-Address': applicationAddress,
-      '_5i-Inspection-Order-ID': inspectionOrderId,
-      '_5i-Inspection-Order-Code': inspectionOrderCode,
-      '_5i-Inspection-Order-Shortdescription': inspectionOrderDescription,
-      '_5i-Assembly-Group-ID': assemblyId,
-      '_5i-Assembly-Group-Name': assemblyName,
-      '_5i-Manufacturing-Step-ID': stepId,
-      '_5i-Manufacturing-Step-Name': stepName,
-      '_5i-Inspection-Plan-Template-ID': templateId,
-      ...customMetaData
-    } = metaData;
-    return { ...customMetaData };
-  }, [metaData]);
-
-  useEffect(() => {
-    const newCustomProperties = Object.entries(customMetaData).map(
-      ([key, value]: [string, any]) => {
-        return { name: key, value };
-      },
-    );
-    setCustomProperties([...newCustomProperties, { name: '', value: '' }]);
-  }, [customMetaData]);
+  const customProperties = [
+    ...Object.entries(customMetaData).map(([key, value]: [string, any]) => ({ name: key, value })),
+    { name: '', value: '' },
+  ];
 
   const updateProperty = (newCustomPropertyName: string, newCustomPropertyValue: any) => {
     onChange(newCustomPropertyName, newCustomPropertyValue);

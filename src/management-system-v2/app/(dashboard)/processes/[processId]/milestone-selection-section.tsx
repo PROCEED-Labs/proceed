@@ -1,21 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { PlusOutlined, CloseOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
-import {
-  Button,
-  Divider,
-  Drawer,
-  Form,
-  FormInstance,
-  Grid,
-  Input,
-  Modal,
-  Space,
-  Table,
-} from 'antd';
+import { Button, Divider, Form, FormInstance, Grid, Input, Modal, Space, Table } from 'antd';
 import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
@@ -138,46 +127,6 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close, initi
   );
 };
 
-type MilestoneDrawerProperties = MilestoneModalProperties;
-const MilestoneDrawer: React.FC<MilestoneDrawerProperties> = ({ show, close }) => {
-  const [form] = Form.useForm();
-  return (
-    <Drawer
-      className="milestone-drawer"
-      open={show}
-      width={'100vw'}
-      styles={{ body: { marginBottom: '1rem', overflowY: 'hidden' } }}
-      closeIcon={false}
-      title={
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Create new Milestone</span>
-          <CloseOutlined onClick={() => close()}></CloseOutlined>
-        </div>
-      }
-      footer={
-        <Space style={{ display: 'flex', justifyContent: 'end' }}>
-          <Button
-            key="cancel"
-            onClick={() => {
-              close();
-            }}
-          >
-            Cancel
-          </Button>
-          <FormSubmitButton
-            key="submit"
-            form={form}
-            onSubmit={close}
-            submitText="Create Milestone"
-          ></FormSubmitButton>
-        </Space>
-      }
-    >
-      <MilestoneForm form={form}></MilestoneForm>
-    </Drawer>
-  );
-};
-
 type MilestoneSelectionProperties = {
   selectedElement: ElementLike;
 };
@@ -195,9 +144,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
-  const milestones = useMemo(() => {
-    return getMilestonesFromElement(selectedElement.businessObject);
-  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
+  const milestones = getMilestonesFromElement(selectedElement.businessObject);
 
   const closeMilestoneModal = () => {
     setInitialMilestoneValues(undefined);

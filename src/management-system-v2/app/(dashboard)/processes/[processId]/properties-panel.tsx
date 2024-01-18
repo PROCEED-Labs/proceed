@@ -23,12 +23,18 @@ type PropertiesPanelContentProperties = {
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
+  const metaData = getMetaDataFromElement(selectedElement.businessObject);
+  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
+  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+
   const [name, setName] = useState(selectedElement.businessObject.name);
-  const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(null);
-  const [timePlannedDuration, setTimePlannedDuration] = useState('');
+  const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(
+    metaData.costsPlanned,
+  );
+  const [timePlannedDuration, setTimePlannedDuration] = useState(metaData.timePlannedDuration);
 
   const modeler = useModelerStateStore((state) => state.modeler);
-  const changeCounter = useModelerStateStore((state) => state.changeCounter);
+  useModelerStateStore((state) => state.changeCounter);
 
   const colorPickerPresets = [
     {
@@ -72,29 +78,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     },
   ];
 
-  // deep comparison of extentionElements object to track changes in array
-  const metaData = useMemo(() => {
-    return getMetaDataFromElement(selectedElement.businessObject);
-  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
-  // deep comparison of extentionElements object to track changes in array
-
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
+      setCostsPlanned(metaData.costsPlanned);
+      setTimePlannedDuration(metaData.timePlannedDuration);
     }
-  }, [selectedElement]);
-
-  useEffect(() => {
-    setCostsPlanned(metaData.costsPlanned);
-    setTimePlannedDuration(metaData.timePlannedDuration);
-  }, [metaData]);
-
-  const backgroundColor = useMemo(() => {
-    return getFillColor(selectedElement, '#FFFFFFFF');
-  }, [selectedElement]);
-
-  const strokeColor = useMemo(() => {
-    return getStrokeColor(selectedElement, '#000000FF');
   }, [selectedElement]);
 
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {

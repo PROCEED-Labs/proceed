@@ -23,9 +23,12 @@ type PropertiesPanelContentProperties = {
 const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(selectedElement.businessObject.name);
   const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(null);
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
+
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const changeCounter = useModelerStateStore((state) => state.changeCounter);
 
   const colorPickerPresets = [
     {
@@ -97,7 +100,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
     const modeling = modeler!.getModeling();
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
-    setName('');
   };
 
   const updateBackgroundColor = (backgroundColor: string) => {
@@ -126,7 +128,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  const modeler = useModelerStateStore((state) => state.modeler);
   return (
     <Space
       direction="vertical"
@@ -141,7 +142,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           addonBefore="Name"
           placeholder={selectedElement.businessObject.name}
           value={name}
-          // onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           onBlur={handleNameChange}
           disabled={selectedElement.type === 'bpmn:Process'}
         />

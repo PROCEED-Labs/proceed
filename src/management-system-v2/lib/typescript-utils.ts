@@ -30,12 +30,11 @@ export type ToPrimitive<T> = T extends number
 /**
  * Recursively removes readonly.
  */
-export type RemoveReadOnly<T> =
-  T extends Record<any, any>
-    ? {
-        -readonly [Key in keyof T]: RemoveReadOnly<T[Key]>;
-      }
-    : T;
+export type RemoveReadOnly<T> = T extends Record<any, any>
+  ? {
+      -readonly [Key in keyof T]: RemoveReadOnly<T[Key]>;
+    }
+  : T;
 
 /**
  * When given an array type returns the type of an element inside the array

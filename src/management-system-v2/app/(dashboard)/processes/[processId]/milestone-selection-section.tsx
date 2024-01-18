@@ -191,6 +191,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
         </Divider>
         <Table
           pagination={{ pageSize: 5 }}
+          rowKey="id"
           columns={[
             { title: 'ID', dataIndex: 'id', key: 'id' },
             { title: 'Name', dataIndex: 'name', key: 'name' },

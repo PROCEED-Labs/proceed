@@ -8,11 +8,23 @@
   display: none !important;
 }
 
+.properties-panel .ant-input-number-input,
 .properties-panel .ant-input,
 .properties-panel .ant-input-group-addon,
+.properties-panel .ant-input-number-group-addon,
 .properties-panel .ant-select-selection-item,
 .properties-panel .ant-table.ant-table-middle {
   font-size: 0.75rem !important;
+}
+
+/* Needed to allow setting width of child (.ant-input-number-group-addon) with display: table-cell */
+.properties-panel .ant-input-number-wrapper {
+  table-layout: fixed;
+}
+
+.properties-panel .ant-input-group-addon,
+.properties-panel .ant-input-number-group-addon {
+  width: 4rem !important;
 }
 
 .editor-container {
@@ -53,10 +65,6 @@
 
 .toastui-editor-contents table {
   width: 100% !important;
-}
-
-.ant-input-group-addon {
-  width: 4rem !important;
 }
 
 .milestone-form {

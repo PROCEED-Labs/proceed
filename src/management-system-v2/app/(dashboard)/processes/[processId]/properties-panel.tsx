@@ -5,14 +5,10 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Input, ColorPicker, Space, Grid, Drawer, Divider, Modal } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal, InputNumber } from 'antd';
 
 import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
-import {
-  getMetaDataFromElement,
-  getMilestonesFromElement,
-  setProceedElement,
-} from '@proceed/bpmn-helper';
+import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
@@ -28,7 +24,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   selectedElement,
 }) => {
   const [name, setName] = useState('');
-  const [costsPlanned, setCostsPlanned] = useState('');
+  const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(null);
   const [timePlannedDuration, setTimePlannedDuration] = useState('');
 
   const colorPickerPresets = [
@@ -178,12 +174,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
       <Space direction="vertical" style={{ width: '100%' }}>
         <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
-        <Input
+        <InputNumber
+          style={{ width: '100%' }}
           addonBefore={<EuroCircleOutlined className="clock-icon" />}
+          stringMode
           placeholder="Planned Cost"
           value={costsPlanned}
-          onChange={(event) => {
-            setCostsPlanned(event.target.value);
+          onChange={(value) => {
+            setCostsPlanned(value);
           }}
           onBlur={() => {
             updateMetaData('costsPlanned', costsPlanned);

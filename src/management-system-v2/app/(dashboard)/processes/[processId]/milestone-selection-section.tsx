@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined, CloseOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -16,9 +16,8 @@ import {
   Space,
   Table,
 } from 'antd';
-import { setProceedElement } from '@proceed/bpmn-helper';
+import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
 import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
 import { Editor } from '@toast-ui/react-editor';
@@ -180,14 +179,10 @@ const MilestoneDrawer: React.FC<MilestoneDrawerProperties> = ({ show, close }) =
 };
 
 type MilestoneSelectionProperties = {
-  milestones: { id: string; name: string; description?: string }[];
   selectedElement: ElementLike;
 };
 
-const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
-  milestones,
-  selectedElement,
-}) => {
+const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedElement }) => {
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [initialMilestoneValues, setInitialMilestoneValues] = useState<
     | {
@@ -200,7 +195,9 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
-  const breakpoint = Grid.useBreakpoint();
+  const milestones = useMemo(() => {
+    return getMilestonesFromElement(selectedElement.businessObject);
+  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
 
   const closeMilestoneModal = () => {
     setInitialMilestoneValues(undefined);
@@ -286,7 +283,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
         initialValues={initialMilestoneValues}
         close={(values) => {
           if (values) {
-            if (initialMilestoneValues) {
+            if (initialMilestoneValues && initialMilestoneValues.id !== values.id) {
               removeMilestone(initialMilestoneValues.id);
             }
             addMilestone(values);

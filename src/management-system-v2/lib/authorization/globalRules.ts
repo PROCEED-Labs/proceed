@@ -13,6 +13,11 @@ export const globalUserRules = [
   {
     inverted: true,
     action: [...resourceAction],
-    subject: ['Role', 'RoleMapping', 'User', 'Machine', 'Execution', 'EnvConfig'],
+    subject: ['Role', 'RoleMapping', 'Machine', 'Execution', 'EnvConfig'],
+  },
+  {
+    inverted: true,
+    action: 'manage',
+    subject: 'User',
   },
 ] satisfies SystemRules;

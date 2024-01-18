@@ -192,6 +192,17 @@ export type ResourceInfos = {
   description?: string;
 };
 /**
+ * An object containing necessary values for duration
+ */
+export type DurationValues = {
+  years: number | null;
+  months: number | null;
+  days: number | null;
+  hours: number | null;
+  minutes: number | null;
+  seconds: number | null;
+};
+/**
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -660,3 +671,23 @@ export function parseISODuration(isoDuration: string): {
  * @returns {number} number of miliseconds for duration
  */
 export function convertISODurationToMiliseconds(isoDuration: string): number;
+
+/**
+ * An object containing all necessary values for duration
+ *
+ * @typedef DurationValues
+ * @type {object}
+ * @property {number | null} years
+ * @property {number | null} months
+ * @property {number | null} days
+ * @property {number | null} hours
+ * @property {number | null} minutes
+ * @property {number | null} seconds
+ */
+
+/**
+ *
+ * @param {DurationValues} durationValues with number of years, months, days, hours, minutes and seconds
+ * @returns {string} ISO duration string
+ */
+export function calculateTimeFormalExpression(durationValues: DurationValues): string;

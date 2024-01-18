@@ -15,6 +15,7 @@ import ResizableElement, { ResizableElementRefType } from '@/components/Resizabl
 import CollapsibleCard from '@/components/collapsible-card';
 import DescriptionSection from '@/app/(dashboard)/processes/[processId]/description-section';
 import ImageSelection from '@/components/image-selection';
+import PlannedDurationInput from './planned-duration-input';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -31,7 +32,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(
     metaData.costsPlanned,
   );
-  const [timePlannedDuration, setTimePlannedDuration] = useState(metaData.timePlannedDuration);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   useModelerStateStore((state) => state.changeCounter);
@@ -82,7 +82,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
       setCostsPlanned(metaData.costsPlanned);
-      setTimePlannedDuration(metaData.timePlannedDuration);
     }
   }, [selectedElement]);
 
@@ -170,17 +169,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             updateMetaData('costsPlanned', costsPlanned);
           }}
         />
-        <Input
-          addonBefore={<ClockCircleOutlined className="clock-icon" />}
-          placeholder="Planned Duration"
-          value={timePlannedDuration}
-          onChange={(event) => {
-            setTimePlannedDuration(event.target.value);
+        <PlannedDurationInput
+          onChange={(changedTimePlannedDuration) => {
+            updateMetaData('timePlannedDuration', changedTimePlannedDuration);
           }}
-          onBlur={() => {
-            updateMetaData('timePlannedDuration', timePlannedDuration);
-          }}
-        />
+          timePlannedDuration={metaData.timePlannedDuration || ''}
+        ></PlannedDurationInput>
       </Space>
 
       <CustomPropertySection

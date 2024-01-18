@@ -27,6 +27,15 @@
   width: 4rem !important;
 }
 
+.planned-duration-modal .ant-input-number-wrapper {
+  table-layout: fixed;
+}
+
+.planned-duration-modal .ant-input-group-addon,
+.planned-duration-modal .ant-input-number-group-addon {
+  width: 6rem !important;
+}
+
 .editor-container {
   display: flex;
   flex-direction: column;

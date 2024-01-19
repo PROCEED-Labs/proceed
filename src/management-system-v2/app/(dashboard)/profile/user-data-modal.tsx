@@ -32,10 +32,10 @@ const UserDataModal: FC<{
   const { message } = App.useApp();
   const router = useRouter();
 
-  const [formatErrors, parseInput] = useParseZodErrors(UserDataSchema.partial());
+  const [formatErrors, parseInput, resetErrors] = useParseZodErrors(UserDataSchema.partial());
 
   function close() {
-    parseInput(undefined);
+    resetErrors();
     propClose();
     form.setFieldsValue(userData);
   }

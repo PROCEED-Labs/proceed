@@ -75,7 +75,9 @@ const ConfirmationButton = forwardRef<HTMLElement, ConfirmationModalProps>(
             onClick={() => setModalOpen(true)}
             disabled={modalOpen || buttonProps?.disabled}
             loading={loading}
-          ></Button>
+          >
+            {children}
+          </Button>
         </Tooltip>
       </>
     );

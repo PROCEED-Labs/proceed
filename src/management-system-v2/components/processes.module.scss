@@ -24,6 +24,28 @@
   }
 }
 
+// .SelectedRow {
+//   display: flex;
+//   flex: 1;
+//   background-color: #ececec;
+//   border-radius: 4px;
+//   margin: 0 2px;
+//   align-items: center;
+//   justify-content: space-evenly;
+//   width: 160px
+// }
+
+.SelectedRow {
+  display: flex;
+  flex: 1;
+  background-color: #ececec;
+  border-radius: 4px;
+  margin: 0 4px;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+}
+
 .Icons {
   //display: inline-flex;
   width: 45%;
@@ -48,4 +70,13 @@
 
 .MobileView {
   width: 100dvw;
+}
+
+.FloatButton {
+  border-radius: 50%;
+  box-shadow: 0px 0px 10px 1px rgba(39, 39, 39, 0.5);
+}
+
+.MobileToggleView {
+  margin-right: 22px;
 }

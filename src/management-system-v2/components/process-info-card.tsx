@@ -21,12 +21,17 @@ import MetaDataContent from './process-info-card-content';
 type MetaDataType = {
   data?: ProcessListProcess[];
   selection: Key[];
+  // resizableElementRef: React.RefObject<ResizableElementRefType>;
+  //collapseCard: () => void;
 };
 
 const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
-const MetaData: FC<MetaDataType> = ({ data, selection }) => {
+const MetaData: FC<MetaDataType> = ({ data, selection,
+  //resizableElementRef,
+  //collapseCard
+}) => {
   const addPreferences = useUserPreferences.use.addPreferences();
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
   const hydrated = useUserPreferences.use._hydrated();

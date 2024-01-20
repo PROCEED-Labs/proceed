@@ -112,7 +112,7 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
 
   // check if there is an id collision
   if (processMetaObjects[processDefinitionsId]) {
-    return processMetaObjects[processDefinitionsId];
+    throw new Error(`A process with the id ${processDefinitionsId} already exists!`);
   }
 
   // save process info

@@ -62,7 +62,7 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
   environmentsMetaObject[id] = newEnvironment;
   store.add('environments', newEnvironment);
 
-  return environment;
+  return newEnvironment;
 }
 
 /**

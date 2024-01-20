@@ -26,21 +26,22 @@ export function getMemberships(environmentId: string, ability: Ability) {
 }
 
 export function addMembership(membershipInput: Membership, ability: Ability) {
-  const membership = MembershipSchema.parse(membershipInput);
+  const newMembership = MembershipSchema.parse(membershipInput);
 
-  if (!environmentsMetaObject[membership.environmentId]) throw new Error('Environment not found');
+  if (!environmentsMetaObject[newMembership.environmentId])
+    throw new Error('Environment not found');
 
-  if (!environmentMembershipMetaObject[membership.environmentId])
-    environmentMembershipMetaObject[membership.environmentId] = [];
+  if (!environmentMembershipMetaObject[newMembership.environmentId])
+    environmentMembershipMetaObject[newMembership.environmentId] = [];
 
-  const environmentMembers = environmentMembershipMetaObject[membership.environmentId];
+  const environmentMembers = environmentMembershipMetaObject[newMembership.environmentId];
 
-  if (environmentMembers.find((member) => member.userId === membership.userId))
+  if (environmentMembers.find((member) => member.userId === newMembership.userId))
     throw new Error('User already a member');
 
-  environmentMembers.push(membership);
+  environmentMembers.push(newMembership);
 
-  store.set('environmentMemberships', membership.environmentId, environmentMembers);
+  store.set('environmentMemberships', newMembership.environmentId, environmentMembers);
 }
 
 export function removeMembership(membershipInput: Membership, ability: Ability) {

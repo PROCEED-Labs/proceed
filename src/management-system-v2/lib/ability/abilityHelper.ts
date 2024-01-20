@@ -36,7 +36,7 @@ export default class Ability {
       (!opts || !('environmentId' in opts))
     )
       throw new Error(
-        'environmentId has to be either be specified in the resource, or as an additional parameter',
+        'The environmentId must be specified either in the resource or as an additional parameter.',
       );
 
     if (typeof action === 'string') return this.caslAbility.can(action, resource, opts?.field);

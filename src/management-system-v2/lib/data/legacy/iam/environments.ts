@@ -25,10 +25,13 @@ const PersonalEnvironmentSchema = z.object({
   organization: z.literal(false).readonly(),
 });
 
-const environmentSchema = z.union([OrganizationEnvironmentSchema, PersonalEnvironmentSchema]);
+export const environmentSchema = z.union([
+  OrganizationEnvironmentSchema,
+  PersonalEnvironmentSchema,
+]);
 
-type EnvironmentInput = z.infer<typeof environmentSchema>;
-type Environment = EnvironmentInput & { id: string };
+export type EnvironmentInput = z.infer<typeof environmentSchema>;
+export type Environment = EnvironmentInput & { id: string };
 
 export let environmentsMetaObject: { [Id: string]: Environment } =
   // @ts-ignore

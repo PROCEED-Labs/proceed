@@ -15,11 +15,10 @@ export type Membership = MembershipInput & {
   id: string;
   createdOn: string;
 };
-//
+
 // @ts-ignore
 let firstInit = !global.membershipMetaObject;
 
-/** @type {any} - object containing all roles */
 export let membershipMetaObject: {
   [EnvironmentId: string]: Membership[];
 } =

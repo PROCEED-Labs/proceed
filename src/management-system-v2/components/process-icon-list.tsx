@@ -14,13 +14,14 @@ type IconViewProps = {
   data?: ProcessListProcess[];
   selection: Key[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
 const IconView: FC<IconViewProps> = ({
   data,
   selection,
   setSelectionElements,
-  setShowMobileMetaDataElements,
+  setShowMobileMetaData,
 }) => {
   const breakpoint = Grid.useBreakpoint();
   return (

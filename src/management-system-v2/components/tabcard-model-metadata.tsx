@@ -109,6 +109,7 @@ const TabCard: FC<TabCardProps> = ({
   setSelectionElements,
   tabcard,
   completeList,
+  setShowMobileMetaData,
 }) => {
   const router = useRouter();
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');

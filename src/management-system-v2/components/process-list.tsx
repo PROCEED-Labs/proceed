@@ -50,6 +50,7 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
   onDeleteProcess: (process: ProcessListProcess) => void;
   onEditProcess: (process: ProcessListProcess) => void;

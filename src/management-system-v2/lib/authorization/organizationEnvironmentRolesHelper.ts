@@ -15,7 +15,7 @@ export function getAppliedRolesForUser(userId: string, environmentId: string): R
   const guestRole = environmentRoles.find((role: any) => role.name === '@guest') as Role;
   userRoles.push(guestRole);
 
-  if (userId === '') userRoles;
+  if (userId === '') return userRoles;
 
   const everyoneRole = environmentRoles.find(
     (role: any) => role.default && role.name === '@everyone',

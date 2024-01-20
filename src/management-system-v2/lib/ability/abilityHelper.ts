@@ -42,7 +42,7 @@ export default class Ability {
     if (typeof action === 'string') return this.caslAbility.can(action, resource, opts?.field);
 
     for (const subAction of action)
-      if (!this.caslAbility.can(subAction, resource, opts && opts?.field)) return false;
+      if (!this.caslAbility.can(subAction, resource, opts?.field)) return false;
 
     return true;
   }

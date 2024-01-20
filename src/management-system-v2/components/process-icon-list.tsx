@@ -38,7 +38,7 @@ const IconView: FC<IconViewProps> = ({
           {data?.map((item) => (
             <TabCard
               setShowMobileMetaData={setShowMobileMetaData}
-              key={item.definitionId}
+              key={item.id}
               item={item}
               completeList={data!}
               selection={selection}

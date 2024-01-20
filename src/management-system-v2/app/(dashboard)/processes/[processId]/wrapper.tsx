@@ -35,7 +35,7 @@ type SubprocessInfo = {
 
 type WrapperProps = PropsWithChildren<{
   processName: string;
-  processes: { definitionId: string; definitionName: string }[];
+  processes: { id: string; name: string }[];
 }>;
 
 const Wrapper = ({ children, processName, processes }: WrapperProps) => {
@@ -126,9 +126,9 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
                   </AuthCan>
                 </>
               )}
-              options={processes?.map(({ definitionId, definitionName }) => ({
-                value: definitionId,
-                label: definitionName,
+              options={processes?.map(({ id, name }) => ({
+                value: id,
+                label: name,
               }))}
             />
           ),

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
 
-type ProcessModalProps<T extends { definitionName: string; description: string }> = {
+type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -13,7 +13,7 @@ type ProcessModalProps<T extends { definitionName: string; description: string }
   initialData?: T[];
 };
 
-const ProcessModal = <T extends { definitionName: string; description: string }>({
+const ProcessModal = <T extends { name: string; description: string }>({
   open,
   title,
   okText,
@@ -36,7 +36,7 @@ const ProcessModal = <T extends { definitionName: string; description: string }>
   const items: CollapseProps['items'] =
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
-          label: data.definitionName,
+          label: data.name,
           children: <ProcessInputs index={index} />,
         }))
       : undefined;
@@ -116,7 +116,7 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
   return (
     <>
       <Form.Item
-        name={[index, 'definitionName']}
+        name={[index, 'name']}
         label="Process Name"
         rules={[{ required: true, message: 'Please fill out the Process name' }]}
       >

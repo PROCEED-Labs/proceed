@@ -33,7 +33,6 @@ import {
   Process,
   ProcessServerInput,
   ProcessServerInputSchema,
-  ExternalProcess,
 } from '../process-schema';
 
 let firstInit = false;
@@ -54,16 +53,6 @@ export function getProcessMetaObjects() {
   return processMetaObjects;
 }
 
-/** Returns a process DTO for the given process id. */
-export function toExternalFormat(processMetaData: any) {
-  const newFormat = { ...processMetaData };
-  newFormat.definitionId = processMetaData.id;
-  newFormat.definitionName = processMetaData.name;
-  delete newFormat.id;
-  delete newFormat.name;
-  return newFormat as ExternalProcess;
-}
-
 /** Returns all processes for a user */
 export async function getProcesses(ability: Ability, includeBPMN = false) {
   const processes = Object.values(processMetaObjects);
@@ -72,9 +61,7 @@ export async function getProcesses(ability: Ability, includeBPMN = false) {
     ability
       .filter('view', 'Process', processes)
       .map(async (process) =>
-        toExternalFormat(
-          !includeBPMN ? process : { ...process, bpmn: await getProcessBpmn(process.id) },
-        ),
+        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
       ),
   );
 
@@ -89,7 +76,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   }
 
   const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
-  return toExternalFormat({ ...process, bpmn });
+  return { ...process, bpmn };
 }
 
 /**

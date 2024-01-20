@@ -41,10 +41,3 @@ export type ProcessMetadata = Prettify<
 >;
 
 export type Process = Prettify<ProcessMetadata & { bpmn: string }>;
-
-export type ExternalProcess = Prettify<
-  Omit<Process, 'id' | 'name'> & {
-    definitionId: string;
-    definitionName: string;
-  }
->;

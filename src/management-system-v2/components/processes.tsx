@@ -34,13 +34,13 @@ import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/proc
 import ProcessModal from './process-modal';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
-import { ExternalProcess } from '@/lib/data/process-schema';
+import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
-  ExternalProcess,
-  'definitionName' | 'description'
+  Omit<Process, 'bpmn'>,
+  'name' | 'description'
 >;
 
 type CopyProcessType = {
@@ -71,14 +71,14 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
 };
 
 type ProcessesProps = {
-  processes: ExternalProcess[];
+  processes: Omit<Process, 'bpmn'>[];
 };
 
 const Processes = ({ processes }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
-  const selectedRowKeys = selectedRowElements.map((element) => element.definitionId);
+  const selectedRowKeys = selectedRowElements.map((element) => element.id);
   const canDeleteSelected = !selectedRowElements.some((element) => !ability.can('delete', element));
 
   const router = useRouter();
@@ -165,8 +165,8 @@ const Processes = ({ processes }: ProcessesProps) => {
     setSearchQuery: setSearchTerm,
   } = useFuzySearch({
     data: processes ?? [],
-    keys: ['definitionName', 'description'],
-    highlightedKeys: ['definitionName', 'description'],
+    keys: ['name', 'description'],
+    highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -343,8 +343,8 @@ const Processes = ({ processes }: ProcessesProps) => {
               onExportProcess={(id) => {
                 setOpenExportModal(true);
               }}
-              onDeleteProcess={async ({ definitionId }) => {
-                await deleteProcesses([definitionId]);
+              onDeleteProcess={async ({ id }) => {
+                await deleteProcesses([id]);
                 setSelectedRowElements([]);
                 router.refresh();
               }}
@@ -370,10 +370,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             title={
               // <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>
-                {
-                  filteredData?.find((item) => item.definitionId === selectedRowKeys[0])
-                    ?.definitionName.value!
-                }
+                {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
               </span>
               // <CloseOutlined
               //   onClick={() => {
@@ -401,11 +398,11 @@ const Processes = ({ processes }: ProcessesProps) => {
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
-            definitionName: `${process.definitionName.value} (Copy)`,
+            name: `${process.name.value} (Copy)`,
             description: process.description.value,
-            originalId: process.definitionId,
+            originalId: process.id,
           }))}
         onSubmit={async (values) => {
           const res = await copyProcesses(values);
@@ -422,10 +419,10 @@ const Processes = ({ processes }: ProcessesProps) => {
         title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
-            definitionId: process.definitionId,
-            definitionName: process.definitionName.value,
+            id: process.id,
+            name: process.name.value,
             description: process.description.value,
           }))}
         onSubmit={async (values) => {

@@ -169,22 +169,22 @@ export async function getProcessInfo(bpmn: string) {
 }
 
 export const getFinalBpmn = async ({
-  definitionId,
-  definitionName,
+  id,
+  name,
   description,
   bpmn,
 }: {
-  definitionId: string;
-  definitionName: string;
+  id: string;
+  name: string;
   description: string;
   bpmn: string;
 }) => {
   // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
   const bpmnObj = await toBpmnObject(bpmn);
-  await setDefinitionsId(bpmnObj, definitionId);
-  await setDefinitionsName(bpmnObj, definitionName);
+  await setDefinitionsId(bpmnObj, id);
+  await setDefinitionsName(bpmnObj, name);
   await addDocumentation(bpmnObj, description);
-  await setTargetNamespace(bpmnObj, definitionId);
+  await setTargetNamespace(bpmnObj, id);
 
   await setDefinitionsVersionInformation(bpmnObj, {
     version: undefined,

@@ -166,7 +166,7 @@ const ProcessList: FC<ProcessListProps> = ({
       setSelectionElements(selectedRows);
     },
     getCheckboxProps: (record: ProcessListProcess) => ({
-      name: record.definitionId,
+      name: record.id,
     }),
     onSelect: (_, __, selectedRows) => {
       // setSelection(selectedRows);
@@ -214,14 +214,14 @@ const ProcessList: FC<ProcessListProps> = ({
   const columns: TableColumnsType<ProcessListProcess> = [
     {
       title: <StarOutlined />,
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       width: '40px',
-      render: (definitionId, _, index) => (
+      render: (id, _, index) => (
         <StarOutlined
           style={{
             color: favourites?.includes(index) ? '#FFD700' : undefined,
-            opacity: hovered?.definitionId === definitionId || favourites?.includes(index) ? 1 : 0,
+            opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
           }}
         />
       ),
@@ -229,10 +229,10 @@ const ProcessList: FC<ProcessListProps> = ({
 
     {
       title: 'Process Name',
-      dataIndex: 'definitionName',
+      dataIndex: 'name',
       key: 'Process Name',
       className: styles.Title,
-      sorter: (a, b) => a.definitionName.value.localeCompare(b.definitionName.value),
+      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
@@ -258,7 +258,7 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.definitionName.highlighted}
+          {record.name.highlighted}
         </div>
       ),
       responsive: ['xs', 'sm'],
@@ -366,7 +366,7 @@ const ProcessList: FC<ProcessListProps> = ({
       fixed: 'right',
       width: 160,
       // add title but only if at least one row is selected
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       title: (
         <div style={{ float: 'right' }}>
@@ -384,11 +384,11 @@ const ProcessList: FC<ProcessListProps> = ({
           </Dropdown>
         </div>
       ),
-      render: (definitionId, record, index) => (
+      render: (id, record, index) => (
         <Row
           justify="space-evenly"
           style={{
-            opacity: hovered?.definitionId === definitionId ? 1 : 0,
+            opacity: hovered?.id === id ? 1 : 0,
           }}
         >
           {actionBarGenerator(record)}
@@ -400,7 +400,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       fixed: 'right',
       width: 160,
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       title: '',
       render: () => (
@@ -428,22 +428,18 @@ const ProcessList: FC<ProcessListProps> = ({
             /* CTRL */
             if (event.ctrlKey) {
               /* Not selected yet -> Add to selection */
-              if (!selection.includes(record?.definitionId)) {
+              if (!selection.includes(record?.id)) {
                 setSelectionElements((prev) => [record, ...prev]);
                 /* Already in selection -> deselect */
               } else {
-                setSelectionElements((prev) =>
-                  prev.filter(({ definitionId }) => definitionId !== record.definitionId),
-                );
+                setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
               }
               /* SHIFT */
             } else if (event.shiftKey) {
               /* At least one element selected */
               if (selection.length) {
-                const iLast = data!.findIndex((process) => process.definitionId === lastProcessId);
-                const iCurr = data!.findIndex(
-                  (process) => process.definitionId === record?.definitionId,
-                );
+                const iLast = data!.findIndex((process) => process.id === lastProcessId);
+                const iCurr = data!.findIndex((process) => process.id === record?.id);
                 /* Identical to last clicked */
                 if (iLast === iCurr) {
                   setSelectionElements([record]);
@@ -464,7 +460,7 @@ const ProcessList: FC<ProcessListProps> = ({
             }
 
             /* Always */
-            setLastProcessId(record?.definitionId);
+            setLastProcessId(record?.id);
           },
           // onClick: (event) => {
           //   if (event.ctrlKey) {
@@ -481,7 +477,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(`/processes/${record.definitionId}`);
+            router.push(`/processes/${record.id}`);
           },
           onMouseEnter: (event) => {
             setHovered(record);
@@ -496,7 +492,7 @@ const ProcessList: FC<ProcessListProps> = ({
         // scroll={{ x: 1200, y: 500 }}
         /* ---- */
         pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
-        rowKey="definitionId"
+        rowKey="id"
         columns={columnsFiltered}
         dataSource={data}
         loading={isLoading}

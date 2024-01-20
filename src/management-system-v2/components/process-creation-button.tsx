@@ -9,7 +9,7 @@ import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 
 type ProcessCreationButtonProps = ButtonProps & {
-  customAction?: (values: { definitionName: string; description: string }) => Promise<any>;
+  customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
 };
 
@@ -25,7 +25,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const router = useRouter();
 
-  const createNewProcess = async (values: { definitionName: string; description: string }[]) => {
+  const createNewProcess = async (values: { name: string; description: string }[]) => {
     // Invoke the custom handler otherwise use the default server action.
     const process = await (customAction?.(values[0]) ??
       addProcesses(values).then((res) => (Array.isArray(res) ? res[0] : res)));
@@ -34,8 +34,8 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
     }
     setIsProcessModalOpen(false);
 
-    if (process && 'definitionId' in process) {
-      router.push(`/processes/${process.definitionId}`);
+    if (process && 'id' in process) {
+      router.push(`/processes/${process.id}`);
     } else {
       router.refresh();
     }

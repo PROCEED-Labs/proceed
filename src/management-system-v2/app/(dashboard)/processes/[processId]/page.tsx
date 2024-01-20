@@ -16,7 +16,7 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
   //console.log('query', searchParams);
-  const selectedVersionId = searchParams.version ? searchParams.version : undefined;
+  const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
   const { ability } = await getCurrentUser();
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
@@ -27,19 +27,19 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   }
 
   const selectedVersionBpmn = selectedVersionId
-    ? await getProcessVersionBpmn(processId, selectedVersionId)
+    ? getProcessVersionBpmn(processId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
-    ? process.versions.find((version) => String(version.version) === selectedVersionId)
+    ? process.versions.find((version) => version.version === selectedVersionId)
     : undefined;
 
   // Since the user is able to minimize and close the page, everyting is in a
   // client component from here.
   return (
-    <Wrapper processName={process.definitionName} processes={processes}>
+    <Wrapper processName={process.name} processes={processes}>
       <Modeler
         className={styles.Modeler}
-        process={{ ...process, bpmn: selectedVersionBpmn }}
+        process={{ ...process, bpmn: selectedVersionBpmn as string }}
         versions={process.versions}
         versionName={selectedVersion?.name}
       />

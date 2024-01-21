@@ -16,6 +16,7 @@ type ResizableElementProps = PropsWithChildren<{
   maxWidth: CssSize;
   onWidthChange?: (width: number) => void;
   style?: CSSProperties;
+  lock?: boolean;
 }>;
 
 export type ResizableElementRefType = (size: CssSize) => void;
@@ -23,7 +24,7 @@ export type ResizableElementRefType = (size: CssSize) => void;
 let isResizing = false;
 const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementProps>(
   function ResizableElement(
-    { children, initialWidth, minWidth, maxWidth, style = {}, onWidthChange },
+    { children, initialWidth, minWidth, maxWidth, style = {}, onWidthChange, lock = false },
     ref,
   ) {
     const [width, setWidth] = useState(initialWidth);
@@ -41,7 +42,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
     };
 
     const onUserMovement = (clientX: number) => {
-      if (isResizing) {
+      if (isResizing && !lock) {
         let offsetRight = document.body.offsetWidth - (clientX - document.body.offsetLeft);
 
         const minPixels = cssSizeToPixel(minWidth);
@@ -95,7 +96,7 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
               left: 0,
               bottom: 0,
               zIndex: 100,
-              cursor: 'ew-resize',
+              cursor: lock ? 'default' : 'ew-resize',
             }}
             onMouseDown={onMouseDown}
             onTouchStart={onMouseDown}

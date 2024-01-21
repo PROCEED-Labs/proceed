@@ -9,7 +9,6 @@ import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
-/** @type {any} - object containing all roles */
 export let roleMetaObjects: Record<string, Role> =
   // @ts-ignore
   global.roleMetaObjects || (global.roleMetaObjects = {});

@@ -185,7 +185,7 @@ export async function saveProcessVersion(definitionId, version, bpmn) {
  * @param {number} version
  * @returns {String} the bpmn of the specific process version
  */
-export async function getProcessVersion(definitionId, version) {
+export function getProcessVersion(definitionId, version) {
   const folder = getFolder(definitionId);
   const bpmnFilePath = path.join(folder, getVersionFileName(definitionId, version));
   return fse.readFileSync(bpmnFilePath, 'utf-8');

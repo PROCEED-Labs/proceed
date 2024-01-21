@@ -22,7 +22,7 @@ export type RoleMapping = RoleMappingInput & { id: string; createdOn: string; ro
 let firstInit = !global.roleMappingsMetaObjects;
 
 export let roleMappingsMetaObjects: {
-  [EnvironMentId: string]: {
+  [EnvironmentId: string]: {
     users: {
       [UserId: string]: RoleMapping[];
     };

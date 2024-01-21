@@ -51,7 +51,7 @@ function ensureIsOrganization(environmentId: string) {
   return environment;
 }
 
-export function getMemebers(environmentId: string, ability?: Ability) {
+export function getMembers(environmentId: string, ability?: Ability) {
   ensureIsOrganization(environmentId);
 
   //TODO: ability check

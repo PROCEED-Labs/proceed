@@ -140,20 +140,6 @@ function getKeys(path: any, params: any) {
   return keys;
 }
 
-type PathParamsToList<T> = T extends { params: { path: any } } ? [T] : [];
-
-export function useInvalidateAsset<
-  TFirstParam extends Parameters<typeof apiClient.GET>[0],
-  TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
->(path: TFirstParam, ...params: PathParamsToList<TSecondParam>) {
-  const queryClient = useQueryClient();
-
-  return useCallback(
-    () => queryClient.invalidateQueries(getKeys(path, params)),
-    [path, params, queryClient],
-  );
-}
-
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.GET>[0],
   TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
@@ -166,35 +152,10 @@ export function useGetAsset<
     // eslint-disable-next-line
     queryKey: keys,
     queryFn: async () => {
-      const { data } = await get(path, params);
+      const { data } = await get(path, params as any);
       return data as Data;
     },
-    ...(reactQueryOptions as UseQueryOptions<Data, Error>),
-  });
-}
-
-export function usePostAsset<TFirstParam extends Parameters<typeof apiClient.POST>[0]>(
-  path: TFirstParam,
-  mutationParams: Omit<
-    UseMutationOptions<
-      QueryData<typeof apiClient.POST<TFirstParam>>,
-      unknown,
-      FetchOptions<FilterKeys<paths[TFirstParam], 'post'>>
-    >,
-    'mutationFn'
-  > = {},
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'post'>>) => {
-      const { data } = await post(path, body);
-
-      queryClient.invalidateQueries(getKeys(path, body));
-
-      return data as QueryData<typeof apiClient.POST<TFirstParam>>;
-    },
-    ...mutationParams,
+    ...(reactQueryOptions as UseQueryOptions<Data, Error> | undefined),
   });
 }
 
@@ -215,7 +176,7 @@ export function usePutAsset<TFirstParam extends Parameters<typeof apiClient.PUT>
     mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'put'>>) => {
       const { data } = await put(path, body);
 
-      queryClient.invalidateQueries(getKeys(path, body));
+      queryClient.invalidateQueries(getKeys(path, body) as any);
 
       return data as QueryData<typeof apiClient.PUT<TFirstParam>>;
     },
@@ -240,7 +201,7 @@ export const useDeleteAsset = <TFirstParam extends Parameters<typeof apiClient.D
     mutationFn: async (body: FetchOptions<FilterKeys<Paths[TFirstParam], 'delete'>>) => {
       const { data } = await del(path, body);
 
-      queryClient.invalidateQueries(getKeys(path, body));
+      queryClient.invalidateQueries(getKeys(path, body) as any);
 
       return data as QueryData<typeof apiClient.DELETE<TFirstParam>>;
     },

@@ -24,7 +24,7 @@
     "@monaco-editor/react": "4.6.0",
     "@proceed/bpmn-helper": "1.0.0",
     "@tanstack/react-query": "5.17.9",
-    "antd": "5.12.8",
+    "antd": "5.13.1",
     "bcryptjs": "^2.4.3",
     "bpmn-js": "13.2.0",
     "bpmn-js-differ": "2.0.2",

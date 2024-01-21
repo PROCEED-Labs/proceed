@@ -5,7 +5,7 @@ import {
   ProcessExportData,
 } from './export-preparation';
 
-import { downloadFile } from './util';
+import shareUsingWebshareApi, { downloadFile } from './util';
 
 import jsZip from 'jszip';
 import 'svg2pdf.js';
@@ -33,19 +33,27 @@ async function bpmnExport(
     if (zipFolder) {
       zipFolder.file(`${filename}.bpmn`, bpmnBlob);
     } else if (useWebshareApi && navigator.share !== undefined) {
-      try {
-        await navigator.share({
-          files: [
-            new File([bpmnBlob], `${processData.definitionName}.bpmn`, {
-              type: 'application/xml',
-            }),
-          ],
+      shareUsingWebshareApi({
+        files: [
+          new File([bpmnBlob], `${processData.definitionName}.bpmn`, {
+            type: 'application/xml',
+          }),
+        ],
+      })
+        .then(() => {
+          console.log('Sharing successful');
+        })
+        .catch((error) => {
+          if (error.name === 'AbortError') {
+            console.log('User cancelled the share');
+          } else if (error.name === 'ShareTimeout') {
+            console.log('Share operation timed out');
+          } else if (error.name === 'InternalError') {
+            console.log('Internal error: could not connect to Web Share interface');
+          } else {
+            console.error('Error during sharing:', error);
+          }
         });
-      } catch (err: any) {
-        if (!err.toString().includes('AbortError')) {
-          throw new Error('Error: ', { cause: err });
-        }
-      }
     } else {
       downloadFile(`${filename}.bpmn`, bpmnBlob);
     }

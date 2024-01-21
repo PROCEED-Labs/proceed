@@ -40,7 +40,7 @@ async function init() {
 
   const origin = [
     `https://localhost:${ports.puppeteer}`,
-    `https://ada9-149-233-55-5.ngrok-free.app`,
+    `https://a2ef-149-233-55-5.ngrok-free.app`,
   ];
 
   if (process.env.NODE_ENV === 'development') {

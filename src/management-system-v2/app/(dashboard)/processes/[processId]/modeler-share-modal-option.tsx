@@ -26,7 +26,7 @@ const ModelerShareModalOption = ({
   return (
     <>
       <Button
-        size="large"
+        size={breakpoint.lg ? 'middle' : 'small'}
         style={{
           boxShadow: isActive ? '3px 2px 2px #3D91DB' : '3px 2px 2px gray',
           border: '1px solid black',
@@ -47,7 +47,7 @@ const ModelerShareModalOption = ({
         <Typography.Text
           style={{
             textAlign: 'center',
-            fontSize: breakpoint.lg ? '0.75rem' : '0.6rem',
+            fontSize: '0.75rem',
           }}
         >
           <Tooltip title={optionTitle}>{optionName}</Tooltip>

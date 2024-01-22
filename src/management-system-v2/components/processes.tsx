@@ -79,7 +79,7 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = !selectedRowElements.some((element) => !ability.can('delete', element));
+  const canDeleteSelected = selectedRowElements.every((element) => ability.can('delete', element));
 
   const router = useRouter();
   const { message } = App.useApp();

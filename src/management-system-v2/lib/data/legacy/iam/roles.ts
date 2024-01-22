@@ -59,15 +59,17 @@ export function getRoleById(roleId: string, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function addRole(roleRepresentationInput: RoleInput, ability: Ability) {
+export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
-  if (!ability.can('create', toCaslResource('Role', roleRepresentation)))
+  if (ability && ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
 
-  const index = Object.values(roleMetaObjects).findIndex((role) => role.name === name);
+  const index = Object.values(roleMetaObjects).findIndex(
+    (role) => role.name === name && role.environmentId === environmentId,
+  );
   if (index > -1) throw new Error('Role already exists');
 
   const createdOn = new Date().toUTCString();

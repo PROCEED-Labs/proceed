@@ -5,7 +5,7 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import Image from 'next/image';
 
-import { Button, message } from 'antd';
+import { Button, message, Table } from 'antd';
 import { copyProcesses } from '@/lib/data/processes';
 import { ApiData } from '@/lib/fetch-data';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -17,9 +17,26 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 import styles from './bpmn-shared-viewer.module.scss';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
+import { getMetaDataFromElement } from '@proceed/bpmn-helper/src/getters';
+
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: ApiData<'/process/{definitionId}', 'get'>;
   embeddedMode?: boolean;
+};
+
+type PlaneInfo = {
+  svg: string;
+  name: string;
+  id: string;
+  isSubprocess: boolean;
+  children: string[];
+  flowElements: {
+    id: string;
+    name?: string;
+    description?: string;
+    costsPlanned?: string;
+    timePlannedDuration?: string;
+  }[];
 };
 
 const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNSharedViewerProps) => {
@@ -32,9 +49,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const bpmnViewer = useRef<BPMNCanvasRef>(null);
 
   const [finishedInitialLoading, setFinishedInitialLoading] = useState(false);
-  const [processPlanes, setProcessPlanes] = useState<
-    { svg: string; name: string; id: string; isSubprocess: boolean; children: string[] }[]
-  >([]);
+  const [processPlanes, setProcessPlanes] = useState<PlaneInfo[]>([]);
+  const [currentPlaneId, setCurrentPlaneId] = useState('');
 
   const handleCopyToOwnWorkspace = async () => {
     if (session.status === 'unauthenticated') {
@@ -63,10 +79,24 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   useEffect(() => {
     if (finishedInitialLoading && bpmnViewer.current) {
       const canvas = bpmnViewer.current.getCanvas();
+      const initialRoot = canvas.getRootElement();
       const rootElements = canvas.getRootElements();
       asyncMap(rootElements, async (rootEl) => {
         canvas.setRootElement(rootEl);
         canvas.zoom('fit-viewport', { x: 0, y: 0 });
+
+        let flowElements = await asyncMap(rootEl.di.planeElement, async (diEl: any) => ({
+          id: diEl.bpmnElement.id,
+          name: diEl.bpmnElement.name,
+          description: diEl.bpmnElement.documentation?.find((el: any) => el.text)?.text,
+          ...(await getMetaDataFromElement(diEl.bpmnElement)),
+        }));
+
+        flowElements = flowElements.filter((el) =>
+          Object.entries(el).some(([key, val]) => val && key !== 'name' && key !== 'id'),
+        );
+
+        console.log(flowElements);
 
         const children = rootEl.di.planeElement
           .filter((diEl: any) =>
@@ -79,15 +109,19 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
           rootEl.businessObject.$type === 'bpmn:SubProcess' ? rootEl.businessObject.id : undefined,
         );
         const svgDom = new DOMParser().parseFromString(svg, 'image/svg+xml');
-        console.log(svgDom);
-        children.forEach((id: string) => {
+
+        flowElements.forEach(({ id }: { id: string }) => {
           const el = svgDom.querySelector(`[data-element-id='${id}']`);
-          const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
-          el?.parentElement?.appendChild(link);
-          link.appendChild(el as Element);
-          link.setAttribute('href', `#${id}_page`);
+          if (el) {
+            console.log(el, id);
+            const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+            el?.parentElement?.appendChild(link);
+            link.appendChild(el as Element);
+            link.setAttribute('href', `#meta-table-${id}`);
+          }
         });
 
+        console.log(svgDom);
         svg = new XMLSerializer().serializeToString(svgDom);
 
         if (rootEl.businessObject!.$type === 'bpmn:SubProcess') {
@@ -97,6 +131,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
             name: rootEl.businessObject.name || `[${rootEl.businessObject.id}]`,
             svg,
             children,
+            flowElements,
           };
         } else {
           return {
@@ -105,9 +140,13 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
             name: processData.definitionName,
             svg,
             children,
+            flowElements,
           };
         }
-      }).then((subprocessPlanes) => setProcessPlanes(subprocessPlanes));
+      }).then((subprocessPlanes) => {
+        setProcessPlanes(subprocessPlanes);
+        setCurrentPlaneId(processData.definitionId);
+      });
     }
   }, [finishedInitialLoading]);
 
@@ -134,16 +173,60 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
     ? getTableOfContents(planeInfoMap[processData.definitionId])
     : [];
 
+  console.log(processPlanes);
+
+  const metaTableColumns = [
+    {
+      title: 'Element',
+      dataIndex: 'name',
+      key: 'elementName',
+      render: (_, { name, id }) => {
+        return <span id={`meta-table-${id}`}>{name || id}</span>;
+      },
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+    {
+      title: 'Costs',
+      dataIndex: 'costsPlanned',
+      key: 'costs',
+    },
+    {
+      title: 'Planned Time',
+      dataIndex: 'timePlannedDuration',
+      key: 'time',
+    },
+  ];
+
+  const currentPlane = currentPlaneId && processPlanes.find((plane) => plane.id === currentPlaneId);
+  console.log(currentPlane);
   return (
     <>
-      <div style={{ display: 'none' }}>
+      <div className={styles.BpmnViewer}>
         <BPMNCanvas
           onLoaded={() => setFinishedInitialLoading(true)}
+          onRootChange={(root) => {
+            console.log(setCurrentPlaneId(root.businessObject.id));
+          }}
           ref={bpmnViewer}
           className={divProps.className}
           type={'viewer'}
           bpmn={{ bpmn: processBpmn }}
         />
+        {!!currentPlane && (
+          <div>
+            <Table
+              style={{ width: '100%' }}
+              rowKey="id"
+              pagination={false}
+              dataSource={currentPlane.flowElements}
+              columns={metaTableColumns}
+            />
+          </div>
+        )}
       </div>
 
       <div className={styles.ProcessOverviewPage}>
@@ -153,22 +236,33 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         <h1 className={styles.ContentTablePageHeader}>Contents</h1>
         <div className={styles.TableOfContents}>{tableOfContents}</div>
 
-        {processPlanes.map(({ isSubprocess, name, id, svg }) => (
-          <div id={`${id}_page`} className={styles.ProcessPage} key={`${id}_page`}>
-            <Image
-              className={styles.ProceedLogo}
-              src="/proceed-labs-logo.svg"
-              alt="Proceed Logo"
-              width="227"
-              height="20"
-            />
-            <h1 style={{ marginBottom: 0 }}>{processData.definitionName}</h1>
-            {isSubprocess && (
-              <div style={{ display: 'flex', alignSelf: 'center' }}>
-                <h2>Subprocess:</h2> <h2>{name}</h2>
+        {processPlanes.map(({ isSubprocess, name, id, svg, flowElements }) => (
+          <div key={`${id}_page`}>
+            <div id={`${id}_page`} className={styles.ProcessPage}>
+              <div className={styles.ProceedLogo}>
+                <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="227" height="20" />
+                <h3 style={{ marginRight: '2pt' }}>www.proceed-labs.org</h3>
+              </div>
+
+              <h1 style={{ marginBottom: 0 }}>{processData.definitionName}</h1>
+              {isSubprocess && (
+                <div style={{ display: 'flex', alignSelf: 'center' }}>
+                  <h2>Subprocess:</h2> <h2>{name}</h2>
+                </div>
+              )}
+              <div className={styles.ProcessCanvas} dangerouslySetInnerHTML={{ __html: svg }}></div>
+            </div>
+            {flowElements.length > 0 && (
+              <div className={styles.ProcessMetaPage}>
+                <Table
+                  style={{ width: '100%' }}
+                  rowKey="id"
+                  pagination={false}
+                  dataSource={flowElements}
+                  columns={metaTableColumns}
+                />
               </div>
             )}
-            <div className={styles.ProcessCanvas} dangerouslySetInnerHTML={{ __html: svg }}></div>
           </div>
         ))}
       </div>

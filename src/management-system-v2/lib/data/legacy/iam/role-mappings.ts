@@ -43,7 +43,7 @@ export function init() {
   // set role mappings store
   store.set('roleMappings', storedRoleMappings);
 
-  roleMappingsMetaObjects.users = storedRoleMappings.roleMappings.users;
+  roleMappingsMetaObjects = storedRoleMappings;
 }
 init();
 
@@ -76,7 +76,7 @@ export function getRoleMappingByUserId(userId: string, environmentId: string, ab
 
 // TODO: also check if user exists?
 /** Adds a user role mapping */
-export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability: Ability) {
+export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?: Ability) {
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
   );
@@ -103,9 +103,15 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability: 
     let environmentMappings = roleMappingsMetaObjects[environmentId];
     if (!environmentMappings) {
       environmentMappings = { users: {} };
+      roleMappingsMetaObjects[environmentId] = environmentMappings;
     }
 
-    const userMappings = environmentMappings.users[userId];
+    let userMappings = environmentMappings.users[userId];
+    if (!userMappings) {
+      environmentMappings.users[userId] = [];
+      userMappings = environmentMappings.users[userId];
+    }
+
     if (userMappings && userMappings.some((mapping) => mapping.roleId === roleId)) {
       throw new Error('Role mapping already exists');
     }
@@ -133,11 +139,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability: 
     });
 
     // persist new role mapping in file system
-    store.setDictElement('roleMappings', {
-      roleMappings: {
-        users: { ...roleMappingsMetaObjects.users },
-      },
-    });
+    store.setDictElement('roleMappings', roleMappingsMetaObjects);
 
     store.update('roles', roleId, roleMetaObjects[roleId]);
   });

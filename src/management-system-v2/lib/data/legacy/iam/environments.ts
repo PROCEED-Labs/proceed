@@ -56,7 +56,7 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
 
   const id = environment.organization ? v4() : environment.ownerId;
 
-  if (environmentsMetaObject[id]) throw new Error('Role id already exists');
+  if (environmentsMetaObject[id]) throw new Error('Environment id already exists');
 
   const newEnvironment = { ...environment, id };
   environmentsMetaObject[id] = newEnvironment;

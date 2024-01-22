@@ -51,7 +51,13 @@ function ensureIsOrganization(environmentId: string) {
   return environment;
 }
 
-export function getMembers(environmentId: string, ability?: Ability) {
+export function getUserOrganizationEnviroments(userId: string) {
+  return Object.keys(membershipMetaObject).filter((environmentId) =>
+    isMember(environmentId, userId),
+  );
+}
+
+export function getMemebers(environmentId: string, ability?: Ability) {
   ensureIsOrganization(environmentId);
 
   //TODO: ability check

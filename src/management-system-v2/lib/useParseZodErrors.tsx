@@ -32,5 +32,9 @@ export default function useParseZodErrors<T extends ZodRawShape>(schema: z.ZodOb
     }
   }
 
-  return [errors, parseInput] as const;
+  function resetErrors() {
+    setErrors({});
+  }
+
+  return [errors, parseInput, resetErrors] as const;
 }

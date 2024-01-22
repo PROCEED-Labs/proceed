@@ -2,8 +2,8 @@ import { v4 } from 'uuid';
 import store from '../store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { addEnvironment } from './environments';
 import { User, UserData, UserDataSchema, UserInput, UserSchema } from '../../user-schema';
+import { addEnvironment } from './environments';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -85,7 +85,10 @@ export function updateUser(userId: string, inputUser: UserData, ability?: Abilit
 
   const user = getUserById(userId, undefined, { throwIfNotFound: true });
 
-  if (ability && !ability.can('update', toCaslResource('User', user)))
+  if (
+    ability &&
+    !ability.can('update', toCaslResource('User', user), { environmentId: ability.environmentId })
+  )
     throw new UnauthorizedError();
 
   if (

@@ -19,9 +19,9 @@ import {
 import express from 'express';
 import { isAllowed } from '../iam/middleware/authorization.ts';
 import logger from '../../shared-electron-server/logging.js';
-import Ability from '../../../../../management-system-v2/lib/ability/abilityHelper';
-import { toCaslResource } from '../../../../../management-system-v2/lib/ability/caslAbility';
+import Ability from '../iam/authorization/abilityHelper';
 import { v4 } from 'uuid';
+import { toCaslResource } from '../iam/authorization/caslAbility';
 
 const processRouter = express.Router();
 

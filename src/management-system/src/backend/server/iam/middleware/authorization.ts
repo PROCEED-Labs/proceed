@@ -1,6 +1,6 @@
 import { config } from '../utils/config.js';
 import { PackedRulesForUser, adminRules, rulesForUser } from '../authorization/caslRules';
-import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
+import Ability from '../authorization/abilityHelper';
 
 import Redis from 'ioredis';
 

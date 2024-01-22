@@ -14,7 +14,7 @@ import { ProcessListProcess } from './processes';
 type TabCardProps = {
   item: ProcessListProcess;
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   tabcard?: boolean;
   completeList: ProcessListProcess[];
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
@@ -89,7 +89,7 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
           borderRadius: '8px',
         }}
       >
-        {showViewer && <Viewer definitionId={data.definitionId} reduceLogo={true} />}
+        {showViewer && <Viewer definitionId={data.id} reduceLogo={true} />}
       </div>
     ),
     meta: (
@@ -106,7 +106,7 @@ const generateContentList = (data: ProcessListProcess, showViewer: boolean = tru
 const TabCard: FC<TabCardProps> = ({
   item,
   selection,
-  setSelection,
+  setSelectionElements,
   tabcard,
   completeList,
   setShowMobileMetaData,
@@ -131,7 +131,7 @@ const TabCard: FC<TabCardProps> = ({
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
           {/* <span>{item?.definitionName}</span> */}
-          {item?.definitionName.highlighted}
+          {item?.name.highlighted}
           <span style={{ flex: 1 }}></span>
           {breakpoint.xl ? null : (
             <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />
@@ -146,7 +146,7 @@ const TabCard: FC<TabCardProps> = ({
       }}
       className={classNames({
         'small-tabs': true,
-        'card-selected': selection.includes(item?.definitionId),
+        'card-selected': selection.includes(item?.id),
         'no-select': true,
       })}
       {...(tabcard ? { tabList, activeTabKey, onTabChange } : {})}
@@ -154,49 +154,41 @@ const TabCard: FC<TabCardProps> = ({
         /* CTRL */
         if (event.ctrlKey) {
           /* Not selected yet -> Add to selection */
-          if (!selection.includes(item?.definitionId)) {
-            setSelection([item?.definitionId, ...selection]);
+          if (!selection.includes(item?.id)) {
+            setSelectionElements((selection) => [item, ...selection]);
             /* Already in selection -> deselect */
           } else {
-            setSelection(selection.filter((id) => id !== item?.definitionId));
+            setSelectionElements((selection) => selection.filter(({ id }) => id !== item?.id));
           }
           /* SHIFT */
         } else if (event.shiftKey) {
           /* At least one element selected */
           if (selection.length) {
-            const iLast = completeList.findIndex(
-              (process) => process.definitionId === lastProcessId,
-            );
-            const iCurr = completeList.findIndex(
-              (process) => process.definitionId === item?.definitionId,
-            );
+            const iLast = completeList.findIndex((process) => process.id === lastProcessId);
+            const iCurr = completeList.findIndex((process) => process.id === item?.id);
             /* Identical to last clicked */
             if (iLast === iCurr) {
-              setSelection([item?.definitionId]);
+              setSelectionElements([item]);
             } else if (iLast < iCurr) {
               /* Clicked comes after last slected */
-              setSelection(
-                completeList.slice(iLast, iCurr + 1).map((process) => process.definitionId),
-              );
+              setSelectionElements(completeList.slice(iLast, iCurr + 1));
             } else if (iLast > iCurr) {
               /* Clicked comes before last slected */
-              setSelection(
-                completeList.slice(iCurr, iLast + 1).map((process) => process.definitionId),
-              );
+              setSelectionElements(completeList.slice(iCurr, iLast + 1));
             }
           } else {
             /* Nothing selected */
-            setSelection([item?.definitionId]);
+            setSelectionElements([item]);
           }
         } else {
-          setSelection([item?.definitionId]);
+          setSelectionElements([item]);
         }
 
         /* Always */
-        setLastProcessId(item?.definitionId);
+        setLastProcessId(item?.id);
       }}
       onDoubleClick={() => {
-        router.push(`/processes/${item.definitionId}`);
+        router.push(`/processes/${item.id}`);
       }}
     >
       {generateContentList(item, isVisible)[activeTabKey]}

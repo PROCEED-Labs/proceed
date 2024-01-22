@@ -1,4 +1,3 @@
-import { ProcessData } from '@/components/process-import';
 import {
   toBpmnObject,
   toBpmnXml,
@@ -16,31 +15,16 @@ import {
   getDefinitionsName,
   setDefinitionsName,
   getOriginalDefinitionsId,
-  generateProcessId,
   getIdentifyingInfos,
   addDocumentation,
   setDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
-
-interface ProceedProcess {
-  id?: string;
-  type?: string;
-  originalId?: string;
-  name?: string;
-  description?: string;
-  processIds?: string[];
-  variables?: { name: string; type: string }[];
-  departments?: string[];
-  inEditingBy?: { id: string; task: string | null }[];
-  createdOn?: string;
-  lastEdited?: string;
-  shared?: boolean;
-  versions?: Array<string | number>;
-}
+import { ProcessInput, ProcessInputSchema, ProcessMetadata } from '../data/process-schema';
+import { WithRequired } from '../typescript-utils';
 
 interface ProcessInfo {
   bpmn: string;
-  metaInfo: ProceedProcess;
+  metaInfo: WithRequired<ProcessMetadata, 'id' | 'name' | 'description'>;
 }
 
 /**
@@ -51,11 +35,12 @@ export function getDefaultProcessMetaInfo() {
   const date = new Date().toUTCString();
   return {
     id: '',
+    environmentId: '',
     type: 'process',
     originalId: '',
     name: 'Default Process',
     description: '',
-    owner: null,
+    owner: '',
     processIds: [],
     variables: [],
     departments: [],
@@ -64,7 +49,7 @@ export function getDefaultProcessMetaInfo() {
     lastEdited: date,
     shared: false,
     versions: [],
-  } as ProceedProcess;
+  } as ProcessMetadata;
 }
 
 /**
@@ -72,14 +57,14 @@ export function getDefaultProcessMetaInfo() {
  * creates a bpmn and a meta info object
  */
 export async function createProcess(
-  processInfo: ProceedProcess & { bpmn?: string },
+  processInfo: ProcessInput & { bpmn?: string },
   noDefaults: boolean = false,
 ) {
-  let metaInfo = { ...processInfo };
-  delete metaInfo.bpmn;
-
   // create default bpmn if user didn't provide any
   let bpmn = processInfo.bpmn || initXml();
+
+  // schema parser removes bpmn property
+  let metaInfo = ProcessInputSchema.parse(processInfo);
 
   let definitions;
 
@@ -126,14 +111,14 @@ export async function createProcess(
 
   const processes = getElementsByTagName(definitions, 'bpmn:Process');
 
-  // make sure every process has an id
-  processes.forEach((p) => {
-    if (!p.id) {
-      p.id = generateProcessId();
-    }
-  });
-
-  metaInfo.processIds = processes.map((p) => p.id);
+  // // make sure every process has an id
+  // processes.forEach((p) => {
+  //   if (!p.id) {
+  //     p.id = generateProcessId();
+  //   }
+  // });
+  //
+  // metaInfo.processIds = processes.map((p) => p.id);
 
   const [process] = processes;
 
@@ -146,10 +131,10 @@ export async function createProcess(
 
   bpmn = await toBpmnXml(definitions);
 
-  if (!noDefaults) {
-    // make sure metaInfo has all necessary entries for a process meta object
-    metaInfo = { ...getDefaultProcessMetaInfo(), ...metaInfo };
-  }
+  // if (!noDefaults) {
+  //   // make sure metaInfo has all necessary entries for a process meta object
+  //   metaInfo = { ...getDefaultProcessMetaInfo(), ...metaInfo };
+  // }
 
   return { metaInfo, bpmn } as ProcessInfo;
 }
@@ -184,22 +169,22 @@ export async function getProcessInfo(bpmn: string) {
 }
 
 export const getFinalBpmn = async ({
-  definitionId,
-  definitionName,
+  id,
+  name,
   description,
   bpmn,
 }: {
-  definitionId: string;
-  definitionName: string;
+  id: string;
+  name: string;
   description: string;
   bpmn: string;
 }) => {
   // write the necessary meta info into the bpmn to create the final bpmn that is sent to the backend
   const bpmnObj = await toBpmnObject(bpmn);
-  await setDefinitionsId(bpmnObj, definitionId);
-  await setDefinitionsName(bpmnObj, definitionName);
+  await setDefinitionsId(bpmnObj, id);
+  await setDefinitionsName(bpmnObj, name);
   await addDocumentation(bpmnObj, description);
-  await setTargetNamespace(bpmnObj, definitionId);
+  await setTargetNamespace(bpmnObj, id);
 
   await setDefinitionsVersionInformation(bpmnObj, {
     version: undefined,

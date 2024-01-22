@@ -48,13 +48,13 @@ import ConfirmationButton from './confirmation-button';
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
-  onExportProcess: (processId: string) => void;
-  onDeleteProcess: (processId: string) => void;
-  onEditProcess: (processId: string) => void;
-  onCopyProcess: (processId: string) => void;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+  onExportProcess: (process: ProcessListProcess) => void;
+  onDeleteProcess: (process: ProcessListProcess) => void;
+  onEditProcess: (process: ProcessListProcess) => void;
+  onCopyProcess: (process: ProcessListProcess) => void;
 }>;
 
 const ColumnHeader = [
@@ -72,7 +72,7 @@ const numberOfRows =
 const ProcessList: FC<ProcessListProps> = ({
   data,
   selection,
-  setSelection,
+  setSelectionElements,
   isLoading,
   onExportProcess,
   onDeleteProcess,
@@ -116,7 +116,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <CopyOutlined
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCopyProcess(record.definitionId);
+                  onCopyProcess(record);
                 }}
               />
             </Tooltip>
@@ -124,7 +124,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined
               onClick={() => {
-                onExportProcess(record.definitionId);
+                onExportProcess(record);
               }}
             />
           </Tooltip>
@@ -132,19 +132,20 @@ const ProcessList: FC<ProcessListProps> = ({
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined
                 onClick={() => {
-                  onEditProcess(record.definitionId);
+                  onEditProcess(record);
                 }}
               />
             </Tooltip>
           </AuthCan>
 
           {/*TODO: errors regarding query */}
-          <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+
+          <AuthCan action="delete" resource={toCaslResource('Process', record)}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteProcess(record.definitionId)}
+                onConfirm={() => onDeleteProcess(record)}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -162,22 +163,22 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const rowSelection: TableRowSelection<ProcessListProcess> = {
     selectedRowKeys: selection,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelection(selectedRowKeys);
+    onChange: (selectedRowKeys: React.Key[], selectedRows) => {
+      setSelectionElements(selectedRows);
     },
     getCheckboxProps: (record: ProcessListProcess) => ({
-      name: record.definitionId,
+      name: record.id,
     }),
     onSelect: (_, __, selectedRows) => {
       // setSelection(selectedRows);
-      setSelection(selectedRows.map((row) => row.definitionId));
+      setSelectionElements(selectedRows);
     },
     onSelectNone: () => {
-      setSelection([]);
+      setSelectionElements([]);
     },
     onSelectAll: (_, selectedRows) => {
-      // setSelection(selectedRows);
-      setSelection(selectedRows.map((row) => row.definitionId));
+      // setSelection(selectedRows)
+      setSelectionElements(selectedRows);
     },
   };
 
@@ -214,14 +215,14 @@ const ProcessList: FC<ProcessListProps> = ({
   const columns: TableColumnsType<ProcessListProcess> = [
     {
       title: <StarOutlined />,
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       width: '40px',
-      render: (definitionId, _, index) => (
+      render: (id, _, index) => (
         <StarOutlined
           style={{
             color: favourites?.includes(index) ? '#FFD700' : undefined,
-            opacity: hovered?.definitionId === definitionId || favourites?.includes(index) ? 1 : 0,
+            opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
           }}
         />
       ),
@@ -229,10 +230,10 @@ const ProcessList: FC<ProcessListProps> = ({
 
     {
       title: 'Process Name',
-      dataIndex: 'definitionName',
+      dataIndex: 'name',
       key: 'Process Name',
       className: styles.Title,
-      sorter: (a, b) => a.definitionName.value.localeCompare(b.definitionName.value),
+      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       onCell: (record, rowIndex) => ({
         onClick: (event) => {
           // TODO: This is a hack to clear the parallel route when selecting
@@ -258,7 +259,7 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.definitionName.highlighted}
+          {record.name.highlighted}
         </div>
       ),
       responsive: ['xs', 'sm'],
@@ -366,7 +367,7 @@ const ProcessList: FC<ProcessListProps> = ({
       fixed: 'right',
       width: 160,
       // add title but only if at least one row is selected
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       title: (
         <div style={{ float: 'right' }}>
@@ -384,11 +385,11 @@ const ProcessList: FC<ProcessListProps> = ({
           </Dropdown>
         </div>
       ),
-      render: (definitionId, record, index) => (
+      render: (id, record, index) => (
         <Row
           justify="space-evenly"
           style={{
-            opacity: hovered?.definitionId === definitionId ? 1 : 0,
+            opacity: hovered?.id === id ? 1 : 0,
           }}
         >
           {actionBarGenerator(record)}
@@ -400,7 +401,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       fixed: 'right',
       width: 160,
-      dataIndex: 'definitionId',
+      dataIndex: 'id',
       key: '',
       title: '',
       render: () => (
@@ -428,45 +429,39 @@ const ProcessList: FC<ProcessListProps> = ({
             /* CTRL */
             if (event.ctrlKey) {
               /* Not selected yet -> Add to selection */
-              if (!selection.includes(record?.definitionId)) {
-                setSelection([record?.definitionId, ...selection]);
+              if (!selection.includes(record?.id)) {
+                setSelectionElements((prev) => [record, ...prev]);
                 /* Already in selection -> deselect */
               } else {
-                setSelection(selection.filter((id) => id !== record?.definitionId));
+                setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
               }
               /* SHIFT */
             } else if (event.shiftKey) {
               /* At least one element selected */
               if (selection.length) {
-                const iLast = data!.findIndex((process) => process.definitionId === lastProcessId);
-                const iCurr = data!.findIndex(
-                  (process) => process.definitionId === record?.definitionId,
-                );
+                const iLast = data!.findIndex((process) => process.id === lastProcessId);
+                const iCurr = data!.findIndex((process) => process.id === record?.id);
                 /* Identical to last clicked */
                 if (iLast === iCurr) {
-                  setSelection([record?.definitionId]);
+                  setSelectionElements([record]);
                 } else if (iLast < iCurr) {
                   /* Clicked comes after last slected */
-                  setSelection(
-                    data!.slice(iLast, iCurr + 1).map((process) => process.definitionId),
-                  );
+                  setSelectionElements(data!.slice(iLast, iCurr + 1));
                 } else if (iLast > iCurr) {
                   /* Clicked comes before last slected */
-                  setSelection(
-                    data!.slice(iCurr, iLast + 1).map((process) => process.definitionId),
-                  );
+                  setSelectionElements(data!.slice(iCurr, iLast + 1));
                 }
               } else {
                 /* Nothing selected */
-                setSelection([record?.definitionId]);
+                setSelectionElements([record]);
               }
               /* Normal Click */
             } else {
-              setSelection([record?.definitionId]);
+              setSelectionElements([record]);
             }
 
             /* Always */
-            setLastProcessId(record?.definitionId);
+            setLastProcessId(record?.id);
           },
           // onClick: (event) => {
           //   if (event.ctrlKey) {
@@ -483,7 +478,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(`/processes/${record.definitionId}`);
+            router.push(`/processes/${record.id}`);
           },
           onMouseEnter: (event) => {
             setHovered(record);
@@ -498,7 +493,7 @@ const ProcessList: FC<ProcessListProps> = ({
         // scroll={{ x: 1200, y: 500 }}
         /* ---- */
         pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
-        rowKey="definitionId"
+        rowKey="id"
         columns={columnsFiltered}
         dataSource={data}
         loading={isLoading}

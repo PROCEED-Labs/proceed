@@ -130,7 +130,7 @@ function getImagesReferencedByHtml(html: string) {
  *
  * @param bpmn
  */
-async function getCollapsedSubprocessInfos(bpmn: string) {
+export async function getCollapsedSubprocessInfos(bpmn: string) {
   const definitions = await toBpmnObject(bpmn);
   const subprocesses = getElementsByTagName(definitions, 'bpmn:SubProcess');
 

@@ -1,0 +1,91 @@
+.ProcessOverviewPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  .ContentTablePageHeader {
+    display: none;
+
+    @media print {
+      display: block;
+    }
+  }
+
+  .TableOfContents {
+    display: none;
+    font-size: 1.3em;
+    color: red;
+
+    ul li {
+      font-weight: bold;
+    }
+
+    li {
+      list-style-type: disc;
+    }
+
+    a {
+      color: red;
+    }
+
+    @media print {
+      display: block;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  .ProcessPage {
+    display: flex;
+    flex-direction: column;
+    break-inside: avoid;
+    break-before: always;
+    flex-wrap: wrap;
+    width: 100%;
+
+    h1 {
+      align-self: center;
+    }
+
+    .ProceedLogo {
+      align-self: end;
+
+      display: none;
+
+      @media print {
+        display: block;
+      }
+    }
+
+    .ProcessCanvas {
+      height: 90vh;
+      width: 90vw;
+
+      @media print {
+        height: 85vh;
+      }
+
+      align-self: center;
+
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-content: center;
+
+      :global(svg) {
+        max-width: 100%;
+        max-height: 100%;
+      }
+    }
+  }
+}
+
+@media print {
+  @page {
+    size: a4 landscape;
+    margin: 5pt;
+  }
+}

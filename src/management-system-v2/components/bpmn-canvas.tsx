@@ -3,7 +3,7 @@
 import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from 'react';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import type Canvas from 'diagram-js/lib/core/Canvas';
+import Canvas from 'diagram-js/lib/core/Canvas';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
@@ -44,7 +44,7 @@ export type BPMNCanvasProps = {
   /** Wether the modeler should have editing capabilities or just be a viewer. */
   type: 'modeler' | 'viewer';
   /** Called once the new BPMN has been fully loaded by the modeler. */
-  onLoaded?: () => void;
+  onLoaded?: (canvas: Canvas) => void;
   /** Called when a commandstack.change event is fired. */
   onChange?: () => void;
   /** Called when the root element changes. */
@@ -76,6 +76,7 @@ export interface BPMNCanvasRef {
   getSelection: () => Selection;
   getModeling: () => Modeling;
   getFactory: () => BpmnFactory;
+  getSVG: () => Promise<string>;
   loadBPMN: (bpmn: string) => Promise<void>;
 }
 
@@ -140,6 +141,10 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       getFactory: () => {
         return modeler.current!.get<BpmnFactory>('bpmnFactory');
       },
+      getSVG: async () => {
+        const { svg } = await modeler.current!.saveSVG();
+        return svg;
+      },
       loadBPMN: async (bpmn: string) => {
         // Note: No onUnload here, because this is only meant as a XML "change"
         // to the same process. Like a user modeling reguraly with the UI.
@@ -192,7 +197,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
     useEffect(() => {
       // Store handlers so we can remove them later.
-      const _onLoaded = () => onLoaded?.();
+      const _onLoaded = () => onLoaded?.(modeler.current!.get<Canvas>('canvas'));
       const commandStackChanged = () => onChange?.();
       const selectionChanged = (event: {
         oldSelection: ElementLike[];

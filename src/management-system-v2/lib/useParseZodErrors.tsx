@@ -46,9 +46,11 @@ export default function useParseZodErrors<T extends ZodRawShape>(schema: z.ZodOb
       return schema.parse(input);
     } catch (e) {
       if (e instanceof z.ZodError) {
-        return parseErrors(e.issues);
+        parseErrors(e.issues);
       }
     }
+
+    return null;
   }
 
   function resetErrors() {

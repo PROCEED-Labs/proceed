@@ -23,7 +23,7 @@ export let membershipMetaObject: {
   [EnvironmentId: string]: Membership[];
 } =
   // @ts-ignore
-  global.membershipMetaObject || (global.roleMetaObjects = {});
+  global.membershipMetaObject || (global.membershipMetaObject = {});
 
 /** initializes the membership meta information objects */
 export function init() {

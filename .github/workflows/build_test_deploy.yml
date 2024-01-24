@@ -305,7 +305,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
-    needs: docker
+    needs: buildMS
     strategy:
       matrix:
         # Run a job each for the engine and MS server images

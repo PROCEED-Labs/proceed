@@ -18,11 +18,4 @@ const ProfilePage = async () => {
   );
 };
 
-export default Auth(
-  {
-    action: 'view',
-    resource: 'User',
-    fallbackRedirect: '/',
-  },
-  ProfilePage,
-);
+export default ProfilePage;

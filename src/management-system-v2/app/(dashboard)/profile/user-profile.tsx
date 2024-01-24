@@ -8,7 +8,7 @@ import { signOut } from 'next-auth/react';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
-import { deleteUsers } from '@/lib/data/users';
+import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
@@ -18,7 +18,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
   async function deleteUser() {
     try {
-      await deleteUsers([userData.id]);
+      await deleteUserServerAction();
 
       messageApi.success({ content: 'Your account was deleted' });
       signOut();

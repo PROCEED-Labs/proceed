@@ -2,15 +2,14 @@
 
 import { FC, useTransition } from 'react';
 import { Button, Form, Input, Modal, App } from 'antd';
-import { ApiData, ApiRequestBody } from '@/lib/fetch-data';
 import { updateUser } from '@/lib/data/users';
 import { User, UserData, UserDataSchema } from '@/lib/data/user-schema';
 import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 
 type modalInputField = {
-  userDataField: keyof ApiData<'/users/{id}', 'get'>;
-  submitField: keyof ApiRequestBody<'/users/{id}', 'put'>;
+  userDataField: keyof UserData;
+  submitField: keyof UserData;
   label: string;
   password?: boolean;
 };

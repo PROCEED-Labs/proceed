@@ -17,7 +17,8 @@ on:
 env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
   OUTPUT_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
-  OUTPUT_PATH_MS_SERVER: './build/management-system/server/'
+  OUTPUT_PATH_MS_SERVER: './src/management-system-v2/.next/'
+  DOCKER_PATH_MS_SERVER: './src/management-system-v2/'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
 
@@ -248,7 +249,7 @@ jobs:
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn build-ms-server
+      - run: yarn build-ms
 
       - name: Upload MS server build
         uses: actions/upload-artifact@v3
@@ -265,7 +266,7 @@ jobs:
             output_path: OUTPUT_PATH_ENGINE_NODE
             image: proceed/engine
           - output: PROCEED_Management_System_Server
-            output_path: OUTPUT_PATH_MS_SERVER
+            output_path: DOCKER_PATH_MS_SERVER
             image: proceed/ms-server
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
@@ -290,7 +291,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           path: ${{ env[matrix.output_path] }}
           tag: ${{ vars.IMAGE_TAG }}
-          extra_args: --build-arg OLD=${{ inputs.environment == 'Production' }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -300,7 +300,7 @@ jobs:
       matrix:
         # Run a job each for the engine and MS server images
         include:
-          - serviceName: engine
+          # - serviceName: engine
           - serviceName: management_system
     env:
       ENV: ${{ inputs.environment || 'Staging' }}
@@ -326,11 +326,8 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
-      # Get the new version from dockerhub
-      - run: ssh $ENV "sudo docker run --rm -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull $SERVICE_NAME"
-
-      # Restart the engine container with the new image
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="${{ inputs.environment == 'Production' && '443' || '33080' }}" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans $SERVICE_NAME"
+      # Restart the container with the new image
+      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 3000:3000 --env-file .env.staging proceed/ms-server:$MS_TAG"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

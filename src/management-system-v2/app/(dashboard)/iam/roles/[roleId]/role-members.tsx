@@ -8,9 +8,7 @@ import { Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
-
-type Role = ApiData<'/roles', 'get'>[number];
-type Users = ApiData<'/users', 'get'>;
+import { Role } from '@/lib/data/role-schema';
 
 const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
   role,

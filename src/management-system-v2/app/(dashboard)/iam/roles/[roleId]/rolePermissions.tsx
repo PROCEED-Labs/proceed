@@ -19,6 +19,7 @@ import { ApiData } from '@/lib/fetch-data';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
+import { Role } from '@/lib/data/role-schema';
 
 type PermissionCategory = {
   key: string;
@@ -256,8 +257,6 @@ const basePermissionOptions: PermissionCategory[] = [
     ],
   },
 ];
-
-type Role = ApiData<'/roles', 'get'>[number];
 
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const [permissions, setPermissions] = useState(role.permissions);

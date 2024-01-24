@@ -1,10 +1,10 @@
-import Auth, { getCurrentUser } from '@/components/auth';
+import Auth, { getCurrentEnvironment } from '@/components/auth';
 import UsersPage from './users-page';
 import { getUsers } from '@/lib/data/legacy/iam/users';
 import Content from '@/components/content';
 
 const Page = async () => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
   const users = getUsers(ability);
 
   return (

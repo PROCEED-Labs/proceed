@@ -1,6 +1,6 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '../ability/caslAbility';
 // Workaround because top-level await is not supported in server action modules.
 // The rest of the app can import from process.ts directly, where init is
@@ -41,7 +41,7 @@ import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
 export const getProcessBPMN = async (definitionId: string) => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
@@ -63,7 +63,7 @@ export const deleteProcesses = async (definitionIds: string[]) => {
   const processMetaObjects: any = getProcessMetaObjects();
 
   // Get ability again since it might have changed.
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   for (const definitionId of definitionIds) {
     const process = processMetaObjects[definitionId];
@@ -83,7 +83,8 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string }[],
 ) => {
-  const { ability, session, activeEnvironment } = await getCurrentUser();
+  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { userId } = await getCurrentUser();
 
   const newProcesses: Process[] = [];
 
@@ -96,7 +97,7 @@ export const addProcesses = async (
 
     const newProcess = {
       bpmn,
-      owner: session?.user.id || '',
+      owner: userId,
       environmentId: activeEnvironment,
     };
 
@@ -124,7 +125,7 @@ export const updateProcess = async (
   name?: string,
   invalidate = false,
 ) => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionsId];
@@ -184,7 +185,8 @@ export const copyProcesses = async (
     originalVersion?: string;
   }[],
 ) => {
-  const { ability, session, activeEnvironment } = await getCurrentUser();
+  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { userId } = await getCurrentUser();
 
   const copiedProcesses: Process[] = [];
 
@@ -201,7 +203,7 @@ export const copyProcesses = async (
 
     // TODO: include variables in copy?
     const newProcess = {
-      owner: session?.user.id || '',
+      owner: userId,
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment,
@@ -227,7 +229,7 @@ export const createVersion = async (
   versionDescription: string,
   processId: string,
 ) => {
-  const { ability, session } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];
@@ -275,7 +277,7 @@ export const createVersion = async (
 };
 
 export const setVersionAsLatest = async (processId: string, version: number) => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];

@@ -3,15 +3,17 @@ import Content from '@/components/content';
 import { Result, Space } from 'antd';
 import NotLoggedInFallback from './not-logged-in-fallback';
 import { getProcesses } from '@/lib/data/legacy/process';
-import Auth, { getCurrentUser } from '@/components/auth';
+import Auth, { getCurrentEnvironment } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
 // otherwise. It might be possible in the future with turbopack without this
 // import.
 import '@/lib/data/processes';
+import { getAbilityForUser } from '@/lib/authorization/authorization';
 
 const ProcessesPage = async () => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
+
   const processes = await getProcesses(ability);
 
   return (

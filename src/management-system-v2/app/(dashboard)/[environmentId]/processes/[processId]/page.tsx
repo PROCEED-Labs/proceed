@@ -1,4 +1,4 @@
-import Auth, { getCurrentUser } from '@/components/auth';
+import Auth, { getCurrentEnvironment } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
@@ -17,7 +17,7 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(ability);

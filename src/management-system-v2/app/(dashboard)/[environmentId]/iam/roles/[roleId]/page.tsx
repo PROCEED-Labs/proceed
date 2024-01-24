@@ -1,4 +1,4 @@
-import Auth, { getCurrentUser } from '@/components/auth';
+import Auth, { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
 import { Button, Card, Result, Space, Tabs } from 'antd';
@@ -12,7 +12,7 @@ import RoleMembers from './role-members';
 type Items = ComponentProps<typeof Tabs>['items'];
 
 const Page = async ({ params: { roleId } }: { params: { roleId: string } }) => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
   const role = getRoleById(roleId, ability);
 
   const items: Items = role

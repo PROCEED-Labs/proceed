@@ -6,8 +6,7 @@ import { userError } from '../user-error';
 import { UserData } from './user-schema';
 
 export async function deleteUser() {
-  const { session } = await getCurrentUser();
-  const userId = session?.user.id || '';
+  const { userId } = await getCurrentUser();
 
   try {
     deleteuser(userId);
@@ -26,8 +25,7 @@ export async function addUser(user: Parameters<typeof _addUser>[0]) {
 
 export async function updateUser(newUserData: UserData) {
   try {
-    const { session } = await getCurrentUser();
-    const userId = session?.user.id || '';
+    const { userId } = await getCurrentUser();
 
     _updateUser(userId, newUserData);
   } catch (_) {

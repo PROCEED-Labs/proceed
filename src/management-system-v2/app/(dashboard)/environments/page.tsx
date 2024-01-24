@@ -6,8 +6,7 @@ import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import EnvironmentsPage from './environemnts-page';
 
 const Page = async () => {
-  const { session } = await getCurrentUser();
-  const userId = session?.user.id || '';
+  const { userId } = await getCurrentUser();
 
   const organizationEnvironments = getUserOrganizationEnviroments(userId).map((environmentId) =>
     getEnvironmentById(environmentId),

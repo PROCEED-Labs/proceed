@@ -1,10 +1,10 @@
-import Auth, { getCurrentUser } from '@/components/auth';
+import Auth, { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoles } from '@/lib/data/legacy/iam/roles';
 import RolesPage from './role-page';
 
 const Page = async () => {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const roles = getRoles(ability);
 

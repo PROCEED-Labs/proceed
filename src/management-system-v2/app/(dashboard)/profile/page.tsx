@@ -1,11 +1,10 @@
-import Auth, { getCurrentUser } from '@/components/auth';
+import { getCurrentUser } from '@/components/auth';
 import UserProfile from './user-profile';
 import Content from '@/components/content';
 import { getUserById } from '@/lib/data/legacy/iam/users';
 
 const ProfilePage = async () => {
-  const { session } = await getCurrentUser();
-  const userId = session?.user.id || '';
+  const { userId } = await getCurrentUser();
 
   //TODO take guest into consideration
 

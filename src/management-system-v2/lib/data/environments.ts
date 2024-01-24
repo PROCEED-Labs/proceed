@@ -1,8 +1,7 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import {
-  EnvironmentInput,
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
@@ -12,7 +11,7 @@ import { addEnvironment } from './legacy/iam/environments';
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
 ) {
-  const { session } = await getCurrentUser();
+  const { session } = await getCurrentEnvironment();
   const userId = session?.user.id || '';
 
   try {

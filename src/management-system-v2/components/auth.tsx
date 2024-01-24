@@ -4,21 +4,29 @@ import { redirect } from 'next/navigation';
 import { AuthCan, AuthCanProps } from './auth-can';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import { nextAuthOptions } from '@/app/api/auth/[...nextauth]/auth-options';
+import { headers } from 'next/headers';
+import { URL } from 'url';
+
+export const getCurrentUser = cache(async () => {
+  const session = await getServerSession(nextAuthOptions);
+  const userId = session?.user.id || '';
+
+  return { session, userId };
+});
 
 // TODO: To enable PPR move the session redirect into this function, so it will
 // be called when the session is first accessed and everything above can PPR. For
 // permissions, each server component should check its permissions anyway, for
 // composability.
-export const getCurrentUser = cache(async () => {
-  const session = await getServerSession(nextAuthOptions);
+export const getCurrentEnvironment = cache(async () => {
+  const { userId } = await getCurrentUser();
 
-  const userId = session?.user.id || '';
-  // TODO: environment defaults to user's personal envitonment
-  const activeEnvironment = userId;
+  const url = new URL(headers().get('referer') || '');
+  const activeEnvironment = url.pathname.split('/')[1];
 
   const ability = await getAbilityForUser(userId, activeEnvironment);
 
-  return { session, ability, activeEnvironment };
+  return { ability, activeEnvironment };
 });
 
 // HOC for server-side auth checking

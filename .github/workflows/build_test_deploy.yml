@@ -191,7 +191,7 @@ jobs:
       - run: yarn build
 
       - name: Upload engine build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: PROCEED_Engine
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
@@ -335,6 +335,15 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      # Pull the latest image
+      - run: ssh $ENV "sudo docker pull proceed/ms-server:$MS_TAG"
+
+      # Stop the container
+      - run: ssh $ENV "sudo docker stop $SERVICE_NAME || true"
+
+      # Remove the container
+      - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
 
       # Restart the container with the new image
       - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging proceed/ms-server:$MS_TAG"

@@ -48,6 +48,7 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
       title="Edit Planned Duration"
       className="planned-duration-modal"
       width={getModalWidth()}
+      style={{ maxWidth: '400px' }}
       centered
       open={show}
       onCancel={() => close()}
@@ -77,7 +78,7 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
         <Row gutter={16}>
           {Object.keys(durationValues).map((key) => {
             return (
-              <Col span={24}>
+              <Col span={24} key={key}>
                 <Form.Item name={key} style={{ marginBottom: '0.2rem' }}>
                   <InputNumber
                     addonBefore={key.charAt(0).toUpperCase() + key.slice(1)}

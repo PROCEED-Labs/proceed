@@ -41,8 +41,14 @@ import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
 export const getProcessBPMN = async (definitionId: string) => {
+  const { ability } = await getCurrentUser();
+
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
+
+  if (!ability.can('view', toCaslResource('Process', process))) {
+    return userError('Not allowed to read this process', UserErrorType.PermissionError);
+  }
 
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);

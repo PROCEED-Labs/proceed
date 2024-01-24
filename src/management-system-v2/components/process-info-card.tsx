@@ -107,7 +107,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
       <CollapsibleCard
         title={
           selection.length
-            ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value!
+            ? data?.find((item) => item.id === selection[0])?.name.value!
             : 'How to PROCEED?'
         }
         show={showInfo}

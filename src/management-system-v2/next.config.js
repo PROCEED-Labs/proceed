@@ -57,7 +57,7 @@ const nextConfig = {
       process.env.NODE_ENV === 'development'
         ? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='
         : undefined,
-    //...oauthProvidersConfig,
+    ...(process.env.NODE_ENV === 'development' ? oauthProvidersConfig : {}),
   },
   async redirects() {
     return [

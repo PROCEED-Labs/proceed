@@ -337,7 +337,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
       # Restart the container with the new image
-      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 3000:3000 --env-file .env.staging proceed/ms-server:$MS_TAG"
+      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging proceed/ms-server:$MS_TAG"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

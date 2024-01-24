@@ -21,21 +21,6 @@ export const nextAuthOptions: AuthOptions = {
 
       const user = token.user;
 
-      if (
-        process.env.NODE_ENV === 'development' &&
-        account?.provider === 'auth0' &&
-        user.username === 'admin' &&
-        (trigger === 'signIn' || trigger === 'signUp')
-      ) {
-        const adminRole = getRoles().find((role) => role.name === '@admin');
-
-        if (!adminRole) throw new Error('Admin role not found');
-
-        if (!adminRole.members.find((member) => member.userId === user.id))
-          // @ts-ignore
-          addRoleMappings([{ userId: user.id, roleId: adminRole.id }]);
-      }
-
       if (trigger === 'signUp' || trigger === 'signIn') {
         if (!usersMetaObject[user.id])
           addUser({

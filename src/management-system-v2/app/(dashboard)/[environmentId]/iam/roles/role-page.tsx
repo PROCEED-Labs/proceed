@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Space, Button, Table, App } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -15,8 +14,8 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useRouter } from 'next/navigation';
 import RoleSidePanel from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
+import { Role } from '@/lib/data/role-schema';
 
-type Role = ApiData<'/roles', 'get'>[number];
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
 const RolesPage = ({ roles }: { roles: Role[] }) => {

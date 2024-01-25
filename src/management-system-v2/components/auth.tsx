@@ -18,11 +18,15 @@ export const getCurrentUser = cache(async () => {
 // be called when the session is first accessed and everything above can PPR. For
 // permissions, each server component should check its permissions anyway, for
 // composability.
-export const getCurrentEnvironment = cache(async () => {
+export const getCurrentEnvironment = cache(async (activeEnvironment?: string) => {
   const { userId } = await getCurrentUser();
 
-  const url = new URL(headers().get('referer') || '');
-  const activeEnvironment = url.pathname.split('/')[1];
+  if (!activeEnvironment) {
+    const url = new URL(headers().get('referer') || '');
+    activeEnvironment = url.pathname.split('/')[1];
+  }
+
+  activeEnvironment = decodeURIComponent(activeEnvironment);
 
   const ability = await getAbilityForUser(userId, activeEnvironment);
 

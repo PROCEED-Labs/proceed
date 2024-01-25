@@ -9,10 +9,9 @@ import Auth, { getCurrentEnvironment } from '@/components/auth';
 // otherwise. It might be possible in the future with turbopack without this
 // import.
 import '@/lib/data/processes';
-import { getAbilityForUser } from '@/lib/authorization/authorization';
 
-const ProcessesPage = async () => {
-  const { ability } = await getCurrentEnvironment();
+const ProcessesPage = async ({ params }: { params: { environmentId: string } }) => {
+  const { ability } = await getCurrentEnvironment(params.environmentId);
 
   const processes = await getProcesses(ability);
 
@@ -25,14 +24,4 @@ const ProcessesPage = async () => {
   );
 };
 
-export default Auth(
-  {
-    action: 'view',
-    resource: 'Process',
-    fallback: (
-      <Result status="403" title="Not allowed" subTitle="You're not allowed to view processes" />
-    ),
-    notLoggedIn: <NotLoggedInFallback />,
-  },
-  ProcessesPage,
-);
+export default ProcessesPage;

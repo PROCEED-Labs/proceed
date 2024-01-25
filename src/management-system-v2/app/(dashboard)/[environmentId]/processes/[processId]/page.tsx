@@ -7,17 +7,17 @@ import { getProcess, getProcessVersionBpmn, getProcesses } from '@/lib/data/lega
 import { toCaslResource } from '@/lib/ability/caslAbility';
 
 type ProcessProps = {
-  params: { processId: string };
+  params: { processId: string; environmentId: string };
   searchParams: { version?: string };
 };
 
-const Process = async ({ params: { processId }, searchParams }: ProcessProps) => {
+const Process = async ({ params: { processId, environmentId }, searchParams }: ProcessProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
   const processes = await getProcesses(ability);
@@ -47,11 +47,4 @@ const Process = async ({ params: { processId }, searchParams }: ProcessProps) =>
   );
 };
 
-export default Auth(
-  {
-    action: 'view',
-    resource: 'Process',
-    fallbackRedirect: '/processes',
-  },
-  Process,
-);
+export default Process;

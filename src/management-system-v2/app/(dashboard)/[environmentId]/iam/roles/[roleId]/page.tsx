@@ -11,8 +11,12 @@ import RoleMembers from './role-members';
 
 type Items = ComponentProps<typeof Tabs>['items'];
 
-const Page = async ({ params: { roleId } }: { params: { roleId: string } }) => {
-  const { ability } = await getCurrentEnvironment();
+const Page = async ({
+  params: { roleId, environmentId },
+}: {
+  params: { roleId: string; environmentId: string };
+}) => {
+  const { ability } = await getCurrentEnvironment(environmentId);
   const role = getRoleById(roleId, ability);
 
   const items: Items = role

@@ -3,10 +3,10 @@ import Content from '@/components/content';
 import { getRoles } from '@/lib/data/legacy/iam/roles';
 import RolesPage from './role-page';
 
-const Page = async () => {
-  const { ability } = await getCurrentEnvironment();
+const Page = async ({ params }: { params: { environmentId: string } }) => {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
-  const roles = getRoles(ability);
+  const roles = getRoles(activeEnvironment, ability);
 
   return (
     <Content title="Identity and Access Management">

@@ -3,9 +3,9 @@ import UsersPage from './users-page';
 import { getUsers } from '@/lib/data/legacy/iam/users';
 import Content from '@/components/content';
 
-const Page = async () => {
-  const { ability } = await getCurrentEnvironment();
-  const users = getUsers(ability);
+const Page = async ({ params }: { params: { environmentId: string } }) => {
+  const { ability } = await getCurrentEnvironment(params.environmentId);
+  const users = getUsers();
 
   return (
     <Content title="Identity and Access Management">

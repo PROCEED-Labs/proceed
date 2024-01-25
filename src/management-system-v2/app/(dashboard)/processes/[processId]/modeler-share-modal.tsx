@@ -133,14 +133,15 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Share Process as Image',
       optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
-    {
+    //xml export using webshare api is not supported
+    /*{
       optionIcon: (
         <Image priority src="/proceed-icon.png" height={24} width={40} alt="proceed logo" />
       ),
       optionName: 'Share Process as BPMN File',
       optionTitle: 'Share Process as BPMN File',
       optionOnClick: () => onExportMobile('bpmn'),
-    },
+    },*/
   ];
 
   const optionsDesktop = [

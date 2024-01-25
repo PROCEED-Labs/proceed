@@ -1133,44 +1133,6 @@ function convertISODurationToMiliseconds(isoDuration) {
   return durationInMiliseconds;
 }
 
-/**
- * An object containing all necessary values for duration
- *
- * @typedef DurationValues
- * @type {object}
- * @property {number | null} years
- * @property {number | null} months
- * @property {number | null} days
- * @property {number | null} hours
- * @property {number | null} minutes
- * @property {number | null} seconds
- */
-
-/**
- *
- * @param {DurationValues} durationValues with number of years, months, days, hours, minutes and seconds
- * @returns {string} ISO duration string
- */
-function calculateTimeFormalExpression(durationValues) {
-  const dateFormal = `${durationValues.years ? durationValues.years + 'Y' : ''}${
-    durationValues.months ? durationValues.months + 'M' : ''
-  }${durationValues.days ? durationValues.days + 'D' : ''}`;
-
-  let timeFormal = '';
-  if (durationValues.hours || durationValues.minutes || durationValues.seconds) {
-    timeFormal = `T${durationValues.hours ? durationValues.hours + 'H' : ''}${
-      durationValues.minutes ? durationValues.minutes + 'M' : ''
-    }${durationValues.seconds ? durationValues.seconds + 'S' : ''}`;
-  }
-
-  let formalExpression = '';
-  if (dateFormal.length > 0 || timeFormal.length > 0) {
-    formalExpression = `P${dateFormal}${timeFormal}`;
-  }
-
-  return formalExpression;
-}
-
 module.exports = {
   // 'definitions' element related
   getDefinitionsId,
@@ -1220,5 +1182,4 @@ module.exports = {
   getPerformersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
-  calculateTimeFormalExpression,
 };

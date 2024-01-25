@@ -69,7 +69,6 @@ declare const _exports: {
   getPerformersFromElement: typeof getters.getPerformersFromElement;
   getPerformersFromElementById: typeof getters.getPerformersFromElementById;
   parseISODuration: typeof getters.parseISODuration;
-  calculateTimeFormalExpression: typeof getters.calculateTimeFormalExpression;
   convertISODurationToMiliseconds: typeof getters.convertISODurationToMiliseconds;
   moddle: any;
   ensureCorrectProceedNamespace: typeof util.ensureCorrectProceedNamespace;

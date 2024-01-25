@@ -6,8 +6,8 @@ import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Space } from '
 
 import { ClockCircleOutlined } from '@ant-design/icons';
 import FormSubmitButton from '@/components/form-submit-button';
-import { calculateTimeFormalExpression, parseISODuration } from '@proceed/bpmn-helper/src/getters';
-
+import { parseISODuration } from '@proceed/bpmn-helper/src/getters';
+import { calculateTimeFormalExpression } from '@/lib/helpers/timeHelper';
 type DurationValues = {
   years: number | null;
   months: number | null;

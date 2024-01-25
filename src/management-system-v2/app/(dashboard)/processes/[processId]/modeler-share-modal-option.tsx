@@ -50,7 +50,7 @@ const ModelerShareModalOption = ({
             fontSize: '0.75rem',
           }}
         >
-          <Tooltip title={optionTitle}>{optionName}</Tooltip>
+          <Tooltip title={breakpoint.lg ? optionTitle : ''}>{optionName}</Tooltip>
         </Typography.Text>
       </Button>
     </>

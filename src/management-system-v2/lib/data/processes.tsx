@@ -37,8 +37,17 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import Button from 'antd/es/button';
 import { revalidatePath } from 'next/cache';
+
+export const getProcess = async (definitionId: string) => {
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionId];
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+  const bpmn = await _getProcessBpmn(definitionId);
+  return { ...process, bpmn };
+};
 
 export const getProcessBPMN = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();

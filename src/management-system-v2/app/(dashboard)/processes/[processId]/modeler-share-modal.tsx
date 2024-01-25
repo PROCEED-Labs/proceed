@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useMemo, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
 import {
   ShareAltOutlined,
@@ -20,6 +20,7 @@ import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { getProcess } from '@/lib/data/processes';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -32,8 +33,25 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
-  const [token, setToken] = useState('');
+  const [shared, setShared] = useState(false);
+  const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
+  const [token, setToken] = useState('');
+
+  const checkIfProcessShared = async () => {
+    const { shared, sharedAs } = await getProcess(processId as string);
+    setShared(shared);
+    setSharedAs(sharedAs);
+  };
+
+  const refresh = async () => {
+    const { shared, sharedAs } = await getProcess(processId as string);
+    setShared(shared);
+    setSharedAs(sharedAs);
+  };
+  useEffect(() => {
+    checkIfProcessShared();
+  }, [processId]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -130,8 +148,17 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Public Link',
       optionTitle: 'Share Public Link',
-      optionOnClick: () => handleOptionClick(0),
-      subOption: <ModelerShareModalOptionPublicLink />,
+      optionOnClick: async () => {
+        handleOptionClick(0);
+      },
+      subOption: (
+        <ModelerShareModalOptionPublicLink
+          shared={shared}
+          accessToken={token}
+          sharedAs={sharedAs}
+          refresh={refresh}
+        />
+      ),
     },
     {
       optionIcon: (
@@ -144,12 +171,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Embed in Website',
       optionOnClick: async () => {
         handleOptionClick(1);
-        const { token } = await generateToken({ processId, embeddedMode: true });
-        setToken(token);
-        updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       },
-
-      subOption: <ModelerShareModalOptionEmdedInWeb accessToken={token} />,
+      subOption: (
+        <ModelerShareModalOptionEmdedInWeb shared={shared} sharedAs={sharedAs} refresh={refresh} />
+      ),
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,

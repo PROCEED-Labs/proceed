@@ -192,28 +192,20 @@ async function pdfExport(
 
   if (zip) {
     zip.file(`${processData.definitionName}.pdf`, await pdf.output('blob'));
-  } else if (useWebshareApi && navigator?.share !== undefined) {
-    shareUsingWebshareApi({
-      files: [
-        new File([await pdf.output('blob')], `${processData.definitionName}.pdf`, {
-          type: 'application/pdf',
-        }),
-      ],
-    })
-      .then(() => {
-        console.log('Sharing successful');
-      })
-      .catch((error) => {
-        if (error.name === 'AbortError') {
-          console.log('User cancelled the share');
-        } else if (error.name === 'ShareTimeout') {
-          console.log('Share operation timed out');
-        } else if (error.name === 'InternalError') {
-          console.log('Internal error: could not connect to Web Share interface');
-        } else {
-          console.error('Error during sharing:', error);
-        }
+  } else if (useWebshareApi && 'canShare' in navigator) {
+    try {
+      await navigator.share({
+        files: [
+          new File([await pdf.output('blob')], `${processData.definitionName}.pdf`, {
+            type: 'application/pdf',
+          }),
+        ],
       });
+    } catch (err: any) {
+      if (!err.toString().includes('AbortError')) {
+        throw new Error(err);
+      }
+    }
   } else {
     downloadFile(`${processData.definitionName}.pdf`, await pdf.output('blob'));
   }

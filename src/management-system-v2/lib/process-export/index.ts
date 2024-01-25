@@ -5,7 +5,7 @@ import {
   ProcessExportData,
 } from './export-preparation';
 
-import shareUsingWebshareApi, { downloadFile } from './util';
+import { downloadFile } from './util';
 
 import jsZip from 'jszip';
 import 'svg2pdf.js';
@@ -32,28 +32,18 @@ async function bpmnExport(
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
       zipFolder.file(`${filename}.bpmn`, bpmnBlob);
-    } else if (useWebshareApi && navigator.share !== undefined) {
-      shareUsingWebshareApi({
-        files: [
-          new File([bpmnBlob], `${processData.definitionName}.bpmn`, {
-            type: 'application/xml',
-          }),
-        ],
-      })
-        .then(() => {
-          console.log('Sharing successful');
-        })
-        .catch((error) => {
-          if (error.name === 'AbortError') {
-            console.log('User cancelled the share');
-          } else if (error.name === 'ShareTimeout') {
-            console.log('Share operation timed out');
-          } else if (error.name === 'InternalError') {
-            console.log('Internal error: could not connect to Web Share interface');
-          } else {
-            console.error('Error during sharing:', error);
-          }
+    } else if (useWebshareApi && 'canShare' in navigator) {
+      try {
+        await navigator.share({
+          // the process bpmn file has to be shared as text due to share() restrictions for XML support
+          //( see MDN Shareable file objects : https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share )
+          files: [new File([bpmnBlob], `${filename}.txt`, { type: 'text/plain' })],
         });
+      } catch (err: any) {
+        if (!err.toString().includes('AbortError')) {
+          throw new Error(err);
+        }
+      }
     } else {
       downloadFile(`${filename}.bpmn`, bpmnBlob);
     }

@@ -28,7 +28,7 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
   );
   const blob = await getPNGFromSVG(svg, 3);
 
-  if (navigator?.share) {
+  if ('canShare' in navigator) {
     try {
       await navigator.share({
         files: [new File([blob], 'diagram.png', { type: 'image/png' })],

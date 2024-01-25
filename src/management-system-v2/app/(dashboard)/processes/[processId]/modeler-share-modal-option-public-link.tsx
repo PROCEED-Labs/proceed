@@ -1,18 +1,42 @@
 import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { SetStateAction, useState } from 'react';
+import { SetStateAction, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
 
-const ModelerShareModalOptionPublicLink = () => {
+type ModelerShareModalOptionPublicLinkProps = {
+  shared: boolean;
+  accessToken: string;
+  sharedAs: 'public' | 'protected';
+  refresh: () => void;
+};
+
+const ModelerShareModalOptionPublicLink = ({
+  shared,
+  accessToken,
+  sharedAs,
+  refresh,
+}: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
   const [token, setToken] = useState<String | null>(null);
-  const [isShareLinkChecked, setIsShareLinkChecked] = useState(false);
-  const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(false);
+  const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
+  const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
+    sharedAs === 'protected',
+  );
 
   const [publicLinkValue, setPublicLinkValue] = useState(
     `${window.location.origin}/shared-viewer?token=`,
   );
+
+  const initialize = async () => {
+    const { token } = await generateToken({ processId: processId });
+    setToken(token);
+    setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
+    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+  };
+  useEffect(() => {
+    initialize();
+  }, [shared, sharedAs]);
 
   const handleCopyLink = async () => {
     try {
@@ -32,6 +56,7 @@ const ModelerShareModalOptionPublicLink = () => {
       const sharedAsValue = isChecked ? 'protected' : 'public';
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAsValue });
     }
+    refresh();
   };
 
   const handleShareLinkChecked = async (e: {
@@ -53,6 +78,7 @@ const ModelerShareModalOptionPublicLink = () => {
       setRegisteredUsersonlyChecked(false);
       message.success('Process unshared');
     }
+    refresh();
   };
 
   const handleLinkChange = (e: { target: { value: SetStateAction<string> } }) => {
@@ -104,10 +130,10 @@ const ModelerShareModalOptionPublicLink = () => {
           <LoadingOutlined style={{ fontSize: '40px' }} />
         </Flex>
       ) : (
-        <div style={{ padding: '10px' }}>
+        <div>
           <Row>
-            <Col span={18} style={{ paddingBottom: '10px' }}>
-              <Flex vertical gap="small" justify="center" align="center">
+            <Col span={18} style={{ paddingBottom: '10px', paddingLeft: '25px' }}>
+              <Flex vertical gap="small" justify="left" align="left">
                 <Checkbox
                   checked={registeredUsersonlyChecked}
                   onChange={handlePermissionChanged}

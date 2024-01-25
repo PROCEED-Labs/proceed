@@ -346,7 +346,7 @@ jobs:
       - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
 
       # Restart the container with the new image
-      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging proceed/ms-server:$MS_TAG"
+      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging -v /opt/proceed-ms-server/Processes:/app/Processes -v /opt/proceed-ms-server/Storage:/app/Storage proceed/ms-server:$MS_TAG"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"

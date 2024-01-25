@@ -23,10 +23,11 @@ import ProcessImportButton from './process-import';
 import Link from 'next/link';
 import styles from './menu-sider.module.scss';
 import { signOut } from 'next-auth/react';
+import { useEnvironment } from './auth-can';
 
 const SiderMenu: FC<PropsWithChildren> = () => {
-  const router = useRouter();
-  const activeSegment = usePathname().slice(1) || 'processes';
+  const environmentId = useEnvironment();
+  const activeSegment = 'processes';
   const ability = useAbilityStore((state) => state.ability);
 
   const breakpoint = Grid.useBreakpoint();
@@ -43,7 +44,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
                 icon={<FileOutlined />}
                 hidden={!ability.can('view', 'Process')}
               >
-                <Link href="/processes">Process List</Link>
+                <Link href={`/${environmentId}/processes`}>Process List</Link>
               </Item>
             ) : null}
 
@@ -63,7 +64,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
         <>
           <ItemGroup key="IAM" title="IAM">
             <Item key="iam/users" icon={<UserOutlined />} hidden={!ability.can('manage', 'User')}>
-              <Link href="/iam/users">Users</Link>
+              <Link href={`/${environmentId}/iam/users`}>Users</Link>
             </Item>
 
             <Item
@@ -71,7 +72,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
               icon={<UnlockOutlined />}
               hidden={!(ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))}
             >
-              <Link href="/iam/roles">Roles</Link>
+              <Link href={`/${environmentId}/iam/roles`}>Roles</Link>
             </Item>
           </ItemGroup>
           <Divider className={cn(breakpoint.xs ? styles.MarginDivider : styles.NoMarginDivider)} />
@@ -82,7 +83,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
         <>
           {ability.can('view', 'Setting') ? (
             <Item key="generalSettings">
-              <Link href="/general-settings">General Settings</Link>
+              <Link href={`/${environmentId}/general-settings`}>General Settings</Link>
             </Item>
           ) : null}
           <Item onClick={() => signOut()}>Logout</Item>
@@ -91,7 +92,7 @@ const SiderMenu: FC<PropsWithChildren> = () => {
         <ItemGroup key="settings" title="Settings">
           {ability.can('view', 'Setting') ? (
             <Item key="generalSettings" icon={<SettingOutlined />}>
-              <Link href="/general-settings">General Settings</Link>
+              <Link href={`/${environmentId}/general-settings`}>General Settings</Link>
             </Item>
           ) : null}
         </ItemGroup>

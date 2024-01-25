@@ -20,7 +20,7 @@ import { PlusOutlined, LeftOutlined } from '@ant-design/icons';
 import useModelerStateStore from './use-modeler-state-store';
 import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
@@ -43,6 +43,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
   const pathname = usePathname();
+  const environmentId = useEnvironment();
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
@@ -53,7 +54,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   } = theme.useToken();
 
   /// Derived State
-  const minimized = pathname !== `/processes/${processId}`;
+  const minimized = decodeURIComponent(pathname) !== `/${environmentId}/processes/${processId}`;
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   const subprocessChain = useMemo(() => {

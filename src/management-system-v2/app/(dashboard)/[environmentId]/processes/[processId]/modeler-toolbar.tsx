@@ -20,6 +20,7 @@ import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
+import { useEnvironment } from '@/components/auth-can';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -38,6 +39,7 @@ const ModelerToolbar = ({
   versions,
 }: ModelerToolbarProps) => {
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -143,7 +145,7 @@ const ModelerToolbar = ({
                 if (!option.value || option.value === -1) searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
-                  `/processes/${processId as string}${
+                  `${environmentId}/processes/${processId as string}${
                     searchParams.size ? '?' + searchParams.toString() : ''
                   }`,
                 );

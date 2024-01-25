@@ -20,6 +20,7 @@ import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
+import { useEnvironment } from '@/components/auth-can';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -29,6 +30,7 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
+  const environmentId = useEnvironment();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
@@ -45,7 +47,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /// Derived State
-  const minimized = pathname !== `/processes/${process.id}`;
+  const minimized = decodeURIComponent(pathname) !== `/${environmentId}/processes/${process.id}`;
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
@@ -132,7 +134,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
           router.replace(pathname + '?' + searchParams.toString());
         } else {
           router.push(
-            `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+            `${environmentId}/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
           );
         }
       }

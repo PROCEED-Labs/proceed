@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { deleteRole, addRole as _addRole, updateRole as _updateRole } from './legacy/iam/roles.js';
+import { deleteRole, addRole as _addRole, updateRole as _updateRole } from './legacy/iam/roles';
 import { redirect } from 'next/navigation';
 import { userError } from '../user-error';
 

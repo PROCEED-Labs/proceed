@@ -40,7 +40,6 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import MetaDataContent from './process-info-card-content';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
-import ToggleView from './processes-toggle-view';
 
 type Processes = ApiData<'/process', 'get'>;
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -236,27 +235,8 @@ const Processes = ({ processes }: ProcessesProps) => {
         <div style={{ flex: '1' }}>
           <Bar
             leftNode={
-              // breakpoint.xl ? (
-              //   <>
-              //       <ProcessCreationButton style={{marginRight: "10px"}} type="primary">New Process</ProcessCreationButton>
-              //       <ProcessImportButton style={{marginRight: "10px"}} type="default">Import Process</ProcessImportButton>
-              //   {selectedRowKeys.length ? (
-              //     <Space size={24}>
-              //       {/* <Button onClick={deselectAll} type="text">
-              //         <CloseOutlined />
-              //       </Button> */}
-              //       <span className={styles.SelectedRow}>
-              //         {/* TODO: take the button out of deleteButton, then remove margin here */}
-              //       <span style={{marginLeft: "16px"}}>{selectedRowKeys.length} selected:</span>
-              //       <span className={styles.Icons}>{actionBar}</span>
-              //       </span>
-              //     </Space>
-              //   ) :
-              //   undefined}
-              // </>) :
               <span
                 style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}
-                //className={cn(selectedRowKeys.length ? styles.WithSelection : styles.WithoutSelection)}
               >
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : (
@@ -272,16 +252,12 @@ const Processes = ({ processes }: ProcessesProps) => {
 
                   {selectedRowKeys.length ? (
                     <span className={styles.SelectedRow}>
-                      {/* <Button onClick={deselectAll} type="text">
-                        <CloseOutlined />
-                      </Button> */}
                       {selectedRowKeys.length} selected:
                       <span className={styles.Icons}>{actionBar}</span>
                     </span>
                   ) : undefined}
                 </span>
 
-                {/* <ToggleView iconView={iconView} /> */}
                 {
                   <span>
                     <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
@@ -354,36 +330,6 @@ const Processes = ({ processes }: ProcessesProps) => {
               onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
               placeholder: 'Search Processes ...',
             }}
-
-            // rightNode={
-            //   <span
-            //   style={{display: 'flex', width: '100%'}}
-            //   className={cn(selectedRowKeys.length ? styles.WithSelection : styles.WithoutSelection)}>
-            //     {breakpoint.xl ? <>
-            //     {/* <ToggleView iconView={iconView} /> */}
-            //     <Space.Compact>
-            //       <Button
-            //         style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-            //         onClick={() => {
-            //         addPreferences({ 'icon-view-in-process-list': false });
-            //         }}
-            //         >
-            //         <UnorderedListOutlined />
-            //       </Button>
-            //       <Button
-            //         style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-            //         onClick={() => {
-            //           addPreferences({ 'icon-view-in-process-list': true });
-            //         }}
-            //       >
-            //         <AppstoreOutlined />
-            //       </Button>
-            //     </Space.Compact>
-            //     <Button type="text" onClick={collapseCard}>
-            //         <InfoCircleOutlined />
-            //       </Button></>  : null }
-            //    </span>
-            // }
           />
 
           {iconView ? (
@@ -421,27 +367,20 @@ const Processes = ({ processes }: ProcessesProps) => {
             />
           )}
         </div>
+
         {/*Meta Data Panel*/}
         {breakpoint.xl ? (
           <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
         ) : (
           <Drawer
-            // width={'100dvw'}
             onClose={closeMobileMetaData}
             title={
-              // <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>
                 {
                   filteredData?.find((item) => item.definitionId === selectedRowKeys[0])
                     ?.definitionName.value!
                 }
               </span>
-              // <CloseOutlined
-              //   onClick={() => {
-              //     closeMobileMetaData();
-              //   }}
-              // />
-              // </div>
             }
             open={showMobileMetaData}
           >

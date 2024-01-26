@@ -4,6 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { FC, PropsWithChildren } from 'react';
 import App from '@/components/app';
+import { ConfigProvider } from 'antd';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 

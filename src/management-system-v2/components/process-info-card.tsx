@@ -21,8 +21,6 @@ import MetaDataContent from './process-info-card-content';
 type MetaDataType = {
   data?: ProcessListProcess[];
   selection: Key[];
-  // resizableElementRef: React.RefObject<ResizableElementRefType>;
-  //collapseCard: () => void;
 };
 export type MetaPanelRefType = () => void;
 
@@ -31,8 +29,6 @@ const MetaData: FC<MetaDataType> = (
   {
     data,
     selection,
-    //resizableElementRef,
-    //collapseCard
   },
   ref,
 ) => {

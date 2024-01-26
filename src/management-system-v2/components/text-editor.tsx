@@ -1,6 +1,7 @@
 import { Editor, EditorProps } from '@toast-ui/react-editor';
 import { Tabs } from 'antd';
 import React, { forwardRef, useEffect } from 'react';
+import styles from './text-editor.module.scss';
 
 const TextEditor = forwardRef<Editor, EditorProps>(function TextEditor(props, ref) {
   const editorRef = ref as React.MutableRefObject<Editor>;
@@ -18,7 +19,7 @@ const TextEditor = forwardRef<Editor, EditorProps>(function TextEditor(props, re
   }, [editorRef, props.initialValue]);
 
   return (
-    <div className="editor-container">
+    <div className={styles.EditorContainer}>
       <Editor
         ref={editorRef}
         previewStyle="tab"

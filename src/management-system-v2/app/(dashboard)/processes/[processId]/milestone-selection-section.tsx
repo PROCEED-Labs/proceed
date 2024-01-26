@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import styles from './milestone-selection-section.module.scss';
 
 import { Button, Divider, Form, FormInstance, Grid, Input, Modal, Space, Table } from 'antd';
 import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helper';
@@ -52,7 +53,7 @@ const MilestoneForm: React.FC<{
   }, [form, initialValues]);
 
   return (
-    <Form form={form} name="name" className="milestone-form" initialValues={initialValues}>
+    <Form form={form} name="name" className={styles.MilestoneForm} initialValues={initialValues}>
       <Form.Item name="id" rules={[{ required: true, message: 'Please input the Milestone ID!' }]}>
         <Input placeholder="Milestone ID" />
       </Form.Item>
@@ -62,7 +63,7 @@ const MilestoneForm: React.FC<{
       >
         <Input placeholder="Milestone Name" />
       </Form.Item>
-      <Form.Item name="description" className="milestone-description">
+      <Form.Item name="description" className={styles.MilestoneDescription}>
         <MilestoneDescriptionEditor
           initialValue={initialValues?.description}
           onChange={(content) => {

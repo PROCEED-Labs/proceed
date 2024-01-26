@@ -4,6 +4,7 @@ import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
+import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal, InputNumber } from 'antd';
 
@@ -121,7 +122,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       direction="vertical"
       size="large"
       style={{ width: '100%', fontSize: '0.75rem' }}
-      className="properties-panel"
+      className={styles.PropertiesPanel}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Divider style={{ fontSize: '0.85rem' }}>General</Divider>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import styles from './planned-duration-input.module.scss';
 
 import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Space } from 'antd';
 
@@ -46,7 +47,7 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
   return (
     <Modal
       title="Edit Planned Duration"
-      className="planned-duration-modal"
+      className={styles.PlannedDurationModal}
       width={getModalWidth()}
       style={{ maxWidth: '400px' }}
       centered

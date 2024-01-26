@@ -21,7 +21,7 @@ type XmlEditorProps = {
   canSave: boolean;
   onClose: () => void;
   onSaveXml: (bpmn: string) => Promise<void>;
-  process: { definitionName: string; definitionId: string };
+  process: { name: string; id: string };
   versionName?: string;
 };
 
@@ -139,7 +139,7 @@ const XmlEditor: FC<XmlEditorProps> = ({
 
   const handleDownload = async () => {
     if (editorRef.current) {
-      let filename = process.definitionName || process.definitionId || 'process';
+      let filename = process.name || process.id || 'process';
 
       if (versionName !== undefined) {
         filename += `_version_${versionName || selectedVersionId}`;

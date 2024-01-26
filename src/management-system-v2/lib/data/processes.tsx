@@ -9,7 +9,6 @@ import { toCaslResource } from '../ability/caslAbility';
 import {
   removeProcess,
   getProcessMetaObjects,
-  toExternalFormat,
   addProcess as _addProcess,
   getProcessBpmn as _getProcessBpmn,
   updateProcess as _updateProcess,
@@ -37,6 +36,8 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
+import Button from 'antd/es/button';
+import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
 export const getProcess = async (definitionId: string) => {
@@ -84,15 +85,15 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 };
 
 export const addProcesses = async (
-  values: { definitionName: string; description: string; bpmn?: string }[],
+  values: { name: string; description: string; bpmn?: string }[],
 ) => {
-  const { ability, session } = await getCurrentUser();
+  const { ability, session, activeEnvironment } = await getCurrentUser();
 
-  const newProcesses: ApiData<'/process/{definitionId}', 'get'>[] = [];
+  const newProcesses: Process[] = [];
 
   for (const value of values) {
     const { bpmn } = await createProcess({
-      name: value.definitionName,
+      name: value.name,
       description: value.description,
       bpmn: value.bpmn,
     });
@@ -100,19 +101,21 @@ export const addProcesses = async (
     const newProcess = {
       bpmn,
       owner: session?.user.id || '',
+      environmentId: activeEnvironment,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
     }
+
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess(newProcess);
+    const process = await _addProcess({ ...newProcess });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
     }
 
-    newProcesses.push(toExternalFormat({ ...process, bpmn }));
+    newProcesses.push({ ...process, bpmn });
   }
 
   return newProcesses;
@@ -160,20 +163,15 @@ export const updateProcess = async (
 
 export const updateProcesses = async (
   processes: {
-    definitionName?: string;
+    name?: string;
     description?: string;
     bpmn?: string;
-    definitionId: string;
+    id: string;
   }[],
 ) => {
   const res = await Promise.all(
     processes.map(async (process) => {
-      return await updateProcess(
-        process.definitionId,
-        process.bpmn,
-        process.description,
-        process.definitionName,
-      );
+      return await updateProcess(process.id, process.bpmn, process.description, process.name);
     }),
   );
 
@@ -184,32 +182,33 @@ export const updateProcesses = async (
 
 export const copyProcesses = async (
   processes: {
-    definitionName: string;
+    name: string;
     description: string;
     originalId: string;
     originalVersion?: string;
   }[],
 ) => {
-  const { ability, session } = await getCurrentUser();
+  const { ability, session, activeEnvironment } = await getCurrentUser();
 
-  const copiedProcesses: ApiData<'/process/{definitionId}', 'get'>[] = [];
+  const copiedProcesses: Process[] = [];
 
-  for (const cpyProcess of processes) {
+  for (const copyProcess of processes) {
     // Copy the original BPMN and update it for the new process.
     const newId = generateDefinitionsId();
     // Copy either a process or a specific version.
-    const originalBpmn = cpyProcess.originalVersion
-      ? await getProcessVersionBpmn(cpyProcess.originalId, cpyProcess.originalVersion)
-      : await _getProcessBpmn(cpyProcess.originalId);
+    const originalBpmn = copyProcess.originalVersion
+      ? await getProcessVersionBpmn(copyProcess.originalId, +copyProcess.originalVersion)
+      : await _getProcessBpmn(copyProcess.originalId);
 
     // TODO: Does createProcess() do the same as this function?
-    const newBpmn = await getFinalBpmn({ ...cpyProcess, definitionId: newId, bpmn: originalBpmn });
+    const newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn });
 
     // TODO: include variables in copy?
     const newProcess = {
       owner: session?.user.id || '',
       definitionId: newId,
       bpmn: newBpmn,
+      environmentId: activeEnvironment,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -221,7 +220,7 @@ export const copyProcesses = async (
       return userError('A process with this id does already exist');
     }
 
-    copiedProcesses.push(toExternalFormat({ ...process, bpmn: newBpmn }));
+    copiedProcesses.push({ ...process, bpmn: newBpmn });
   }
 
   return copiedProcesses;

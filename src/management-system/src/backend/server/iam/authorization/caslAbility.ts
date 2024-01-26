@@ -5,41 +5,8 @@ import {
   RawRuleOf,
   fieldPatternMatcher,
   subject,
-} from '@casl/ability';
-
-export const resources = [
-  'Process',
-  'Project',
-  'Template',
-  'Task',
-  'Machine',
-  'Execution',
-  'Role',
-  'User',
-  'Setting',
-  'EnvConfig',
-  'RoleMapping', // added in, in order to do it "the casl way"
-  'Share', // added in, in order to do it "the casl way"
-  'All',
-] as const;
-export type ResourceType = (typeof resources)[number];
-
-export const resourceAction = [
-  'none',
-  'view',
-  'update',
-  'create',
-  'delete',
-  'manage',
-  'share',
-  'manage-roles',
-  'manage-groups',
-  'manage-password',
-  'admin',
-] as const;
-export type ResourceActionType = (typeof resourceAction)[number];
-
-export type PermissionNumber = number;
+} from '@casl/ability-v6';
+import { ResourceActionType, ResourceType } from './permissionHelpers';
 
 const conditions = {
   $in: (valueInCondition: any[]) => (inputValue: any) => valueInCondition.includes(inputValue),
@@ -90,7 +57,7 @@ function testConidition(
   condition: (value: any) => boolean,
   strategy: 'or' | 'and',
   pathNotFound: boolean,
-): boolean {
+) {
   let value = resource;
   for (let i = 0; i < path.length; i++) {
     const key = path[i];

@@ -13,7 +13,6 @@ import '@/lib/data/processes';
 const ProcessesPage = async () => {
   const { ability } = await getCurrentUser();
   const processes = await getProcesses(ability);
-  //await new Promise((resolve) => setTimeout(resolve, 10000));
 
   return (
     <Content title="Processes">

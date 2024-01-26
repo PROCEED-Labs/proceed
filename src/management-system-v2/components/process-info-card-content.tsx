@@ -35,19 +35,13 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
             <b>Last Edited</b>
           </h5>
           <p>
-            {generateDateString(
-              data?.find((item) => item.definitionId === selection[0])?.lastEdited,
-              true,
-            )}
+            {generateDateString(data?.find((item) => item.id === selection[0])?.lastEdited, true)}
           </p>
           <h5>
             <b>Created On</b>
           </h5>
           <p>
-            {generateDateString(
-              data?.find((item) => item.definitionId === selection[0])?.createdOn,
-              false,
-            )}
+            {generateDateString(data?.find((item) => item.id === selection[0])?.createdOn, false)}
           </p>
           <h5>
             <b>File Size</b>
@@ -60,7 +54,7 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
           <h5>
             <b>Description</b>
           </h5>
-          <p>{data?.find((item) => item.definitionId === selection[0])?.description.value}</p>
+          <p>{data?.find((item) => item.id === selection[0])?.description.value}</p>
 
           <Divider style={{ width: '100%', marginLeft: '-20%' }} />
           <h3>Access Rights</h3>

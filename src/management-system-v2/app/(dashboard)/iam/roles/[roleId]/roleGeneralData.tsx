@@ -9,8 +9,7 @@ import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
-
-type Role = ApiData<'/roles/{id}', 'get'>;
+import { Role } from '@/lib/data/role-schema';
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();

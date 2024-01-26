@@ -45,7 +45,7 @@ const UserDataModal: FC<{
         const data = parseInput(values);
         if (!data) return;
 
-        const result = await updateUser(userData.id, values as UserData);
+        const result = await updateUser(values as UserData);
         if (result && 'error' in result) throw new Error();
 
         message.success({ content: 'Profile updated' });

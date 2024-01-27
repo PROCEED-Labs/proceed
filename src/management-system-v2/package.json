@@ -19,6 +19,7 @@
     "@casl/ability": "6.5.0",
     "@monaco-editor/react": "4.6.0",
     "@proceed/bpmn-helper": "1.0.0",
+    "@toast-ui/react-editor": "3.2.3",
     "@tanstack/react-query": "5.17.9",
     "antd": "5.13.1",
     "bcryptjs": "^2.4.3",

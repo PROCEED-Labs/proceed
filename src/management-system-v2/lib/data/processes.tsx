@@ -146,8 +146,7 @@ export const updateProcess = async (
     revalidatePath(`/processes/${definitionsId}`);
   }
 
-  const newProcessInfo = await _updateProcess(definitionsId, { bpmn: newBpmn });
-  return toExternalFormat({ ...newProcessInfo, bpmn: newBpmn });
+  await _updateProcess(definitionsId, { bpmn: newBpmn });
 };
 
 export const updateProcesses = async (
@@ -169,7 +168,7 @@ export const updateProcesses = async (
     }),
   );
 
-  const firstError = res.find((r) => 'error' in r);
+  const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
 };

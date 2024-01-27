@@ -16,7 +16,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { debounce } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { invalidateProcessCache, updateProcess } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
@@ -42,6 +42,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
+  const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /// Derived State
   const minimized = pathname !== `/processes/${process.definitionId}`;
@@ -88,6 +89,10 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   );
 
   const onChange = useCallback<Required<BPMNCanvasProps>['onChange']>(async () => {
+    // Increment the change counter to trigger a rerender of all components that
+    // depend on onChange, but can't use this callback as a child component.
+    incrementChangeCounter();
+
     // Save in the background when the BPMN changes.
     saveDebounced(await modeler.current!.getXML());
     // Update undo/redo state.

@@ -112,7 +112,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
               // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
               optionLabelProp="children"
               onSelect={(_, option) => {
-                router.push(`/processes/${option.value}`);
+                router.push(`/${environmentId}/processes/${option.value}`);
               }}
               dropdownRender={(menu) => (
                 <>
@@ -215,7 +215,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
       canvas.setRootElement(canvas.findRoot(currentSubprocess.id) as Root);
       modeler.fitViewport();
     } else {
-      router.push('/processes');
+      router.push(`/${environmentId}/processes`);
     }
   };
 

@@ -145,7 +145,7 @@ const ModelerToolbar = ({
                 if (!option.value || option.value === -1) searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
-                  `${environmentId}/processes/${processId as string}${
+                  `/${environmentId}/processes/${processId as string}${
                     searchParams.size ? '?' + searchParams.toString() : ''
                   }`,
                 );

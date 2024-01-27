@@ -10,8 +10,8 @@ import Link from 'next/link';
 import { UserOutlined } from '@ant-design/icons';
 import router, { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
-import SiderMenu from './menu-sider';
 import { useLayoutMobileDrawer } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { useEnvironment } from './auth-can';
 
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */
@@ -44,6 +44,7 @@ const Content: FC<ContentProps> = ({
 }) => {
   const breakpoint = Grid.useBreakpoint();
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
+  const environmentId = useEnvironment();
 
   return (
     <AntLayout className={cn(styles.Main, wrapperClass)}>
@@ -52,7 +53,7 @@ const Content: FC<ContentProps> = ({
           {/* Add icon into header for xs screens*/}
           {breakpoint.xs ? (
             <div className={styles.LogoContainer}>
-              <Link href="/processes">
+              <Link href={`/${environmentId}/processes`}>
                 <Image
                   src={'/proceed-icon.png'}
                   alt="PROCEED Logo"

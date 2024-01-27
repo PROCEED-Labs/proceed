@@ -4,7 +4,7 @@ import { Tooltip, Space } from 'antd';
 import { FormOutlined, PlusOutlined } from '@ant-design/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessCreationButton from '@/components/process-creation-button';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
 
@@ -13,6 +13,7 @@ type VersionToolbarProps = { processId: string };
 const VersionToolbar = ({ processId }: VersionToolbarProps) => {
   const router = useRouter();
   const query = useSearchParams();
+  const environmentId = useEnvironment();
   // This component should only be rendered when a version is selected
   const selectedVersionId = query.get('version') as string;
 
@@ -55,7 +56,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           tooltip="Set as latest Version and enable editing"
           onConfirm={async () => {
             await setVersionAsLatest(processId, Number(selectedVersionId));
-            router.push(`/processes/${processId}`);
+            router.push(`/${environmentId}/processes/${processId}`);
           }}
           modalProps={{
             okText: 'Set as latest Version',

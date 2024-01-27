@@ -134,7 +134,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
           router.replace(pathname + '?' + searchParams.toString());
         } else {
           router.push(
-            `${environmentId}/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+            `/${environmentId}/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
           );
         }
       }

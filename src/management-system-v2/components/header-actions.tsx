@@ -5,9 +5,11 @@ import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { FC } from 'react';
+import { useEnvironment } from './auth-can';
 
 const HeaderActions: FC = () => {
   const session = useSession();
+  const environmentId = useEnvironment();
   const loggedIn = session.status === 'authenticated';
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {
@@ -40,17 +42,17 @@ const HeaderActions: FC = () => {
             {
               key: 'profile',
               title: 'Account Settings',
-              label: <Link href="/profile">Account Settings</Link>,
+              label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
             },
             {
               key: 'environments',
               title: 'My environments',
-              label: <Link href="/environments">My environments</Link>,
+              label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
             },
           ],
         }}
       >
-        <Link href="/profile">
+        <Link href={`/${environmentId}/profile`}>
           <Avatar src={session.data.user.image}>
             {session.data.user.image
               ? null

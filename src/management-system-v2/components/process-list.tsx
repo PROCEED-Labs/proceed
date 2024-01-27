@@ -82,7 +82,6 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
-  const environmentId = useEnvironment();
   //const [previewerOpen, setPreviewerOpen] = useState(false);
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -479,7 +478,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(`/${environmentId}/processes/${record.id}`);
+            router.push(`processes/${record.id}`);
           },
           onMouseEnter: (event) => {
             setHovered(record);

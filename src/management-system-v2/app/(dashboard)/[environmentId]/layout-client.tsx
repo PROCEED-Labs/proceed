@@ -72,7 +72,7 @@ const Layout: FC<
             trigger={null}
           >
             <div className={styles.LogoContainer}>
-              <Link href="/processes">
+              <Link href={`/${environmentId}/processes`}>
                 <Image
                   src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
                   alt="PROCEED Logo"
@@ -111,7 +111,10 @@ const Layout: FC<
           loggedIn ? (
             <>
               <Tooltip title="Account Settings">
-                <Avatar src={session.data?.user.image} onClick={() => router.push('/profile')}>
+                <Avatar
+                  src={session.data?.user.image}
+                  onClick={() => router.push(`/${environmentId}/profile`)}
+                >
                   {session.data?.user.image
                     ? null
                     : session.status === 'authenticated'

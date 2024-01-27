@@ -2,7 +2,18 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
-import { Layout as AntLayout, Avatar, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
+import {
+  Layout as AntLayout,
+  Avatar,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Select,
+  Space,
+  Tooltip,
+} from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
@@ -10,6 +21,8 @@ import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { create } from 'zustand';
 import { useRouter } from 'next/navigation';
+import { Environment } from '@/lib/data/environment-schema';
+import { useEnvironment } from '@/components/auth-can';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -19,10 +32,15 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
 );
 
 const Layout: FC<
-  PropsWithChildren<{ loggedIn: boolean; layoutMenuItems: NonNullable<MenuProps['items']> }>
-> = ({ loggedIn, layoutMenuItems: _layoutMenuItems, children }) => {
+  PropsWithChildren<{
+    loggedIn: boolean;
+    userEnvironments: Environment[];
+    layoutMenuItems: NonNullable<MenuProps['items']>;
+  }>
+> = ({ loggedIn, userEnvironments, layoutMenuItems: _layoutMenuItems, children }) => {
   const session = useSession();
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
@@ -67,6 +85,19 @@ const Layout: FC<
                 />
               </Link>
             </div>
+
+            <div style={{ padding: '1rem' }}>
+              <Select
+                options={userEnvironments.map((environment) => ({
+                  label: environment.organization ? environment.name : 'Personal Environment',
+                  value: environment.id,
+                }))}
+                defaultValue={environmentId}
+                onChange={(environmentId) => router.push(`/${environmentId}/processes`)}
+                style={{ width: '100%' }}
+              />
+            </div>
+
             {loggedIn ? menu : null}
           </AntLayout.Sider>
 

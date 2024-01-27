@@ -14,6 +14,8 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
+import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
+import { Environment } from '@/lib/data/environment-schema';
 
 const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } }>> = async ({
   children,
@@ -25,6 +27,13 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
 
   if (activeEnvironment !== userId && !isMember(activeEnvironment, userId))
     redirect(`/${userId}/processes`);
+
+  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+  userEnvironments.push(
+    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+      getEnvironmentById(environmentId),
+    ),
+  );
 
   const userRules = await getUserRules(userId, activeEnvironment);
 
@@ -112,7 +121,11 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
   return (
     <>
       <SetAbility rules={userRules} environmentId={activeEnvironment} />
-      <Layout loggedIn={!!userId} layoutMenuItems={layoutMenuItems}>
+      <Layout
+        loggedIn={!!userId}
+        userEnvironments={userEnvironments}
+        layoutMenuItems={layoutMenuItems}
+      >
         {children}
       </Layout>
     </>

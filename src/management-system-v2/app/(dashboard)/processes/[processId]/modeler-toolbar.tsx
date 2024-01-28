@@ -139,7 +139,14 @@ const ModelerToolbar = ({
   return (
     <>
       <Toolbar className={styles.Toolbar}>
-        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+        <Space
+          style={{
+            width: '100%',
+            justifyContent: 'space-between',
+            flexWrap: 'nowrap',
+            alignItems: 'start',
+          }}
+        >
           <ToolbarGroup>
             <Select
               popupMatchSelectWidth={false}
@@ -191,36 +198,42 @@ const ModelerToolbar = ({
             )}
           </ToolbarGroup>
 
-          <ToolbarGroup>
-            <Tooltip
-              title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
-            >
-              <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
-            </Tooltip>
-            <Tooltip title="Share Process">
-              <ModelerShareModalButton
-                onExport={handleProcessExportModalToggle}
-                onExportMobile={handleProcessExportModalToggleMobile}
+          <Space style={{ height: '3rem' }}>
+            <ToolbarGroup>
+              <Tooltip
+                title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
+              >
+                <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
+              </Tooltip>
+              <Tooltip title="Share Process">
+                <ModelerShareModalButton
+                  onExport={handleProcessExportModalToggle}
+                  onExportMobile={handleProcessExportModalToggleMobile}
+                />
+              </Tooltip>
+              {!showMobileView && (
+                <>
+                  <Tooltip title="Show XML">
+                    <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
+                  </Tooltip>
+                  <Tooltip title="Export">
+                    <Button
+                      icon={<ExportOutlined />}
+                      onClick={handleProcessExportModalToggle}
+                    ></Button>
+                  </Tooltip>
+                </>
+              )}
+            </ToolbarGroup>
+            {showPropertiesPanel && selectedElement && (
+              <PropertiesPanel
+                isOpen={showPropertiesPanel}
+                close={handlePropertiesPanelToggle}
+                selectedElement={selectedElement}
               />
-            </Tooltip>
-            {!showMobileView && (
-              <>
-                <Tooltip title="Show XML">
-                  <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
-                </Tooltip>
-                <Tooltip title="Export">
-                  <Button
-                    icon={<ExportOutlined />}
-                    onClick={handleProcessExportModalToggle}
-                  ></Button>
-                </Tooltip>
-              </>
             )}
-          </ToolbarGroup>
+          </Space>
         </Space>
-        {showPropertiesPanel && selectedElement && (
-          <PropertiesPanel selectedElement={selectedElement} />
-        )}
       </Toolbar>
       <ProcessExportModal
         open={showProcessExportModal}

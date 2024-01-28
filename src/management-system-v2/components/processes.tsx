@@ -89,8 +89,6 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
-  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
-  const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {

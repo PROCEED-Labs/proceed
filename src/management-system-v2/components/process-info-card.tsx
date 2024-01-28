@@ -25,13 +25,7 @@ type MetaDataType = {
 export type MetaPanelRefType = () => void;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
-const MetaData: FC<MetaDataType> = (
-  {
-    data,
-    selection,
-  },
-  ref,
-) => {
+const MetaData: FC<MetaDataType> = ({ data, selection }, ref) => {
   const addPreferences = useUserPreferences.use.addPreferences();
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
   const hydrated = useUserPreferences.use._hydrated();

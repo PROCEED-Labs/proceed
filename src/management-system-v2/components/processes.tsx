@@ -235,9 +235,7 @@ const Processes = ({ processes }: ProcessesProps) => {
         <div style={{ flex: '1' }}>
           <Bar
             leftNode={
-              <span
-                style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}
-              >
+              <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : (
                     <>

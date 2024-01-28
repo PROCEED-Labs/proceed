@@ -149,5 +149,8 @@
 }
 
 :where(.css-dev-only-do-not-override-baxwvh).ant-float-btn {
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.15), 0 3px 6px -4px rgba(0, 0, 0, 0.15), 0 9px 28px 8px rgba(0, 0, 0, 0.1)
+  box-shadow:
+    0 6px 16px 0 rgba(0, 0, 0, 0.15),
+    0 3px 6px -4px rgba(0, 0, 0, 0.15),
+    0 9px 28px 8px rgba(0, 0, 0, 0.1);
 }

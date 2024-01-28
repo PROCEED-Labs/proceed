@@ -28,7 +28,8 @@ export function getAppDataPath() {
   let appDir;
 
   if (!process.env.IS_ELECTRON && process.env.NODE_ENV === 'production') {
-    appDir = __dirname;
+    // TODO: make this environment variable configurable
+    appDir = process.cwd();
   } else {
     appDir = envPaths('proceed-management-system').config;
     appDir = appDir.slice(0, appDir.search('-nodejs'));
@@ -107,7 +108,7 @@ function getUserTaskDir(id) {
  * @param {String} processDefinitionsId
  * @returns {String} the process description
  */
-export async function getBPMN(processDefinitionsId) {
+export function getBPMN(processDefinitionsId) {
   const folder = getFolder(processDefinitionsId);
   const bpmnFilePath = path.join(folder, processDefinitionsId.concat('.bpmn'));
   return fse.readFileSync(bpmnFilePath, 'utf-8');
@@ -166,7 +167,7 @@ function getVersionFileName(definitionId, version) {
  * Saves the bpmn of a specific process version
  *
  * @param {String} definitionId
- * @param {String} version the identifier of the version
+ * @param {number} version the identifier of the version
  * @param {String} bpmn
  */
 export async function saveProcessVersion(definitionId, version, bpmn) {
@@ -182,10 +183,10 @@ export async function saveProcessVersion(definitionId, version, bpmn) {
  * Will return the bpmn of a specific version of a process
  *
  * @param {String} definitionId
- * @param {String} version
+ * @param {number} version
  * @returns {String} the bpmn of the specific process version
  */
-export async function getProcessVersion(definitionId, version) {
+export function getProcessVersion(definitionId, version) {
   const folder = getFolder(definitionId);
   const bpmnFilePath = path.join(folder, getVersionFileName(definitionId, version));
   return fse.readFileSync(bpmnFilePath, 'utf-8');
@@ -565,6 +566,7 @@ async function getProcessInfo(bpmn, process) {
     processIds,
     versions: [],
     owner: process.owner,
+    environmentId: process.environmentId,
   };
   if (newProcess.type === 'project') {
     newProcess = {

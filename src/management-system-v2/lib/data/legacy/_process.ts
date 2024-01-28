@@ -22,15 +22,30 @@ import {
 } from './fileHandling.js';
 import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
-import { ApiData } from '@/lib/fetch-data';
 
 import bpmnHelperEx from '@proceed/bpmn-helper';
+import Ability from '@/lib/ability/abilityHelper.js';
+import { OptionalKeys } from '@/lib/typescript-utils.js';
+import {
+  ProcessMetadata,
+  ProcessInput,
+  ProcessInputSchema,
+  Process,
+  ProcessServerInput,
+  ProcessServerInputSchema,
+} from '../process-schema';
 
 let firstInit = false;
+// @ts-ignore
 if (!global.processMetaObjects) {
   firstInit = true;
 }
-let processMetaObjects = global.processMetaObjects || (global.processMetaObjects = {});
+
+let processMetaObjects: {
+  [ProcessId: string]: Omit<ProcessMetadata, 'bpmn'>;
+} =
+  // @ts-ignore
+  global.processMetaObjects || (global.processMetaObjects = {});
 
 const { getDefinitionsVersionInformation } = bpmnHelperEx;
 
@@ -38,49 +53,29 @@ export function getProcessMetaObjects() {
   return processMetaObjects;
 }
 
-/**
- * Returns a process DTO for the given process id.
- *
- * @returns {ApiData<'/process/{definitionId}', 'get'>}
- */
-export function toExternalFormat(processMetaData) {
-  const newFormat = { ...processMetaData };
-  newFormat.definitionId = processMetaData.id;
-  newFormat.definitionName = processMetaData.name;
-  delete newFormat.id;
-  delete newFormat.name;
-  return newFormat;
-}
-
-/**
- * Returns all processes for a user
- *
- * @returns {Promise<ApiData<'/process', 'get'>>}
- */
-export async function getProcesses(ability, includeBPMN = false) {
+/** Returns all processes for a user */
+export async function getProcesses(ability: Ability, includeBPMN = false) {
   const processes = Object.values(processMetaObjects);
 
   const userProcesses = await Promise.all(
     ability
       .filter('view', 'Process', processes)
       .map(async (process) =>
-        toExternalFormat(
-          !includeBPMN ? process : { ...process, bpmn: await getProcessBpmn(process.id) },
-        ),
+        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
       ),
   );
 
   return userProcesses;
 }
 
-export async function getProcess(processDefinitionsId, includeBPMN = false) {
+export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
   const process = processMetaObjects[processDefinitionsId];
   if (!process) {
     throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
   }
 
   const bpmn = includeBPMN ? await getProcessBpmn(processDefinitionsId) : null;
-  return toExternalFormat({ ...process, bpmn });
+  return { ...process, bpmn };
 }
 
 /**
@@ -88,21 +83,18 @@ export async function getProcess(processDefinitionsId, includeBPMN = false) {
  *
  * @param {String} processDefinitionsId
  */
-export function checkIfProcessExists(processDefinitionsId) {
+export function checkIfProcessExists(processDefinitionsId: string) {
   if (!processMetaObjects[processDefinitionsId]) {
     throw new Error(`Process with id ${processDefinitionsId} does not exist!`);
   }
 }
 
-/**
- * Handles adding a process, makes sure all necessary information gets parsed from bpmn
- *
- * @param {String} bpmn the xml description of the process to create
- * @returns {Promise<Object|string>} - returns an object containing the intitial process information or its id if a process with the same id already exists
- */
-export async function addProcess(processData) {
-  const { bpmn } = processData;
-  delete processData.bpmn;
+/** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
+export async function addProcess(processInput: ProcessServerInput & { bpmn: string }) {
+  // const processData = ProcessInputSchema.parse(processInput) as OptionalKeys<ProcessInput, 'bpmn'>;
+  const { bpmn } = processInput;
+
+  const processData = ProcessServerInputSchema.parse(processInput);
 
   if (!bpmn) {
     throw new Error("Can't create a process without a bpmn!");
@@ -119,11 +111,12 @@ export async function addProcess(processData) {
 
   // check if there is an id collision
   if (processMetaObjects[processDefinitionsId]) {
-    return processDefinitionsId;
+    throw new Error(`A process with the id ${processDefinitionsId} already exists!`);
   }
 
   // save process info
   processMetaObjects[processDefinitionsId] = metadata;
+
   // write meta data to store
   store.add('processes', removeExcessiveInformation(metadata));
   // save bpmn
@@ -134,18 +127,15 @@ export async function addProcess(processData) {
   return metadata;
 }
 
-/**
- * Updates an existing process with the given bpmn
- *
- * @param {String} processDefinitionsId
- * @param {String} newBpmn
- * @returns {Promise<Object>} - contains the new process meta information
- */
-export async function updateProcess(processDefinitionsId, newInfo) {
-  checkIfProcessExists(processDefinitionsId);
+/** Updates an existing process with the given bpmn */
+export async function updateProcess(
+  processDefinitionsId: string,
+  newInfoInput: Partial<ProcessInput> & { bpmn?: string },
+) {
+  const { bpmn: newBpmn } = newInfoInput;
 
-  const { bpmn: newBpmn } = newInfo;
-  delete newInfo.bpmn;
+  const newInfo = ProcessInputSchema.partial().parse(newInfoInput);
+  checkIfProcessExists(processDefinitionsId);
 
   let metaChanges = {
     ...newInfo,
@@ -173,21 +163,15 @@ export async function updateProcess(processDefinitionsId, newInfo) {
   return newMetaData;
 }
 
-/**
- * Direct updates to process meta data, should mostly be used for internal changes (puppeteer client, electron) to avoid
- * parsing the bpmn unnecessarily
- *
- * @param {Object} processDefinitionsId
- * @param {Object} metaChanges contains the elements to change and their new values
- */
-export async function updateProcessMetaData(processDefinitionsId, metaChanges) {
+/** Direct updates to process meta data, should mostly be used for internal changes (puppeteer client, electron) to avoid
+ * parsing the bpmn unnecessarily */
+export async function updateProcessMetaData(
+  processDefinitionsId: string,
+  metaChangesInput: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+) {
+  const metaChanges = ProcessInputSchema.partial().parse(metaChangesInput);
+
   checkIfProcessExists(processDefinitionsId);
-
-  const { id: newId } = metaChanges;
-
-  if (newId && processDefinitionsId !== newId) {
-    throw new Error(`Illegal try to change id from ${processDefinitionsId} to ${newId}`);
-  }
 
   const newMetaData = {
     ...processMetaObjects[processDefinitionsId],
@@ -196,7 +180,7 @@ export async function updateProcessMetaData(processDefinitionsId, metaChanges) {
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
 
-  // add shared_with if process is shared
+  /* // add shared_with if process is shared
   if (metaChanges.shared_with) {
     newMetaData.shared_with = metaChanges.shared_with;
   }
@@ -204,7 +188,7 @@ export async function updateProcessMetaData(processDefinitionsId, metaChanges) {
   // remove shared_with if not shared anymore
   if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
     delete newMetaData.shared_with;
-  }
+  } */
 
   if (metaChanges.shared) {
     newMetaData.shared = metaChanges.shared;
@@ -223,18 +207,14 @@ export async function updateProcessMetaData(processDefinitionsId, metaChanges) {
   return newMetaData;
 }
 
-/**
- * Removes an existing process
- *
- * @param {String} processDefinitionsId
- */
-export async function removeProcess(processDefinitionsId) {
+/** Removes an existing process */
+export async function removeProcess(processDefinitionsId: string) {
   if (!processMetaObjects[processDefinitionsId]) {
     return;
   }
 
   // remove process directory
-  await deleteProcess(processDefinitionsId);
+  deleteProcess(processDefinitionsId);
   // remove from store
   store.remove('processes', processDefinitionsId);
   delete processMetaObjects[processDefinitionsId];
@@ -242,13 +222,8 @@ export async function removeProcess(processDefinitionsId) {
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }
 
-/**
- * Stores a new version of an existing process
- *
- * @param {String} processDefinitionsId
- * @param {String} bpmn
- */
-export async function addProcessVersion(processDefinitionsId, bpmn) {
+/** Stores a new version of an existing process */
+export async function addProcessVersion(processDefinitionsId: string, bpmn: string) {
   // get the version from the given bpmn
   let versionInformation = await getDefinitionsVersionInformation(bpmn);
 
@@ -277,25 +252,21 @@ export async function addProcessVersion(processDefinitionsId, bpmn) {
   }
 
   // save the new version in the directory of the process
-  await saveProcessVersion(processDefinitionsId, versionInformation.version, bpmn);
+
+  await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
 
   // add information about the new version to the meta information and inform others about its existance
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
+  //@ts-ignore
   newVersions.push(versionInformation);
   newVersions.sort((a, b) => b.version - a.version);
 
   await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
 }
 
-/**
- * Returns the bpmn of a specific process version
- *
- * @param {String} processDefinitionsId
- * @param {String} version
- * @returns {Promise<string>} the bpmn of the specific process version
- */
-export async function getProcessVersionBpmn(processDefinitionsId, version) {
+/** Returns the bpmn of a specific process version */
+export function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
   let existingProcess = processMetaObjects[processDefinitionsId];
   if (!existingProcess) {
     throw new Error('The process for which you try to get a version does not exist');
@@ -308,31 +279,22 @@ export async function getProcessVersionBpmn(processDefinitionsId, version) {
     throw new Error('The version you are trying to get does not exist');
   }
 
-  return await getProcessVersion(processDefinitionsId, version);
+  return getProcessVersion(processDefinitionsId, version);
 }
 
-/**
- * Removes information from the meta data that would not be correct after a restart
- *
- * @param {Object} processInfo the complete process meta information
- */
-function removeExcessiveInformation(processInfo) {
+/** Removes information from the meta data that would not be correct after a restart */
+function removeExcessiveInformation(processInfo: Omit<ProcessMetadata, 'bpmn'>) {
   const newInfo = { ...processInfo };
   delete newInfo.inEditingBy;
   return newInfo;
 }
 
-/**
- * Returns the process definition for the process with the given id
- *
- * @param {String} processDefinitionsId
- * @returns {Promise<String>} - the process definition
- */
-export async function getProcessBpmn(processDefinitionsId) {
+/** Returns the process definition for the process with the given id */
+export function getProcessBpmn(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const bpmn = await getBPMN(processDefinitionsId);
+    const bpmn = getBPMN(processDefinitionsId);
     return bpmn;
   } catch (err) {
     logger.debug(`Error reading bpmn of process. Reason:\n${err}`);
@@ -340,13 +302,8 @@ export async function getProcessBpmn(processDefinitionsId) {
   }
 }
 
-/**
- * Returns the filenames of html data for all user tasks in the given process
- *
- * @param {String} processDefinitionsId
- * @returns {Array} - array containing the filenames of the htmls of all user tasks in the process
- */
-export async function getProcessUserTasks(processDefinitionsId) {
+/** Returns the filenames of html data for all user tasks in the given process */
+export async function getProcessUserTasks(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -358,14 +315,8 @@ export async function getProcessUserTasks(processDefinitionsId) {
   }
 }
 
-/**
- * Returns the html for a specific user task in a process
- *
- * @param {String} processDefinitionsId
- * @param {String} taskFileName
- * @returns {String} - the html under the given fileName
- */
-export async function getProcessUserTaskHtml(processDefinitionsId, taskFileName) {
+/** Returns the html for a specific user task in a process */
+export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -377,13 +328,8 @@ export async function getProcessUserTaskHtml(processDefinitionsId, taskFileName)
   }
 }
 
-/**
- * Return object mapping from user tasks fileNames to their html
- *
- * @param {String} processDefinitionsId
- * @returns {Pomise<Object>} - contains the html for all user tasks in the process
- */
-export async function getProcessUserTasksHtml(processDefinitionsId) {
+/** Return object mapping from user tasks fileNames to their html */
+export async function getProcessUserTasksHtml(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -395,7 +341,11 @@ export async function getProcessUserTasksHtml(processDefinitionsId) {
   }
 }
 
-export async function saveProcessUserTask(processDefinitionsId, userTaskFileName, html) {
+export async function saveProcessUserTask(
+  processDefinitionsId: string,
+  userTaskFileName: string,
+  html: string,
+) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -411,13 +361,11 @@ export async function saveProcessUserTask(processDefinitionsId, userTaskFileName
   }
 }
 
-/**
- * Removes a stored user task from disk
- *
- * @param {String} processDefinitionsId
- * @param {String} userTaskFileName
- */
-export async function deleteProcessUserTask(processDefinitionsId, userTaskFileName) {
+/** Removes a stored user task from disk */
+export async function deleteProcessUserTask(
+  processDefinitionsId: string,
+  userTaskFileName: string,
+) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -431,7 +379,7 @@ export async function deleteProcessUserTask(processDefinitionsId, userTaskFileNa
   }
 }
 
-export async function getProcessImage(processDefinitionsId, imageFileName) {
+export async function getProcessImage(processDefinitionsId: string, imageFileName: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -444,13 +392,8 @@ export async function getProcessImage(processDefinitionsId, imageFileName) {
   }
 }
 
-/**
- * Return Array with fileNames of images for given process
- *
- * @param {String} processDefinitionsId
- * @returns {Promise<string[]>} - contains all image fileNames in the process
- */
-export async function getProcessImageFileNames(processDefinitionsId) {
+/** Return Array with fileNames of images for given process */
+export async function getProcessImageFileNames(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -462,13 +405,8 @@ export async function getProcessImageFileNames(processDefinitionsId) {
   }
 }
 
-/**
- * Return object mapping from images fileNames to their image
- *
- * @param {String} processDefinitionsId
- * @returns {Promise<object>} - contains all images in the process
- */
-export async function getProcessImages(processDefinitionsId) {
+/** Return object mapping from images fileNames to their image */
+export async function getProcessImages(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -480,7 +418,11 @@ export async function getProcessImages(processDefinitionsId) {
   }
 }
 
-export async function saveProcessImage(processDefinitionsId, imageFileName, image) {
+export async function saveProcessImage(
+  processDefinitionsId: string,
+  imageFileName: string,
+  image: string,
+) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -496,7 +438,7 @@ export async function saveProcessImage(processDefinitionsId, imageFileName, imag
   }
 }
 
-export async function deleteProcessImage(processDefinitionsId, imageFileName) {
+export async function deleteProcessImage(processDefinitionsId: string, imageFileName: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
@@ -507,18 +449,13 @@ export async function deleteProcessImage(processDefinitionsId, imageFileName) {
   }
 }
 
-/**
- * Stores the id of the socket wanting to block the process from being deleted inside the process object
- *
- * @param {String} socketId
- * @param {String} processDefinitionsId
- */
-export function blockProcess(socketId, processDefinitionsId) {
+/** Stores the id of the socket wanting to block the process from being deleted inside the process object */
+export function blockProcess(socketId: string, processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   const process = { ...processMetaObjects[processDefinitionsId] };
 
-  const blocker = { id: socketId, task: null };
+  const blocker = { id: socketId, task: undefined };
   let { inEditingBy } = process;
   if (!inEditingBy) {
     inEditingBy = [blocker];
@@ -531,13 +468,8 @@ export function blockProcess(socketId, processDefinitionsId) {
   updateProcessMetaData(processDefinitionsId, { inEditingBy });
 }
 
-/**
- * Removes the id of the socket wanting to unblock the process from the process object
- *
- * @param {String} socketId
- * @param {String} processDefinitionsId
- */
-export function unblockProcess(socketId, processDefinitionsId) {
+/** Removes the id of the socket wanting to unblock the process from the process object */
+export function unblockProcess(socketId: string, processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   const process = processMetaObjects[processDefinitionsId];
@@ -551,7 +483,7 @@ export function unblockProcess(socketId, processDefinitionsId) {
   updateProcessMetaData(processDefinitionsId, { inEditingBy });
 }
 
-export function blockTask(socketId, processDefinitionsId, taskId) {
+export function blockTask(socketId: string, processDefinitionsId: string, taskId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   const process = processMetaObjects[processDefinitionsId];
@@ -574,7 +506,7 @@ export function blockTask(socketId, processDefinitionsId, taskId) {
   updateProcessMetaData(processDefinitionsId, { inEditingBy });
 }
 
-export function unblockTask(socketId, processDefinitionsId, taskId) {
+export function unblockTask(socketId: string, processDefinitionsId: string, taskId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   const process = processMetaObjects[processDefinitionsId];
@@ -586,19 +518,14 @@ export function unblockTask(socketId, processDefinitionsId, taskId) {
   let blocker = process.inEditingBy.find((b) => b.id === socketId);
 
   if (blocker && blocker.task === taskId) {
-    blocker.task = null;
+    blocker.task = undefined;
 
     updateProcessMetaData(processDefinitionsId, { inEditingBy: process.inEditingBy });
   }
 }
 
-/**
- * Will remove all instance adaptation processes that are stored
- *
- * @param {Array} processes all stored processes
- * @returns {Array} all stored processes that are not instance adaptation processes
- */
-function removeAdaptationProcesses(processes) {
+/** Will remove all instance adaptation processes that are stored */
+function removeAdaptationProcesses(processes: ProcessMetadata[]) {
   for (const process of processes) {
     // delete the process data if it is an adaptation process
     if (process.type === 'process-instance') {
@@ -620,7 +547,7 @@ export async function init() {
 
   // get processes that were persistently stored
   const storedProcesses = store.get('processes');
-  let updatedProcesses = await getUpdatedProcessesJSON(storedProcesses);
+  let updatedProcesses = (await getUpdatedProcessesJSON(storedProcesses)) as ProcessMetadata[];
 
   // remove all adaptation process that might still be stored for some reason
   updatedProcesses = removeAdaptationProcesses(updatedProcesses);

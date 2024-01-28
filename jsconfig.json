@@ -7,13 +7,13 @@
     "**/node_modules/*",
     ".vscode",
     "build",
-    "jsdoc"
+    "jsdoc",
   ],
   "compilerOptions": {
     "baseUrl": "./src", // this must be specified if "paths" is specified.
     "paths": {
       // defined aliases in webpack for import
-      "@/*": ["management-system/src/*"]
-    }
-  }
+      "@/*": ["management-system/src/*"],
+    },
+  },
 }

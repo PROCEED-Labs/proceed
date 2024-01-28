@@ -6,8 +6,8 @@ import {
   getRoleMappingByUserId,
 } from '../../../shared-electron-server/data/iam/role-mappings.js';
 import { deleteRulesForUsers, isAllowed } from '../middleware/authorization';
-import Ability from '../../../../../../management-system-v2/lib/ability/abilityHelper';
-import { toCaslResource } from '../../../../../../management-system-v2/lib/ability/caslAbility';
+import Ability from '../authorization/abilityHelper';
+import { toCaslResource } from '../authorization/caslRules';
 
 const roleMappingsRouter = express.Router();
 

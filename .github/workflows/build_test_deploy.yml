@@ -17,7 +17,8 @@ on:
 env:
   OUTPUT_PATH_ENGINE_NODE: './build/engine/'
   OUTPUT_PATH_ENGINE_ANDROID: './src/engine/native/android/app/build/outputs/apk/debug/'
-  OUTPUT_PATH_MS_SERVER: './build/management-system/server/'
+  OUTPUT_PATH_MS_SERVER: './src/management-system-v2/.next/'
+  DOCKER_PATH_MS_SERVER: './src/management-system-v2'
   FILE_NAME_NODE_ENGINE: 'PROCEED-Engine-0.1.0.zip'
   FILE_NAME_ANDROID: 'PROCEED-Engine-0.1.0.apk'
 
@@ -27,7 +28,7 @@ jobs:
     outputs:
       compose: ${{ steps.changes.outputs.compose }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: dorny/paths-filter@v2
         id: changes
@@ -37,7 +38,7 @@ jobs:
               - 'docker-compose.yml'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -46,7 +47,7 @@ jobs:
       - run: yarn install --frozen-lockfile --ignore-engines # Remove once node-ipc is removed
 
       # Cache for this workflow run.
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: cache-install
         with:
@@ -57,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -65,7 +66,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -77,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -85,7 +86,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -97,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -105,7 +106,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -117,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -125,7 +126,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -137,7 +138,7 @@ jobs:
   #   timeout-minutes: 60
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/cache@v3
+  #     - uses: actions/cache@v4
   #       timeout-minutes: 2
   #       id: restore-install
   #       with:
@@ -145,7 +146,7 @@ jobs:
   #         key: ${{ github.sha }}-${{ github.run_number }}
 
   #     - name: Set up Node.js
-  #       uses: actions/setup-node@v3
+  #       uses: actions/setup-node@v4
   #       with:
   #         node-version: 20
   #         check-latest: true
@@ -173,7 +174,7 @@ jobs:
       - testEngineE2E
       - testMS
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -181,7 +182,7 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
@@ -190,7 +191,7 @@ jobs:
       - run: yarn build
 
       - name: Upload engine build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: PROCEED_Engine
           path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
@@ -202,7 +203,7 @@ jobs:
   #      - testEngine
   #      - testEngineE2E
   # steps:
-  #   - uses: actions/cache@v3
+  #   - uses: actions/cache@v4
   #     timeout-minutes: 2
   #     id: restore-install
   #     with:
@@ -210,7 +211,7 @@ jobs:
   #       key: ${{ github.sha }}-${{ github.run_number }}
   #
   #   - name: Set up Node.js
-  #     uses: actions/setup-node@v3
+  #     uses: actions/setup-node@v4
   #     with:
   #       node-version: 20
   #       check-latest: true
@@ -228,13 +229,14 @@ jobs:
   buildMS:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
+    environment: ${{ inputs.environment || 'Staging' }}
     needs:
       - lint
       - testEngine
       - testEngineE2E
       - testMS
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:
@@ -242,65 +244,73 @@ jobs:
           key: ${{ github.sha }}-${{ github.run_number }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
           cache: 'yarn'
 
-      - run: yarn build-ms-server
-
-      - name: Upload MS server build
-        uses: actions/upload-artifact@v3
-        with:
-          name: PROCEED_Management_System_Server
-          path: ${{ env.OUTPUT_PATH_MS_SERVER }}
-
-  docker:
-    strategy:
-      matrix:
-        # Run a job each for the engine and MS server images
-        include:
-          - output: PROCEED_Engine
-            output_path: OUTPUT_PATH_ENGINE_NODE
-            image: proceed/engine
-          - output: PROCEED_Management_System_Server
-            output_path: OUTPUT_PATH_MS_SERVER
-            image: proceed/ms-server
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'Staging' }}
-    needs:
-      - buildEngine
-      - buildMS
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ matrix.output }}
-          path: ${{ env[matrix.output_path] }}
-
-      - name: Display structure of downloaded files
-        run: ls ${{ env[matrix.output_path] }}
+      - run: yarn build-ms
 
       - name: Kaniko build
         uses: aevea/action-kaniko@master
         with:
-          image: ${{ matrix.image }}
+          image: proceed/ms-server
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          path: ${{ env[matrix.output_path] }}
+          path: ${{ env.DOCKER_PATH_MS_SERVER }}
           tag: ${{ vars.IMAGE_TAG }}
-          extra_args: --build-arg OLD=${{ inputs.environment == 'Production' }}
+
+      # - name: Upload MS server build
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: PROCEED_Management_System_Server
+      #     path: ${{ env.OUTPUT_PATH_MS_SERVER }}
+
+  # docker:
+  #   strategy:
+  #     matrix:
+  #       # Run a job each for the engine and MS server images
+  #       include:
+  #         - output: PROCEED_Engine
+  #           output_path: OUTPUT_PATH_ENGINE_NODE
+  #           image: proceed/engine
+  #         - output: PROCEED_Management_System_Server
+  #           output_path: DOCKER_PATH_MS_SERVER
+  #           image: proceed/ms-server
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ inputs.environment || 'Staging' }}
+  #   needs:
+  #     - buildEngine
+  #     - buildMS
+  #   steps:
+  #     - name: Download build
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: ${{ matrix.output }}
+  #         path: ${{ env[matrix.output_path] }}
+
+  #     - name: Display structure of downloaded files
+  #       run: ls ${{ env[matrix.output_path] }}
+
+  #     - name: Kaniko build
+  #       uses: aevea/action-kaniko@master
+  #       with:
+  #         image: ${{ matrix.image }}
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+  #         path: ${{ env[matrix.output_path] }}
+  #         tag: ${{ vars.IMAGE_TAG }}
 
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
-    needs: docker
+    needs: buildMS
     strategy:
       matrix:
         # Run a job each for the engine and MS server images
         include:
-          - serviceName: engine
+          # - serviceName: engine
           - serviceName: management_system
     env:
       ENV: ${{ inputs.environment || 'Staging' }}
@@ -326,11 +336,17 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
 
-      # Get the new version from dockerhub
-      - run: ssh $ENV "sudo docker run --rm -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 pull $SERVICE_NAME"
+      # Pull the latest image
+      - run: ssh $ENV "sudo docker pull proceed/ms-server:$MS_TAG"
 
-      # Restart the engine container with the new image
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="${{ inputs.environment == 'Production' && '443' || '33080' }}" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans $SERVICE_NAME"
+      # Stop the container
+      - run: ssh $ENV "sudo docker stop $SERVICE_NAME || true"
+
+      # Remove the container
+      - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
+
+      # Restart the container with the new image
+      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging -v /opt/proceed-ms-server/Processes:/app/Processes -v /opt/proceed-ms-server/Storage:/app/Storage proceed/ms-server:$MS_TAG"
 
       # Remove unused images
       - run: ssh $ENV "sudo docker image prune -f -a"
@@ -348,7 +364,7 @@ jobs:
       MS_TAG: ${{ vars.IMAGE_TAG }}
       LOG_DRIVER: ${{ vars.LOG_DRIVER }}
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         timeout-minutes: 2
         id: restore-install
         with:

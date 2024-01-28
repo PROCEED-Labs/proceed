@@ -3,7 +3,6 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -33,16 +32,15 @@ import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
 import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/processes';
 import ProcessModal from './process-modal';
-import { toCaslResource } from '@/lib/ability/caslAbility';
-import { AuthCan } from './auth-can';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
+import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
 
-type Processes = ApiData<'/process', 'get'>;
+//TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
-  Processes[number],
-  'definitionName' | 'description'
+  Omit<Process, 'bpmn'>,
+  'name' | 'description'
 >;
 
 type CopyProcessType = {
@@ -73,11 +71,16 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
 };
 
 type ProcessesProps = {
-  processes: Processes;
+  processes: Omit<Process, 'bpmn'>[];
 };
 
 const Processes = ({ processes }: ProcessesProps) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const ability = useAbilityStore((state) => state.ability);
+
+  const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
+  const selectedRowKeys = selectedRowElements.map((element) => element.id);
+  const canDeleteSelected = selectedRowElements.every((element) => ability.can('delete', element));
+
   const router = useRouter();
   const { message } = App.useApp();
 
@@ -85,8 +88,6 @@ const Processes = ({ processes }: ProcessesProps) => {
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
   const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
-
-  const ability = useAbilityStore((state) => state.ability);
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
@@ -105,12 +106,11 @@ const Processes = ({ processes }: ProcessesProps) => {
         content: 'Someting went wrong while submitting the data',
       });
     }
-    setSelectedRowKeys([]);
+    setSelectedRowElements([]);
     router.refresh();
   }, [message, router, selectedRowKeys]);
 
   const breakpoint = Grid.useBreakpoint();
-
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -141,7 +141,7 @@ const Processes = ({ processes }: ProcessesProps) => {
         />
       </Tooltip>
 
-      <AuthCan action="delete" resource={toCaslResource('Process', process)}>
+      {canDeleteSelected && (
         <Tooltip placement="top" title={'Delete'}>
           <ConfirmationButton
             title="Delete Processes"
@@ -155,7 +155,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             }}
           />
         </Tooltip>
-      </AuthCan>
+      )}
     </>
   );
 
@@ -165,13 +165,13 @@ const Processes = ({ processes }: ProcessesProps) => {
     setSearchQuery: setSearchTerm,
   } = useFuzySearch({
     data: processes ?? [],
-    keys: ['definitionName', 'description'],
-    highlightedKeys: ['definitionName', 'description'],
+    keys: ['name', 'description'],
+    highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
   const deselectAll = () => {
-    setSelectedRowKeys([]);
+    setSelectedRowElements([]);
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
@@ -184,7 +184,7 @@ const Processes = ({ processes }: ProcessesProps) => {
       /* CTRL + A */
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
-        setSelectedRowKeys(filteredData?.map((item) => item.definitionId) ?? []);
+        setSelectedRowElements(filteredData ?? []);
         /* DEL */
       } else if (e.key === 'Delete' && selectedRowKeys.length) {
         if (ability.can('delete', 'Process')) {
@@ -330,32 +330,31 @@ const Processes = ({ processes }: ProcessesProps) => {
             <IconView
               data={filteredData}
               selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
+              setSelectionElements={setSelectedRowElements}
               setShowMobileMetaData={setShowMobileMetaData}
             />
           ) : (
             <ProcessList
               data={filteredData}
+              setSelectionElements={setSelectedRowElements}
               selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
               // TODO: Replace with server component loading state
               //isLoading={isLoading}
               onExportProcess={(id) => {
                 setOpenExportModal(true);
-                setSelectedRowKeys([id]);
               }}
-              onDeleteProcess={async (id) => {
+              onDeleteProcess={async ({ id }) => {
                 await deleteProcesses([id]);
-                setSelectedRowKeys([]);
+                setSelectedRowElements([]);
                 router.refresh();
               }}
-              onCopyProcess={(id) => {
+              onCopyProcess={(process) => {
                 setOpenCopyModal(true);
-                setSelectedRowKeys([id]);
+                setSelectedRowElements([process]);
               }}
-              onEditProcess={(id) => {
+              onEditProcess={(process) => {
                 setOpenEditModal(true);
-                setSelectedRowKeys([id]);
+                setSelectedRowElements([process]);
               }}
               setShowMobileMetaData={setShowMobileMetaData}
             />
@@ -371,10 +370,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             title={
               // <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>
-                {
-                  filteredData?.find((item) => item.definitionId === selectedRowKeys[0])
-                    ?.definitionName.value!
-                }
+                {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
               </span>
               // <CloseOutlined
               //   onClick={() => {
@@ -402,11 +398,11 @@ const Processes = ({ processes }: ProcessesProps) => {
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
-            definitionName: `${process.definitionName.value} (Copy)`,
+            name: `${process.name.value} (Copy)`,
             description: process.description.value,
-            originalId: process.definitionId,
+            originalId: process.id,
           }))}
         onSubmit={async (values) => {
           const res = await copyProcesses(values);
@@ -423,10 +419,10 @@ const Processes = ({ processes }: ProcessesProps) => {
         title={`Edit Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenEditModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.definitionId))
+          .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
-            definitionId: process.definitionId,
-            definitionName: process.definitionName.value,
+            id: process.id,
+            name: process.name.value,
             description: process.description.value,
           }))}
         onSubmit={async (values) => {

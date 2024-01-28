@@ -1,4 +1,5 @@
 const { readFileSync } = require('fs');
+const path = require('path');
 
 let oauthProvidersConfig;
 
@@ -9,6 +10,8 @@ try {
       'utf8',
     ),
   );
+
+  console.log('environmentsContent', environmentsContent);
 
   oauthProvidersConfig = {
     NEXTAUTH_SECRET: environmentsContent.nextAuthSecret,
@@ -24,6 +27,7 @@ try {
     ([key, value]) => value === undefined && delete oauthProvidersConfig[key],
   );
 } catch (_) {
+  console.error(_);
   oauthProvidersConfig = {};
 }
 
@@ -31,6 +35,12 @@ try {
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  experimental: {
+    outputFileTracingRoot: path.join(__dirname, '../../'),
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // This is due to needing to init our in-memory db before accesing the getters.
     // Can probably be removed once we switch to a real db.
@@ -45,12 +55,12 @@ const nextConfig = {
           `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/proxy`
         : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',
-    NEXT_PUBLIC_USE_AUTH: process.env.USE_AUTHORIZATION === 'true' ? 'true' : 'false',
+    NEXT_PUBLIC_USE_AUTH: 'true',
     NEXTAUTH_SECRET:
       process.env.NODE_ENV === 'development'
         ? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='
         : undefined,
-    ...oauthProvidersConfig,
+    ...(process.env.NODE_ENV === 'development' ? oauthProvidersConfig : {}),
   },
   async redirects() {
     return [

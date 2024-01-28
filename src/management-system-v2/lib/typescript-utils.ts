@@ -46,3 +46,9 @@ export type ArrayEntryType<T extends any[]> = T extends Array<infer EntryType> ?
  * Makes specific properties of a type required.
  */
 export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+/**
+ * Make keys of T optional.
+ */
+export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = Omit<T, K> &
+  Partial<Pick<T, K>>;

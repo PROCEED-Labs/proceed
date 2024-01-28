@@ -9,17 +9,18 @@ import {
   getUserTaskFileNameMapping,
   setUserTaskData,
 } from '@proceed/bpmn-helper';
-
-import { ApiData } from '../fetch-data';
-
 import { asyncForEach, asyncMap } from './javascriptHelpers';
 import {
+  deleteProcessUserTask,
   getProcessUserTaskHtml,
+  getProcessBpmn,
+  getProcessUserTasksHtml,
   getProcessVersionBpmn,
   saveProcessUserTask,
   updateProcess,
 } from '../data/legacy/_process';
 import { getUserTaskHTML } from '../data/legacy/fileHandling';
+import { Process } from '../data/process-schema';
 
 const { diff } = require('bpmn-js-differ');
 
@@ -86,22 +87,19 @@ export async function convertToEditableBpmn(bpmn: string) {
   return { bpmn: await toBpmnXml(bpmnObj), changedFileNames };
 }
 
-export async function getLocalVersionBpmn(
-  process: ApiData<'/process', 'get'>[number],
-  localVersion: number,
-) {
+export async function getLocalVersionBpmn(process: Process, localVersion: number) {
   // early exit if there are no known versions for the process locally
   if (!Array.isArray(process.versions) || !process.versions.length) return;
 
   // check if the specific version exists locally and get its bpmn if it does
   if (process.versions.some(({ version }) => +version == localVersion)) {
-    const bpmn = getProcessVersionBpmn(process.definitionId, String(localVersion));
+    const bpmn = getProcessVersionBpmn(process.id, localVersion);
     return bpmn;
   }
 }
 
 export async function versionUserTasks(
-  processInfo: ApiData<'/process', 'get'>[number],
+  processInfo: Process,
   newVersion: number,
   bpmnObj: object,
   dryRun = false,
@@ -114,7 +112,7 @@ export async function versionUserTasks(
     const { fileName, implementation } = htmlMapping[userTaskId];
     // only version user tasks that use html
     if (fileName && implementation === getUserTaskImplementationString()) {
-      const userTaskHTML = getUserTaskHTML(processInfo.definitionId, fileName);
+      const userTaskHTML = getUserTaskHTML(processInfo.id, fileName);
 
       let versionFileName = `${fileName}-${newVersion}`;
 
@@ -134,7 +132,7 @@ export async function versionUserTasks(
 
         if (basedOnVersionFileInfo && basedOnVersionFileInfo.fileName) {
           const basedOnVersionUserTaskHTML = getUserTaskHTML(
-            processInfo.definitionId,
+            processInfo.id,
             basedOnVersionFileInfo.fileName,
           );
 
@@ -156,16 +154,13 @@ export async function versionUserTasks(
 
       // store the user task version if it didn't exist before
       if (!dryRun && !userTaskHtmlAlreadyExisting) {
-        saveProcessUserTask(processInfo.definitionId, versionFileName, userTaskHTML);
+        saveProcessUserTask(processInfo.id, versionFileName, userTaskHTML);
       }
     }
   }
 }
 
-export async function updateProcessVersionBasedOn(
-  processInfo: ApiData<'/process', 'get'>[number],
-  versionBasedOn: number,
-) {
+export async function updateProcessVersionBasedOn(processInfo: Process, versionBasedOn: number) {
   if (processInfo?.bpmn) {
     const { version, description, name } = await getDefinitionsVersionInformation(processInfo.bpmn);
 
@@ -176,6 +171,44 @@ export async function updateProcessVersionBasedOn(
       versionBasedOn,
     })) as string;
 
-    await updateProcess(processInfo.definitionId, { bpmn });
+    await updateProcess(processInfo.id, { bpmn });
   }
+}
+
+const getUsedFileNames = async (bpmn: string) => {
+  const userTaskFileNameMapping = await getUserTaskFileNameMapping(bpmn);
+
+  const fileNames = new Set<string>();
+
+  Object.values(userTaskFileNameMapping).forEach(({ fileName }) => {
+    if (fileName) {
+      fileNames.add(fileName);
+    }
+  });
+
+  return [...fileNames];
+};
+
+export async function selectAsLatestVersion(processId: string, version: number) {
+  // make sure that the html is also rolled back
+  const processHtmlMapping = await getProcessUserTasksHtml(processId);
+
+  const editableBpmn = await getProcessBpmn(processId);
+  const versionBpmn = await getProcessVersionBpmn(processId, version);
+  const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
+
+  const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);
+
+  // Delete UserTasks stored for latest version
+  await asyncForEach(fileNamesinEditableVersion, async (taskFileName) => {
+    await deleteProcessUserTask(processId, taskFileName);
+  });
+
+  // Store UserTasks from this version as UserTasks from latest version
+  await asyncForEach(Object.entries(changedFileNames), async ([oldName, newName]) => {
+    await saveProcessUserTask(processId, newName, processHtmlMapping[oldName]);
+  });
+
+  // Store bpmn from this version as latest version
+  await updateProcess(processId, { bpmn: convertedBpmn });
 }

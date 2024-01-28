@@ -70,7 +70,7 @@ const Preview: React.FC<PropertiesPanelProperties> = ({ selectedElement, setOpen
         }}
         onMouseDown={handleMouseDown}
       ></div>
-      <Viewer definitionId={selectedElement.definitionId} fitOnResize />
+      <Viewer definitionId={selectedElement.id} fitOnResize />
     </Drawer>
   );
 

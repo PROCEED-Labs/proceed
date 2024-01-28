@@ -38,11 +38,11 @@ const MetaData: FC<MetaDataType> = (
 
   const collapseCard = () => {
     const resizeCard = resizableElementRef.current;
-    const sidepanelWidth = useUserPreferences.getState().preferences['process-meta-data'].width;
+    const sidepanelWidth = getWidth();
 
     if (resizeCard) {
-      if (showInfo) resizeCard(30);
-      else resizeCard(sidepanelWidth);
+      if (showInfo) resizeCard({ width: 30, minWidth: 30, maxWidth: 30 });
+      else resizeCard({ width: sidepanelWidth, minWidth: 300, maxWidth: 600 });
     }
     addPreferences({
       'process-meta-data': {
@@ -86,7 +86,7 @@ const MetaData: FC<MetaDataType> = (
       <CollapsibleCard
         title={
           selection.length
-            ? data?.find((item) => item.definitionId === selection[0])?.definitionName.value!
+            ? data?.find((item) => item.id === selection[0])?.name.value!
             : 'How to PROCEED?'
         }
         show={showInfo}

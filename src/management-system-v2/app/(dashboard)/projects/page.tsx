@@ -10,7 +10,7 @@ const Projects: FC = () => {
     <Content title="Projects">
       <Space direction="vertical" size="large" style={{ display: 'flex' }}>
         <ProjectStats />
-        <Processes />
+        <Processes processes={[]} />
       </Space>
     </Content>
   );

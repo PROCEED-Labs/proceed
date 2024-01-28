@@ -16,7 +16,7 @@ if (process.env.USE_AUTH0) {
       },
       profile(profile) {
         return {
-          id: profile.sub,
+          id: `auth0:${profile.sub}`,
           email: profile.email,
           image: profile.picture,
           firstName: profile.given_name,

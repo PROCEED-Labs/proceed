@@ -1,13 +1,13 @@
 import { FC, PropsWithChildren, ReactNode } from 'react';
 
 type ProcessesLayoutProps = PropsWithChildren<{
-  background: ReactNode;
+  /*background: ReactNode;*/
 }>;
 
-const ProcessesLayout: FC<ProcessesLayoutProps> = ({ children, background }) => {
+const ProcessesLayout: FC<ProcessesLayoutProps> = ({ children /*, background*/ }) => {
   return (
     <>
-      {background}
+      {/*background*/}
       {children}
     </>
   );

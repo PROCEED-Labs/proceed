@@ -1,0 +1,20 @@
+.PropertiesPanel :global {
+  .ant-input-number-input,
+  .ant-input,
+  .ant-input-group-addon,
+  .ant-input-number-group-addon,
+  .ant-select-selection-item,
+  .ant-table.ant-table-middle {
+    font-size: 0.75rem !important;
+  }
+
+  /* Needed to allow setting width of child (.ant-input-number-group-addon) with display: table-cell */
+  .ant-input-number-wrapper {
+    table-layout: fixed;
+  }
+
+  .ant-input-group-addon,
+  .ant-input-number-group-addon {
+    width: 4rem !important;
+  }
+}

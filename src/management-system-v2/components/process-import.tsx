@@ -16,7 +16,7 @@ import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 
 export type ProcessData = {
-  definitionName: string;
+  name: string;
   description: string;
   bpmn: string;
 };
@@ -42,7 +42,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
               const bpmnObj = await toBpmnObject(bpmn);
 
               return {
-                definitionName: (await getDefinitionsName(bpmnObj)) || '',
+                name: (await getDefinitionsName(bpmnObj)) || '',
                 description: await getProcessDocumentation(bpmn),
                 bpmn,
               };

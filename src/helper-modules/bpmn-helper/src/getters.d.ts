@@ -192,6 +192,17 @@ export type ResourceInfos = {
   description?: string;
 };
 /**
+ * An object containing necessary values for duration
+ */
+export type DurationValues = {
+  years: number | null;
+  months: number | null;
+  days: number | null;
+  hours: number | null;
+  minutes: number | null;
+  seconds: number | null;
+};
+/**
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object

@@ -1,15 +1,15 @@
-import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
-import { packRules } from '@casl/ability-v6/extra';
+import { subject } from '@casl/ability-v6';
 import {
-  AbilityRule,
-  CaslAbility,
   ResourceActionType,
   ResourceType,
-  buildAbility,
+  adminPermissions,
+  permissionNumberToIdentifiers,
   resources,
-} from '../../../../../../management-system-v2/lib/ability/caslAbility';
+} from './permissionHelpers';
+import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
+import { packRules } from '@casl/ability-v6/extra';
+import { AbilityRule, CaslAbility, buildAbility } from './caslAbility';
 import { getAppliedRolesForUser } from './rolesHelper';
-import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
 
 const needOwnership = new Set<ResourceType>(['Process', 'Project', 'Template']);
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
@@ -218,7 +218,7 @@ async function rulesForSharedResources(ability: CaslAbility, userId: string) {
           conditions: {
             conditions: {
               id: { $eq: share.resourceId },
-              $: { $not_expired_value: share.expiredAt },
+              $: { $not_expired_value: share.expiredAt ?? null },
             },
           },
         });
@@ -240,7 +240,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         resourceOwner: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration },
+        $: { $not_expired_value: expiration ?? null },
       },
       conditionsOperator: 'and',
     },
@@ -253,7 +253,7 @@ function rulesForShares(resource: ResourceType, userId: string, expiration: stri
       conditions: {
         sharedBy: { $eq: userId },
         resourceType: { $eq_string_case_insensitive: resource },
-        $: { $not_expired_value: expiration },
+        $: { $not_expired_value: expiration ?? null },
       },
       conditionsOperator: 'and',
     },

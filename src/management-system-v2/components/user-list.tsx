@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ComponentProps, FC, ReactNode, useState } from 'react';
-import { Space, Avatar, Button, Table, Result } from 'antd';
+import { Space, Avatar, Button, Table, Result, Grid } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
@@ -91,6 +91,7 @@ const UserList: FC<UserListProps> = ({
     highlightedKeys: ['firstName', 'lastName', 'username', 'email'],
   });
 
+  const breakpoint = Grid.useBreakpoint();
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
@@ -161,7 +162,7 @@ const UserList: FC<UserListProps> = ({
           loading={loading}
         />
       </div>
-      {sidePanel}
+      {breakpoint.xl ? sidePanel : null}
     </div>
   );
 };

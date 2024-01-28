@@ -23,7 +23,7 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
       initialWidth={
         sidePanelOpen ? useUserPreferences.getState().preferences['user-page-side-panel'].width : 30
       }
-      minWidth={300}
+      minWidth={sidePanelOpen ? 300 : 30}
       maxWidth={600}
       style={{ position: 'relative' }}
       onWidthChange={(width) =>

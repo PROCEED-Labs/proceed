@@ -15,7 +15,12 @@
       font-size: 18px;
       color: #5f5f5f;
       font-weight: 300;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
     }
+    
   }
 
   .Content {

@@ -70,7 +70,7 @@ const Content: FC<ContentProps> = ({
               </div>
             ) : null}
 
-            {headerLeft || <div className={styles.Title}>{title}</div>}
+            {headerLeft || <div className={cn(styles.Title)}>{title}</div>}
             {headerCenter || null}
             {breakpoint.xs ? (
               // Hamburger menu for mobile view

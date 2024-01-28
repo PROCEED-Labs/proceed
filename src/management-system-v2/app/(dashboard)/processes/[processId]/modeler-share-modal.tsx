@@ -36,7 +36,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
-  const [token, setToken] = useState('');
 
   const checkIfProcessShared = async () => {
     const { shared, sharedAs } = await getProcess(processId as string);
@@ -45,13 +44,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const refresh = async () => {
-    const { shared, sharedAs } = await getProcess(processId as string);
-    setShared(shared);
-    setSharedAs(sharedAs);
-  };
-  useEffect(() => {
     checkIfProcessShared();
-  }, [processId]);
+  };
 
   const handleClose = () => {
     setIsOpen(false);
@@ -89,7 +83,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
 
     const shareObject = {
-      title: `${processData.definitionName} | PROCEED`,
+      title: `${processData.name} | PROCEED`,
       text: 'Here is a shared process for you',
       url: `${window.location.origin}/shared-viewer?token=${token}`,
     };
@@ -106,6 +100,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       navigator.clipboard.writeText(shareObject.url);
       message.success('Copied to clipboard');
     }
+  };
+
+  const handleShareButtonClick = async () => {
+    setIsOpen(true);
+    checkIfProcessShared();
   };
 
   const optionsMobile = [
@@ -153,12 +152,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         handleOptionClick(0);
       },
       subOption: (
-        <ModelerShareModalOptionPublicLink
-          shared={shared}
-          accessToken={token}
-          sharedAs={sharedAs}
-          refresh={refresh}
-        />
+        <ModelerShareModalOptionPublicLink shared={shared} sharedAs={sharedAs} refresh={refresh} />
       ),
     },
     {
@@ -263,7 +257,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         )}
       </Modal>
       <Tooltip title="Share">
-        <Button icon={<ShareAltOutlined />} onClick={() => setIsOpen(true)} />
+        <Button icon={<ShareAltOutlined />} onClick={() => handleShareButtonClick()} />
       </Tooltip>
     </>
   );

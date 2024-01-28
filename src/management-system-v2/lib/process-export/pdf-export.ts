@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import jsZip from 'jszip';
 
 import { ProcessExportData, ProcessesExportData } from './export-preparation';
-import shareUsingWebshareApi, { downloadFile, getSVGFromBPMN } from './util';
+import { downloadFile, getSVGFromBPMN } from './util';
 
 import PDFPagebuilder from './PDFPageBuilder';
 

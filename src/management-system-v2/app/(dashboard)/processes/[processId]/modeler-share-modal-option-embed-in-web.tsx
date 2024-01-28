@@ -4,13 +4,11 @@ import { Button, message, Input, Checkbox, Typography } from 'antd';
 import { TextAreaRef } from 'antd/es/input/TextArea';
 import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
 import { useParams } from 'next/navigation';
-import { getProcess } from '@/lib/data/processes';
 
 const { TextArea } = Input;
 
 type ModelerShareModalOptionEmdedInWebProps = {
   shared: boolean;
-  accessToken?: string;
   sharedAs: 'public' | 'protected';
   refresh: () => void;
 };
@@ -31,12 +29,19 @@ const ModelerShareModalOptionEmdedInWeb = ({
     if (shared && sharedAs === 'public') {
       const { token } = await generateToken({ processId, embeddedMode: true });
       setToken(token);
-      // await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      //await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
     }
   };
   useEffect(() => {
     initialize();
   }, [shared, sharedAs]);
+
+  if (sharedAs === 'protected')
+    return (
+      <>
+        <Typography.Text type="danger">Process is not public</Typography.Text>
+      </>
+    );
 
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };

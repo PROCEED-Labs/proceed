@@ -6,14 +6,12 @@ import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions
 
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
-  accessToken: string;
   sharedAs: 'public' | 'protected';
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
   shared,
-  accessToken,
   sharedAs,
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
@@ -28,14 +26,19 @@ const ModelerShareModalOptionPublicLink = ({
     `${window.location.origin}/shared-viewer?token=`,
   );
 
-  const initialize = async () => {
+  const getNewToken = async () => {
     const { token } = await generateToken({ processId: processId });
     setToken(token);
     setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
   };
+
   useEffect(() => {
-    initialize();
+    setIsShareLinkChecked(shared);
+    if (shared) {
+      getNewToken();
+    }
+    setRegisteredUsersonlyChecked(sharedAs === 'protected' ? true : false);
   }, [shared, sharedAs]);
 
   const handleCopyLink = async () => {
@@ -54,7 +57,10 @@ const ModelerShareModalOptionPublicLink = ({
     setRegisteredUsersonlyChecked(isChecked);
     if (isShareLinkChecked) {
       const sharedAsValue = isChecked ? 'protected' : 'public';
-      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAsValue });
+      await updateProcessGuestAccessRights(processId, {
+        shared: true,
+        sharedAs: sharedAsValue,
+      });
     }
     refresh();
   };
@@ -120,6 +126,9 @@ const ModelerShareModalOptionPublicLink = ({
 
   return (
     <>
+      <div>
+        {shared ? 'true' : 'false'}, {sharedAs}
+      </div>
       <div style={{ marginBottom: '5px' }}>
         <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
           Share Process with Public Link

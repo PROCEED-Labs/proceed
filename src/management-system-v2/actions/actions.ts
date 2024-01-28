@@ -10,7 +10,7 @@ export interface TokenPayload {
 
 export async function generateToken(payload: TokenPayload) {
   const secretKey = process.env.JWT_KEY;
-  const processData = await getProcess(payload.processId);
+  const processData = await getProcess(payload.processId as string);
   const token = jwt.sign(payload, secretKey!);
 
   return { token, processData };
@@ -25,5 +25,5 @@ export async function updateProcessGuestAccessRights(
   processId: string | string[],
   newMeta: ProcessGuestAccessRights,
 ) {
-  await updateProcessMetaData(processId, newMeta);
+  await updateProcessMetaData(processId as string, newMeta);
 }

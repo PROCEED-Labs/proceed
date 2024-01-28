@@ -1,107 +1,137 @@
-.BpmnViewer {
-  width: 70vw;
-  height: 70vh;
-  margin: auto;
-
-  @media print {
-    display: none;
-  }
-}
-
-.ProcessOverviewPage {
-  display: none;
-
+.ProcessOverview {
   @media print {
     display: flex;
   }
 
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-
-  .ContentTablePageHeader {
-    display: none;
-
+  :global(.ant-layout-header) {
     @media print {
-      display: block;
-    }
-  }
-
-  .TableOfContents {
-    display: none;
-    font-size: 1.3em;
-    color: red;
-
-    ul li {
-      font-weight: bold;
-    }
-
-    li {
-      list-style-type: disc;
-    }
-
-    a {
-      color: red;
-    }
-
-    @media print {
-      display: block;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-
-  .ProcessPage {
-    display: flex;
-    flex-direction: column;
-    break-inside: avoid;
-    break-before: always;
-    flex-wrap: wrap;
-    width: 100%;
-
-    h1 {
-      align-self: center;
-    }
-
-    .ProceedLogo {
-      align-self: end;
-      text-align: right;
-
       display: none;
-
-      @media print {
-        display: block;
-      }
-    }
-
-    .ProcessCanvas {
-      height: 90vh;
-      width: 90vw;
-
-      @media print {
-        height: 80vh;
-      }
-
-      align-self: center;
-
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-content: center;
-
-      :global(svg) {
-        max-width: 100%;
-        max-height: 100%;
-      }
     }
   }
+
+  :global(.ant-layout-footer) {
+    @media print {
+      display: none;
+    }
+  }
+
+  :global(.ant-layout-content) {
+    padding: 0;
+  }
+
+  .ProcessDocument {
+    width: 70vw;
+    @media print {
+      width: 100%;
+    }
+
+    margin: 0 auto;
+    background-color: rgb(238, 243, 245);
+  }
+
+  .ElementPage {
+    break-before: always;
+  }
 }
+
+// .ProcessOverviewPage {
+//   display: none;
+
+//   @media print {
+//     display: flex;
+//   }
+
+//   flex-direction: column;
+//   align-items: center;
+//   justify-content: center;
+//   width: 100%;
+
+//   .ContentTablePageHeader {
+//     display: none;
+
+//     @media print {
+//       display: block;
+//     }
+//   }
+
+//   .TableOfContents {
+//     display: none;
+//     font-size: 1.3em;
+//     color: red;
+
+//     ul li {
+//       font-weight: bold;
+//     }
+
+//     li {
+//       list-style-type: disc;
+//     }
+
+//     a {
+//       color: red;
+//     }
+
+//     @media print {
+//       display: block;
+//       position: absolute;
+//       top: 50%;
+//       transform: translateY(-50%);
+//     }
+//   }
+
+//   .ProcessPage {
+//     display: flex;
+//     flex-direction: column;
+//     break-inside: avoid;
+//     break-before: always;
+//     flex-wrap: wrap;
+//     width: 100%;
+
+//     h1 {
+//       align-self: center;
+//     }
+
+//     .ProceedLogo {
+//       align-self: end;
+//       text-align: right;
+
+//       display: none;
+
+//       @media print {
+//         display: block;
+//       }
+//     }
+
+//     .ProcessCanvas {
+//       height: 90vh;
+//       width: 90vw;
+
+//       @media print {
+//         height: 85vh;
+//       }
+
+//       align-self: center;
+
+//       display: flex;
+//       flex-wrap: wrap;
+//       justify-content: center;
+//       align-content: center;
+
+//       :global(svg) {
+//         max-width: 100%;
+//         max-height: 100%;
+//       }
+//     }
+//   }
+
+//   .ProcessMetaPage {
+//     break-before: always;
+//   }
+// }
 
 @media print {
   @page {
-    size: a4 landscape;
+    size: a4;
     margin: 5pt;
   }
 }

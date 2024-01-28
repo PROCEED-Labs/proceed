@@ -1,4 +1,3 @@
-import EmbeddedModeler from '@/components/bpmn-shared-viewer';
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/legacy/process';

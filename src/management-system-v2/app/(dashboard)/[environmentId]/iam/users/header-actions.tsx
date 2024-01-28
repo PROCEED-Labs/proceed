@@ -1,46 +1,21 @@
 'use client';
 
-import { AuthCan } from '@/components/auth-can';
-import { UserSchema } from '@/lib/data/user-schema';
-import { addUser } from '@/lib/data/users';
-import useParseZodErrors from '@/lib/useParseZodErrors';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal } from 'antd';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
+import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Button, Form, App, Input, Modal, Space } from 'antd';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
-const modalStructureWithoutPassword = [
-  {
-    dataKey: 'firstName',
-    label: 'First Name',
-    type: 'text',
-  },
-  {
-    dataKey: 'lastName',
-    label: 'Last Name',
-    type: 'text',
-  },
-  {
-    dataKey: 'username',
-    label: 'Username Name',
-    type: 'text',
-  },
-  {
-    dataKey: 'email',
-    label: 'Email',
-    type: 'email',
-  },
-] as const;
-
-const CreateUserModal: FC<{
+const AddUsersModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ modalOpen, close }) => {
   const { message: messageApi } = App.useApp();
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const [form] = Form.useForm();
-  const [formErrors, parseInput] = useParseZodErrors(UserSchema);
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch([], form);
@@ -67,13 +42,11 @@ const CreateUserModal: FC<{
       try {
         form.validateFields();
 
-        const data = parseInput({ ...values, oauthProvider: 'email' });
-        if (!data) return;
+        const result = inviteUsersToEnvironment(environmentId, values.users);
 
-        const result = await addUser(data);
         if (result && 'error' in result) throw new Error();
 
-        messageApi.success({ content: 'Account created' });
+        messageApi.success({ content: 'User Added' });
         router.refresh();
         close();
       } catch (e) {
@@ -83,25 +56,48 @@ const CreateUserModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null} title="Create New User">
+    <Modal open={modalOpen} onCancel={close} footer={null} title="Add New User">
       <Form form={form} layout="vertical" onFinish={submitData}>
-        {modalStructureWithoutPassword.map((formField) => (
-          <Form.Item
-            key={formField.dataKey}
-            label={formField.label}
-            name={formField.dataKey}
-            validateStatus={formField.dataKey in formErrors ? 'error' : ''}
-            help={formField.dataKey in formErrors ? formErrors[formField.dataKey] : ''}
-            hasFeedback
-            required
-          >
-            <Input type={formField.type} />
-          </Form.Item>
-        ))}
+        <Form.List name="users">
+          {(fields, { add, remove }, { errors }) => (
+            <>
+              {fields.map((field, index) => (
+                <Space key={field.key} align="start" style={{ width: '100%' }}>
+                  <Form.Item
+                    {...field}
+                    rules={[
+                      { required: true, message: 'User Email is required' },
+                      { type: 'email' },
+                    ]}
+                    style={{ width: '100%' }}
+                  >
+                    <Input placeholder="User Email" />
+                  </Form.Item>
+                  <Button
+                    icon={<MinusCircleOutlined className="dynamic-delete-button" />}
+                    type="text"
+                    onClick={() => remove(field.name)}
+                  />
+                </Space>
+              ))}
+
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  style={{ width: '60%' }}
+                  icon={<PlusOutlined />}
+                >
+                  Add User
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
 
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
-            Create User
+            Add User
           </Button>
         </Form.Item>
       </Form>
@@ -114,13 +110,10 @@ const HeaderActions: FC = () => {
 
   return (
     <>
-      <CreateUserModal
-        modalOpen={createUserModalOpen}
-        close={() => setCreateUserModalOpen(false)}
-      />
+      <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
       <AuthCan action="create" resource="User">
-        <Button type="primary" onClick={() => setCreateUserModalOpen(true)}>
-          <PlusOutlined /> Create User
+        <Button type="primary" onClick={() => setCreateUserModalOpen(true)} icon={<PlusOutlined />}>
+          Add User
         </Button>
       </AuthCan>
     </>

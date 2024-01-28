@@ -7,21 +7,23 @@ import HeaderActions from './header-actions';
 import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserSidePanel from './user-side-panel';
-import { deleteUsers as serverActionDeleteUsers } from '@/lib/data/users';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/data/user-schema';
+import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
+import { useEnvironment } from '@/components/auth-can';
 
 const UsersPage: FC<{ users: User[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();
   const router = useRouter();
+  const environmentId = useEnvironment();
 
-  async function deleteUsers(ids: string[], unsetIds: () => void) {
+  async function removeUsers(ids: string[], unsetIds: () => void) {
     startTransition(async () => {
       unsetIds();
 
-      const result = await serverActionDeleteUsers(ids);
+      const result = await removeUsersFromEnvironment(environmentId, ids);
 
       if (result && 'error' in result)
         messageApi.open({ type: 'error', content: 'Something went wrong' });
@@ -40,11 +42,11 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
           title: '',
           width: 100,
           render: (id: string) => (
-            <Tooltip placement="top" title="Delete">
+            <Tooltip placement="top" title="Remove From Environment">
               <ConfirmationButton
-                title="Delete User"
-                description="Are you sure you want to delete this user?"
-                onConfirm={() => deleteUsers([id], clearSelected)}
+                title="Remove User"
+                description="Are you sure you want to remove this user?"
+                onConfirm={() => removeUsers([id], clearSelected)}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -58,9 +60,9 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
       loading={deletingUser}
       selectedRowActions={(ids, clearIds) => (
         <ConfirmationButton
-          title="Delete Users"
-          description="Are you sure you want to delete the selected users?"
-          onConfirm={() => deleteUsers(ids, clearIds)}
+          title="Remove Users"
+          description="Are you sure you want to Remove the selected users?"
+          onConfirm={() => removeUsers(ids, clearIds)}
           buttonProps={{
             type: 'text',
             icon: <DeleteOutlined />,

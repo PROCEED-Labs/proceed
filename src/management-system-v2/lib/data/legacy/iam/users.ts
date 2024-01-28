@@ -10,16 +10,18 @@ export let usersMetaObject: { [Id: string]: User } =
   // @ts-ignore
   global.usersMetaObject || (global.usersMetaObject = {});
 
-export function getUsers() {
-  const users = Object.values(usersMetaObject);
-
-  return users;
-}
-
 export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
+
+  return user;
+}
+
+export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
+  const user = Object.values(usersMetaObject).find((user) => email === user.email);
+
+  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }

@@ -1,7 +1,7 @@
 import EmbeddedModeler from '@/components/bpmn-shared-viewer';
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
-import { getProcess } from '@/lib/data/legacy/process';
+import { getProcess } from '@/lib/data/processes';
 import { TokenPayload } from '@/actions/actions';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/components/bpmn-shared-viewer';
@@ -22,7 +22,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const key = process.env.JWT_KEY;
 
   const { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
-  const processData = await getProcess(processId, true);
+  const processData = await getProcess(processId as string);
 
   if (processData.shared && processData.sharedAs === 'protected' && !session?.user.id) {
     const callbackUrl = `/shared-viewer?token=${searchParams.token}`;

@@ -10,9 +10,10 @@ import { ApiData } from '@/lib/fetch-data';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
+import { Process } from '@/lib/data/process-schema';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
-  processData: ApiData<'/process/{definitionId}', 'get'>;
+  processData: Process;
   embeddedMode?: boolean;
 };
 
@@ -34,9 +35,9 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
     }
     const res = await copyProcesses([
       {
-        definitionName: processData.definitionName,
+        name: processData.name,
         description: processData.description,
-        originalId: processData.definitionId,
+        originalId: processData.id,
       },
     ]);
     if ('error' in res) {
@@ -45,7 +46,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
     } else {
       message.success('Diagram has been successfully copied to your workspace');
       //router.push(`/processes/${newDefinitionID}`);
-      if (res.length == 1) router.push(`/processes/${res[0].definitionId}`);
+      if (res.length == 1) router.push(`/processes/${res[0].id}`);
     }
   };
 

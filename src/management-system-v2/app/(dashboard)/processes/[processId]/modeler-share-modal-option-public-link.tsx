@@ -126,9 +126,6 @@ const ModelerShareModalOptionPublicLink = ({
 
   return (
     <>
-      <div>
-        {shared ? 'true' : 'false'}, {sharedAs}
-      </div>
       <div style={{ marginBottom: '5px' }}>
         <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked}>
           Share Process with Public Link

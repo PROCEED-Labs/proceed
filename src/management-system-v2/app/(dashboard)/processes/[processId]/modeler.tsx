@@ -23,7 +23,7 @@ import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-ca
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
-  process: { definitionName: string; definitionId: string; bpmn: string };
+  process: { name: string; id: string; bpmn: string };
   versions: { version: number; name: string; description: string }[];
 };
 
@@ -35,15 +35,17 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const { message: messageApi } = App.useApp();
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const modeler = useRef<BPMNCanvasRef>(null);
 
   const setModeler = useModelerStateStore((state) => state.setModeler);
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
+  const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /// Derived State
-  const minimized = pathname !== `/processes/${process.definitionId}`;
+  const minimized = pathname !== `/processes/${process.id}`;
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
@@ -53,14 +55,14 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
 
   const saveDebounced = useMemo(
     () =>
-      debounce(async (xml: string) => {
+      debounce(async (xml: string, invalidate: boolean = false) => {
         try {
-          await updateProcess(process.definitionId, xml);
+          await updateProcess(process.id, xml, undefined, undefined, invalidate);
         } catch (err) {
           console.log(err);
         }
       }, 2000),
-    [process.definitionId],
+    [process.id],
   );
 
   useEffect(() => {
@@ -87,6 +89,10 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   );
 
   const onChange = useCallback<Required<BPMNCanvasProps>['onChange']>(async () => {
+    // Increment the change counter to trigger a rerender of all components that
+    // depend on onChange, but can't use this callback as a child component.
+    incrementChangeCounter();
+
     // Save in the background when the BPMN changes.
     saveDebounced(await modeler.current!.getXML());
     // Update undo/redo state.
@@ -126,14 +132,12 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
           router.replace(pathname + '?' + searchParams.toString());
         } else {
           router.push(
-            `/processes/${process.definitionId}${
-              searchParams.size ? '?' + searchParams.toString() : ''
-            }`,
+            `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
           );
         }
       }
     },
-    [process.definitionId, router, setRootElement],
+    [process.id, router, setRootElement],
   );
 
   const onUnload = useCallback<Required<BPMNCanvasProps>['onUnload']>(
@@ -146,7 +150,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         // Since this is in cleanup, we can't use ref because it is already null
         // or uses the new instance.
         const { xml } = await oldInstance.saveXML({ format: true });
-        await saveDebounced.asyncImmediate(xml).catch((err) => {});
+        // Last save before unloading, so invalidate the client router cache.
+        await saveDebounced.asyncImmediate(xml, true).catch((err) => {});
       } catch (err) {
         // Most likely called before the modeler loaded anything. Can ignore.
       }
@@ -158,6 +163,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     // stay in the current subprocess when the page or the modeler reloads
     // (unless the subprocess does not exist anymore because the process
     // changed)
+    setLoaded(true);
     console.log('onLoaded');
     if (subprocessId && modeler.current) {
       const canvas = modeler.current.getCanvas();
@@ -214,7 +220,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       // automatically => make sure the stored bpmn is the same as the one in
       // the modeler.
       const cleanedBpmn = await modeler.current.getXML();
-      await updateProcess(process.definitionId, cleanedBpmn);
+      await updateProcess(process.id, cleanedBpmn);
     }
   };
 
@@ -222,23 +228,23 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [process.definitionId, process.bpmn, selectedVersionId],
+    [process.id, process.bpmn, selectedVersionId],
   );
 
   return (
     <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
       {!minimized && (
         <>
-          <ModelerToolbar
-            processId={process.definitionId}
-            onOpenXmlEditor={handleOpenXmlEditor}
-            versions={versions}
-            canRedo={canRedo}
-            canUndo={canUndo}
-          />
-          {selectedVersionId && !showMobileView && (
-            <VersionToolbar processId={process.definitionId} />
+          {loaded && (
+            <ModelerToolbar
+              processId={process.id}
+              onOpenXmlEditor={handleOpenXmlEditor}
+              versions={versions}
+              canRedo={canRedo}
+              canUndo={canUndo}
+            />
           )}
+          {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
           {!!xmlEditorBpmn && (
             <XmlEditor
               bpmn={xmlEditorBpmn}

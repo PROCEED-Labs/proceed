@@ -5,12 +5,12 @@ import { getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 
 const DashboardLayout: FC<PropsWithChildren> = async ({ children }) => {
-  const { session } = await getCurrentUser();
-  const userRules = await getUserRules(session?.user.id ?? '');
+  const { session, activeEnvironment } = await getCurrentUser();
+  const userRules = await getUserRules(session?.user.id ?? '', activeEnvironment);
 
   return (
     <>
-      <SetAbility rules={userRules} />
+      <SetAbility rules={userRules} environmentId={activeEnvironment} />
       <Layout>{children}</Layout>
     </>
   );

@@ -1,4 +1,4 @@
-import Fuse from 'fuse.js';
+import Fuse, { FuseResult } from 'fuse.js';
 import { useMemo, useState, JSX } from 'react';
 import { Prettify } from './typescript-utils';
 import { useSearchParamState } from './use-search-param-state';
@@ -9,7 +9,7 @@ export type ReplaceKeysWithHighlighted<
 > = Prettify<Omit<TData, TKeys> & Record<TKeys, ReturnType<typeof highlightText<TData>>>>;
 
 function highlightText<TObj>(
-  fuseElement: Fuse.FuseResult<TObj>,
+  fuseElement: FuseResult<TObj>,
   dataIndexElement: keyof TObj,
   color: string = '#3e93de',
 ) {
@@ -63,10 +63,10 @@ export default function useFuzySearch<
   TKeys extends keyof TData,
   THighlightKeys extends TKeys,
   TTransformFunc extends (
-    items: Fuse.FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
+    items: FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
   ) => any = (
-    items: Fuse.FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
-  ) => Fuse.FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
+    items: FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
+  ) => FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[],
 >({
   data,
   keys,
@@ -120,7 +120,7 @@ export default function useFuzySearch<
       }
 
       return result;
-    }) as Fuse.FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[];
+    }) as FuseResult<ReplaceKeysWithHighlighted<TData, THighlightKeys>>[];
 
     if (transformData) return transformData(highlightedResults);
     else return highlightedResults;

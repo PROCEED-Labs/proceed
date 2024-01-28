@@ -3,13 +3,14 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
 import { RemoveReadOnly, ToPrimitive } from './typescript-utils';
 
-type GetType<T> = T extends Record<any, any>
-  ? T extends readonly any[]
-    ? readonly (T[0] extends undefined ? any : ToPrimitive<T[0]>)[]
-    : {
-        [Key in keyof T]: GetType<T[Key]>;
-      }
-  : ToPrimitive<T>;
+type GetType<T> =
+  T extends Record<any, any>
+    ? T extends readonly any[]
+      ? readonly (T[0] extends undefined ? any : ToPrimitive<T[0]>)[]
+      : {
+          [Key in keyof T]: GetType<T[Key]>;
+        }
+    : ToPrimitive<T>;
 
 type PreferencesType = Record<string, any> & GetType<typeof defaultPreferences>;
 

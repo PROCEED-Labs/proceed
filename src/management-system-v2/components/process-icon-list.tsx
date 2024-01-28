@@ -13,11 +13,16 @@ import { Grid } from 'antd';
 type IconViewProps = {
   data?: ProcessListProcess[];
   selection: Key[];
-  setSelection: Dispatch<SetStateAction<Key[]>>;
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
-const IconView: FC<IconViewProps> = ({ data, selection, setSelection, setShowMobileMetaData }) => {
+const IconView: FC<IconViewProps> = ({
+  data,
+  selection,
+  setSelectionElements,
+  setShowMobileMetaData,
+}) => {
   const breakpoint = Grid.useBreakpoint();
   return (
     <>
@@ -34,11 +39,11 @@ const IconView: FC<IconViewProps> = ({ data, selection, setSelection, setShowMob
           {data?.map((item) => (
             <TabCard
               setShowMobileMetaData={setShowMobileMetaData}
-              key={item.definitionId}
+              key={item.id}
               item={item}
               completeList={data!}
               selection={selection}
-              setSelection={setSelection}
+              setSelectionElements={setSelectionElements}
               tabcard={false}
             />
           ))}

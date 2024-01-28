@@ -51,12 +51,9 @@ const ModelerToolbar = ({
   const { preselectedExportType, setPreselectedExportType } = useExportTypeStore();
 
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-
   const selectedElement = useMemo(() => {
     if (modeler) {
-      return selectedElementId
-        ? modeler.getElement(selectedElementId)
-        : modeler.getProcessElement();
+      return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
   }, [modeler, selectedElementId]);
 

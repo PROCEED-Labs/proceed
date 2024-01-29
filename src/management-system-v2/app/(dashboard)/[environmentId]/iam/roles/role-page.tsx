@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import RoleSidePanel from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
+import { useEnvironment } from '@/components/auth-can';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
@@ -22,6 +23,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch({
     data: roles || [],
@@ -43,7 +45,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
 
   async function deleteRoles(roleIds: string[]) {
     try {
-      const result = await serverDeleteRoles(roleIds);
+      const result = await serverDeleteRoles(environmentId, roleIds);
       if (result && 'error' in result) throw new Error();
 
       setSelectedRowKeys([]);
@@ -60,7 +62,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
       dataIndex: 'name',
       key: 'display',
       render: (name: FilteredRole['name'], role: FilteredRole) => (
-        <Link style={{ color: '#000' }} href={`/iam/roles/${role.id}`}>
+        <Link style={{ color: '#000' }} href={`/${environmentId}/iam/roles/${role.id}`}>
           {name.highlighted}
         </Link>
       ),
@@ -136,7 +138,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
             onRow={(element) => ({
               onMouseEnter: () => setHoveredRow(element.id),
               onMouseLeave: () => setHoveredRow(null),
-              onDoubleClick: () => router.push(`/iam/roles/${element.id}`),
+              onDoubleClick: () => router.push(`/${environmentId}/iam/roles/${element.id}`),
               onClick: () => {
                 setSelectedRowKeys([element.id]);
                 setSelectedRows([element]);

@@ -1,52 +1,42 @@
 'use client';
 
-import { FC, useMemo, useState } from 'react';
+import { FC, useMemo, useState, useTransition } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { ApiData, useGetAsset } from '@/lib/fetch-data';
+import { useGetAsset } from '@/lib/fetch-data';
 import UserList, { UserListProps } from '@/components/user-list';
 import { Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
+import { Role } from '@/lib/data/role-schema';
+import { User } from '@/lib/data/user-schema';
+import { useEnvironment } from '@/components/auth-can';
 
-type Role = ApiData<'/roles', 'get'>[number];
-type Users = ApiData<'/users', 'get'>;
-
-const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
-  role,
-  open,
-  close,
-}) => {
-  const [loading, setLoading] = useState(false);
-  const { data: users, refetch: refetchUsers, isLoading: usersLoading } = useGetAsset('/users', {});
+const AddUserModal: FC<{
+  role: Role;
+  usersNotInRole: User[];
+  open: boolean;
+  close: () => void;
+}> = ({ role, usersNotInRole, open, close }) => {
+  const [loading, startTransition] = useTransition();
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
-  const addUsers = async (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
-    if (clearIds) clearIds();
-    setLoading(true);
-    await addRoleMappings(
-      users.map((user) => ({
-        userId: user.id,
-        roleId: role.id,
-        email: user.email.value,
-        lastName: user.lastName.value,
-        firstName: user.firstName.value,
-        username: user.username.value,
-      })),
-    );
-    setLoading(false);
-    refetchUsers();
-    router.refresh();
+
+  const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
+    startTransition(async () => {
+      if (clearIds) clearIds();
+      await addRoleMappings(
+        environmentId,
+        users.map((user) => ({
+          userId: user.id,
+          roleId: role.id,
+        })),
+      );
+      router.refresh();
+    });
   };
-
-  const usersNotInRole = useMemo(() => {
-    if (!users) return [];
-
-    const usersInRole = new Set(role.members.map((member) => member.userId));
-
-    return users.filter((user) => !usersInRole.has(user.id));
-  }, [users, role.members]);
 
   return (
     <Modal
@@ -58,7 +48,7 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
     >
       <UserList
         users={usersNotInRole}
-        loading={loading || usersLoading}
+        loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {
             dataIndex: 'id',
@@ -86,16 +76,22 @@ const AddUserModal: FC<{ role: Role; open: boolean; close: () => void }> = ({
   );
 };
 
-const RoleMembers: FC<{ role: Role }> = ({ role }) => {
+const RoleMembers: FC<{ role: Role; usersInRole: User[]; usersNotInRole: User[] }> = ({
+  role,
+  usersInRole,
+  usersNotInRole,
+}) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
+      environmentId,
       userIds.map((userId) => ({
         roleId: role.id,
         userId: userId,
@@ -108,10 +104,15 @@ const RoleMembers: FC<{ role: Role }> = ({ role }) => {
 
   return (
     <>
-      <AddUserModal role={role} open={addUserModalOpen} close={() => setAddUserModalOpen(false)} />
+      <AddUserModal
+        role={role}
+        usersNotInRole={usersNotInRole}
+        open={addUserModalOpen}
+        close={() => setAddUserModalOpen(false)}
+      />
 
       <UserList
-        users={role.members.map((member) => ({ ...member, id: member.userId }))}
+        users={usersInRole}
         loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
           {

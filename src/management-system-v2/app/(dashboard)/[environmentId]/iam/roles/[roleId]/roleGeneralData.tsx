@@ -1,7 +1,6 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { ApiData } from '@/lib/fetch-data';
 import { Alert, App, Button, DatePicker, Form, Input } from 'antd';
 import { FC, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
@@ -9,14 +8,15 @@ import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
-
-type Role = ApiData<'/roles/{id}', 'get'>;
+import { Role } from '@/lib/data/role-schema';
+import { useEnvironment } from '@/components/auth-can';
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -41,7 +41,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
     }
 
     try {
-      const result = await updateRole(role.id, values);
+      const result = await updateRole(environmentId, role.id, values);
       if (result && 'error' in result) throw new Error();
       router.refresh();
       message.open({ type: 'success', content: 'Role updated' });
@@ -65,13 +65,16 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
         rules={[{ required: true, message: 'this field is required' }]}
         required
       >
-        <Input placeholder="input placeholder" disabled={!ability.can('update', role, 'name')} />
+        <Input
+          placeholder="input placeholder"
+          disabled={!ability.can('update', role, { field: 'name' })}
+        />
       </Form.Item>
 
       <Form.Item label="Description" name="description">
         <Input.TextArea
           placeholder="input placeholder"
-          disabled={!ability.can('update', role, 'description')}
+          disabled={!ability.can('update', role, { field: 'description' })}
         />
       </Form.Item>
 
@@ -80,7 +83,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
           // Note german locale hard coded
           locale={germanLocale}
           allowClear={true}
-          disabled={!ability.can('update', role, 'expiration')}
+          disabled={!ability.can('update', role, { field: 'expiration' })}
           defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
         />
       </Form.Item>

@@ -5,7 +5,7 @@ import { Button, Form, App, Input, Modal, DatePicker } from 'antd';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { addRole as serverAddRoles } from '@/lib/data/roles';
 
 type PostRoleKeys = 'name' | 'description' | 'expiration';
@@ -18,6 +18,7 @@ const CreateRoleModal: FC<{
   const { message: messageApi } = App.useApp();
   type ErrorsObject = { [field in PostRoleKeys]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
+  const environmentId = useEnvironment();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -44,7 +45,11 @@ const CreateRoleModal: FC<{
       expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
 
     try {
-      const result = await serverAddRoles(values);
+      const result = await serverAddRoles(environmentId, {
+        ...values,
+        permissions: {},
+        environmentId,
+      });
       if (result && 'error' in result) throw new Error();
     } catch (e) {
       messageApi.error({ content: 'Something went wrong' });

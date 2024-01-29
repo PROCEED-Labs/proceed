@@ -15,10 +15,12 @@ import {
 import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
 import { FC, useState } from 'react';
-import { ApiData } from '@/lib/fetch-data';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
+import { Role } from '@/lib/data/role-schema';
+import { useEnvironment } from '@/components/auth-can';
+import { UserErrorType } from '@/lib/user-error';
 
 type PermissionCategory = {
   key: string;
@@ -257,26 +259,29 @@ const basePermissionOptions: PermissionCategory[] = [
   },
 ];
 
-type Role = ApiData<'/roles', 'get'>[number];
-
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const [permissions, setPermissions] = useState(role.permissions);
   const [loading, setLoading] = useState(false);
   const ability = useAbilityStore((store) => store.ability);
   const { message } = App.useApp();
   const [form] = Form.useForm();
+  const environmentId = useEnvironment();
 
   async function updateRole() {
     setLoading(true);
     try {
-      const result = await serverUpdateRole(role.id, {
+      const result = await serverUpdateRole(environmentId, role.id, {
         permissions,
       });
-      if (result && 'error' in result) throw new Error();
+      if (result && 'error' in result) {
+        throw new Error(undefined, { cause: result.error.type });
+      }
 
       message.open({ content: 'Role updated', type: 'success' });
     } catch (e) {
-      message.open({ content: 'Something went wrong', type: 'error' });
+      if (e instanceof Error && e.cause === UserErrorType.PermissionError)
+        message.open({ content: 'Permission denied', type: 'error' });
+      else message.open({ content: 'Something went wrong', type: 'error' });
     }
     setLoading(false);
   }

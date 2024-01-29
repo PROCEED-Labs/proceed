@@ -5,6 +5,7 @@ import { roleMappingsMetaObjects } from './role-mappings';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
+import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
@@ -62,7 +63,7 @@ export function getRoleById(roleId: string, ability?: Ability) {
 export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
-  if (ability && ability.can('create', toCaslResource('Role', roleRepresentation)))
+  if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
@@ -110,17 +111,23 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function updateRole(roleId: string, roleRepresentationInput: RoleInput, ability: Ability) {
+export function updateRole(
+  roleId: string,
+  roleRepresentationInput: Partial<RoleInput>,
+  ability: Ability,
+) {
   const targetRole = roleMetaObjects[roleId];
   if (!targetRole) throw new Error('Role not found');
 
-  const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
+  const roleRepresentation = RoleInputSchema.partial().parse(roleRepresentationInput);
 
   // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
   if (
     !(
       ability.checkInputFields(toCaslResource('Role', targetRole), 'update', roleRepresentation) &&
-      ability.can('create', toCaslResource('Role', roleRepresentation))
+      ability.can('create', toCaslResource('Role', roleRepresentation), {
+        environmentId: targetRole.environmentId,
+      })
     )
   )
     throw new UnauthorizedError();
@@ -137,6 +144,8 @@ export function updateRole(roleId: string, roleRepresentationInput: RoleInput, a
 
   // persist updated role on file system
   store.update('roles', roleId, roleMetaObjects[roleId]);
+
+  rulesCacheDeleteAll();
 
   return roleMetaObjects[roleId];
 }
@@ -159,23 +168,27 @@ export async function deleteRole(roleId: string, ability: Ability) {
   // remove from file system
   store.remove('roles', roleId);
 
-  Object.keys(roleMappingsMetaObjects.users).forEach((userId) => {
-    const index = roleMappingsMetaObjects.users[userId].findIndex(
-      //TODO remove any
-      (mapping: any) => mapping.roleId === roleId,
-    );
-    if (index > -1) {
-      roleMappingsMetaObjects.users[userId].splice(index, 1);
-    }
+  const environmentRoleMappings = roleMappingsMetaObjects[role.environmentId];
 
-    if (roleMappingsMetaObjects.users[userId].length === 0)
-      delete roleMappingsMetaObjects.users[userId];
-  });
+  if (environmentRoleMappings) {
+    for (const userId of Object.keys(environmentRoleMappings)) {
+      const userMappings = environmentRoleMappings.users[userId];
+
+      if (!userMappings) continue;
+
+      const index = environmentRoleMappings.users[userId].findIndex(
+        //TODO remove any
+        (mapping: any) => mapping.roleId === roleId,
+      );
+
+      if (index > -1) {
+        userMappings.splice(index, 1);
+      }
+
+      if (userMappings.length === 0) delete environmentRoleMappings.users[userId];
+    }
+  }
 
   // persist new role mapping in file system
-  store.setDictElement('roleMappings', {
-    roleMappings: {
-      users: { ...roleMappingsMetaObjects.users },
-    },
-  });
+  store.setDictElement('roleMappings', roleMappingsMetaObjects);
 }

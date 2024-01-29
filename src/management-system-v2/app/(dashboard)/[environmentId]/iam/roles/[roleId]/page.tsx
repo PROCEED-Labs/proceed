@@ -1,74 +1,39 @@
-import Auth, { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
-import { Button, Card, Result, Space, Tabs } from 'antd';
-import { LeftOutlined } from '@ant-design/icons';
-import Link from 'next/link';
-import { ComponentProps } from 'react';
-import RoleGeneralData from './roleGeneralData';
-import RolePermissions from './rolePermissions';
-import RoleMembers from './role-members';
-
-type Items = ComponentProps<typeof Tabs>['items'];
+import { Result } from 'antd';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import RoleId from './role-id-page';
+import { getMemebers } from '@/lib/data/legacy/iam/memberships';
+import { getUserById } from '@/lib/data/legacy/iam/users';
 
 const Page = async ({
   params: { roleId, environmentId },
 }: {
   params: { roleId: string; environmentId: string };
 }) => {
-  const { ability } = await getCurrentEnvironment(environmentId);
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   const role = getRoleById(roleId, ability);
-
-  const items: Items = role
-    ? [
-        {
-          key: 'generalData',
-          label: 'General Data',
-          children: <RoleGeneralData role={role} />,
-        },
-        { key: 'permissions', label: 'Permissions', children: <RolePermissions role={role} /> },
-        {
-          key: 'members',
-          label: 'Manage Members',
-          children: <RoleMembers role={role} />,
-        },
-      ]
-    : [];
 
   if (!role)
     return (
       <Content>
-        <Result status="404" title="Role not found" />
+        <h1>Role not found</h1>
       </Content>
     );
 
-  return (
-    <Content
-      title={
-        <Space>
-          <Link href="/iam/roles">
-            <Button icon={<LeftOutlined />} type="text">
-              Roles
-            </Button>
-          </Link>
-          {role?.name}
-        </Space>
-      }
-    >
-      <div style={{ maxWidth: '800px', margin: 'auto' }}>
-        <Card>
-          <Tabs items={items} />
-        </Card>
-      </div>
-    </Content>
-  );
+  const usersInRole = role.members.map((member) => getUserById(member.userId));
+  const roleUserSet = new Set(usersInRole.map((member) => member.id));
+
+  const memberships = getMemebers(activeEnvironment, ability);
+  const usersNotInRole = memberships
+    .filter(({ userId }) => !roleUserSet.has(userId))
+    .map((user) => getUserById(user.userId));
+
+  if (!ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
+
+  return <RoleId role={role} usersNotInRole={usersNotInRole} usersInRole={usersInRole} />;
 };
 
-export default Auth(
-  {
-    action: ['view', 'manage'],
-    resource: 'Role',
-    fallbackRedirect: '/',
-  },
-  Page,
-);
+export default Page;

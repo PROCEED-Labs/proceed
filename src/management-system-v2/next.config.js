@@ -50,10 +50,7 @@ const nextConfig = {
   },
   env: {
     API_URL:
-      process.env.NODE_ENV === 'development'
-        ? // all the requests to backend is proxied to middleware (see middleware.ts)
-          `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/proxy`
-        : process.env.API_URL,
+      process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',
     NEXT_PUBLIC_USE_AUTH: 'true',
     NEXTAUTH_SECRET:

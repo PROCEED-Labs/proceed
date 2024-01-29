@@ -5,7 +5,7 @@ import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
   ExportOutlined,
-  SettingOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
   UndoOutlined,
   RedoOutlined,
@@ -190,7 +190,10 @@ const ModelerToolbar = ({
               <Tooltip
                 title={showPropertiesPanel ? 'Close Properties Panel' : 'Open Properties Panel'}
               >
-                <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
+                <Button
+                  icon={<InfoCircleOutlined />}
+                  onClick={handlePropertiesPanelToggle}
+                ></Button>
               </Tooltip>
               {!showMobileView && (
                 <>

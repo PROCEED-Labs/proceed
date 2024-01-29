@@ -66,7 +66,7 @@ processRouter.post('/', isAllowed('create', 'Process'), async (req, res) => {
     return;
   }
 
-  body.owner = req.session.userId || '';
+  body.owner = req.session?.userId || '';
 
   /** @type {Ability} */
   const userAbility = req.userAbility;
@@ -346,7 +346,7 @@ processRouter.use('/:definitionId/user-tasks/:userTaskFileName', async (req, res
   try {
     // see if there already exists some data for this user task and make it accessible for later steps
     req.userTaskHtml = await getProcessUserTaskHtml(req.definitionsId, req.userTaskFileName);
-  } catch (err) {}
+  } catch (err) { }
   next();
 });
 

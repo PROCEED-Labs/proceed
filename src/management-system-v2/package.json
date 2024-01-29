@@ -39,7 +39,10 @@
     "react-dom": "18.2.0",
     "svg2pdf.js": "^2.2.2",
     "uuid": "^9.0.0",
-    "zustand": "4.4.2"
+    "zustand": "4.4.2",
+    "proceed-frontend-plugin-system": "^1.1.5",
+    "webpack": "^5.89.0",
+    "@module-federation/nextjs-mf": "7.0.8"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "4.36.0",

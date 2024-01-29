@@ -20,6 +20,11 @@ import { Preferences, getPreferences, addUserPreference } from '@/lib/utils';
 import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
+import {
+  ExtensionPoint,
+  PluginManifest,
+  getPluginsForExtensionPoint,
+} from 'proceed-frontend-plugin-system';
 
 type Processes = ApiData<'/process', 'get'>;
 type Process = Processes[number];
@@ -119,6 +124,14 @@ const Processes: FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filteredData]);
 
+  // Plugin system specifica
+  const [plugins, setPlugins] = useState<PluginManifest[]>([]);
+  const [activatedPlugin, setActivatedPlugin] = useState<PluginManifest | undefined>(undefined);
+
+  useEffect(() => {
+    getPluginsForExtensionPoint('processlistview').then(setPlugins);
+  }, []);
+
   if (isError) {
     return <div>Error</div>;
   }
@@ -148,39 +161,70 @@ const Processes: FC = () => {
             rightNode={
               <Space.Compact>
                 <Button
-                  style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                  style={
+                    !iconView && activatedPlugin == null
+                      ? { color: '#3e93de', borderColor: '#3e93de' }
+                      : {}
+                  }
                   onClick={() => {
                     addUserPreference({ 'icon-view-in-process-list': false });
                     setIconView(false);
+                    setActivatedPlugin(undefined);
                   }}
                 >
                   <UnorderedListOutlined />
                 </Button>
                 <Button
-                  style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                  style={
+                    !iconView || activatedPlugin != null
+                      ? {}
+                      : { color: '#3e93de', borderColor: '#3e93de' }
+                  }
                   onClick={() => {
                     addUserPreference({ 'icon-view-in-process-list': true });
                     setIconView(true);
+                    setActivatedPlugin(undefined);
                   }}
                 >
                   <AppstoreOutlined />
                 </Button>
+                {plugins.map((plugin) => (
+                  <Button
+                    key={plugin.bundle}
+                    style={
+                      activatedPlugin == plugin ? { color: '#3e93de', borderColor: '#3e93de' } : {}
+                    }
+                    onClick={() => {
+                      setActivatedPlugin(plugin);
+                    }}
+                  >
+                    {plugin.name}
+                  </Button>
+                ))}
               </Space.Compact>
             }
           />
-          {iconView ? (
-            <IconView
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
-            />
+          {activatedPlugin == undefined ? (
+            iconView ? (
+              <IconView
+                data={filteredData}
+                selection={selectedRowKeys}
+                setSelection={setSelectedRowKeys}
+              />
+            ) : (
+              <ProcessList
+                data={filteredData}
+                selection={selectedRowKeys}
+                setSelection={setSelectedRowKeys}
+                isLoading={isLoading}
+                onExportProcess={setExportProcessIds}
+              />
+            )
           ) : (
-            <ProcessList
+            <ExtensionPoint
+              extensionPoint="processlistview"
+              plugin={activatedPlugin}
               data={filteredData}
-              selection={selectedRowKeys}
-              setSelection={setSelectedRowKeys}
-              isLoading={isLoading}
-              onExportProcess={setExportProcessIds}
             />
           )}
         </div>

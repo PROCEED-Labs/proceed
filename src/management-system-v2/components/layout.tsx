@@ -99,7 +99,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                   General Settings
                 </Item>
                 <Item key="plugins" icon={<ApiOutlined />}>
-                  Plugins
+                  <Link href={'/plugins'}>Plugins</Link>
                 </Item>
               </ItemGroup>
             </Menu>

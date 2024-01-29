@@ -49,15 +49,6 @@ const nextConfig = {
         : undefined,
     ...oauthProvidersConfig,
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/processes',
-        permanent: false,
-      },
-    ];
-  },
 };
 
 module.exports = nextConfig;

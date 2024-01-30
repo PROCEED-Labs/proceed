@@ -1,7 +1,5 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import { User, UserData, UserDataSchema, UserInput, UserSchema } from '../../user-schema';
 import { addEnvironment } from './environments';
 
@@ -12,34 +10,24 @@ export let usersMetaObject: { [Id: string]: User } =
   // @ts-ignore
   global.usersMetaObject || (global.usersMetaObject = {});
 
-export function getUsers(ability?: Ability) {
-  const users = Object.values(usersMetaObject);
-
-  return ability ? ability.filter('view', 'User', users) : users;
-}
-
-export function getUserById(id: string, ability?: Ability, opts?: { throwIfNotFound?: boolean }) {
+export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
 
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
-  if (
-    ability &&
-    !ability?.can('view', toCaslResource('User', user), { environmentId: ability.environmentId })
-  )
-    throw new UnauthorizedError();
+  return user;
+}
+
+export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
+  const user = Object.values(usersMetaObject).find((user) => email === user.email);
+
+  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }
 
-export function addUser(inputUser: UserInput, ability?: Ability) {
+export function addUser(inputUser: UserInput) {
   const user = UserSchema.parse(inputUser);
-
-  if (
-    ability &&
-    !ability.can('create', toCaslResource('User', user), { environmentId: ability.environmentId })
-  )
-    throw new UnauthorizedError();
 
   if (
     Object.values(usersMetaObject).find(
@@ -63,14 +51,8 @@ export function addUser(inputUser: UserInput, ability?: Ability) {
   return user;
 }
 
-export function deleteuser(userId: string, ability?: Ability) {
+export function deleteuser(userId: string) {
   const user = usersMetaObject[userId];
-
-  if (
-    ability &&
-    !ability.can('delete', toCaslResource('User', user), { environmentId: ability.environmentId })
-  )
-    throw new UnauthorizedError();
 
   if (!user) throw new Error("User doesn't exist");
 
@@ -80,16 +62,10 @@ export function deleteuser(userId: string, ability?: Ability) {
   return user;
 }
 
-export function updateUser(userId: string, inputUser: UserData, ability?: Ability) {
+export function updateUser(userId: string, inputUser: UserData) {
   const newUserData = UserDataSchema.partial().parse(inputUser);
 
-  const user = getUserById(userId, undefined, { throwIfNotFound: true });
-
-  if (
-    ability &&
-    !ability.can('update', toCaslResource('User', user), { environmentId: ability.environmentId })
-  )
-    throw new UnauthorizedError();
+  const user = getUserById(userId, { throwIfNotFound: true });
 
   if (
     Object.values(usersMetaObject).find(

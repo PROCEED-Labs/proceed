@@ -46,9 +46,9 @@ function highlightText<TObj>(
 type UseFuzySearchOptions<TData, TKeys, THighlightKeys, TTransformFunc> = {
   data: TData[];
   /** Keys on which the search should be performed on */
-  keys: TKeys[];
+  keys: TKeys[] | readonly TKeys[];
   /** Highlight keys in hook's output */
-  highlightedKeys?: THighlightKeys[];
+  highlightedKeys?: THighlightKeys[] | readonly THighlightKeys[];
   /** Color of the highlighted letters, the default color is #3e93de*/
   highlightColor?: string;
   /** Transfrom the hook's output (result is memoized) */

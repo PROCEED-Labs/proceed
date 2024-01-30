@@ -54,7 +54,11 @@ function getCachedRulesForUser(userId: string, environmentId: string) {
  * If no environmentId is specified, the user's personal environment is used.
  * */
 export async function getUserRules(userId: string, environmentId: string) {
-  let userRules = getCachedRulesForUser(userId, environmentId);
+  // let userRules = getCachedRulesForUser(userId, environmentId);
+
+  // TODO remove this line
+  // cached rules aren't being correctly removed after roles are updated
+  let userRules = undefined;
 
   if (userRules === undefined) {
     const { rules, expiration } = await computeRulesForUser(userId, environmentId);

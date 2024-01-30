@@ -1,0 +1,17 @@
+.MilestoneForm {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .MilestoneDescription {
+    flex-grow: 1;
+    margin-bottom: 0 !important;
+  }
+
+  :global(.ant-form-item-row),
+  :global(.ant-form-item-control),
+  :global(.ant-form-item-control-input),
+  :global(.ant-form-item-control-input-content) {
+    height: 100%;
+  }
+}

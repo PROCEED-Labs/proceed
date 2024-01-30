@@ -4,30 +4,37 @@ import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Input, ColorPicker, Space, Image } from 'antd';
-import { EuroCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import {
-  getMetaDataFromElement,
-  getMilestonesFromElement,
-  setProceedElement,
-} from '@proceed/bpmn-helper';
+import styles from './properties-panel.module.scss';
+
+import { Input, ColorPicker, Space, Grid, Divider, Modal, InputNumber } from 'antd';
+
+import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
+import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
+import ImageSelection from '@/components/image-selection';
+import PlannedDurationInput from './planned-duration-input';
+import DescriptionSection from './description-section';
 
-type PropertiesPanelProperties = {
+type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
 };
 
-const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement }) => {
-  const [showInfo, setShowInfo] = useState(true);
+const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
+  selectedElement,
+}) => {
+  const metaData = getMetaDataFromElement(selectedElement.businessObject);
+  const backgroundColor = getFillColor(selectedElement, '#FFFFFFFF');
+  const strokeColor = getStrokeColor(selectedElement, '#000000FF');
+
   const [name, setName] = useState(selectedElement.businessObject.name);
-  const [costsPlanned, setCostsPlanned] = useState('');
-  const [timePlannedDuration, setTimePlannedDuration] = useState('');
+  const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(
+    metaData.costsPlanned,
+  );
 
   const modeler = useModelerStateStore((state) => state.modeler);
-  // Subscribe to onChange of the modeler.
   useModelerStateStore((state) => state.changeCounter);
 
   const colorPickerPresets = [
@@ -72,32 +79,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     },
   ];
 
-  // deep comparison of extentionElements object to track changes in array
-  const metaData = useMemo(() => {
-    return getMetaDataFromElement(selectedElement.businessObject);
-  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
-  // deep comparison of extentionElements object to track changes in array
-  const milestones = useMemo(() => {
-    return getMilestonesFromElement(selectedElement.businessObject);
-  }, [JSON.stringify(selectedElement.businessObject.extensionElements)]);
-
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
+      setCostsPlanned(metaData.costsPlanned);
     }
-  }, [selectedElement]);
-
-  useEffect(() => {
-    setCostsPlanned(metaData.costsPlanned);
-    setTimePlannedDuration(metaData.timePlannedDuration);
-  }, [metaData]);
-
-  const backgroundColor = useMemo(() => {
-    return getFillColor(selectedElement, '#FFFFFFFF');
-  }, [selectedElement]);
-
-  const strokeColor = useMemo(() => {
-    return getStrokeColor(selectedElement, '#000000FF');
   }, [selectedElement]);
 
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
@@ -131,27 +117,126 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
     });
   };
 
-  const updateDescription = (text: string) => {
-    const modeling = modeler!.getModeling();
-    const bpmnFactory = modeler!.getFactory();
+  return (
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%', fontSize: '0.75rem' }}
+      className={styles.PropertiesPanel}
+    >
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Divider style={{ fontSize: '0.85rem' }}>General</Divider>
+        <Input
+          style={{ fontSize: '0.85rem' }}
+          addonBefore="Name"
+          placeholder={selectedElement.businessObject.name}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={handleNameChange}
+          disabled={selectedElement.type === 'bpmn:Process'}
+        />
 
-    let documentationElement = undefined;
-    if (text) {
-      documentationElement = bpmnFactory.create('bpmn:Documentation', {
-        text,
-      });
-    }
+        <Input addonBefore="Type" placeholder={selectedElement.type} disabled />
 
-    modeling.updateProperties(selectedElement as any, { documentation: [documentationElement] });
-  };
+        <div
+          style={{
+            width: '75%',
+            display: 'flex',
+            justifyContent: 'center',
+            margin: 'auto',
+            marginTop: '1rem',
+          }}
+        >
+          <ImageSelection metaData={metaData}></ImageSelection>
+        </div>
+      </Space>
+
+      <DescriptionSection selectedElement={selectedElement}></DescriptionSection>
+
+      <MilestoneSelectionSection selectedElement={selectedElement}></MilestoneSelectionSection>
+
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
+        <InputNumber
+          style={{ width: '100%' }}
+          addonBefore={<EuroCircleOutlined className="clock-icon" />}
+          stringMode
+          placeholder="Planned Cost"
+          value={costsPlanned}
+          onChange={(value) => {
+            setCostsPlanned(value);
+          }}
+          onBlur={() => {
+            updateMetaData('costsPlanned', costsPlanned);
+          }}
+        />
+        <PlannedDurationInput
+          onChange={(changedTimePlannedDuration) => {
+            updateMetaData('timePlannedDuration', changedTimePlannedDuration);
+          }}
+          timePlannedDuration={metaData.timePlannedDuration || ''}
+        ></PlannedDurationInput>
+      </Space>
+
+      <CustomPropertySection
+        metaData={metaData}
+        onChange={(name, value) => {
+          updateMetaData('property', { value: value, attributes: { name } });
+        }}
+      ></CustomPropertySection>
+
+      {selectedElement.type !== 'bpmn:Process' && (
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
+          <Space>
+            <ColorPicker
+              size="small"
+              presets={colorPickerPresets}
+              value={backgroundColor}
+              onChange={(_, hex) => updateBackgroundColor(hex)}
+            />
+            <span>Background Colour</span>
+          </Space>
+          <Space>
+            <ColorPicker
+              size="small"
+              presets={colorPickerPresets}
+              value={strokeColor}
+              onChange={(_, hex) => updateStrokeColor(hex)}
+            />
+            <span>Stroke Colour</span>
+          </Space>
+        </Space>
+      )}
+    </Space>
+  );
+};
+
+type PropertiesPanelProperties = {
+  selectedElement: ElementLike;
+  isOpen: boolean;
+  close: () => void;
+};
+
+const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
+  selectedElement,
+  isOpen,
+  close,
+}) => {
+  const [showInfo, setShowInfo] = useState(true);
+
+  const breakpoint = Grid.useBreakpoint();
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  return (
+  return breakpoint.xl ? (
     <ResizableElement
-      initialWidth={450}
-      minWidth={450}
-      maxWidth={600}
-      style={{ position: 'absolute', top: '65px', right: '12px', height: '70vh' }}
+      initialWidth={400}
+      minWidth={300}
+      maxWidth={'40vw'}
+      style={{
+        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 70px and Header with 64px, Padding of Toolbar 12px (=> Total 184px)
+        height: 'calc(100vh - 190px)',
+      }}
       ref={resizableElementRef}
     >
       <CollapsibleCard
@@ -160,9 +245,9 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
           //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
           if (resizableElementRef.current) {
             if (showInfo) {
-              resizableElementRef.current(40);
+              resizableElementRef.current({ width: 40, minWidth: 40, maxWidth: 40 });
             } else {
-              resizableElementRef.current(450);
+              resizableElementRef.current({ width: 450, minWidth: 450, maxWidth: 600 });
             }
           }
           setShowInfo(!showInfo);
@@ -170,107 +255,31 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({ selectedElement 
         title="Properties"
         collapsedWidth="40px"
       >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>General</b>
-            <Input
-              addonBefore="Name"
-              placeholder={selectedElement.businessObject.name}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={handleNameChange}
-              disabled={selectedElement.type === 'bpmn:Process'}
-            />
-
-            <Input addonBefore="Type" size="large" placeholder={selectedElement.type} disabled />
-          </Space>
-
-          {selectedElement.type === 'bpmn:UserTask' && (
-            <MilestoneSelectionSection
-              milestones={milestones}
-              selectedElement={selectedElement}
-            ></MilestoneSelectionSection>
-          )}
-          <Space direction="vertical" size="large">
-            <b>Image</b>
-            <Image
-              width={200}
-              height={200}
-              src="error"
-              fallback="data:image/png;base64,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"
-              alt="No Image"
-            />
-          </Space>
-
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>Properties</b>
-            <Input
-              prefix={<EuroCircleOutlined className="clock-icon" />}
-              placeholder="Planned Cost"
-              value={costsPlanned}
-              onChange={(event) => {
-                setCostsPlanned(event.target.value);
-              }}
-              onBlur={() => {
-                updateMetaData('costsPlanned', costsPlanned);
-              }}
-            />
-            <Input
-              prefix={<ClockCircleOutlined className="clock-icon" />}
-              placeholder="Planned Duration"
-              value={timePlannedDuration}
-              onChange={(event) => {
-                setTimePlannedDuration(event.target.value);
-              }}
-              onBlur={() => {
-                updateMetaData('timePlannedDuration', timePlannedDuration);
-              }}
-            />
-          </Space>
-
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <b>Description</b>
-            <Input.TextArea
-              placeholder={
-                selectedElement.type !== 'bpmn:Process'
-                  ? 'Element Documentation'
-                  : 'Process Documentation'
-              }
-              onChange={(event) => updateDescription(event.target.value)}
-            ></Input.TextArea>
-          </Space>
-
-          <CustomPropertySection
-            metaData={metaData}
-            onChange={(name, value) => {
-              updateMetaData('property', { value: value, attributes: { name } });
-            }}
-          ></CustomPropertySection>
-
-          {selectedElement.type !== 'bpmn:Process' && (
-            <Space direction="vertical" size="large">
-              <b>Colors</b>
-              <Space>
-                <ColorPicker
-                  presets={colorPickerPresets}
-                  value={backgroundColor}
-                  onChange={(_, hex) => updateBackgroundColor(hex)}
-                />
-                <span>Background Colour</span>
-              </Space>
-              <Space>
-                <ColorPicker
-                  presets={colorPickerPresets}
-                  value={strokeColor}
-                  onChange={(_, hex) => updateStrokeColor(hex)}
-                />
-                <span>Stroke Colour</span>
-              </Space>
-            </Space>
-          )}
-        </Space>
+        <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
       </CollapsibleCard>
     </ResizableElement>
+  ) : (
+    <Modal
+      open={isOpen}
+      width={breakpoint.xs ? '100vw' : '75vw'}
+      styles={{ body: { height: '75vh', overflowY: 'scroll', paddingRight: '1rem' } }}
+      centered
+      closeIcon={false}
+      onCancel={close}
+      onOk={close}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Properties</span>
+          <CloseOutlined
+            onClick={() => {
+              close();
+            }}
+          ></CloseOutlined>
+        </div>
+      }
+    >
+      <PropertiesPanelContent selectedElement={selectedElement}></PropertiesPanelContent>
+    </Modal>
   );
 };
 

@@ -45,6 +45,11 @@ export function addUser(inputUser: UserInput) {
     organization: false,
   });
 
+  addEnvironment({
+    ownerId: user.id,
+    organization: false,
+  });
+
   usersMetaObject[user.id as string] = user as User;
   store.add('users', user);
 

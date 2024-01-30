@@ -14,7 +14,7 @@ const RoleMappingInputSchema = z.object({
   expiration: z.string().optional(),
 });
 
-type RoleMappingInput = z.infer<typeof RoleMappingInputSchema>;
+export type RoleMappingInput = z.infer<typeof RoleMappingInputSchema>;
 
 export type RoleMapping = RoleMappingInput & { id: string; createdOn: string; roleName: string };
 
@@ -44,6 +44,8 @@ export function init() {
   store.set('roleMappings', storedRoleMappings);
 
   roleMappingsMetaObjects = storedRoleMappings;
+  //@ts-ignore
+  global.roleMappingsMetaObjects = roleMappingsMetaObjects;
 }
 init();
 

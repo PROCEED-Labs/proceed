@@ -103,7 +103,7 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
     });
   }
 
-  if (ability.can('view', 'Setting')) {
+  if (can('view', 'Setting')) {
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',

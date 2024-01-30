@@ -6,6 +6,7 @@ import { getAbilityForUser } from '@/lib/authorization/authorization';
 import { nextAuthOptions } from '@/app/api/auth/[...nextauth]/auth-options';
 import { headers } from 'next/headers';
 import { URL } from 'url';
+import { isMember } from '@/lib/data/legacy/iam/memberships';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
@@ -18,20 +19,43 @@ export const getCurrentUser = cache(async () => {
 // be called when the session is first accessed and everything above can PPR. For
 // permissions, each server component should check its permissions anyway, for
 // composability.
-export const getCurrentEnvironment = cache(async (activeEnvironment?: string) => {
-  const { userId } = await getCurrentUser();
+type PermissionErrorHandling =
+  | { action: 'redirect'; redirectUrl?: string }
+  | { action: 'throw-error' };
+export const getCurrentEnvironment = cache(
+  async (
+    activeEnvironment?: string,
+    _opts?: { permissionErrorHandling: PermissionErrorHandling },
+  ) => {
+    const opts = _opts || { permissionErrorHandling: { action: 'redirect' } };
+    const { userId } = await getCurrentUser();
 
-  if (!activeEnvironment) {
-    const url = new URL(headers().get('referer') || '');
-    activeEnvironment = url.pathname.split('/')[1];
-  }
+    if (!activeEnvironment) {
+      const url = new URL(headers().get('referer') || '');
+      activeEnvironment = url.pathname.split('/')[1];
+    }
 
-  activeEnvironment = decodeURIComponent(activeEnvironment);
+    activeEnvironment = decodeURIComponent(activeEnvironment);
 
-  const ability = await getAbilityForUser(userId, activeEnvironment);
+    if (!isMember(decodeURIComponent(activeEnvironment), userId)) {
+      switch (opts?.permissionErrorHandling.action) {
+        case 'throw-error':
+          throw new Error('User does not have access to this environment');
+        case 'redirect':
+        default:
+          if (opts.permissionErrorHandling.redirectUrl)
+            return redirect(opts.permissionErrorHandling.redirectUrl);
+          else if (userId) return redirect(`/${userId}/processes`);
+          //NOTE this needs to be removed for guest users
+          else return redirect(`/api/auth/signin`);
+      }
+    }
 
-  return { ability, activeEnvironment };
-});
+    const ability = await getAbilityForUser(userId, activeEnvironment);
+
+    return { ability, activeEnvironment };
+  },
+);
 
 // HOC for server-side auth checking
 const Auth = <P extends {}>(authOptions: AuthCanProps, Component: ComponentType<P>) => {

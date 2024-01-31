@@ -20,6 +20,7 @@ export const resources = [
   'EnvConfig',
   'RoleMapping',
   'Share',
+  'Environment',
   'All',
 ] as const;
 export type ResourceType = (typeof resources)[number];

@@ -18,8 +18,8 @@ export const resources = [
   'User',
   'Setting',
   'EnvConfig',
-  'RoleMapping', // added in, in order to do it "the casl way"
-  'Share', // added in, in order to do it "the casl way"
+  'RoleMapping',
+  'Share',
   'All',
 ] as const;
 export type ResourceType = (typeof resources)[number];
@@ -30,11 +30,8 @@ export const resourceAction = [
   'update',
   'create',
   'delete',
+  // casl aliases
   'manage',
-  'share',
-  'manage-roles',
-  'manage-groups',
-  'manage-password',
   'admin',
 ] as const;
 export type ResourceActionType = (typeof resourceAction)[number];
@@ -162,7 +159,6 @@ export type AbilityRule = RawRuleOf<CaslAbility>;
 const resolveAction = createAliasResolver(
   {
     manage: ['update', 'create', 'delete'],
-    'manage-roles': ['view', 'update', 'create', 'delete'],
   },
   {
     anyAction: 'admin',

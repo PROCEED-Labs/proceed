@@ -1,11 +1,12 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
 import Ability from '@/lib/ability/abilityHelper';
-import { addRole } from './roles';
+import { addRole, deleteRole, roleMetaObjects } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
-import { addMember } from './memberships';
+import { addMember, membershipMetaObject, removeMember } from './memberships';
 import { Environment, EnvironmentInput, environmentSchema } from '../../environment-schema';
+import { getProcessMetaObjects, removeProcess } from '../_process';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -76,6 +77,40 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
   }
 
   return newEnvironmentWithId;
+}
+
+export function deleteEnvironment(environmentId: string, ability?: Ability) {
+  const environment = environmentsMetaObject[environmentId];
+  if (!environment) throw new Error('Environment not found');
+
+  // TODO check ability, maybe people other than the owner can delete the environment
+
+  const roles = Object.values(roleMetaObjects);
+  for (const role of roles) {
+    if (role.environmentId === environmentId) {
+      deleteRole(role.id); // also deletes role mappings
+    }
+  }
+
+  const processes = Object.values(getProcessMetaObjects());
+  for (const process of processes) {
+    if (process.environmentId === environmentId) {
+      removeProcess(process.id);
+    }
+  }
+
+  if (environment.organization) {
+    const environmentMemberships = membershipMetaObject[environmentId];
+    if (environmentMemberships) {
+      for (const { userId } of environmentMemberships) {
+        removeMember(environmentId, userId);
+      }
+      delete membershipMetaObject[environmentId];
+    }
+  }
+
+  delete environmentsMetaObject[environmentId];
+  store.remove('environments', environmentId);
 }
 
 /**

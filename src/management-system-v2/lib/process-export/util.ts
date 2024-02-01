@@ -73,12 +73,15 @@ export async function getSVGFromBPMN(
     // remove connections where the source or target or both are not selected
     flowElementsToExportIds = flowElementsToExportIds.filter((id) => {
       const el = elementRegistry.get(id);
+
       return (
         el &&
-        (!el.source || flowElementsToExportIds.includes(el.source.id)) &&
-        (!el.target || flowElementsToExportIds.includes(el.target.id))
+        ((!el.source && !el.target) ||
+          flowElementsToExportIds.includes(el.source.id) ||
+          flowElementsToExportIds.includes(el.target.id))
       );
     });
+
     if (flowElementsToExportIds.length) {
       // hide all elements that are not directly selected and that are not indirectly selected due to a parent being selected
       const allElements = elementRegistry.getAll();

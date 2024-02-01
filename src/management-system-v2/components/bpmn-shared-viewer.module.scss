@@ -17,117 +17,73 @@
 
   :global(.ant-layout-content) {
     padding: 0;
+    overflow-y: scroll;
+    background-color: white;
+
+    @media print {
+      overflow-y: visible;
+    }
   }
 
   .ProcessDocument {
     width: 70vw;
     @media print {
       width: 100%;
+      background-color: white;
     }
 
     margin: 0 auto;
     background-color: rgb(238, 243, 245);
   }
 
-  .ElementPage {
+  .TableOfContents {
     break-before: always;
   }
+
+  .ContainerPage {
+    break-before: always;
+  }
+
+  .ElementPage,
+  .ContainerPage {
+    width: 100%;
+
+    .ElementOverview {
+      .ElementCanvas {
+        display: flex;
+        justify-content: center;
+
+        // @media print {
+        //   max-width: 90vw;
+        //   max-height: 40vh;
+        //   background-color: red;
+        // }
+
+        @media print {
+          max-height: 60vh;
+          width: 100vw;
+        }
+
+        :global(svg) {
+          max-width: 100%;
+          height: 100%;
+        }
+      }
+    }
+
+    .ElementMilestones {
+      :global(.toastui-editor-contents table) {
+        width: 100% !important;
+      }
+    }
+
+    .ElementDescription {
+      :global(.toastui-editor-contents table) {
+        width: 100% !important;
+      }
+    }
+  }
 }
-
-// .ProcessOverviewPage {
-//   display: none;
-
-//   @media print {
-//     display: flex;
-//   }
-
-//   flex-direction: column;
-//   align-items: center;
-//   justify-content: center;
-//   width: 100%;
-
-//   .ContentTablePageHeader {
-//     display: none;
-
-//     @media print {
-//       display: block;
-//     }
-//   }
-
-//   .TableOfContents {
-//     display: none;
-//     font-size: 1.3em;
-//     color: red;
-
-//     ul li {
-//       font-weight: bold;
-//     }
-
-//     li {
-//       list-style-type: disc;
-//     }
-
-//     a {
-//       color: red;
-//     }
-
-//     @media print {
-//       display: block;
-//       position: absolute;
-//       top: 50%;
-//       transform: translateY(-50%);
-//     }
-//   }
-
-//   .ProcessPage {
-//     display: flex;
-//     flex-direction: column;
-//     break-inside: avoid;
-//     break-before: always;
-//     flex-wrap: wrap;
-//     width: 100%;
-
-//     h1 {
-//       align-self: center;
-//     }
-
-//     .ProceedLogo {
-//       align-self: end;
-//       text-align: right;
-
-//       display: none;
-
-//       @media print {
-//         display: block;
-//       }
-//     }
-
-//     .ProcessCanvas {
-//       height: 90vh;
-//       width: 90vw;
-
-//       @media print {
-//         height: 85vh;
-//       }
-
-//       align-self: center;
-
-//       display: flex;
-//       flex-wrap: wrap;
-//       justify-content: center;
-//       align-content: center;
-
-//       :global(svg) {
-//         max-width: 100%;
-//         max-height: 100%;
-//       }
-//     }
-//   }
-
-//   .ProcessMetaPage {
-//     break-before: always;
-//   }
-// }
 
 @media print {
   @page {

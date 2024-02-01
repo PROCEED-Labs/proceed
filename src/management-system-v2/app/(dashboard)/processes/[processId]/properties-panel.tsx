@@ -41,16 +41,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     {
       label: 'Recommended',
       colors: [
-        '#000000',
-        '#000000E0',
-        '#000000A6',
-        '#00000073',
-        '#00000040',
-        '#00000026',
-        '#0000001A',
-        '#00000012',
-        '#0000000A',
-        '#00000005',
         '#F5222D',
         '#FA8C16',
         '#FADB14',
@@ -61,16 +51,8 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         '#2F54EB',
         '#722ED1',
         '#EB2F96',
-        '#F5222D4D',
-        '#FA8C164D',
-        '#FADB144D',
-        '#8BBB114D',
-        '#52C41A4D',
-        '#13A8A84D',
-        '#1677FF4D',
-        '#2F54EB4D',
-        '#722ED14D',
-        '#EB2F964D',
+        '#000000',
+        '#FFFFFF',
       ],
     },
     {
@@ -136,7 +118,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           disabled={selectedElement.type === 'bpmn:Process'}
         />
 
-        <Input addonBefore="Type" placeholder={selectedElement.type} disabled />
+        <Input addonBefore="Type" value={selectedElement.type} disabled />
 
         <div
           style={{
@@ -191,6 +173,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           <Space>
             <ColorPicker
               size="small"
+              disabledAlpha
               presets={colorPickerPresets}
               value={backgroundColor}
               onChange={(_, hex) => updateBackgroundColor(hex)}
@@ -200,6 +183,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           <Space>
             <ColorPicker
               size="small"
+              disabledAlpha
               presets={colorPickerPresets}
               value={strokeColor}
               onChange={(_, hex) => updateStrokeColor(hex)}

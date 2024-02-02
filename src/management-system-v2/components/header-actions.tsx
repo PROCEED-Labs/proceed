@@ -36,7 +36,7 @@ const HeaderActions: FC = () => {
       </Button>
 
       <Tooltip title={loggedIn ? 'Account Settings' : 'Log in'}>
-        <Avatar src={session.data.user.image} onClick={() => router.push('/profile')}>
+        <Avatar style={{cursor: 'pointer'}} src={session.data.user.image} onClick={() => router.push('/profile')}>
           {session.data.user.image
             ? null
             : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { ComponentProps, FC, ReactNode, useState } from 'react';
-import { Space, Avatar, Button, Table, Result, Grid } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
+import { Space, Avatar, Button, Table, Result, Grid, Drawer } from 'antd';
+import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { User } from '@/lib/data/user-schema';
+import styles from './user-list.module.scss'
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
@@ -15,26 +16,6 @@ export type ListUser = ReplaceKeysWithHighlighted<
 >;
 type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefined>;
 
-const defaultColumns = [
-  {
-    title: 'Account',
-    dataIndex: 'display',
-    key: 'display',
-  },
-  {
-    title: 'Username',
-    dataIndex: 'username',
-    key: 'username',
-    render: (username: any) => username.highlighted,
-  },
-  {
-    title: 'Email Adress',
-    dataIndex: 'email',
-    key: 'email',
-    render: (email: any) => email.highlighted,
-  },
-];
-
 export type UserListProps = {
   users: _ListUser[];
   highlightKeys?: boolean;
@@ -43,10 +24,11 @@ export type UserListProps = {
     | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
-  searchBarRightNode?: ReactNode;
+  createUserNode?: ReactNode;
   loading?: boolean;
   sidePanel?: ReactNode;
   onSelectedRows?: (users: ListUser[]) => void;
+  setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
 };
 
 const UserList: FC<UserListProps> = ({
@@ -55,10 +37,11 @@ const UserList: FC<UserListProps> = ({
   columns,
   selectedRowActions,
   error,
-  searchBarRightNode,
+  createUserNode,
   loading,
   sidePanel,
   onSelectedRows,
+  setShowMobileUserSider
 }) => {
   const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
     data: users,
@@ -96,11 +79,52 @@ const UserList: FC<UserListProps> = ({
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
 
+  const showMobileUserSider = () => {
+    setShowMobileUserSider(true);
+  };
+
+
+  const defaultColumns = [
+    {
+      title: 'Account',
+      dataIndex: 'display',
+      key: 'display',
+    },
+    {
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
+      render: (username: any) => username.highlighted,
+    },
+    {
+      title: 'Email Adress',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email: any) => email.highlighted,
+    },
+    {
+      fixed: 'right',
+      width: 160,
+      dataIndex: 'id',
+      key: '',
+      title: '',
+      render: () => (
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileUserSider}>
+          <InfoCircleOutlined />
+        </Button>
+      ),
+      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
+    },
+  ];
+
+  //TODO: fix type
   let tableColumns: Column = defaultColumns;
   if (typeof columns === 'function')
     tableColumns = [
       ...defaultColumns,
       ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
+    //TODO: add InfoButtonCircleOutlined buttons
+
     ];
   else if (columns) tableColumns = [...defaultColumns, ...columns];
 
@@ -115,6 +139,56 @@ const UserList: FC<UserListProps> = ({
     <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: '10px' }}>
       <div style={{ flexGrow: 1 }}>
         <Bar
+          leftNode={
+            <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+            <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              {breakpoint.xs ? null : (
+                 createUserNode ? createUserNode : null
+                  )}
+
+              {selectedRowKeys.length ? (
+                <span className={styles.SelectedRow}>
+                  {selectedRowKeys.length} selected:
+                    {selectedRowActions
+                  ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
+                  : null}
+                    </span>
+                  ) : undefined}
+            </span>
+            </span>
+            }
+            searchProps={{
+              value: searchQuery,
+              onChange: (e) => setSearchQuery(e.target.value),
+              placeholder: 'Search Users ...',
+            }}
+          />
+          <Table<ListUser>
+            columns={tableColumns}
+            dataSource={filteredData}
+            onRow={(element) => ({
+              onMouseEnter: () => setHoveredRowId(element.id),
+              onMouseLeave: () => setHoveredRowId(null),
+              onClick: () => {
+                setSelectedRowKeys([element.id]);
+                setSelectedRows([element]);
+                if (onSelectedRows) onSelectedRows([element]);
+              },
+            })}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
+                setSelectedRowKeys(selectedRowKeys as string[]);
+                setSelectedRows(selectedObjects);
+                if (onSelectedRows) onSelectedRows(selectedObjects);
+              },
+            }}
+            pagination={{ position: ['bottomCenter'] }}
+            rowKey="id"
+            loading={loading}
+          />
+
+        {/* <Bar
           leftNode={
             selectedRowKeys.length ? (
               <Space size={20}>
@@ -160,9 +234,9 @@ const UserList: FC<UserListProps> = ({
           pagination={{ position: ['bottomCenter'] }}
           rowKey="id"
           loading={loading}
-        />
+        /> */}
       </div>
-      {breakpoint.xl ? sidePanel : null}
+      {sidePanel}
     </div>
   );
 };

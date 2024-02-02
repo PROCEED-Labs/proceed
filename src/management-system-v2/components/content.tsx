@@ -78,7 +78,7 @@ const Content: FC<ContentProps> = ({
                 <Button
                   className={styles.Hamburger}
                   type="text"
-                  style={{ marginTop: '20px', marginLeft: '15px' }}
+                  style={{ marginTop: '20px'}}
                   icon={<MenuOutlined style={{ fontSize: '170%' }} />}
                   onClick={() => setOpenMobileMenu(true)}
                 />
@@ -98,7 +98,7 @@ const Content: FC<ContentProps> = ({
           loggedIn ? (
             <>
               <Tooltip title="Account Settings">
-                <Avatar src={session.data?.user.image} onClick={() => router.push('/profile')}>
+                <Avatar style={{cursor: 'pointer'}} src={session.data?.user.image} onClick={() => router.push('/profile')}>
                   {session.data?.user.image
                     ? null
                     : session.data?.user.firstName.slice(0, 1) +

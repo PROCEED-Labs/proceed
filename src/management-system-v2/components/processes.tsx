@@ -3,7 +3,7 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData, usePostAsset } from '@/lib/fetch-data';
+import { ApiData } from '@/lib/fetch-data';
 import cn from 'classnames';
 import {
   ExportOutlined,
@@ -241,7 +241,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                       <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
                         {breakpoint.xl ? 'New Process' : 'New'}
                       </ProcessCreationButton>
-                      <ProcessImportButton style={{ marginRight: '10px' }} type="default">
+                      <ProcessImportButton type="default">
                         {breakpoint.xl ? 'Import Process' : 'Import'}
                       </ProcessImportButton>
                     </>
@@ -275,7 +275,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                         <AppstoreOutlined />
                       </Button>
                     </Space.Compact>
-                    {breakpoint.xl ? (
+                    {/* {breakpoint.xl ? (
                       <Button
                         type="text"
                         onClick={() => {
@@ -284,7 +284,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                       >
                         <InfoCircleOutlined />
                       </Button>
-                    ) : undefined}
+                    ) : undefined} */}
                   </span>
                 }
 

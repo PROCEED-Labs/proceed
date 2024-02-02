@@ -1,25 +1,33 @@
 'use client';
 
-import { FC, useRef } from 'react';
-import { Avatar, Typography } from 'antd';
+import { Dispatch, FC, SetStateAction, useRef, useState } from 'react';
+import { Avatar, Drawer, Grid, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { ListUser } from '@/components/user-list';
+import UserSiderContent from './user-sider-content'
 
-const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
+
+const UserSidePanel: FC<{ user: ListUser | null; setShowMobileUserSider: Dispatch<SetStateAction<boolean>>; showMobileUserSider: boolean }> = ({ user, setShowMobileUserSider, showMobileUserSider }) => {
   const setUserPreferences = useUserPreferences.use.addPreferences();
   const hydrated = useUserPreferences.use._hydrated();
   const sidePanelOpen = useUserPreferences(
     (store) => store.preferences['user-page-side-panel'].open,
   );
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-
+  const breakpoint = Grid.useBreakpoint();
   const userFullName = user ? `${user.firstName.value} ${user.lastName.value}` : null;
+
+  const closeMobileUserSider = () => {
+    setShowMobileUserSider(false)
+  }
 
   if (!hydrated) return null;
   return (
-    <ResizableElement
+    <>
+    {breakpoint.xl ? (
+      <ResizableElement
       initialWidth={
         sidePanelOpen ? useUserPreferences.getState().preferences['user-page-side-panel'].width : 30
       }
@@ -37,7 +45,7 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
       ref={resizableElementRef}
     >
       <CollapsibleCard
-        title={userFullName ?? ''}
+        title={userFullName ?? 'How to PROCEED?'}
         show={sidePanelOpen}
         collapsedWidth="30px"
         onCollapse={() => {
@@ -58,31 +66,22 @@ const UserSidePanel: FC<{ user: ListUser | null }> = ({ user }) => {
           });
         }}
       >
-        {user ? (
-          <>
-            <Avatar src={user.image} size={60} style={{ marginBottom: 20 }}>
-              {user.image
-                ? null
-                : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
-            </Avatar>
-
-            <Typography.Title>First Name</Typography.Title>
-            <Typography.Text>{user.firstName.value}</Typography.Text>
-
-            <Typography.Title>Last Name</Typography.Title>
-            <Typography.Text>{user.lastName.value}</Typography.Text>
-
-            <Typography.Title>Username</Typography.Title>
-            <Typography.Text>{user.username.value}</Typography.Text>
-
-            <Typography.Title>Email</Typography.Title>
-            <Typography.Text>{user.email.value}</Typography.Text>
-          </>
-        ) : (
-          <Typography.Text>Select an element.</Typography.Text>
-        )}
+        <UserSiderContent user={user}/>
       </CollapsibleCard>
     </ResizableElement>
+    ):
+    (
+      <Drawer
+      onClose={closeMobileUserSider}
+      title={
+        <span>{userFullName}</span>
+      }
+        open={showMobileUserSider}
+      >
+        <UserSiderContent user={user}/>
+    </Drawer>
+  )}
+  </>
   );
 };
 

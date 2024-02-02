@@ -41,7 +41,7 @@ This project is organized as a Mono-Repo and contains multiple software project 
 
 ## Install Development Software
 
-To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v12.18.
+To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v20.11.0.
 
 For further information about installation and configuration of our favorite development environment, [see the Wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and [the debugging configuration](https://github.com/PROCEED-Labs/proceed/wiki/Debugging).
 
@@ -50,7 +50,8 @@ For further information about installation and configuration of our favorite dev
 After cloning the repository, you need to install the PROCEED project dependencies and all third-party libraries. Run the following command in the root directory of the repo:
 
 ```
-yarn install
+yarn global add node-gyp
+yarn install --ignore-engines
 ```
 
 **Docker Installation**

@@ -5,7 +5,7 @@ import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
-import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
 import type BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
@@ -71,6 +71,7 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
+  getAllElements: () => Element[];
   getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getSelection: () => Selection;
@@ -122,6 +123,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
+      },
+      getAllElements: () => {
+        return modeler.current!.get<ElementRegistry>('elementRegistry').getAll() as Element[];
       },
       getCurrentRoot: () => {
         return modeler

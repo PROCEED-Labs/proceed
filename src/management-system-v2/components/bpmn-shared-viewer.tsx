@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
-import { isAny } from 'bpmn-js/lib/util/ModelUtil';
+import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
 import { Editor } from '@toast-ui/editor';
@@ -104,14 +104,25 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
       ): Promise<ElementInfo> {
         let svg;
-        let name = el.name;
+        let name = el.name || `<${el.id}>`;
+        const isContainer = isAny(el, [
+          'bpmn:Collaboration',
+          'bpmn:Process',
+          'bpmn:Participant',
+          'bpmn:SubProcess',
+        ]);
 
-        if (el.$type === 'bpmn:Collaboration' || el.$type === 'bpmn:Process') {
+        if (isType(el, 'bpmn:Participant')) {
+          name = 'Participant: ' + name;
+        } else if (isType(el, 'bpmn:SubProcess')) {
+          name = 'Subprocess: ' + name;
+        }
+
+        if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
           svg = await getSVGFromBPMN(processData.bpmn!);
-        } else if (el.$type === 'bpmn:SubProcess' && !getElementDI(el, definitions).isExpanded) {
+        } else if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
           // getting the whole layer for a collapsed sub-process
           svg = await getSVGFromBPMN(processData.bpmn!, el.id);
-          name = 'Subprocess: ' + name;
           // set the new root for the following export of any children contained in this layer
           currentRootId = el.id;
         } else {
@@ -123,36 +134,44 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         }
 
         // try to establish a link between an element in a root layer and the sub-chapter for this element
-        // TODO: fix: Container elements with visible children (Pools, expanded Sub-Processes) seem to overlay their children when wrapped in an anchor tag
-        // const svgDom = new DOMParser().parseFromString(svg, 'image/svg+xml');
-        // const domEls = svgDom.querySelectorAll(`[data-element-id]`);
-        // Array.from(domEls).forEach((el) => {
-        //   const elementId = el.getAttribute('data-element-id');
-        //   const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
-        //   el?.parentElement?.appendChild(link);
-        //   link.appendChild(el as Element);
-        //   link.setAttribute('href', `#${elementId}_page`);
-        // });
-        // svg = new XMLSerializer().serializeToString(svgDom);
+
+        const svgDom = new DOMParser().parseFromString(svg, 'image/svg+xml');
+        const domEls = svgDom.querySelectorAll(`[data-element-id]`);
+        Array.from(domEls).forEach((el) => {
+          // add a title to the svg element so a user can see its id or name when hovering over it
+          const elementId = el.getAttribute('data-element-id');
+          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          const viewerEl = bpmnViewer.current?.getElement(elementId!);
+          title.textContent = viewerEl?.businessObject.name || `<${elementId}>`;
+          el.appendChild(title);
+          if (isContainer) {
+            const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+            // wrapping the parent g element in a link to link to the correct subchapter (wrapping the element itself leads to container elements not being rendered correctly)
+            el?.parentElement?.parentElement?.appendChild(link);
+            link.appendChild(el.parentElement as Element);
+            link.setAttribute('href', `#${elementId}_page`);
+          }
+        });
+        svg = new XMLSerializer().serializeToString(svgDom);
 
         let children: ElementInfo[] | undefined = [];
 
         // recursively transform any children of this element
-        if (el.$type === 'bpmn:Collaboration') {
+        if (isType(el, 'bpmn:Collaboration')) {
           children = await asyncMap(el.participants, (participant) =>
             transform(participant, definitions, currentRootId),
           );
-        } else if (el.$type === 'bpmn:Participant') {
+        } else if (isType(el, 'bpmn:Participant')) {
           if (el.processRef.flowElements) {
             children = await asyncMap(
-              el.processRef.flowElements.filter((el: any) => el.$type !== 'bpmn:SequenceFlow'),
+              el.processRef.flowElements.filter((el: any) => !isType(el, 'bpmn:SequenceFlow')),
               (participant) => transform(participant, definitions, currentRootId),
             );
           }
         } else {
           if (el.flowElements) {
             children = await asyncMap(
-              el.flowElements.filter((el: any) => el.$type !== 'bpmn:SequenceFlow'),
+              el.flowElements.filter((el: any) => !isType(el, 'bpmn:SequenceFlow')),
               (participant) => transform(participant, definitions, currentRootId),
             );
           }
@@ -196,12 +215,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
           id: el.id,
           name,
           description,
-          isContainer: isAny(el, [
-            'bpmn:Collaboration',
-            'bpmn:Process',
-            'bpmn:Participant',
-            'bpmn:SubProcess',
-          ]),
+          isContainer,
           meta: Object.keys(meta).length ? meta : undefined,
           milestones: milestones.length ? milestones : undefined,
           children,
@@ -211,7 +225,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       const canvas = bpmnViewer.current.getCanvas();
       const root = canvas.getRootElement();
 
-      transform(root.businessObject, root.businessObject.$parent).then((rootElement) => {
+      transform(root.businessObject, root.businessObject.$parent, undefined).then((rootElement) => {
         setProcessHierarchy(rootElement);
       });
     }

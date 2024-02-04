@@ -1,12 +1,12 @@
 'use client';
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback, use } from 'react';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
-import { Editor } from '@toast-ui/editor';
+import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
 import { Button, message, Tooltip, Typography, Table } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
@@ -29,6 +29,11 @@ import {
   getElementDI,
 } from '@proceed/bpmn-helper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+
+const ToastEditor: Promise<typeof ToastEditorType> =
+  typeof window !== 'undefined'
+    ? import('@toast-ui/editor').then((mod) => mod.Editor)
+    : (Promise.resolve(null) as any);
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -94,6 +99,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       if (res.length == 1) router.push(`/processes/${res[0].id}`);
     }
   };
+
+  const Editor = use(ToastEditor);
 
   useEffect(() => {
     if (finishedInitialLoading && bpmnViewer.current) {
@@ -229,7 +236,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         setProcessHierarchy(rootElement);
       });
     }
-  }, [finishedInitialLoading]);
+  }, [finishedInitialLoading, Editor]);
 
   // trigger the build of the document when the viewer has finished loading the bpmn
   const handleOnLoad = useCallback(() => setFinishedInitialLoading(true), []);

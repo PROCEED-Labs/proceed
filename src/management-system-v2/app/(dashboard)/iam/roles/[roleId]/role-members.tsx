@@ -3,7 +3,8 @@
 import { FC, useMemo, useState } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { ApiData, useGetAsset } from '@/lib/fetch-data';
-import UserList, { UserListProps } from '@/components/user-list';
+import { UserListProps } from '@/components/user-list';
+import UserList from '@/components/UserList';
 import { Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';

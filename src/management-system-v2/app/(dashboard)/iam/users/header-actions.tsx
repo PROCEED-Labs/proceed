@@ -5,7 +5,7 @@ import { UserSchema } from '@/lib/data/user-schema';
 import { addUser } from '@/lib/data/users';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal } from 'antd';
+import { Button, Form, App, Input, Modal, Grid } from 'antd';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
@@ -44,6 +44,8 @@ const CreateUserModal: FC<{
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch([], form);
+  const breakpoint = Grid.useBreakpoint();
+
 
   useEffect(() => {
     form.validateFields({ validateOnly: true }).then(
@@ -100,9 +102,13 @@ const CreateUserModal: FC<{
         ))}
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
+          {breakpoint.xl ? (<Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
             Create User
+          </Button>) : (
+            <Button type="text" htmlType="submit" loading={isLoading} disabled={!submittable}>
+            <PlusOutlined />
           </Button>
+          )}
         </Form.Item>
       </Form>
     </Modal>
@@ -111,6 +117,8 @@ const CreateUserModal: FC<{
 
 const HeaderActions: FC = () => {
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const breakpoint = Grid.useBreakpoint();
+
 
   return (
     <>
@@ -119,8 +127,9 @@ const HeaderActions: FC = () => {
         close={() => setCreateUserModalOpen(false)}
       />
       <AuthCan action="create" resource="User">
+        {/* TODO: fix icon for float button in button group */}
         <Button type="primary" onClick={() => setCreateUserModalOpen(true)}>
-          <PlusOutlined /> Create User
+          {breakpoint.xl ? (<><PlusOutlined /> Create User</>) : (<PlusOutlined />)}
         </Button>
       </AuthCan>
     </>

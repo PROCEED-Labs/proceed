@@ -77,9 +77,11 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
       onSelectedRows={(users) => {
         setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
       }}
+      setShowMobileUserSider={setShowMobileUserSider}
       sidePanel={<UserSidePanel user={selectedUser}
       showMobileUserSider={showMobileUserSider}
-      setShowMobileUserSider={setShowMobileUserSider}/>}
+      setShowMobileUserSider={setShowMobileUserSider}
+      />}
     />
   );
 };

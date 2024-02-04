@@ -1,15 +1,16 @@
 'use client';
 
 import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
-import { Space, Avatar, Button, Table, Result, Grid, Drawer } from 'antd';
-import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Space, Avatar, Button, Table, Result, Grid, Drawer, Breakpoint, FloatButton, Tooltip } from 'antd';
+import { CloseOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { User } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss'
+import HeaderActions from '@/app/(dashboard)/iam/users/header-actions';
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
-  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email' > & {};
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'
@@ -27,8 +28,8 @@ export type UserListProps = {
   createUserNode?: ReactNode;
   loading?: boolean;
   sidePanel?: ReactNode;
-  onSelectedRows?: (users: ListUser[]) => void;
   setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
+  onSelectedRows?: (users: ListUser[]) => void;
 };
 
 const UserList: FC<UserListProps> = ({
@@ -102,29 +103,26 @@ const UserList: FC<UserListProps> = ({
       key: 'email',
       render: (email: any) => email.highlighted,
     },
+
+    //TODO: get rid of the column on the right side of the info button for breakpoint < xl
     {
-      fixed: 'right',
-      width: 160,
-      dataIndex: 'id',
+      dataIndex: 'info',
       key: '',
       title: '',
-      render: () => (
+      render: (): React.ReactNode => (
         <Button style={{ float: 'right' }} type="text" onClick={showMobileUserSider}>
           <InfoCircleOutlined />
         </Button>
       ),
-      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
+      responsive: (breakpoint.xl ? ['xs'] : ['xs', 'sm']) as Breakpoint[],
     },
   ];
 
-  //TODO: fix type
   let tableColumns: Column = defaultColumns;
   if (typeof columns === 'function')
     tableColumns = [
       ...defaultColumns,
       ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
-    //TODO: add InfoButtonCircleOutlined buttons
-
     ];
   else if (columns) tableColumns = [...defaultColumns, ...columns];
 
@@ -187,54 +185,24 @@ const UserList: FC<UserListProps> = ({
             rowKey="id"
             loading={loading}
           />
-
-        {/* <Bar
-          leftNode={
-            selectedRowKeys.length ? (
-              <Space size={20}>
-                <Button
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={() => setSelectedRowKeys([])}
-                />
-                <span>{selectedRowKeys.length} selected: </span>
-                {selectedRowActions
-                  ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
-                  : null}
-              </Space>
-            ) : undefined
-          }
-          searchProps={{
-            value: searchQuery,
-            onChange: (e) => setSearchQuery(e.target.value),
-            placeholder: 'Search Users ...',
-          }}
-          rightNode={searchBarRightNode ? searchBarRightNode : null}
-        />
-        <Table<ListUser>
-          columns={tableColumns}
-          dataSource={filteredData}
-          onRow={(element) => ({
-            onMouseEnter: () => setHoveredRowId(element.id),
-            onMouseLeave: () => setHoveredRowId(null),
-            onClick: () => {
-              setSelectedRowKeys([element.id]);
-              setSelectedRows([element]);
-              if (onSelectedRows) onSelectedRows([element]);
-            },
-          })}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-              setSelectedRowKeys(selectedRowKeys as string[]);
-              setSelectedRows(selectedObjects);
-              if (onSelectedRows) onSelectedRows(selectedObjects);
-            },
-          }}
-          pagination={{ position: ['bottomCenter'] }}
-          rowKey="id"
-          loading={loading}
-        /> */}
+            {/* <!-- FloatButtonGroup needs a z-index of 101
+            since BPMN Logo of the viewer has an z-index of 100 --> */}
+              {breakpoint.xl ? undefined : (
+                <FloatButton.Group
+                  className={styles.FloatButton}
+                  trigger="click"
+                  type="primary"
+                  style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                  icon={<PlusOutlined />}
+                >
+                  <Tooltip trigger="hover" placement="left" title="Create an user">
+                    <FloatButton
+                      icon={
+                        <HeaderActions  />}
+                        />
+                  </Tooltip>
+                </FloatButton.Group>
+              )}
       </div>
       {sidePanel}
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, FC, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, FC, PropsWithChildren, SetStateAction, useRef, useState } from 'react';
 import { Avatar, Drawer, Grid, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -9,7 +9,17 @@ import { ListUser } from '@/components/user-list';
 import UserSiderContent from './user-sider-content'
 
 
-const UserSidePanel: FC<{ user: ListUser | null; setShowMobileUserSider: Dispatch<SetStateAction<boolean>>; showMobileUserSider: boolean }> = ({ user, setShowMobileUserSider, showMobileUserSider }) => {
+type UserSidePanelProps = PropsWithChildren<{
+  user: ListUser | null;
+  setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
+  showMobileUserSider: boolean;
+}>
+
+const UserSidePanel: FC<UserSidePanelProps> = ({
+  user,
+  setShowMobileUserSider,
+  showMobileUserSider
+}) => {
   const setUserPreferences = useUserPreferences.use.addPreferences();
   const hydrated = useUserPreferences.use._hydrated();
   const sidePanelOpen = useUserPreferences(

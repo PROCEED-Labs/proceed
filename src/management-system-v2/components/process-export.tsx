@@ -18,7 +18,6 @@ import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
 import { R } from '@tanstack/react-query-devtools/build/legacy/devtools-0Hr18ibL';
-import useExportTypeStore from '@/lib/use-export-type-store';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -110,7 +109,9 @@ type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
-  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
+  giveSelectionOption?: boolean;
+  preselectedExportType?: ProcessExportOptions['type'];
+  resetPreselectedExportType?: () => void; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
@@ -118,9 +119,12 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   onClose,
   open,
   giveSelectionOption,
+  preselectedExportType,
+  resetPreselectedExportType,
 }) => {
-  const { preselectedExportType, resetPreselectedExportType } = useExportTypeStore();
-  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
+  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type'] | undefined>(
+    preselectedExportType,
+  );
 
   useEffect(() => {
     setSelectedType(preselectedExportType);
@@ -141,7 +145,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   const handleClose = () => {
     setIsExporting(false);
     setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
-    resetPreselectedExportType();
+    if (preselectedExportType && resetPreselectedExportType) resetPreselectedExportType();
     setSelectedType(undefined);
     onClose();
   };

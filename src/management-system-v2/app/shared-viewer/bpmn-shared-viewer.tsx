@@ -4,12 +4,12 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
-import { Button, message } from 'antd';
+import { Button, Typography, message } from 'antd';
 import { copyProcesses } from '@/lib/data/processes';
 import { ApiData } from '@/lib/fetch-data';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
+import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -25,6 +25,10 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
 
   const processBpmn = processData.bpmn;
   const bpmnViewer = useRef<BPMNCanvasRef>(null);
+
+  if (!processData.shared) {
+    return <Typography.Text type="danger">Process is no longer shared</Typography.Text>;
+  }
 
   const handleCopyToOwnWorkspace = async () => {
     if (session.status === 'unauthenticated') {
@@ -63,7 +67,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         }}
       >
         {!embeddedMode ? (
-          <Button onClick={handleCopyToOwnWorkspace}>Copy to own workspace</Button>
+          <Button onClick={handleCopyToOwnWorkspace}>Add to your Processes</Button>
         ) : null}
         <div className="bpmn-viewer" style={{ height: '90vh', width: '90vw' }}>
           <BPMNCanvas

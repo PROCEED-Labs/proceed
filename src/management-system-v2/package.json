@@ -45,6 +45,7 @@
     "openapi-fetch": "0.8.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "jsonwebtoken": "^8.5.1",
     "server-only": "0.0.1",
     "server-only": "0.0.1",
     "svg2pdf.js": "2.2.3",

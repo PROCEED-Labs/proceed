@@ -14,20 +14,28 @@ import useModelerStateStore from './use-modeler-state-store';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
-import Image from 'next/image';
-import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
+import {
+  generateProcessShareToken,
+  updateProcessGuestAccessRights,
+} from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
+import { Process } from '@/lib/data/process-schema';
 
 type ShareModalProps = {
   onExport: () => void;
   onExportMobile: (type: ProcessExportOptions['type']) => void;
+  processData: Process;
 };
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
+const ModelerShareModalButton: FC<ShareModalProps> = ({
+  onExport,
+  onExportMobile,
+  processData,
+}) => {
   const { processId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
@@ -62,10 +70,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     }
   };
 
-  const handleOptionClick = (index: number) => {
-    setActiveIndex(index);
-  };
-
   const shareWrapper = async (fn: (args: any) => Promise<void>, args: any) => {
     try {
       if (isSharing) return;
@@ -79,7 +83,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    const { token, processData } = await generateToken({ processId });
+    const { token } = await generateProcessShareToken({ processId });
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
 
     const shareObject = {
@@ -93,7 +97,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         await navigator.share(shareObject);
       } catch (err: any) {
         if (!err.toString().includes('AbortError')) {
-          throw new Error('Error: ', { cause: err });
+          console.error(err);
         }
       }
     } else {
@@ -149,7 +153,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Share Public Link',
       optionTitle: 'Share Public Link',
       optionOnClick: async () => {
-        handleOptionClick(0);
+        setActiveIndex(0);
       },
       subOption: (
         <ModelerShareModalOptionPublicLink shared={shared} sharedAs={sharedAs} refresh={refresh} />
@@ -165,7 +169,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Embed in Website',
       optionTitle: 'Embed in Website',
       optionOnClick: async () => {
-        handleOptionClick(1);
+        setActiveIndex(1);
       },
       subOption: (
         <ModelerShareModalOptionEmdedInWeb shared={shared} sharedAs={sharedAs} refresh={refresh} />
@@ -176,7 +180,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Copy Diagram to Clipboard (PNG)',
       optionName: 'Copy Diagram as PNG',
       optionOnClick: () => {
-        handleOptionClick(2);
+        setActiveIndex(2);
         copyProcessImage(modeler!);
         setActiveIndex(null);
       },
@@ -186,7 +190,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Copy Diagram as XML',
       optionTitle: 'Copy BPMN to Clipboard (XML)',
       optionOnClick: () => {
-        handleOptionClick(3);
+        setActiveIndex(3);
         handleCopyXMLToClipboard();
         setActiveIndex(null);
       },
@@ -196,7 +200,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Export as file',
       optionTitle: 'Export as file',
       optionOnClick: () => {
-        handleOptionClick(4);
+        setActiveIndex(4);
         onExport();
         setActiveIndex(null);
       },

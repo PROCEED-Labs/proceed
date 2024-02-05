@@ -36,13 +36,24 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
 export const getProcess = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
+
+  // Get ability again since it might have changed.
+  const { ability } = await getCurrentUser();
+
   const process = processMetaObjects[definitionId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to delete this process', UserErrorType.PermissionError);
+  }
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }

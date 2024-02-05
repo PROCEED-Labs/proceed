@@ -35,7 +35,7 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
       });
     } catch (err: any) {
       if (!err.toString().includes('AbortError')) {
-        throw new Error('Error: ', { cause: err });
+        console.log('error occurred while sharing... ', err);
       }
     }
   } else {

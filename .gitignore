@@ -53,4 +53,3 @@ package-lock.json
 /playwright-report/
 /playwright/.cache/
 dataEval.json
-src/management-system/src/backend/server/index.js

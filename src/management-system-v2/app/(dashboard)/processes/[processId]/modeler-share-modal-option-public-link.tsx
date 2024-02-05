@@ -1,8 +1,11 @@
 import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { SetStateAction, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { generateToken, updateProcessGuestAccessRights } from '@/actions/actions';
+import {
+  generateProcessShareToken,
+  updateProcessGuestAccessRights,
+} from '@/lib/sharing/process-sharing';
 
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
@@ -22,14 +25,11 @@ const ModelerShareModalOptionPublicLink = ({
     sharedAs === 'protected',
   );
 
-  const [publicLinkValue, setPublicLinkValue] = useState(
-    `${window.location.origin}/shared-viewer?token=`,
-  );
+  const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
 
   const getNewToken = async () => {
-    const { token } = await generateToken({ processId: processId });
+    const { token } = await generateProcessShareToken({ processId: processId });
     setToken(token);
-    setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
   };
 
@@ -73,9 +73,8 @@ const ModelerShareModalOptionPublicLink = ({
     setIsShareLinkChecked(isChecked);
 
     if (isChecked) {
-      const { token } = await generateToken({ processId: processId });
+      const { token } = await generateProcessShareToken({ processId: processId });
       setToken(token);
-      setPublicLinkValue(`${window.location.origin}/shared-viewer?token=${token}`);
 
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       message.success('Process shared');
@@ -85,10 +84,6 @@ const ModelerShareModalOptionPublicLink = ({
       message.success('Process unshared');
     }
     refresh();
-  };
-
-  const handleLinkChange = (e: { target: { value: SetStateAction<string> } }) => {
-    setPublicLinkValue(e.target.value);
   };
 
   const handleQRCodeAction = async (action: 'download' | 'copy') => {
@@ -155,7 +150,6 @@ const ModelerShareModalOptionPublicLink = ({
                 value={publicLinkValue}
                 disabled={!isShareLinkChecked}
                 style={{ border: '1px solid #000' }}
-                onChange={handleLinkChange}
               />
             </Col>
             <Col span={12}>

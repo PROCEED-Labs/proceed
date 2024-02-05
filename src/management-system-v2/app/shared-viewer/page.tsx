@@ -1,10 +1,10 @@
-import EmbeddedModeler from '@/components/bpmn-shared-viewer';
-import jwt from 'jsonwebtoken';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/processes';
-import { TokenPayload } from '@/actions/actions';
+import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
-import BPMNSharedViewer from '@/components/bpmn-shared-viewer';
+import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
+import { Typography } from 'antd';
 
 interface PageProps {
   searchParams: {
@@ -19,10 +19,16 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <h1>Invalid Token</h1>;
   }
 
-  const key = process.env.JWT_KEY;
-
-  const { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
-  const processData = await getProcess(processId as string);
+  const key = process.env.JWT_SHARE_SECRET!;
+  let processData;
+  let iframeMode;
+  try {
+    const { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
+    processData = await getProcess(processId as string);
+    iframeMode = embeddedMode;
+  } catch (err) {
+    console.error('error while verifying token... ', err);
+  }
 
   if (processData.shared && processData.sharedAs === 'protected' && !session?.user.id) {
     const callbackUrl = `/shared-viewer?token=${searchParams.token}`;
@@ -30,12 +36,9 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     redirect(loginPath);
   }
 
-  if (!processData.shared) {
-    return <h1 style={{ color: 'red', textAlign: 'center' }}>Process is no longer shared</h1>;
-  }
   return (
     <div>
-      <BPMNSharedViewer processData={processData} embeddedMode={embeddedMode} />
+      <BPMNSharedViewer processData={processData} embeddedMode={iframeMode} />
     </div>
   );
 };

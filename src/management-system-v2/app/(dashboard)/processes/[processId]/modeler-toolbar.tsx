@@ -18,9 +18,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess } from '@/lib/data/processes';
+import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
-import useExportTypeStore from '@/lib/use-export-type-store';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import ModelerShareModalButton from '@/app/(dashboard)/processes/[processId]/modeler-share-modal';
 
@@ -48,7 +47,9 @@ const ModelerToolbar = ({
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
 
   const modeler = useModelerStateStore((state) => state.modeler);
-  const { preselectedExportType, setPreselectedExportType } = useExportTypeStore();
+  const [preselectedExportType, setPreselectedExportType] = useState<
+    ProcessExportOptions['type'] | undefined
+  >();
 
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
@@ -125,6 +126,16 @@ const ModelerToolbar = ({
       canvas.setRootElement(canvas.findRoot(subprocessId as string) as Root);
       modeler.fitViewport();
     }
+  };
+
+  const getProcessData = () => {
+    return getProcess(processId as string)
+      .then((processData) => {
+        return processData;
+      })
+      .catch((error) => {
+        console.error('Error fetching process data:', error);
+      });
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>
@@ -205,12 +216,11 @@ const ModelerToolbar = ({
               >
                 <Button icon={<SettingOutlined />} onClick={handlePropertiesPanelToggle}></Button>
               </Tooltip>
-              <Tooltip title="Share Process">
-                <ModelerShareModalButton
-                  onExport={handleProcessExportModalToggle}
-                  onExportMobile={handleProcessExportModalToggleMobile}
-                />
-              </Tooltip>
+              <ModelerShareModalButton
+                onExport={handleProcessExportModalToggle}
+                onExportMobile={handleProcessExportModalToggleMobile}
+                processData={getProcessData}
+              />
               {!showMobileView && (
                 <>
                   <Tooltip title="Show XML">
@@ -251,6 +261,8 @@ const ModelerToolbar = ({
         }
         onClose={() => setShowProcessExportModal(false)}
         giveSelectionOption={!!elementsSelectedForExport.length}
+        preselectedExportType={preselectedExportType}
+        resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
     </>
   );

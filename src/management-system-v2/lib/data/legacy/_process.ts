@@ -190,10 +190,8 @@ export async function updateProcessMetaData(
     delete newMetaData.shared_with;
   } */
 
-  if (metaChanges.shared) {
-    newMetaData.shared = metaChanges.shared;
-    newMetaData.sharedAs = metaChanges.sharedAs;
-  }
+  newMetaData.shared = metaChanges.shared;
+  newMetaData.sharedAs = metaChanges.sharedAs;
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 

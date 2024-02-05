@@ -28,7 +28,7 @@ const CreateEnvironmentButton: FC<CreateEnvironmentModalProps> = ({ text }) => {
     resetFormErrors();
   }
 
-  function createEnvitonment(values: any) {
+  function createEnvironment(values: any) {
     values.logoUrl = undefined;
     startTransition(async () => {
       try {
@@ -58,7 +58,7 @@ const CreateEnvironmentButton: FC<CreateEnvironmentModalProps> = ({ text }) => {
         title="Create Environment"
         okButtonProps={{ htmlType: 'submit' }}
       >
-        <Form form={form} name="Create Environment" autoComplete="off" onFinish={createEnvitonment}>
+        <Form form={form} name="Create Environment" autoComplete="off" onFinish={createEnvironment}>
           <Form.Item name="name" {...antDesignInputProps(formErrors, 'name')} required>
             <Input placeholder="Environment Name" />
           </Form.Item>

@@ -59,15 +59,6 @@ const nextConfig = {
         : undefined,
     ...(process.env.NODE_ENV === 'development' ? oauthProvidersConfig : {}),
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/processes',
-        permanent: false,
-      },
-    ];
-  },
 };
 
 module.exports = nextConfig;

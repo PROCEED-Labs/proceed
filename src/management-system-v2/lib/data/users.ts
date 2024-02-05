@@ -5,31 +5,29 @@ import { deleteuser, addUser as _addUser, updateUser as _updateUser } from './le
 import { userError } from '../user-error';
 import { UserData } from './user-schema';
 
-export async function deleteUsers(userIds: string[]) {
-  const { ability } = await getCurrentUser();
+export async function deleteUser() {
+  const { userId } = await getCurrentUser();
 
   try {
-    for (const userId of userIds) {
-      deleteuser(userId, ability);
-    }
+    deleteuser(userId);
   } catch (_) {
-    return userError('Error deleting users');
+    return userError('Error deleting user');
   }
 }
 
 export async function addUser(user: Parameters<typeof _addUser>[0]) {
   try {
-    const { ability } = await getCurrentUser();
-    _addUser(user, ability);
+    return _addUser(user);
   } catch (_) {
     return userError('Error adding user');
   }
 }
 
-export async function updateUser(userId: string, newUserData: UserData) {
+export async function updateUser(newUserData: UserData) {
   try {
-    const { ability } = await getCurrentUser();
-    _updateUser(userId, newUserData, ability);
+    const { userId } = await getCurrentUser();
+
+    _updateUser(userId, newUserData);
   } catch (_) {
     return userError('Error updating user');
   }

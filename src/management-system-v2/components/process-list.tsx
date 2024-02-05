@@ -31,7 +31,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import cn from 'classnames';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
@@ -41,7 +41,7 @@ import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 
@@ -478,7 +478,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(`/processes/${record.id}`);
+            router.push(`processes/${record.id}`);
           },
           onMouseEnter: (event) => {
             setHovered(record);

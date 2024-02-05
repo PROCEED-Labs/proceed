@@ -159,7 +159,7 @@ export type AbilityRule = RawRuleOf<CaslAbility>;
 // beware: casl usually uses 'manage' as a wildcard
 const resolveAction = createAliasResolver(
   {
-    manage: ['update', 'create', 'delete'],
+    manage: ['view', 'update', 'create', 'delete'],
   },
   {
     anyAction: 'admin',

@@ -43,7 +43,7 @@ export const getProcess = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
 
   // Get ability again since it might have changed.
-  const { ability } = await getCurrentUser();
+  //const { ability } = await getCurrentUser();
 
   const process = processMetaObjects[definitionId];
 
@@ -51,12 +51,10 @@ export const getProcess = async (definitionId: string) => {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
 
-  if (!ability.can('update', toCaslResource('Process', process))) {
+  /*if (!ability.can('view', toCaslResource('Process', process))) {
     return userError('Not allowed to delete this process', UserErrorType.PermissionError);
-  }
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
+  }*/
+
   const bpmn = await _getProcessBpmn(definitionId);
   return { ...process, bpmn };
 };

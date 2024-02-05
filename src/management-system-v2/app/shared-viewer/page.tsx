@@ -1,10 +1,9 @@
-import jwt, { JsonWebTokenError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/processes';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
-import { Typography } from 'antd';
 
 interface PageProps {
   searchParams: {
@@ -37,9 +36,11 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   }
 
   return (
-    <div>
-      <BPMNSharedViewer processData={processData} embeddedMode={iframeMode} />
-    </div>
+    <>
+      <div>
+        <BPMNSharedViewer processData={processData} embeddedMode={iframeMode} />
+      </div>
+    </>
   );
 };
 

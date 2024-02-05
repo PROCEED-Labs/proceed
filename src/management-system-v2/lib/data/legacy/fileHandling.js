@@ -29,7 +29,7 @@ export function getAppDataPath() {
 
   if (!process.env.IS_ELECTRON && process.env.NODE_ENV === 'production') {
     // TODO: make this environment variable configurable
-    appDir = process.cwd();
+    appDir = path.join(process.cwd(), 'volume');
   } else {
     appDir = envPaths('proceed-management-system').config;
     appDir = appDir.slice(0, appDir.search('-nodejs'));

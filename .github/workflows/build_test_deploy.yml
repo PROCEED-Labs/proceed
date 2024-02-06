@@ -294,6 +294,6 @@ jobs:
       - id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
-          service: '$SERVICE_NAME'
-          image: 'docker.io/proceed/ms-server:$MS_TAG'
+          service: ${{ env.SERVICE_NAME }}
+          image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
           region: 'europe-west3'

@@ -340,6 +340,7 @@ jobs:
         with:
           service: 'ms-server-staging'
           image: 'docker.io/proceed/ms-server:edge'
+          region: 'europe-west3'
 
   updateCompose:
     runs-on: ubuntu-latest

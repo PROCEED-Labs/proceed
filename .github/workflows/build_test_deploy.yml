@@ -306,6 +306,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
     needs: buildMS
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     strategy:
       matrix:
         # Run a job each for the engine and MS server images

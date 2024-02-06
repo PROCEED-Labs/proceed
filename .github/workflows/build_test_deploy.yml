@@ -331,6 +331,7 @@ jobs:
 
       - uses: 'google-github-actions/auth@v2'
         with:
+          project_id: 'proceed-274611'
           workload_identity_provider: 'projects/116613464484/locations/global/workloadIdentityPools/github-ci/providers/github'
 
       - id: 'deploy'

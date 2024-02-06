@@ -3,12 +3,12 @@
 import { getFillColor, getStrokeColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
-import React, { FocusEvent, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FocusEvent, useEffect, useRef, useState } from 'react';
 import styles from './properties-panel.module.scss';
 
-import { Input, ColorPicker, Space, Grid, Divider, Modal, InputNumber } from 'antd';
+import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
 
-import { EuroCircleOutlined, ClockCircleOutlined, CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, EditOutlined } from '@ant-design/icons';
 import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -17,6 +17,8 @@ import CollapsibleCard from '@/components/collapsible-card';
 import DescriptionSection from '@/app/(dashboard)/processes/[processId]/description-section';
 import ImageSelection from '@/components/image-selection';
 import PlannedDurationInput from './planned-duration-input';
+
+import PlannedCostInput from './planned-cost-input';
 
 type PropertiesPanelContentProperties = {
   selectedElement: ElementLike;
@@ -30,9 +32,10 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const strokeColor = getStrokeColor(selectedElement, '#000000FF');
 
   const [name, setName] = useState(selectedElement.businessObject.name);
-  const [costsPlanned, setCostsPlanned] = useState<string | null | undefined>(
-    metaData.costsPlanned,
-  );
+  const [isNameEditing, setIsNameEditing] = useState(false);
+
+  const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
+  const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
 
   const modeler = useModelerStateStore((state) => state.modeler);
   useModelerStateStore((state) => state.changeCounter);
@@ -64,11 +67,11 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   useEffect(() => {
     if (selectedElement) {
       setName(selectedElement.businessObject.name);
-      setCostsPlanned(metaData.costsPlanned);
     }
   }, [selectedElement]);
 
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
+    setIsNameEditing(false);
     const modeling = modeler!.getModeling();
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
   };
@@ -86,13 +89,24 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     });
   };
 
-  const updateMetaData = (name: string, value: any) => {
+  const updateMetaData = (
+    name: string,
+    value: any,
+    attributes?: { [key: string]: any },
+    oldAttributes?: { [key: string]: any },
+  ) => {
     const modeling = modeler!.getModeling();
 
     if (name === 'property') {
-      setProceedElement(selectedElement.businessObject, name, value.value, value.attributes);
+      setProceedElement(
+        selectedElement.businessObject,
+        name,
+        value.value,
+        value.attributes,
+        oldAttributes,
+      );
     } else {
-      setProceedElement(selectedElement.businessObject, name, value ? value : null);
+      setProceedElement(selectedElement.businessObject, name, value ? value : null, attributes);
     }
     modeling.updateProperties(selectedElement as any, {
       extensionElements: selectedElement.businessObject.extensionElements,
@@ -116,6 +130,16 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
           onChange={(e) => setName(e.target.value)}
           onBlur={handleNameChange}
           disabled={selectedElement.type === 'bpmn:Process'}
+          readOnly={!isNameEditing}
+          suffix={
+            selectedElement.type === 'bpmn:Process' || isNameEditing ? null : (
+              <EditOutlined
+                onClick={() => {
+                  setIsNameEditing(true);
+                }}
+              ></EditOutlined>
+            )
+          }
         />
 
         <Input addonBefore="Type" value={selectedElement.type} disabled />
@@ -139,31 +163,37 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
       <Space direction="vertical" style={{ width: '100%' }}>
         <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
-        <InputNumber
-          style={{ width: '100%' }}
-          addonBefore={<EuroCircleOutlined className="clock-icon" />}
-          stringMode
-          placeholder="Planned Cost"
-          value={costsPlanned}
-          onChange={(value) => {
-            setCostsPlanned(value);
+        <PlannedCostInput
+          costsPlanned={
+            costsPlanned
+              ? { value: costsPlanned.value, currency: costsPlanned.unit }
+              : { currency: 'EUR' }
+          }
+          onInput={({ value, currency }) => {
+            updateMetaData('costsPlanned', value, { unit: currency });
           }}
-          onBlur={() => {
-            updateMetaData('costsPlanned', costsPlanned);
-          }}
-        />
+        ></PlannedCostInput>
         <PlannedDurationInput
           onChange={(changedTimePlannedDuration) => {
             updateMetaData('timePlannedDuration', changedTimePlannedDuration);
           }}
-          timePlannedDuration={metaData.timePlannedDuration || ''}
+          timePlannedDuration={timePlannedDuration || ''}
         ></PlannedDurationInput>
       </Space>
 
       <CustomPropertySection
         metaData={metaData}
-        onChange={(name, value) => {
-          updateMetaData('property', { value: value, attributes: { name } });
+        onChange={(name, value, oldName) => {
+          updateMetaData(
+            'property',
+            { value: value, attributes: { name } },
+            undefined,
+            oldName
+              ? {
+                  name: oldName,
+                }
+              : undefined,
+          );
         }}
       ></CustomPropertySection>
 

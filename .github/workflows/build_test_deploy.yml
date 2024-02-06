@@ -333,6 +333,7 @@ jobs:
         with:
           project_id: 'proceed-274611'
           workload_identity_provider: 'projects/116613464484/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-274611.iam.gserviceaccount.com'
 
       - id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v2'

@@ -25,17 +25,17 @@ env:
 jobs:
   install:
     runs-on: ubuntu-latest
-    outputs:
-      compose: ${{ steps.changes.outputs.compose }}
+    # outputs:
+    #   compose: ${{ steps.changes.outputs.compose }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            compose:
-              - 'docker-compose.yml'
+      # - uses: dorny/paths-filter@v3
+      #   id: changes
+      #   with:
+      #     filters: |
+      #       compose:
+      #         - 'docker-compose.yml'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

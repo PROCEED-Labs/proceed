@@ -16,6 +16,12 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();
+  const [showMobileUserSider, setShowMobileUserSider] = useState(false);
+
+  const closeMobileUserSider = () => {
+    setShowMobileUserSider(false);
+  };
+
   const router = useRouter();
   const environmentId = useEnvironment();
 
@@ -69,11 +75,18 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
           }}
         />
       )}
-      searchBarRightNode={<HeaderActions />}
+      createUserNode={<HeaderActions />}
       onSelectedRows={(users) => {
         setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
       }}
-      sidePanel={<UserSidePanel user={selectedUser} />}
+      setShowMobileUserSider={setShowMobileUserSider}
+      sidePanel={
+        <UserSidePanel
+          user={selectedUser}
+          showMobileUserSider={showMobileUserSider}
+          setShowMobileUserSider={setShowMobileUserSider}
+        />
+      }
     />
   );
 };

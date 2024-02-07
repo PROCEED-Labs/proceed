@@ -156,11 +156,12 @@ export function updateRole(
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export async function deleteRole(roleId: string, ability: Ability) {
+export async function deleteRole(roleId: string, ability?: Ability) {
   const role = roleMetaObjects[roleId];
   if (!role) throw new Error('Role not found');
 
-  if (!ability.can('delete', toCaslResource('Role', role))) throw new UnauthorizedError();
+  if (ability && !ability.can('delete', toCaslResource('Role', role)))
+    throw new UnauthorizedError();
 
   // remove from local cache
   delete roleMetaObjects[roleId];

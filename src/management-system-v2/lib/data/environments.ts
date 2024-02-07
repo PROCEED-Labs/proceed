@@ -1,12 +1,12 @@
 'use server';
 
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
-import { userError } from '../user-error';
-import { addEnvironment } from './legacy/iam/environments';
+import { UserErrorType, userError } from '../user-error';
+import { addEnvironment, deleteEnvironment, getEnvironmentById } from './legacy/iam/environments';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
@@ -24,5 +24,32 @@ export async function addOrganizationEnvironment(
   } catch (e) {
     console.error(e);
     return userError('Error adding environment');
+  }
+}
+
+export async function deleteOrganizationEnvironments(environmentIds: string[]) {
+  const { userId } = await getCurrentUser();
+
+  try {
+    for (const environmentId of environmentIds) {
+      const { ability } = await getCurrentEnvironment(environmentId);
+
+      const environment = getEnvironmentById(environmentId);
+
+      if (!environment.organization)
+        return userError(`Environment ${environmentId} is not an organization environment`);
+
+      //TODO remove this once the ability is checked in deleteEnvironment
+      if (environment.ownerId !== userId)
+        return userError(
+          `You are not the owner of ${environmentId}`,
+          UserErrorType.PermissionError,
+        );
+
+      deleteEnvironment(environmentId, ability);
+    }
+  } catch (e) {
+    console.error(e);
+    return userError('Error deleting environment');
   }
 }

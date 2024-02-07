@@ -1,8 +1,10 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { useCallback, useEffect, useState, useTransition } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
+import { ApiData } from '@/lib/fetch-data';
+import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -15,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
-import MetaData from './process-info-card';
+import MetaData, { MetaPanelRefType } from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
@@ -36,6 +38,7 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -86,8 +89,6 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
-  const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
-  const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
@@ -116,15 +117,6 @@ const Processes = ({ processes }: ProcessesProps) => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [showMobileMetaData, setShowMobileMetaData] = useState(false);
-
-  const changeShowMetaData = () => {
-    addPreferences({
-      'process-meta-data': {
-        open: !showInfo,
-        width: getWidth(),
-      },
-    });
-  };
 
   const closeMobileMetaData = () => {
     setShowMobileMetaData(false);
@@ -169,6 +161,18 @@ const Processes = ({ processes }: ProcessesProps) => {
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const CollapsePannelRef = useRef<MetaPanelRefType>(null);
+
+  const collapseCard = CollapsePannelRef.current;
+  // () => {
+  //   addPreferences({
+  //     'process-meta-data': {
+  //       open: !showInfo,
+  //       width: getWidth(),
+  //     },
+  //   });
+  // };
 
   const deselectAll = () => {
     setSelectedRowElements([]);
@@ -230,100 +234,99 @@ const Processes = ({ processes }: ProcessesProps) => {
         <div style={{ flex: '1' }}>
           <Bar
             leftNode={
-              breakpoint.xl ? (
-                selectedRowKeys.length ? (
-                  <Space size={20}>
-                    <Button onClick={deselectAll} type="text">
-                      <CloseOutlined />
-                    </Button>
-                    {selectedRowKeys.length} selected:
-                    <span className={styles.Icons}>{actionBar}</span>
-                  </Space>
-                ) : undefined
-              ) : null
+              <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  {breakpoint.xs ? null : (
+                    <>
+                      <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
+                        {breakpoint.xl ? 'New Process' : 'New'}
+                      </ProcessCreationButton>
+                      <ProcessImportButton type="default">
+                        {breakpoint.xl ? 'Import Process' : 'Import'}
+                      </ProcessImportButton>
+                    </>
+                  )}
+
+                  {selectedRowKeys.length ? (
+                    <span className={styles.SelectedRow}>
+                      {selectedRowKeys.length} selected:
+                      <span className={styles.Icons}>{actionBar}</span>
+                    </span>
+                  ) : undefined}
+                </span>
+
+                {
+                  <span>
+                    <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
+                      <Button
+                        style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                        onClick={() => {
+                          addPreferences({ 'icon-view-in-process-list': false });
+                        }}
+                      >
+                        <UnorderedListOutlined />
+                      </Button>
+                      <Button
+                        style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                        onClick={() => {
+                          addPreferences({ 'icon-view-in-process-list': true });
+                        }}
+                      >
+                        <AppstoreOutlined />
+                      </Button>
+                    </Space.Compact>
+                    {/* {breakpoint.xl ? (
+                      <Button
+                        type="text"
+                        onClick={() => {
+                          if (collapseCard) collapseCard();
+                        }}
+                      >
+                        <InfoCircleOutlined />
+                      </Button>
+                    ) : undefined} */}
+                  </span>
+                }
+
+                {/* <!-- FloatButtonGroup needs a z-index of 101
+              since BPMN Logo of the viewer has an z-index of 100 --> */}
+                {breakpoint.xl ? undefined : (
+                  <FloatButton.Group
+                    className={styles.FloatButton}
+                    trigger="click"
+                    type="primary"
+                    style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                    icon={<PlusOutlined />}
+                  >
+                    <Tooltip trigger="hover" placement="left" title="Create a process">
+                      <FloatButton
+                        icon={
+                          <ProcessCreationButton
+                            type="text"
+                            icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
+                          />
+                        }
+                      />
+                    </Tooltip>
+                    <Tooltip trigger="hover" placement="left" title="Import a process">
+                      <FloatButton
+                        icon={
+                          <ProcessImportButton
+                            type="text"
+                            icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
+                          />
+                        }
+                      />
+                    </Tooltip>
+                  </FloatButton.Group>
+                )}
+              </span>
             }
             searchProps={{
               onChange: (e) => setSearchTerm(e.target.value),
               onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
               placeholder: 'Search Processes ...',
             }}
-            // TODO: make selected space go the beginning while the view button goes to the end of the row
-            rightNode={
-              <Space size={16} style={{ paddingLeft: 8 }}>
-                {breakpoint.xl ? (
-                  <>
-                    <ProcessImportButton type="default">Import Process</ProcessImportButton>
-                    <ProcessCreationButton type="primary">New Process</ProcessCreationButton>
-                  </>
-                ) : (
-                  <>
-                    {selectedRowKeys.length ? (
-                      <span>
-                        <Space size={20}>
-                          <Button onClick={deselectAll} type="text">
-                            <CloseOutlined />
-                          </Button>
-                          {selectedRowKeys.length} selected:
-                          <span className={styles.Icons}>{actionBar}</span>
-                        </Space>
-                      </span>
-                    ) : undefined}
-                    {/* <!-- FloatButtonGroup needs a z-index of 101
-                 since BPMN Logo of the viewer has an z-index of 100 --> */}
-                    <FloatButton.Group
-                      trigger="click"
-                      type="primary"
-                      style={{ marginBottom: '90px', marginRight: '5px', zIndex: '101' }}
-                      icon={<PlusOutlined />}
-                    >
-                      <Tooltip trigger="hover" placement="left" title="Create a process">
-                        <FloatButton
-                          icon={
-                            <ProcessCreationButton
-                              type="text"
-                              icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
-                            />
-                          }
-                        />
-                      </Tooltip>
-                      <Tooltip trigger="hover" placement="left" title="Import a process">
-                        <FloatButton
-                          icon={
-                            <ProcessImportButton
-                              type="text"
-                              icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
-                            />
-                          }
-                        />
-                      </Tooltip>
-                    </FloatButton.Group>
-                  </>
-                )}
-                <Space.Compact>
-                  <Button
-                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                    onClick={() => {
-                      addPreferences({ 'icon-view-in-process-list': false });
-                    }}
-                  >
-                    <UnorderedListOutlined />
-                  </Button>
-                  <Button
-                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                    onClick={() => {
-                      addPreferences({ 'icon-view-in-process-list': true });
-                    }}
-                  >
-                    <AppstoreOutlined />
-                  </Button>
-                </Space.Compact>
-                {breakpoint.xl ? (
-                  <Button type="text" style={{ marginLeft: '-16px' }} onClick={changeShowMetaData}>
-                    <InfoCircleOutlined />
-                  </Button>
-                ) : null}
-              </Space>
-            }
           />
 
           {iconView ? (
@@ -360,27 +363,19 @@ const Processes = ({ processes }: ProcessesProps) => {
             />
           )}
         </div>
+
         {/*Meta Data Panel*/}
         {breakpoint.xl ? (
-          <MetaData data={filteredData} selection={selectedRowKeys} />
+          <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
         ) : (
           <Drawer
-            // width={'100dvw'}
             onClose={closeMobileMetaData}
             title={
-              // <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>
                 {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
               </span>
-              // <CloseOutlined
-              //   onClick={() => {
-              //     closeMobileMetaData();
-              //   }}
-              // />
-              // </div>
             }
             open={showMobileMetaData}
-            // closeIcon={false}
           >
             <MetaDataContent data={filteredData} selection={selectedRowKeys} />
           </Drawer>

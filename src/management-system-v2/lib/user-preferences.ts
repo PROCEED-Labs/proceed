@@ -23,14 +23,15 @@ type PreferencesStoreType = {
 const defaultPreferences = {
   /* Default User-Settings: */
   /*
-    Delete user-preferences in localstorage, after adding a preference-setting
-    The new default won't be set otherwise
-  */
+      Delete user-preferences in localstorage, after adding a preference-setting
+      The new default won't be set otherwise
+    */
   'icon-view-in-process-list': false,
   'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },
+  'environments-page-side-panel': { open: false, width: 300 },
 } as const;
 
 const useUserPreferencesStore = create<PreferencesStoreType>()(

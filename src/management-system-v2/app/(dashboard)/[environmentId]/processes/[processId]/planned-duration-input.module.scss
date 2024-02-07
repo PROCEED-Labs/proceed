@@ -1,0 +1,10 @@
+.PlannedDurationModal :global {
+  .ant-input-number-wrapper {
+    table-layout: fixed;
+  }
+
+  .ant-input-group-addon,
+  .ant-input-number-group-addon {
+    width: 6rem !important;
+  }
+}

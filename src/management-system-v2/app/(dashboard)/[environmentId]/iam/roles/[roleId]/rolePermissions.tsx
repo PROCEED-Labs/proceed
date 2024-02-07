@@ -41,14 +41,14 @@ const basePermissionOptions: PermissionCategory[] = [
     resource: 'Environment',
     permissions: [
       {
-        key: 'Update Envrionment Information',
-        title: 'Update Envrionment Information',
+        key: 'Update Environment Information',
+        title: 'Update Environment Information',
         description: 'Allows a user to update the environment information.',
         permission: 'update',
       },
       {
-        key: 'Manage Envrionment',
-        title: 'Manage machines',
+        key: 'Manage Environment',
+        title: 'Manage Environment',
         description: 'Allows a user to update and delete the Environment.',
         permission: 'manage',
       },

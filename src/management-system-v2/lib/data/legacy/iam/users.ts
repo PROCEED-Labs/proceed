@@ -1,7 +1,7 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
 import { User, UserData, UserDataSchema, UserInput, UserSchema } from '../../user-schema';
-import { addEnvironment } from './environments';
+import { addEnvironment, deleteEnvironment, environmentsMetaObject } from './environments';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -55,6 +55,10 @@ export function deleteuser(userId: string) {
   const user = usersMetaObject[userId];
 
   if (!user) throw new Error("User doesn't exist");
+
+  for (const environmentId of Object.keys(environmentsMetaObject)) {
+    if (environmentsMetaObject[environmentId].ownerId === userId) deleteEnvironment(environmentId);
+  }
 
   delete usersMetaObject[userId];
   store.remove('users', userId);

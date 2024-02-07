@@ -1945,7 +1945,7 @@
   resolved "https://registry.yarnpkg.com/@mdi/font/-/font-6.9.96.tgz#c68da7e0895885dd09e60dc08c5ecc0d77f67efb"
   integrity sha512-z3QVZStyHVwkDsFR7A7F2PIvZJPWgdSFw4BEEy2Gc9HUN5NfK9mGbjgaYClRcbMWiYEV45srmiYtczmBtCqR8w==
 
-"@module-federation/nextjs-mf@7.0.8", "@module-federation/nextjs-mf@^7.0.8":
+"@module-federation/nextjs-mf@7.0.8":
   version "7.0.8"
   resolved "https://registry.yarnpkg.com/@module-federation/nextjs-mf/-/nextjs-mf-7.0.8.tgz#1639f820d2b2ff9427b6b571d6a769b991f31fc1"
   integrity sha512-sjpcujqBKxP3pFD+tivvxizZnN2Pszwdm80u4sK5xfPAW8tzjX9PGpZdFmtj8TNAKDQ8i269mrd25ojOzEYu0Q==
@@ -16621,12 +16621,11 @@ private@^0.1.8, private@~0.1.5:
   resolved "https://registry.yarnpkg.com/private/-/private-0.1.8.tgz#2381edb3689f7a53d653190060fcf822d2f368ff"
   integrity sha512-VvivMrbvd2nKkiG38qjULzlc+4Vx4wm/whI9pQD35YrARNnhxeiRktSOhSukRLFNlzg6Br/cJPet5J/u19r/mg==
 
-proceed-frontend-plugin-system@^1.1.5:
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/proceed-frontend-plugin-system/-/proceed-frontend-plugin-system-1.1.5.tgz#dd308893a4aa01b90e020558ae434f01c409fa7f"
-  integrity sha512-aubKvkK0I+xjmoea0H/OLhgMmdKmZHs65H5CpkXb08ouJwx7+s4rAvJ4VpppZJHtZZkL6/6rXS3cgCrQO2bbJg==
+proceed-frontend-plugin-system@^1.1.6:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/proceed-frontend-plugin-system/-/proceed-frontend-plugin-system-1.1.6.tgz#ae071ecc5060938dc1520404681d510133185a3a"
+  integrity sha512-GSQC3H284xizuTFPO6M62dxDdKJYeF5OHngO0CYnTPSin5ZMywg8SWUUQ/4xuDw5bRhYi0yMTljC9yaKXfhDfw==
   dependencies:
-    "@module-federation/nextjs-mf" "^7.0.8"
     "@module-federation/utilities" "^3.0.0"
     proceed-plugin-core-library "^1.0.5"
     react "^18.2.0"

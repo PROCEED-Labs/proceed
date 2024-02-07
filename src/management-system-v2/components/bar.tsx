@@ -19,7 +19,7 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
   return (
     <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
       {leftNode && (
-        <Col xs={24} xl={{flex: '1'}} >
+        <Col xs={24} xl={{ flex: '1' }}>
           {leftNode}
         </Col>
       )}
@@ -27,12 +27,7 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
         {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
       </Col>
       {rightNode && (
-        <Col
-          xs={23}
-          sm={24}
-          xl={{ flex: 'none' }}
-          style={breakpoint.xl ? {} : { }}
-        >
+        <Col xs={23} sm={24} xl={{ flex: 'none' }} style={breakpoint.xl ? {} : {}}>
           {rightNode}
         </Col>
       )}

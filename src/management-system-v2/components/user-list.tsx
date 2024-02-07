@@ -1,16 +1,27 @@
 'use client';
 
 import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
-import { Space, Avatar, Button, Table, Result, Grid, Drawer, Breakpoint, FloatButton, Tooltip } from 'antd';
+import {
+  Space,
+  Avatar,
+  Button,
+  Table,
+  Result,
+  Grid,
+  Drawer,
+  Breakpoint,
+  FloatButton,
+  Tooltip,
+} from 'antd';
 import { CloseOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { User } from '@/lib/data/user-schema';
-import styles from './user-list.module.scss'
-import HeaderActions from '@/app/(dashboard)/iam/users/header-actions';
+import styles from './user-list.module.scss';
+import HeaderActions from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
-  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email' > & {};
+  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'
@@ -42,7 +53,7 @@ const UserList: FC<UserListProps> = ({
   loading,
   sidePanel,
   onSelectedRows,
-  setShowMobileUserSider
+  setShowMobileUserSider,
 }) => {
   const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
     data: users,
@@ -83,7 +94,6 @@ const UserList: FC<UserListProps> = ({
   const showMobileUserSider = () => {
     setShowMobileUserSider(true);
   };
-
 
   const defaultColumns = [
     {
@@ -139,70 +149,69 @@ const UserList: FC<UserListProps> = ({
         <Bar
           leftNode={
             <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-            <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              {breakpoint.xs ? null : (
-                 createUserNode ? createUserNode : null
-                  )}
+              <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                {breakpoint.xs ? null : createUserNode ? createUserNode : null}
 
-              {selectedRowKeys.length ? (
-                <span className={styles.SelectedRow}>
-                  {selectedRowKeys.length} selected:
+                {selectedRowKeys.length ? (
+                  <span className={styles.SelectedRow}>
+                    {selectedRowKeys.length} selected:
                     {selectedRowActions
-                  ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
-                  : null}
-                    </span>
-                  ) : undefined}
+                      ? selectedRowActions(
+                          selectedRowKeys,
+                          () => setSelectedRowKeys([]),
+                          selectedRows,
+                        )
+                      : null}
+                  </span>
+                ) : undefined}
+              </span>
             </span>
-            </span>
-            }
-            searchProps={{
-              value: searchQuery,
-              onChange: (e) => setSearchQuery(e.target.value),
-              placeholder: 'Search Users ...',
-            }}
-          />
-          <Table<ListUser>
-            columns={tableColumns}
-            dataSource={filteredData}
-            onRow={(element) => ({
-              onMouseEnter: () => setHoveredRowId(element.id),
-              onMouseLeave: () => setHoveredRowId(null),
-              onClick: () => {
-                setSelectedRowKeys([element.id]);
-                setSelectedRows([element]);
-                if (onSelectedRows) onSelectedRows([element]);
-              },
-            })}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-                setSelectedRowKeys(selectedRowKeys as string[]);
-                setSelectedRows(selectedObjects);
-                if (onSelectedRows) onSelectedRows(selectedObjects);
-              },
-            }}
-            pagination={{ position: ['bottomCenter'] }}
-            rowKey="id"
-            loading={loading}
-          />
-            {/* <!-- FloatButtonGroup needs a z-index of 101
+          }
+          searchProps={{
+            value: searchQuery,
+            onChange: (e) => setSearchQuery(e.target.value),
+            placeholder: 'Search Users ...',
+          }}
+        />
+        <Table<ListUser>
+          columns={tableColumns}
+          dataSource={filteredData}
+          onRow={(element) => ({
+            onMouseEnter: () => setHoveredRowId(element.id),
+            onMouseLeave: () => setHoveredRowId(null),
+            onClick: () => {
+              setSelectedRowKeys([element.id]);
+              setSelectedRows([element]);
+              if (onSelectedRows) onSelectedRows([element]);
+            },
+          })}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
+              setSelectedRowKeys(selectedRowKeys as string[]);
+              setSelectedRows(selectedObjects);
+              if (onSelectedRows) onSelectedRows(selectedObjects);
+            },
+          }}
+          pagination={{ position: ['bottomCenter'] }}
+          rowKey="id"
+          loading={loading}
+        />
+        {/* <!-- FloatButtonGroup needs a z-index of 101
             since BPMN Logo of the viewer has an z-index of 100 --> */}
-              {breakpoint.xl ? undefined : (
-                <FloatButton.Group
-                  className={styles.FloatButton}
-                  trigger="click"
-                  type="primary"
-                  style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
-                  icon={<PlusOutlined />}
-                >
-                  <Tooltip trigger="hover" placement="left" title="Create an user">
-                    <FloatButton
-                      icon={
-                        <HeaderActions  />}
-                        />
-                  </Tooltip>
-                </FloatButton.Group>
-              )}
+        {breakpoint.xl ? undefined : (
+          <FloatButton.Group
+            className={styles.FloatButton}
+            trigger="click"
+            type="primary"
+            style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+            icon={<PlusOutlined />}
+          >
+            <Tooltip trigger="hover" placement="left" title="Create an user">
+              <FloatButton icon={<HeaderActions />} />
+            </Tooltip>
+          </FloatButton.Group>
+        )}
       </div>
       {sidePanel}
     </div>

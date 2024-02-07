@@ -66,9 +66,6 @@ const ColumnHeader = [
   'Owner',
 ];
 
-const numberOfRows =
-  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
-
 const ProcessList: FC<ProcessListProps> = ({
   data,
   selection,
@@ -82,10 +79,18 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
+
+  const numberOfRows =
+    typeof window !== 'undefined'
+      ? breakpoint.xl
+        ? Math.floor((window?.innerHeight - 410) / 49)
+        : data?.length
+      : 10;
+
   //const [previewerOpen, setPreviewerOpen] = useState(false);
+  // const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -137,8 +142,6 @@ const ProcessList: FC<ProcessListProps> = ({
               />
             </Tooltip>
           </AuthCan>
-
-          {/*TODO: errors regarding query */}
 
           <AuthCan action="delete" resource={toCaslResource('Process', record)}>
             <Tooltip placement="top" title={'Delete'}>
@@ -234,16 +237,6 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Process Name',
       className: styles.Title,
       sorter: (a, b) => a.name.value.localeCompare(b.name.value),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          //   // TODO:
-          //   setSelectedProcess(record);
-          //   router.refresh();
-          //   router.push(`/processes/${record.definitionId}`);
-        },
-      }),
       render: (_, record) => (
         <div
           className={
@@ -270,15 +263,6 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'description',
       key: 'Description',
       sorter: (a, b) => a.description.value.localeCompare(b.description.value),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       render: (_, record) => (
         <div
           style={{
@@ -300,15 +284,6 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
       sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
 
@@ -318,15 +293,6 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
       sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
 
@@ -334,15 +300,6 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'File Size',
       key: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
 
@@ -351,22 +308,13 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'owner',
       key: 'Owner',
       sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
 
     {
       fixed: 'right',
       width: 160,
-      // add title but only if at least one row is selected
+      // TODO: add title but only if at least one row is selected
       dataIndex: 'id',
       key: '',
       title: (
@@ -405,7 +353,14 @@ const ProcessList: FC<ProcessListProps> = ({
       key: '',
       title: '',
       render: () => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+        <Button
+          style={{ float: 'right' }}
+          type="text"
+          onClick={(event) => {
+            event.stopPropagation();
+            showMobileMetaData();
+          }}
+        >
           <InfoCircleOutlined />
         </Button>
       ),
@@ -426,6 +381,7 @@ const ProcessList: FC<ProcessListProps> = ({
           onClick: (event) => {
             // event.stopPropagation();
             // event.preventDefault();
+
             /* CTRL */
             if (event.ctrlKey) {
               /* Not selected yet -> Add to selection */
@@ -458,26 +414,18 @@ const ProcessList: FC<ProcessListProps> = ({
               /* Normal Click */
             } else {
               setSelectionElements([record]);
+              const element = event.target as HTMLElement;
+              //TODO: tagName doesn't work --> give button record prop instead?
+              if (!breakpoint.xl && element.tagName !== 'BUTTON') {
+                router.push(`processes/${record.id}`);
+              }
+              // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);
             }
-
             /* Always */
             setLastProcessId(record?.id);
           },
-          // onClick: (event) => {
-          //   if (event.ctrlKey) {
-          //     if (!selection.includes(record.definitionId)) {
-          //       setSelection([record.definitionId, ...selection]);
-          //     } else {
-          //       setSelection(selection.filter((id) => id !== record.definitionId));
-          //     }
-          //   } else {
-          //     setSelection([record.definitionId]);
-          //   }
-          // },
+
           onDoubleClick: () => {
-            // TODO: This is a hack to clear the parallel route when selecting
-            // another process. (needs upstream fix)
-            //router.refresh();
             router.push(`processes/${record.id}`);
           },
           onMouseEnter: (event) => {

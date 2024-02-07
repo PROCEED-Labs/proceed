@@ -58,8 +58,8 @@ const Content: FC<ContentProps> = ({
                   src={'/proceed-icon.png'}
                   alt="PROCEED Logo"
                   className={styles.Icon}
-                  width={breakpoint.xs ? 85 : 160}
-                  height={breakpoint.xs ? 35 : 63}
+                  width={breakpoint.xs ? 70 : 160}
+                  height={breakpoint.xs ? 30 : 63}
                 />
               </Link>
             </div>

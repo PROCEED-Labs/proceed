@@ -261,108 +261,22 @@ jobs:
           path: ${{ env.DOCKER_PATH_MS_SERVER }}
           tag: ${{ vars.IMAGE_TAG }}
 
-      # - name: Upload MS server build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: PROCEED_Management_System_Server
-      #     path: ${{ env.OUTPUT_PATH_MS_SERVER }}
-
-  # docker:
-  #   strategy:
-  #     matrix:
-  #       # Run a job each for the engine and MS server images
-  #       include:
-  #         - output: PROCEED_Engine
-  #           output_path: OUTPUT_PATH_ENGINE_NODE
-  #           image: proceed/engine
-  #         - output: PROCEED_Management_System_Server
-  #           output_path: DOCKER_PATH_MS_SERVER
-  #           image: proceed/ms-server
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment || 'Staging' }}
-  #   needs:
-  #     - buildEngine
-  #     - buildMS
-  #   steps:
-  #     - name: Download build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: ${{ matrix.output }}
-  #         path: ${{ env[matrix.output_path] }}
-
-  #     - name: Display structure of downloaded files
-  #       run: ls ${{ env[matrix.output_path] }}
-
-  #     - name: Kaniko build
-  #       uses: aevea/action-kaniko@master
-  #       with:
-  #         image: ${{ matrix.image }}
-  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-  #         path: ${{ env[matrix.output_path] }}
-  #         tag: ${{ vars.IMAGE_TAG }}
-
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
     needs: buildMS
-    strategy:
-      matrix:
-        # Run a job each for the engine and MS server images
-        include:
-          # - serviceName: engine
-          - serviceName: management_system
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    #strategy:
+    #  matrix:
+    #    # Run a job each for the engine and MS server images
+    #    include:
+    #      - serviceName: engine
+    #      - serviceName: management_system
     env:
-      ENV: ${{ inputs.environment || 'Staging' }}
-      ENGINE_TAG: ${{ vars.IMAGE_TAG }}
       MS_TAG: ${{ vars.IMAGE_TAG }}
-      LOG_DRIVER: ${{ vars.LOG_DRIVER }}
-      SERVICE_NAME: ${{ matrix.serviceName }}
-    steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/$ENV.key
-          chmod 600 ~/.ssh/$ENV.key
-          cat >>~/.ssh/config <<END
-          Host $ENV
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/$ENV.key
-            StrictHostKeyChecking no
-          END
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-
-      # Pull the latest image
-      - run: ssh $ENV "sudo docker pull proceed/ms-server:$MS_TAG"
-
-      # Stop the container
-      - run: ssh $ENV "sudo docker stop $SERVICE_NAME || true"
-
-      # Remove the container
-      - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
-
-      # Restart the container with the new image
-      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.staging -v /opt/proceed-ms-server/Processes:/app/Processes -v /opt/proceed-ms-server/Storage:/app/Storage proceed/ms-server:$MS_TAG"
-
-      # Remove unused images
-      - run: ssh $ENV "sudo docker image prune -f -a"
-
-  updateCompose:
-    runs-on: ubuntu-latest
-    if: ${{ needs.install.outputs.compose == 'true' }}
-    environment: ${{ inputs.environment || 'Staging' }}
-    needs:
-      - install
-      - deploy
-    env:
-      ENV: ${{ inputs.environment || 'Staging' }}
-      ENGINE_TAG: ${{ vars.IMAGE_TAG }}
-      MS_TAG: ${{ vars.IMAGE_TAG }}
-      LOG_DRIVER: ${{ vars.LOG_DRIVER }}
+      SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -371,32 +285,15 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/$ENV.key
-          chmod 600 ~/.ssh/$ENV.key
-          cat >>~/.ssh/config <<END
-          Host $ENV
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile ~/.ssh/$ENV.key
-            StrictHostKeyChecking no
-          END
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: 'proceed-274611'
+          workload_identity_provider: 'projects/116613464484/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-274611.iam.gserviceaccount.com'
 
-      # clean up data from the old docker compose file on the compute engine if there is any
-      - run: ssh $ENV "sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 down --rmi all || true"
-
-      # copy opa config to compute engine
-      - run: scp src/management-system/opa/config.yaml $ENV:~/opa/config.yaml
-
-      # push new docker compose file to the compute engine
-      - run: scp docker-compose.yml $ENV:~
-
-      # start MS services and the engine (escaped $ to prevent gitlab CI from trying to interpret PWD which can only be determined when the command is run in the compute engine)
-      # TODO: restart when the compute engine restarts
-      - run: ssh $ENV "sudo docker run --rm -e MS_BIND_MOUNT_DIRECTORY="/var/PROCEED/ms-server" -e ENGINE_BIND_MOUNT_DIRECTORY="/var/PROCEED/engine" -e MS_LOG_DRIVER="$LOG_DRIVER" -e ENGINE_LOG_DRIVER="$LOG_DRIVER" -e MS_HTTPS_PORT="${{ inputs.environment == 'Production' && '443' || '33080' }}" -e MS_TAG="$MS_TAG" -e ENGINE_TAG="$ENGINE_TAG" -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD:\$PWD" -w="\$PWD" docker/compose:1.29.0 up -d --remove-orphans"
+      - id: 'deploy'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+          region: 'europe-west3'

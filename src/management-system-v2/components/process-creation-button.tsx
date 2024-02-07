@@ -7,6 +7,7 @@ import ProcessModal from './process-modal';
 import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
+import { useEnvironment } from './auth-can';
 
 type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -24,6 +25,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const router = useRouter();
+  const environmentId = useEnvironment();
 
   const createNewProcess = async (values: { name: string; description: string }[]) => {
     // Invoke the custom handler otherwise use the default server action.
@@ -35,7 +37,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
     setIsProcessModalOpen(false);
 
     if (process && 'id' in process) {
-      router.push(`/processes/${process.id}`);
+      router.push(`/${environmentId}/processes/${process.id}`);
     } else {
       router.refresh();
     }

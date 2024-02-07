@@ -78,7 +78,7 @@ const CreateEnvironmentButton: FC<CreateEnvironmentModalProps> = ({ text }) => {
         </Form>
       </Modal>
       <Button type="primary" onClick={() => setModalOpen(true)}>
-        {text ?? 'Create Organization Environment'}
+        {text ?? 'New Organization'}
       </Button>
     </>
   );

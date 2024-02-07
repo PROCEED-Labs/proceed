@@ -3,7 +3,7 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, Space } from 'antd';
+import { Button, Form, App, Input, Modal, Space, Grid } from 'antd';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
@@ -16,6 +16,7 @@ const AddUsersModal: FC<{
   const environmentId = useEnvironment();
 
   const [form] = Form.useForm();
+  const breakpoint = Grid.useBreakpoint();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch([], form);
@@ -96,9 +97,15 @@ const AddUsersModal: FC<{
         </Form.List>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
-            Add User
-          </Button>
+          {breakpoint.xl ? (
+            <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
+              Add User
+            </Button>
+          ) : (
+            <Button type="text" htmlType="submit" loading={isLoading} disabled={!submittable}>
+              <PlusOutlined />
+            </Button>
+          )}
         </Form.Item>
       </Form>
     </Modal>
@@ -107,13 +114,21 @@ const AddUsersModal: FC<{
 
 const HeaderActions: FC = () => {
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
       <AuthCan action="create" resource="User">
+        {/* TODO: fix icon for float button in button group */}
         <Button type="primary" onClick={() => setCreateUserModalOpen(true)} icon={<PlusOutlined />}>
-          Add User
+          {breakpoint.xl ? (
+            <>
+              <PlusOutlined /> Add User
+            </>
+          ) : (
+            <PlusOutlined />
+          )}
         </Button>
       </AuthCan>
     </>

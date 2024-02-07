@@ -11,8 +11,6 @@ try {
     ),
   );
 
-  console.log('environmentsContent', environmentsContent);
-
   oauthProvidersConfig = {
     NEXTAUTH_SECRET: environmentsContent.nextAuthSecret,
     USE_AUTH0: environmentsContent.useAuth0 ? 'true' : 'false',
@@ -27,7 +25,9 @@ try {
     ([key, value]) => value === undefined && delete oauthProvidersConfig[key],
   );
 } catch (_) {
-  console.error(_);
+  console.info(`No environment configurations where found.
+If you want to use Auth0 clone the environment-configurations folder to src/management-system/src/backend/server/environment-configurations
+    `);
   oauthProvidersConfig = {};
 }
 

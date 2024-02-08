@@ -1,7 +1,7 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
-import { Editor, Viewer } from '@toast-ui/react-editor';
+import type { Editor, Viewer } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
 
 import { EditOutlined } from '@ant-design/icons';

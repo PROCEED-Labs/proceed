@@ -14,6 +14,7 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
+  saveProcessImage,
 } from './legacy/_process';
 import {
   addDocumentation,
@@ -39,6 +40,7 @@ import {
 import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
+import { v4 } from 'uuid';
 
 export const getProcessBPMN = async (definitionId: string) => {
   const { ability } = await getCurrentEnvironment();
@@ -175,6 +177,51 @@ export const updateProcesses = async (
   const firstError = res.find((r) => r && 'error' in r);
 
   return firstError ?? res;
+};
+
+export const addProcessImage = async (definitionsId: string, imageFormData: FormData) => {
+  const { ability } = await getCurrentEnvironment();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionsId];
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update image in this process', UserErrorType.PermissionError);
+  }
+
+  const imageFile = imageFormData.get('image') as File;
+  const imageType = imageFile.type.split('image/').pop();
+  const imageFileName = `_image${v4()}.${imageType}`;
+
+  await saveProcessImage(definitionsId, imageFileName, imageFile);
+
+  return imageFileName;
+};
+
+export const updateProcessImage = async (
+  definitionsId: string,
+  imageFileName: string,
+  imageFormData: FormData,
+) => {
+  const { ability } = await getCurrentEnvironment();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionsId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update image in this process', UserErrorType.PermissionError);
+  }
+
+  const imageFile = imageFormData.get('image') as File;
+
+  await saveProcessImage(definitionsId, imageFileName, imageFile);
 };
 
 export const copyProcesses = async (

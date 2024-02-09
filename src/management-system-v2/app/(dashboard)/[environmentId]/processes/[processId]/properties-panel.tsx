@@ -14,7 +14,7 @@ import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
-import ImageSelection from '@/components/image-selection';
+import ImageSelectionSection from './image-selection-section';
 import PlannedDurationInput from './planned-duration-input';
 import DescriptionSection from './description-section';
 
@@ -153,7 +153,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             marginTop: '1rem',
           }}
         >
-          <ImageSelection metaData={metaData}></ImageSelection>
+          <ImageSelectionSection
+            imageFileName={metaData.overviewImage && metaData.overviewImage.split('/images/').pop()}
+            onImageAdded={(imageFileName) => {
+              updateMetaData('overviewImage', imageFileName);
+            }}
+          ></ImageSelectionSection>
         </div>
       </Space>
 

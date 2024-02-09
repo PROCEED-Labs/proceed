@@ -352,12 +352,14 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'id',
       key: '',
       title: '',
-      render: () => (
+      render: (record: ProcessListProcess) => (
         <Button
           style={{ float: 'right' }}
           type="text"
           onClick={(event) => {
             event.stopPropagation();
+            setSelectionElements([record]);
+            console.log(selection);
             showMobileMetaData();
           }}
         >

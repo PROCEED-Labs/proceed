@@ -47,7 +47,8 @@
     "winston": "^3.3.3",
     "yup": "^0.32.9",
     "zod": "^3.22.4",
-    "zustand": "4.5.0"
+    "zustand": "4.5.0",
+    "react-icons": "5.0.1"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.18.1",

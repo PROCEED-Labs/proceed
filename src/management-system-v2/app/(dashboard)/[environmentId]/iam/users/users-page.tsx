@@ -11,8 +11,6 @@ import { useRouter } from 'next/navigation';
 import { User } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
-import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
-import { useEnvironment } from '@/components/auth-can';
 
 const UsersPage: FC<{ users: User[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();

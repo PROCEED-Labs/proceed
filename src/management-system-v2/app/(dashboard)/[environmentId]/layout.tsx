@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
+import { enableNewMSExecution } from 'FeatureFlags';
+import { LuBoxes } from 'react-icons/lu';
 
 const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } }>> = async ({
   children,
@@ -66,6 +68,27 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
       type: 'divider',
     });
   }
+  if (enableNewMSExecution) {
+    const children: MenuProps['items'] = [];
+
+    children.push({
+      key: 'executions',
+      label: <Link href={`/${activeEnvironment}/executions`}>Instances</Link>,
+      icon: <LuBoxes />,
+    });
+
+    layoutMenuItems.push({
+      key: 'executions-group',
+      label: 'Executions',
+      type: 'group',
+      children,
+    });
+
+    layoutMenuItems.push({
+      key: 'divider-executions',
+      type: 'divider',
+    });
+  }
 
   if (
     ability.can('manage', 'User') ||
@@ -101,7 +124,7 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
     });
   }
 
-  if (ability.can('view', 'Setting')) {
+  if (can('view', 'Setting')) {
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',

@@ -53,7 +53,7 @@ const HeaderActions: FC = () => {
         }}
       >
         <Link href={`/${environmentId}/profile`}>
-          <Avatar src={session.data.user.image}>
+          <Avatar style={{ cursor: 'pointer' }} src={session.data.user.image}>
             {session.data.user.image
               ? null
               : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}

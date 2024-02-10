@@ -73,7 +73,7 @@ const Content: FC<ContentProps> = ({
               <Button
                 className={styles.Hamburger}
                 type="text"
-                style={{ marginTop: '20px', marginLeft: '15px' }}
+                style={{ marginTop: '20px' }}
                 icon={<MenuOutlined style={{ fontSize: '170%' }} />}
                 onClick={() => setMobileDrawerOpen(true)}
               />

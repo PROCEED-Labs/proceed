@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import { User, UserData, UserDataSchema, UserInput, UserSchema } from '../../user-schema';
+import { User, UserData, UserDataSchema, CreateUserInput, UserSchema } from '../../user-schema';
 import { addEnvironment } from './environments';
 
 // @ts-ignore
@@ -19,19 +19,22 @@ export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
 }
 
 export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = Object.values(usersMetaObject).find((user) => email === user.email);
+  const user = Object.values(usersMetaObject).find((user) => !user.guest && email === user.email);
 
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }
 
-export function addUser(inputUser: UserInput) {
+export function addUser(inputUser: CreateUserInput) {
   const user = UserSchema.parse(inputUser);
 
   if (
+    !user.guest &&
     Object.values(usersMetaObject).find(
-      ({ email, username }) => email === user.email || username === user.username,
+      (existingUser) =>
+        !existingUser.guest &&
+        (existingUser.email === user.email || existingUser.username === user.username),
     )
   )
     throw new Error('User with this email or username already exists');
@@ -48,7 +51,7 @@ export function addUser(inputUser: UserInput) {
   usersMetaObject[user.id as string] = user as User;
   store.add('users', user);
 
-  return user;
+  return user as User;
 }
 
 export function deleteuser(userId: string) {
@@ -63,21 +66,25 @@ export function deleteuser(userId: string) {
 }
 
 export function updateUser(userId: string, inputUser: UserData) {
-  const newUserData = UserDataSchema.partial().parse(inputUser);
-
   const user = getUserById(userId, { throwIfNotFound: true });
+
+  if (user.guest) throw new Error('Guest users cannot be updated');
+
+  const newUserData = UserDataSchema.partial().parse(inputUser);
 
   if (
     Object.values(usersMetaObject).find(
-      ({ email, username, id }) =>
-        id != userId && (email === userData.email || username === userData.username),
+      (existingUser) =>
+        !existingUser.guest &&
+        existingUser.id != userId &&
+        (existingUser.email === userData.email || existingUser.username === userData.username),
     )
   )
     throw new Error('User with this email or username already exists');
 
   const userData = { ...user, ...newUserData };
 
-  usersMetaObject[user.id as string] = userData;
+  usersMetaObject[user.id] = userData;
   store.update('users', userId, userData);
 
   return user;

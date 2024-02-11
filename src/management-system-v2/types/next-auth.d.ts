@@ -1,13 +1,19 @@
+import { User } from '@/lib/data/user-schema';
 import NextAuth from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 
-export type User = {
+export type NextAuthUser = (
+  | {
+    email: string;
+    image?: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+    guest: false;
+  }
+  | { guest: true }
+) & {
   id: string;
-  email: string;
-  image: string;
-  firstName: string;
-  lastName: string;
-  username: string;
 };
 
 declare module 'next-auth' {
@@ -17,6 +23,10 @@ declare module 'next-auth' {
   interface Session {
     user: User;
     csrfToken: string;
+  }
+
+  interface User {
+    guest: boolean;
   }
 }
 

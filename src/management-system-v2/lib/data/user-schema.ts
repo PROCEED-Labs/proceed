@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { WithRequired } from '../typescript-utils';
 
 export const UserDataSchema = z.object({
   email: z.string().email(),
@@ -20,13 +19,22 @@ export const UserDataSchema = z.object({
     .regex(/^[^\s]+$/, 'The Username cannot contain spaces')
     .min(1, 'The Username must be at least 1 character long')
     .max(35, 'The Username cannot be longer than 35 characters'),
-});
-
-export const UserSchema = UserDataSchema.extend({
   id: z.string().optional(),
   oauthProvider: z.string(),
+  guest: z.literal(false).readonly(),
+});
+export type UserData = z.infer<typeof UserDataSchema>;
+
+export const UnauthenticatedUserSchema = z.object({
+  id: z.string().optional(),
+  oauthProvider: z.literal('guest-loguin').readonly(),
+  guest: z.literal(true).readonly(),
 });
 
-export type UserData = z.infer<typeof UserDataSchema>;
-export type UserInput = z.infer<typeof UserSchema>;
-export type User = WithRequired<UserInput, 'id'>;
+export const UserSchema = z.union([UserDataSchema, UnauthenticatedUserSchema]);
+
+export type CreateUserInput = z.infer<typeof UserSchema>;
+
+export type AuthenticatedUser = UserData & { id: string };
+export type GuestUser = z.infer<typeof UnauthenticatedUserSchema> & { id: string };
+export type User = AuthenticatedUser | GuestUser;

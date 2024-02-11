@@ -3,6 +3,7 @@ import store from '../store.js';
 import Ability from '@/lib/ability/abilityHelper';
 import { environmentsMetaObject } from './environments';
 import { v4 } from 'uuid';
+import { usersMetaObject } from './users';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -79,6 +80,10 @@ export function addMember(environmentId: string, userId: string, ability?: Abili
 
   // TODO: ability check
   if (ability) ability;
+
+  const user = usersMetaObject[userId];
+  if (!user) throw new Error('User not found');
+  if (user.guest) throw new Error('Guest users cannot be added to environments');
 
   const members = membershipMetaObject[environmentId];
 

@@ -9,6 +9,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
+import UserAvatar from '@/components/user-avatar';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
@@ -76,27 +77,31 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         <Card className={styles.Card} style={{ margin: 'auto' }}>
           <Typography.Title level={3}>Account Information</Typography.Title>
 
-          <Avatar size={64} src={userData.image || undefined} style={{ marginBottom: 16 }}>
-            {userData.image ? null : userData.firstName.slice(0, 1) + userData.lastName.slice(0, 1)}
-          </Avatar>
+          <UserAvatar
+            user={userData}
+            avatarProps={{
+              size: 120,
+              style: { marginBottom: 120 },
+            }}
+          />
 
           <Table
             dataSource={[
               {
                 title: 'Name',
-                value: `${(userData && userData.firstName) || ''} ${
-                  (userData && userData.lastName) || ''
+                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
+                  !userData.guest ? userData.lastName : ''
                 }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 title: 'Username',
-                value: userData && userData.username,
+                value: !userData.guest ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 title: 'Email',
-                value: userData && userData.email,
+                value: !userData.guest ? userData.email : 'Guest',
                 action: () => setChangeEmailModalOpen(true),
               },
             ]}

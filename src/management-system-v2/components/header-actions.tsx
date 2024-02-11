@@ -6,6 +6,7 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { FC } from 'react';
 import { useEnvironment } from './auth-can';
+import UserAvatar from './user-avatar';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -53,11 +54,7 @@ const HeaderActions: FC = () => {
         }}
       >
         <Link href={`/${environmentId}/profile`}>
-          <Avatar src={session.data.user.image}>
-            {session.data.user.image
-              ? null
-              : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
-          </Avatar>
+          <UserAvatar user={session.data.user} />
         </Link>
       </Dropdown>
     </Space>

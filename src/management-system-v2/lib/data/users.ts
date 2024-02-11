@@ -15,14 +15,6 @@ export async function deleteUser() {
   }
 }
 
-export async function addUser(user: Parameters<typeof _addUser>[0]) {
-  try {
-    return _addUser(user);
-  } catch (_) {
-    return userError('Error adding user');
-  }
-}
-
 export async function updateUser(newUserData: UserData) {
   try {
     const { userId } = await getCurrentUser();

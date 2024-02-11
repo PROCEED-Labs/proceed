@@ -5,10 +5,12 @@ import { Space, Avatar, Button, Table, Result } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
-  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+type _ListUser = Partial<
+  Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
+> &
+  Pick<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'

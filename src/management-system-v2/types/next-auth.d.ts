@@ -4,13 +4,13 @@ import { JWT } from 'next-auth/jwt';
 
 export type NextAuthUser = (
   | {
-    email: string;
-    image?: string;
-    firstName: string;
-    lastName: string;
-    username: string;
-    guest: false;
-  }
+      email: string;
+      image?: string;
+      firstName: string;
+      lastName: string;
+      username: string;
+      guest: false;
+    }
   | { guest: true }
 ) & {
   id: string;
@@ -23,10 +23,6 @@ declare module 'next-auth' {
   interface Session {
     user: User;
     csrfToken: string;
-  }
-
-  interface User {
-    guest: boolean;
   }
 }
 

@@ -8,11 +8,11 @@ import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserSidePanel from './user-side-panel';
 import { useRouter } from 'next/navigation';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
 
-const UsersPage: FC<{ users: User[] }> = ({ users }) => {
+const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
   const [deletingUser, startTransition] = useTransition();

@@ -49,6 +49,7 @@ export function getDefaultProcessMetaInfo() {
     lastEdited: date,
     shared: false,
     sharedAs: undefined,
+    shareTimeStamp: 0,
     versions: [],
   } as ProcessMetadata;
 }

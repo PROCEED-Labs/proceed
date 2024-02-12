@@ -49,6 +49,10 @@ const nextConfig = {
     return config;
   },
   env: {
+    JWT_SHARE_SECRET:
+      process.env.NODE_ENV === 'development'
+        ? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='
+        : process.env.JWT_SHARE_SECRET,
     API_URL:
       process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
     BACKEND_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:33080' : 'FIXME',

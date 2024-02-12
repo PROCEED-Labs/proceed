@@ -170,7 +170,6 @@ export async function updateProcessMetaData(
   metaChangesInput: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
   const metaChanges = ProcessInputSchema.partial().parse(metaChangesInput);
-
   checkIfProcessExists(processDefinitionsId);
 
   const newMetaData = {
@@ -192,6 +191,7 @@ export async function updateProcessMetaData(
 
   newMetaData.shared = metaChanges.shared;
   newMetaData.sharedAs = metaChanges.sharedAs;
+  if (metaChanges.shareTimeStamp) newMetaData.shareTimeStamp = metaChanges.shareTimeStamp;
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 

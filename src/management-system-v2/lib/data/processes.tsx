@@ -42,6 +42,8 @@ import { revalidatePath } from 'next/cache';
 export const getProcess = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
 
+  /* TODO: Add ability check */
+
   // Get ability again since it might have changed.
   //const { ability } = await getCurrentUser();
 

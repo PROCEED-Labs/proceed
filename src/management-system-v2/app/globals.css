@@ -147,3 +147,9 @@
 .group .separator {
   display: none;
 }
+
+@media print {
+  .ant-tooltip {
+    display: none !important;
+  }
+}

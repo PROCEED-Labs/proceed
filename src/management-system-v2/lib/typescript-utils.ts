@@ -52,3 +52,9 @@ export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
  */
 export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = Omit<T, K> &
   Partial<Pick<T, K>>;
+
+/**
+ * Allows typescript to narrow filter functions to truthy values
+ * Found here: https://stackoverflow.com/a/63541957
+ */
+export const truthyFilter = <T>(x: T | false | undefined | null | '' | 0): x is T => !!x;

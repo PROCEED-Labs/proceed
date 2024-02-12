@@ -38,7 +38,6 @@ const Layout: FC<LayoutProps> = ({ children, hideSider }) => {
   return (
     <AntLayout style={{ height: '100vh' }}>
       <AntLayout hasSider>
-        {' '}
         {!hideSider && (
           <AntLayout.Sider
             style={{

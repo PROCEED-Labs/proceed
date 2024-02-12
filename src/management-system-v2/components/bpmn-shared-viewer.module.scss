@@ -1,6 +1,27 @@
 .ProcessOverview {
   @media print {
     display: flex;
+    font-size: 20px;
+  }
+
+  :global(h1.ant-typography) {
+    font-size: 4em;
+    text-align: center;
+    padding-top: 20px;
+    font-weight: 500;
+  }
+
+  :global(h2.ant-typography) {
+    font-size: 3em;
+    margin-bottom: 2em;
+    font-weight: 500;
+    margin-bottom: 60px;
+  }
+
+  :global(h3.ant-typography) {
+    font-size: 2em;
+    margin-bottom: 1.5em;
+    font-weight: 500;
   }
 
   :global(.ant-layout-header) {
@@ -17,27 +38,123 @@
 
   :global(.ant-layout-content) {
     padding: 0;
-    overflow-y: scroll;
+    overflow-x: hidden;
     background-color: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    @media print {
+      overflow: visible;
+    }
+  }
+
+  .PrintHeader {
+    display: none;
+
+    @media print {
+      display: table-header-group;
+    }
+
+    td {
+      display: flex;
+
+      justify-content: flex-end;
+      padding: 10px 10px;
+      text-align: right;
+    }
+  }
+
+  .MainContent {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-y: auto;
+    height: 100%;
+    width: 100vw;
 
     @media print {
       overflow-y: visible;
+      padding: 0 40pt 0 40pt;
+      box-sizing: border-box;
+    }
+
+    .ProcessInfoCol {
+      height: fit-content;
+      background-color: rgb(241, 241, 241);
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    .ContentTableCol {
+      max-width: 320px;
+      padding: 0 10px 0 0;
+
+      @media print {
+        display: none;
+      }
     }
   }
 
   .ProcessDocument {
-    width: 70vw;
+    // TODO Bug: big processes with additional information will not be printed correctly
+    width: 95%;
+    max-width: 1200px;
+    background-color: white;
+    height: 100%;
+
     @media print {
+      max-width: 100%;
       width: 100%;
-      background-color: white;
+    }
+
+    .TitlePage {
+      @media print {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+
+    .TitleInfos {
+      margin-bottom: 80pt;
+      @media print {
+        margin-top: 80pt;
+        padding: 20pt 0;
+        border-top: 2pt solid;
+        border-bottom: 2pt solid;
+      }
+
+      div {
+        font-size: 1.3em;
+      }
     }
 
     margin: 0 auto;
-    background-color: rgb(238, 243, 245);
+    // background-color: rgb(238, 243, 245);
   }
 
   .TableOfContents {
-    break-before: always;
+    break-after: always;
+    margin-bottom: 80pt;
+    display: none;
+
+    @media print {
+      display: block;
+    }
+
+    ul {
+      list-style-type: none;
+    }
+
+    ul a {
+      color: black;
+    }
+
+    ul {
+      font-size: 21px;
+    }
   }
 
   .ContainerPage {
@@ -48,20 +165,20 @@
   .ContainerPage {
     width: 100%;
 
+    margin-top: 7dvh;
+
+    @media print {
+      margin-top: 0;
+    }
+
     .ElementOverview {
       .ElementCanvas {
         display: flex;
         justify-content: center;
 
-        // @media print {
-        //   max-width: 90vw;
-        //   max-height: 40vh;
-        //   background-color: red;
-        // }
-
         @media print {
-          max-height: 60vh;
-          width: 100vw;
+          max-height: 95%;
+          width: 100%;
         }
 
         :global(svg) {
@@ -69,25 +186,35 @@
           height: 100%;
         }
       }
+
+      margin-bottom: 50px;
+      break-inside: avoid;
     }
 
     .ElementMilestones {
+      margin-bottom: 50px;
       :global(.toastui-editor-contents table) {
         width: 100% !important;
       }
     }
 
     .ElementDescription {
+      width: 90%;
+      margin: auto;
+      margin-bottom: 50px;
       :global(.toastui-editor-contents table) {
         width: 100% !important;
       }
     }
+
+    .ElementMeta {
+      margin-bottom: 50px;
+    }
   }
 }
 
-@media print {
-  @page {
-    size: a4;
-    margin: 5pt;
-  }
+@page {
+  size: a4;
+  // margin: 80pt 40pt 60pt 40pt;
+  margin: 0pt 0pt 60pt 0pt;
 }

@@ -110,6 +110,41 @@ export async function getSVGFromBPMN(
 }
 
 /**
+ * Places title elements on each svg representation of a bpmn element to show its name or id
+ * Optionally wraps the element in an anchor tag to allow linking from the svg
+ *
+ * @param svg
+ * @param getNameOfEl function that returns the name of an element with a specific id when possible
+ * @param createLink function that creates a link string from an elements id
+ * @returns the svg with added title and optionally also added anchor elements
+ */
+export function addTooltipsAndLinksToSVG(
+  svg: string,
+  getNameOfEl: (id: string) => string | undefined,
+  createLink?: (id: string) => string,
+) {
+  const svgDom = new DOMParser().parseFromString(svg, 'image/svg+xml');
+  const domEls = svgDom.querySelectorAll(`[data-element-id]`);
+  Array.from(domEls).forEach((el) => {
+    // add a title to the svg element so a user can see its id or name when hovering over it
+    const elementId = el.getAttribute('data-element-id') as string;
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = getNameOfEl(elementId) || `<${elementId}>`;
+    el.appendChild(title);
+    if (createLink) {
+      const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+      // wrapping the parent g element in a link to link to the correct subchapter (wrapping the element itself leads to container elements not being rendered correctly)
+      el?.parentElement?.parentElement?.appendChild(link);
+      link.appendChild(el.parentElement as Element);
+      link.setAttribute('href', createLink(elementId));
+    }
+  });
+  svg = new XMLSerializer().serializeToString(svgDom);
+
+  return svg;
+}
+
+/**
  * Returns the dimensions of a vector-image
  *
  * @param svg the svg string to get the size from

@@ -16,11 +16,17 @@ export async function GET(
   const process = processMetaObjects[processId];
 
   if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+    return new NextResponse(null, {
+      status: 404,
+      statusText: 'Process with this id does not exist.',
+    });
   }
 
   if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to view image in this process', UserErrorType.PermissionError);
+    return new NextResponse(null, {
+      status: 403,
+      statusText: 'Not allowed to view image in this process',
+    });
   }
 
   const image = await getProcessImage(processId, imageFileName);

@@ -5,7 +5,7 @@ import styles from './text-editor.module.scss';
 import dynamic from 'next/dynamic';
 
 // Editor uses `navigator` in top level scope, which is not available in server side rendering.
-const Editor = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Editor), {
+const ToastUIEditor = dynamic(() => import('./toastui-editor').then((res) => res.ToastUIEditor), {
   ssr: false,
 });
 
@@ -26,8 +26,8 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
 
   return (
     <div className={styles.EditorContainer}>
-      <Editor
-        ref={editorRef}
+      <ToastUIEditor
+        editorRef={editorRef}
         previewStyle="tab"
         autofocus={true}
         viewer={true}
@@ -52,7 +52,7 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
           size="small"
           type="card"
           onChange={(value) => {
-            const editor = editorRef.current as Editor;
+            const editor = editorRef.current as EditorClass;
             const editorInstance = editor.getInstance();
             if (value === 'source') {
               editorInstance.changeMode('markdown');

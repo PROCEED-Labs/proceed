@@ -8,6 +8,7 @@ import { EditOutlined } from '@ant-design/icons';
 
 import { Divider, Grid, Modal, Space } from 'antd';
 import TextEditor from '@/components/text-editor';
+import TextViewer from '@/components/text-viewer';
 
 const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
   const description =
@@ -66,7 +67,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
         ></EditOutlined>
       </Divider>
       <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
-        <Viewer ref={viewerRef} initialValue={description}></Viewer>
+        <TextViewer ref={viewerRef} initialValue={description}></TextViewer>
       </div>
 
       <Modal

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { createRef, useEffect, useState } from 'react';
 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './milestone-selection-section.module.scss';
@@ -10,7 +10,7 @@ import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helpe
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
-import { Editor } from '@toast-ui/react-editor';
+import { Editor, Viewer } from '@toast-ui/react-editor';
 import TextEditor from '@/components/text-editor';
 import TextViewer from '@/components/text-viewer';
 
@@ -201,7 +201,15 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
               dataIndex: 'description',
               key: 'description',
               render: (description) => {
-                return <TextViewer initialValue={description}></TextViewer>;
+                const viewerRef = createRef<Viewer>();
+                if (viewerRef.current && description) {
+                  const viewer = viewerRef.current as Viewer;
+                  const viewerInstance = viewer.getInstance();
+
+                  viewerInstance.setMarkdown(description);
+                }
+
+                return <TextViewer ref={viewerRef} initialValue={description}></TextViewer>;
               },
             },
             {

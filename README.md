@@ -9,7 +9,7 @@ Thereby, all machines communicate their capabilities to the vicinity and the pro
 
 There are two main components in PROCEED:
 
-1. the _Management System_ (MS): here you can create IoT processes and monitor the execution. This is a desktop application available for Linux, Windows and Mac.
+1. the _Management System_ (MS): here you can create IoT processes and monitor the execution. This is a web application optimized for all major desktop and mobile browsers.
 2. the _Distributed Process Engine_ (DPE, or just Engine): this components accepts process steps and executes them. Moreover, it manages the underlying Machine, interacts with other Engines and communicates the Machine's capabilities. The DPE is available for many platforms and can easily be ported to missing architectures with our platform-independent framework.
 
 For more information, have a look at the documentation: https://docs.proceed-labs.org/ .
@@ -20,10 +20,10 @@ There, you can also [download nightly builds](https://docs.proceed-labs.org/down
 We started with a small developer team based on a research project.
 The requirements are still driven by research projects, but we are also very open for community feedback and contributions.
 
-Currently, we mainly organize our development tasks with [Trello](https://trello.com/b/9FsPcQhv).
+Currently, we mainly organize our development tasks with [Issues](https://github.com/orgs/PROCEED-Labs/projects/1).
 If you have ideas or find bugs, please create a an [Issue](https://github.com/PROCEED-Labs/proceed/issues).
 We are very open for help and project contributions.
-Regularly there are on-boarding development workshops and, if you are interested, we have weekly video calls on Thursday with all developers.
+Regularly there are on-boarding development workshops and, if you are interested, we have weekly video calls on Monday with all developers.
 
 We've created [many Wiki pages](https://github.com/PROCEED-Labs/proceed/wiki) for a better understanding of the internals.
 For development you should start with looking at the [Hints for Installation and Configuration with our preferred tools](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and afterwards read the [Contribution information](https://github.com/PROCEED-Labs/proceed/wiki/Contribution)
@@ -35,13 +35,13 @@ For further information, just contact us: proceed@snet.tu-berlin.de
 This project is organized as a Mono-Repo and contains multiple software project developed by PROCEED:
 
 - the PROCEED Engine (DPE) for Win, Linux, Mac, Android, iOS, Browser, MCUs
-- the Management System (MS) as a Desktop and Server version
+- the Management System (MS) as a NextJS Web App
 - Machine Capabilities
 - supporting libraries/modules
 
 ## Install Development Software
 
-To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v12.18.
+To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v20.11.0.
 
 For further information about installation and configuration of our favorite development environment, [see the Wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and [the debugging configuration](https://github.com/PROCEED-Labs/proceed/wiki/Debugging).
 
@@ -50,19 +50,20 @@ For further information about installation and configuration of our favorite dev
 After cloning the repository, you need to install the PROCEED project dependencies and all third-party libraries. Run the following command in the root directory of the repo:
 
 ```
-yarn install
+yarn global add node-gyp
+yarn install --ignore-engines
 ```
-
-**Docker Installation**
-Make sure Docker is installed on your system. If not, you can download and install Docker from the official website: (https://docs.docker.com)
-
-Ensure the Docker daemon is running on your system.
 
 This will install all modules and their dependencies inside `node_modules/`
 
 > Note: On macOS catalina there might be an error message popping up during the install step involving node-gyp. If it says "no xcode or clt version detected" then follow the steps from [this page of the node-gyp repo](https://github.com/nodejs/node-gyp/blob/master/macOS_Catalina.md) to resolve this problem.
 
 For the Engine and the Management System there are _development_ and _build_ commands configured in the `package.json` file.
+
+**Docker Installation**
+Make sure Docker is installed on your system. If not, you can download and install Docker from the official website: (https://docs.docker.com)
+
+Ensure the Docker daemon is running on your system.
 
 ## Development
 
@@ -86,14 +87,8 @@ yarn dev-engine-web
 // NextJS frontend
 yarn dev-ms
 
-// API
-yarn dev-ms-api
-
 // NextJS frontend without Authentication & Authorization
 yarn dev-ms-no-iam
-
-// API frontend without Authentication & Authorization
-yarn dev-ms-api-no-iam
 ```
 
 **Old Vue Management System:**
@@ -113,7 +108,7 @@ _Server version:_ If successful, this automatically starts a Chrome/Chromium bro
 
 **Authentication & Authorization**
 
-When you start the API with `yarn dev-ms-api`, you can log in with two default users just by typing their name in the 'Sign in with Development Users' section:
+When you start the new MS with `yarn dev-ms`, you can log in with two default users just by typing their name in the 'Sign in with Development Users' section:
 
 - Admin: With the username `admin`.
 - John Doe: With the username `johndoe`.
@@ -164,17 +159,11 @@ The results will be generated inside the `/build/engine/` folder.
 **Management System:**
 
 ```
-// Desktop Linux and Windows
+// NextJS standalone build
 yarn build-ms
-
-// Desktop MacOS (on a Mac)
-yarn build-ms-mac
-
-// Server
-yarn build-ms-server
 ```
 
-The results will be generated inside the `/build/management-system/*` folder.
+The results will be generated inside the `/src/management-system-v2/.next/*` folder.
 
 ## Generate JSDoc API
 

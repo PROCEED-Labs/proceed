@@ -1,14 +1,15 @@
 'use client';
 
 import { UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Space, Tooltip } from 'antd';
+import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { FC } from 'react';
+import { useEnvironment } from './auth-can';
 
 const HeaderActions: FC = () => {
-  const router = useRouter();
   const session = useSession();
+  const environmentId = useEnvironment();
   const loggedIn = session.status === 'authenticated';
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {
@@ -35,13 +36,30 @@ const HeaderActions: FC = () => {
         <u>Logout</u>
       </Button>
 
-      <Tooltip title={loggedIn ? 'Account Settings' : 'Log in'}>
-        <Avatar src={session.data.user.image} onClick={() => router.push('/profile')}>
-          {session.data.user.image
-            ? null
-            : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
-        </Avatar>
-      </Tooltip>
+      <Dropdown
+        menu={{
+          items: [
+            {
+              key: 'profile',
+              title: 'Account Settings',
+              label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
+            },
+            {
+              key: 'environments',
+              title: 'My environments',
+              label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
+            },
+          ],
+        }}
+      >
+        <Link href={`/${environmentId}/profile`}>
+          <Avatar style={{ cursor: 'pointer' }} src={session.data.user.image}>
+            {session.data.user.image
+              ? null
+              : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
+          </Avatar>
+        </Link>
+      </Dropdown>
     </Space>
   );
 };

@@ -22,12 +22,12 @@ type MetaDataType = {
   data?: ProcessListProcess[];
   selection: Key[];
 };
-
-const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
+export type MetaPanelRefType = () => void;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
-const MetaData: FC<MetaDataType> = ({ data, selection }) => {
+const MetaData: FC<MetaDataType> = ({ data, selection }, ref) => {
   const addPreferences = useUserPreferences.use.addPreferences();
+  const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
   const hydrated = useUserPreferences.use._hydrated();
 
@@ -41,42 +41,13 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
     }
     addPreferences({
       'process-meta-data': {
-        open: !showInfo,
+        open: !useUserPreferences.getState().preferences['process-meta-data'].open,
         width: sidepanelWidth,
       },
     });
   };
 
-  /* Necessary for Firefox BPMN.js Viewer fix */
-  /* const [showViewer, setShowViewer] = useState(showInfo); */
-
-  /* Fix for firefox: */
-  /* useEffect(() => {
-    const panelWidth = getWidth();
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (showInfo) {
-      // Delay the rendering of Viewer
-      timeoutId = setTimeout(() => {
-        setShowViewer(true);
-
-        //  set width of parent component (resizable element) to 450 which is the desired with of the collapsed card
-        if (resizableElementRef.current) {
-          resizableElementRef.current(panelWidth);
-        }
-      }, 350); // Transition duration + 50ms
-    } else {
-      setShowViewer(false);
-
-      //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
-      if (resizableElementRef.current) {
-        resizableElementRef.current(30);
-      }
-    }
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [showInfo]); */
+  useImperativeHandle(ref, () => collapseCard);
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
 
@@ -84,8 +55,10 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
 
   return (
     <ResizableElement
-      initialWidth={showInfo ? getWidth() : 30}
-      minWidth={300}
+      initialWidth={
+        showInfo ? useUserPreferences.getState().preferences['process-meta-data'].width : 30
+      }
+      minWidth={showInfo ? 300 : 30}
       maxWidth={600}
       style={{
         // position: 'relative',
@@ -103,6 +76,7 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
         })
       }
       ref={resizableElementRef}
+      lock={!showInfo}
     >
       <CollapsibleCard
         title={
@@ -119,4 +93,4 @@ const MetaData: FC<MetaDataType> = ({ data, selection }) => {
   );
 };
 
-export default MetaData;
+export default forwardRef(MetaData);

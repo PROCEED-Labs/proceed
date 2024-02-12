@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getCurrentUser } from './components/auth';
+import { withAuth } from 'next-auth/middleware';
 
-/* This middleware is to be used only with ngrok to inject the "ngrok-skip-browser-warning" header
-   inorder to bypass the CORS policy errors.
-   (Dev mode only)
-*/
-export async function middleware(request: NextRequest) {
-  const requestHeaders = new Headers(request.headers);
+export default withAuth(
+  // `withAuth` augments your `Request` with the user's token.
+  function middleware(req) {
+    const userId = req.nextauth.token?.user.id;
 
-  requestHeaders.set('ngrok-skip-browser-warning', 'true');
+    if (userId)
+      return NextResponse.redirect(new URL(`/${encodeURIComponent(userId)}/processes`, req.url));
 
-  const path = request.nextUrl.pathname.split('/proxy/')[1];
-  const url = `${process.env.BACKEND}/api/${path}`;
+    return NextResponse.redirect(new URL('/api/auth/signin', req.url));
+  },
+);
 
-  const response = NextResponse.rewrite(url, {
-    headers: requestHeaders,
-  });
-
-  return response;
-}
-export const config = {
-  matcher: '/proxy/:path*',
-};
+export const config = { matcher: ['/'] };

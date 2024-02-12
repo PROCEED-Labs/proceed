@@ -1,10 +1,10 @@
-import { ComponentProps, FC, PropsWithChildren, forwardRef, useState } from 'react';
-import { Button, Modal, Tooltip } from 'antd';
+import { ComponentProps, FC, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
+import { Button, Modal, Tooltip, Typography } from 'antd';
 
 type ConfirmationModalProps = PropsWithChildren<{
   onConfirm: () => Promise<any> | any;
   title: string;
-  description: string;
+  description: ReactNode;
   canCloseWhileLoading?: boolean;
   modalProps?: Omit<
     ComponentProps<typeof Modal>,
@@ -64,8 +64,13 @@ const ConfirmationButton = forwardRef<HTMLElement, ConfirmationModalProps>(
             ((canCloseWhileLoading || !loading) && setModalOpen(false)) || onExternalClose?.()
           }
           cancelButtonProps={{ disabled: !canCloseWhileLoading && loading }}
+          destroyOnClose={true}
         >
-          <p>{description}</p>
+          {typeof description === 'string' ? (
+            <Typography.Text>{description}</Typography.Text>
+          ) : (
+            description
+          )}
         </Modal>
 
         <Tooltip title={tooltip}>

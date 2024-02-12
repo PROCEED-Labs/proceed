@@ -167,9 +167,8 @@ export async function updateProcess(
  * parsing the bpmn unnecessarily */
 export async function updateProcessMetaData(
   processDefinitionsId: string,
-  metaChangesInput: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  const metaChanges = ProcessInputSchema.partial().parse(metaChangesInput);
   checkIfProcessExists(processDefinitionsId);
 
   const newMetaData = {

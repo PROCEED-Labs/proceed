@@ -18,9 +18,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess } from '@/lib/data/processes';
+import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
+import ModelerShareModalButton from './modeler-share-modal';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -45,7 +47,19 @@ const ModelerToolbar = ({
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
+  const [preselectedExportType, setPreselectedExportType] = useState<
+    ProcessExportOptions['type'] | undefined
+  >();
 
+  const getProcessData = () => {
+    return getProcess(processId as string)
+      .then((processData) => {
+        return processData;
+      })
+      .catch((error) => {
+        console.error('Error fetching process data:', error);
+      });
+  };
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
@@ -94,6 +108,14 @@ const ModelerToolbar = ({
     }
 
     setShowProcessExportModal(!showProcessExportModal);
+  };
+
+  const handleProcessExportModalToggleMobile = async (
+    preselectedExportType: ProcessExportOptions['type'],
+  ) => {
+    setPreselectedExportType(preselectedExportType);
+    setShowProcessExportModal(!showProcessExportModal);
+    //await handleProcessExportModalToggle();
   };
 
   const query = useSearchParams();
@@ -197,6 +219,11 @@ const ModelerToolbar = ({
                   onClick={handlePropertiesPanelToggle}
                 ></Button>
               </Tooltip>
+              <ModelerShareModalButton
+                onExport={handleProcessExportModalToggle}
+                onExportMobile={handleProcessExportModalToggleMobile}
+                processData={getProcessData}
+              />
               {!showMobileView && (
                 <>
                   <Tooltip title="Show XML">
@@ -211,6 +238,7 @@ const ModelerToolbar = ({
                 </>
               )}
             </ToolbarGroup>
+
             {showPropertiesPanel && selectedElement && (
               <PropertiesPanel
                 isOpen={showPropertiesPanel}
@@ -237,6 +265,8 @@ const ModelerToolbar = ({
         }
         onClose={() => setShowProcessExportModal(false)}
         giveSelectionOption={!!elementsSelectedForExport.length}
+        preselectedExportType={preselectedExportType}
+        resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
     </>
   );

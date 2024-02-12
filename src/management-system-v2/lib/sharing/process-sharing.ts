@@ -2,7 +2,7 @@
 
 import jwt from 'jsonwebtoken';
 import { getProcessMetaObjects, updateProcessMetaData } from '@/lib/data/legacy/_process';
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
 
@@ -22,7 +22,7 @@ export async function updateProcessGuestAccessRights(
   processId: string | string[],
   newMeta: ProcessGuestAccessRights,
 ) {
-  const { ability } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment();
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId as string];

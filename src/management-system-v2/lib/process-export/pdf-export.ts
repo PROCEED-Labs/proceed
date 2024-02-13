@@ -192,7 +192,7 @@ async function pdfExport(
 
   if (zip) {
     zip.file(`${processData.definitionName}.pdf`, await pdf.output('blob'));
-  } else if (useWebshareApi && navigator.share !== undefined) {
+  } else if (useWebshareApi && 'canShare' in navigator) {
     try {
       await navigator.share({
         files: [
@@ -203,7 +203,7 @@ async function pdfExport(
       });
     } catch (err: any) {
       if (!err.toString().includes('AbortError')) {
-        throw new Error('Error: ', { cause: err });
+        throw new Error(err);
       }
     }
   } else {

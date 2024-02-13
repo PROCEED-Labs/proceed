@@ -188,7 +188,7 @@ const TabCard: FC<TabCardProps> = ({
         setLastProcessId(item?.id);
       }}
       onDoubleClick={() => {
-        router.push(`/processes/${item.id}`);
+        router.push(`processes/${item.id}`);
       }}
     >
       {generateContentList(item, isVisible)[activeTabKey]}

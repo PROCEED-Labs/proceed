@@ -28,14 +28,14 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
   );
   const blob = await getPNGFromSVG(svg, 3);
 
-  if (navigator.share) {
+  if ('canShare' in navigator) {
     try {
       await navigator.share({
         files: [new File([blob], 'diagram.png', { type: 'image/png' })],
       });
     } catch (err: any) {
       if (!err.toString().includes('AbortError')) {
-        throw new Error('Error: ', { cause: err });
+        console.log('error occurred while sharing... ', err);
       }
     }
   } else {

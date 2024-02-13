@@ -33,6 +33,6 @@ export async function copyProcessImage(modeler: BPMNCanvasRef) {
       message.success('Diagram copied to clipboard');
     });
   } catch (error) {
-    message.error(`${error}`);
+    message.error(`Error while copying the diagram`);
   }
 }

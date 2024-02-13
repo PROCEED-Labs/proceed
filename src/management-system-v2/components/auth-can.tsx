@@ -7,7 +7,7 @@ import { Route } from 'next';
 import { AbilityRule, ResourceActionType } from '@/lib/ability/caslAbility';
 import { PackRule } from '@casl/ability/extra';
 import { useCsrfTokenStore } from '@/lib/csrfTokenStore';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Ability from '@/lib/ability/abilityHelper';
 
 export type AuthCanProps = {
@@ -67,4 +67,10 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   if (allow) return children;
 
   return fallback || null;
+};
+
+export const useEnvironment = () => {
+  const pathname = usePathname();
+  const environmentId = pathname.split('/')[1];
+  return decodeURIComponent(environmentId);
 };

@@ -6,6 +6,8 @@ export const ProcessInputSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   shared: z.boolean().optional(),
+  sharedAs: z.string().optional(),
+  shareTimeStamp: z.number().optional(),
   originalId: z.string().optional(),
 });
 export type ProcessInput = z.infer<typeof ProcessInputSchema>;

@@ -38,10 +38,7 @@ const configPath =
 async function init() {
   const backendServer = express();
 
-  const origin = [
-    `https://localhost:${ports.puppeteer}`,
-    `https://ada9-149-233-55-5.ngrok-free.app`,
-  ];
+  const origin = [`https://localhost:${ports.puppeteer}`];
 
   if (process.env.NODE_ENV === 'development') {
     origin.push(

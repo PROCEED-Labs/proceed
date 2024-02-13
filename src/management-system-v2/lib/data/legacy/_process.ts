@@ -167,10 +167,8 @@ export async function updateProcess(
  * parsing the bpmn unnecessarily */
 export async function updateProcessMetaData(
   processDefinitionsId: string,
-  metaChangesInput: Partial<Omit<ProcessMetadata, 'bpmn'>>,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
-  const metaChanges = ProcessInputSchema.partial().parse(metaChangesInput);
-
   checkIfProcessExists(processDefinitionsId);
 
   const newMetaData = {
@@ -190,10 +188,9 @@ export async function updateProcessMetaData(
     delete newMetaData.shared_with;
   } */
 
-  if (metaChanges.shared) {
-    newMetaData.shared = metaChanges.shared;
-    newMetaData.sharedAs = metaChanges.sharedAs;
-  }
+  newMetaData.shared = metaChanges.shared;
+  newMetaData.sharedAs = metaChanges.sharedAs;
+  if (metaChanges.shareTimeStamp) newMetaData.shareTimeStamp = metaChanges.shareTimeStamp;
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 

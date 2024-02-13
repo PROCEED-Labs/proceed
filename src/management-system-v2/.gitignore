@@ -24,8 +24,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# env files
+.env*
 
 # vercel
 .vercel
@@ -34,7 +34,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
 # ant design build output
 /public/antd.min.css
 
-certificates
+#relevant for ngrok only
+/src/management-system-v2/middleware.ts

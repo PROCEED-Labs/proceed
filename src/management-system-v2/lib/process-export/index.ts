@@ -32,18 +32,16 @@ async function bpmnExport(
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
       zipFolder.file(`${filename}.bpmn`, bpmnBlob);
-    } else if (useWebshareApi && navigator.share !== undefined) {
+    } else if (useWebshareApi && 'canShare' in navigator) {
       try {
         await navigator.share({
-          files: [
-            new File([bpmnBlob], `${processData.definitionName}.bpmn`, {
-              type: 'application/xml',
-            }),
-          ],
+          // the process bpmn file has to be shared as text due to share() restrictions for XML support
+          //( see MDN Shareable file objects : https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share )
+          files: [new File([bpmnBlob], `${filename}.txt`, { type: 'text/plain' })],
         });
       } catch (err: any) {
         if (!err.toString().includes('AbortError')) {
-          throw new Error('Error: ', { cause: err });
+          throw new Error(err);
         }
       }
     } else {

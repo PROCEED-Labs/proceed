@@ -40,21 +40,6 @@
     }
   }
 
-  // the proceed logo and url
-  .PrintHeader {
-    display: none;
-
-    // we use that table headers are repeated on the next page when a table spans multiple pages to put the header on every page
-    @media print {
-      display: table-header-group;
-    }
-
-    td {
-      padding: 10px 10px;
-      text-align: right;
-    }
-  }
-
   .MainContent {
     display: flex;
     overflow-y: auto;
@@ -63,8 +48,6 @@
 
     @media print {
       overflow-y: visible;
-      padding: 0 40pt 0 40pt;
-      box-sizing: border-box;
     }
 
     .ProcessInfoCol {

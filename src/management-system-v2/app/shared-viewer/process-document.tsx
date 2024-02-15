@@ -2,7 +2,7 @@ import React from 'react';
 
 import { getProcess } from '@/lib/data/legacy/process';
 
-import { Typography, Table, Grid } from 'antd';
+import { Typography, Table, Grid, Image } from 'antd';
 
 const { Title } = Typography;
 
@@ -136,34 +136,42 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   processHierarchy && getContent(processHierarchy, processPages);
 
   return (
-    <div className={styles.ProcessDocument}>
-      <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
-        <Title>{processData.name}</Title>
-        <div className={styles.TitleInfos}>
-          <div>Owner: {processData.owner.split('|').pop()}</div>
-          <div>Version: Latest</div>
-          <div>Last Edit: {processData.lastEdited}</div>
+    <>
+      <div className={styles.ProcessDocument}>
+        <div className={styles.Header}>
+          <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="227" height="20" />
+          <h3>www.proceed-labs.org</h3>
+        </div>
+        <div className={styles.Main}>
+          <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
+            <Title>{processData.name}</Title>
+            <div className={styles.TitleInfos}>
+              <div>Owner: {processData.owner.split('|').pop()}</div>
+              <div>Version: Latest</div>
+              <div>Last Edit: {processData.lastEdited}</div>
+            </div>
+          </div>
+          {settings.tableOfContents ? (
+            <div
+              className={cn(styles.TableOfContents, {
+                [styles.WebTableOfContents]: !breakpoint.lg,
+                [styles.TableOfContentPage]: settings.titlepage,
+              })}
+            >
+              <Title level={2}>Table Of Contents</Title>
+              <TableOfContents
+                affix={false}
+                getCurrentAnchor={() => ''}
+                settings={settings}
+                processHierarchy={processHierarchy}
+              />
+            </div>
+          ) : null}
+
+          {...processPages}
         </div>
       </div>
-      {settings.tableOfContents ? (
-        <div
-          className={cn(styles.TableOfContents, {
-            [styles.WebTableOfContents]: !breakpoint.lg,
-            [styles.TableOfContentPage]: settings.titlepage,
-          })}
-        >
-          <Title level={2}>Table Of Contents</Title>
-          <TableOfContents
-            affix={false}
-            getCurrentAnchor={() => ''}
-            settings={settings}
-            processHierarchy={processHierarchy}
-          />
-        </div>
-      ) : null}
-
-      {...processPages}
-    </div>
+    </>
   );
 };
 

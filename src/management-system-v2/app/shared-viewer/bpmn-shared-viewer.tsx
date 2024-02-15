@@ -5,7 +5,7 @@ import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import { Button, message, Tooltip, Typography, Space, Image, Anchor, Grid } from 'antd';
+import { Button, message, Tooltip, Typography, Space, Grid } from 'antd';
 
 const { Text } = Typography;
 
@@ -277,50 +277,27 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
               bpmn={bpmn}
             />
           </div>
-          <table style={{ height: '100%', overflowY: 'auto' }}>
-            <thead className={styles.PrintHeader}>
-              <tr>
-                <td>
-                  <div className={styles.ProceedLogo}>
-                    <Image
-                      src="/proceed-labs-logo.svg"
-                      alt="Proceed Logo"
-                      width="227"
-                      height="20"
-                    />
-                    <h3 style={{ marginRight: '2pt' }}>www.proceed-labs.org</h3>
-                  </div>
-                </td>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <div className={styles.MainContent} ref={mainContent}>
-                    <div className={styles.ProcessInfoCol}>
-                      <ProcessDocument
-                        settings={activeSettings}
-                        processHierarchy={processHierarchy}
-                        processData={processData}
-                      />
-                    </div>
-                    {/* TODO: Still Buggy when the table of contents is bigger than the page */}
-                    {breakpoint.lg && (
-                      <div className={styles.ContentTableCol}>
-                        <TableOfContents
-                          settings={activeSettings}
-                          processHierarchy={processHierarchy}
-                          affix={true}
-                          getContainer={() => mainContent.current}
-                          targetOffset={100}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className={styles.MainContent} ref={mainContent}>
+            <div className={styles.ProcessInfoCol}>
+              <ProcessDocument
+                settings={activeSettings}
+                processHierarchy={processHierarchy}
+                processData={processData}
+              />
+            </div>
+            {/* TODO: Still Buggy when the table of contents is bigger than the page */}
+            {breakpoint.lg && (
+              <div className={styles.ContentTableCol}>
+                <TableOfContents
+                  settings={activeSettings}
+                  processHierarchy={processHierarchy}
+                  affix={true}
+                  getContainer={() => mainContent.current}
+                  targetOffset={100}
+                />
+              </div>
+            )}
+          </div>
         </Content>
       </Layout>
     </div>

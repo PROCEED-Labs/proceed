@@ -1,0 +1,122 @@
+.ProcessDocument {
+  width: 95%;
+  max-width: 1200px;
+  background-color: white;
+
+  margin: 0 auto;
+
+  @media print {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .Title {
+    padding-top: 20px;
+
+    @media print {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+
+  // used when the option that the title should be its own page is selected
+  .TitlePage {
+    @media print {
+      height: 90vh;
+    }
+  }
+
+  .TitleInfos {
+    margin-bottom: 7dvh;
+    @media print {
+      margin-top: 80pt;
+      padding: 20pt 0;
+      border-top: 2pt solid;
+      border-bottom: 2pt solid;
+    }
+
+    div {
+      font-size: 1.3em;
+    }
+  }
+
+  .TableOfContents {
+    // hide this on the web page but show it in print (or on small screens [controlled in the tsx file])
+    display: none;
+    @media print {
+      display: block;
+    }
+  }
+
+  // used for smaller displays to show the table of contents inside the process document on the web page
+  .WebTableOfContents {
+    display: block;
+  }
+
+  // used when the option for a separate title page is selected so there is a page break after the table of contents
+  .TableOfContentPage {
+    break-after: always;
+  }
+
+  .ElementPage {
+    width: 100%;
+    margin-top: 7dvh;
+
+    .ElementOverview {
+      break-inside: avoid;
+
+      .ElementCanvas {
+        display: flex;
+        justify-content: center;
+
+        @media print {
+          max-height: 95%;
+          width: 100%;
+        }
+
+        svg {
+          max-width: 100%;
+          height: 100%;
+        }
+      }
+    }
+
+    .MetaInformation {
+      margin-top: 50px;
+
+      // prevent the header from being put at the end of a page with the content starting on the next page
+      h3 {
+        break-after: avoid;
+      }
+
+      :global(.toastui-editor-contents) {
+        width: 90%;
+        margin: auto;
+
+        table {
+          width: 100% !important;
+        }
+      }
+
+      :global(.ant-table) {
+        width: 90%;
+        margin: auto;
+      }
+    }
+  }
+
+  .ContainerPage {
+    // start a new page for elements that contain other new elements and start with the container element at the top of the page
+    break-before: always;
+
+    @media print {
+      margin-top: 0;
+    }
+  }
+
+  :nth-child(1 of .ContainerPage) {
+    // the first page containing the main process diagram might follow directly after the table of contents based on the settings selected by the user
+    break-before: auto;
+  }
+}

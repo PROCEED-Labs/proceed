@@ -1,23 +1,15 @@
 .ProcessOverview {
-  @media print {
-    display: flex;
-    font-size: 20px;
-  }
-
   :global(h1.ant-typography) {
     font-size: 4em;
     text-align: center;
-    padding-top: 20px;
     font-weight: 500;
   }
-
   :global(h2.ant-typography) {
     font-size: 3em;
     margin-bottom: 2em;
     font-weight: 500;
     margin-bottom: 60px;
   }
-
   :global(h3.ant-typography) {
     font-size: 2em;
     margin-bottom: 1.5em;
@@ -25,12 +17,14 @@
   }
 
   :global(.ant-layout-header) {
+    // hide the page header on the printed page
     @media print {
       display: none;
     }
   }
 
   :global(.ant-layout-footer) {
+    // hide the page footer on the printed page
     @media print {
       display: none;
     }
@@ -38,28 +32,24 @@
 
   :global(.ant-layout-content) {
     padding: 0;
-    overflow-x: hidden;
-    background-color: white;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
 
+    // needed for multi page print (otherwise only the currently visible content is printed)
     @media print {
       overflow: visible;
     }
   }
 
+  // the proceed logo and url
   .PrintHeader {
     display: none;
 
+    // we use that table headers are repeated on the next page when a table spans multiple pages to put the header on every page
     @media print {
       display: table-header-group;
     }
 
     td {
-      display: flex;
-
-      justify-content: flex-end;
       padding: 10px 10px;
       text-align: right;
     }
@@ -67,7 +57,6 @@
 
   .MainContent {
     display: flex;
-    flex-wrap: nowrap;
     overflow-y: auto;
     height: 100%;
     width: 100vw;
@@ -81,7 +70,6 @@
     .ProcessInfoCol {
       height: fit-content;
       background-color: rgb(241, 241, 241);
-      flex-grow: 1;
       width: 100%;
     }
 
@@ -92,123 +80,6 @@
       @media print {
         display: none;
       }
-    }
-  }
-
-  .ProcessDocument {
-    // TODO Bug: big processes with additional information will not be printed correctly
-    width: 95%;
-    max-width: 1200px;
-    background-color: white;
-    height: 100%;
-
-    @media print {
-      max-width: 100%;
-      width: 100%;
-    }
-
-    .TitlePage {
-      @media print {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-    }
-
-    .TitleInfos {
-      margin-bottom: 80pt;
-      @media print {
-        margin-top: 80pt;
-        padding: 20pt 0;
-        border-top: 2pt solid;
-        border-bottom: 2pt solid;
-      }
-
-      div {
-        font-size: 1.3em;
-      }
-    }
-
-    margin: 0 auto;
-    // background-color: rgb(238, 243, 245);
-  }
-
-  .TableOfContents {
-    break-after: always;
-    margin-bottom: 80pt;
-    display: none;
-
-    @media print {
-      display: block;
-    }
-
-    ul {
-      list-style-type: none;
-    }
-
-    ul a {
-      color: black;
-    }
-
-    ul {
-      font-size: 21px;
-    }
-  }
-
-  .ContainerPage {
-    break-before: always;
-  }
-
-  .ElementPage,
-  .ContainerPage {
-    width: 100%;
-
-    margin-top: 7dvh;
-
-    @media print {
-      margin-top: 0;
-    }
-
-    .ElementOverview {
-      .ElementCanvas {
-        display: flex;
-        justify-content: center;
-
-        @media print {
-          max-height: 95%;
-          width: 100%;
-        }
-
-        :global(svg) {
-          max-width: 100%;
-          height: 100%;
-        }
-      }
-
-      margin-bottom: 50px;
-      break-inside: avoid;
-    }
-
-    .ElementMilestones {
-      margin-bottom: 50px;
-      :global(.toastui-editor-contents table) {
-        width: 100% !important;
-      }
-    }
-
-    .ElementDescription {
-      width: 90%;
-      margin: auto;
-      margin-bottom: 50px;
-      :global(.toastui-editor-contents table) {
-        width: 100% !important;
-      }
-    }
-
-    .ElementMeta {
-      margin-bottom: 50px;
     }
   }
 }

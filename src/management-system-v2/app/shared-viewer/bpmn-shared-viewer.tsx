@@ -1,35 +1,15 @@
 'use client';
 import React, { useRef, useState, useEffect, useMemo, useCallback, use } from 'react';
-import 'bpmn-js/dist/assets/bpmn-js.css';
-import 'bpmn-js/dist/assets/diagram-js.css';
-import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import {
-  Button,
-  message,
-  Tooltip,
-  Typography,
-  Table,
-  Modal,
-  Checkbox,
-  Space,
-  Image,
-  Anchor,
-  Row,
-  Col,
-  Grid,
-} from 'antd';
+import { Button, message, Tooltip, Typography, Space, Image, Anchor, Grid } from 'antd';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
-
-import type { CheckboxValueType } from 'antd/es/checkbox/Group';
-import { PrinterOutlined, SettingOutlined } from '@ant-design/icons';
+import { PrinterOutlined } from '@ant-design/icons';
 
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
@@ -49,8 +29,10 @@ import {
   getElementDI,
 } from '@proceed/bpmn-helper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import AnchorLink from 'antd/es/anchor/AnchorLink';
-import { truthyFilter } from '@/lib/typescript-utils';
+
+import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
+import TableOfContents, { ElementInfo } from './table-of-content';
+import ProcessDocument from './process-document';
 
 const ToastEditor: Promise<typeof ToastEditorType> =
   typeof window !== 'undefined'
@@ -62,104 +44,6 @@ type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   embeddedMode?: boolean;
 };
 
-type ElementInfo = {
-  svg: string;
-  planeSvg?: string;
-  name?: string;
-  id: string;
-  description?: string;
-  children?: ElementInfo[];
-  isContainer: boolean;
-  milestones?: {
-    id: string;
-    name: string;
-    description?: string;
-  }[];
-  meta?: {
-    [key: string]: any;
-  };
-};
-
-const settings = [
-  {
-    label: 'Separate Title Page',
-    value: 'titlepage',
-    tooltip:
-      'The first page contains only the title. The table of contents or the content start on the second page',
-  },
-  {
-    label: 'Table of Contents',
-    value: 'tableOfContents',
-    tooltip: 'Will add a table of contents between the title and the main content',
-  },
-  {
-    label: 'Element Visualization',
-    value: 'showElementSVG',
-    tooltip: 'Every sub-chapter of an element contains a visualization of that element',
-  },
-  {
-    label: 'Nested Subprocesses',
-    value: 'subprocesses',
-    tooltip: 'Add the content of collapsed subprocesses as sub-chapters.',
-  },
-  {
-    label: 'Exclude Empty Elements',
-    value: 'hideEmpty',
-    tooltip:
-      'Will exclude sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
-  },
-] as const;
-
-type SettingsModalProps = {
-  checkedSettings: string[];
-  onConfirm: (settings: SettingsModalProps['checkedSettings']) => void;
-};
-
-const SettingsModal: React.FC<SettingsModalProps> = ({ checkedSettings, onConfirm }) => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [checked, setChecked] = useState(checkedSettings);
-
-  const handleSettingsChange = (checkedValues: string[]) => {
-    setChecked(checkedValues);
-  };
-
-  const handleCancel = () => {
-    setModalOpen(false);
-    setChecked(checkedSettings);
-  };
-
-  const handleConfirm = () => {
-    setModalOpen(false);
-    onConfirm(checked);
-  };
-
-  return (
-    <>
-      <Modal
-        closeIcon={null}
-        title="Settings"
-        open={modalOpen}
-        onOk={handleConfirm}
-        onCancel={handleCancel}
-      >
-        <Checkbox.Group value={checked} onChange={handleSettingsChange}>
-          <Space direction="vertical">
-            {settings.map(({ label, value, tooltip }) => (
-              <Tooltip placement="right" title={tooltip} key={label}>
-                <Checkbox value={value}>{label}</Checkbox>
-              </Tooltip>
-            ))}
-          </Space>
-        </Checkbox.Group>
-      </Modal>
-
-      <Tooltip title="Settings">
-        <Button size="large" icon={<SettingOutlined />} onClick={() => setModalOpen(true)} />
-      </Tooltip>
-    </>
-  );
-};
-
 const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNSharedViewerProps) => {
   const router = useRouter();
   const session = useSession();
@@ -168,9 +52,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
 
   const breakpoint = Grid.useBreakpoint();
 
-  const [checkedSettings, setCheckedSettings] = useState<(typeof settings)[number]['value'][]>(
-    settings.map(({ value }) => value),
-  );
+  const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(settingsOptions);
 
   const processBpmn = processData.bpmn;
 
@@ -227,6 +109,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         let svg;
         let planeSvg;
         let name = el.name || `<${el.id}>`;
+
         const isContainer = isAny(el, [
           'bpmn:Collaboration',
           'bpmn:Process',
@@ -243,12 +126,14 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         }
 
         if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
+          // get the svg representation of the root plane
           svg = await getSVGFromBPMN(processData.bpmn!);
         } else {
           const elementsToShow = [el.id];
           // show incoming/outgoing sequence flows for the current element
           if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
           if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
+          // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
           svg = await getSVGFromBPMN(processData.bpmn!, currentRootId, elementsToShow);
 
           if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
@@ -263,8 +148,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
           }
         }
 
-        // add links from elements in the diagram to sub-chapters for those elements and tooltips that show element names or ids
-        // TODO: show tooltips in the pdf when there is no subchapter for the element and the element has no name (or always)
+        // add links from elements in the diagram to (sub-)chapters for those elements and tooltips that show element names or ids
         svg = addTooltipsAndLinksToSVG(
           svg,
           (id) => bpmnViewer.current?.getElement(id)?.businessObject.name,
@@ -297,12 +181,16 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         // get the meta data to show in the (sub-)chapter of the element
         const meta = getMetaDataFromElement(el);
 
+        function getHtmlFromMarkdown(markdown: string) {
+          const div = document.createElement('div');
+          const editor = new Editor({ el: div });
+          editor.setMarkdown(markdown);
+          return editor.getHTML();
+        }
+
         const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
           if (description) {
-            const div = document.createElement('div');
-            const editor = new Editor({ el: div });
-            editor.setMarkdown(description);
-            description = editor.getHTML();
+            description = getHtmlFromMarkdown(description);
           }
 
           return { id, name, description };
@@ -311,12 +199,10 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         let description: string | undefined = undefined;
         const documentation = el.documentation?.find((el: any) => el.text)?.text;
         if (documentation) {
-          const div = document.createElement('div');
-          const editor = new Editor({ el: div });
-          editor.setMarkdown(documentation);
-          description = editor.getHTML();
+          description = getHtmlFromMarkdown(documentation);
         }
 
+        // sort so that elements that contain no other elements come first and elements containing others come after
         children.sort((a, b) => {
           return !a.isContainer ? -1 : !b.isContainer ? 1 : 0;
         });
@@ -348,162 +234,6 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
-
-  // transform the document data into a table of contents
-  function getTableOfContents(hierarchyElement: ElementInfo): AnchorLinkItemProps | undefined {
-    let children: AnchorLinkItemProps[] = [];
-
-    if ((activeSettings.subprocesses || !hierarchyElement.planeSvg) && hierarchyElement.children) {
-      children = hierarchyElement.children
-        .map((child) => getTableOfContents(child))
-        .filter(truthyFilter);
-    }
-
-    if (hierarchyElement.milestones) {
-      children.unshift({
-        key: `${hierarchyElement.id}_milestones`,
-        href: `#${hierarchyElement.id}_milestone_page`,
-        title: 'Milestones',
-      });
-    }
-    if (hierarchyElement.meta) {
-      children.unshift({
-        key: `${hierarchyElement.id}_meta`,
-        href: `#${hierarchyElement.id}_meta_page`,
-        title: 'Meta Data',
-      });
-    }
-    if (hierarchyElement.description) {
-      children.unshift({
-        key: `${hierarchyElement.id}_description`,
-        href: `#${hierarchyElement.id}_description_page`,
-        title: 'General Description',
-      });
-    }
-
-    if (activeSettings.hideEmpty && !children.length && !hierarchyElement.children?.length) {
-      return undefined;
-    }
-
-    const label = hierarchyElement.name || `<${hierarchyElement.id}>`;
-
-    return {
-      key: hierarchyElement.id,
-      href: `#${hierarchyElement.id}_page`,
-      title: <Text ellipsis={{ tooltip: label }}>{label}</Text>,
-      children,
-    };
-  }
-
-  let tableOfContents: AnchorLinkItemProps | AnchorLinkItemProps[] | undefined = processHierarchy
-    ? getTableOfContents(processHierarchy)
-    : undefined;
-
-  if (tableOfContents) {
-    const directChildren = tableOfContents.children || [];
-    delete tableOfContents.children;
-    tableOfContents = [tableOfContents, ...directChildren];
-  }
-
-  // transform the document data into the respective pages of the document
-  const processPages: React.JSX.Element[] = [];
-  function getContent(hierarchyElement: ElementInfo, pages: React.JSX.Element[]) {
-    if (
-      activeSettings.hideEmpty &&
-      !hierarchyElement.description &&
-      !hierarchyElement.meta &&
-      !hierarchyElement.milestones &&
-      !hierarchyElement.children?.length
-    ) {
-      return;
-    }
-
-    pages.push(
-      <div
-        key={`element_${hierarchyElement.id}_page`}
-        className={hierarchyElement.isContainer ? styles.ContainerPage : styles.ElementPage}
-      >
-        <div className={styles.ElementOverview}>
-          <Title id={`${hierarchyElement.id}_page`} level={2}>
-            {hierarchyElement.name || `<${hierarchyElement.id}>`}
-          </Title>
-          {(activeSettings.showElementSVG || hierarchyElement.isContainer) && (
-            <div
-              className={styles.ElementCanvas}
-              dangerouslySetInnerHTML={{
-                __html: activeSettings.subprocesses
-                  ? hierarchyElement.planeSvg || hierarchyElement.svg
-                  : hierarchyElement.svg,
-              }}
-            ></div>
-          )}
-        </div>
-        {hierarchyElement.description && (
-          <>
-            <Title level={3} id={`${hierarchyElement.id}_description_page`}>
-              General Description
-            </Title>
-            <div className={styles.ElementDescription}>
-              <div
-                className="toastui-editor-contents"
-                dangerouslySetInnerHTML={{ __html: hierarchyElement.description }}
-              ></div>
-            </div>
-          </>
-        )}
-        {hierarchyElement.meta && (
-          <div className={styles.ElementMeta}>
-            <Title level={3} id={`${hierarchyElement.id}_meta_page`}>
-              Meta Data
-            </Title>
-            <Table
-              style={{ width: '90%', margin: 'auto' }}
-              pagination={false}
-              rowKey="key"
-              columns={[
-                { title: 'Name', dataIndex: 'key', key: 'key' },
-                { title: 'Value', dataIndex: 'val', key: 'value' },
-              ]}
-              dataSource={Object.entries(hierarchyElement.meta).map(([key, val]) => ({ key, val }))}
-            />
-          </div>
-        )}
-        {hierarchyElement.milestones && (
-          <div className={styles.ElementMilestones}>
-            <Title level={3} id={`${hierarchyElement.id}_milestone_page`}>
-              Milestones
-            </Title>
-            <Table
-              style={{ width: '90%', margin: 'auto' }}
-              pagination={false}
-              rowKey="id"
-              columns={[
-                { title: 'ID', dataIndex: 'id', key: 'id' },
-                { title: 'Name', dataIndex: 'name', key: 'name' },
-                {
-                  title: 'Description',
-                  dataIndex: 'description',
-                  key: 'description',
-                  render: (value) => (
-                    <div
-                      className="toastui-editor-contents"
-                      dangerouslySetInnerHTML={{ __html: value }}
-                    ></div>
-                  ),
-                },
-              ]}
-              dataSource={hierarchyElement.milestones}
-            />
-          </div>
-        )}
-      </div>,
-    );
-    if (activeSettings.subprocesses || !hierarchyElement.planeSvg) {
-      hierarchyElement.children?.forEach((child) => getContent(child, pages));
-    }
-  }
-
-  processHierarchy && getContent(processHierarchy, processPages);
 
   return (
     <div className={styles.ProcessOverview}>
@@ -568,49 +298,22 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
                 <td>
                   <div className={styles.MainContent} ref={mainContent}>
                     <div className={styles.ProcessInfoCol}>
-                      <div className={styles.ProcessDocument}>
-                        <div
-                          className={activeSettings.titlepage ? styles.TitlePage : ''}
-                          // TODO: fix this so that there is no empty page before the table of contents
-                          // style={{ pageBreakAfter: activeSettings.titlepage ? 'always' : 'auto' }}
-                        >
-                          <Title>{processData.name}</Title>
-                          <div className={styles.TitleInfos}>
-                            <div>Owner: {processData.owner.split('|').pop()}</div>
-                            <div>Version: Latest</div>
-                            <div>Last Edit: {processData.lastEdited}</div>
-                          </div>
-                        </div>
-                        <div
-                          style={
-                            activeSettings.tableOfContents && !breakpoint.lg
-                              ? { display: 'block' }
-                              : {}
-                          }
-                          className={styles.TableOfContents}
-                        >
-                          <Title level={2}>Table Of Contents</Title>
-                          <Anchor
-                            affix={false}
-                            items={tableOfContents}
-                            getCurrentAnchor={() => ''}
-                          />
-                        </div>
-
-                        {...processPages}
-                      </div>
+                      <ProcessDocument
+                        settings={activeSettings}
+                        processHierarchy={processHierarchy}
+                        processData={processData}
+                      />
                     </div>
                     {/* TODO: Still Buggy when the table of contents is bigger than the page */}
                     {breakpoint.lg && (
                       <div className={styles.ContentTableCol}>
-                        {tableOfContents && (
-                          <Anchor
-                            affix={true}
-                            items={tableOfContents}
-                            getContainer={() => mainContent.current}
-                            targetOffset={100}
-                          />
-                        )}
+                        <TableOfContents
+                          settings={activeSettings}
+                          processHierarchy={processHierarchy}
+                          affix={true}
+                          getContainer={() => mainContent.current}
+                          targetOffset={100}
+                        />
                       </div>
                     )}
                   </div>

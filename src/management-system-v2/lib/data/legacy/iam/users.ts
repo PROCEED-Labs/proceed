@@ -3,14 +3,12 @@ import store from '../store.js';
 import {
   User,
   UserSchema,
-  AuthenticatedUserDataSchema,
-  AuthenticatedUserData,
   OauthAccountSchema,
   OauthAccount,
   AuthenticatedUser,
   AuthenticatedUserSchema,
 } from '../../user-schema';
-import { addEnvironment } from './environments';
+import { addEnvironment, deleteEnvironment, environmentsMetaObject } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
 
 // @ts-ignore
@@ -40,16 +38,22 @@ export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean
   return user;
 }
 
+export function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
+  const user = Object.values(usersMetaObject).find(
+    (user) => !user.guest && user.username && user.username === username,
+  );
+
+  if (!user && opts?.throwIfNotFound) throw new Error('User not found');
+
+  return user;
+}
+
 export function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
   if (
     !user.guest &&
-    Object.values(usersMetaObject).find(
-      (existingUser) =>
-        !existingUser.guest &&
-        (existingUser.email === user.email || existingUser.username === user.username),
-    )
+    ((user.username && getUserByUsername(user.username)) || getUserByEmail(user.email))
   )
     throw new Error('User with this email or username already exists');
 
@@ -73,6 +77,10 @@ export function deleteuser(userId: string) {
 
   if (!user) throw new Error("User doesn't exist");
 
+  for (const environmentId of Object.keys(environmentsMetaObject)) {
+    if (environmentsMetaObject[environmentId].ownerId === userId) deleteEnvironment(environmentId);
+  }
+
   for (const account of Object.values(accountsMetaObject)) {
     if (account.userId === userId) deleteOauthAccount(account.id);
   }
@@ -90,15 +98,12 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
 
   const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
 
-  if (
-    Object.values(usersMetaObject).find(
-      (existingUser) =>
-        !existingUser.guest &&
-        existingUser.id != userId &&
-        existingUser.username === newUserData.username,
-    )
-  )
-    throw new Error('User with this email or username already exists');
+  if (newUserData.email) {
+    const existingUser = getUserByEmail(newUserData.email);
+
+    if (existingUser && existingUser.id !== userId)
+      throw new Error('User with this email or username already exists');
+  }
 
   const userData = { ...user, ...newUserData };
 

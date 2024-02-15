@@ -39,6 +39,9 @@ module.exports = {
   // Features that provide functionality supporting 5thIndustry use cases
   enable5thIndustryIntegration: false,
 
+  // Execution view in the new MS web app
+  enableNewMSExecution: false,
+
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

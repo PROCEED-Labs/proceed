@@ -1,37 +1,22 @@
 import Ability from '@/lib/ability/abilityHelper';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
-import { ApiData } from '@/lib/fetch-data';
-
-type Role = ApiData<'/roles', 'get'>[number];
+import { ResourceActionsMapping } from '@/lib/authorization/permissionHelpers';
+import { Role } from '@/lib/data/role-schema';
 
 // permission mapping to verbs
-const PERMISSION_MAPPING = {
-  none: 0,
-  view: 1,
-  update: 2,
-  create: 4,
-  delete: 8,
-  manage: 16,
-  share: 32,
-  'manage-roles': 64,
-  'manage-groups': 128,
-  'manage-password': 256,
-  admin: 9007199254740991,
-} as const;
-
 export function togglePermission(
   permissions: Role['permissions'],
   resource: keyof Role['permissions'],
-  permission: keyof typeof PERMISSION_MAPPING,
+  permission: keyof typeof ResourceActionsMapping,
 ) {
   const currentValue = permissions[resource] ?? 0;
 
   if (permission !== 'admin') {
-    const permissionBit = PERMISSION_MAPPING[permission];
+    const permissionBit = ResourceActionsMapping[permission];
     permissions[resource] = currentValue ^ permissionBit;
   } else {
     permissions[resource] =
-      currentValue === PERMISSION_MAPPING.admin ? 0 : PERMISSION_MAPPING.admin;
+      currentValue === ResourceActionsMapping.admin ? 0 : ResourceActionsMapping.admin;
   }
 
   // New pointer for role object to trigger a rerender
@@ -48,10 +33,10 @@ export function switchChecked(
 
   const permissionNumber = permissions[resource]!;
 
-  if (action === 'admin') return permissionNumber === PERMISSION_MAPPING.admin;
-  else if (permissionNumber === PERMISSION_MAPPING.admin) return false;
+  if (action === 'admin') return permissionNumber === ResourceActionsMapping.admin;
+  else if (permissionNumber === ResourceActionsMapping.admin) return false;
 
-  return !!(PERMISSION_MAPPING[action] & permissionNumber);
+  return !!(ResourceActionsMapping[action] & permissionNumber);
 }
 
 export function switchDisabled(
@@ -66,7 +51,7 @@ export function switchDisabled(
     return false;
 
   const permissionNumber = permissions[resource]!;
-  if (permissionNumber === PERMISSION_MAPPING.admin && action !== 'admin') return true;
+  if (permissionNumber === ResourceActionsMapping.admin && action !== 'admin') return true;
 
   return false;
 }

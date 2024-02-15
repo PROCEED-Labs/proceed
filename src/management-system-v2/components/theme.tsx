@@ -29,6 +29,9 @@ const Theme: FC<PropsWithChildren> = ({ children }) => {
           colorBgContainer: '#fff',
           fontSize: 14,
           fontSizeHeading1: 16,
+          screenSMMin: 601,
+          screenSM: 601,
+          screenXSMax: 600,
         },
         components: {
           Layout: {

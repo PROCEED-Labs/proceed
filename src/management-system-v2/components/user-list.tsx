@@ -1,11 +1,24 @@
 'use client';
 
-import React, { ComponentProps, FC, ReactNode, useState } from 'react';
-import { Space, Avatar, Button, Table, Result } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
+import {
+  Space,
+  Avatar,
+  Button,
+  Table,
+  Result,
+  Grid,
+  Drawer,
+  Breakpoint,
+  FloatButton,
+  Tooltip,
+} from 'antd';
+import { CloseOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
+import { AuthenticatedUser, User } from '@/lib/data/user-schema';
+import styles from './user-list.module.scss';
+import HeaderActions from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
@@ -17,26 +30,6 @@ export type ListUser = ReplaceKeysWithHighlighted<
 >;
 type Column = Exclude<ComponentProps<typeof Table<ListUser>>['columns'], undefined>;
 
-const defaultColumns = [
-  {
-    title: 'Account',
-    dataIndex: 'display',
-    key: 'display',
-  },
-  {
-    title: 'Username',
-    dataIndex: 'username',
-    key: 'username',
-    render: (username: any) => username.highlighted,
-  },
-  {
-    title: 'Email Adress',
-    dataIndex: 'email',
-    key: 'email',
-    render: (email: any) => email.highlighted,
-  },
-];
-
 export type UserListProps = {
   users: _ListUser[];
   highlightKeys?: boolean;
@@ -45,9 +38,10 @@ export type UserListProps = {
     | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   error?: boolean;
-  searchBarRightNode?: ReactNode;
+  createUserNode?: ReactNode;
   loading?: boolean;
   sidePanel?: ReactNode;
+  setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
   onSelectedRows?: (users: ListUser[]) => void;
 };
 
@@ -57,10 +51,11 @@ const UserList: FC<UserListProps> = ({
   columns,
   selectedRowActions,
   error,
-  searchBarRightNode,
+  createUserNode,
   loading,
   sidePanel,
   onSelectedRows,
+  setShowMobileUserSider,
 }) => {
   const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
     data: users,
@@ -93,9 +88,47 @@ const UserList: FC<UserListProps> = ({
     highlightedKeys: ['firstName', 'lastName', 'username', 'email'],
   });
 
+  const breakpoint = Grid.useBreakpoint();
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+
+  const showMobileUserSider = () => {
+    setShowMobileUserSider(true);
+  };
+
+  const defaultColumns = [
+    {
+      title: 'Account',
+      dataIndex: 'display',
+      key: 'display',
+    },
+    {
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
+      render: (username: any) => username.highlighted,
+    },
+    {
+      title: 'Email Adress',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email: any) => email.highlighted,
+    },
+
+    //TODO: get rid of the column on the right side of the info button for breakpoint < xl
+    {
+      dataIndex: 'info',
+      key: '',
+      title: '',
+      render: (): React.ReactNode => (
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileUserSider}>
+          <InfoCircleOutlined />
+        </Button>
+      ),
+      responsive: (breakpoint.xl ? ['xs'] : ['xs', 'sm']) as Breakpoint[],
+    },
+  ];
 
   let tableColumns: Column = defaultColumns;
   if (typeof columns === 'function')
@@ -117,26 +150,30 @@ const UserList: FC<UserListProps> = ({
       <div style={{ flexGrow: 1 }}>
         <Bar
           leftNode={
-            selectedRowKeys.length ? (
-              <Space size={20}>
-                <Button
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={() => setSelectedRowKeys([])}
-                />
-                <span>{selectedRowKeys.length} selected: </span>
-                {selectedRowActions
-                  ? selectedRowActions(selectedRowKeys, () => setSelectedRowKeys([]), selectedRows)
-                  : null}
-              </Space>
-            ) : undefined
+            <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+              <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                {breakpoint.xs ? null : createUserNode ? createUserNode : null}
+
+                {selectedRowKeys.length ? (
+                  <span className={styles.SelectedRow}>
+                    {selectedRowKeys.length} selected:
+                    {selectedRowActions
+                      ? selectedRowActions(
+                          selectedRowKeys,
+                          () => setSelectedRowKeys([]),
+                          selectedRows,
+                        )
+                      : null}
+                  </span>
+                ) : undefined}
+              </span>
+            </span>
           }
           searchProps={{
             value: searchQuery,
             onChange: (e) => setSearchQuery(e.target.value),
             placeholder: 'Search Users ...',
           }}
-          rightNode={searchBarRightNode ? searchBarRightNode : null}
         />
         <Table<ListUser>
           columns={tableColumns}
@@ -162,6 +199,21 @@ const UserList: FC<UserListProps> = ({
           rowKey="id"
           loading={loading}
         />
+        {/* <!-- FloatButtonGroup needs a z-index of 101
+            since BPMN Logo of the viewer has an z-index of 100 --> */}
+        {breakpoint.xl ? undefined : (
+          <FloatButton.Group
+            className={styles.FloatButton}
+            trigger="click"
+            type="primary"
+            style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+            icon={<PlusOutlined />}
+          >
+            <Tooltip trigger="hover" placement="left" title="Create an user">
+              <FloatButton icon={<HeaderActions />} />
+            </Tooltip>
+          </FloatButton.Group>
+        )}
       </div>
       {sidePanel}
     </div>

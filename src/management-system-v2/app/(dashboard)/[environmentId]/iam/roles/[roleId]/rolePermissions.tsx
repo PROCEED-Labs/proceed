@@ -36,6 +36,25 @@ type PermissionCategory = {
 
 const basePermissionOptions: PermissionCategory[] = [
   {
+    key: 'environment',
+    title: 'ENVIRONMENT',
+    resource: 'Environment',
+    permissions: [
+      {
+        key: 'Update Environment Information',
+        title: 'Update Environment Information',
+        description: 'Allows a user to update the environment information.',
+        permission: 'update',
+      },
+      {
+        key: 'Manage Environment',
+        title: 'Manage Environment',
+        description: 'Allows a user to update and delete the Environment.',
+        permission: 'manage',
+      },
+    ],
+  },
+  {
     key: 'process',
     title: 'PROCESSES',
     resource: 'Process',
@@ -51,12 +70,6 @@ const basePermissionOptions: PermissionCategory[] = [
         title: 'Manage processes',
         description: 'Allows a user to create, modify and delete processes in the Processes view.',
         permission: 'manage',
-      },
-      {
-        key: 'process_share',
-        title: 'Share processes',
-        description: 'Allows a user to share processes with different users and groups.',
-        permission: 'share',
       },
       {
         key: 'process_admin',
@@ -77,21 +90,12 @@ const basePermissionOptions: PermissionCategory[] = [
         description: 'Allows a user to view her or his projects. (Enables the Projects view.)',
         permission: 'view',
       },
-
       {
         key: 'Manage projects',
         title: 'Manage projects',
         description: 'Allows a user to create, modify and delete projects in the Projects view.',
         permission: 'manage',
       },
-
-      {
-        key: 'Share projects',
-        title: 'Share projects',
-        description: 'Allows a user to share projects with different users and groups.',
-        permission: 'share',
-      },
-
       {
         key: 'Administrate projects',
         title: 'Administrate projects',
@@ -118,14 +122,6 @@ const basePermissionOptions: PermissionCategory[] = [
         description: 'A,llows a user to create, modify and delete templates in the Templates view.',
         permission: 'manage',
       },
-
-      {
-        key: 'Share templates',
-        title: 'Share templates',
-        description: 'A,llows a user to share templates with different users and groups.',
-        permission: 'share',
-      },
-
       {
         key: 'Administrate templates',
         title: 'Administrate templates',
@@ -155,7 +151,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'View machines',
         title: 'View machines',
-        description: ',Allows a user to view all machines. (Enables the Machines view.)',
+        description: 'Allows a user to view all machines. (Enables the Machines view.)',
         permission: 'view',
       },
 
@@ -211,7 +207,7 @@ const basePermissionOptions: PermissionCategory[] = [
         title: 'Manage roles of users',
         description:
           'Allows a user to assign roles to a user and to remove roles from a user. (Enables the IAM view.)',
-        permission: 'manage-roles',
+        permission: 'manage',
       },
     ],
   },

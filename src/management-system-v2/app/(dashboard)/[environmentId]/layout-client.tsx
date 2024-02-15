@@ -58,7 +58,7 @@ const Layout: FC<
             collapsed={collapsed}
             onCollapse={(collapsed) => setCollapsed(collapsed)}
             collapsedWidth={breakpoint.xs ? '0' : '80'}
-            breakpoint="md"
+            breakpoint="xl"
             trigger={null}
           >
             <div className={styles.LogoContainer}>

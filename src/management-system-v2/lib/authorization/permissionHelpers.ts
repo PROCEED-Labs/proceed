@@ -1,11 +1,17 @@
-// @ts-ignore
-import { PERMISSION_MAPPING } from 'proceed-management-system/src/shared-frontend-backend/constants';
 import { ResourceActionType, resourceAction } from '@/lib/ability/caslAbility';
 
-type ResourceActionsMappingType = Record<ResourceActionType, number>;
-const ResourceActionsMapping = PERMISSION_MAPPING as ResourceActionsMappingType;
+// permission mapping to verbs
+export const ResourceActionsMapping = {
+  none: 0,
+  view: 1,
+  update: 2,
+  create: 4,
+  delete: 8,
+  manage: 16,
+  admin: 9007199254740991,
+} as const satisfies Record<ResourceActionType, number>;
 
-export const adminPermissions = 9007199254740991;
+export const adminPermissions = ResourceActionsMapping.admin;
 export function permissionNumberToIdentifiers(permission: number): ResourceActionType[] {
   if (permission === 0) {
     return ['none'];

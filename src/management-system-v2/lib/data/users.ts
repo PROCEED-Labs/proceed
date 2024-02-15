@@ -3,7 +3,7 @@
 import { getCurrentUser } from '@/components/auth';
 import { deleteuser, addUser as _addUser, updateUser as _updateUser } from './legacy/iam/users';
 import { userError } from '../user-error';
-import { UserData } from './user-schema';
+import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -15,9 +15,11 @@ export async function deleteUser() {
   }
 }
 
-export async function updateUser(newUserData: UserData) {
+export async function updateUser(newUserDataInput: AuthenticatedUserData) {
   try {
     const { userId } = await getCurrentUser();
+
+    const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
     _updateUser(userId, newUserData);
   } catch (_) {

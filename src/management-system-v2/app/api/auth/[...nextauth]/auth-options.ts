@@ -1,61 +1,36 @@
 import { AuthOptions } from 'next-auth';
-import { NextAuthUser } from '@/types/next-auth';
-import { randomUUID } from 'crypto';
 import Auth0Provider from 'next-auth/providers/auth0';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import Adapter from './adapter';
+import { User } from '@/lib/data/user-schema';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  adapter: Adapter,
+  session: {
+    strategy: 'jwt',
+  },
   providers: [
     CredentialsProvider({
       name: 'Guest',
       id: 'guest-loguin',
       credentials: {},
       async authorize() {
-        return {
-          id: '',
-          guest: true,
-        };
+        return addUser({ guest: true });
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user: _user, trigger, account }) {
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
+    async jwt({ token, user: _user }) {
+      const user = _user as User;
 
-      if (trigger === 'signUp' || trigger === 'signIn') {
-        const user = { ..._user } as NextAuthUser;
-
-        if (user.guest) {
-          token.user = addUser({
-            oauthProvider: 'guest-loguin',
-            guest: true,
-          });
-        } else if (!usersMetaObject[user.id]) {
-          const provider = account?.provider ?? 'none';
-          const nameSpacedId = `${provider}:${_user.id}`;
-          user.id = nameSpacedId;
-
-          token.user = addUser({
-            id: user.id,
-            oauthProvider: account?.provider ?? 'none',
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            image: user.image ?? '',
-            guest: false,
-          });
-        }
-      }
+      if (_user) token.user = user;
 
       return token;
     },
     session({ session, token }) {
       if (token.user) session.user = token.user;
-
-      session.csrfToken = token.csrfToken;
 
       return session;
     },
@@ -75,7 +50,7 @@ if (process.env.USE_AUTH0) {
       },
       profile(profile) {
         return {
-          id: `auth0:${profile.sub}`,
+          id: profile.sub,
           email: profile.email,
           image: profile.picture,
           firstName: profile.given_name,
@@ -94,19 +69,23 @@ if (process.env.NODE_ENV === 'development') {
       username: 'johndoe',
       firstName: 'John',
       lastName: 'Doe',
-      email: 'johndoe@proceed-labs.org',
+      email: 'difewe7223@fkcod.com',
       id: 'development-id|johndoe',
       guest: false,
+      emailVerified: null,
+      image: null,
     },
     {
       username: 'admin',
       firstName: 'Admin',
       lastName: 'Admin',
-      email: 'admin@proceed-labs.org',
+      email: 'felipe.trost@gmail.com',
       id: 'development-id|admin',
       guest: false,
+      emailVerified: null,
+      image: null,
     },
-  ] satisfies NextAuthUser[];
+  ] satisfies User[];
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
@@ -115,9 +94,17 @@ if (process.env.NODE_ENV === 'development') {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
-        const user = developmentUsers.find((user) => user.username === credentials?.username);
+        const userTemplate = developmentUsers.find(
+          (user) => user.username === credentials?.username,
+        );
 
-        return user || null;
+        if (!userTemplate) return null;
+
+        let user = usersMetaObject[userTemplate.id];
+
+        if (!user) user = addUser(userTemplate);
+
+        return user;
       },
     }),
   );

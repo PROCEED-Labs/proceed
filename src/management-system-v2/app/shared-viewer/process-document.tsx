@@ -138,6 +138,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   return (
     <>
       <div className={styles.ProcessDocument}>
+        {/* TODO: the header that is repeating on each page seems to break the links in the final pdf (i think it is not correctly considered when calculating the position of the link target) */}
         <div className={styles.Header}>
           <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="227" height="20" />
           <h3>www.proceed-labs.org</h3>

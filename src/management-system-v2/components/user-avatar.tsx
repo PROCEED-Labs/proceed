@@ -11,7 +11,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps
   if (user.guest) return <Avatar icon={<UserOutlined />} />;
 
   return (
-    <Avatar src={user.image && <img src={user.image} alt="avatar" />} {...avatarProps} ref={ref}>
+    <Avatar src={user.image} {...avatarProps} ref={ref}>
       {!user.image ? (user.firstName || '').slice(0, 1) + (user.lastName || '').slice(0, 1) : null}
     </Avatar>
   );

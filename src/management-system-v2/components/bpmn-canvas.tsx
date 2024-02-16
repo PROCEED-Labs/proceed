@@ -128,6 +128,10 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         return modeler.current!.get<ElementRegistry>('elementRegistry').getAll() as Element[];
       },
       getCurrentRoot: () => {
+        if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
+          return;
+        }
+
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
           .get(

@@ -1,7 +1,7 @@
 import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   generateProcessShareToken,
   updateProcessGuestAccessRights,
@@ -19,6 +19,8 @@ const ModelerShareModalOptionPublicLink = ({
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
   const [token, setToken] = useState<String | null>(null);
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
@@ -28,7 +30,10 @@ const ModelerShareModalOptionPublicLink = ({
   const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
 
   const getNewToken = async () => {
-    const { token } = await generateProcessShareToken({ processId: processId });
+    const { token } = await generateProcessShareToken({
+      processId: processId,
+      version: selectedVersionId,
+    });
     setToken(token);
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
   };

@@ -27,12 +27,14 @@ import {
   getMetaDataFromElement,
   getMilestonesFromElement,
   getElementDI,
+  getRootFromElement,
+  getDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
-import ProcessDocument from './process-document';
+import ProcessDocument, { VersionInfo } from './process-document';
 
 const ToastEditor: Promise<typeof ToastEditorType> =
   typeof window !== 'undefined'
@@ -67,6 +69,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const [finishedInitialLoading, setFinishedInitialLoading] = useState(false);
   // a hierarchy of the process elements as it should be displayed in the final document containing meta information for each element
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
+  const [versionInfo, setVersionInfo] = useState<VersionInfo>({});
 
   if (!processData.shared) {
     return <Text type="danger">Process is no longer shared</Text>;
@@ -223,6 +226,11 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       const canvas = bpmnViewer.current.getCanvas();
       const root = canvas.getRootElement();
 
+      const definitions = getRootFromElement(root.businessObject);
+      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
+        setVersionInfo({ id: version, name, description }),
+      );
+
       transform(root.businessObject, root.businessObject.$parent, undefined).then((rootElement) => {
         setProcessHierarchy(rootElement);
       });
@@ -283,6 +291,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
                 settings={activeSettings}
                 processHierarchy={processHierarchy}
                 processData={processData}
+                version={versionInfo}
               />
             </div>
             {/* TODO: Still Buggy when the table of contents is bigger than the page */}

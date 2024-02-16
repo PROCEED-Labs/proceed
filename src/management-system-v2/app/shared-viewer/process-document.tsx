@@ -12,10 +12,17 @@ import cn from 'classnames';
 import { ActiveSettings } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
 
+export type VersionInfo = {
+  id?: number;
+  name?: string;
+  description?: string;
+};
+
 type ProcessDocumentProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
+  version: VersionInfo;
 };
 
 /**
@@ -25,6 +32,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   processData,
   settings,
   processHierarchy,
+  version,
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -148,8 +156,21 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
             <Title>{processData.name}</Title>
             <div className={styles.TitleInfos}>
               <div>Owner: {processData.owner.split('|').pop()}</div>
-              <div>Version: Latest</div>
-              <div>Last Edit: {processData.lastEdited}</div>
+              {version.id ? (
+                <>
+                  <div>Version: {version.name || version.id}</div>
+                  {version.description ? (
+                    <div>Version Description: {version.description}</div>
+                  ) : null}
+                </>
+              ) : (
+                <div>Version: Latest</div>
+              )}
+              {version.id ? (
+                <div>Creation Time: {new Date(version.id).toUTCString()}</div>
+              ) : (
+                <div>Last Edit: {processData.lastEdited}</div>
+              )}
             </div>
           </div>
           {settings.tableOfContents ? (

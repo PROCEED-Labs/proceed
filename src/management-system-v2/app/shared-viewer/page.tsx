@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/processes';
+import { getProcessVersionBpmn } from '@/lib/data/legacy/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
@@ -24,8 +25,13 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   let processData: Process;
   let iframeMode;
   try {
-    const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
+    const { processId, version, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     processData = await getProcess(processId as string);
+
+    if (version) {
+      processData.bpmn = await getProcessVersionBpmn(processId as string, parseInt(version));
+    }
+
     iframeMode = embeddedMode;
 
     if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {

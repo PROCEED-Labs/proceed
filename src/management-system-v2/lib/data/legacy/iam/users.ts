@@ -120,6 +120,10 @@ export function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
 
   if (accountsMetaObject[id]) throw new Error('Account already exists');
 
+  const user = getUserById(newAccount.userId);
+  if (!user) throw new Error('User not found');
+  if (user.guest) throw new Error('Guest users cannot have oauth accounts');
+
   const account = { ...newAccount, id };
   store.add('accounts', account);
   accountsMetaObject[id] = account;

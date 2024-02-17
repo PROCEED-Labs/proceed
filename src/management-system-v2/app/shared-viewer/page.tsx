@@ -8,6 +8,7 @@ import { Process } from '@/lib/data/process-schema';
 import TokenExpired from './token-expired';
 import InvalidShareToken from './invalid-token';
 import ProcessNoLongerShared from './process-no-longer-shared';
+import ProcessDoesNotExist from './process-does-not-exist';
 
 interface PageProps {
   searchParams: {
@@ -29,6 +30,10 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     processData = await getProcess(processId as string);
     iframeMode = embeddedMode;
+
+    if (!processData) {
+      return <ProcessDoesNotExist />;
+    }
 
     if (!processData.shared) {
       return <ProcessNoLongerShared />;

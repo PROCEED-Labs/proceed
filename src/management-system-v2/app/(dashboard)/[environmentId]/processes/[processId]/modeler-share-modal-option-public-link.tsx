@@ -29,12 +29,6 @@ const ModelerShareModalOptionPublicLink = ({
 
   const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
 
-  const getNewToken = async () => {
-    const { token } = await generateProcessShareToken({ processId: processId });
-    setToken(token);
-    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
-  };
-
   useEffect(() => {
     setIsShareLinkChecked(shared);
     if (shared) {

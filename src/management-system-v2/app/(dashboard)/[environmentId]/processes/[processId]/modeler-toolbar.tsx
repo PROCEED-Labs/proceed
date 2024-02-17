@@ -51,15 +51,6 @@ const ModelerToolbar = ({
     ProcessExportOptions['type'] | undefined
   >();
 
-  const getProcessData = () => {
-    return getProcess(processId as string)
-      .then((processData) => {
-        return processData;
-      })
-      .catch((error) => {
-        console.error('Error fetching process data:', error);
-      });
-  };
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
@@ -222,7 +213,6 @@ const ModelerToolbar = ({
               <ModelerShareModalButton
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
-                processData={getProcessData}
               />
               {!showMobileView && (
                 <>

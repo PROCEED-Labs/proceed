@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcess } from '@/lib/data/processes';
-import { getProcessVersionBpmn } from '@/lib/data/legacy/process';
+import { getProcesses, getProcessVersionBpmn } from '@/lib/data/legacy/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
@@ -21,6 +21,8 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <h1>Invalid Token</h1>;
   }
 
+  let isOwner = false;
+
   const key = process.env.JWT_SHARE_SECRET!;
   let processData: Process;
   let iframeMode;
@@ -28,19 +30,31 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     const { processId, version, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     processData = await getProcess(processId as string);
 
+    if (session) {
+      // check if the current user is the owner of the process => if yes give access regardless of sharing status
+      const { ability } = await getCurrentEnvironment(session?.user.id);
+      const ownedProcesses = await getProcesses(ability);
+      isOwner = ownedProcesses.some((process) => process.id === processId);
+    }
+
     if (version) {
       processData.bpmn = await getProcessVersionBpmn(processId as string, parseInt(version));
     }
 
     iframeMode = embeddedMode;
 
-    if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
+    if (!isOwner && processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
       return <TokenExpired />;
     }
   } catch (err) {
     console.error('error while verifying token... ', err);
   }
-  if (processData!.shared && processData!.sharedAs === 'protected' && !session?.user.id) {
+  if (
+    !isOwner &&
+    processData!.shared &&
+    processData!.sharedAs === 'protected' &&
+    !session?.user.id
+  ) {
     const callbackUrl = `/shared-viewer?token=${searchParams.token}`;
     const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
     redirect(loginPath);
@@ -49,7 +63,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   return (
     <>
       <div>
-        <BPMNSharedViewer processData={processData!} embeddedMode={iframeMode} />
+        <BPMNSharedViewer isOwner={isOwner} processData={processData!} embeddedMode={iframeMode} />
       </div>
     </>
   );

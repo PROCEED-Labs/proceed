@@ -10,6 +10,7 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -23,6 +24,8 @@ import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+
+import { generateProcessShareToken } from '@/lib/sharing/process-sharing';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -135,6 +138,11 @@ const ModelerToolbar = ({
     }
   };
 
+  const handleOpenDocumentation = async () => {
+    const { token } = await generateProcessShareToken({ processId, version: selectedVersionId });
+    router.push(`${window.location.origin}/shared-viewer?token=${token}`);
+  };
+
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
@@ -221,6 +229,9 @@ const ModelerToolbar = ({
                 onExportMobile={handleProcessExportModalToggleMobile}
                 processData={getProcessData}
               />
+              <Tooltip title="Open Documentation">
+                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+              </Tooltip>
               {!showMobileView && (
                 <>
                   <Tooltip title="Show XML">

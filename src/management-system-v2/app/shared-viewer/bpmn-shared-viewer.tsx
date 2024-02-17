@@ -44,9 +44,15 @@ const ToastEditor: Promise<typeof ToastEditorType> =
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: Awaited<ReturnType<typeof getProcess>>;
   embeddedMode?: boolean;
+  isOwner: boolean;
 };
 
-const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNSharedViewerProps) => {
+const BPMNSharedViewer = ({
+  processData,
+  embeddedMode,
+  isOwner,
+  ...divProps
+}: BPMNSharedViewerProps) => {
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
@@ -71,7 +77,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
   const [versionInfo, setVersionInfo] = useState<VersionInfo>({});
 
-  if (!processData.shared) {
+  if (!isOwner && !processData.shared) {
     return <Text type="danger">Process is no longer shared</Text>;
   }
 
@@ -253,12 +259,12 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
                 <Button
                   size="large"
                   onClick={() => {
-                    router.push('/processes');
+                    router.push('/');
                   }}
                 >
                   Go to PROCEED
                 </Button>
-                {!embeddedMode && (
+                {!embeddedMode && !isOwner && (
                   <Button size="large" onClick={handleCopyToOwnWorkspace}>
                     Add to your Processes
                   </Button>

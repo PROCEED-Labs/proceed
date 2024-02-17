@@ -188,10 +188,6 @@ export async function updateProcessMetaData(
     delete newMetaData.shared_with;
   } */
 
-  newMetaData.shared = metaChanges.shared;
-  newMetaData.sharedAs = metaChanges.sharedAs;
-  if (metaChanges.shareTimeStamp) newMetaData.shareTimeStamp = metaChanges.shareTimeStamp;
-
   processMetaObjects[processDefinitionsId] = newMetaData;
 
   store.update('processes', processDefinitionsId, removeExcessiveInformation(newMetaData));

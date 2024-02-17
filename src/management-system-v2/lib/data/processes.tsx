@@ -14,6 +14,7 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
+  updateProcessMetaData,
 } from './legacy/_process';
 import {
   addDocumentation,
@@ -137,6 +138,34 @@ export const addProcesses = async (
   }
 
   return newProcesses;
+};
+
+export const updateProcessMetaInfo = async (
+  definitionsId: string,
+  shared: boolean | undefined,
+  sharedAs: 'public' | 'protected' | undefined,
+  shareToken: string | undefined,
+  shareTimeStamp: number | undefined,
+) => {
+  const { ability } = await getCurrentEnvironment();
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionsId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update this process', UserErrorType.PermissionError);
+  }
+
+  await updateProcessMetaData(definitionsId, {
+    shared: shared,
+    sharedAs: sharedAs,
+    shareTimeStamp: shareTimeStamp,
+    shareToken: shareToken,
+  });
 };
 
 export const updateProcess = async (

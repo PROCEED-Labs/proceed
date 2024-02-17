@@ -6,7 +6,6 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
 import { Button, Typography, message } from 'antd';
 import { copyProcesses } from '@/lib/data/processes';
-import { ApiData } from '@/lib/fetch-data';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';

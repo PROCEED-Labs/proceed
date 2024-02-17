@@ -10,12 +10,14 @@ import {
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
+  shareToken: string;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
   shared,
   sharedAs,
+  shareToken,
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
@@ -36,10 +38,10 @@ const ModelerShareModalOptionPublicLink = ({
   useEffect(() => {
     setIsShareLinkChecked(shared);
     if (shared) {
-      getNewToken();
+      setToken(shareToken);
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected' ? true : false);
-  }, [shared, sharedAs]);
+  }, [shared, sharedAs, shareToken]);
 
   const handleCopyLink = async () => {
     try {

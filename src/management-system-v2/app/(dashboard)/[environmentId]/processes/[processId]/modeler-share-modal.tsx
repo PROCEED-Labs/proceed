@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useMemo, useState } from 'react';
+import React, { FC, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
 import {
   ShareAltOutlined,
@@ -44,11 +44,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
+  const [shareToken, setShareToken] = useState('');
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs } = await getProcess(processId as string);
+    const { shared, sharedAs, shareToken } = await getProcess(processId as string);
     setShared(shared);
     setSharedAs(sharedAs);
+    setShareToken(shareToken);
   };
 
   const refresh = async () => {
@@ -156,7 +158,12 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         setActiveIndex(0);
       },
       subOption: (
-        <ModelerShareModalOptionPublicLink shared={shared} sharedAs={sharedAs} refresh={refresh} />
+        <ModelerShareModalOptionPublicLink
+          shared={shared}
+          sharedAs={sharedAs}
+          shareToken={shareToken}
+          refresh={refresh}
+        />
       ),
     },
     {

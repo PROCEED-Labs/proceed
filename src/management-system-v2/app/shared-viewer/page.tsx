@@ -6,6 +6,8 @@ import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
 import { Process } from '@/lib/data/process-schema';
 import TokenExpired from './token-expired';
+import InvalidShareToken from './invalid-token';
+import ProcessNoLongerShared from './process-no-longer-shared';
 
 interface PageProps {
   searchParams: {
@@ -17,7 +19,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const token = searchParams.token;
   const { session } = await getCurrentUser();
   if (typeof token !== 'string') {
-    return <h1>Invalid Token</h1>;
+    return <InvalidShareToken />;
   }
 
   const key = process.env.JWT_SHARE_SECRET!;
@@ -27,6 +29,10 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     processData = await getProcess(processId as string);
     iframeMode = embeddedMode;
+
+    if (!processData.shared) {
+      return <ProcessNoLongerShared />;
+    }
 
     if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
       return <TokenExpired />;

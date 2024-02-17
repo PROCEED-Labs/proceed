@@ -12,8 +12,11 @@ import { Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 const invitationTokens = new Map<string, VerificationToken>();
 
 const Adapter = {
-  createUser: async (user: Omit<AuthenticatedUser, 'id'>) => {
+  createUser: async (
+    user: Omit<AuthenticatedUser, 'id'> | { email: string; emailVerified: Date },
+  ) => {
     return addUser({
+      image: null,
       ...user,
       guest: false,
     });

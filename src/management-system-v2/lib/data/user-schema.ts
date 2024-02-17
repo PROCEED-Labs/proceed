@@ -20,7 +20,7 @@ export const AuthenticatedUserDataSchema = z.object({
     .min(1, 'The Username must be at least 1 character long')
     .max(35, 'The Username cannot be longer than 35 characters')
     .optional(),
-  image: z.string().url().nullable(),
+  image: z.string().url().nullable().optional(),
 });
 export type AuthenticatedUserData = z.infer<typeof AuthenticatedUserDataSchema>;
 
@@ -32,10 +32,13 @@ export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
 });
 export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema> & { id: string };
 
-export const UserSchema = z.union([
-  AuthenticatedUserSchema,
-  z.object({ guest: z.literal(true), id: z.string().optional() }),
-]);
+export const GuestUserSchema = z.object({
+  guest: z.literal(true),
+  id: z.string().optional(),
+});
+export type GuestUser = z.infer<typeof GuestUserSchema> & { id: string };
+
+export const UserSchema = z.union([AuthenticatedUserSchema, GuestUserSchema]);
 export type User = z.infer<typeof UserSchema> & { id: string };
 
 /**

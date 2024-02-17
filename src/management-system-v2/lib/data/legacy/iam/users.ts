@@ -94,21 +94,29 @@ export function deleteuser(userId: string) {
 export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
   const user = getUserById(userId, { throwIfNotFound: true });
 
-  if (user.guest) throw new Error('Guest users cannot be updated');
+  const isGoingToBeGuest = inputUser.guest !== undefined ? inputUser.guest : user.guest;
 
-  const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+  let updatedUser: User;
+  if (isGoingToBeGuest) {
+    updatedUser = {
+      id: user.id,
+      guest: true,
+    };
+  } else {
+    const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
 
-  if (newUserData.email) {
-    const existingUser = getUserByEmail(newUserData.email);
+    if (newUserData.email) {
+      const existingUser = getUserByEmail(newUserData.email);
 
-    if (existingUser && existingUser.id !== userId)
-      throw new Error('User with this email or username already exists');
+      if (existingUser && existingUser.id !== userId)
+        throw new Error('User with this email or username already exists');
+    }
+
+    updatedUser = { ...(user as AuthenticatedUser), ...newUserData };
   }
 
-  const userData = { ...user, ...newUserData };
-
-  usersMetaObject[user.id] = userData;
-  store.update('users', userId, userData);
+  usersMetaObject[user.id] = updatedUser;
+  store.update('users', userId, updatedUser);
 
   return user;
 }
@@ -116,14 +124,14 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
 export function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
   const newAccount = OauthAccountSchema.parse(accountInput);
 
-  const id = v4();
-
-  if (accountsMetaObject[id]) throw new Error('Account already exists');
-
   const user = getUserById(newAccount.userId);
   if (!user) throw new Error('User not found');
   if (user.guest) throw new Error('Guest users cannot have oauth accounts');
 
+  const id = v4();
+  if (accountsMetaObject[id]) throw new Error('Account already exists');
+
+  console.log('adding account');
   const account = { ...newAccount, id };
   store.add('accounts', account);
   accountsMetaObject[id] = account;

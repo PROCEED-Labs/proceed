@@ -1,9 +1,9 @@
-import { AuthOptions } from 'next-auth';
+import { AuthOptions, getServerSession } from 'next-auth';
 import Auth0Provider from 'next-auth/providers/auth0';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
 import Adapter from './adapter';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -29,10 +29,33 @@ const nextAuthOptions: AuthOptions = {
 
       return token;
     },
-    session({ session, token }) {
+    session(args) {
+      const { session, token } = args;
       if (token.user) session.user = token.user;
 
       return session;
+    },
+    signIn: async ({ account, user: _user }) => {
+      const session = await getServerSession(nextAuthOptions);
+      const sessionUser = session?.user;
+
+      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
+        const user = _user as Partial<AuthenticatedUser>;
+        const guestUser = getUserById(sessionUser.id);
+
+        if (guestUser.guest) {
+          updateUser(guestUser.id, {
+            firstName: user.firstName ?? undefined,
+            lastName: user.lastName ?? undefined,
+            username: user.username ?? undefined,
+            image: user.image ?? undefined,
+            email: user.email ?? undefined,
+            guest: false,
+          });
+        }
+      }
+
+      return true;
     },
   },
 };
@@ -56,7 +79,6 @@ if (process.env.USE_AUTH0) {
           firstName: profile.given_name,
           lastName: profile.family_name,
           username: profile.preferred_username,
-          guest: false,
         };
       },
     }),

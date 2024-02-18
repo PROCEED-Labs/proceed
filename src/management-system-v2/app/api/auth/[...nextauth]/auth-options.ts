@@ -1,9 +1,11 @@
 import { AuthOptions, getServerSession } from 'next-auth';
 import Auth0Provider from 'next-auth/providers/auth0';
+import EmailProvider from 'next-auth/providers/email';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
+import { sendEmail } from '@/lib/email/mailer';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -18,6 +20,15 @@ const nextAuthOptions: AuthOptions = {
       credentials: {},
       async authorize() {
         return addUser({ guest: true });
+      },
+    }),
+    EmailProvider({
+      sendVerificationRequest(params) {
+        sendEmail({
+          to: params.identifier,
+          body: params.url,
+          subject: 'Sign in',
+        });
       },
     }),
   ],

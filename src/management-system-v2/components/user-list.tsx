@@ -39,7 +39,7 @@ export type UserListProps = {
   createUserNode?: ReactNode;
   loading?: boolean;
   sidePanel?: ReactNode;
-  setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
+  setShowMobileUserSider?: Dispatch<SetStateAction<boolean>>;
   onSelectedRows?: (users: ListUser[]) => void;
 };
 
@@ -92,7 +92,7 @@ const UserList: FC<UserListProps> = ({
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
 
   const showMobileUserSider = () => {
-    setShowMobileUserSider(true);
+    setShowMobileUserSider?.(true);
   };
 
   const defaultColumns = [

@@ -6,9 +6,6 @@ const nextConfig = {
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // This is due to needing to init our in-memory db before accessing the getters.
     // Can probably be removed once we switch to a real db.

@@ -135,9 +135,9 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
     userMappings.push(newRoleMapping);
     role.members.push({
       userId: userId,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      username: user.username ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
       email: user.email,
     });
 

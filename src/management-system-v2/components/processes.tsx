@@ -3,21 +3,18 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  CloseOutlined,
-  InfoCircleOutlined,
   PlusOutlined,
   ImportOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
-import MetaData, { MetaPanelRefType } from './process-info-card';
+import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
@@ -38,7 +35,6 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
-import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -63,12 +59,6 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
     versionDescription: undefined,
     versionBasedOn: undefined,
   });
-  // newBPMN = await manipulateElementsByTagName(newBPMN, 'bpmn:Definitions', (definitions: any) => {
-  //   delete definitions.version;
-  //   delete definitions.versionName;
-  //   delete definitions.versionDescription;
-  //   delete definitions.versionBasedOn;
-  // });
 
   return newBPMN;
 };
@@ -162,18 +152,6 @@ const Processes = ({ processes }: ProcessesProps) => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const CollapsePannelRef = useRef<MetaPanelRefType>(null);
-
-  const collapseCard = CollapsePannelRef.current;
-  // () => {
-  //   addPreferences({
-  //     'process-meta-data': {
-  //       open: !showInfo,
-  //       width: getWidth(),
-  //     },
-  //   });
-  // };
-
   const deselectAll = () => {
     setSelectedRowElements([]);
   };
@@ -230,7 +208,6 @@ const Processes = ({ processes }: ProcessesProps) => {
         className={breakpoint.xs ? styles.MobileView : ''}
         style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
       >
-        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{ flex: '1' }}>
           <Bar
             leftNode={
@@ -275,16 +252,6 @@ const Processes = ({ processes }: ProcessesProps) => {
                         <AppstoreOutlined />
                       </Button>
                     </Space.Compact>
-                    {/* {breakpoint.xl ? (
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          if (collapseCard) collapseCard();
-                        }}
-                      >
-                        <InfoCircleOutlined />
-                      </Button>
-                    ) : undefined} */}
                   </span>
                 }
 
@@ -295,7 +262,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                     className={styles.FloatButton}
                     trigger="click"
                     type="primary"
-                    style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                    style={{ marginBottom: '100px', marginRight: '10px', zIndex: '101' }}
                     icon={<PlusOutlined />}
                   >
                     <Tooltip trigger="hover" placement="left" title="Create a process">
@@ -366,7 +333,7 @@ const Processes = ({ processes }: ProcessesProps) => {
 
         {/*Meta Data Panel*/}
         {breakpoint.xl ? (
-          <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
+          <MetaData data={filteredData} selection={selectedRowKeys} />
         ) : (
           <Drawer
             onClose={closeMobileMetaData}
@@ -381,6 +348,7 @@ const Processes = ({ processes }: ProcessesProps) => {
           </Drawer>
         )}
       </div>
+
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,

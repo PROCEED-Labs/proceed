@@ -18,9 +18,9 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
   const [deletingUser, startTransition] = useTransition();
   const [showMobileUserSider, setShowMobileUserSider] = useState(false);
 
-  const closeMobileUserSider = () => {
-    setShowMobileUserSider(false);
-  };
+  // const closeMobileUserSider = () => {
+  //   setShowMobileUserSider(false);
+  // };
 
   const router = useRouter();
   const environmentId = useEnvironment();
@@ -75,11 +75,13 @@ const UsersPage: FC<{ users: User[] }> = ({ users }) => {
           }}
         />
       )}
+      selectedUser={selectedUser}
       createUserNode={<HeaderActions />}
       onSelectedRows={(users) => {
         setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
       }}
       setShowMobileUserSider={setShowMobileUserSider}
+      showMobileUserSider={showMobileUserSider}
       sidePanel={
         <UserSidePanel
           user={selectedUser}

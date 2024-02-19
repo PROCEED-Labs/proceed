@@ -27,7 +27,21 @@ const defaultPreferences = {
       The new default won't be set otherwise
     */
   'icon-view-in-process-list': false,
-  'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
+  'icon-view-in-user-list': false,
+  'process-list-columns-desktop': [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Selected Columns',
+  ],
+  'process-list-columns-mobile': [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Meta Data Button',
+  ],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },

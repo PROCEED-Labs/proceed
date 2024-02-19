@@ -13,12 +13,25 @@ import {
   FloatButton,
   Tooltip,
 } from 'antd';
-import { CloseOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+} from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { User } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
-import HeaderActions from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
+import HeaderActions, {
+  FloatButtonActions,
+} from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
+import { useUserPreferences } from '@/lib/user-preferences';
+import cn from 'classnames';
+import UserSiderContent from '@/app/(dashboard)/[environmentId]/iam/users/user-sider-content';
+import ScrollBar from './scrollbar';
+import TabCard from './tabcard-model-metadata';
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
@@ -40,7 +53,9 @@ export type UserListProps = {
   loading?: boolean;
   sidePanel?: ReactNode;
   setShowMobileUserSider: Dispatch<SetStateAction<boolean>>;
+  showMobileUserSider: boolean;
   onSelectedRows?: (users: ListUser[]) => void;
+  selectedUser: ListUser | null;
 };
 
 const UserList: FC<UserListProps> = ({
@@ -54,6 +69,8 @@ const UserList: FC<UserListProps> = ({
   sidePanel,
   onSelectedRows,
   setShowMobileUserSider,
+  showMobileUserSider,
+  selectedUser,
 }) => {
   const { searchQuery, setSearchQuery, filteredData } = useFuzySearch({
     data: users,
@@ -90,9 +107,16 @@ const UserList: FC<UserListProps> = ({
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  const iconView = useUserPreferences.use['icon-view-in-user-list']();
 
-  const showMobileUserSider = () => {
+  const addPreferences = useUserPreferences.use.addPreferences();
+
+  const openMobileUserSider = () => {
     setShowMobileUserSider(true);
+  };
+
+  const closeMobileUserSider = () => {
+    setShowMobileUserSider(false);
   };
 
   const defaultColumns = [
@@ -120,7 +144,7 @@ const UserList: FC<UserListProps> = ({
       key: '',
       title: '',
       render: (): React.ReactNode => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileUserSider}>
+        <Button style={{ float: 'right' }} type="text" onClick={openMobileUserSider}>
           <InfoCircleOutlined />
         </Button>
       ),
@@ -144,13 +168,16 @@ const UserList: FC<UserListProps> = ({
     />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: '10px' }}>
-      <div style={{ flexGrow: 1 }}>
+    <div
+      className={breakpoint.xs ? styles.MobileView : ''}
+      style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+    >
+      <div style={{ flex: '1' }}>
         <Bar
           leftNode={
             <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
               <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                {breakpoint.xs ? null : createUserNode ? createUserNode : null}
+                {breakpoint.md ? createUserNode : null}
 
                 {selectedRowKeys.length ? (
                   <span className={styles.SelectedRow}>
@@ -165,6 +192,28 @@ const UserList: FC<UserListProps> = ({
                   </span>
                 ) : undefined}
               </span>
+              {
+                <span>
+                  <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
+                    <Button
+                      style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                      onClick={() => {
+                        addPreferences({ 'icon-view-in-process-list': false });
+                      }}
+                    >
+                      <UnorderedListOutlined />
+                    </Button>
+                    <Button
+                      style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                      onClick={() => {
+                        addPreferences({ 'icon-view-in-process-list': true });
+                      }}
+                    >
+                      <AppstoreOutlined />
+                    </Button>
+                  </Space.Compact>
+                </span>
+              }
             </span>
           }
           searchProps={{
@@ -173,30 +222,7 @@ const UserList: FC<UserListProps> = ({
             placeholder: 'Search Users ...',
           }}
         />
-        <Table<ListUser>
-          columns={tableColumns}
-          dataSource={filteredData}
-          onRow={(element) => ({
-            onMouseEnter: () => setHoveredRowId(element.id),
-            onMouseLeave: () => setHoveredRowId(null),
-            onClick: () => {
-              setSelectedRowKeys([element.id]);
-              setSelectedRows([element]);
-              if (onSelectedRows) onSelectedRows([element]);
-            },
-          })}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-              setSelectedRowKeys(selectedRowKeys as string[]);
-              setSelectedRows(selectedObjects);
-              if (onSelectedRows) onSelectedRows(selectedObjects);
-            },
-          }}
-          pagination={{ position: ['bottomCenter'] }}
-          rowKey="id"
-          loading={loading}
-        />
+
         {/* <!-- FloatButtonGroup needs a z-index of 101
             since BPMN Logo of the viewer has an z-index of 100 --> */}
         {breakpoint.xl ? undefined : (
@@ -204,16 +230,84 @@ const UserList: FC<UserListProps> = ({
             className={styles.FloatButton}
             trigger="click"
             type="primary"
-            style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+            style={{ marginBottom: '60px', zIndex: '101' }}
             icon={<PlusOutlined />}
           >
             <Tooltip trigger="hover" placement="left" title="Create an user">
-              <FloatButton icon={<HeaderActions />} />
+              <FloatButton icon={<FloatButtonActions />} />
             </Tooltip>
           </FloatButton.Group>
         )}
+
+        {iconView ? undefined : ( //IconView
+          //   <ScrollBar width="12px">
+          //   <div
+          //     className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
+          //     style={{
+          //       display: 'grid',
+          //       gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+          //       justifyContent: 'space-between',
+          //       gridGap: '20px',
+          //     }}
+          //   >
+          //     {/* //TODO: Fix types */}
+          //     {filteredData?.map((item) => (
+          //       <TabCard
+          //         setShowMobileMetaData={setShowMobileUserSider}
+          //         key={item.id}
+          //         item={item}
+          //         completeList={filteredData!}
+          //         selection={selectedRowKeys}
+          //         setSelectionElements={setSelectedRowKeys}
+          //         tabcard={false}
+          //       />
+          //     ))}
+          //   </div>
+          // </ScrollBar>
+
+          //ListView
+          <Table<ListUser>
+            columns={tableColumns}
+            dataSource={filteredData}
+            onRow={(element) => ({
+              onMouseEnter: () => setHoveredRowId(element.id),
+              onMouseLeave: () => setHoveredRowId(null),
+              onClick: () => {
+                setSelectedRowKeys([element.id]);
+                setSelectedRows([element]);
+                if (onSelectedRows) onSelectedRows([element]);
+              },
+            })}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
+                setSelectedRowKeys(selectedRowKeys as string[]);
+                setSelectedRows(selectedObjects);
+                if (onSelectedRows) onSelectedRows(selectedObjects);
+              },
+            }}
+            pagination={{ position: ['bottomCenter'] }}
+            rowKey="id"
+            loading={loading}
+          />
+        )}
       </div>
-      {sidePanel}
+      {/*Meta Data Panel*/}
+      {breakpoint.xl ? (
+        sidePanel
+      ) : (
+        <Drawer
+          onClose={closeMobileUserSider}
+          title={
+            <span>
+              {filteredData?.find((item) => item.id === selectedRowKeys[0])?.username.value!}
+            </span>
+          }
+          open={showMobileUserSider}
+        >
+          <UserSiderContent user={selectedUser} />
+        </Drawer>
+      )}
     </div>
   );
 };

@@ -19,6 +19,7 @@ import React, {
   Key,
   Dispatch,
   SetStateAction,
+  useEffect,
 } from 'react';
 import {
   CopyOutlined,
@@ -26,22 +27,20 @@ import {
   EditOutlined,
   DeleteOutlined,
   StarOutlined,
-  EyeOutlined,
   MoreOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import cn from 'classnames';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
-import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 
@@ -66,6 +65,9 @@ const ColumnHeader = [
   'Owner',
 ];
 
+const numberOfRows =
+  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
+
 const ProcessList: FC<ProcessListProps> = ({
   data,
   selection,
@@ -79,24 +81,17 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
-
-  const numberOfRows =
-    typeof window !== 'undefined'
-      ? breakpoint.xl
-        ? Math.floor((window?.innerHeight - 410) / 49)
-        : data?.length
-      : 10;
-
   //const [previewerOpen, setPreviewerOpen] = useState(false);
-  // const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
+  // const [columnsFiltered, setColumnsFiltered] = useState<TableColumnsType>();
 
   const favourites = [0];
 
@@ -108,14 +103,6 @@ const ProcessList: FC<ProcessListProps> = ({
     (record: ProcessListProcess) => {
       return (
         <>
-          {/* <Tooltip placement="top" title={'Preview'}>
-            <EyeOutlined
-              onClick={() => {
-                setPreviewProcess(record);
-                setPreviewerOpen(true);
-              }}
-            />
-          </Tooltip> */}
           <AuthCan resource={toCaslResource('Process', record)} action="create">
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
@@ -162,8 +149,6 @@ const ProcessList: FC<ProcessListProps> = ({
     [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
   );
 
-  // rowSelection object indicates the need for row selection
-
   const rowSelection: TableRowSelection<ProcessListProcess> = {
     selectedRowKeys: selection,
     onChange: (selectedRowKeys: React.Key[], selectedRows) => {
@@ -173,14 +158,12 @@ const ProcessList: FC<ProcessListProps> = ({
       name: record.id,
     }),
     onSelect: (_, __, selectedRows) => {
-      // setSelection(selectedRows);
       setSelectionElements(selectedRows);
     },
     onSelectNone: () => {
       setSelectionElements([]);
     },
     onSelectAll: (_, selectedRows) => {
-      // setSelection(selectedRows)
       setSelectionElements(selectedRows);
     },
   };
@@ -189,12 +172,10 @@ const ProcessList: FC<ProcessListProps> = ({
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
-      //setSelectedColumns([...selectedColumns, value]);
-      addPreferences({ 'process-list-columns': [...selectedColumns, value] });
+      addPreferences({ 'process-list-columns-desktop': [...selectedColumns, value] });
     } else {
-      //setSelectedColumns(selectedColumns.filter((column) => column !== value));
       addPreferences({
-        'process-list-columns': selectedColumns.filter((column: any) => column !== value),
+        'process-list-columns-desktop': selectedColumns.filter((column: any) => column !== value),
       });
     }
   };
@@ -219,7 +200,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: <StarOutlined />,
       dataIndex: 'id',
-      key: '',
+      key: 'Favorites',
       width: '40px',
       render: (id, _, index) => (
         <StarOutlined
@@ -230,7 +211,6 @@ const ProcessList: FC<ProcessListProps> = ({
         />
       ),
     },
-
     {
       title: 'Process Name',
       dataIndex: 'name',
@@ -257,7 +237,6 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['xs', 'sm'],
     },
-
     {
       title: 'Description',
       dataIndex: 'description',
@@ -277,7 +256,6 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['sm'],
     },
-
     {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
@@ -286,23 +264,21 @@ const ProcessList: FC<ProcessListProps> = ({
       sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
       responsive: ['md'],
     },
-
     {
       title: 'Created On',
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
       sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      onCell: (record, rowIndex) => ({}),
       responsive: ['md'],
     },
-
     {
       title: 'File Size',
       key: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
       responsive: ['md'],
     },
-
     {
       title: 'Owner',
       dataIndex: 'owner',
@@ -310,13 +286,11 @@ const ProcessList: FC<ProcessListProps> = ({
       sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
       responsive: ['md'],
     },
-
     {
       fixed: 'right',
       width: 160,
-      // TODO: add title but only if at least one row is selected
       dataIndex: 'id',
-      key: '',
+      key: 'Selected Columns',
       title: (
         <div style={{ float: 'right' }}>
           <Dropdown
@@ -345,30 +319,84 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['xl'],
     },
-
     {
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
-      key: '',
+      key: 'Meta Data Button',
       title: '',
-      render: (record: ProcessListProcess) => (
-        <Button
-          style={{ float: 'right' }}
-          type="text"
-          onClick={(event) => {
-            event.stopPropagation();
-            setSelectionElements([record]);
-            console.log(selection);
-            showMobileMetaData();
-          }}
-        >
+      render: () => (
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
           <InfoCircleOutlined />
         </Button>
       ),
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
   ];
+
+  //TODO: fix types
+  const onRowActions = (record: any) => ({
+    onClick: (event: any) => {
+      /* CTRL */
+      if (event.ctrlKey) {
+        /* Not selected yet -> Add to selection */
+        if (!selection.includes(record?.id)) {
+          setSelectionElements((prev) => [record, ...prev]);
+          /* Already in selection -> deselect */
+        } else {
+          setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
+        }
+        /* SHIFT */
+      } else if (event.shiftKey) {
+        /* At least one element selected */
+        if (selection.length) {
+          const iLast = data!.findIndex((process) => process.id === lastProcessId);
+          const iCurr = data!.findIndex((process) => process.id === record?.id);
+          /* Identical to last clicked */
+          if (iLast === iCurr) {
+            setSelectionElements([record]);
+          } else if (iLast < iCurr) {
+            /* Clicked comes after last slected */
+            setSelectionElements(data!.slice(iLast, iCurr + 1));
+          } else if (iLast > iCurr) {
+            /* Clicked comes before last slected */
+            setSelectionElements(data!.slice(iCurr, iLast + 1));
+          }
+        } else {
+          /* Nothing selected */
+          setSelectionElements([record]);
+        }
+        /* Normal Click */
+      } else {
+        setSelectionElements([record]);
+        // const element = event.target as HTMLElement;
+        if (!breakpoint.xl) {
+          setSelectionElements([record]);
+          //router.push(`processes/${record.id}`);
+        }
+        // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);
+      }
+      /* Always */
+      setLastProcessId(record?.id);
+    },
+
+    onDoubleClick: () => {
+      router.push(`processes/${record.id}`);
+    },
+    onMouseEnter: () => {
+      setHovered(record);
+    }, // mouse enter row
+    onMouseLeave: () => {
+      setHovered(undefined);
+    }, // mouse leave row
+  });
+
+  // useEffect (() => {
+  //   breakpoint.xl ?
+  //   setColumnsFiltered(columns.filter((c) => selectedColumns.includes(c?.key as string))) :
+  //   setColumnsFiltered(columns.filter((c) => useUserPreferences.use['process-list-columns-mobile']().includes(c?.key as string)))
+
+  // }, [breakpoint, columns, selectedColumns])
 
   const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
 
@@ -379,64 +407,7 @@ const ProcessList: FC<ProcessListProps> = ({
           type: 'checkbox',
           ...rowSelection,
         }}
-        onRow={(record, rowIndex) => ({
-          onClick: (event) => {
-            // event.stopPropagation();
-            // event.preventDefault();
-
-            /* CTRL */
-            if (event.ctrlKey) {
-              /* Not selected yet -> Add to selection */
-              if (!selection.includes(record?.id)) {
-                setSelectionElements((prev) => [record, ...prev]);
-                /* Already in selection -> deselect */
-              } else {
-                setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
-              }
-              /* SHIFT */
-            } else if (event.shiftKey) {
-              /* At least one element selected */
-              if (selection.length) {
-                const iLast = data!.findIndex((process) => process.id === lastProcessId);
-                const iCurr = data!.findIndex((process) => process.id === record?.id);
-                /* Identical to last clicked */
-                if (iLast === iCurr) {
-                  setSelectionElements([record]);
-                } else if (iLast < iCurr) {
-                  /* Clicked comes after last slected */
-                  setSelectionElements(data!.slice(iLast, iCurr + 1));
-                } else if (iLast > iCurr) {
-                  /* Clicked comes before last slected */
-                  setSelectionElements(data!.slice(iCurr, iLast + 1));
-                }
-              } else {
-                /* Nothing selected */
-                setSelectionElements([record]);
-              }
-              /* Normal Click */
-            } else {
-              setSelectionElements([record]);
-              const element = event.target as HTMLElement;
-              //TODO: tagName doesn't work --> give button record prop instead?
-              if (!breakpoint.xl && element.tagName !== 'BUTTON') {
-                router.push(`processes/${record.id}`);
-              }
-              // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);
-            }
-            /* Always */
-            setLastProcessId(record?.id);
-          },
-
-          onDoubleClick: () => {
-            router.push(`processes/${record.id}`);
-          },
-          onMouseEnter: (event) => {
-            setHovered(record);
-          }, // mouse enter row
-          onMouseLeave: (event) => {
-            setHovered(undefined);
-          }, // mouse leave row
-        })}
+        onRow={onRowActions}
         /* ---- */
         /* Breaks Side-Panel */
         // sticky

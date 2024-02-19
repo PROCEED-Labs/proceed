@@ -6,6 +6,7 @@ import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/le
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
+import { randomUUID } from 'crypto';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -33,7 +34,9 @@ const nextAuthOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user: _user }) {
+    async jwt({ token, user: _user, trigger }) {
+      if (trigger === 'signIn') token.csrfToken = randomUUID();
+
       const user = _user as User;
 
       if (_user) token.user = user;
@@ -43,6 +46,7 @@ const nextAuthOptions: AuthOptions = {
     session(args) {
       const { session, token } = args;
       if (token.user) session.user = token.user;
+      if (token.csrfToken) session.csrfToken = token.csrfToken;
 
       return session;
     },

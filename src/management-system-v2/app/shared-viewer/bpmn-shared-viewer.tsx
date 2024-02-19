@@ -40,9 +40,14 @@ import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal
 import TableOfContents, { ElementInfo } from './table-of-content';
 import ProcessDocument, { VersionInfo } from './process-document';
 
-const ToastEditor: Promise<typeof ToastEditorType> =
+const markdownEditor: Promise<ToastEditorType> =
   typeof window !== 'undefined'
-    ? import('@toast-ui/editor').then((mod) => mod.Editor)
+    ? import('@toast-ui/editor')
+        .then((mod) => mod.Editor)
+        .then((Editor) => {
+          const div = document.createElement('div');
+          return new Editor({ el: div });
+        })
     : (Promise.resolve(null) as any);
 
 type BPMNSharedViewerProps = {
@@ -103,14 +108,14 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
     }
   };
 
-  const Editor = use(ToastEditor);
+  const mdEditor = use(markdownEditor);
 
   useEffect(() => {
     let viewerElement: HTMLDivElement;
 
     // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
     async function transform(
-      viewer: ViewerType,
+      bpmnViewer: ViewerType,
       el: any, // the element to transform
       definitions: any, // the defintitions element at the root of the process tree
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
@@ -119,7 +124,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
       let planeSvg;
       let name = el.name || `<${el.id}>`;
 
-      const elementRegistry = viewer.get<ElementRegistry>('elementRegistry');
+      const elementRegistry = bpmnViewer.get<ElementRegistry>('elementRegistry');
 
       const isContainer = isAny(el, [
         'bpmn:Collaboration',
@@ -138,19 +143,19 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
 
       if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
         // get the svg representation of the root plane
-        svg = await getSVGFromBPMN(viewer);
+        svg = await getSVGFromBPMN(bpmnViewer);
       } else {
         const elementsToShow = [el.id];
         // show incoming/outgoing sequence flows for the current element
         if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
         if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
         // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
-        svg = await getSVGFromBPMN(viewer, currentRootId, elementsToShow);
+        svg = await getSVGFromBPMN(bpmnViewer, currentRootId, elementsToShow);
 
         if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
           // getting the whole layer for a collapsed sub-process
           planeSvg = addTooltipsAndLinksToSVG(
-            await getSVGFromBPMN(viewer, el.id),
+            await getSVGFromBPMN(bpmnViewer, el.id),
             (id) => elementRegistry.get(id)?.businessObject.name,
             isContainer ? (elementId) => `#${elementId}_page` : undefined,
           );
@@ -171,7 +176,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
       // recursively transform any children of this element
       if (isType(el, 'bpmn:Collaboration')) {
         for (const participant of el.participants) {
-          children.push(await transform(viewer, participant, definitions, currentRootId));
+          children.push(await transform(bpmnViewer, participant, definitions, currentRootId));
         }
       } else if (isType(el, 'bpmn:Participant')) {
         if (el.processRef.flowElements) {
@@ -180,7 +185,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
           );
           for (const flowElement of flowElements) {
             if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
-            children.push(await transform(viewer, flowElement, definitions, currentRootId));
+            children.push(await transform(bpmnViewer, flowElement, definitions, currentRootId));
           }
         }
       } else {
@@ -190,7 +195,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
           );
           for (const flowElement of flowElements) {
             if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
-            children.push(await transform(viewer, flowElement, definitions, currentRootId));
+            children.push(await transform(bpmnViewer, flowElement, definitions, currentRootId));
           }
         }
       }
@@ -199,10 +204,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
       const meta = getMetaDataFromElement(el);
 
       function getHtmlFromMarkdown(markdown: string) {
-        const div = document.createElement('div');
-        const editor = new Editor({ el: div });
-        editor.setMarkdown(markdown);
-        return editor.getHTML();
+        mdEditor.setMarkdown(markdown);
+        return mdEditor.getHTML();
       }
 
       const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
@@ -271,7 +274,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
         setProcessHierarchy(rootElement);
         document.body.removeChild(viewerElement);
       });
-  }, [finishedInitialLoading, Editor]);
+  }, [finishedInitialLoading, mdEditor]);
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));

@@ -21,11 +21,11 @@ type modalInput = {
 };
 
 const AuthenticatedUserDataModal: FC<{
-  AuthenticateduserData: User;
+  userData: User;
   structure: modalInput;
   modalOpen: boolean;
   close: () => void;
-}> = ({ structure, modalOpen, close: propClose, AuthenticateduserData }) => {
+}> = ({ structure, modalOpen, close: propClose, userData }) => {
   const [form] = Form.useForm();
   const [loading, startTransition] = useTransition();
   const { message } = App.useApp();
@@ -38,7 +38,7 @@ const AuthenticatedUserDataModal: FC<{
   function close() {
     resetErrors();
     propClose();
-    form.setFieldsValue(AuthenticateduserData);
+    form.setFieldsValue(userData);
   }
 
   const submitData = async (values: any) => {
@@ -61,12 +61,7 @@ const AuthenticatedUserDataModal: FC<{
 
   return (
     <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title}>
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={submitData}
-        initialValues={AuthenticateduserData}
-      >
+      <Form form={form} layout="vertical" onFinish={submitData} initialValues={userData}>
         {structure.inputFields.map((input) => (
           <Form.Item
             key={input.submitField}

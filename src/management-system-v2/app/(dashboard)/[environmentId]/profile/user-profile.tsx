@@ -63,8 +63,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           <UserAvatar
             user={userData}
             avatarProps={{
-              size: 120,
-              style: { marginBottom: 120 },
+              size: 90,
+              style: { marginBottom: '1rem' },
             }}
           />
 

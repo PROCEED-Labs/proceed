@@ -31,7 +31,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import UserSiderContent from '@/app/(dashboard)/[environmentId]/iam/users/user-sider-content';
 import ScrollBar from './scrollbar';
-import TabCard from './tabcard-model-metadata';
+import TabCard from './tabcard-user';
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
@@ -239,32 +239,33 @@ const UserList: FC<UserListProps> = ({
           </FloatButton.Group>
         )}
 
-        {iconView ? undefined : ( //IconView
-          //   <ScrollBar width="12px">
-          //   <div
-          //     className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-          //     style={{
-          //       display: 'grid',
-          //       gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-          //       justifyContent: 'space-between',
-          //       gridGap: '20px',
-          //     }}
-          //   >
-          //     {/* //TODO: Fix types */}
-          //     {filteredData?.map((item) => (
-          //       <TabCard
-          //         setShowMobileMetaData={setShowMobileUserSider}
-          //         key={item.id}
-          //         item={item}
-          //         completeList={filteredData!}
-          //         selection={selectedRowKeys}
-          //         setSelectionElements={setSelectedRowKeys}
-          //         tabcard={false}
-          //       />
-          //     ))}
-          //   </div>
-          // </ScrollBar>
-
+        {iconView ? (
+          //IconView
+          <ScrollBar width="12px">
+            <div
+              className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                justifyContent: 'space-between',
+                gridGap: '20px',
+              }}
+            >
+              {/* //TODO: Fix types */}
+              {filteredData?.map((item) => (
+                <TabCard
+                  setShowMobileMetaData={setShowMobileUserSider}
+                  key={item.id}
+                  item={item}
+                  completeList={filteredData!}
+                  selection={selectedRowKeys}
+                  setSelectionElements={setSelectedRowKeys}
+                  tabcard={false}
+                />
+              ))}
+            </div>
+          </ScrollBar>
+        ) : (
           //ListView
           <Table<ListUser>
             columns={tableColumns}

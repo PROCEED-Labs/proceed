@@ -40,15 +40,15 @@ export type SettingsOption = typeof settingsOptions;
 export type ActiveSettings = Partial<{ [key in SettingsOption[number]]: boolean }>;
 
 type SettingsModalProps = {
-  checkedSettings: string[];
+  checkedSettings: SettingsOption;
   onConfirm: (settings: SettingsModalProps['checkedSettings']) => void;
 };
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ checkedSettings, onConfirm }) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [checked, setChecked] = useState(checkedSettings);
+  const [checked, setChecked] = useState<SettingsOption>(checkedSettings);
 
-  const handleSettingsChange = (checkedValues: string[]) => {
+  const handleSettingsChange = (checkedValues: SettingsOption) => {
     setChecked(checkedValues);
   };
 

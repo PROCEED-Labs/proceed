@@ -66,16 +66,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(settingsOptions);
 
-  const processBpmn = processData.bpmn;
+  const mainContent = useRef<HTMLDivElement>(null);
 
-  // prevent unnecessary changes to the bpmn ref on rerender so the BpmnCanvas does not reload the bpmn without it actually changing
-  const bpmn = useMemo(() => {
-    return { bpmn: processBpmn };
-  }, [processBpmn]);
-
-  const mainContent = useRef<HTMLElement>(null);
-
-  const [finishedInitialLoading, setFinishedInitialLoading] = useState(false);
   // a hierarchy of the process elements as it should be displayed in the final document containing meta information for each element
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
   const [versionInfo, setVersionInfo] = useState<VersionInfo>({});
@@ -274,7 +266,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
         setProcessHierarchy(rootElement);
         document.body.removeChild(viewerElement);
       });
-  }, [finishedInitialLoading, mdEditor]);
+  }, [mdEditor]);
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
@@ -328,7 +320,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
                   settings={activeSettings}
                   processHierarchy={processHierarchy}
                   affix={true}
-                  getContainer={() => mainContent.current}
+                  getContainer={() => mainContent.current!}
                   targetOffset={100}
                 />
               </div>

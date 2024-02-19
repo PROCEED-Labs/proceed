@@ -25,7 +25,7 @@ type MetaDataType = {
 export type MetaPanelRefType = () => void;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
-const MetaData: FC<MetaDataType> = ({ data, selection }, ref) => {
+const MetaData = forwardRef<() => void, MetaDataType>(({ data, selection }, ref) => {
   const addPreferences = useUserPreferences.use.addPreferences();
   const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
@@ -91,6 +91,8 @@ const MetaData: FC<MetaDataType> = ({ data, selection }, ref) => {
       </CollapsibleCard>
     </ResizableElement>
   );
-};
+});
 
-export default forwardRef(MetaData);
+MetaData.displayName = 'MetaData';
+
+export default MetaData;

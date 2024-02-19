@@ -1,0 +1,51 @@
+$bg-color: #ffffff;
+$divider-color: #f0f0f0;
+$outline-color: #f4f4f4;
+$triangle-width: 10px;
+
+.AssistantWindow {
+  position: absolute;
+  right: -100px;
+  width: 500px;
+  // height: 200px;
+  background-color: $bg-color;
+  z-index: 9;
+  border-radius: 8px;
+  border: solid 1px $outline-color;
+  display: flex;
+  justify-content: center;
+
+  .innerSpacing {
+    margin: 15px 0px;
+    width: 95%;
+    height: 350px;
+    overflow: clip;
+    // background-color: red;
+  }
+}
+
+.AssistantWindowOutline {
+  position: absolute;
+  right: 11px;
+  bottom: 0%;
+  width: $triangle-width;
+  height: calc($triangle-width * 1.5);
+  background-color: $outline-color;
+  z-index: 10;
+  clip-path: polygon(5% 100%, 50% 0%, 95% 100%, 85% 100%, 50% 20%, 15% 100%);
+  //   clip-path: polygon(5% 95%, 50% 0%, 95% 95%, 85% 95%, 50% 20%, 15% 95%);
+  overflow: visible;
+}
+
+.AssistantWindowOverflow {
+  position: absolute;
+  right: 11px;
+  bottom: -3px;
+  width: $triangle-width;
+  height: calc($triangle-width * 1.5);
+  background-color: $bg-color;
+  z-index: 10;
+  clip-path: polygon(5% 100%, 50% 0%, 95% 100%);
+  //   clip-path: polygon(5% 95%, 50% 0%, 95% 95%, 85% 95%, 50% 20%, 15% 95%);
+  overflow: visible;
+}

@@ -1,0 +1,43 @@
+$chatbox-bg-color: rgba(25, 117, 210, 0.02);
+$outline-color: #f4f4f4;
+$bg-color: #ffffff;
+$borderRadius: 8px;
+
+.ChatBox {
+  width: 100%;
+  height: 260px;
+  background-color: $chatbox-bg-color;
+  border: solid 1px $outline-color;
+  border-radius: $borderRadius;
+  //   display: flex;
+  //   flex-direction: column;
+
+  .ChatDialogue {
+    width: 100%;
+    height: 80%;
+    // flex-grow: 1;
+    // margin-bottom: 1%;
+    border-radius: $borderRadius;
+    // background-color: red;
+    margin-bottom: -2px;
+
+    // background-color: rgba(0, 128, 0, 0.194);
+
+    .MessageContainer {
+      height: auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      // background-color: green;
+      padding-bottom: 4px;
+    }
+  }
+
+  .UserInput {
+    width: 100%;
+    height: 55px;
+    background-color: $bg-color;
+    border-radius: $borderRadius;
+    border: solid 1px $outline-color;
+  }
+}

@@ -28,19 +28,13 @@ const defaultPreferences = {
     */
   'icon-view-in-process-list': false,
   'icon-view-in-user-list': false,
+  'icon-view-in-role-list': false,
   'process-list-columns-desktop': [
     'Favorites',
     'Process Name',
     'Description',
     'Last Edited',
     'Selected Columns',
-  ],
-  'process-list-columns-mobile': [
-    'Favorites',
-    'Process Name',
-    'Description',
-    'Last Edited',
-    'Meta Data Button',
   ],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },

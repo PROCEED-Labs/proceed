@@ -99,6 +99,14 @@ const ProcessList: FC<ProcessListProps> = ({
     setShowMobileMetaData(true);
   };
 
+  const processListColumnsMobile = [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Meta Data Button',
+  ];
+
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
       return (
@@ -326,7 +334,15 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Meta Data Button',
       title: '',
       render: () => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+        <Button
+          style={{ float: 'right' }}
+          type="text"
+          onClick={(e) => {
+            // e.stopPropagation()
+            e.proceedClickedInfoButton = true;
+            showMobileMetaData();
+          }}
+        >
           <InfoCircleOutlined />
         </Button>
       ),
@@ -372,7 +388,8 @@ const ProcessList: FC<ProcessListProps> = ({
         // const element = event.target as HTMLElement;
         if (!breakpoint.xl) {
           setSelectionElements([record]);
-          //router.push(`processes/${record.id}`);
+          // console.log(event.proceedClickedInfoButton)
+          if (!event.proceedClickedInfoButton) router.push(`processes/${record.id}`);
         }
         // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);
       }
@@ -398,7 +415,9 @@ const ProcessList: FC<ProcessListProps> = ({
 
   // }, [breakpoint, columns, selectedColumns])
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
+  const columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+    : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
     <>

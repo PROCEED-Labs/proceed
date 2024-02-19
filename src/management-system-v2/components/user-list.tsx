@@ -31,7 +31,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import UserSiderContent from '@/app/(dashboard)/[environmentId]/iam/users/user-sider-content';
 import ScrollBar from './scrollbar';
-import TabCard from './tabcard-user';
+import TabCard from './tabcard-model-metadata';
 
 type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
   Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
@@ -137,8 +137,6 @@ const UserList: FC<UserListProps> = ({
       key: 'email',
       render: (email: any) => email.highlighted,
     },
-
-    //TODO: get rid of the column on the right side of the info button for breakpoint < xl
     {
       dataIndex: 'info',
       key: '',
@@ -153,7 +151,9 @@ const UserList: FC<UserListProps> = ({
   ];
 
   let tableColumns: Column = defaultColumns;
-  if (typeof columns === 'function')
+  if (!breakpoint.xl) {
+    tableColumns = defaultColumns;
+  } else if (typeof columns === 'function')
     tableColumns = [
       ...defaultColumns,
       ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
@@ -239,33 +239,9 @@ const UserList: FC<UserListProps> = ({
           </FloatButton.Group>
         )}
 
-        {iconView ? (
-          //IconView
-          <ScrollBar width="12px">
-            <div
-              className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                justifyContent: 'space-between',
-                gridGap: '20px',
-              }}
-            >
-              {/* //TODO: Fix types */}
-              {filteredData?.map((item) => (
-                <TabCard
-                  setShowMobileMetaData={setShowMobileUserSider}
-                  key={item.id}
-                  item={item}
-                  completeList={filteredData!}
-                  selection={selectedRowKeys}
-                  setSelectionElements={setSelectedRowKeys}
-                  tabcard={false}
-                />
-              ))}
-            </div>
-          </ScrollBar>
-        ) : (
+        {iconView ? undefined : ( //IconView
+          //TODO: add IconView for User List
+
           //ListView
           <Table<ListUser>
             columns={tableColumns}

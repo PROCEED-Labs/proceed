@@ -3,9 +3,9 @@
 import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from 'react';
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
-import Canvas from 'diagram-js/lib/core/Canvas';
+import type Canvas from 'diagram-js/lib/core/Canvas';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
-import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
 import type BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory';
 import type { ElementLike } from 'diagram-js/lib/model/Types';
@@ -44,7 +44,7 @@ export type BPMNCanvasProps = {
   /** Wether the modeler should have editing capabilities or just be a viewer. */
   type: 'modeler' | 'viewer';
   /** Called once the new BPMN has been fully loaded by the modeler. */
-  onLoaded?: (canvas: Canvas) => void;
+  onLoaded?: () => void;
   /** Called when a commandstack.change event is fired. */
   onChange?: () => void;
   /** Called when the root element changes. */
@@ -71,13 +71,11 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
-  getAllElements: () => Element[];
   getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getSelection: () => Selection;
   getModeling: () => Modeling;
   getFactory: () => BpmnFactory;
-  getSVG: () => Promise<string>;
   loadBPMN: (bpmn: string) => Promise<void>;
 }
 
@@ -124,9 +122,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
       },
-      getAllElements: () => {
-        return modeler.current!.get<ElementRegistry>('elementRegistry').getAll() as Element[];
-      },
       getCurrentRoot: () => {
         if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
           return;
@@ -149,10 +144,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
       getFactory: () => {
         return modeler.current!.get<BpmnFactory>('bpmnFactory');
-      },
-      getSVG: async () => {
-        const { svg } = await modeler.current!.saveSVG();
-        return svg;
       },
       loadBPMN: async (bpmn: string) => {
         // Note: No onUnload here, because this is only meant as a XML "change"
@@ -206,7 +197,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
     useEffect(() => {
       // Store handlers so we can remove them later.
-      const _onLoaded = () => onLoaded?.(modeler.current!.get<Canvas>('canvas'));
+      const _onLoaded = () => onLoaded?.();
       const commandStackChanged = () => onChange?.();
       const selectionChanged = (event: {
         oldSelection: ElementLike[];

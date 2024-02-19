@@ -13,7 +13,6 @@ import UserAvatar from '@/components/user-avatar';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
-  const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
 
   const { message: messageApi } = App.useApp();
 
@@ -30,22 +29,6 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
   return (
     <>
-      <UserDataModal
-        userData={userData}
-        modalOpen={changeEmailModalOpen}
-        close={() => setChangeEmailModalOpen((open) => !open)}
-        structure={{
-          title: 'Change your email',
-          password: false,
-          inputFields: [
-            {
-              label: 'Email',
-              submitField: 'email',
-              userDataField: 'email',
-            },
-          ],
-        }}
-      />
       <UserDataModal
         userData={userData}
         modalOpen={changeNameModalOpen}
@@ -102,19 +85,22 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 title: 'Email',
                 value: !userData.guest ? userData.email : 'Guest',
-                action: () => setChangeEmailModalOpen(true),
               },
             ]}
             columns={[
               { dataIndex: 'title' },
               { dataIndex: 'value' },
               {
-                render: () => <RightOutlined />,
+                render: (_, row) => row.action && <RightOutlined />,
               },
             ]}
-            onRow={(row) => ({
-              onClick: row.action,
-            })}
+            onRow={(row) =>
+              row.action
+                ? {
+                    onClick: row.action,
+                  }
+                : {}
+            }
             showHeader={false}
             pagination={false}
             className={styles.Table}

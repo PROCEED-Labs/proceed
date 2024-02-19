@@ -7,6 +7,9 @@ import { toBpmnObject, getElementById, getRootFromElement } from '@proceed/bpmn-
 import { asyncFilter } from '../helpers/javascriptHelpers';
 import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
+import type ViewerType from 'bpmn-js/lib/Viewer';
+import type Canvas from 'diagram-js/lib/core/Canvas';
+
 /**
  * Downloads the data onto the device of the user
  *
@@ -36,37 +39,49 @@ export function downloadFile(filename: string, data: Blob) {
 /**
  * Converts the bpmn into an svg image of the process or of subprocess contained inside the process
  *
- * @param bpmn
+ * @param bpmnOrViewer either the bpmn as a string or a viewer with the bpmn already imported
  * @returns the svg image as a string
  */
 export async function getSVGFromBPMN(
-  bpmn: string,
+  bpmnOrViewer: string | ViewerType,
   subprocessId?: string,
   flowElementsToExportIds: string[] = [],
 ) {
-  const Viewer = (await import('bpmn-js/lib/Viewer')).default;
+  let viewer: ViewerType;
+  let viewerElement;
 
-  //Creating temporary element for BPMN Viewer
-  const viewerElement = document.createElement('div');
+  if (typeof bpmnOrViewer === 'string') {
+    const Viewer = (await import('bpmn-js/lib/Viewer')).default;
 
-  //Assiging process id to temp element and append to DOM
-  viewerElement.id = 'canvas_' + v4();
-  document.body.appendChild(viewerElement);
+    //Creating temporary element for BPMN Viewer
+    viewerElement = document.createElement('div');
 
-  //Create a viewer to transform the bpmn into an svg
-  const viewer = new Viewer({ container: '#' + viewerElement.id });
-  await viewer.importXML(bpmn);
+    //Assiging process id to temp element and append to DOM
+    viewerElement.id = 'canvas_' + v4();
+    document.body.appendChild(viewerElement);
 
-  const canvas = viewer.get('canvas') as any;
+    //Create a viewer to transform the bpmn into an svg
+    viewer = new Viewer({ container: '#' + viewerElement.id });
+    await viewer.importXML(bpmnOrViewer);
+  } else {
+    viewer = bpmnOrViewer;
+  }
+
+  const canvas = viewer.get('canvas') as Canvas;
+
+  let originalRoot;
 
   // target the correct plane (root process or the specified subprocess)
   if (subprocessId) {
-    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`));
+    originalRoot = canvas.getRootElement();
+    canvas.setRootElement(canvas.findRoot(`${subprocessId}_plane`)!);
   }
 
-  canvas.zoom('fit-viewport', 'auto');
+  canvas.zoom('fit-viewport', { x: 0, y: 0 });
 
   const elementRegistry = viewer.get('elementRegistry') as ElementRegistry;
+
+  let originalVisibilityMap: { [elId: string]: string } = {};
 
   // if specific elements are selected for export make sure to filter out all other elements
   if (flowElementsToExportIds.length) {
@@ -97,14 +112,30 @@ export async function getSVGFromBPMN(
         );
       });
       unselectedElements.forEach((el: any) => {
-        elementRegistry.getGraphics(el).style.setProperty('display', 'none');
+        const elementStyle = elementRegistry.getGraphics(el).style;
+        originalVisibilityMap[el.id] = elementStyle.getPropertyValue('display');
+        elementStyle.setProperty('display', 'none');
       });
     }
   }
 
   const { svg } = await viewer.saveSVG();
 
-  document.body.removeChild(viewerElement);
+  // reset the state
+  if (viewerElement) {
+    // remove the temporary element that the viewer is bound to
+    document.body.removeChild(viewerElement);
+  } else {
+    // reset to the original state of the viewer that was passed in
+    if (originalRoot) {
+      canvas.setRootElement(originalRoot);
+      canvas.zoom('fit-viewport', { x: 0, y: 0 });
+    }
+
+    Object.entries(originalVisibilityMap).forEach(([elId, originalDisplayValue]) => {
+      elementRegistry.getGraphics(elId).style.setProperty('display', originalDisplayValue);
+    });
+  }
 
   return svg;
 }

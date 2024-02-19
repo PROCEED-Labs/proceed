@@ -1,6 +1,12 @@
 'use client';
-import React, { useRef, useState, useEffect, useMemo, useCallback, use } from 'react';
+import React, { useRef, useState, useEffect, useMemo, use } from 'react';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
+import type ViewerType from 'bpmn-js/lib/Viewer';
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import Canvas from 'diagram-js/lib/core/Canvas';
+import schema from '@/lib/schema';
+
+import { v4 } from 'uuid';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
@@ -17,7 +23,6 @@ import { copyProcesses } from '@/lib/data/processes';
 import { getProcess } from '@/lib/data/legacy/process';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';
 
 import { addTooltipsAndLinksToSVG, getSVGFromBPMN } from '@/lib/process-export/util';
 
@@ -30,7 +35,6 @@ import {
   getRootFromElement,
   getDefinitionsVersionInformation,
 } from '@proceed/bpmn-helper';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
@@ -41,18 +45,13 @@ const ToastEditor: Promise<typeof ToastEditorType> =
     ? import('@toast-ui/editor').then((mod) => mod.Editor)
     : (Promise.resolve(null) as any);
 
-type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
+type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   embeddedMode?: boolean;
   isOwner: boolean;
 };
 
-const BPMNSharedViewer = ({
-  processData,
-  embeddedMode,
-  isOwner,
-  ...divProps
-}: BPMNSharedViewerProps) => {
+const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedViewerProps) => {
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
@@ -69,7 +68,6 @@ const BPMNSharedViewer = ({
     return { bpmn: processBpmn };
   }, [processBpmn]);
 
-  const bpmnViewer = useRef<BPMNCanvasRef>(null);
   const mainContent = useRef<HTMLElement>(null);
 
   const [finishedInitialLoading, setFinishedInitialLoading] = useState(false);
@@ -108,143 +106,172 @@ const BPMNSharedViewer = ({
   const Editor = use(ToastEditor);
 
   useEffect(() => {
-    if (finishedInitialLoading && bpmnViewer.current) {
-      // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
-      async function transform(
-        el: any, // the element to transform
-        definitions: any, // the defintitions element at the root of the process tree
-        currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
-      ): Promise<ElementInfo> {
-        let svg;
-        let planeSvg;
-        let name = el.name || `<${el.id}>`;
+    let viewerElement: HTMLDivElement;
 
-        const isContainer = isAny(el, [
-          'bpmn:Collaboration',
-          'bpmn:Process',
-          'bpmn:Participant',
-          'bpmn:SubProcess',
-        ]);
+    // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
+    async function transform(
+      viewer: ViewerType,
+      el: any, // the element to transform
+      definitions: any, // the defintitions element at the root of the process tree
+      currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
+    ): Promise<ElementInfo> {
+      let svg;
+      let planeSvg;
+      let name = el.name || `<${el.id}>`;
 
-        if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
-          name = 'Process Diagram';
-        } else if (isType(el, 'bpmn:Participant')) {
-          name = 'Pool: ' + name;
-        } else if (isType(el, 'bpmn:SubProcess')) {
-          name = 'Subprocess: ' + name;
-        }
+      const elementRegistry = viewer.get<ElementRegistry>('elementRegistry');
 
-        if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
-          // get the svg representation of the root plane
-          svg = await getSVGFromBPMN(processData.bpmn!);
-        } else {
-          const elementsToShow = [el.id];
-          // show incoming/outgoing sequence flows for the current element
-          if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
-          if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
-          // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
-          svg = await getSVGFromBPMN(processData.bpmn!, currentRootId, elementsToShow);
+      const isContainer = isAny(el, [
+        'bpmn:Collaboration',
+        'bpmn:Process',
+        'bpmn:Participant',
+        'bpmn:SubProcess',
+      ]);
 
-          if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
-            // getting the whole layer for a collapsed sub-process
-            planeSvg = addTooltipsAndLinksToSVG(
-              await getSVGFromBPMN(processData.bpmn!, el.id),
-              (id) => bpmnViewer.current?.getElement(id)?.businessObject.name,
-              isContainer ? (elementId) => `#${elementId}_page` : undefined,
-            );
-            // set the new root for the following export of any children contained in this layer
-            currentRootId = el.id;
-          }
-        }
-
-        // add links from elements in the diagram to (sub-)chapters for those elements and tooltips that show element names or ids
-        svg = addTooltipsAndLinksToSVG(
-          svg,
-          (id) => bpmnViewer.current?.getElement(id)?.businessObject.name,
-          isContainer ? (elementId) => `#${elementId}_page` : undefined,
-        );
-
-        let children: ElementInfo[] | undefined = [];
-
-        // recursively transform any children of this element
-        if (isType(el, 'bpmn:Collaboration')) {
-          children = await asyncMap(el.participants, (participant) =>
-            transform(participant, definitions, currentRootId),
-          );
-        } else if (isType(el, 'bpmn:Participant')) {
-          if (el.processRef.flowElements) {
-            children = await asyncMap(
-              el.processRef.flowElements.filter((el: any) => !isType(el, 'bpmn:SequenceFlow')),
-              (participant) => transform(participant, definitions, currentRootId),
-            );
-          }
-        } else {
-          if (el.flowElements) {
-            children = await asyncMap(
-              el.flowElements.filter((el: any) => !isType(el, 'bpmn:SequenceFlow')),
-              (participant) => transform(participant, definitions, currentRootId),
-            );
-          }
-        }
-
-        // get the meta data to show in the (sub-)chapter of the element
-        const meta = getMetaDataFromElement(el);
-
-        function getHtmlFromMarkdown(markdown: string) {
-          const div = document.createElement('div');
-          const editor = new Editor({ el: div });
-          editor.setMarkdown(markdown);
-          return editor.getHTML();
-        }
-
-        const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
-          if (description) {
-            description = getHtmlFromMarkdown(description);
-          }
-
-          return { id, name, description };
-        });
-
-        let description: string | undefined = undefined;
-        const documentation = el.documentation?.find((el: any) => el.text)?.text;
-        if (documentation) {
-          description = getHtmlFromMarkdown(documentation);
-        }
-
-        // sort so that elements that contain no other elements come first and elements containing others come after
-        children.sort((a, b) => {
-          return !a.isContainer ? -1 : !b.isContainer ? 1 : 0;
-        });
-
-        return {
-          svg,
-          planeSvg,
-          id: el.id,
-          name,
-          description,
-          isContainer,
-          meta: Object.keys(meta).length ? meta : undefined,
-          milestones: milestones.length ? milestones : undefined,
-          children,
-        };
+      if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
+        name = 'Process Diagram';
+      } else if (isType(el, 'bpmn:Participant')) {
+        name = 'Pool: ' + name;
+      } else if (isType(el, 'bpmn:SubProcess')) {
+        name = 'Subprocess: ' + name;
       }
 
-      const canvas = bpmnViewer.current.getCanvas();
-      const root = canvas.getRootElement();
+      if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
+        // get the svg representation of the root plane
+        svg = await getSVGFromBPMN(viewer);
+      } else {
+        const elementsToShow = [el.id];
+        // show incoming/outgoing sequence flows for the current element
+        if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
+        if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
+        // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
+        svg = await getSVGFromBPMN(viewer, currentRootId, elementsToShow);
 
-      const definitions = getRootFromElement(root.businessObject);
-      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
-        setVersionInfo({ id: version, name, description }),
+        if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
+          // getting the whole layer for a collapsed sub-process
+          planeSvg = addTooltipsAndLinksToSVG(
+            await getSVGFromBPMN(viewer, el.id),
+            (id) => elementRegistry.get(id)?.businessObject.name,
+            isContainer ? (elementId) => `#${elementId}_page` : undefined,
+          );
+          // set the new root for the following export of any children contained in this layer
+          currentRootId = el.id;
+        }
+      }
+
+      // add links from elements in the diagram to (sub-)chapters for those elements and tooltips that show element names or ids
+      svg = addTooltipsAndLinksToSVG(
+        svg,
+        (id) => elementRegistry.get(id)?.businessObject.name,
+        isContainer ? (elementId) => `#${elementId}_page` : undefined,
       );
 
-      transform(root.businessObject, root.businessObject.$parent, undefined).then((rootElement) => {
-        setProcessHierarchy(rootElement);
-      });
-    }
-  }, [finishedInitialLoading, Editor]);
+      let children: ElementInfo[] | undefined = [];
 
-  // trigger the build of the document when the viewer has finished loading the bpmn
-  const handleOnLoad = useCallback(() => setFinishedInitialLoading(true), []);
+      // recursively transform any children of this element
+      if (isType(el, 'bpmn:Collaboration')) {
+        for (const participant of el.participants) {
+          children.push(await transform(viewer, participant, definitions, currentRootId));
+        }
+      } else if (isType(el, 'bpmn:Participant')) {
+        if (el.processRef.flowElements) {
+          const flowElements = el.processRef.flowElements.filter(
+            (el: any) => !isType(el, 'bpmn:SequenceFlow'),
+          );
+          for (const flowElement of flowElements) {
+            if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
+            children.push(await transform(viewer, flowElement, definitions, currentRootId));
+          }
+        }
+      } else {
+        if (el.flowElements) {
+          const flowElements = el.flowElements.filter(
+            (el: any) => !isType(el, 'bpmn:SequenceFlow'),
+          );
+          for (const flowElement of flowElements) {
+            if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
+            children.push(await transform(viewer, flowElement, definitions, currentRootId));
+          }
+        }
+      }
+
+      // get the meta data to show in the (sub-)chapter of the element
+      const meta = getMetaDataFromElement(el);
+
+      function getHtmlFromMarkdown(markdown: string) {
+        const div = document.createElement('div');
+        const editor = new Editor({ el: div });
+        editor.setMarkdown(markdown);
+        return editor.getHTML();
+      }
+
+      const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
+        if (description) {
+          description = getHtmlFromMarkdown(description);
+        }
+
+        return { id, name, description };
+      });
+
+      let description: string | undefined = undefined;
+      const documentation = el.documentation?.find((el: any) => el.text)?.text;
+      if (documentation) {
+        description = getHtmlFromMarkdown(documentation);
+      }
+
+      // sort so that elements that contain no other elements come first and elements containing others come after
+      children.sort((a, b) => {
+        return !a.isContainer ? -1 : !b.isContainer ? 1 : 0;
+      });
+
+      return {
+        svg,
+        planeSvg,
+        id: el.id,
+        name,
+        description,
+        isContainer,
+        meta: Object.keys(meta).length ? meta : undefined,
+        milestones: milestones.length ? milestones : undefined,
+        children,
+      };
+    }
+
+    import('bpmn-js/lib/Viewer')
+      .then(async ({ default: Viewer }) => {
+        //Creating temporary element for BPMN Viewer
+        viewerElement = document.createElement('div');
+
+        //Assiging process id to temp element and append to DOM
+        viewerElement.id = 'canvas_' + v4();
+        document.body.appendChild(viewerElement);
+
+        //Create a viewer to transform the bpmn into an svg
+        const viewer = new Viewer({
+          container: '#' + viewerElement.id,
+          moddleExtensions: {
+            proceed: schema,
+          },
+        });
+        await viewer.importXML(processData.bpmn!);
+        return viewer;
+      })
+      .then(async (viewer) => {
+        const canvas = viewer.get<Canvas>('canvas');
+        const root = canvas.getRootElement();
+
+        const definitions = getRootFromElement(root.businessObject);
+        getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
+          setVersionInfo({ id: version, name, description }),
+        );
+
+        return await transform(viewer, root.businessObject, root.businessObject.$parent, undefined);
+      })
+      .then((rootElement) => {
+        setProcessHierarchy(rootElement);
+        document.body.removeChild(viewerElement);
+      });
+  }, [finishedInitialLoading, Editor]);
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
@@ -282,15 +309,6 @@ const BPMNSharedViewer = ({
             </Typography.Text>
           }
         >
-          <div style={{ display: 'none' }}>
-            <BPMNCanvas
-              onLoaded={handleOnLoad}
-              ref={bpmnViewer}
-              className={divProps.className}
-              type={'viewer'}
-              bpmn={bpmn}
-            />
-          </div>
           <div className={styles.MainContent} ref={mainContent}>
             <div className={styles.ProcessInfoCol}>
               <ProcessDocument

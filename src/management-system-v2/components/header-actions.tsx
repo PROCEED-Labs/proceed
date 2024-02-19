@@ -6,6 +6,7 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { FC } from 'react';
 import { useEnvironment } from './auth-can';
+import Assistant from '@/components/assistant';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -32,6 +33,8 @@ const HeaderActions: FC = () => {
 
   return (
     <Space style={{ float: 'right', padding: '16px' }}>
+      <Assistant />
+
       <Button type="text" onClick={() => signOut()}>
         <u>Logout</u>
       </Button>

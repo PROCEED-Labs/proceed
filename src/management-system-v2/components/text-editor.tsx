@@ -1,13 +1,19 @@
-import { Editor, EditorProps } from '@toast-ui/react-editor';
+import { Editor as EditorClass, EditorProps } from '@toast-ui/react-editor';
 import { Tabs } from 'antd';
-import React, { forwardRef, useEffect } from 'react';
+import React, { FC, RefAttributes, forwardRef, useEffect } from 'react';
 import styles from './text-editor.module.scss';
+import dynamic from 'next/dynamic';
 
-const TextEditor = forwardRef<Editor, EditorProps>(function TextEditor(props, ref) {
-  const editorRef = ref as React.MutableRefObject<Editor>;
+// Editor uses `navigator` in top level scope, which is not available in server side rendering.
+const Editor = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Editor), {
+  ssr: false,
+}) as FC<RefAttributes<EditorClass> & EditorProps>;
+
+const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(props, ref) {
+  const editorRef = ref as React.MutableRefObject<EditorClass>;
   useEffect(() => {
     if (editorRef.current) {
-      const editor = editorRef.current as Editor;
+      const editor = editorRef.current as EditorClass;
       const editorInstance = editor.getInstance();
 
       if (props.initialValue && props.initialValue.length > 0) {
@@ -34,6 +40,7 @@ const TextEditor = forwardRef<Editor, EditorProps>(function TextEditor(props, re
           ['code', 'codeblock'],
           ['scrollSync'],
         ]}
+        usageStatistics={false}
         {...props}
       />
       <div style={{ display: 'flex', justifyContent: 'start' }}>
@@ -45,7 +52,7 @@ const TextEditor = forwardRef<Editor, EditorProps>(function TextEditor(props, re
           size="small"
           type="card"
           onChange={(value) => {
-            const editor = editorRef.current as Editor;
+            const editor = editorRef.current as EditorClass;
             const editorInstance = editor.getInstance();
             if (value === 'source') {
               editorInstance.changeMode('markdown');

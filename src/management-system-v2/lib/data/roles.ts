@@ -15,7 +15,7 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
     for (const roleId of roleIds) {
       deleteRole(roleId, ability);
     }
-  } catch (_) {
+  } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
     else return userError('Error deleting roles');

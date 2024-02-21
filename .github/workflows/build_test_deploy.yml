@@ -228,7 +228,6 @@ jobs:
 
   buildMS:
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
     environment: ${{ inputs.environment || 'Staging' }}
     needs:
       - lint
@@ -254,6 +253,9 @@ jobs:
 
       - name: Kaniko build
         uses: aevea/action-kaniko@master
+        # We build on PRs as well to check types but only create a new image on
+        # main.
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
           image: proceed/ms-server
           username: ${{ secrets.DOCKERHUB_USERNAME }}

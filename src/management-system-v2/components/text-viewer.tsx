@@ -1,11 +1,11 @@
 import { Viewer as ViewerClass, ViewerProps } from '@toast-ui/react-editor';
 import dynamic from 'next/dynamic';
-import React, { useEffect, useRef } from 'react';
+import React, { FC, RefAttributes, useEffect, useRef } from 'react';
 
 // Editor uses `navigator` in top level scope, which is not available in server side rendering.
 const Viewer = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Viewer), {
   ssr: false,
-});
+}) as FC<RefAttributes<ViewerClass> & ViewerProps>;
 
 const TextViewer: React.FC<ViewerProps> = (viewerProps) => {
   const viewerRef = useRef<ViewerClass>(null);

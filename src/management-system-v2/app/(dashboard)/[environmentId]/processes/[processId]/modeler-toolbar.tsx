@@ -140,7 +140,11 @@ const ModelerToolbar = ({
 
   const handleOpenDocumentation = async () => {
     const { token } = await generateProcessShareToken({ processId, version: selectedVersionId });
-    router.push(`${window.location.origin}/shared-viewer?token=${token}`);
+    // open the documentation page in a new tab
+    window.open(
+      `${window.location.origin}/shared-viewer?token=${token}`,
+      `${processId}-${selectedVersionId}-tab`,
+    );
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>

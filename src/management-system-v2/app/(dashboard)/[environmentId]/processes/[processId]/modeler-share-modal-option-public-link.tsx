@@ -7,6 +7,8 @@ import {
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 
+import styles from './modeler-share-modal-option-public-link.module.scss';
+
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
@@ -124,6 +126,15 @@ const ModelerShareModalOptionPublicLink = ({
     }
   };
 
+  const handleOpenSharedPage = async () => {
+    const { token } = await generateProcessShareToken({ processId, version: selectedVersionId });
+    // open the documentation page in a new tab
+    window.open(
+      `${window.location.origin}/shared-viewer?token=${token}`,
+      `${processId}-${selectedVersionId}-tab`,
+    );
+  };
+
   return (
     <>
       <div style={{ marginBottom: '5px' }}>
@@ -171,7 +182,7 @@ const ModelerShareModalOptionPublicLink = ({
                         border: '1px solid #000',
                       }}
                       value={publicLinkValue}
-                      size={130}
+                      size={158}
                     />
                   </div>
                 )}
@@ -180,30 +191,23 @@ const ModelerShareModalOptionPublicLink = ({
             <Col span={6} style={{ paddingTop: '10px' }}>
               <Flex vertical gap={10}>
                 <Button
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
+                  className={styles.OptionButton}
                   onClick={handleCopyLink}
                   disabled={!isShareLinkChecked}
                 >
                   Copy link
                 </Button>
                 <Button
+                  className={styles.OptionButton}
+                  onClick={handleOpenSharedPage}
+                  disabled={!isShareLinkChecked}
+                >
+                  Open
+                </Button>
+                <Button
                   icon={<DownloadOutlined />}
                   title="Save as PNG"
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
+                  className={styles.OptionButton}
                   hidden={!isShareLinkChecked}
                   onClick={() => handleQRCodeAction('download')}
                   disabled={!isShareLinkChecked}
@@ -213,14 +217,7 @@ const ModelerShareModalOptionPublicLink = ({
                 <Button
                   icon={<CopyOutlined />}
                   title="Copy as PNG"
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
+                  className={styles.OptionButton}
                   hidden={!isShareLinkChecked}
                   onClick={() => handleQRCodeAction('copy')}
                   disabled={!isShareLinkChecked}

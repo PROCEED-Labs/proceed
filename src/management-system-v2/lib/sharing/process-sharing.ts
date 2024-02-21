@@ -8,7 +8,7 @@ import { toCaslResource } from '../ability/caslAbility';
 
 export interface TokenPayload {
   processId: string | string[];
-  version: string | null;
+  version?: string | null;
   embeddedMode?: boolean;
   timestamp?: number;
 }

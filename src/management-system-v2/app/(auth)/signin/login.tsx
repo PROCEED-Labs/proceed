@@ -10,6 +10,7 @@ import {
   Divider,
   Typography,
   Image as AntDesignImage,
+  Alert,
 } from 'antd';
 
 import styles from './login.module.scss';
@@ -24,6 +25,7 @@ const Login: FC<{
 }> = ({ providers }) => {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? '/';
+  const authError = searchParams.get('error');
 
   return (
     <Space
@@ -49,8 +51,14 @@ const Login: FC<{
           }
           className={styles.Card}
         >
-          <Typography.Title level={5}>Sign in</Typography.Title>
-          <br />
+          <Typography.Title level={5} style={{ marginBottom: '1rem' }}>
+            Sign in
+          </Typography.Title>
+
+          {authError && (
+            <Alert description={authError} type="error" style={{ marginBottom: '2rem' }} />
+          )}
+
           {providers.map((provider, idx) => {
             let loginMethod: ReactNode;
             if (provider.type === 'credentials') {

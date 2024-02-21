@@ -33,6 +33,11 @@
   }
 
   .Main {
+    @media screen {
+      width: 95%;
+      margin: auto;
+    }
+
     @media print {
       padding: 0 40pt 0 40pt;
       box-sizing: border-box;
@@ -88,7 +93,6 @@
     }
 
     .ElementPage {
-      width: 100%;
       margin-top: 7dvh;
 
       .ElementOverview {
@@ -119,17 +123,9 @@
         }
 
         :global(.toastui-editor-contents) {
-          width: 90%;
-          margin: auto;
-
           table {
             width: 100% !important;
           }
-        }
-
-        :global(.ant-table) {
-          width: 90%;
-          margin: auto;
         }
       }
     }

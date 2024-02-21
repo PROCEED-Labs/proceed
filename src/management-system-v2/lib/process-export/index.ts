@@ -8,9 +8,7 @@ import {
 import { downloadFile } from './util';
 
 import jsZip from 'jszip';
-import 'svg2pdf.js';
 
-import pdfExport from './pdf-export';
 import { pngExport, svgExport } from './image-export';
 
 async function bpmnExport(
@@ -77,60 +75,38 @@ async function bpmnExport(
 export async function exportProcesses(options: ProcessExportOptions, processes: ExportProcessInfo) {
   const exportData = await prepareExport(options, processes);
 
-  // determine if a zip export is required
-  let needsZip = false;
-  if (options.type === 'pdf') {
-    // in case of a pdf export all data for a single process (including imported processes) will be exported in a single pdf file
-    const numNonImports = exportData.filter(({ isImport }) => !isImport).length;
-    needsZip = numNonImports > 1;
-  } else {
-    // for other export types we need one file for every kind of additional data (artefacts, collapsed subprocesses, imports)
-    const numProcesses = exportData.length;
-    // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
-    const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
-    const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
-    // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
-    const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
+  // for other export types we need one file for every kind of additional data (artefacts, collapsed subprocesses, imports)
+  const numProcesses = exportData.length;
+  // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
+  const hasMulitpleVersions = Object.keys(exportData[0].versions).length > 1;
+  const hasArtefacts = !!exportData[0].userTasks.length || !!exportData[0].images.length;
+  // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
+  const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
 
-    needsZip = numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses;
-  }
+  // determine if a zip export is required
+  const needsZip = numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses;
 
   const zip = needsZip ? new jsZip() : undefined;
 
   for (const processData of exportData) {
-    if (options.type === 'pdf') {
-      // handle imports inside the pdfExport function
-      if (!processData.isImport) {
-        await pdfExport(
-          exportData,
-          processData,
-          options.metaData,
-          options.a4,
-          options.exportSelectionOnly,
-          zip,
-          options.useWebshareApi,
-        );
-      }
-    } else {
-      if (options.type === 'bpmn') {
-        const folder = zip?.folder(processData.definitionName);
-        await bpmnExport(processData, folder, options.useWebshareApi);
-      }
-      // handle imports inside the svgExport function
-      if (options.type === 'svg' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
-        await svgExport(exportData, processData, options.exportSelectionOnly, folder);
-      }
-      if (options.type === 'png' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
-        await pngExport(
-          exportData,
-          processData,
-          options.scaling,
-          options.exportSelectionOnly,
-          folder,
-        );
-      }
+    if (options.type === 'bpmn') {
+      const folder = zip?.folder(processData.definitionName);
+      await bpmnExport(processData, folder, options.useWebshareApi);
+    }
+    // handle imports inside the svgExport function
+    if (options.type === 'svg' && !processData.isImport) {
+      const folder = zip?.folder(processData.definitionName);
+      await svgExport(exportData, processData, options.exportSelectionOnly, folder);
+    }
+    if (options.type === 'png' && !processData.isImport) {
+      const folder = zip?.folder(processData.definitionName);
+      await pngExport(
+        exportData,
+        processData,
+        options.scaling,
+        options.exportSelectionOnly,
+        folder,
+      );
     }
   }
 

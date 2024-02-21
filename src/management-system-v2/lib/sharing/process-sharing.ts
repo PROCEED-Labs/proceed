@@ -5,10 +5,12 @@ import { getProcessMetaObjects, updateProcessMetaData } from '@/lib/data/legacy/
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
+import { SettingsOption } from '@/app/shared-viewer/settings-modal';
 
 export interface TokenPayload {
   processId: string | string[];
-  version?: string | null;
+  version?: string | number | null;
+  settings?: SettingsOption;
   embeddedMode?: boolean;
   timestamp?: number;
 }

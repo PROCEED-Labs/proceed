@@ -8,6 +8,8 @@ import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
 import { Process } from '@/lib/data/process-schema';
 import TokenExpired from './token-expired';
 
+import { SettingsOption } from './settings-modal';
+
 interface PageProps {
   searchParams: {
     [key: string]: string[] | string | undefined;
@@ -26,8 +28,13 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const key = process.env.JWT_SHARE_SECRET!;
   let processData: Process;
   let iframeMode;
+  let defaultSettings: SettingsOption | undefined;
   try {
-    const { processId, version, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
+    let { processId, version, embeddedMode, timestamp, settings } = jwt.verify(
+      token,
+      key!,
+    ) as TokenPayload;
+    defaultSettings = settings;
     processData = await getProcess(processId as string);
 
     if (session) {
@@ -36,9 +43,9 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       const ownedProcesses = await getProcesses(ability);
       isOwner = ownedProcesses.some((process) => process.id === processId);
     }
-
     if (version) {
-      processData.bpmn = await getProcessVersionBpmn(processId as string, parseInt(version));
+      version = typeof version === 'number' ? version : parseInt(version);
+      processData.bpmn = await getProcessVersionBpmn(processId as string, version);
     }
 
     iframeMode = embeddedMode;
@@ -63,7 +70,12 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   return (
     <>
       <div>
-        <BPMNSharedViewer isOwner={isOwner} processData={processData!} embeddedMode={iframeMode} />
+        <BPMNSharedViewer
+          isOwner={isOwner}
+          processData={processData!}
+          embeddedMode={iframeMode}
+          defaultSettings={defaultSettings}
+        />
       </div>
     </>
   );

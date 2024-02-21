@@ -54,9 +54,15 @@ type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   embeddedMode?: boolean;
   isOwner: boolean;
+  defaultSettings?: SettingsOption;
 };
 
-const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedViewerProps) => {
+const BPMNSharedViewer = ({
+  processData,
+  embeddedMode,
+  isOwner,
+  defaultSettings,
+}: BPMNSharedViewerProps) => {
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
@@ -64,7 +70,9 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
 
   const breakpoint = Grid.useBreakpoint();
 
-  const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(settingsOptions);
+  const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(
+    defaultSettings || settingsOptions,
+  );
 
   const mainContent = useRef<HTMLDivElement>(null);
 
@@ -267,6 +275,13 @@ const BPMNSharedViewer = ({ processData, embeddedMode, isOwner }: BPMNSharedView
         document.body.removeChild(viewerElement);
       });
   }, [mdEditor]);
+
+  useEffect(() => {
+    if (processHierarchy && defaultSettings) {
+      // open the print dialog automatically after everything has loaded when the page is opened from the export modal
+      window.print();
+    }
+  }, [processHierarchy, defaultSettings]);
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));

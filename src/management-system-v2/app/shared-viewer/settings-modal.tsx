@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Modal, Checkbox, Space, Tooltip, Button } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 
-const settings = [
+export const settings = [
   {
     label: 'Separate Title Page',
     value: 'titlepage',
@@ -22,7 +22,7 @@ const settings = [
   },
   {
     label: 'Nested Subprocesses',
-    value: 'subprocesses',
+    value: 'nestedSubprocesses',
     tooltip: 'Add the content of collapsed subprocesses as sub-chapters.',
   },
   {

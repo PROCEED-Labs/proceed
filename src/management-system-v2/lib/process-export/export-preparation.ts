@@ -28,12 +28,10 @@ import { ArrayEntryType } from '../typescript-utils';
  * The options that can be used to select what should be exported
  */
 export type ProcessExportOptions = {
-  type: 'bpmn' | 'svg' | 'pdf' | 'png';
+  type: 'bpmn' | 'svg' | 'png';
   artefacts: boolean; // if artefacts like images or user task html should be included in the export
-  subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg, pdf)
+  subprocesses: boolean; // if collapsed subprocesses should be exported as well (svg)
   imports: boolean; // if processes referenced by this process should be exported as well
-  metaData: boolean; // (only pdf) if the process page should contain meta information about the process (name, version, [subprocess-id]) as text
-  a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
   scaling: number; // the scaling factor that should be used for png export
   exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
   useWebshareApi: boolean; // if true, the process is shared using web share api

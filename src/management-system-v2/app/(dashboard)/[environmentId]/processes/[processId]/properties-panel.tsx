@@ -120,12 +120,12 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       style={{ width: '100%', fontSize: '0.75rem' }}
       className={styles.PropertiesPanel}
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%' }} data-testid="generalSection">
         <Divider style={{ fontSize: '0.85rem' }}>General</Divider>
         <Input
+          name="Name"
           style={{ fontSize: '0.85rem' }}
           addonBefore="Name"
-          placeholder={selectedElement.businessObject.name}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={handleNameChange}
@@ -137,12 +137,13 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                 onClick={() => {
                   setIsNameEditing(true);
                 }}
+                data-testid="nameInputEdit"
               ></EditOutlined>
             )
           }
         />
 
-        <Input addonBefore="Type" value={selectedElement.type} disabled />
+        <Input name="Type" addonBefore="Type" value={selectedElement.type} disabled />
 
         <div
           style={{

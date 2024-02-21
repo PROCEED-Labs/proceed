@@ -1,28 +1,32 @@
 import { Locator, Page } from '@playwright/test';
+import { PlatformPath } from 'path';
+import * as path from 'path';
 
 export class PropertiesPanelPage {
   readonly page: Page;
+  readonly path: PlatformPath;
   processName?: string;
   processDescription?: string;
   processDefinitionID?: string;
 
   constructor(page: Page) {
     this.page = page;
+    this.path = path;
   }
 
   async goto() {
     if (this.processDefinitionID) {
-      await this.page.goto(`http://localhost:3000/processes/${this.processDefinitionID}`);
+      await this.page.goto(
+        `http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes/${this.processDefinitionID}`,
+      );
     } else {
-      await this.page.goto('http://localhost:3000/processes');
+      await this.page.goto('http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes');
     }
   }
 
   async login() {
     const page = this.page;
-    await page.goto('http://localhost:3000/processes');
-
-    await page.getByRole('button', { name: 'login Login' }).click();
+    await page.goto('http://localhost:3000');
     await page.getByPlaceholder('johndoe | admin').click();
     await page.getByPlaceholder('johndoe | admin').fill('admin');
     await page.getByRole('button', { name: 'Sign in with Development Users' }).click();
@@ -43,7 +47,7 @@ export class PropertiesPanelPage {
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
-    await page.goto('http://localhost:3000/processes');
+    await page.goto('http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes');
     await page.getByRole('button', { name: 'New Process' }).click();
     await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
     await page.getByLabel('Process Description').click();
@@ -52,7 +56,9 @@ export class PropertiesPanelPage {
     await page.waitForTimeout(2000);
 
     const pageURL = page.url();
-    const processDefinitionID = pageURL.split('http://localhost:3000/processes/').pop();
+    const processDefinitionID = pageURL
+      .split('http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes/')
+      .pop();
     this.processDefinitionID = processDefinitionID;
     this.processName = processName;
     this.processDescription = description;
@@ -61,7 +67,8 @@ export class PropertiesPanelPage {
   async removeAllProcesses() {
     const page = this.page;
 
-    await page.goto('http://localhost:3000/processes');
+    await page.goto('http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes');
+    await page.waitForTimeout(500);
     await page.getByLabel('Select all').check();
     await page.getByRole('button', { name: 'delete' }).first().click();
     await page.getByRole('button', { name: 'OK' }).click();

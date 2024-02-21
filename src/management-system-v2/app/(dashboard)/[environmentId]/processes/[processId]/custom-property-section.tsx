@@ -70,6 +70,7 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
           style={{ margin: 0, flexGrow: 1 }}
         >
           <Input
+            name="Name"
             addonBefore="Name"
             placeholder="Custom Name"
             readOnly={!isCreationForm && !isNameEditing}
@@ -192,7 +193,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space direction="vertical" style={{ width: '100%' }} data-testid="customPropertiesSection">
       <Divider style={{ fontSize: '0.85rem' }}>Custom Properties</Divider>
       {customProperties.map((element: { name: string; value: any }, index) => (
         <CustomPropertyForm

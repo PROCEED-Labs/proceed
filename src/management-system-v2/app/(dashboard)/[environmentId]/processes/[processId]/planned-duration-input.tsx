@@ -94,6 +94,7 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
               <Col span={24} key={key}>
                 <Form.Item name={key} style={{ marginBottom: '0.2rem' }}>
                   <InputNumber
+                    name={key}
                     defaultValue={0}
                     addonBefore={key.charAt(0).toUpperCase() + key.slice(1)}
                     min={0}
@@ -162,6 +163,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
             onClick={() => {
               setIsPlannedDurationModalOpen(true);
             }}
+            data-testid="plannedDurationInputEdit"
           ></EditOutlined>
         }
       />

@@ -76,6 +76,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
             </div>
           ),
         }}
+        data-testid="imageSection"
       ></Image>
     </Upload>
   );

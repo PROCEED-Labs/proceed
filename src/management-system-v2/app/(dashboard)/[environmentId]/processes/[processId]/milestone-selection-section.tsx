@@ -181,7 +181,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
 
   return (
     <>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%' }} data-testid="milestonesSection">
         <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
           <span style={{ marginRight: '0.3em' }}>Milestones</span>
           <PlusOutlined

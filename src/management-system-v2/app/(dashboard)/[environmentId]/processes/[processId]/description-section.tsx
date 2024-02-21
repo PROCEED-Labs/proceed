@@ -57,7 +57,12 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%' }}
+      data-testid="descriptionSection"
+    >
       <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
         <span style={{ marginRight: '0.3em' }}>Description</span>
         <EditOutlined
@@ -66,7 +71,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
           }}
         ></EditOutlined>
       </Divider>
-      <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+      <div style={{ maxHeight: '40vh', overflowY: 'auto' }} data-testid="descriptionViewer">
         <TextViewer ref={viewerRef} initialValue={description}></TextViewer>
       </div>
 

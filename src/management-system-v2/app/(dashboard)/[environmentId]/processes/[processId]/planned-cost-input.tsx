@@ -60,6 +60,7 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
             onClick={() => {
               setIsEditing(true);
             }}
+            data-testid="plannedCostInputEdit"
           ></EditOutlined>
         )
       }

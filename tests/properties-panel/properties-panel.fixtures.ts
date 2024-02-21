@@ -11,11 +11,11 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
   propertiesPanelPage: async ({ page }, use) => {
     // Set up the fixture.
-    await page.goto('http://localhost:3000/processes/');
+    await page.goto('http://localhost:3000');
     const propertiesPanelPage = new PropertiesPanelPage(page);
     await propertiesPanelPage.login();
     await propertiesPanelPage.createProcess();
-    await propertiesPanelPage.goto();
+    // await propertiesPanelPage.goto();
 
     // Use the fixture value in the test.
     await use(propertiesPanelPage);

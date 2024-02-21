@@ -25,7 +25,9 @@ type PermissionErrorHandling =
 export const getCurrentEnvironment = cache(
   async (
     activeEnvironment?: string,
-    opts: { permissionErrorHandling: PermissionErrorHandling } = { permissionErrorHandling: { action: 'redirect' } },
+    opts: { permissionErrorHandling: PermissionErrorHandling } = {
+      permissionErrorHandling: { action: 'redirect' },
+    },
   ) => {
     const { userId } = await getCurrentUser();
 

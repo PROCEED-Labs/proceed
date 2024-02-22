@@ -66,7 +66,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               className={styles.ElementCanvas}
               dangerouslySetInnerHTML={{
                 // show the sub-process plane with the sub-process' children if the respective option is selected, otherwise show the sub-process element as it is visible in its parent
-                __html: settings.subprocesses
+                __html: settings.nestedSubprocesses
                   ? hierarchyElement.planeSvg || hierarchyElement.svg
                   : hierarchyElement.svg,
               }}
@@ -134,7 +134,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
     // create pages for the children of an element if the element is a collapsed sub-process with a separate plane and the respective option is selected
     // or if it is a container in the same plane (expanded sub-process, pool)
-    if (settings.subprocesses || !hierarchyElement.planeSvg) {
+    if (settings.nestedSubprocesses || !hierarchyElement.planeSvg) {
       hierarchyElement.children?.forEach((child) => getContent(child, pages));
     }
   }

@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useRef, useState, useEffect, useMemo, use } from 'react';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import type ViewerType from 'bpmn-js/lib/Viewer';
@@ -21,6 +22,7 @@ import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
 import { copyProcesses } from '@/lib/data/processes';
 import { getProcess } from '@/lib/data/legacy/process';
+import { getProcessBPMN } from '@/lib/data/processes';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -34,6 +36,7 @@ import {
   getElementDI,
   getRootFromElement,
   getDefinitionsVersionInformation,
+  getTargetDefinitionsAndProcessIdForCallActivityByObject,
 } from '@proceed/bpmn-helper';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
@@ -131,6 +134,7 @@ const BPMNSharedViewer = ({
         'bpmn:Process',
         'bpmn:Participant',
         'bpmn:SubProcess',
+        'bpmn:CallActivity',
       ]);
 
       if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
@@ -139,7 +143,11 @@ const BPMNSharedViewer = ({
         name = 'Pool: ' + name;
       } else if (isType(el, 'bpmn:SubProcess')) {
         name = 'Subprocess: ' + name;
+      } else if (isType(el, 'bpmn:CallActivity')) {
+        name = 'Call Activity: ' + name;
       }
+
+      let oldBpmn: string | undefined;
 
       if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
         // get the svg representation of the root plane
@@ -161,6 +169,32 @@ const BPMNSharedViewer = ({
           );
           // set the new root for the following export of any children contained in this layer
           currentRootId = el.id;
+        } else if (isType(el, 'bpmn:CallActivity')) {
+          let importDefinitionId: string | undefined;
+          let version: number | undefined;
+          try {
+            ({ definitionId: importDefinitionId, version: version } =
+              getTargetDefinitionsAndProcessIdForCallActivityByObject(
+                getRootFromElement(el),
+                el.id,
+              ));
+          } catch (err) {}
+
+          if (importDefinitionId) {
+            ({ xml: oldBpmn } = await bpmnViewer.saveXML());
+            // const importBpmn = version
+            //   ? await getProcessVersionBpmn(importDefinitionId, version)
+            //   : await getProcessBPMN(importDefinitionId);
+
+            const importBpmn = await getProcessBPMN(importDefinitionId);
+            // const importBpmn = undefined;
+
+            if (typeof importBpmn === 'string') {
+              await bpmnViewer.importXML(importBpmn);
+              planeSvg = await getSVGFromBPMN(bpmnViewer);
+              currentRootId = undefined;
+            }
+          }
         }
       }
 
@@ -226,6 +260,11 @@ const BPMNSharedViewer = ({
       children.sort((a, b) => {
         return !a.isContainer ? -1 : !b.isContainer ? 1 : 0;
       });
+
+      // if the current element was a call activity and the bpmn of the imported process was loaded => reset the viewer to the importing process
+      if (oldBpmn) {
+        await bpmnViewer.importXML(oldBpmn);
+      }
 
       return {
         svg,

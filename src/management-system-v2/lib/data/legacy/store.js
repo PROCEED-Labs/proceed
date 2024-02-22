@@ -53,6 +53,7 @@ if (!global.stores) {
   stores.users = { store: getStore('users') };
   stores.environments = { store: getStore('environments') };
   stores.environmentMemberships = { store: getStore('environmentMemberships') };
+  stores.folders = { store: getStore('folders') };
 }
 
 /**

@@ -48,7 +48,7 @@ const HeaderActions: FC = () => {
 
   return (
     <Space style={{ float: 'right', padding: '16px' }}>
-      <Button type="text" onClick={() => signOut()}>
+      <Button type="text" onClick={() => signOut({ redirect: true, callbackUrl: '/' })}>
         <u>Logout</u>
       </Button>
 

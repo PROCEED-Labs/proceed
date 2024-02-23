@@ -7,10 +7,12 @@ export type FolderUserInput = z.infer<typeof FolderUserInputSchema>;
 
 export const FolderSchema = FolderUserInputSchema.extend({
   id: z.string().optional(),
-  parentId: z.string(),
+  parentId: z.string().nullable(),
   createdBy: z.string(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
   environmentId: z.string(),
 });
-export type Folder = z.infer<typeof FolderSchema> & { id: string };
+export type Folder = z.infer<typeof FolderSchema> & {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+};

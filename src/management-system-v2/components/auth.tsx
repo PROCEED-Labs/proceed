@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { AuthCan, AuthCanProps } from './auth-can';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
-import { nextAuthOptions } from '@/app/api/auth/[...nextauth]/auth-options';
+import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { headers } from 'next/headers';
 import { URL } from 'url';
 import { isMember } from '@/lib/data/legacy/iam/memberships';

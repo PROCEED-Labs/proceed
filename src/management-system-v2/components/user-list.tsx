@@ -16,12 +16,14 @@ import {
 import { CloseOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
 import HeaderActions from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
 
-type _ListUser = Partial<Omit<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>> &
-  Pick<User, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
+type _ListUser = Partial<
+  Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
+> &
+  Pick<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'> & {};
 export type ListUser = ReplaceKeysWithHighlighted<
   _ListUser,
   'firstName' | 'lastName' | 'username' | 'email'

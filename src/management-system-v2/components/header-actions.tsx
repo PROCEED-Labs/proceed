@@ -6,9 +6,11 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { FC } from 'react';
 import { useEnvironment } from './auth-can';
+import UserAvatar from './user-avatar';
 
 const HeaderActions: FC = () => {
   const session = useSession();
+  const isGuest = session.data?.user.guest;
   const environmentId = useEnvironment();
   const loggedIn = session.status === 'authenticated';
 
@@ -30,6 +32,20 @@ const HeaderActions: FC = () => {
     );
   }
 
+  const avatarDropdownItems = [
+    {
+      key: 'profile',
+      title: 'Account Settings',
+      label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
+    },
+  ];
+  if (!isGuest)
+    avatarDropdownItems.push({
+      key: 'environments',
+      title: 'My environments',
+      label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
+    });
+
   return (
     <Space style={{ float: 'right', padding: '16px' }}>
       <Button type="text" onClick={() => signOut({ redirect: true, callbackUrl: '/' })}>
@@ -38,26 +54,11 @@ const HeaderActions: FC = () => {
 
       <Dropdown
         menu={{
-          items: [
-            {
-              key: 'profile',
-              title: 'Account Settings',
-              label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
-            },
-            {
-              key: 'environments',
-              title: 'My environments',
-              label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
-            },
-          ],
+          items: avatarDropdownItems,
         }}
       >
         <Link href={`/${environmentId}/profile`}>
-          <Avatar style={{ cursor: 'pointer' }} src={session.data.user.image}>
-            {session.data.user.image
-              ? null
-              : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
-          </Avatar>
+          <UserAvatar user={session.data.user} />
         </Link>
       </Dropdown>
     </Space>

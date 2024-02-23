@@ -8,17 +8,9 @@ import { truthyFilter } from '@/lib/typescript-utils';
 
 import { ActiveSettings } from './settings-modal';
 
-export type ElementInfo = {
-  // the visual representation of an element (and its children) as seen in its parent elements plane
-  svg: string;
-  // the visual representation of the plane of an element (sub-process) and the contained children
-  planeSvg?: string;
+type MetaInformation = {
   name?: string;
-  id: string;
   description?: string;
-  children?: ElementInfo[];
-  // if the element contains other elements (process, sub-process, pool)
-  isContainer: boolean;
   milestones?: {
     id: string;
     name: string;
@@ -26,6 +18,22 @@ export type ElementInfo = {
   }[];
   meta?: {
     [key: string]: any;
+  };
+};
+
+export type ElementInfo = MetaInformation & {
+  // the visual representation of an element (and its children) as seen in its parent elements plane
+  svg: string;
+  id: string;
+  children?: ElementInfo[];
+  // marks the element as a subprocess and contains the visual representation of the plane of that subprocess and the contained children
+  nestedSubprocess?: { planeSvg: string };
+  // information about the imported process that is used by the call-activity that this object represents; can overwrite the information of the call-activity based on the selected settings
+  importedProcess?: MetaInformation & {
+    planeSvg: string;
+    version?: number;
+    versionName?: string;
+    versionDescription?: string;
   };
 };
 
@@ -44,39 +52,57 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     let children: AnchorLinkItemProps[] = [];
 
     // recursively create content table entries for child elements if necessary/chosen by the user
-    if ((settings.subprocesses || !hierarchyElement.planeSvg) && hierarchyElement.children) {
+    if (
+      (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
+      (settings.importedProcesses || !hierarchyElement.importedProcess) &&
+      hierarchyElement.children
+    ) {
       children = hierarchyElement.children
         .map((child) => getTableOfContents(child))
         .filter(truthyFilter);
     }
 
-    if (hierarchyElement.milestones) {
+    let { milestones, meta, description, importedProcess } = hierarchyElement;
+
+    let label = hierarchyElement.name || `<${hierarchyElement.id}>`;
+
+    if (settings.importedProcesses && importedProcess) {
+      label = importedProcess.name!;
+      ({ milestones, meta, description } = importedProcess);
+    }
+
+    if (milestones) {
       children.unshift({
         key: `${hierarchyElement.id}_milestones`,
         href: `#${hierarchyElement.id}_milestone_page`,
         title: 'Milestones',
       });
     }
-    if (hierarchyElement.meta) {
+    if (meta) {
       children.unshift({
         key: `${hierarchyElement.id}_meta`,
         href: `#${hierarchyElement.id}_meta_page`,
         title: 'Meta Data',
       });
     }
-    if (hierarchyElement.description) {
+    if (description) {
       children.unshift({
         key: `${hierarchyElement.id}_description`,
         href: `#${hierarchyElement.id}_description_page`,
         title: 'General Description',
       });
     }
+    if (settings.importedProcesses && importedProcess && importedProcess.version) {
+      children.unshift({
+        key: `${hierarchyElement.id}_version`,
+        href: `#${hierarchyElement.id}_version_page`,
+        title: 'Version Information',
+      });
+    }
 
     if (settings.hideEmpty && !children.length && !hierarchyElement.children?.length) {
       return undefined;
     }
-
-    const label = hierarchyElement.name || `<${hierarchyElement.id}>`;
 
     return {
       key: hierarchyElement.id,

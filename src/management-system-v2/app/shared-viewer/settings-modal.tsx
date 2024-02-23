@@ -26,6 +26,12 @@ export const settings = [
     tooltip: 'Add the content of collapsed subprocesses as sub-chapters.',
   },
   {
+    label: 'Imported Processes',
+    value: 'importedProcesses',
+    tooltip:
+      'Add the content of processes that are imported as the internal logic of a call-activity in the process.',
+  },
+  {
     label: 'Exclude Empty Elements',
     value: 'hideEmpty',
     tooltip:

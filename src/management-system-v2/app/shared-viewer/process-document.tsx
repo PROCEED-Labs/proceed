@@ -51,29 +51,63 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       return;
     }
 
+    const isContainer = !!hierarchyElement.children?.length;
+
+    // show the element as it is visible in its parent
+    let elementSvg = hierarchyElement.svg;
+    let elementLabel = hierarchyElement.name || `<${hierarchyElement.id}>`;
+    let { milestones, meta, description, importedProcess } = hierarchyElement;
+
+    if (settings.nestedSubprocesses && hierarchyElement.nestedSubprocess) {
+      // show the sub-process plane with the sub-process' children if the respective option is selected
+      elementSvg = hierarchyElement.nestedSubprocess?.planeSvg;
+    } else if (settings.importedProcesses && importedProcess) {
+      // show the root plane, label and meta information of the imported process if the respective option is selected
+      elementSvg = importedProcess.planeSvg;
+      elementLabel = importedProcess.name!;
+      ({ milestones, meta, description } = importedProcess);
+    }
+
     pages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
-        className={cn(styles.ElementPage, { [styles.ContainerPage]: hierarchyElement.isContainer })}
+        className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
       >
         <div className={styles.ElementOverview}>
           <Title id={`${hierarchyElement.id}_page`} level={2}>
-            {hierarchyElement.name || `<${hierarchyElement.id}>`}
+            {elementLabel}
           </Title>
-          {/* Hide the svg if the element does not a container (process, sub-process, pool,...) and the respective option is deselected */}
-          {(settings.showElementSVG || hierarchyElement.isContainer) && (
+          {/* Hide the svg if the element is not a container (process, sub-process, pool,...) and the respective option is deselected */}
+          {(settings.showElementSVG || isContainer) && (
             <div
               className={styles.ElementCanvas}
               dangerouslySetInnerHTML={{
-                // show the sub-process plane with the sub-process' children if the respective option is selected, otherwise show the sub-process element as it is visible in its parent
-                __html: settings.nestedSubprocesses
-                  ? hierarchyElement.planeSvg || hierarchyElement.svg
-                  : hierarchyElement.svg,
+                __html: elementSvg,
               }}
             ></div>
           )}
         </div>
-        {hierarchyElement.description && (
+        {settings.importedProcesses && importedProcess && importedProcess.version && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`${hierarchyElement.id}_version_page`}>
+              Version Information
+            </Title>
+            {importedProcess.versionName && (
+              <p>
+                <b>Version:</b> {importedProcess.versionName}
+              </p>
+            )}
+            {importedProcess.versionDescription && (
+              <p>
+                <b>Version Description:</b> {importedProcess.versionDescription}
+              </p>
+            )}
+            <p>
+              <b>Creation Time:</b> {new Date(importedProcess.version).toUTCString()}
+            </p>
+          </div>
+        )}
+        {description && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${hierarchyElement.id}_description_page`}>
               General Description
@@ -81,12 +115,12 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
             <div>
               <div
                 className="toastui-editor-contents"
-                dangerouslySetInnerHTML={{ __html: hierarchyElement.description }}
+                dangerouslySetInnerHTML={{ __html: description }}
               ></div>
             </div>
           </div>
         )}
-        {hierarchyElement.meta && (
+        {meta && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${hierarchyElement.id}_meta_page`}>
               Meta Data
@@ -98,11 +132,11 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                 { title: 'Name', dataIndex: 'key', key: 'key' },
                 { title: 'Value', dataIndex: 'val', key: 'value' },
               ]}
-              dataSource={Object.entries(hierarchyElement.meta).map(([key, val]) => ({ key, val }))}
+              dataSource={Object.entries(meta).map(([key, val]) => ({ key, val }))}
             />
           </div>
         )}
-        {hierarchyElement.milestones && (
+        {milestones && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${hierarchyElement.id}_milestone_page`}>
               Milestones
@@ -125,7 +159,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                   ),
                 },
               ]}
-              dataSource={hierarchyElement.milestones}
+              dataSource={milestones}
             />
           </div>
         )}
@@ -134,7 +168,10 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
     // create pages for the children of an element if the element is a collapsed sub-process with a separate plane and the respective option is selected
     // or if it is a container in the same plane (expanded sub-process, pool)
-    if (settings.nestedSubprocesses || !hierarchyElement.planeSvg) {
+    if (
+      (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
+      (settings.importedProcesses || !hierarchyElement.importedProcess)
+    ) {
       hierarchyElement.children?.forEach((child) => getContent(child, pages));
     }
   }

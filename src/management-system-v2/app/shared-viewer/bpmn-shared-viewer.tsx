@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useRef, useState, useEffect, useMemo, use } from 'react';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import type ViewerType from 'bpmn-js/lib/Viewer';
@@ -21,6 +22,7 @@ import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
 import { copyProcesses } from '@/lib/data/processes';
 import { getProcess } from '@/lib/data/legacy/process';
+import { getProcessBPMN } from '@/lib/data/processes';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -34,6 +36,7 @@ import {
   getElementDI,
   getRootFromElement,
   getDefinitionsVersionInformation,
+  getTargetDefinitionsAndProcessIdForCallActivityByObject,
 } from '@proceed/bpmn-helper';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
@@ -56,6 +59,41 @@ type BPMNSharedViewerProps = {
   isOwner: boolean;
   defaultSettings?: SettingsOption;
 };
+
+/**
+ * Returns the meta data to show in the (sub-)chapter of an element
+ *
+ * @param el the moddle object representing the element
+ * @param mdEditor an instance of the toast markdown editor
+ */
+function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
+  const meta = getMetaDataFromElement(el);
+
+  function getHtmlFromMarkdown(markdown: string) {
+    mdEditor.setMarkdown(markdown);
+    return mdEditor.getHTML();
+  }
+
+  const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
+    if (description) {
+      description = getHtmlFromMarkdown(description);
+    }
+
+    return { id, name, description };
+  });
+
+  let description: string | undefined = undefined;
+  const documentation = el.documentation?.find((el: any) => el.text)?.text;
+  if (documentation) {
+    description = getHtmlFromMarkdown(documentation);
+  }
+
+  return {
+    description,
+    meta: Object.keys(meta).length ? meta : undefined,
+    milestones: milestones.length ? milestones : undefined,
+  };
+}
 
 const BPMNSharedViewer = ({
   processData,
@@ -121,8 +159,10 @@ const BPMNSharedViewer = ({
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
-      let planeSvg;
       let name = el.name || `<${el.id}>`;
+
+      let nestedSubprocess;
+      let importedProcess;
 
       const elementRegistry = bpmnViewer.get<ElementRegistry>('elementRegistry');
 
@@ -131,6 +171,7 @@ const BPMNSharedViewer = ({
         'bpmn:Process',
         'bpmn:Participant',
         'bpmn:SubProcess',
+        'bpmn:CallActivity',
       ]);
 
       if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
@@ -139,7 +180,14 @@ const BPMNSharedViewer = ({
         name = 'Pool: ' + name;
       } else if (isType(el, 'bpmn:SubProcess')) {
         name = 'Subprocess: ' + name;
+      } else if (isType(el, 'bpmn:CallActivity')) {
+        name = 'Call Activity: ' + name;
       }
+
+      const { meta, milestones, description } = getMetaDataFromBpmnElement(el, mdEditor);
+
+      // stores the bpmn of an importing process when the importing process is loaded into the modeler in the case of a call activity
+      let oldBpmn: string | undefined;
 
       if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
         // get the svg representation of the root plane
@@ -153,14 +201,60 @@ const BPMNSharedViewer = ({
         svg = await getSVGFromBPMN(bpmnViewer, currentRootId, elementsToShow);
 
         if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
-          // getting the whole layer for a collapsed sub-process
-          planeSvg = addTooltipsAndLinksToSVG(
-            await getSVGFromBPMN(bpmnViewer, el.id),
-            (id) => elementRegistry.get(id)?.businessObject.name,
-            isContainer ? (elementId) => `#${elementId}_page` : undefined,
-          );
+          nestedSubprocess = {
+            // getting the whole layer for a collapsed sub-process
+            planeSvg: addTooltipsAndLinksToSVG(
+              await getSVGFromBPMN(bpmnViewer, el.id),
+              (id) => elementRegistry.get(id)?.businessObject.name,
+              isContainer ? (elementId) => `#${elementId}_page` : undefined,
+            ),
+          };
           // set the new root for the following export of any children contained in this layer
           currentRootId = el.id;
+        } else if (isType(el, 'bpmn:CallActivity')) {
+          // check if the call activity references another process
+          let importDefinitionId: string | undefined;
+          let version: number | undefined;
+          try {
+            ({ definitionId: importDefinitionId, version: version } =
+              getTargetDefinitionsAndProcessIdForCallActivityByObject(
+                getRootFromElement(el),
+                el.id,
+              ));
+          } catch (err) {}
+
+          if (importDefinitionId) {
+            // remember the bpmn currently loaded into the viewer so we can return to it after getting the svg for the elements in the imported process
+            ({ xml: oldBpmn } = await bpmnViewer.saveXML());
+
+            // get the bpmn for the import and load it into the viewer
+            const importBpmn = await getProcessBPMN(importDefinitionId, version);
+            if (typeof importBpmn === 'string') {
+              await bpmnViewer.importXML(importBpmn);
+
+              // set the current element and layer to the root of the imported process
+              const canvas = bpmnViewer.get<Canvas>('canvas');
+              const root = canvas.getRootElement();
+              el = root.businessObject;
+              definitions = el.$parent;
+              currentRootId = undefined;
+
+              const {
+                version,
+                name: versionName,
+                description: versionDescription,
+              } = await getDefinitionsVersionInformation(definitions);
+
+              importedProcess = {
+                name: `Imported Process: ${definitions.name}`,
+                ...getMetaDataFromBpmnElement(el, mdEditor),
+                planeSvg: await getSVGFromBPMN(bpmnViewer),
+                version,
+                versionName,
+                versionDescription,
+              };
+            }
+          }
         }
       }
 
@@ -200,42 +294,27 @@ const BPMNSharedViewer = ({
         }
       }
 
-      // get the meta data to show in the (sub-)chapter of the element
-      const meta = getMetaDataFromElement(el);
-
-      function getHtmlFromMarkdown(markdown: string) {
-        mdEditor.setMarkdown(markdown);
-        return mdEditor.getHTML();
-      }
-
-      const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
-        if (description) {
-          description = getHtmlFromMarkdown(description);
-        }
-
-        return { id, name, description };
-      });
-
-      let description: string | undefined = undefined;
-      const documentation = el.documentation?.find((el: any) => el.text)?.text;
-      if (documentation) {
-        description = getHtmlFromMarkdown(documentation);
-      }
-
       // sort so that elements that contain no other elements come first and elements containing others come after
       children.sort((a, b) => {
-        return !a.isContainer ? -1 : !b.isContainer ? 1 : 0;
+        const aIsContainer = !!a.children?.length;
+        const bIsContainer = !!b.children?.length;
+        return !aIsContainer ? -1 : !bIsContainer ? 1 : 0;
       });
+
+      // if the current element was a call activity and the bpmn of the imported process was loaded => reset the viewer to the importing process
+      if (oldBpmn) {
+        await bpmnViewer.importXML(oldBpmn);
+      }
 
       return {
         svg,
-        planeSvg,
         id: el.id,
         name,
         description,
-        isContainer,
-        meta: Object.keys(meta).length ? meta : undefined,
-        milestones: milestones.length ? milestones : undefined,
+        meta,
+        milestones,
+        importedProcess,
+        nestedSubprocess,
         children,
       };
     }

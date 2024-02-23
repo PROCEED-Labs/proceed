@@ -61,21 +61,29 @@ export const getProcess = async (definitionId: string) => {
   return { ...process, bpmn };
 };
 
-export const getProcessBPMN = async (definitionId: string) => {
-  const { ability } = await getCurrentEnvironment();
-
-  const processMetaObjects: any = getProcessMetaObjects();
+export const getProcessBPMN = async (definitionId: string, version?: number) => {
+  const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
-
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to read this process', UserErrorType.PermissionError);
-  }
 
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
 
-  const bpmn = await _getProcessBpmn(definitionId);
+  if (version && !process.versions.some((versionInfo) => versionInfo.version === version)) {
+    return userError(
+      'The requested version does not exist for the process.',
+      UserErrorType.NotFoundError,
+    );
+  }
+
+  const { ability } = await getCurrentEnvironment(process.environmentId);
+  if (!ability.can('view', toCaslResource('Process', process))) {
+    return userError('Not allowed to read this process', UserErrorType.PermissionError);
+  }
+
+  const bpmn = version
+    ? await getProcessVersionBpmn(definitionId, version)
+    : await _getProcessBpmn(definitionId);
 
   return bpmn;
 };

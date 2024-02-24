@@ -1,7 +1,7 @@
 import Ability from '@/lib/ability/abilityHelper.js';
-import { Folder, FolderSchema, FolderUserInput, FolderUserInputSchema } from '../folder-schema.js';
+import { Folder, FolderSchema, FolderUserInput, FolderUserInputSchema } from '../folder-schema';
 import store from './store.js';
-import { toCaslResource } from '@/lib/ability/caslAbility.js';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { z } from 'zod';
 

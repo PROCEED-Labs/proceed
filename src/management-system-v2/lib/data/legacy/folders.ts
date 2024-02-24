@@ -169,6 +169,21 @@ export function updateFolderMetaData(
   store.update('folders', folderId, newFolder);
 }
 
+function isInSubtree(rootId: string, nodeId: string) {
+  const folderData = foldersMetaObject.folders[rootId];
+  if (!folderData) throw new Error('RootId not found');
+
+  if (!foldersMetaObject.folders[nodeId]) throw new Error('NodeId not found');
+
+  if (rootId === nodeId) return true;
+
+  for (const child of folderData.children) {
+    if (isInSubtree(child.id, nodeId)) return true;
+  }
+
+  return false;
+}
+
 export function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
@@ -180,7 +195,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   const newParentData = foldersMetaObject.folders[newParentId];
   if (!newParentData) throw new Error('New parent folder not found');
 
-  const oldParentData = foldersMetaObject.folders[newParentId];
+  const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
   if (!oldParentData)
     throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
 
@@ -195,6 +210,10 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
     !ability.can('update', toCaslResource('Folder', oldParentData.folder))
   )
     throw new Error('Permission denied');
+
+  // Folder cannot be movet to it's sub tree
+  if (isInSubtree(folderId, newParentId))
+    throw new Error("Folder cannot be moved to it's children");
 
   // Sore
   oldParentData.children.splice(folderIndex, 1);

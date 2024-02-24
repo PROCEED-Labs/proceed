@@ -20,7 +20,7 @@ export function init() {
   if (!firstInit) return;
 
   const storedFolders = store.get('folders') as Folder[];
-  foldersMetaObject.folders = {};
+  foldersMetaObject = { folders: {}, rootFolders: {} };
 
   //first create all the folders
   for (const folder of storedFolders) {

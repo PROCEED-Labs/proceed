@@ -1,5 +1,10 @@
 import { beforeEach, jest, describe, test, expect } from '@jest/globals';
-import { createFolder, foldersMetaObject, getFolderChildren } from '@/lib/data/legacy/folders';
+import {
+  createFolder,
+  foldersMetaObject,
+  getFolderChildren,
+  getRootFolder,
+} from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
 import { LuClock9 } from 'react-icons/lu';
 import { Folder } from '@/lib/data/folder-schema';
@@ -373,6 +378,12 @@ function _printFolders(
 const ids = (folders: Folder[]) => folders.map((folder) => folder.id).sort();
 
 describe('Get Folders', () => {
+  test('getRootFolder', () => {
+    expect(getRootFolder('1')?.id).toEqual(rootId1);
+
+    expect(getRootFolder('2')?.id).toEqual(rootId2);
+  });
+
   test('getFolderChildren: environment 1', () => {
     expect(ids(getFolderChildren(rootId1))).toEqual(['1-1', '1-2', '1-3', '1-4'].sort());
 

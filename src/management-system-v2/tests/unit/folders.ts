@@ -1,6 +1,7 @@
-import { beforeEach, jest } from '@jest/globals';
-import { foldersMetaObject } from '@/lib/data/legacy/folders';
+import { beforeEach, jest, describe, test, expect } from '@jest/globals';
+import { createFolder, foldersMetaObject } from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
+import { LuClock9 } from 'react-icons/lu';
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
   get: () => {
@@ -367,3 +368,49 @@ function _printFolders(
     _printFolders(folderStructure, child.id, strings, depth + 1);
   }
 }
+
+describe('Create Folders', () => {
+  test('Create subfolder', () => {
+    const newFolder = createFolder({
+      name: 'new-folder',
+      environmentId: '1',
+      parentId: rootId1,
+      createdBy: 'test',
+    });
+
+    expect(foldersMetaObject.folders[rootId1]?.children).toContain(newFolder);
+  });
+
+  test('wrong environment', () => {
+    expect(() =>
+      createFolder({
+        name: 'new-folder',
+        environmentId: '2',
+        parentId: rootId1,
+        createdBy: 'test',
+      }),
+    ).toThrowError();
+  });
+
+  test('wrong parent', () => {
+    expect(() =>
+      createFolder({
+        name: 'new-folder',
+        environmentId: '1',
+        parentId: 'none',
+        createdBy: 'test',
+      }),
+    ).toThrowError();
+  });
+
+  test('second root', () => {
+    expect(() =>
+      createFolder({
+        name: 'new-folder',
+        environmentId: '1',
+        parentId: null,
+        createdBy: 'test',
+      }),
+    ).toThrowError();
+  });
+});

@@ -338,18 +338,18 @@ export function getImages(processDefinitionsId) {
  *
  * @param {String} processDefinitionsId the id of the process that contains the image
  * @param {String} imageId the id of the specific image
- * @param {File} image an image
+ * @param {Blob | File} image an image
  */
 export async function saveImage(processDefinitionsId, imageFileName, image) {
   const imagesDir = getImagesDir(processDefinitionsId);
-
   const imageArrayBuffer = await image.arrayBuffer();
-  const imageBuffer = new Uint8Array(imageArrayBuffer);
+  const imageBuffer = Buffer.from(imageArrayBuffer);
+
   fse.ensureDirSync(imagesDir);
 
   fse.writeFileSync(path.join(imagesDir, `${imageFileName}`), imageBuffer);
 
-  eventHandler.dispatch('image_changed', { processDefinitionsId, imageFileName, imageBuffer });
+  eventHandler.dispatch('image_changed', { processDefinitionsId, imageFileName, image });
 }
 
 /**

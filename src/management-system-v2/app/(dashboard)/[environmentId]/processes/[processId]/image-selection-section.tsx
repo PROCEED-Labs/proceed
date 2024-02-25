@@ -4,9 +4,8 @@ import React, { useState } from 'react';
 
 import { Upload, Image } from 'antd';
 
-import { addProcessImage, updateProcessImage } from '@/lib/data/processes';
-
 import { useParams } from 'next/navigation';
+import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 
 type ImageSelectionSectionProperties = {
   imageFileName?: string;
@@ -31,29 +30,29 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     <Upload
       showUploadList={false}
       beforeUpload={() => false} // needed for custom upload of file
-      onChange={({ fileList }) => {
+      onChange={async ({ fileList }) => {
         const uploadFile = fileList.pop(); // get latest uploaded file
         if (uploadFile && uploadFile.originFileObj) {
-          const formData = new FormData();
-          formData.append('image', uploadFile.originFileObj);
+          // scale down image to max length of 1500px if file size is over 2mb
+          const image =
+            uploadFile.originFileObj.size > 2000000
+              ? await scaleDownImage(uploadFile.originFileObj, 1500)
+              : uploadFile.originFileObj;
 
           if (imageFileName) {
             // Update existing image
-            updateProcessImage(processId as string, imageFileName, formData).then((res) => {
-              if (typeof res === 'object' && 'error' in res) {
-                throw res.error;
-              }
-              setReloadParam(Date.now());
+            await fetch(`/api/processes/${processId as string}/images/${imageFileName}`, {
+              method: 'PUT',
+              body: image,
             });
+            setReloadParam(Date.now());
           } else {
             // Add new Image
-            addProcessImage(processId as string, formData).then((res) => {
-              if (typeof res === 'object' && 'error' in res) {
-                throw res.error;
-              }
-
-              onImageAdded(res);
-            });
+            const newImageFileName = await fetch(`/api/processes/${processId as string}/images/`, {
+              method: 'POST',
+              body: image,
+            }).then((res) => res.text());
+            onImageAdded(newImageFileName);
           }
         }
       }}

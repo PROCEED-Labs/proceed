@@ -56,7 +56,6 @@
     "docker:stop-server": "docker container stop ms-server",
     "test": "yarn test-engine",
     "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
-    "test-ms2": "cross-env USE_PROJECTS=\"ms2\" jest --no-cache",
     "test-ms": "cd src/management-system && yarn test:unit",
     "test-e2e": "cross-env USE_PROJECTS=\"engine-e2e\" jest src/engine/e2e_tests --runInBand --detectOpenHandles --forceExit",
     "test-all": "yarn test-engine && yarn test-ms && yarn test-e2e",

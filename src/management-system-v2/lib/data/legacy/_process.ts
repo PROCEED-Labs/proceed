@@ -177,7 +177,6 @@ export async function updateProcessMetaData(
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
-
   /* // add shared_with if process is shared
   if (metaChanges.shared_with) {
     newMetaData.shared_with = metaChanges.shared_with;

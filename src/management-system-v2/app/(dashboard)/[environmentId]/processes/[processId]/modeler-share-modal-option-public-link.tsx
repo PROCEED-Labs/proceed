@@ -1,4 +1,4 @@
-import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
+import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -28,6 +28,8 @@ const ModelerShareModalOptionPublicLink = ({
   );
 
   const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
+
+  const { message } = App.useApp();
 
   useEffect(() => {
     setIsShareLinkChecked(shared);

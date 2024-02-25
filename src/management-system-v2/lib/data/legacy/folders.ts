@@ -69,7 +69,7 @@ export function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder;
 }
 
-export function getFolderChildren(folderId: string, ability: Ability) {
+export function getFolderChildren(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 

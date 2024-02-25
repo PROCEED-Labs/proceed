@@ -310,7 +310,7 @@ const rootId1 = '1-0';
 const rootId2 = '2-0';
 
 /**
- * Mockedd folders:
+ * Mocked folders:
  *
  * Environment 1
  * ─1-0:root

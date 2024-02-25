@@ -1,7 +1,8 @@
 import { beforeEach, jest, describe, test, expect } from '@jest/globals';
-import { createFolder, foldersMetaObject } from '@/lib/data/legacy/folders';
+import { createFolder, foldersMetaObject, getFolderChildren } from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
 import { LuClock9 } from 'react-icons/lu';
+import { Folder } from '@/lib/data/folder-schema';
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
   get: () => {
@@ -368,6 +369,36 @@ function _printFolders(
     _printFolders(folderStructure, child.id, strings, depth + 1);
   }
 }
+
+const ids = (folders: Folder[]) => folders.map((folder) => folder.id).sort();
+
+describe('Get Folders', () => {
+  test('getFolderChildren: environment 1', () => {
+    expect(ids(getFolderChildren(rootId1))).toEqual(['1-1', '1-2', '1-3', '1-4'].sort());
+
+    expect(ids(getFolderChildren('1-1'))).toEqual(['1-5', '1-6', '1-7'].sort());
+
+    expect(ids(getFolderChildren('1-2'))).toEqual(['1-8', '1-9', '1-10'].sort());
+
+    expect(ids(getFolderChildren('1-3'))).toEqual(['1-11', '1-12', '1-13'].sort());
+
+    expect(ids(getFolderChildren('1-4'))).toEqual(['1-14', '1-15', '1-16'].sort());
+  });
+
+  test('getFolderChildren: environment 2', () => {
+    expect(ids(getFolderChildren(rootId2))).toEqual(['2-1', '2-2', '2-3'].sort());
+
+    expect(ids(getFolderChildren('2-1'))).toEqual(['2-4', '2-5', '2-6'].sort());
+
+    expect(ids(getFolderChildren('2-2'))).toEqual(['2-7', '2-9'].sort());
+
+    expect(ids(getFolderChildren('2-3'))).toEqual(['2-10'].sort());
+
+    expect(ids(getFolderChildren('2-10'))).toEqual(['2-11'].sort());
+
+    expect(ids(getFolderChildren('2-11'))).toEqual(['2-12'].sort());
+  });
+});
 
 describe('Create Folders', () => {
   test('Create subfolder', () => {

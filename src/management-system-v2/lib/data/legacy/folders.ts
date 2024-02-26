@@ -4,12 +4,16 @@ import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { z } from 'zod';
+import { Process } from '../process-schema';
+import { deleteProcesses } from '../processes';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
 export let foldersMetaObject: {
-  folders: Partial<{ [Id: string]: { folder: Folder; children: Folder[] } }>;
+  folders: Partial<{
+    [Id: string]: { folder: Folder; children: (Folder | Process)[] }; // NOTE: the fact that folders don't have a type is needed to differentiate them
+  }>;
   rootFolders: Partial<{ [environmentId: string]: Folder }>;
 } =
   // @ts-ignore
@@ -135,14 +139,16 @@ function _deleteFolder(
     throw new Error('Permission denied');
 
   for (const child of folderData.children) {
+    if ('type' in child && child.type === 'process') {
+      deleteProcesses([child.id]);
+      continue;
+    }
+
     const childData = foldersMetaObject.folders[child.id];
     if (!childData) throw new Error('Inconsistency in folder structure: child folder not found');
 
     _deleteFolder(childData, ability);
   }
-
-  // TODO: remove processes
-
   delete foldersMetaObject.folders[folderData.folder.id];
   if (!folderData.folder.parentId)
     delete foldersMetaObject.rootFolders[folderData.folder.environmentId];
@@ -178,6 +184,8 @@ function isInSubtree(rootId: string, nodeId: string) {
   if (rootId === nodeId) return true;
 
   for (const child of folderData.children) {
+    if ('type' in child) continue; // skip elements that aren't folders
+
     if (isInSubtree(child.id, nodeId)) return true;
   }
 
@@ -202,7 +210,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   if (!oldParentData)
     throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
 
-  const folderIndex = oldParentData.children.findIndex((f) => f.id === folderId);
+  const folderIndex = oldParentData.children.findIndex((f) => !('type' in f) && f.id === folderId);
   if (folderIndex === -1)
     throw new Error("Consistency error: folder not found in parent's children");
 

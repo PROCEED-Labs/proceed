@@ -131,11 +131,11 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
 /** Updates an existing process with the given bpmn */
 export async function updateProcess(
   processDefinitionsId: string,
-  newInfoInput: Partial<ProcessInput> & { bpmn?: string },
+  newInfoInput: Partial<ProcessServerInput> & { bpmn?: string },
 ) {
   const { bpmn: newBpmn } = newInfoInput;
 
-  const newInfo = ProcessInputSchema.partial().parse(newInfoInput);
+  const newInfo = ProcessServerInputSchema.partial().parse(newInfoInput);
   checkIfProcessExists(processDefinitionsId);
 
   let metaChanges = {

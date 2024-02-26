@@ -305,9 +305,9 @@ jest.mock('../../lib/data/legacy/store.js', () => ({
       },
     ];
   },
-  add: () => { },
-  remove: () => { },
-  update: () => { },
+  add: () => {},
+  remove: () => {},
+  update: () => {},
 }));
 
 beforeEach(initFolderStore);

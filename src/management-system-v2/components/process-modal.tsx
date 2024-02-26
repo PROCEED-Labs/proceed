@@ -125,7 +125,7 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
       <Form.Item
         name={[index, 'description']}
         label="Process Description"
-        rules={[{ required: true, message: 'Please fill out the Process description' }]}
+        rules={[{ required: false, message: 'Please fill out the Process description' }]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>

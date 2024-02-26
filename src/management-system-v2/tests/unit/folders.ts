@@ -1,12 +1,12 @@
 import { beforeEach, jest, describe, test, expect } from '@jest/globals';
 import {
   createFolder,
+  deleteFolder,
   foldersMetaObject,
   getFolderChildren,
   getRootFolder,
 } from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
-import { LuClock9 } from 'react-icons/lu';
 import { Folder } from '@/lib/data/folder-schema';
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
@@ -305,9 +305,9 @@ jest.mock('../../lib/data/legacy/store.js', () => ({
       },
     ];
   },
-  add: () => {},
-  remove: () => {},
-  update: () => {},
+  add: () => { },
+  remove: () => { },
+  update: () => { },
 }));
 
 beforeEach(initFolderStore);
@@ -454,5 +454,59 @@ describe('Create Folders', () => {
         createdBy: 'test',
       }),
     ).toThrowError();
+  });
+});
+
+describe('Delete Folders', () => {
+  test("delete environment 1's root", () => {
+    deleteFolder(rootId1);
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        folderData?.folder.id.includes('1-'),
+      ),
+    ).toBe(false);
+
+    expect(
+      Object.values(foldersMetaObject.rootFolders).some((folder) => folder?.id.includes('1-')),
+    ).toBe(false);
+
+    expect(() => getRootFolder('1')).toThrowError();
+  });
+
+  test("delete environment 2's root", () => {
+    deleteFolder(rootId2);
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        folderData?.folder.id.includes('2-'),
+      ),
+    ).toBe(false);
+
+    expect(
+      Object.values(foldersMetaObject.rootFolders).some((folder) => folder?.id.includes('2-')),
+    ).toBe(false);
+
+    expect(() => getRootFolder('2')).toThrowError();
+  });
+
+  test('delete environment 1 folder', () => {
+    deleteFolder('1-2');
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        ['1-2', '1-8', '1-9', '1-10'].includes(folderData?.folder.id as string),
+      ),
+    ).toBe(false);
+  });
+
+  test('delete environment 2 folder', () => {
+    deleteFolder('2-3');
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        ['2-3', '2-10', '2-11', '2-12'].includes(folderData?.folder.id as string),
+      ),
+    ).toBe(false);
   });
 });

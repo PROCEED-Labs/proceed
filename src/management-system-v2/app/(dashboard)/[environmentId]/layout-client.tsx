@@ -93,7 +93,7 @@ const Layout: FC<
 
           <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
         </AntLayout>
-        <AntLayout.Footer className={cn(styles.Footer)}>© 2023 PROCEED Labs GmbH</AntLayout.Footer>
+        <AntLayout.Footer className={cn(styles.Footer)}>© 2024 PROCEED Labs GmbH</AntLayout.Footer>
       </AntLayout>
 
       <Drawer

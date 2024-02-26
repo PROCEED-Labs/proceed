@@ -8,6 +8,7 @@ import {
 } from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
 import { Folder } from '@/lib/data/folder-schema';
+import store from '@/lib/data/legacy/store';
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
   get: () => {
@@ -377,6 +378,30 @@ function _printFolders(
 
 const ids = (folders: Folder[]) => folders.map((folder) => folder.id).sort();
 
+function environmentFoldersUnchanged(environmentId: string) {
+  const rootFolder = getRootFolder(environmentId);
+  if (!rootFolder) return false;
+
+  const originalFolders = store.get('folders') as Folder[];
+  const storedFolders = originalFolders.filter((folder) => environmentId === folder.environmentId);
+
+  const environmentFoldersInMetaObject = new Map<string, Folder>();
+  (Object.values(foldersMetaObject.folders) as { folder: Folder }[]).forEach((folder) =>
+    environmentFoldersInMetaObject.set(folder.folder.id, folder.folder),
+  );
+
+  for (const folder of storedFolders) {
+    const folderInMetaObject = environmentFoldersInMetaObject.get(folder.id);
+    if (!folderInMetaObject) return false;
+
+    if (folder.parentId !== folderInMetaObject.parentId) return false;
+  }
+
+  return true;
+}
+
+// Tests
+
 describe('Get Folders', () => {
   test('getRootFolder', () => {
     expect(getRootFolder('1')?.id).toEqual(rootId1);
@@ -472,6 +497,8 @@ describe('Delete Folders', () => {
     ).toBe(false);
 
     expect(() => getRootFolder('1')).toThrowError();
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
   });
 
   test("delete environment 2's root", () => {
@@ -488,6 +515,8 @@ describe('Delete Folders', () => {
     ).toBe(false);
 
     expect(() => getRootFolder('2')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
   });
 
   test('delete environment 1 folder', () => {
@@ -498,6 +527,8 @@ describe('Delete Folders', () => {
         ['1-2', '1-8', '1-9', '1-10'].includes(folderData?.folder.id as string),
       ),
     ).toBe(false);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
   });
 
   test('delete environment 2 folder', () => {
@@ -508,5 +539,7 @@ describe('Delete Folders', () => {
         ['2-3', '2-10', '2-11', '2-12'].includes(folderData?.folder.id as string),
       ),
     ).toBe(false);
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
   });
 });

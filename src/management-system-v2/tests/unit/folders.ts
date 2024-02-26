@@ -3,8 +3,10 @@ import {
   createFolder,
   deleteFolder,
   foldersMetaObject,
+  getFolderById,
   getFolderChildren,
   getRootFolder,
+  moveFolder,
 } from '@/lib/data/legacy/folders';
 import { init as initFolderStore } from '@/lib/data/legacy/folders';
 import { Folder } from '@/lib/data/folder-schema';
@@ -306,9 +308,9 @@ jest.mock('../../lib/data/legacy/store.js', () => ({
       },
     ];
   },
-  add: () => { },
-  remove: () => { },
-  update: () => { },
+  add: () => {},
+  remove: () => {},
+  update: () => {},
 }));
 
 beforeEach(initFolderStore);
@@ -541,5 +543,58 @@ describe('Delete Folders', () => {
     ).toBe(false);
 
     expect(environmentFoldersUnchanged('1')).toBe(true);
+  });
+});
+
+describe('Move Folders', () => {
+  test('Environment 1: move folder to root', () => {
+    moveFolder('1-5', rootId1);
+    const expectedAtRoot = ['1-1', '1-2', '1-3', '1-4', '1-5'];
+
+    const movedFolder = getFolderById('1-5');
+    expect(movedFolder?.parentId).toBe(rootId1);
+
+    expect(ids(foldersMetaObject.folders[rootId1]?.children ?? [])).toEqual(expectedAtRoot.sort());
+
+    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId1);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test('Environment 2: move folder to root', () => {
+    moveFolder('2-10', rootId2);
+    const expectedAtRoot = ['2-1', '2-2', '2-3', '2-10'];
+
+    const movedFolder = getFolderById('2-10');
+    expect(movedFolder?.parentId).toBe(rootId2);
+
+    expect(ids(foldersMetaObject.folders[rootId2]?.children ?? [])).toEqual(expectedAtRoot.sort());
+
+    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId2);
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+  });
+
+  test("Environment 1: move folder into it's children", () => {
+    expect(() => moveFolder('1-1', '1-5')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test("Environment 2: move folder into it's children", () => {
+    expect(() => moveFolder('2-2', '2-7')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test('Move root', () => {
+    expect(() => moveFolder(rootId1, '1-1')).toThrowError();
+  });
+
+  test('Move to different environment', () => {
+    expect(() => moveFolder('2-1', rootId1)).toThrowError();
   });
 });

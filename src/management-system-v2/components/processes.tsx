@@ -262,7 +262,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                     className={styles.FloatButton}
                     trigger="click"
                     type="primary"
-                    style={{ marginBottom: '100px', marginRight: '10px', zIndex: '101' }}
+                    style={{ marginBottom: '20px', marginRight: '10px', zIndex: '101' }}
                     icon={<PlusOutlined />}
                   >
                     <Tooltip trigger="hover" placement="left" title="Create a process">

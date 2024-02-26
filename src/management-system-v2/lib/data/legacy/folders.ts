@@ -226,7 +226,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   if (isInSubtree(folderId, newParentId))
     throw new Error("Folder cannot be moved to it's children");
 
-  // Sore
+  // Store
   oldParentData.children.splice(folderIndex, 1);
 
   folderData.folder.parentId = newParentId;

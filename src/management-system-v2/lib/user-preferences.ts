@@ -22,10 +22,6 @@ type PreferencesStoreType = {
 
 const defaultPreferences = {
   /* Default User-Settings: */
-  /*
-      Delete user-preferences in localstorage, after adding a preference-setting
-      The new default won't be set otherwise
-    */
   'icon-view-in-process-list': false,
   'icon-view-in-user-list': false,
   'icon-view-in-role-list': false,
@@ -87,7 +83,10 @@ const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) =>
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     setHydrated(true);
-    useUserPreferencesStore.setState({ _hydrated: true });
+    useUserPreferencesStore.setState((state) => ({
+      preferences: { ...defaultPreferences, ...state.preferences },
+      _hydrated: true,
+    }));
   }, [hydrated]);
 
   return hydrated ? storeValues : defaultValues;

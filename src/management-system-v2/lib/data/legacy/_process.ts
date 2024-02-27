@@ -24,16 +24,10 @@ import { mergeIntoObject } from '../../helpers/javascriptHelpers';
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
 
 import bpmnHelperEx from '@proceed/bpmn-helper';
-import Ability from '@/lib/ability/abilityHelper.js';
-import { OptionalKeys } from '@/lib/typescript-utils.js';
-import {
-  ProcessMetadata,
-  ProcessInput,
-  ProcessInputSchema,
-  Process,
-  ProcessServerInput,
-  ProcessServerInputSchema,
-} from '../process-schema';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
+import { foldersMetaObject, getRootFolder } from './folders';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 let firstInit = false;
 // @ts-ignore
@@ -108,6 +102,15 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
     ...(await getProcessInfo(bpmn)),
   };
 
+  if (!metadata.folderId) {
+    metadata.folderId = getRootFolder(metadata.environmentId).id;
+  }
+
+  const folderData = foldersMetaObject.folders[metadata.folderId];
+  if (!folderData) throw new Error('Folder not found');
+  // TODO check folder permissions here, they're checked in movefolder,
+  // but by then the folder was already created
+
   const { id: processDefinitionsId } = metadata;
 
   // check if there is an id collision
@@ -123,6 +126,8 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
   // save bpmn
   await saveProcess(processDefinitionsId, bpmn);
 
+  moveProcess({ processDefinitionsId, newFolderId: metadata.folderId, dontUpdateOldFolder: true });
+
   eventHandler.dispatch('processAdded', { process: metadata });
 
   return metadata;
@@ -137,6 +142,7 @@ export async function updateProcess(
 
   const newInfo = ProcessServerInputSchema.partial().parse(newInfoInput);
   checkIfProcessExists(processDefinitionsId);
+  const currentParent = processMetaObjects[processDefinitionsId].folderId;
 
   let metaChanges = {
     ...newInfo,
@@ -148,6 +154,12 @@ export async function updateProcess(
       ...metaChanges,
       ...(await getProcessInfo(newBpmn)),
     };
+  }
+
+  // Update folders
+  if (metaChanges.folderId && metaChanges.folderId !== currentParent) {
+    moveProcess({ processDefinitionsId, newFolderId: metaChanges.folderId });
+    delete metaChanges.folderId;
   }
 
   const newMetaData = await updateProcessMetaData(processDefinitionsId, metaChanges);
@@ -162,6 +174,50 @@ export async function updateProcess(
   }
 
   return newMetaData;
+}
+
+export function moveProcess({
+  processDefinitionsId,
+  newFolderId,
+  ability,
+  dontUpdateOldFolder = false,
+}: {
+  processDefinitionsId: string;
+  newFolderId: string;
+  dontUpdateOldFolder?: boolean;
+  ability?: Ability;
+}) {
+  // Checks
+  const process = processMetaObjects[processDefinitionsId];
+  if (!process) throw new Error('Process not found');
+
+  const folderData = foldersMetaObject.folders[newFolderId];
+  if (!folderData) throw new Error('Folder not found');
+
+  if (
+    ability &&
+    // no need to check folder permissions of parent, since the permissions on the process derive from it
+    !ability.can('update', toCaslResource('Process', process)) &&
+    !ability.can('update', toCaslResource('Folder', folderData.folder))
+  )
+    throw new UnauthorizedError();
+
+  if (!dontUpdateOldFolder) {
+    const oldFolder = foldersMetaObject.folders[process.folderId];
+    if (!oldFolder) throw new Error("Consistensy Error: Process' folder not found");
+    const processOldFolderIdx = oldFolder.children.findIndex(
+      (item) => 'type' in item && item.type === 'process' && item.id === processDefinitionsId,
+    );
+    if (processOldFolderIdx === -1)
+      throw new Error('Consistensy Error: Process not found in folder');
+
+    oldFolder.children.splice(processOldFolderIdx as number, 1);
+  }
+
+  folderData.children.push(process);
+  process.folderId = newFolderId;
+
+  store.update('processes', processDefinitionsId, removeExcessiveInformation(process));
 }
 
 /** Direct updates to process meta data, should mostly be used for internal changes (puppeteer client, electron) to avoid
@@ -180,14 +236,14 @@ export async function updateProcessMetaData(
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
 
   /* // add shared_with if process is shared
-  if (metaChanges.shared_with) {
-    newMetaData.shared_with = metaChanges.shared_with;
-  }
+    if (metaChanges.shared_with) {
+      newMetaData.shared_with = metaChanges.shared_with;
+    }
 
-  // remove shared_with if not shared anymore
-  if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
-    delete newMetaData.shared_with;
-  } */
+    // remove shared_with if not shared anymore
+    if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
+      delete newMetaData.shared_with;
+    } */
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 

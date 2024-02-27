@@ -14,7 +14,7 @@ import store from '@/lib/data/legacy/store';
 
 // NOTE this module is mocked to avoid errors in files that _process.ts imports
 jest.mock('../../lib/data/legacy/_process.ts', () => ({
-  removeProcess() { },
+  removeProcess() {},
 }));
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
@@ -313,9 +313,9 @@ jest.mock('../../lib/data/legacy/store.js', () => ({
       },
     ];
   },
-  add: () => { },
-  remove: () => { },
-  update: () => { },
+  add: () => {},
+  remove: () => {},
+  update: () => {},
 }));
 
 beforeEach(initFolderStore);

@@ -214,7 +214,7 @@ export function moveProcess({
     oldFolder.children.splice(processOldFolderIdx as number, 1);
   }
 
-  folderData.children.push(process);
+  folderData.children.push({ id: process.id, type: process.type });
   process.folderId = newFolderId;
 
   store.update('processes', processDefinitionsId, removeExcessiveInformation(process));

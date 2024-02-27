@@ -5,16 +5,20 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { z } from 'zod';
 import { Process } from '../process-schema';
-import { deleteProcesses } from '../processes';
+import { removeProcess } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
 export let foldersMetaObject: {
   folders: Partial<{
-    [Id: string]: { folder: Folder; children: (Folder | Omit<Process, 'bpmn'>)[] }; // NOTE: the fact that folders don't have a type is needed to differentiate them
+    [Id: string]: {
+      folder: Folder;
+      // NOTE: the fact that folders don't have a type is needed to differentiate them
+      children: ({ id: string } | { id: string; type: Process['type'] })[];
+    };
   }>;
-  rootFolders: Partial<{ [environmentId: string]: Folder }>;
+  rootFolders: Partial<{ [environmentId: string]: string }>;
 } =
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
@@ -23,8 +27,10 @@ export let foldersMetaObject: {
 export function init() {
   if (!firstInit) return;
 
+  foldersMetaObject.folders = {};
+  foldersMetaObject.rootFolders = {};
+
   const storedFolders = store.get('folders') as Folder[];
-  foldersMetaObject = { folders: {}, rootFolders: {} };
 
   //first create all the folders
   for (const folder of storedFolders) {
@@ -32,7 +38,7 @@ export function init() {
       if (foldersMetaObject.rootFolders[folder.environmentId])
         throw new Error(`Environment ${folder.environmentId} Multiple root folders`);
 
-      foldersMetaObject.rootFolders[folder.environmentId] = folder;
+      foldersMetaObject.rootFolders[folder.environmentId] = folder.id;
     }
 
     foldersMetaObject.folders[folder.id] = { folder, children: [] };
@@ -48,19 +54,22 @@ export function init() {
     if (!parentData)
       throw new Error(`Inconsistency in folder structure: folder ${folder.id} has no parent`);
 
-    parentData.children.push(folder);
+    parentData.children.push({ id: folder.id });
   }
 }
 init();
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
-  const rootFolder = foldersMetaObject.rootFolders[environmentId];
-  if (!rootFolder) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
+  const rootFolderId = foldersMetaObject.rootFolders[environmentId];
+  if (!rootFolderId) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
 
-  if (ability && !ability.can('view', toCaslResource('Folder', rootFolder)))
+  const rootFolderData = foldersMetaObject.folders[rootFolderId];
+  if (!rootFolderData) throw new Error('Root folder not found');
+
+  if (ability && !ability.can('view', toCaslResource('Folder', rootFolderData.folder)))
     throw new Error('Permission denied');
 
-  return rootFolder;
+  return rootFolderData.folder;
 }
 
 export function getFolderById(folderId: string, ability?: Ability) {
@@ -113,8 +122,8 @@ export function createFolder(folderInput: z.infer<typeof FolderSchema>, ability?
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
 
-  if (parentFolderData) parentFolderData.children.push(newFolder);
-  else foldersMetaObject.rootFolders[newFolder.environmentId] = newFolder;
+  if (parentFolderData) parentFolderData.children.push({ id: newFolder.id });
+  else foldersMetaObject.rootFolders[newFolder.environmentId] = newFolder.id;
 
   store.add('folders', newFolder);
 
@@ -140,7 +149,7 @@ function _deleteFolder(
 
   for (const child of folderData.children) {
     if ('type' in child && child.type === 'process') {
-      deleteProcesses([child.id]);
+      removeProcess(child.id);
       continue;
     }
 
@@ -230,7 +239,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   oldParentData.children.splice(folderIndex, 1);
 
   folderData.folder.parentId = newParentId;
-  newParentData.children.push(folderData.folder);
+  newParentData.children.push({ id: folderData.folder.id });
 
   store.update('folders', folderId, folderData.folder);
 }

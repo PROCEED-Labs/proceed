@@ -308,9 +308,9 @@ jest.mock('../../lib/data/legacy/store.js', () => ({
       },
     ];
   },
-  add: () => {},
-  remove: () => {},
-  update: () => {},
+  add: () => { },
+  remove: () => { },
+  update: () => { },
 }));
 
 beforeEach(initFolderStore);
@@ -378,7 +378,11 @@ function _printFolders(
   }
 }
 
-const ids = (folders: Folder[]) => folders.map((folder) => folder.id).sort();
+const ids = (folders: ReturnType<typeof getFolderChildren>) =>
+  folders
+    .filter((item) => !('type' in item))
+    .map((folder) => folder.id)
+    .sort();
 
 function environmentFoldersUnchanged(environmentId: string) {
   const rootFolder = getRootFolder(environmentId);
@@ -447,7 +451,11 @@ describe('Create Folders', () => {
       createdBy: 'test',
     });
 
-    expect(foldersMetaObject.folders[rootId1]?.children).toContain(newFolder);
+    expect(
+      foldersMetaObject.folders[rootId1]?.children.some(
+        (child) => !('type' in child) && child.id === newFolder.id,
+      ),
+    ).toBe(true);
   });
 
   test('wrong environment', () => {
@@ -495,7 +503,9 @@ describe('Delete Folders', () => {
     ).toBe(false);
 
     expect(
-      Object.values(foldersMetaObject.rootFolders).some((folder) => folder?.id.includes('1-')),
+      Object.values(foldersMetaObject.rootFolders).some(
+        (folderId) => folderId && folderId.includes('1-'),
+      ),
     ).toBe(false);
 
     expect(() => getRootFolder('1')).toThrowError();
@@ -513,7 +523,9 @@ describe('Delete Folders', () => {
     ).toBe(false);
 
     expect(
-      Object.values(foldersMetaObject.rootFolders).some((folder) => folder?.id.includes('2-')),
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        folderData?.folder.id.includes('2-'),
+      ),
     ).toBe(false);
 
     expect(() => getRootFolder('2')).toThrowError();

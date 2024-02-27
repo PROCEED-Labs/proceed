@@ -4,7 +4,7 @@ import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { z } from 'zod';
-import { Process } from '../process-schema';
+import { Process, ProcessMetadata } from '../process-schema';
 import { removeProcess } from './_process';
 
 // @ts-ignore
@@ -55,6 +55,13 @@ export function init() {
       throw new Error(`Inconsistency in folder structure: folder ${folder.id} has no parent`);
 
     parentData.children.push({ id: folder.id });
+  }
+
+  for (const process of store.get('processes') as ProcessMetadata[]) {
+    const folderData = foldersMetaObject.folders[process.folderId];
+    if (!folderData) throw new Error(`Consistency error: process ${process.id}'s folder not found`);
+
+    folderData.children.push({ id: process.id, type: process.type });
   }
 }
 init();

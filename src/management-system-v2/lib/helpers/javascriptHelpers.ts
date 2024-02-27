@@ -1,12 +1,12 @@
-export async function asyncMap<Type>(
+export async function asyncMap<Type, TReturn>(
   array: Array<Type>,
-  cb: (entry: Type, index: Number) => Promise<any>,
+  cb: (entry: Type, index: Number) => Promise<TReturn>,
 ) {
   const mappingCallbacks = array.map(async (entry, index) => await cb(entry, index));
 
   const mappedValues = await Promise.all(mappingCallbacks);
 
-  return mappedValues;
+  return mappedValues as Array<TReturn>;
 }
 
 export async function asyncForEach<Type>(

@@ -398,8 +398,8 @@ const BPMNSharedViewer = ({
             </Typography.Text>
           }
         >
-          <div className={styles.MainContent} ref={mainContent}>
-            <div className={styles.ProcessInfoCol}>
+          <div className={styles.MainContent}>
+            <div className={styles.ProcessInfoCol} ref={mainContent}>
               <ProcessDocument
                 settings={activeSettings}
                 processHierarchy={processHierarchy}

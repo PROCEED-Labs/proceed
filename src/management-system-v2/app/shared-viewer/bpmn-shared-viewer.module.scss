@@ -42,7 +42,6 @@
 
   .MainContent {
     display: flex;
-    overflow-y: auto;
     height: 100%;
     width: 100vw;
 
@@ -51,9 +50,15 @@
     }
 
     .ProcessInfoCol {
-      height: fit-content;
+      height: 100%;
       background-color: rgb(241, 241, 241);
       width: 100%;
+      overflow: auto;
+
+      @media print {
+        overflow-y: visible;
+        height: fit-content;
+      }
     }
 
     .ContentTableCol {

@@ -12,7 +12,7 @@ let firstInit = !global.foldersMetaObject;
 
 export let foldersMetaObject: {
   folders: Partial<{
-    [Id: string]: { folder: Folder; children: (Folder | Process)[] }; // NOTE: the fact that folders don't have a type is needed to differentiate them
+    [Id: string]: { folder: Folder; children: (Folder | Omit<Process, 'bpmn'>)[] }; // NOTE: the fact that folders don't have a type is needed to differentiate them
   }>;
   rootFolders: Partial<{ [environmentId: string]: Folder }>;
 } =

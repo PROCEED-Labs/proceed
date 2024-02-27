@@ -12,6 +12,11 @@ import { init as initFolderStore } from '@/lib/data/legacy/folders';
 import { Folder } from '@/lib/data/folder-schema';
 import store from '@/lib/data/legacy/store';
 
+// NOTE this module is mocked to avoid errors in files that _process.ts imports
+jest.mock('../../lib/data/legacy/_process.ts', () => ({
+  removeProcess() { },
+}));
+
 jest.mock('../../lib/data/legacy/store.js', () => ({
   get: () => {
     return [

@@ -81,7 +81,7 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string }[],
+  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment();
   const { userId } = await getCurrentUser();
@@ -106,7 +106,7 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess });
+    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');

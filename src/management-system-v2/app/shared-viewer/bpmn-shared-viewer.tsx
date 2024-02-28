@@ -160,6 +160,7 @@ const BPMNSharedViewer = ({
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
+      let id = el.id;
       let name = el.name || `<${el.id}>`;
 
       let nestedSubprocess;
@@ -235,6 +236,7 @@ const BPMNSharedViewer = ({
 
               // set the current element and layer to the root of the imported process
               const canvas = bpmnViewer.get<Canvas>('canvas');
+              const elementRegistry = bpmnViewer.get<ElementRegistry>('elementRegistry');
               const root = canvas.getRootElement();
               el = root.businessObject;
               definitions = el.$parent;
@@ -249,7 +251,11 @@ const BPMNSharedViewer = ({
               importedProcess = {
                 name: `Imported Process: ${definitions.name}`,
                 ...getMetaDataFromBpmnElement(el, mdEditor),
-                planeSvg: await getSVGFromBPMN(bpmnViewer),
+                planeSvg: addTooltipsAndLinksToSVG(
+                  await getSVGFromBPMN(bpmnViewer),
+                  (id) => elementRegistry.get(id)?.businessObject.name,
+                  isContainer ? (elementId) => `#${elementId}_page` : undefined,
+                ),
                 version,
                 versionName,
                 versionDescription,
@@ -309,7 +315,7 @@ const BPMNSharedViewer = ({
 
       return {
         svg,
-        id: el.id,
+        id,
         name,
         description,
         meta,

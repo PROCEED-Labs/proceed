@@ -1,5 +1,11 @@
 import Ability from '@/lib/ability/abilityHelper.js';
-import { Folder, FolderSchema, FolderUserInput, FolderUserInputSchema } from '../folder-schema';
+import {
+  Folder,
+  FolderInput,
+  FolderSchema,
+  FolderUserInput,
+  FolderUserInputSchema,
+} from '../folder-schema';
 import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
@@ -15,7 +21,7 @@ export let foldersMetaObject: {
     [Id: string]: {
       folder: Folder;
       // NOTE: the fact that folders don't have a type is needed to differentiate them
-      children: ({ id: string } | { id: string; type: Process['type'] })[];
+      children: ({ id: string; type: 'folder' } | { id: string; type: Process['type'] })[];
     };
   }>;
   rootFolders: Partial<{ [environmentId: string]: string }>;
@@ -54,7 +60,7 @@ export function init() {
     if (!parentData)
       throw new Error(`Inconsistency in folder structure: folder ${folder.id} has no parent`);
 
-    parentData.children.push({ id: folder.id });
+    parentData.children.push({ id: folder.id, type: 'folder' });
   }
 
   for (const process of store.get('processes') as ProcessMetadata[]) {
@@ -99,7 +105,7 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
   return folderData.children;
 }
 
-export function createFolder(folderInput: z.infer<typeof FolderSchema>, ability?: Ability) {
+export function createFolder(folderInput: FolderInput, ability?: Ability) {
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
@@ -129,7 +135,7 @@ export function createFolder(folderInput: z.infer<typeof FolderSchema>, ability?
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
 
-  if (parentFolderData) parentFolderData.children.push({ id: newFolder.id });
+  if (parentFolderData) parentFolderData.children.push({ id: newFolder.id, type: 'folder' });
   else foldersMetaObject.rootFolders[newFolder.environmentId] = newFolder.id;
 
   store.add('folders', newFolder);
@@ -200,9 +206,7 @@ function isInSubtree(rootId: string, nodeId: string) {
   if (rootId === nodeId) return true;
 
   for (const child of folderData.children) {
-    if ('type' in child) continue; // skip elements that aren't folders
-
-    if (isInSubtree(child.id, nodeId)) return true;
+    if (child.type === 'folder') if (isInSubtree(child.id, nodeId)) return true;
   }
 
   return false;
@@ -226,7 +230,9 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   if (!oldParentData)
     throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
 
-  const folderIndex = oldParentData.children.findIndex((f) => !('type' in f) && f.id === folderId);
+  const folderIndex = oldParentData.children.findIndex(
+    (f) => f.type === 'folder' && f.id === folderId,
+  );
   if (folderIndex === -1)
     throw new Error("Consistency error: folder not found in parent's children");
 
@@ -243,10 +249,10 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
     throw new Error("Folder cannot be moved to it's children");
 
   // Store
-  oldParentData.children.splice(folderIndex, 1);
+  const removed = oldParentData.children.splice(folderIndex, 1)[0];
 
   folderData.folder.parentId = newParentId;
-  newParentData.children.push({ id: folderData.folder.id });
+  newParentData.children.push(removed);
 
   store.update('folders', folderId, folderData.folder);
 }

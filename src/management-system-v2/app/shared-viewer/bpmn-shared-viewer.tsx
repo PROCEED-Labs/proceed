@@ -113,6 +113,7 @@ const BPMNSharedViewer = ({
   );
 
   const mainContent = useRef<HTMLDivElement>(null);
+  const contentTableRef = useRef<HTMLDivElement>(null);
 
   // a hierarchy of the process elements as it should be displayed in the final document containing meta information for each element
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
@@ -365,6 +366,31 @@ const BPMNSharedViewer = ({
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
 
+  // automatically scrolls the content table if a link that becomes active is not currently visible due to the table being too long
+  const handleContentTableChange = function (currentActiveLink: string) {
+    if (contentTableRef.current) {
+      const contentTableDiv = contentTableRef.current;
+
+      // get the link that is currently being highlighted
+      const activeLink = Array.from(contentTableDiv.getElementsByTagName('a')).find(
+        (link) => link.href.split(link.baseURI)[1] === currentActiveLink,
+      );
+
+      if (activeLink) {
+        const contentTableBox = contentTableDiv.getBoundingClientRect();
+        const activeLinkBox = activeLink.getBoundingClientRect();
+
+        // if the link is outside of the viewbox of the content table div scroll the div to show the link
+        if (activeLinkBox.bottom > contentTableBox.bottom) {
+          console.log(currentActiveLink);
+          contentTableDiv.scrollBy({ top: activeLinkBox.bottom - contentTableBox.bottom });
+        } else if (activeLinkBox.top < contentTableBox.top) {
+          contentTableDiv.scrollBy({ top: activeLinkBox.top - contentTableBox.top });
+        }
+      }
+    }
+  };
+
   return (
     <div className={styles.ProcessOverview}>
       <Layout hideSider={true} layoutMenuItems={[]}>
@@ -407,15 +433,15 @@ const BPMNSharedViewer = ({
                 version={versionInfo}
               />
             </div>
-            {/* TODO: Still Buggy when the table of contents is bigger than the page */}
             {breakpoint.lg && (
-              <div className={styles.ContentTableCol}>
+              <div className={styles.ContentTableCol} ref={contentTableRef}>
                 <TableOfContents
                   settings={activeSettings}
                   processHierarchy={processHierarchy}
-                  affix={true}
+                  affix={false}
                   getContainer={() => mainContent.current!}
                   targetOffset={100}
+                  onChange={handleContentTableChange}
                 />
               </div>
             )}

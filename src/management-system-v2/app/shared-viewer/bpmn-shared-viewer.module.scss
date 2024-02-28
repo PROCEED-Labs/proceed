@@ -62,8 +62,10 @@
     }
 
     .ContentTableCol {
+      height: 100%;
       max-width: 320px;
       padding: 0 10px 0 0;
+      overflow-y: hidden;
 
       @media print {
         display: none;

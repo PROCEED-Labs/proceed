@@ -382,7 +382,6 @@ const BPMNSharedViewer = ({
 
         // if the link is outside of the viewbox of the content table div scroll the div to show the link
         if (activeLinkBox.bottom > contentTableBox.bottom) {
-          console.log(currentActiveLink);
           contentTableDiv.scrollBy({ top: activeLinkBox.bottom - contentTableBox.bottom });
         } else if (activeLinkBox.top < contentTableBox.top) {
           contentTableDiv.scrollBy({ top: activeLinkBox.top - contentTableBox.top });

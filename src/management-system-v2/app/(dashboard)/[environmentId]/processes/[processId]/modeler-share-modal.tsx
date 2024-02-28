@@ -21,13 +21,13 @@ import {
 import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
 import ModelerShareModalOption from './modeler-share-modal-option';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { ProcessExportTypes } from '@/components/process-export';
 import { getProcess } from '@/lib/data/processes';
 import { Process } from '@/lib/data/process-schema';
 
 type ShareModalProps = {
   onExport: () => void;
-  onExportMobile: (type: ProcessExportOptions['type']) => void;
+  onExportMobile: (type: ProcessExportTypes) => void;
   processData: Process;
 };
 
@@ -202,7 +202,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
       optionOnClick: () => {
         setActiveIndex(4);
         onExport();
-        setActiveIndex(null);
+        handleClose();
       },
     },
   ];

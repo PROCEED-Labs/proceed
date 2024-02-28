@@ -21,6 +21,8 @@ const exportTypeOptions = [
   { label: 'PNG', value: 'png' },
 ];
 
+export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';
+
 function getSubOptions(giveSelectionOption?: boolean) {
   const exportSubOptions = {
     bpmn: [
@@ -83,7 +85,7 @@ type ProcessExportModalProps = {
   onClose: () => void;
   open: boolean;
   giveSelectionOption?: boolean;
-  preselectedExportType?: ProcessExportOptions['type'];
+  preselectedExportType?: ProcessExportTypes;
   resetPreselectedExportType?: () => void; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
 };
 
@@ -95,9 +97,9 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   preselectedExportType,
   resetPreselectedExportType,
 }) => {
-  const [selectedType, setSelectedType] = useState<
-    (ProcessExportOptions['type'] | 'pdf') | undefined
-  >(preselectedExportType);
+  const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>(
+    preselectedExportType,
+  );
 
   useEffect(() => {
     setSelectedType(preselectedExportType);

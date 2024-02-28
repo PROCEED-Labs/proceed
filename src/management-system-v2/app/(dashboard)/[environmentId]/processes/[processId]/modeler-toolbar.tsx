@@ -23,7 +23,7 @@ import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { ProcessExportTypes } from '@/components/process-export';
 
 import { generateProcessShareToken } from '@/lib/sharing/process-sharing';
 
@@ -51,7 +51,7 @@ const ModelerToolbar = ({
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
-    ProcessExportOptions['type'] | undefined
+    ProcessExportTypes | undefined
   >();
 
   const getProcessData = () => {
@@ -111,7 +111,7 @@ const ModelerToolbar = ({
   };
 
   const handleProcessExportModalToggleMobile = async (
-    preselectedExportType: ProcessExportOptions['type'],
+    preselectedExportType: ProcessExportTypes,
   ) => {
     setPreselectedExportType(preselectedExportType);
     setShowProcessExportModal(!showProcessExportModal);

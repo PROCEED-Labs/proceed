@@ -111,7 +111,7 @@ export async function PUT(
     });
   }
 
-  const imageBlob = await request.blob();
+  const imageBlob = new Blob([imageBuffer]);
 
   await saveProcessImage(processId, imageFileName, imageBlob);
 

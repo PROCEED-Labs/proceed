@@ -28,9 +28,12 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
   );
   const blob = await getPNGFromSVG(svg, 3);
 
-  if ('canShare' in navigator) {
+  // Type assertion for navigator
+  const nav = navigator as Navigator;
+
+  if ('canShare' in nav) {
     try {
-      await navigator.share({
+      await nav.share({
         files: [new File([blob], 'diagram.png', { type: 'image/png' })],
       });
     } catch (err: any) {
@@ -39,10 +42,6 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
       }
     }
   } else {
-    message.error('Web share api not supported, Image copied to clipboard');
-    const data = [new ClipboardItem({ 'image/png': blob })];
-    navigator.clipboard.write(data).then(() => {
-      console.log('Copied to clipboard');
-    });
+    console.log('Webshare api not supported');
   }
 }

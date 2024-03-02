@@ -14,6 +14,8 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
+  getProcessUserTaskHtml as _getProcessUserTaskHtml,
+  getProcessImage as _getProcessImage,
 } from './legacy/_process';
 import {
   addDocumentation,
@@ -40,41 +42,64 @@ import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
-export const getProcessBPMN = async (definitionId: string) => {
+const checkValidity = async (definitionId: string, operation: 'view' | 'update' | 'delete') => {
   const { ability } = await getCurrentEnvironment();
 
-  const processMetaObjects: any = getProcessMetaObjects();
+  const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
-
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to read this process', UserErrorType.PermissionError);
-  }
 
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
 
-  const bpmn = await _getProcessBpmn(definitionId);
+  const errorMessages = {
+    view: 'Not allowed to read this process',
+    update: 'Not allowed to update this process',
+    delete: 'Not allowed to delete this process',
+  };
+
+  if (!ability.can(operation, toCaslResource('Process', process))) {
+    return userError(errorMessages[operation], UserErrorType.PermissionError);
+  }
+};
+
+export const getProcess = async (definitionId: string) => {
+  const error = await checkValidity(definitionId, 'view');
+
+  if (error) return error;
+
+  return getProcessMetaObjects()[definitionId];
+};
+
+export const getProcessBPMN = async (definitionId: string, versionId?: number) => {
+  const error = await checkValidity(definitionId, 'view');
+
+  if (error) return error;
+
+  const process = getProcessMetaObjects()[definitionId];
+
+  let bpmn;
+  if (versionId) {
+    if (!process.versions.some((version) => version.version === versionId)) {
+      return userError(
+        `The requested version does not exist for the requested process.`,
+        UserErrorType.NotFoundError,
+      );
+    }
+
+    bpmn = await getProcessVersionBpmn(definitionId, versionId);
+  } else {
+    bpmn = await _getProcessBpmn(definitionId);
+  }
 
   return bpmn;
 };
 
 export const deleteProcesses = async (definitionIds: string[]) => {
-  const processMetaObjects: any = getProcessMetaObjects();
-
-  // Get ability again since it might have changed.
-  const { ability } = await getCurrentEnvironment();
-
   for (const definitionId of definitionIds) {
-    const process = processMetaObjects[definitionId];
+    const error = await checkValidity(definitionId, 'delete');
 
-    if (!process) {
-      return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-    }
-
-    if (!ability.can('delete', toCaslResource('Process', process))) {
-      return userError('Not allowed to delete this process', UserErrorType.PermissionError);
-    }
+    if (error) return error;
 
     await removeProcess(definitionId);
   }
@@ -125,18 +150,9 @@ export const updateProcess = async (
   name?: string,
   invalidate = false,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(definitionsId, 'update');
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[definitionsId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   // Either replace or update the old BPMN.
   let newBpmn = bpmn ?? (await _getProcessBpmn(definitionsId));
@@ -229,18 +245,9 @@ export const createVersion = async (
   versionDescription: string,
   processId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(processId, 'update');
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   const bpmn = await _getProcessBpmn(processId);
   const bpmnObj = await toBpmnObject(bpmn);
@@ -255,6 +262,9 @@ export const createVersion = async (
     versionDescription,
     versionBasedOn,
   });
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
 
   await versionUserTasks(process, epochTime, bpmnObj);
 
@@ -277,18 +287,25 @@ export const createVersion = async (
 };
 
 export const setVersionAsLatest = async (processId: string, version: number) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(processId, 'update');
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   await selectAsLatestVersion(processId, version);
+};
+
+export const getProcessUserTaskHTML = async (definitionId: string, taskFileName: string) => {
+  const error = await checkValidity(definitionId, 'view');
+
+  if (error) return error;
+
+  return _getProcessUserTaskHtml(definitionId, taskFileName);
+};
+
+export const getProcessImage = async (definitionId: string, imageFileName: string) => {
+  const error = await checkValidity(definitionId, 'view');
+
+  if (error) return error;
+
+  return _getProcessImage(definitionId, imageFileName);
 };

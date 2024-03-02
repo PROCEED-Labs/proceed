@@ -7,6 +7,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import RoleId from './role-id-page';
 import { getMemebers } from '@/lib/data/legacy/iam/memberships';
 import { getUserById } from '@/lib/data/legacy/iam/users';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
 const Page = async ({
   params: { roleId, environmentId },
@@ -23,13 +24,15 @@ const Page = async ({
       </Content>
     );
 
-  const usersInRole = role.members.map((member) => getUserById(member.userId));
+  const usersInRole = role.members.map((member) =>
+    getUserById(member.userId),
+  ) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
   const memberships = getMemebers(activeEnvironment, ability);
   const usersNotInRole = memberships
     .filter(({ userId }) => !roleUserSet.has(userId))
-    .map((user) => getUserById(user.userId));
+    .map((user) => getUserById(user.userId)) as AuthenticatedUser[];
 
   if (!ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
 

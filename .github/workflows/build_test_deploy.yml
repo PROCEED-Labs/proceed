@@ -226,6 +226,32 @@ jobs:
   #       name: PROCEED_Engine_Android
   #       path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
 
+  checkTypes:
+    runs-on: ubuntu-latest
+    # only run on PRs to check types
+    if: ${{ github.event_name == 'pull_request' }}
+    needs:
+      - lint
+      - testEngine
+      - testEngineE2E
+      - testMS
+    steps:
+      - uses: actions/cache@v4
+        timeout-minutes: 2
+        id: restore-install
+        with:
+          path: ./*
+          key: ${{ github.sha }}-${{ github.run_number }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+          cache: 'yarn'
+
+      - run: yarn build-ms
+
   buildMS:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}

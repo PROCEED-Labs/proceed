@@ -3,13 +3,13 @@
 import { FC, useTransition } from 'react';
 import { Button, Form, Input, Modal, App } from 'antd';
 import { updateUser } from '@/lib/data/users';
-import { User, UserData, UserDataSchema } from '@/lib/data/user-schema';
+import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
 import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 
 type modalInputField = {
-  userDataField: keyof UserData;
-  submitField: keyof UserData;
+  userDataField: keyof AuthenticatedUserData;
+  submitField: keyof AuthenticatedUserData;
   label: string;
   password?: boolean;
 };
@@ -20,7 +20,7 @@ type modalInput = {
   title: string;
 };
 
-const UserDataModal: FC<{
+const AuthenticatedUserDataModal: FC<{
   userData: User;
   structure: modalInput;
   modalOpen: boolean;
@@ -31,7 +31,9 @@ const UserDataModal: FC<{
   const { message } = App.useApp();
   const router = useRouter();
 
-  const [formatErrors, parseInput, resetErrors] = useParseZodErrors(UserDataSchema.partial());
+  const [formatErrors, parseInput, resetErrors] = useParseZodErrors(
+    AuthenticatedUserDataSchema.partial(),
+  );
 
   function close() {
     resetErrors();
@@ -45,7 +47,7 @@ const UserDataModal: FC<{
         const data = parseInput(values);
         if (!data) return;
 
-        const result = await updateUser(values as UserData);
+        const result = await updateUser(values as AuthenticatedUserData);
         if (result && 'error' in result) throw new Error();
 
         message.success({ content: 'Profile updated' });
@@ -83,4 +85,4 @@ const UserDataModal: FC<{
   );
 };
 
-export default UserDataModal;
+export default AuthenticatedUserDataModal;

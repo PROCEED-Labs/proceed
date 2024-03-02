@@ -17,7 +17,6 @@ import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
-import { R } from '@tanstack/react-query-devtools/build/legacy/devtools-0Hr18ibL';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },

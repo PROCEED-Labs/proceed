@@ -3,6 +3,8 @@ import store from '../store.js';
 import Ability from '@/lib/ability/abilityHelper';
 import { environmentsMetaObject } from './environments';
 import { v4 } from 'uuid';
+import { usersMetaObject } from './users';
+import { Environment } from '../../environment-schema.js';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -41,14 +43,17 @@ export function init() {
 }
 init();
 
-function ensureIsOrganization(environmentId: string) {
-  const environment = environmentsMetaObject[environmentId];
+function isOrganization(environment: Environment, opts: { throwIfNotFound?: boolean } = {}) {
+  if (!environment)
+    if (opts.throwIfNotFound) throw new Error('Environment not found');
+    else return false;
 
-  if (!environment) throw new Error('Environment not found');
   if (!environment.organization)
-    throw new Error("Environment isn't  an organization, it can't have members");
+    if (opts.throwIfNotFound)
+      throw new Error("Environment isn't  an organization, it can't have members");
+    else return false;
 
-  return environment;
+  return true;
 }
 
 export function getUserOrganizationEnviroments(userId: string) {
@@ -58,7 +63,8 @@ export function getUserOrganizationEnviroments(userId: string) {
 }
 
 export function getMemebers(environmentId: string, ability?: Ability) {
-  ensureIsOrganization(environmentId);
+  const environment = environmentsMetaObject[environmentId];
+  isOrganization(environment, { throwIfNotFound: true });
 
   //TODO: ability check
   if (ability) ability;
@@ -67,7 +73,9 @@ export function getMemebers(environmentId: string, ability?: Ability) {
 }
 
 export function isMember(environmentId: string, userId: string) {
-  ensureIsOrganization(environmentId);
+  const environment = environmentsMetaObject[environmentId];
+
+  if (!isOrganization(environment)) return userId === environmentId;
 
   const members = membershipMetaObject[environmentId];
 
@@ -75,10 +83,15 @@ export function isMember(environmentId: string, userId: string) {
 }
 
 export function addMember(environmentId: string, userId: string, ability?: Ability) {
-  ensureIsOrganization(environmentId);
+  const environment = environmentsMetaObject[environmentId];
+  isOrganization(environment, { throwIfNotFound: true });
 
   // TODO: ability check
   if (ability) ability;
+
+  const user = usersMetaObject[userId];
+  if (!user) throw new Error('User not found');
+  if (user.guest) throw new Error('Guest users cannot be added to environments');
 
   const members = membershipMetaObject[environmentId];
 
@@ -96,7 +109,8 @@ export function addMember(environmentId: string, userId: string, ability?: Abili
 }
 
 export function removeMember(environmentId: string, userId: string, ability?: Ability) {
-  ensureIsOrganization(environmentId);
+  const environment = environmentsMetaObject[environmentId];
+  isOrganization(environment, { throwIfNotFound: true });
 
   // TODO: ability check
   if (ability) ability;

@@ -227,6 +227,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         centered
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
         width={540}
+        data-testId="Export Modal"
       >
         <Flex>
           {typeSelection}

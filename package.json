@@ -99,6 +99,7 @@
     "jest": "29.7.0",
     "jest-when": "3.6.0",
     "jsdoc": "^3.6.6",
+    "lint-staged": "^14.0.1",
     "mini-css-extract-plugin": "^0.6.0",
     "nodemon": "^2.0.12",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
@@ -112,7 +113,9 @@
     "uuid": "9.0.1",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1",
-    "lint-staged": "^14.0.1"
+    "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.6"
   }
 }

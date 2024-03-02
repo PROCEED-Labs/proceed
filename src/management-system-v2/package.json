@@ -26,7 +26,6 @@
     "bpmn-js": "13.2.0",
     "bpmn-js-differ": "2.0.2",
     "classnames": "2.5.1",
-    "conf": "6.2.4",
     "env-paths": "^2.2.0",
     "fs-extra": "^10.1.0",
     "conf": "6.2.4",

@@ -1,7 +1,7 @@
 'use server';
 
 import jwt from 'jsonwebtoken';
-import { updateProcessMetaInfo, updateProcesses } from '../data/processes';
+import { updateProcessMetaInfo } from '../data/processes';
 
 export interface TokenPayload {
   processId: string | string[];

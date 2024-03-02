@@ -8,17 +8,17 @@ import { BPMNCanvasRef } from '@/components/bpmn-canvas';
  *
  * @param modeler the modeler to copy the process image from
  */
-export async function copyProcessImage(modeler: BPMNCanvasRef) {
-  let xml = await modeler.getXML();
+export async function copyProcessImage(modeler: BPMNCanvasRef | null) {
+  let xml = await modeler?.getXML();
   // get the currently visible layer
-  const rootElement = modeler.getCanvas().getRootElement().businessObject;
+  const rootElement = modeler?.getCanvas().getRootElement().businessObject;
   const subprocessId =
     rootElement.$type === 'bpmn:Process' || rootElement.$type === 'bpmn:Collaboration'
       ? undefined
       : rootElement.id;
 
   // get the selected elements
-  let selection: any[] = modeler.getSelection().get();
+  let selection: any[] = modeler!.getSelection().get();
   // get the png and copy it to the clipboard
   const svg = await getSVGFromBPMN(
     xml!,

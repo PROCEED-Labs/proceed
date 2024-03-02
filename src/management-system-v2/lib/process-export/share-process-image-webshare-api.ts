@@ -1,6 +1,5 @@
 import { getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
-import { message } from 'antd';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 /**

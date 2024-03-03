@@ -22,6 +22,12 @@ type PreferencesStoreType = {
 
 const defaultPreferences = {
   /* Default User-Settings: */
+  /* 
+  Increase version-number when default value changes
+  When adding a new field don't increase the version number
+  (Increasing the version number will reset the user's settings to the default settings)
+  */
+  version: 1,
   'icon-view-in-process-list': false,
   'icon-view-in-user-list': false,
   'icon-view-in-role-list': false,
@@ -83,10 +89,15 @@ const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) =>
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     setHydrated(true);
-    useUserPreferencesStore.setState((state) => ({
-      preferences: { ...defaultPreferences, ...state.preferences },
-      _hydrated: true,
-    }));
+    useUserPreferencesStore.setState((state) => {
+      if (!state.preferences.version || state.preferences.version < defaultPreferences.version)
+        return { defaultStore, _hydrated: true };
+
+      return {
+        preferences: { ...defaultPreferences, ...state.preferences },
+        _hydrated: true,
+      };
+    });
   }, [hydrated]);
 
   return hydrated ? storeValues : defaultValues;

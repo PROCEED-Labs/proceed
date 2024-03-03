@@ -156,7 +156,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         >
           <ImageSelectionSection
             imageFileName={metaData.overviewImage && metaData.overviewImage.split('/images/').pop()}
-            onImageAdded={(imageFileName) => {
+            onImageUpdate={(imageFileName) => {
               updateMetaData('overviewImage', imageFileName);
             }}
           ></ImageSelectionSection>

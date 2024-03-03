@@ -1,6 +1,7 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
+  deleteProcessImage,
   getProcessImage,
   getProcessMetaObjects,
   saveProcessImage,
@@ -51,7 +52,7 @@ export async function PUT(
 ) {
   if (!request.body) {
     return new NextResponse(null, {
-      status: 404,
+      status: 400,
       statusText: 'No image was given in request',
     });
   }
@@ -114,6 +115,36 @@ export async function PUT(
   const imageBlob = new Blob([imageBuffer]);
 
   await saveProcessImage(processId, imageFileName, imageBlob);
+
+  return new NextResponse(null, { status: 200, statusText: 'OK' });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  {
+    params: { processId, imageFileName },
+  }: { params: { processId: string; imageFileName: string } },
+) {
+  const { ability } = await getCurrentEnvironment();
+
+  const processMetaObjects = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
+
+  if (!process) {
+    return new NextResponse(null, {
+      status: 404,
+      statusText: 'Process with this id does not exist.',
+    });
+  }
+
+  if (!ability.can('delete', toCaslResource('Process', process))) {
+    return new NextResponse(null, {
+      status: 403,
+      statusText: 'Not allowed to delete image in this process',
+    });
+  }
+
+  await deleteProcessImage(processId, imageFileName);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });
 }

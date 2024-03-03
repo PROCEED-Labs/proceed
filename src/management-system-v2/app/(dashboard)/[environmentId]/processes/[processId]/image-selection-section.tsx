@@ -3,18 +3,19 @@
 import React, { useState } from 'react';
 
 import { Upload, Image } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useParams } from 'next/navigation';
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 
 type ImageSelectionSectionProperties = {
   imageFileName?: string;
-  onImageAdded: (imageFileName: string) => void;
+  onImageUpdate: (imageFileName?: string) => void;
 };
 
 const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   imageFileName,
-  onImageAdded,
+  onImageUpdate,
 }) => {
   const { processId } = useParams();
 
@@ -27,57 +28,74 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     imageFileName && `/api/processes/${processId as string}/images/${imageFileName}?${reloadParam}`;
 
   return (
-    <Upload
-      showUploadList={false}
-      beforeUpload={() => false} // needed for custom upload of file
-      onChange={async ({ fileList }) => {
-        const uploadFile = fileList.pop(); // get latest uploaded file
-        if (uploadFile && uploadFile.originFileObj) {
-          // scale down image to max length of 1500px if file size is over 2mb
-          const image =
-            uploadFile.originFileObj.size > 2000000
-              ? await scaleDownImage(uploadFile.originFileObj, 1500)
-              : uploadFile.originFileObj;
-
-          if (imageFileName) {
-            // Update existing image
-            await fetch(`/api/processes/${processId as string}/images/${imageFileName}`, {
-              method: 'PUT',
-              body: image,
-            });
-            setReloadParam(Date.now());
-          } else {
-            // Add new Image
-            const newImageFileName = await fetch(`/api/processes/${processId as string}/images/`, {
-              method: 'POST',
-              body: image,
-            }).then((res) => res.text());
-            onImageAdded(newImageFileName);
-          }
-        }
+    <Image
+      src={imageURL || fallbackImage}
+      alt="Image"
+      fallback={fallbackImage}
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '6px',
+        border: '1px solid #d9d9d9',
       }}
-    >
-      <Image
-        src={imageURL || fallbackImage}
-        alt="Image"
-        fallback={fallbackImage}
-        style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '6px',
-          border: '1px solid #d9d9d9',
-        }}
-        preview={{
-          visible: false,
-          mask: (
-            <div>
-              {imageURL ? 'Edit ' : 'Add '} <span> Image</span>
-            </div>
-          ),
-        }}
-        data-testid="imageSection"
-      ></Image>
-    </Upload>
+      preview={{
+        visible: false,
+        mask: (
+          <div>
+            <Upload
+              style={{ color: 'white' }}
+              showUploadList={false}
+              beforeUpload={() => false} // needed for custom upload of file
+              onChange={async ({ fileList }) => {
+                const uploadFile = fileList.pop(); // get latest uploaded file
+                if (uploadFile && uploadFile.originFileObj) {
+                  // scale down image to max length of 1500px if file size is over 2mb
+                  const image =
+                    uploadFile.originFileObj.size > 2000000
+                      ? await scaleDownImage(uploadFile.originFileObj, 1500)
+                      : uploadFile.originFileObj;
+
+                  if (imageFileName) {
+                    // Update existing image
+                    await fetch(`/api/processes/${processId as string}/images/${imageFileName}`, {
+                      method: 'PUT',
+                      body: image,
+                    });
+                    setReloadParam(Date.now());
+                  } else {
+                    // Add new Image
+                    const newImageFileName = await fetch(
+                      `/api/processes/${processId as string}/images/`,
+                      {
+                        method: 'POST',
+                        body: image,
+                      },
+                    ).then((res) => res.text());
+                    onImageUpdate(newImageFileName);
+                  }
+                }
+              }}
+            >
+              <span style={{ color: 'white' }}>
+                {imageURL ? <EditOutlined></EditOutlined> : 'Add Image'}
+              </span>
+            </Upload>
+            {imageURL && (
+              <DeleteOutlined
+                style={{ marginLeft: '0.5rem' }}
+                onClick={async () => {
+                  await fetch(`/api/processes/${processId as string}/images/${imageFileName}`, {
+                    method: 'DELETE',
+                  });
+                  onImageUpdate();
+                }}
+              ></DeleteOutlined>
+            )}
+          </div>
+        ),
+      }}
+      data-testid="imageSection"
+    ></Image>
   );
 };
 

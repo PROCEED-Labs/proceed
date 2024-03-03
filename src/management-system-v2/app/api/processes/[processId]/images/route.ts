@@ -11,7 +11,7 @@ export async function POST(
 ) {
   if (!request.body) {
     return new NextResponse(null, {
-      status: 404,
+      status: 400,
       statusText: 'No image was given in request',
     });
   }

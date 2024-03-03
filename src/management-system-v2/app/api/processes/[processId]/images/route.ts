@@ -71,9 +71,10 @@ export async function POST(
     });
   }
 
-  const imageBlob = new Blob([imageBuffer]);
-  const imageType = imageBlob.type.split('image/').pop();
+  const contentType = request.headers.get('Content-Type') || '';
+  const imageType = contentType.split('image/').pop() || '';
   const imageFileName = `_image${v4()}.${imageType}`;
+  const imageBlob = new Blob([imageBuffer], { type: contentType });
 
   await saveProcessImage(processId, imageFileName, imageBlob);
 

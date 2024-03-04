@@ -7,6 +7,9 @@ import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
 import { Process } from '@/lib/data/process-schema';
 import TokenExpired from './token-expired';
+import InvalidShareToken from './invalid-token';
+import ProcessNoLongerShared from './process-no-longer-shared';
+import ProcessDoesNotExist from './process-does-not-exist';
 
 import { SettingsOption } from './settings-modal';
 
@@ -20,7 +23,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const token = searchParams.token;
   const { session } = await getCurrentUser();
   if (typeof token !== 'string') {
-    return <h1>Invalid Token</h1>;
+    return <InvalidShareToken />;
   }
 
   let isOwner = false;
@@ -50,8 +53,18 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
     iframeMode = embeddedMode;
 
-    if (!isOwner && processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
-      return <TokenExpired />;
+    if (!processData) {
+      return <ProcessDoesNotExist />;
+    }
+
+    if (!isOwner) {
+      if (!processData.shared) {
+        return <ProcessNoLongerShared />;
+      }
+
+      if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
+        return <TokenExpired />;
+      }
     }
   } catch (err) {
     console.error('error while verifying token... ', err);

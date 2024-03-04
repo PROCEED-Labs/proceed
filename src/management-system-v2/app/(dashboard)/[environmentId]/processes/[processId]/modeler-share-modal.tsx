@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useMemo, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
 import {
   ShareAltOutlined,
@@ -28,14 +28,9 @@ import { Process } from '@/lib/data/process-schema';
 type ShareModalProps = {
   onExport: () => void;
   onExportMobile: (type: ProcessExportTypes) => void;
-  processData: Process;
 };
 
-const ModelerShareModalButton: FC<ShareModalProps> = ({
-  onExport,
-  onExportMobile,
-  processData,
-}) => {
+const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
   const { processId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
@@ -44,15 +39,28 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
   const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
+  const [shareToken, setShareToken] = useState('');
+  const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs } = await getProcess(processId as string);
+    const { shared, sharedAs, shareToken } = await getProcess(processId as string);
     setShared(shared);
     setSharedAs(sharedAs);
+    setShareToken(shareToken);
   };
 
   const refresh = async () => {
     checkIfProcessShared();
+  };
+
+  const getProcessData = () => {
+    return getProcess(processId as string)
+      .then((processData) => {
+        setProcessData(processData);
+      })
+      .catch((error) => {
+        console.error('Error fetching process data:', error);
+      });
   };
 
   const handleClose = () => {
@@ -87,7 +95,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
 
     const shareObject = {
-      title: `${processData.name} | PROCEED`,
+      title: `${processData?.name} | PROCEED`,
       text: 'Here is a shared process for you',
       url: `${window.location.origin}/shared-viewer?token=${token}`,
     };
@@ -108,6 +116,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
 
   const handleShareButtonClick = async () => {
     setIsOpen(true);
+    getProcessData();
     checkIfProcessShared();
   };
 
@@ -156,7 +165,12 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({
         setActiveIndex(0);
       },
       subOption: (
-        <ModelerShareModalOptionPublicLink shared={shared} sharedAs={sharedAs} refresh={refresh} />
+        <ModelerShareModalOptionPublicLink
+          shared={shared}
+          sharedAs={sharedAs}
+          shareToken={shareToken}
+          refresh={refresh}
+        />
       ),
     },
     {

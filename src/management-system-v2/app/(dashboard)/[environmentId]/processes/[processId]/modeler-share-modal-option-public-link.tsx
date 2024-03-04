@@ -1,4 +1,4 @@
-import { Button, Checkbox, Col, Flex, Input, message, QRCode, Row, Typography } from 'antd';
+import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -12,12 +12,14 @@ import styles from './modeler-share-modal-option-public-link.module.scss';
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
+  shareToken: string;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
   shared,
   sharedAs,
+  shareToken,
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
@@ -31,22 +33,15 @@ const ModelerShareModalOptionPublicLink = ({
 
   const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
 
-  const getNewToken = async () => {
-    const { token } = await generateProcessShareToken({
-      processId: processId,
-      version: selectedVersionId,
-    });
-    setToken(token);
-    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
-  };
+  const { message } = App.useApp();
 
   useEffect(() => {
     setIsShareLinkChecked(shared);
     if (shared) {
-      getNewToken();
+      setToken(shareToken);
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected' ? true : false);
-  }, [shared, sharedAs]);
+  }, [shared, sharedAs, shareToken]);
 
   const handleCopyLink = async () => {
     try {

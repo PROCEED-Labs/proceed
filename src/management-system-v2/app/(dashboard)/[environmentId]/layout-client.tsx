@@ -2,18 +2,7 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, useState } from 'react';
-import {
-  Layout as AntLayout,
-  Avatar,
-  Button,
-  Drawer,
-  Grid,
-  Menu,
-  MenuProps,
-  Select,
-  Space,
-  Tooltip,
-} from 'antd';
+import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Select, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
@@ -23,6 +12,7 @@ import { create } from 'zustand';
 import { useRouter } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
 import { useEnvironment } from '@/components/auth-can';
+import UserAvatar from '@/components/user-avatar';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -114,17 +104,7 @@ const Layout: FC<
           loggedIn ? (
             <>
               <Tooltip title="Account Settings">
-                <Avatar
-                  src={session.data?.user.image}
-                  onClick={() => router.push(`/${environmentId}/profile`)}
-                >
-                  {session.data?.user.image
-                    ? null
-                    : session.status === 'authenticated'
-                      ? session.data?.user.firstName.slice(0, 1) +
-                        session.data?.user.lastName.slice(0, 1)
-                      : null}
-                </Avatar>
+                <UserAvatar user={session.data?.user} />
               </Tooltip>
             </>
           ) : (

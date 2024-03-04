@@ -177,7 +177,6 @@ export async function updateProcessMetaData(
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
-
   /* // add shared_with if process is shared
   if (metaChanges.shared_with) {
     newMetaData.shared_with = metaChanges.shared_with;
@@ -187,10 +186,6 @@ export async function updateProcessMetaData(
   if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
     delete newMetaData.shared_with;
   } */
-
-  newMetaData.shared = metaChanges.shared;
-  newMetaData.sharedAs = metaChanges.sharedAs;
-  if (metaChanges.shareTimeStamp) newMetaData.shareTimeStamp = metaChanges.shareTimeStamp;
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 

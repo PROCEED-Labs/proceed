@@ -24,11 +24,9 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
   params,
 }) => {
   const { userId } = await getCurrentUser();
+
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-
-  if (activeEnvironment !== userId && !isMember(activeEnvironment, userId))
-    redirect(`/${userId}/processes`);
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
@@ -70,7 +68,6 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
       type: 'divider',
     });
   }
-
   if (enableNewMSExecution) {
     const children: MenuProps['items'] = [];
 

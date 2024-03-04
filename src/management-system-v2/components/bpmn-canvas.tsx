@@ -13,7 +13,7 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
-import { copyProcessImage } from '@/lib/process-export/copy-process-image';
+import { copyProcessImage, copyProcessImage_ } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 
@@ -178,7 +178,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         .addListener(async ({ keyEvent }: { keyEvent: KeyboardEvent }) => {
           // handle the copy shortcut
           if (keyEvent.ctrlKey && keyEvent.key === 'c') {
-            await copyProcessImage(modeler.current);
+            await copyProcessImage_(modeler.current!);
           }
         }, 'keyboard.keyup');
 

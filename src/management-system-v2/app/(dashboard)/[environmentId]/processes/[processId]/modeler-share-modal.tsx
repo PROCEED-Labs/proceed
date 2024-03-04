@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
+import { Modal, Button, Tooltip, Space, Divider, message, Grid, App } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -24,6 +24,7 @@ import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
 import { Process } from '@/lib/data/process-schema';
+import { error } from 'console';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -40,6 +41,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
   const [shareToken, setShareToken] = useState('');
+  const { message } = App.useApp();
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
@@ -193,9 +195,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
       optionTitle: 'Copy Diagram to Clipboard (PNG)',
       optionName: 'Copy Diagram as PNG',
-      optionOnClick: () => {
+      optionOnClick: async () => {
         setActiveIndex(2);
-        copyProcessImage(modeler!);
+        if (await copyProcessImage(modeler!)) {
+          message.success('Copied to clipboard');
+        } else {
+          message.error('Error while copying');
+        }
         setActiveIndex(null);
       },
     },

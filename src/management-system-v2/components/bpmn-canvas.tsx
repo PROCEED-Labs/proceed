@@ -13,7 +13,7 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
-import { copyProcessImage, copyProcessImage_ } from '@/lib/process-export/copy-process-image';
+import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
 

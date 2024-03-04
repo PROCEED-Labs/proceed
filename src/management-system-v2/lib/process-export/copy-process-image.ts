@@ -1,7 +1,6 @@
 import { getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { message } from 'antd';
 import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 

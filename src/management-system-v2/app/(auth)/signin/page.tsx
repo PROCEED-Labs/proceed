@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { getProviders } from 'next-auth/react';
 import Login from './login';
-import { nextAuthOptions } from '@/app/api/auth/[...nextauth]/auth-options';
+import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';

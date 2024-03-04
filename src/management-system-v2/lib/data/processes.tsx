@@ -140,7 +140,7 @@ export const addProcesses = async (
   return newProcesses;
 };
 
-export const updateProcessMetaInfo = async (
+export const updateProcessShareInfo = async (
   definitionsId: string,
   shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,

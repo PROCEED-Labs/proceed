@@ -106,7 +106,6 @@ const ModelerToolbar = ({
   ) => {
     setPreselectedExportType(preselectedExportType);
     setShowProcessExportModal(!showProcessExportModal);
-    //await handleProcessExportModalToggle();
   };
 
   const query = useSearchParams();

@@ -1,7 +1,7 @@
 'use server';
 
 import jwt from 'jsonwebtoken';
-import { updateProcessMetaInfo } from '../data/processes';
+import { updateProcessShareInfo } from '../data/processes';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -20,7 +20,7 @@ export async function updateProcessGuestAccessRights(
   processId: string | string[],
   newMeta: ProcessGuestAccessRights,
 ) {
-  await updateProcessMetaInfo(
+  await updateProcessShareInfo(
     processId as string,
     newMeta.shared,
     newMeta.sharedAs,

@@ -19,7 +19,7 @@ import {
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
-import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
+import { shareProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
@@ -49,10 +49,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     setShared(shared);
     setSharedAs(sharedAs);
     setShareToken(shareToken);
-  };
-
-  const refresh = async () => {
-    checkIfProcessShared();
   };
 
   const getProcessData = () => {
@@ -147,15 +143,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Share Process as Image',
       optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
-    //xml export using webshare api is not supported
-    /*{
-      optionIcon: (
-        <Image priority src="/proceed-icon.png" height={24} width={40} alt="proceed logo" />
-      ),
-      optionName: 'Share Process as BPMN File',
-      optionTitle: 'Share Process as BPMN File',
-      optionOnClick: () => onExportMobile('bpmn'),
-    },*/
   ];
 
   const optionsDesktop = [
@@ -171,7 +158,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
           shared={shared}
           sharedAs={sharedAs}
           shareToken={shareToken}
-          refresh={refresh}
+          refresh={checkIfProcessShared}
         />
       ),
     },
@@ -188,7 +175,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         setActiveIndex(1);
       },
       subOption: (
-        <ModelerShareModalOptionEmdedInWeb shared={shared} sharedAs={sharedAs} refresh={refresh} />
+        <ModelerShareModalOptionEmdedInWeb
+          shared={shared}
+          sharedAs={sharedAs}
+          refresh={checkIfProcessShared}
+        />
       ),
     },
     {

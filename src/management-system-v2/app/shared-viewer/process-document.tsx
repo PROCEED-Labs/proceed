@@ -74,9 +74,9 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
         className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
       >
         <div className={styles.ElementOverview}>
-          <Title id={`${hierarchyElement.id}_page`} level={2}>
-            {elementLabel}
-          </Title>
+          {/* TODO: Replace with the version with the id when the problem with the links being broken in the pdf is fixed */}
+          {/* <Title id={`${hierarchyElement.id}_page`} level={2}> */}
+          <Title level={2}>{elementLabel}</Title>
           {/* Hide the svg if the element is not a container (process, sub-process, pool,...) and the respective option is deselected */}
           {(settings.showElementSVG || isContainer) && (
             <div
@@ -89,9 +89,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
         </div>
         {settings.importedProcesses && importedProcess && importedProcess.version && (
           <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_version_page`}>
-              Version Information
-            </Title>
+            {/* <Title level={3} id={`${hierarchyElement.id}_version_page`}> */}
+            <Title level={3}>Version Information</Title>
             {importedProcess.versionName && (
               <p>
                 <b>Version:</b> {importedProcess.versionName}
@@ -109,9 +108,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
         )}
         {description && (
           <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_description_page`}>
-              General Description
-            </Title>
+            {/* <Title level={3} id={`${hierarchyElement.id}_description_page`}> */}
+            <Title level={3}>General Description</Title>
             <div>
               <div
                 className="toastui-editor-contents"
@@ -122,9 +120,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
         )}
         {meta && (
           <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_meta_page`}>
-              Meta Data
-            </Title>
+            {/* <Title level={3} id={`${hierarchyElement.id}_meta_page`}> */}
+            <Title level={3}>Meta Data</Title>
             <Table
               pagination={false}
               rowKey="key"
@@ -138,9 +135,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
         )}
         {milestones && (
           <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_milestone_page`}>
-              Milestones
-            </Title>
+            {/* <Title level={3} id={`${hierarchyElement.id}_milestone_page`}> */}
+            <Title level={3}>Milestones</Title>
             <Table
               pagination={false}
               rowKey="id"

@@ -46,12 +46,16 @@ export const getProcessBPMN = async (definitionId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
 
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to read this process', UserErrorType.PermissionError);
-  }
-
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (
+    !ability.can('view', toCaslResource('Process', process), {
+      environmentId: process.environmentId,
+    })
+  ) {
+    return userError('Not allowed to read this process', UserErrorType.PermissionError);
   }
 
   const bpmn = await _getProcessBpmn(definitionId);

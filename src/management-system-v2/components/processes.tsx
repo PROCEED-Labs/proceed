@@ -1,17 +1,14 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { Fragment, useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Card, Dropdown, Menu } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Dropdown } from 'antd';
 import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  CloseOutlined,
-  InfoCircleOutlined,
   PlusOutlined,
   ImportOutlined,
 } from '@ant-design/icons';
@@ -22,13 +19,6 @@ import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
-import {
-  setDefinitionsId,
-  setDefinitionsName,
-  generateDefinitionsId,
-  setTargetNamespace,
-  setDefinitionsVersionInformation,
-} from '@proceed/bpmn-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
@@ -36,11 +26,9 @@ import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/proc
 import ProcessModal from './process-modal';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
-import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
-import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { Folder } from '@/lib/data/folder-schema';
-import * as ContextMenu from '@radix-ui/react-context-menu';
 import FolderCreationButton from './folder-creation-button';
 
 //TODO stop using external process
@@ -371,11 +359,12 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.id))
+          .filter((process) => selectedRowKeys.includes(process.id) && process.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
             description: process.description.value,
             originalId: process.id,
+            folderId: folder.id,
           }))}
         onSubmit={async (values) => {
           const res = await copyProcesses(values);

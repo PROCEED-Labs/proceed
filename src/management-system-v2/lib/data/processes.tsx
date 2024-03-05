@@ -187,6 +187,7 @@ export const copyProcesses = async (
     description: string;
     originalId: string;
     originalVersion?: string;
+    folderId?: string;
   }[],
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment();
@@ -211,6 +212,7 @@ export const copyProcesses = async (
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment,
+      folderId: copyProcess.folderId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {

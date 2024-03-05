@@ -48,9 +48,15 @@ export type ArrayEntryType<T extends any[]> = T extends Array<infer EntryType> ?
 export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 /**
+ * Does the same as Omit, but doesn't break union types.
+ * It does so, by distributing the Omit over the union.
+ */
+export type OmitDistributive<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+
+/**
  * Make keys of T optional.
  */
-export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = Omit<T, K> &
+export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = OmitDistributive<T, K> &
   Partial<Pick<T, K>>;
 
 /**

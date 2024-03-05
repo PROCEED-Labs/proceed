@@ -52,3 +52,10 @@ export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
  */
 export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = Omit<T, K> &
   Partial<Pick<T, K>>;
+
+/**
+ * The normal Omit breaks union types. This is a fix for that.
+ */
+export type UnionAwareOmit<TObj extends Record<string, any>, TKeys extends keyof TObj> = Prettify<
+  TObj extends any ? Omit<TObj, TKeys> : never
+>;

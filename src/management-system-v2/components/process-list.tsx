@@ -20,6 +20,8 @@ import {
   StarOutlined,
   MoreOutlined,
   InfoCircleOutlined,
+  FolderOutlined as FolderFilled,
+  FileOutlined as FileFilled,
 } from '@ant-design/icons';
 import cn from 'classnames';
 import { useRouter } from 'next/navigation';
@@ -28,7 +30,7 @@ import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import { generateDateString } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 
@@ -68,6 +70,7 @@ const ProcessList: FC<ProcessListProps> = ({
   setShowMobileMetaData,
 }) => {
   const router = useRouter();
+  const environmentId = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,19 +102,11 @@ const ProcessList: FC<ProcessListProps> = ({
             </Tooltip>
           </AuthCan>
           <Tooltip placement="top" title={'Export'}>
-            <ExportOutlined
-              onClick={() => {
-                onExportProcess(record);
-              }}
-            />
+            <ExportOutlined onClick={() => onExportProcess(record)} />
           </Tooltip>
           <AuthCan resource={toCaslResource('Process', record)} action="update">
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined
-                onClick={() => {
-                  onEditProcess(record);
-                }}
-              />
+              <EditOutlined onClick={() => onEditProcess(record)} />
             </Tooltip>
           </AuthCan>
 
@@ -176,11 +171,11 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
     },
     {
-      title: 'Process Name',
+      title: 'Name',
       dataIndex: 'name',
       key: 'Process Name',
       className: styles.Title,
-      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
         <div
           className={
@@ -196,7 +191,7 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.name.highlighted}
+          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
         </div>
       ),
       responsive: ['xs', 'sm'],
@@ -205,7 +200,7 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      sorter: (a, b) => a.description.value.localeCompare(b.description.value),
+      // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
         <div
           style={{
@@ -225,7 +220,7 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      // sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
       responsive: ['md'],
     },
     {
@@ -233,7 +228,7 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      // sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
       responsive: ['md'],
     },
     {
@@ -246,7 +241,7 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
+      // sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
       responsive: ['md'],
     },
     {
@@ -351,7 +346,12 @@ const ProcessList: FC<ProcessListProps> = ({
             /* Always */
             setLastProcessId(record?.id);
           },
-          onDoubleClick: () => router.push(`processes/${record.id}`),
+          onDoubleClick: () =>
+            router.push(
+              record.type === 'folder'
+                ? `/${environmentId}/processes/folder/${record.id}`
+                : `/${environmentId}/processes/${record.id}`,
+            ),
           onMouseEnter: () => setHovered(record),
           onMouseLeave: () => setHovered(undefined),
         })}

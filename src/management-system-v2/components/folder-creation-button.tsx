@@ -68,11 +68,20 @@ const FolderCreationButton: React.FC<ProcessCreationButtonProps> = ({
         onOk={form.submit}
         onCancel={() => setModalOpen(false)}
       >
-        <Form onFinish={createFolder} form={form}>
-          <Form.Item name="name" required {...antDesignInputProps(errors, 'name')}>
+        <Form onFinish={createFolder} form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Folder name"
+            required
+            {...antDesignInputProps(errors, 'name')}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="description" {...antDesignInputProps(errors, 'description')}>
+          <Form.Item
+            name="description"
+            label="Description"
+            {...antDesignInputProps(errors, 'description')}
+          >
             <TextArea />
           </Form.Item>
         </Form>

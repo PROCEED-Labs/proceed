@@ -1,8 +1,8 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
+import React, { Fragment, useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Card, Dropdown, Menu } from 'antd';
 import { ApiData } from '@/lib/fetch-data';
 import cn from 'classnames';
 import {
@@ -36,48 +36,25 @@ import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/proc
 import ProcessModal from './process-modal';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
-import { Process } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
+import { Folder } from '@/lib/data/folder-schema';
+import * as ContextMenu from '@radix-ui/react-context-menu';
+import FolderCreationButton from './folder-creation-button';
 
 //TODO stop using external process
-export type ProcessListProcess = ReplaceKeysWithHighlighted<
-  Omit<Process, 'bpmn'>,
-  'name' | 'description'
->;
+export type ProcessListProcess = ListItem;
 
-type CopyProcessType = {
-  bpmn: string;
-  newName?: string;
-};
-
-const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
-  const newDefinitionsId = await generateDefinitionsId();
-  let newBPMN = await setDefinitionsId(bpmn, newDefinitionsId);
-  newBPMN = await setDefinitionsName(newBPMN, newName || 'Copy of Process');
-  newBPMN = await setTargetNamespace(newBPMN, newDefinitionsId);
-
-  newBPMN = await setDefinitionsVersionInformation(newBPMN, {
-    version: undefined,
-    versionName: undefined,
-    versionDescription: undefined,
-    versionBasedOn: undefined,
-  });
-  // newBPMN = await manipulateElementsByTagName(newBPMN, 'bpmn:Definitions', (definitions: any) => {
-  //   delete definitions.version;
-  //   delete definitions.versionName;
-  //   delete definitions.versionDescription;
-  //   delete definitions.versionBasedOn;
-  // });
-
-  return newBPMN;
-};
+type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
+export type ListItem = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 type ProcessesProps = {
-  processes: Omit<Process, 'bpmn'>[];
+  processes: InputItem[];
+  folder: Folder;
 };
 
-const Processes = ({ processes }: ProcessesProps) => {
+const Processes = ({ processes, folder }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
@@ -151,11 +128,7 @@ const Processes = ({ processes }: ProcessesProps) => {
     </>
   );
 
-  const {
-    filteredData,
-    searchQuery: searchTerm,
-    setSearchQuery: setSearchTerm,
-  } = useFuzySearch({
+  const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: processes ?? [],
     keys: ['name', 'description'],
     highlightedKeys: ['name', 'description'],
@@ -163,16 +136,6 @@ const Processes = ({ processes }: ProcessesProps) => {
   });
 
   const CollapsePannelRef = useRef<MetaPanelRefType>(null);
-
-  const collapseCard = CollapsePannelRef.current;
-  // () => {
-  //   addPreferences({
-  //     'process-meta-data': {
-  //       open: !showInfo,
-  //       width: getWidth(),
-  //     },
-  //   });
-  // };
 
   const deselectAll = () => {
     setSelectedRowElements([]);
@@ -226,36 +189,50 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   return (
     <>
-      <div
-        className={breakpoint.xs ? styles.MobileView : ''}
-        style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+      <Dropdown
+        menu={{
+          items: [
+            {
+              key: 'create-process',
+              label: <ProcessCreationButton wrapperElement="Create Process" />,
+            },
+            {
+              key: 'create-folder',
+              label: <FolderCreationButton wrapperElement="Create Folder" />,
+            },
+          ],
+        }}
+        trigger={['contextMenu']}
       >
-        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ flex: '1' }}>
-          <Bar
-            leftNode={
-              <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  {breakpoint.xs ? null : (
-                    <>
-                      <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                        {breakpoint.xl ? 'New Process' : 'New'}
-                      </ProcessCreationButton>
-                      <ProcessImportButton type="default">
-                        {breakpoint.xl ? 'Import Process' : 'Import'}
-                      </ProcessImportButton>
-                    </>
-                  )}
+        <div
+          className={breakpoint.xs ? styles.MobileView : ''}
+          style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+        >
+          {/* 73% for list / icon view, 27% for meta data panel (if active) */}
+          <div style={{ flex: '1' }}>
+            <Bar
+              leftNode={
+                <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    {breakpoint.xs ? null : (
+                      <>
+                        <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
+                          {breakpoint.xl ? 'New Process' : 'New'}
+                        </ProcessCreationButton>
+                        <ProcessImportButton type="default">
+                          {breakpoint.xl ? 'Import Process' : 'Import'}
+                        </ProcessImportButton>
+                      </>
+                    )}
 
-                  {selectedRowKeys.length ? (
-                    <span className={styles.SelectedRow}>
-                      {selectedRowKeys.length} selected:
-                      <span className={styles.Icons}>{actionBar}</span>
-                    </span>
-                  ) : undefined}
-                </span>
+                    {selectedRowKeys.length ? (
+                      <span className={styles.SelectedRow}>
+                        {selectedRowKeys.length} selected:
+                        <span className={styles.Icons}>{actionBar}</span>
+                      </span>
+                    ) : undefined}
+                  </span>
 
-                {
                   <span>
                     <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
                       <Button
@@ -276,111 +253,112 @@ const Processes = ({ processes }: ProcessesProps) => {
                       </Button>
                     </Space.Compact>
                     {/* {breakpoint.xl ? (
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          if (collapseCard) collapseCard();
-                        }}
-                      >
-                        <InfoCircleOutlined />
-                      </Button>
-                    ) : undefined} */}
+          <Button
+          type="text"
+          onClick={() => {
+          if (collapseCard) collapseCard();
+          }}
+          >
+          <InfoCircleOutlined />
+          </Button>
+          ) : undefined} */}
                   </span>
-                }
 
-                {/* <!-- FloatButtonGroup needs a z-index of 101
-              since BPMN Logo of the viewer has an z-index of 100 --> */}
-                {breakpoint.xl ? undefined : (
-                  <FloatButton.Group
-                    className={styles.FloatButton}
-                    trigger="click"
-                    type="primary"
-                    style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
-                    icon={<PlusOutlined />}
-                  >
-                    <Tooltip trigger="hover" placement="left" title="Create a process">
-                      <FloatButton
-                        icon={
-                          <ProcessCreationButton
-                            type="text"
-                            icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
-                          />
-                        }
-                      />
-                    </Tooltip>
-                    <Tooltip trigger="hover" placement="left" title="Import a process">
-                      <FloatButton
-                        icon={
-                          <ProcessImportButton
-                            type="text"
-                            icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
-                          />
-                        }
-                      />
-                    </Tooltip>
-                  </FloatButton.Group>
-                )}
-              </span>
-            }
-            searchProps={{
-              onChange: (e) => setSearchTerm(e.target.value),
-              onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
-              placeholder: 'Search Processes ...',
-            }}
-          />
-
-          {iconView ? (
-            <IconView
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelectionElements={setSelectedRowElements}
-              setShowMobileMetaData={setShowMobileMetaData}
+                  {/* <!-- FloatButtonGroup needs a z-index of 101
+        since BPMN Logo of the viewer has an z-index of 100 --> */}
+                  {breakpoint.xl ? undefined : (
+                    <FloatButton.Group
+                      className={styles.FloatButton}
+                      trigger="click"
+                      type="primary"
+                      style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                      icon={<PlusOutlined />}
+                    >
+                      <Tooltip trigger="hover" placement="left" title="Create a process">
+                        <FloatButton
+                          icon={
+                            <ProcessCreationButton
+                              type="text"
+                              icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
+                            />
+                          }
+                        />
+                      </Tooltip>
+                      <Tooltip trigger="hover" placement="left" title="Import a process">
+                        <FloatButton
+                          icon={
+                            <ProcessImportButton
+                              type="text"
+                              icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
+                            />
+                          }
+                        />
+                      </Tooltip>
+                    </FloatButton.Group>
+                  )}
+                </span>
+              }
+              searchProps={{
+                onChange: (e) => setSearchTerm(e.target.value),
+                onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
+                placeholder: 'Search Processes ...',
+              }}
             />
+
+            {iconView ? (
+              <IconView
+                data={filteredData}
+                selection={selectedRowKeys}
+                setSelectionElements={setSelectedRowElements}
+                setShowMobileMetaData={setShowMobileMetaData}
+              />
+            ) : (
+              <ProcessList
+                data={filteredData}
+                setSelectionElements={setSelectedRowElements}
+                selection={selectedRowKeys}
+                // TODO: Replace with server component loading state
+                //isLoading={isLoading}
+                onExportProcess={(id) => {
+                  setOpenExportModal(true);
+                }}
+                onDeleteProcess={async ({ id }) => {
+                  await deleteProcesses([id]);
+                  setSelectedRowElements([]);
+                  router.refresh();
+                }}
+                onCopyProcess={(process) => {
+                  setOpenCopyModal(true);
+                  setSelectedRowElements([process]);
+                }}
+                onEditProcess={(process) => {
+                  setOpenEditModal(true);
+                  setSelectedRowElements([process]);
+                }}
+                setShowMobileMetaData={setShowMobileMetaData}
+              />
+            )}
+          </div>
+
+          {/*Meta Data Panel*/}
+          {breakpoint.xl ? (
+            <MetaData selectedElement={selectedRowElements.at(-1)} ref={CollapsePannelRef} />
           ) : (
-            <ProcessList
-              data={filteredData}
-              setSelectionElements={setSelectedRowElements}
-              selection={selectedRowKeys}
-              // TODO: Replace with server component loading state
-              //isLoading={isLoading}
-              onExportProcess={(id) => {
-                setOpenExportModal(true);
-              }}
-              onDeleteProcess={async ({ id }) => {
-                await deleteProcesses([id]);
-                setSelectedRowElements([]);
-                router.refresh();
-              }}
-              onCopyProcess={(process) => {
-                setOpenCopyModal(true);
-                setSelectedRowElements([process]);
-              }}
-              onEditProcess={(process) => {
-                setOpenEditModal(true);
-                setSelectedRowElements([process]);
-              }}
-              setShowMobileMetaData={setShowMobileMetaData}
-            />
+            <Drawer
+              onClose={closeMobileMetaData}
+              title={
+                <span>
+                  {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
+                </span>
+              }
+              open={showMobileMetaData}
+            >
+              <MetaDataContent selectedElement={selectedRowElements.at(-1)} />
+            </Drawer>
           )}
         </div>
+      </Dropdown>
 
-        {/*Meta Data Panel*/}
-        {breakpoint.xl ? (
-          <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
-        ) : (
-          <Drawer
-            onClose={closeMobileMetaData}
-            title={
-              <span>
-                {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
-              </span>
-            }
-            open={showMobileMetaData}
-          >
-            <MetaDataContent data={filteredData} selection={selectedRowKeys} />
-          </Drawer>
-        )}
-      </div>
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,

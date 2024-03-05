@@ -19,13 +19,12 @@ import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import MetaDataContent from './process-info-card-content';
 
 type MetaDataType = {
-  data?: ProcessListProcess[];
-  selection: Key[];
+  selectedElement?: ProcessListProcess;
 };
 export type MetaPanelRefType = () => void;
 
 /** NEEDS TO BE PLACED IN A FLEX CONTAINER */
-const MetaData = forwardRef<() => void, MetaDataType>(({ data, selection }, ref) => {
+const MetaData = forwardRef<() => void, MetaDataType>(({ selectedElement }, ref) => {
   const addPreferences = useUserPreferences.use.addPreferences();
   const getWidth = () => useUserPreferences.getState().preferences['process-meta-data'].width;
   const showInfo = useUserPreferences((store) => store.preferences['process-meta-data'].open);
@@ -79,15 +78,11 @@ const MetaData = forwardRef<() => void, MetaDataType>(({ data, selection }, ref)
       lock={!showInfo}
     >
       <CollapsibleCard
-        title={
-          selection.length
-            ? data?.find((item) => item.id === selection[0])?.name.value!
-            : 'How to PROCEED?'
-        }
+        title={selectedElement?.name.value ?? 'How to PROCEED?'}
         show={showInfo}
         onCollapse={collapseCard}
       >
-        <MetaDataContent data={data} selection={selection} />
+        <MetaDataContent selectedElement={selectedElement} />
       </CollapsibleCard>
     </ResizableElement>
   );

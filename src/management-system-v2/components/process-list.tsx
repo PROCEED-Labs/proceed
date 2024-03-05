@@ -274,7 +274,7 @@ const ProcessList: FC<ProcessListProps> = ({
             opacity: hovered?.id === id ? 1 : 0,
           }}
         >
-          {actionBarGenerator(record)}
+          {record.type !== 'folder' ? actionBarGenerator(record) : null}
         </Row>
       ),
       responsive: ['xl'],

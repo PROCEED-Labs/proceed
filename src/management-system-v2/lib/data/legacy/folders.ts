@@ -9,9 +9,7 @@ import {
 import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
-import { z } from 'zod';
 import { Process, ProcessMetadata } from '../process-schema';
-import { removeProcess } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
@@ -63,14 +61,28 @@ export function init() {
     parentData.children.push({ id: folder.id, type: 'folder' });
   }
 
-  for (const process of store.get('processes') as ProcessMetadata[]) {
+  for (let process of store.get('processes') as ProcessMetadata[]) {
+    if (!process.folderId) {
+      console.warn(
+        `Process ${process.id} has no parent folder, it was stored in it's environment's root folder`,
+      );
+
+      process = {
+        ...process,
+        folderId: foldersMetaObject.rootFolders[process.environmentId] as string,
+      };
+
+      store.update('processes', process.id, process);
+    }
+
     const folderData = foldersMetaObject.folders[process.folderId];
-    if (!folderData) throw new Error(`Consistency error: process ${process.id}'s folder not found`);
+    if (!folderData) throw new Error(`Process ${process.id}'s folder wasn't found`);
 
     folderData.children.push({ id: process.id, type: process.type });
   }
 }
 init();
+import { removeProcess } from './_process';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];

@@ -1,3 +1,4 @@
+import { init as initFolders } from './folders';
 import eventHandler from './eventHandler.js';
 import store from './store.js';
 import logger from './logging.js';
@@ -28,7 +29,6 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-
 let firstInit = false;
 // @ts-ignore
 if (!global.processMetaObjects) {
@@ -594,6 +594,9 @@ export async function init() {
   if (!firstInit) {
     return;
   }
+
+  // folder init can change processes, so it has to be called first
+  initFolders();
 
   // get processes that were persistently stored
   const storedProcesses = store.get('processes');

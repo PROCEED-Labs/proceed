@@ -89,9 +89,10 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
+      const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
       return (
         <>
-          <AuthCan resource={toCaslResource('Process', record)} action="create">
+          <AuthCan resource={resource} action="create">
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
                 onClick={(e) => {
@@ -104,7 +105,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined onClick={() => onExportProcess(record)} />
           </Tooltip>
-          <AuthCan resource={toCaslResource('Process', record)} action="update">
+          <AuthCan resource={resource} action="update">
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined onClick={() => onEditProcess(record)} />
             </Tooltip>
@@ -112,7 +113,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan action="delete" resource={toCaslResource('Process', record)}>
+          <AuthCan action="delete" resource={resource}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"

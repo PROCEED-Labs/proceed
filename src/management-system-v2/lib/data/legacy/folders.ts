@@ -26,7 +26,7 @@ export function init() {
   for (const folder of storedFolders) {
     if (!folder.parentId) {
       if (foldersMetaObject.rootFolders[folder.environmentId])
-        throw new Error(`Environment ${folder.environmentId} Multiple root folders`);
+        throw new Error(`Environment ${folder.environmentId} has multiple root folders`);
 
       foldersMetaObject.rootFolders[folder.environmentId] = folder;
     }

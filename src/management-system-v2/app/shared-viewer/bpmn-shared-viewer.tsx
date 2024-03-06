@@ -119,34 +119,6 @@ const BPMNSharedViewer = ({
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
   const [versionInfo, setVersionInfo] = useState<VersionInfo>({});
 
-  if (!isOwner && !processData.shared) {
-    return <Text type="danger">Process is no longer shared</Text>;
-  }
-
-  const handleCopyToOwnWorkspace = async () => {
-    if (session.status === 'unauthenticated') {
-      const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}`;
-      const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-
-      router.replace(loginPath);
-    }
-    const res = await copyProcesses([
-      {
-        name: processData.name,
-        description: processData.description,
-        originalId: processData.id,
-      },
-    ]);
-    if ('error' in res) {
-      message.error(res.error.message);
-      return res;
-    } else {
-      message.success('Diagram has been successfully copied to your workspace');
-      //router.push(`/processes/${newDefinitionID}`);
-      if (res.length == 1) router.push(`/processes/${res[0].id}`);
-    }
-  };
-
   const mdEditor = use(markdownEditor);
 
   useEffect(() => {
@@ -205,11 +177,13 @@ const BPMNSharedViewer = ({
         if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
           nestedSubprocess = {
             // getting the whole layer for a collapsed sub-process
-            planeSvg: addTooltipsAndLinksToSVG(
-              await getSVGFromBPMN(bpmnViewer, el.id),
-              (id) => elementRegistry.get(id)?.businessObject.name,
-              isContainer ? (elementId) => `#${elementId}_page` : undefined,
-            ),
+            planeSvg: await getSVGFromBPMN(bpmnViewer, el.id),
+            // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
+            // planeSvg: addTooltipsAndLinksToSVG(
+            //   await getSVGFromBPMN(bpmnViewer, el.id),
+            //   (id) => elementRegistry.get(id)?.businessObject.name,
+            //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
+            // ),
           };
           // set the new root for the following export of any children contained in this layer
           currentRootId = el.id;
@@ -251,11 +225,13 @@ const BPMNSharedViewer = ({
               importedProcess = {
                 name: `Imported Process: ${definitions.name}`,
                 ...getMetaDataFromBpmnElement(el, mdEditor),
-                planeSvg: addTooltipsAndLinksToSVG(
-                  await getSVGFromBPMN(bpmnViewer),
-                  (id) => elementRegistry.get(id)?.businessObject.name,
-                  isContainer ? (elementId) => `#${elementId}_page` : undefined,
-                ),
+                planeSvg: await getSVGFromBPMN(bpmnViewer, el.id),
+                // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
+                // planeSvg: addTooltipsAndLinksToSVG(
+                //   await getSVGFromBPMN(bpmnViewer),
+                //   (id) => elementRegistry.get(id)?.businessObject.name,
+                //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
+                // ),
                 version,
                 versionName,
                 versionDescription,
@@ -265,12 +241,13 @@ const BPMNSharedViewer = ({
         }
       }
 
+      // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
       // add links from elements in the diagram to (sub-)chapters for those elements and tooltips that show element names or ids
-      svg = addTooltipsAndLinksToSVG(
-        svg,
-        (id) => elementRegistry.get(id)?.businessObject.name,
-        isContainer ? (elementId) => `#${elementId}_page` : undefined,
-      );
+      // svg = addTooltipsAndLinksToSVG(
+      //   svg,
+      //   (id) => elementRegistry.get(id)?.businessObject.name,
+      //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
+      // );
 
       let children: ElementInfo[] | undefined = [];
 
@@ -360,7 +337,7 @@ const BPMNSharedViewer = ({
         setProcessHierarchy(rootElement);
         document.body.removeChild(viewerElement);
       });
-  }, [mdEditor]);
+  }, [mdEditor, processData]);
 
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
@@ -368,6 +345,34 @@ const BPMNSharedViewer = ({
       window.print();
     }
   }, [processHierarchy, defaultSettings]);
+
+  if (!isOwner && !processData.shared) {
+    return <Text type="danger">Process is no longer shared</Text>;
+  }
+
+  const handleCopyToOwnWorkspace = async () => {
+    if (session.status === 'unauthenticated') {
+      const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}`;
+      const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+      router.replace(loginPath);
+    }
+    const res = await copyProcesses([
+      {
+        name: processData.name,
+        description: processData.description,
+        originalId: processData.id,
+      },
+    ]);
+    if ('error' in res) {
+      message.error(res.error.message);
+      return res;
+    } else {
+      message.success('Diagram has been successfully copied to your workspace');
+      //router.push(`/processes/${newDefinitionID}`);
+      if (res.length == 1) router.push(`/processes/${res[0].id}`);
+    }
+  };
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
@@ -379,7 +384,7 @@ const BPMNSharedViewer = ({
 
       // get the link that is currently being highlighted
       const activeLink = Array.from(contentTableDiv.getElementsByTagName('a')).find(
-        (link) => link.href.split(link.baseURI)[1] === currentActiveLink,
+        (link) => `#${link.href.split('#')[1]}` === currentActiveLink,
       );
 
       if (activeLink) {

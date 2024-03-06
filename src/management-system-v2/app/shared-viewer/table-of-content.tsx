@@ -6,6 +6,8 @@ import { AnchorProps, AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 import { truthyFilter } from '@/lib/typescript-utils';
 
+import styles from './table-of-content.module.scss';
+
 import { ActiveSettings } from './settings-modal';
 
 type MetaInformation = {
@@ -40,11 +42,13 @@ export type ElementInfo = MetaInformation & {
 type TableOfContentProps = Omit<AnchorProps, 'items'> & {
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
+  linksDisabled?: boolean;
 };
 
 const TableOfContents: React.FC<TableOfContentProps> = ({
   settings,
   processHierarchy,
+  linksDisabled = false,
   ...anchorProps
 }) => {
   // transform the document data into a table of contents
@@ -74,28 +78,28 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     if (milestones) {
       children.unshift({
         key: `${hierarchyElement.id}_milestones`,
-        href: `#${hierarchyElement.id}_milestone_page`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_milestone_page`,
         title: 'Milestones',
       });
     }
     if (meta) {
       children.unshift({
         key: `${hierarchyElement.id}_meta`,
-        href: `#${hierarchyElement.id}_meta_page`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_meta_page`,
         title: 'Meta Data',
       });
     }
     if (description) {
       children.unshift({
         key: `${hierarchyElement.id}_description`,
-        href: `#${hierarchyElement.id}_description_page`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_description_page`,
         title: 'General Description',
       });
     }
     if (settings.importedProcesses && importedProcess && importedProcess.version) {
       children.unshift({
         key: `${hierarchyElement.id}_version`,
-        href: `#${hierarchyElement.id}_version_page`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_version_page`,
         title: 'Version Information',
       });
     }
@@ -106,7 +110,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
 
     return {
       key: hierarchyElement.id,
-      href: `#${hierarchyElement.id}_page`,
+      href: linksDisabled ? '' : `#${hierarchyElement.id}_page`,
       title: <Text ellipsis={{ tooltip: label }}>{label}</Text>,
       children,
     };
@@ -123,7 +127,15 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     tableOfContents = [tableOfContents, ...directChildren];
   }
 
-  return tableOfContents ? <Anchor {...anchorProps} items={tableOfContents}></Anchor> : <></>;
+  return tableOfContents ? (
+    <Anchor
+      className={linksDisabled ? styles.DisabledAnchors : ''}
+      {...anchorProps}
+      items={tableOfContents}
+    ></Anchor>
+  ) : (
+    <></>
+  );
 };
 
 export default TableOfContents;

@@ -64,7 +64,7 @@ export class PropertiesPanelPage {
 
     const pageURL = page.url();
     const processDefinitionID = pageURL
-      .split('http://localhost:3000/credentials%3Adevelopment-id%7Cadmin/processes/')
+      .split('http://localhost:3000/credentials:development-id%7Cadmin/processes/')
       .pop();
     this.processDefinitionID = processDefinitionID;
     this.processName = processName;

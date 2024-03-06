@@ -14,12 +14,13 @@ import { Process, ProcessMetadata } from '../process-schema';
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
+export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {
       folder: Folder;
       // NOTE: the fact that folders don't have a type is needed to differentiate them
-      children: ({ id: string; type: 'folder' } | { id: string; type: Process['type'] })[];
+      children: FolderChildren[];
     };
   }>;
   rootFolders: Partial<{ [environmentId: string]: string }>;

@@ -50,6 +50,17 @@ export async function PUT(
     params: { processId, imageFileName },
   }: { params: { processId: string; imageFileName: string } },
 ) {
+  const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
+
+  const contentType = request.headers.get('content-Type');
+
+  if (!contentType || !allowedContentTypes.includes(contentType)) {
+    return new NextResponse(null, {
+      status: 400,
+      statusText: 'Wrong content type. Image must be of type JPEG, PNG or SVG.',
+    });
+  }
+
   if (!request.body) {
     return new NextResponse(null, {
       status: 400,

@@ -40,6 +40,17 @@ export async function POST(
   request: NextRequest,
   { params: { processId } }: { params: { processId: string } },
 ) {
+  const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
+
+  const contentType = request.headers.get('content-Type');
+
+  if (!contentType || !allowedContentTypes.includes(contentType)) {
+    return new NextResponse(null, {
+      status: 400,
+      statusText: 'Wrong content type. Image must be of type JPEG, PNG or SVG.',
+    });
+  }
+
   if (!request.body) {
     return new NextResponse(null, {
       status: 400,
@@ -102,7 +113,6 @@ export async function POST(
     });
   }
 
-  const contentType = request.headers.get('Content-Type') || '';
   const imageType = contentType.split('image/').pop() || '';
   const imageFileName = `_image${v4()}.${imageType}`;
   const imageBlob = new Blob([imageBuffer], { type: contentType });

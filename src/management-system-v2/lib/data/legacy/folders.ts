@@ -123,6 +123,16 @@ export function deleteFolder(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
+  if (folderData.folder.parentId) {
+    const parent = foldersMetaObject.folders[folderData.folder.parentId];
+    if (!parent) throw new Error('Parent not found');
+
+    const folderIndex = parent.children.findIndex((f) => f.id === folderId);
+    if (folderIndex === -1) throw new Error("Folder not found in parent's children");
+
+    parent.children.splice(folderIndex, 1);
+  }
+
   _deleteFolder(folderData, ability);
 }
 

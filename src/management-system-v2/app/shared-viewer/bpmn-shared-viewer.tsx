@@ -10,6 +10,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
+import ErrorMessage from '@/components/error-message';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: Process;
@@ -26,7 +27,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const bpmnViewer = useRef<BPMNCanvasRef>(null);
 
   if (!processData.shared) {
-    return <Typography.Text type="danger">Process is no longer shared</Typography.Text>;
+    return <ErrorMessage message="Process is no longer shared" />;
   }
 
   const handleCopyToOwnWorkspace = async () => {

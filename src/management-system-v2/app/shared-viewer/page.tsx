@@ -5,7 +5,7 @@ import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
 import { Process } from '@/lib/data/process-schema';
-import ErrorMessage from './error-message';
+import ErrorMessage from '../../components/error-message';
 
 interface PageProps {
   searchParams: {

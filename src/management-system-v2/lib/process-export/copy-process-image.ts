@@ -4,14 +4,18 @@ import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 
-async function getRootElementAndSelection(modeler: BPMNCanvasRef | Modeler | NavigatedViewer) {
+async function getPNG(modeler: BPMNCanvasRef | Modeler | NavigatedViewer) {
+  let bpmnXML;
   let rootElement;
   let selection;
 
   if ('getXML' in modeler) {
+    bpmnXML = await modeler.getXML();
     rootElement = modeler?.getCanvas().getRootElement().businessObject;
     selection = modeler!.getSelection().get();
   } else {
+    const { xml } = await modeler.saveXML({ format: true });
+    bpmnXML = xml;
     rootElement = (modeler.get('canvas') as any).getRootElement().businessObject;
     selection = (modeler.get('selection') as any).get();
   }
@@ -21,7 +25,17 @@ async function getRootElementAndSelection(modeler: BPMNCanvasRef | Modeler | Nav
       ? undefined
       : rootElement.id;
 
-  return { rootElement, subprocessId, selection };
+  // Get the SVG from the BPMN XML
+  const svg = await getSVGFromBPMN(
+    bpmnXML!,
+    subprocessId,
+    selection.map((el: { id: any }) => el.id),
+  );
+
+  // Convert the SVG to a PNG
+  const blob = await getPNGFromSVG(svg, 3);
+
+  return blob;
 }
 
 /**
@@ -34,26 +48,9 @@ export async function copyProcessImage(
   modeler: BPMNCanvasRef | Modeler | NavigatedViewer,
 ): Promise<Boolean> {
   try {
-    let bpmnXML;
+    const blob = await getPNG(modeler);
 
-    if ('getXML' in modeler) {
-      bpmnXML = await modeler.getXML();
-    } else {
-      const { xml } = await modeler.saveXML({ format: true });
-      bpmnXML = xml;
-    }
-
-    const { subprocessId, selection } = await getRootElementAndSelection(modeler);
-
-    // Get the SVG from the BPMN XML
-    const svg = await getSVGFromBPMN(
-      bpmnXML!,
-      subprocessId,
-      selection.map((el: { id: any }) => el.id),
-    );
-
-    // Convert the SVG to a PNG and copy it to the clipboard
-    const blob = await getPNGFromSVG(svg, 3);
+    // Copy the PNG to the clipboard
     const data = [new ClipboardItem({ 'image/png': blob })];
     await navigator.clipboard.write(data);
     console.log('Copied to clipboard');
@@ -71,16 +68,7 @@ export async function copyProcessImage(
  */
 
 export async function shareProcessImage(modeler: BPMNCanvasRef) {
-  let xml = await modeler.getXML();
-
-  const { subprocessId, selection } = await getRootElementAndSelection(modeler);
-
-  const svg = await getSVGFromBPMN(
-    xml!,
-    subprocessId,
-    selection.map((el: { id: any }) => el.id),
-  );
-  const blob = await getPNGFromSVG(svg, 3);
+  const blob = await getPNG(modeler);
 
   const nav = navigator as Navigator;
 

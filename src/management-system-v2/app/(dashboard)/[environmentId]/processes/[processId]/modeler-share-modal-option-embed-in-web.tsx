@@ -6,6 +6,7 @@ import {
   generateProcessShareToken,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
+import ErrorMessage from '@/components/error-message';
 
 const { TextArea } = Input;
 
@@ -22,7 +23,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
   const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(
-    shared && sharedAs === 'public' ? true : false,
+    shared && sharedAs === 'public',
   );
   const [token, setToken] = useState('');
 
@@ -37,12 +38,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
     initialize();
   }, [shared, sharedAs]);
 
-  if (sharedAs === 'protected')
-    return (
-      <>
-        <Typography.Text type="danger">Process is not public</Typography.Text>
-      </>
-    );
+  if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
 
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };

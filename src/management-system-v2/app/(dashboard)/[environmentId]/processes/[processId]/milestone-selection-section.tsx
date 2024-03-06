@@ -194,8 +194,18 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
           pagination={{ pageSize: 5 }}
           rowKey="id"
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id' },
-            { title: 'Name', dataIndex: 'name', key: 'name' },
+            {
+              title: 'ID',
+              dataIndex: 'id',
+              key: 'id',
+              sorter: (a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }),
+            },
+            {
+              title: 'Name',
+              dataIndex: 'name',
+              key: 'name',
+              sorter: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
+            },
             {
               title: 'Description',
               dataIndex: 'description',

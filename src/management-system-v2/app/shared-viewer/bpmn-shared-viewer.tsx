@@ -26,7 +26,7 @@ import { getProcessBPMN } from '@/lib/data/processes';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-import { addTooltipsAndLinksToSVG, getSVGFromBPMN } from '@/lib/process-export/util';
+import { getSVGFromBPMN } from '@/lib/process-export/util';
 
 import styles from './bpmn-shared-viewer.module.scss';
 
@@ -138,16 +138,6 @@ const BPMNSharedViewer = ({
       let nestedSubprocess;
       let importedProcess;
 
-      const elementRegistry = bpmnViewer.get<ElementRegistry>('elementRegistry');
-
-      const isContainer = isAny(el, [
-        'bpmn:Collaboration',
-        'bpmn:Process',
-        'bpmn:Participant',
-        'bpmn:SubProcess',
-        'bpmn:CallActivity',
-      ]);
-
       if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
         name = 'Process Diagram';
       } else if (isType(el, 'bpmn:Participant')) {
@@ -178,12 +168,6 @@ const BPMNSharedViewer = ({
           nestedSubprocess = {
             // getting the whole layer for a collapsed sub-process
             planeSvg: await getSVGFromBPMN(bpmnViewer, el.id),
-            // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
-            // planeSvg: addTooltipsAndLinksToSVG(
-            //   await getSVGFromBPMN(bpmnViewer, el.id),
-            //   (id) => elementRegistry.get(id)?.businessObject.name,
-            //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
-            // ),
           };
           // set the new root for the following export of any children contained in this layer
           currentRootId = el.id;
@@ -210,7 +194,6 @@ const BPMNSharedViewer = ({
 
               // set the current element and layer to the root of the imported process
               const canvas = bpmnViewer.get<Canvas>('canvas');
-              const elementRegistry = bpmnViewer.get<ElementRegistry>('elementRegistry');
               const root = canvas.getRootElement();
               el = root.businessObject;
               definitions = el.$parent;
@@ -226,12 +209,6 @@ const BPMNSharedViewer = ({
                 name: `Imported Process: ${definitions.name}`,
                 ...getMetaDataFromBpmnElement(el, mdEditor),
                 planeSvg: await getSVGFromBPMN(bpmnViewer, el.id),
-                // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
-                // planeSvg: addTooltipsAndLinksToSVG(
-                //   await getSVGFromBPMN(bpmnViewer),
-                //   (id) => elementRegistry.get(id)?.businessObject.name,
-                //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
-                // ),
                 version,
                 versionName,
                 versionDescription,
@@ -240,14 +217,6 @@ const BPMNSharedViewer = ({
           }
         }
       }
-
-      // TODO: re-enable this when there is a fix for the links not linking to the correct positions in the pdf
-      // add links from elements in the diagram to (sub-)chapters for those elements and tooltips that show element names or ids
-      // svg = addTooltipsAndLinksToSVG(
-      //   svg,
-      //   (id) => elementRegistry.get(id)?.businessObject.name,
-      //   isContainer ? (elementId) => `#${elementId}_page` : undefined,
-      // );
 
       let children: ElementInfo[] | undefined = [];
 

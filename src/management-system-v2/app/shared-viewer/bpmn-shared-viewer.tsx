@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useMemo, use } from 'react';
+import React, { useRef, useState, useEffect, use, useMemo } from 'react';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import type ViewerType from 'bpmn-js/lib/Viewer';
-import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+
 import Canvas from 'diagram-js/lib/core/Canvas';
 import schema from '@/lib/schema';
 
@@ -17,6 +17,8 @@ import { Button, message, Tooltip, Typography, Space, Grid } from 'antd';
 const { Text } = Typography;
 
 import { PrinterOutlined } from '@ant-design/icons';
+
+import BPMNCanvas from '../../components/bpmn-canvas';
 
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
@@ -121,7 +123,14 @@ const BPMNSharedViewer = ({
 
   const mdEditor = use(markdownEditor);
 
+  const processBpmn = processData.bpmn as string;
+  const bpmn = useMemo(() => {
+    return { bpmn: processBpmn };
+  }, [processBpmn]);
+
   useEffect(() => {
+    if (embeddedMode) return;
+
     let viewerElement: HTMLDivElement;
 
     // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
@@ -306,7 +315,7 @@ const BPMNSharedViewer = ({
         setProcessHierarchy(rootElement);
         document.body.removeChild(viewerElement);
       });
-  }, [mdEditor, processData]);
+  }, [mdEditor, processData, embeddedMode]);
 
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
@@ -370,7 +379,9 @@ const BPMNSharedViewer = ({
     }
   };
 
-  return (
+  return embeddedMode ? (
+    <BPMNCanvas className={styles.EmbeddedViewer} type="viewer" bpmn={bpmn} />
+  ) : (
     <div className={styles.ProcessOverview}>
       <Layout hideSider={true} layoutMenuItems={[]}>
         <Content
@@ -385,7 +396,7 @@ const BPMNSharedViewer = ({
                 >
                   Go to PROCEED
                 </Button>
-                {!embeddedMode && !isOwner && (
+                {!isOwner && (
                   <Button size="large" onClick={handleCopyToOwnWorkspace}>
                     Add to your Processes
                   </Button>

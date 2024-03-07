@@ -230,7 +230,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   // Folder cannot be movet to it's sub tree
   if (isInSubtree(folderId, newParentId)) throw new Error('Folder cannot be moved to its children');
 
-  // Sore
+  // Store
   oldParentData.children.splice(folderIndex, 1);
   oldParentData.folder.updatedAt = new Date().toISOString();
   store.update('folders', oldParentData.folder.id, oldParentData.folder);

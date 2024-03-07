@@ -21,6 +21,7 @@ export const resources = [
   'RoleMapping',
   'Share',
   'Environment',
+  'Folder',
   'All',
 ] as const;
 export type ResourceType = (typeof resources)[number];

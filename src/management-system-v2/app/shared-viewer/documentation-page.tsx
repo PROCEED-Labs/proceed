@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState, useEffect, use, useMemo } from 'react';
-import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
+import React, { useRef, useState, useEffect, use } from 'react';
+import { is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import type ViewerType from 'bpmn-js/lib/Viewer';
 
 import Canvas from 'diagram-js/lib/core/Canvas';
@@ -31,8 +31,6 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 import styles from './documentation-page.module.scss';
 
 import {
-  getMetaDataFromElement,
-  getMilestonesFromElement,
   getElementDI,
   getRootFromElement,
   getDefinitionsVersionInformation,
@@ -43,6 +41,11 @@ import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal
 import TableOfContents, { ElementInfo } from './table-of-content';
 import ProcessDocument, { VersionInfo } from './process-document';
 
+import { getTitle, getMetaDataFromBpmnElement, getChildElements } from './documentation-page-utils';
+
+/**
+ * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
+ */
 const markdownEditor: Promise<ToastEditorType> =
   typeof window !== 'undefined'
     ? import('@toast-ui/editor')
@@ -58,41 +61,6 @@ type BPMNSharedViewerProps = {
   isOwner: boolean;
   defaultSettings?: SettingsOption;
 };
-
-/**
- * Returns the meta data to show in the (sub-)chapter of an element
- *
- * @param el the moddle object representing the element
- * @param mdEditor an instance of the toast markdown editor
- */
-function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
-  const meta = getMetaDataFromElement(el);
-
-  function getHtmlFromMarkdown(markdown: string) {
-    mdEditor.setMarkdown(markdown);
-    return mdEditor.getHTML();
-  }
-
-  const milestones = getMilestonesFromElement(el).map(({ id, name, description }) => {
-    if (description) {
-      description = getHtmlFromMarkdown(description);
-    }
-
-    return { id, name, description };
-  });
-
-  let description: string | undefined = undefined;
-  const documentation = el.documentation?.find((el: any) => el.text)?.text;
-  if (documentation) {
-    description = getHtmlFromMarkdown(documentation);
-  }
-
-  return {
-    description,
-    meta: Object.keys(meta).length ? meta : undefined,
-    milestones: milestones.length ? milestones : undefined,
-  };
-}
 
 const BPMNSharedViewer = ({ processData, isOwner, defaultSettings }: BPMNSharedViewerProps) => {
   const router = useRouter();
@@ -127,20 +95,10 @@ const BPMNSharedViewer = ({ processData, isOwner, defaultSettings }: BPMNSharedV
     ): Promise<ElementInfo> {
       let svg;
       let id = el.id;
-      let name = el.name || `<${el.id}>`;
+      let name = getTitle(el);
 
       let nestedSubprocess;
       let importedProcess;
-
-      if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
-        name = 'Process Diagram';
-      } else if (isType(el, 'bpmn:Participant')) {
-        name = 'Pool: ' + name;
-      } else if (isType(el, 'bpmn:SubProcess')) {
-        name = 'Subprocess: ' + name;
-      } else if (isType(el, 'bpmn:CallActivity')) {
-        name = 'Call Activity: ' + name;
-      }
 
       const { meta, milestones, description } = getMetaDataFromBpmnElement(el, mdEditor);
 
@@ -215,30 +173,9 @@ const BPMNSharedViewer = ({ processData, isOwner, defaultSettings }: BPMNSharedV
       let children: ElementInfo[] | undefined = [];
 
       // recursively transform any children of this element
-      if (isType(el, 'bpmn:Collaboration')) {
-        for (const participant of el.participants) {
-          children.push(await transform(bpmnViewer, participant, definitions, currentRootId));
-        }
-      } else if (isType(el, 'bpmn:Participant')) {
-        if (el.processRef.flowElements) {
-          const flowElements = el.processRef.flowElements.filter(
-            (el: any) => !isType(el, 'bpmn:SequenceFlow'),
-          );
-          for (const flowElement of flowElements) {
-            if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
-            children.push(await transform(bpmnViewer, flowElement, definitions, currentRootId));
-          }
-        }
-      } else {
-        if (el.flowElements) {
-          const flowElements = el.flowElements.filter(
-            (el: any) => !isType(el, 'bpmn:SequenceFlow'),
-          );
-          for (const flowElement of flowElements) {
-            if (isType(flowElement, 'bpmn:SequenceFlow')) continue;
-            children.push(await transform(bpmnViewer, flowElement, definitions, currentRootId));
-          }
-        }
+      const childElements = getChildElements(el);
+      for (const childEl of childElements) {
+        children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
       }
 
       // sort so that elements that contain no other elements come first and elements containing others come after

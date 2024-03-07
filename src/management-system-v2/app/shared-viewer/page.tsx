@@ -4,7 +4,8 @@ import { getProcess } from '@/lib/data/processes';
 import { getProcesses, getProcessVersionBpmn } from '@/lib/data/legacy/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
-import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
+import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
+import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 import TokenExpired from './token-expired';
 import InvalidShareToken from './invalid-token';
@@ -29,7 +30,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   let isOwner = false;
 
   const key = process.env.JWT_SHARE_SECRET!;
-  let processData: Process;
+  let processData: Process | undefined = undefined;
   let iframeMode;
   let defaultSettings: SettingsOption | undefined;
   try {
@@ -38,7 +39,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       key!,
     ) as TokenPayload;
     defaultSettings = settings;
-    processData = await getProcess(processId as string);
+    processData = (await getProcess(processId as string)) as Process;
 
     if (session) {
       // check if the current user is the owner of the process => if yes give access regardless of sharing status
@@ -80,15 +81,20 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     redirect(loginPath);
   }
 
+  if (!processData) return <></>;
+
   return (
     <>
-      <div>
-        <BPMNSharedViewer
-          isOwner={isOwner}
-          processData={processData!}
-          embeddedMode={iframeMode}
-          defaultSettings={defaultSettings}
-        />
+      <div style={{ height: '100vh' }}>
+        {iframeMode ? (
+          <BPMNCanvas type="viewer" bpmn={{ bpmn: processData.bpmn }} />
+        ) : (
+          <BPMNSharedViewer
+            isOwner={isOwner}
+            processData={processData!}
+            defaultSettings={defaultSettings}
+          />
+        )}
       </div>
     </>
   );

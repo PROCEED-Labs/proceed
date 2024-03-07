@@ -18,8 +18,6 @@ const { Text } = Typography;
 
 import { PrinterOutlined } from '@ant-design/icons';
 
-import BPMNCanvas from '../../components/bpmn-canvas';
-
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
 import { copyProcesses } from '@/lib/data/processes';
@@ -30,7 +28,7 @@ import { useSession } from 'next-auth/react';
 
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 
-import styles from './bpmn-shared-viewer.module.scss';
+import styles from './documentation-page.module.scss';
 
 import {
   getMetaDataFromElement,
@@ -57,7 +55,6 @@ const markdownEditor: Promise<ToastEditorType> =
 
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
-  embeddedMode?: boolean;
   isOwner: boolean;
   defaultSettings?: SettingsOption;
 };
@@ -97,12 +94,7 @@ function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
   };
 }
 
-const BPMNSharedViewer = ({
-  processData,
-  embeddedMode,
-  isOwner,
-  defaultSettings,
-}: BPMNSharedViewerProps) => {
+const BPMNSharedViewer = ({ processData, isOwner, defaultSettings }: BPMNSharedViewerProps) => {
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
@@ -123,14 +115,7 @@ const BPMNSharedViewer = ({
 
   const mdEditor = use(markdownEditor);
 
-  const processBpmn = processData.bpmn as string;
-  const bpmn = useMemo(() => {
-    return { bpmn: processBpmn };
-  }, [processBpmn]);
-
   useEffect(() => {
-    if (embeddedMode) return;
-
     let viewerElement: HTMLDivElement;
 
     // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
@@ -315,7 +300,7 @@ const BPMNSharedViewer = ({
         setProcessHierarchy(rootElement);
         document.body.removeChild(viewerElement);
       });
-  }, [mdEditor, processData, embeddedMode]);
+  }, [mdEditor, processData]);
 
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
@@ -379,9 +364,7 @@ const BPMNSharedViewer = ({
     }
   };
 
-  return embeddedMode ? (
-    <BPMNCanvas className={styles.EmbeddedViewer} type="viewer" bpmn={bpmn} />
-  ) : (
+  return (
     <div className={styles.ProcessOverview}>
       <Layout hideSider={true} layoutMenuItems={[]}>
         <Content

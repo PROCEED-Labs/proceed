@@ -50,7 +50,6 @@ export function getDefaultProcessMetaInfo() {
     shared: false,
     sharedAs: 'protected',
     shareToken: '',
-    shareTimeStamp: 0,
     versions: [],
   } as ProcessMetadata;
 }

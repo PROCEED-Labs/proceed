@@ -145,7 +145,6 @@ export const updateProcessShareInfo = async (
   shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,
   shareToken: string | undefined,
-  shareTimeStamp: number | undefined,
 ) => {
   const { ability } = await getCurrentEnvironment();
 
@@ -163,7 +162,6 @@ export const updateProcessShareInfo = async (
   await updateProcessMetaData(definitionsId, {
     shared: shared,
     sharedAs: sharedAs,
-    shareTimeStamp: shareTimeStamp,
     shareToken: shareToken,
   });
 };

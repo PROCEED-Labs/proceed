@@ -26,7 +26,7 @@ export function init() {
   for (const folder of storedFolders) {
     if (!folder.parentId) {
       if (foldersMetaObject.rootFolders[folder.environmentId])
-        throw new Error(`Environment ${folder.environmentId} Multiple root folders`);
+        throw new Error(`Environment ${folder.environmentId} has multiple root folders`);
 
       foldersMetaObject.rootFolders[folder.environmentId] = folder;
     }
@@ -95,6 +95,9 @@ export function createFolder(folderInput: z.infer<typeof FolderSchema>, ability?
 
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
+
+    parentFolderData.folder.updatedAt = new Date().toISOString();
+    store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
       throw new Error(`Environment ${folder.environmentId} already has a root folder`);
@@ -122,6 +125,19 @@ export function deleteFolder(folderId: string, ability?: Ability) {
   // NOTE: maybe the ability should do this recursive check
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
+
+  if (folderData.folder.parentId) {
+    const parent = foldersMetaObject.folders[folderData.folder.parentId];
+    if (!parent) throw new Error('Parent not found');
+
+    const folderIndex = parent.children.findIndex((f) => f.id === folderId);
+    if (folderIndex === -1) throw new Error("Folder not found in parent's children");
+
+    parent.children.splice(folderIndex, 1);
+
+    parent.folder.updatedAt = new Date().toISOString();
+    store.update('folders', parent.folder.id, parent.folder);
+  }
 
   _deleteFolder(folderData, ability);
 }
@@ -215,14 +231,17 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
     throw new Error('Permission denied');
 
   // Folder cannot be movet to it's sub tree
-  if (isInSubtree(folderId, newParentId))
-    throw new Error("Folder cannot be moved to it's children");
+  if (isInSubtree(folderId, newParentId)) throw new Error('Folder cannot be moved to its children');
 
-  // Sore
+  // Store
   oldParentData.children.splice(folderIndex, 1);
+  oldParentData.folder.updatedAt = new Date().toISOString();
+  store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
   newParentData.children.push(folderData.folder);
+  newParentData.folder.updatedAt = new Date().toISOString();
+  store.update('folders', newParentData.folder.id, newParentData.folder);
 
   store.update('folders', folderId, folderData.folder);
 }

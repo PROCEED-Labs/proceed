@@ -392,6 +392,8 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
             />
 
             <DndContext
+              // Without an id Next throws a id mismatch
+              id="processes-dnd-context"
               modifiers={[snapCenterToCursor]}
               sensors={dndSensors}
               onDragEnd={dragEndHanler}

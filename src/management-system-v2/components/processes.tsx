@@ -12,7 +12,18 @@ import React, {
   ClassAttributes,
   ReactHTML,
 } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Dropdown, Card } from 'antd';
+import {
+  Space,
+  Button,
+  Tooltip,
+  Grid,
+  App,
+  Drawer,
+  FloatButton,
+  Dropdown,
+  Card,
+  Badge,
+} from 'antd';
 import cn from 'classnames';
 import {
   ExportOutlined,
@@ -214,6 +225,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
       activationConstraint: { distance: 5 },
     }),
   );
+
   const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
     setDragInfo({ dragging: false });
 
@@ -223,9 +235,20 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     if (!active || !over) return;
     if (over.type != 'folder' || active.id === over.id) return;
 
+    // don't allow to move selected items into themselves
+    if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
+
     startMovingItemTransition(async () => {
       try {
-        const response = await moveIntoFolder({ type: active.type, id: active.id }, over.id);
+        const items =
+          selectedRowKeys.length > 0
+            ? selectedRowElements.map((element) => ({
+                type: element.type,
+                id: element.id,
+              }))
+            : [{ type: active.type, id: active.id }];
+
+        const response = await moveIntoFolder(items, over.id);
 
         if (response && 'error' in response) throw new Error();
 
@@ -236,6 +259,17 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
           content: `Someting went wrong while moving the ${active.type}`,
         });
       }
+    });
+  };
+
+  const dragStartHandler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
+    if (selectedRowKeys.length > 0 && !selectedRowKeys.includes(e.active.id as string))
+      setSelectedRowElements([]);
+
+    setDragInfo({
+      dragging: true,
+      activeId: e.active.id as string,
+      activeElement: processes.find((item) => item.id === e.active.id) as InputItem,
     });
   };
 
@@ -361,13 +395,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               modifiers={[snapCenterToCursor]}
               sensors={dndSensors}
               onDragEnd={dragEndHanler}
-              onDragStart={(e) =>
-                setDragInfo({
-                  dragging: true,
-                  activeId: e.active.id as string,
-                  activeElement: processes.find((item) => item.id === e.active.id) as InputItem,
-                })
-              }
+              onDragStart={dragStartHandler}
             >
               {iconView ? (
                 <IconView
@@ -406,19 +434,23 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               )}
               <DragOverlay dropAnimation={null}>
                 {dragInfo.dragging ? (
-                  <Card
-                    style={{
-                      width: 'fit-content',
-                      cursor: 'move',
-                    }}
+                  <Badge
+                    count={selectedRowElements.length > 1 ? selectedRowElements.length : undefined}
                   >
-                    {dragInfo.activeElement.type === 'folder' ? (
-                      <FolderOutlined />
-                    ) : (
-                      <FileOutlined />
-                    )}{' '}
-                    {dragInfo.activeElement.name}
-                  </Card>
+                    <Card
+                      style={{
+                        width: 'fit-content',
+                        cursor: 'move',
+                      }}
+                    >
+                      {dragInfo.activeElement.type === 'folder' ? (
+                        <FolderOutlined />
+                      ) : (
+                        <FileOutlined />
+                      )}{' '}
+                      {dragInfo.activeElement.name}
+                    </Card>
+                  </Badge>
                 ) : null}
               </DragOverlay>
             </DndContext>

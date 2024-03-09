@@ -5,14 +5,13 @@ import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
 import {
   FolderChildren,
   createFolder as _createFolder,
-  foldersMetaObject,
   getFolderById,
   getRootFolder,
   moveFolder,
 } from './legacy/folders';
-import { UserErrorType, userError } from '../user-error';
+import { userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
-import { getProcess, moveProcess } from './legacy/_process';
+import { moveProcess } from './legacy/_process';
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {
@@ -28,7 +27,7 @@ export async function createFolder(folderInput: FolderUserInput) {
   }
 }
 
-export async function moveIntoFolder(item: FolderChildren, folderId: string) {
+export async function moveIntoFolder(items: FolderChildren[], folderId: string) {
   const folder = getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
@@ -37,13 +36,15 @@ export async function moveIntoFolder(item: FolderChildren, folderId: string) {
   if (!ability.can('update', toCaslResource('Folder', folder)))
     return userError('Permission denied');
 
-  if (['process', 'project', 'process-instance'].includes(item.type)) {
-    moveProcess({
-      processDefinitionsId: item.id,
-      newFolderId: folderId,
-      ability: ability,
-    });
-  } else if (item.type === 'folder') {
-    moveFolder(item.id, folderId, ability);
+  for (const item of items) {
+    if (['process', 'project', 'process-instance'].includes(item.type)) {
+      moveProcess({
+        processDefinitionsId: item.id,
+        newFolderId: folderId,
+        ability: ability,
+      });
+    } else if (item.type === 'folder') {
+      moveFolder(item.id, folderId, ability);
+    }
   }
 }

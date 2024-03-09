@@ -1,8 +1,18 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Dropdown } from 'antd';
+import React, {
+  ComponentProps,
+  HTMLAttributes,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  ClassAttributes,
+  ReactHTML,
+} from 'react';
+import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton, Dropdown, Card } from 'antd';
 import cn from 'classnames';
 import {
   ExportOutlined,
@@ -11,6 +21,8 @@ import {
   AppstoreOutlined,
   PlusOutlined,
   ImportOutlined,
+  FolderOutlined,
+  FileOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -30,6 +42,23 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
+import { moveIntoFolder } from '@/lib/data/folders';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
+
+export type DragInfo =
+  | { dragging: false }
+  | { dragging: true; activeId: string; activeElement: InputItem };
 
 //TODO stop using external process
 export type ProcessListProcess = ListItem;
@@ -175,6 +204,41 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     openEditModal,
   ]);
 
+  const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
+  const [movingItem, startMovingItemTransition] = useTransition();
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  );
+  const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
+    setDragInfo({ dragging: false });
+
+    const active = processes.find((item) => item.id === e.active.id);
+    const over = processes.find((item) => item.id === e.over?.id);
+
+    if (!active || !over) return;
+    if (over.type != 'folder' || active.id === over.id) return;
+
+    startMovingItemTransition(async () => {
+      try {
+        const response = await moveIntoFolder({ type: active.type, id: active.id }, over.id);
+
+        if (response && 'error' in response) throw new Error();
+
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong while moving the ${active.type}`,
+        });
+      }
+    });
+  };
+
   return (
     <>
       <Dropdown
@@ -293,39 +357,71 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               }}
             />
 
-            {iconView ? (
-              <IconView
-                data={filteredData}
-                selection={selectedRowKeys}
-                setSelectionElements={setSelectedRowElements}
-                setShowMobileMetaData={setShowMobileMetaData}
-              />
-            ) : (
-              <ProcessList
-                data={filteredData}
-                setSelectionElements={setSelectedRowElements}
-                selection={selectedRowKeys}
-                // TODO: Replace with server component loading state
-                //isLoading={isLoading}
-                onExportProcess={(id) => {
-                  setOpenExportModal(true);
-                }}
-                onDeleteProcess={async ({ id }) => {
-                  await deleteProcesses([id]);
-                  setSelectedRowElements([]);
-                  router.refresh();
-                }}
-                onCopyProcess={(process) => {
-                  setOpenCopyModal(true);
-                  setSelectedRowElements([process]);
-                }}
-                onEditProcess={(process) => {
-                  setOpenEditModal(true);
-                  setSelectedRowElements([process]);
-                }}
-                setShowMobileMetaData={setShowMobileMetaData}
-              />
-            )}
+            <DndContext
+              modifiers={[snapCenterToCursor]}
+              sensors={dndSensors}
+              onDragEnd={dragEndHanler}
+              onDragStart={(e) =>
+                setDragInfo({
+                  dragging: true,
+                  activeId: e.active.id as string,
+                  activeElement: processes.find((item) => item.id === e.active.id) as InputItem,
+                })
+              }
+            >
+              {iconView ? (
+                <IconView
+                  data={filteredData}
+                  selection={selectedRowKeys}
+                  setSelectionElements={setSelectedRowElements}
+                  setShowMobileMetaData={setShowMobileMetaData}
+                />
+              ) : (
+                <ProcessList
+                  data={filteredData}
+                  dragInfo={dragInfo}
+                  setSelectionElements={setSelectedRowElements}
+                  selection={selectedRowKeys}
+                  isLoading={movingItem}
+                  // TODO: Replace with server component loading state
+                  //isLoading={isLoading}
+                  onExportProcess={(id) => {
+                    setOpenExportModal(true);
+                  }}
+                  onDeleteProcess={async ({ id }) => {
+                    await deleteProcesses([id]);
+                    setSelectedRowElements([]);
+                    router.refresh();
+                  }}
+                  onCopyProcess={(process) => {
+                    setOpenCopyModal(true);
+                    setSelectedRowElements([process]);
+                  }}
+                  onEditProcess={(process) => {
+                    setOpenEditModal(true);
+                    setSelectedRowElements([process]);
+                  }}
+                  setShowMobileMetaData={setShowMobileMetaData}
+                />
+              )}
+              <DragOverlay dropAnimation={null}>
+                {dragInfo.dragging ? (
+                  <Card
+                    style={{
+                      width: 'fit-content',
+                      cursor: 'move',
+                    }}
+                  >
+                    {dragInfo.activeElement.type === 'folder' ? (
+                      <FolderOutlined />
+                    ) : (
+                      <FileOutlined />
+                    )}{' '}
+                    {dragInfo.activeElement.name}
+                  </Card>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </div>
 
           {/*Meta Data Panel*/}
@@ -402,3 +498,48 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 };
 
 export default Processes;
+
+// NOTE I plan to move this to a separate file
+export function DraggableElementGenerator<TPropId extends string>(
+  element: keyof ReactHTML,
+  propId: TPropId,
+) {
+  type Props = ClassAttributes<HTMLElement> &
+    HTMLAttributes<HTMLElement> & { [key in TPropId]: string };
+
+  const DraggableElement = (props: Props) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef: setDraggableNodeRef,
+      isDragging,
+    } = useDraggable({ id: props[propId] });
+
+    const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
+      id: props[propId],
+    });
+
+    const className = cn(
+      {
+        [styles.HoveredByFile]: !isDragging && over?.id === props[propId],
+        [styles.RowBeingDragged]: isDragging,
+      },
+      props.className,
+    );
+
+    return React.createElement(element, {
+      ...props,
+      ...attributes,
+      ...listeners,
+      ref(elementRef) {
+        setDraggableNodeRef(elementRef);
+        setNodeRefDroppable(elementRef);
+      },
+      className,
+    });
+  };
+
+  DraggableElement.displayName = 'DraggableRow';
+
+  return DraggableElement;
+}

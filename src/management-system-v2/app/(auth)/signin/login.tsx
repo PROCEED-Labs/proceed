@@ -78,7 +78,7 @@ const Login: FC<{
                 </Form.Item>
               ))}
               <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                Continue with {provider.name}
+                {provider.name}
               </Button>
             </Form>
           );

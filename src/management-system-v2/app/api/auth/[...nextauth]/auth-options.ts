@@ -17,7 +17,7 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Guest',
+      name: 'Continue as a Guest',
       id: 'guest-loguin',
       credentials: {},
       async authorize() {
@@ -130,7 +130,7 @@ if (process.env.NODE_ENV === 'development') {
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
-      name: 'Development Users',
+      name: 'Continue with Development Users',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
@@ -153,22 +153,22 @@ if (process.env.NODE_ENV === 'development') {
 
 export type ExtractedProvider =
   | {
-      id: string;
-      type: 'email';
-      name: string;
-    }
+    id: string;
+    type: 'email';
+    name: string;
+  }
   | {
-      id: string;
-      type: 'oauth';
-      name: string;
-      style?: OAuthProviderButtonStyles;
-    }
+    id: string;
+    type: 'oauth';
+    name: string;
+    style?: OAuthProviderButtonStyles;
+  }
   | {
-      id: string;
-      type: 'credentials';
-      name: string;
-      credentials: Record<string, CredentialInput>;
-    };
+    id: string;
+    type: 'credentials';
+    name: string;
+    credentials: Record<string, CredentialInput>;
+  };
 
 // Unfortunatly, next-auth's getProviders() function does not return enough information to render the login page.
 // So we need to manually map the providers

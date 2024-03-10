@@ -1,10 +1,10 @@
-import Login from './login';
 import { getProviders } from '@/app/api/auth/[...nextauth]/auth-options';
 import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
+import SignIn from './signin';
 
 // take in search query
-const LoginPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
+const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
   const { session } = await getCurrentUser();
   if (session?.user) {
     const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
@@ -24,7 +24,7 @@ const LoginPage = async ({ searchParams }: { searchParams: { callbackUrl: string
     return 1;
   });
 
-  return <Login providers={providers} />;
+  return <SignIn providers={providers} />;
 };
 
-export default LoginPage;
+export default SignInPage;

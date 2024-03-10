@@ -3,13 +3,7 @@ import Content from '@/components/content';
 import Processes from '@/components/processes';
 import { SetAbility } from '@/lib/abilityStore';
 import { FC, PropsWithChildren } from 'react';
-import {
-  FileOutlined,
-  ProfileOutlined,
-  UnlockOutlined,
-  UserOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { FileOutlined, ProfileOutlined } from '@ant-design/icons';
 
 const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
   return (

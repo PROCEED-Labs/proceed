@@ -19,7 +19,7 @@ import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
 
-const Login: FC<{
+const SignIn: FC<{
   providers: ExtractedProvider[];
 }> = ({ providers }) => {
   const searchParams = useSearchParams();
@@ -145,4 +145,4 @@ const Login: FC<{
   );
 };
 
-export default Login;
+export default SignIn;

@@ -3,6 +3,7 @@ import Auth0Provider from 'next-auth/providers/auth0';
 import EmailProvider from 'next-auth/providers/email';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
@@ -146,5 +147,36 @@ if (process.env.NODE_ENV === 'development') {
     }),
   );
 }
+
+export type ExtractedProvider =
+  | {
+      id: string;
+      type: 'email';
+      name: string;
+    }
+  | {
+      id: string;
+      type: 'oauth';
+      name: string;
+      style?: OAuthProviderButtonStyles;
+    }
+  | {
+      id: string;
+      type: 'credentials';
+      name: string;
+      credentials: Record<string, CredentialInput>;
+    };
+
+// Unfortunatly, next-auth's getProviders() function does not return enough information to render the login page.
+// So we need to manually map the providers
+// NOTE be careful not to leak any sensitive information
+export const getProviders = () =>
+  nextAuthOptions.providers.map((provider) => ({
+    id: provider.options?.id ?? provider.id,
+    type: provider.type,
+    name: provider.options?.name ?? provider.name,
+    style: provider.type === 'oauth' ? provider.style : undefined,
+    credentials: provider.type === 'credentials' ? provider.options.credentials : undefined,
+  })) as ExtractedProvider[];
 
 export default nextAuthOptions;

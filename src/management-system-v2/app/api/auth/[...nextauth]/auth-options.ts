@@ -74,6 +74,9 @@ const nextAuthOptions: AuthOptions = {
       return true;
     },
   },
+  pages: {
+    signIn: '/signin',
+  },
 };
 
 if (process.env.USE_AUTH0) {

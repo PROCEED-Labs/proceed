@@ -28,7 +28,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
       }}
     >
       <Space.Compact size="large" direction="vertical">
-        <AuthCan action="create" resource="Process">
+        <AuthCan create Process>
           <Tooltip title="Create a new Process using this Version">
             <ProcessCreationButton
               icon={<PlusOutlined />}

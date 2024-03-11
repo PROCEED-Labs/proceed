@@ -117,7 +117,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
               dropdownRender={(menu) => (
                 <>
                   {menu}
-                  <AuthCan action="create" resource="Process">
+                  <AuthCan create Process>
                     <Divider style={{ margin: '4px 0' }} />
                     <Space style={{ display: 'flex', justifyContent: 'center' }}>
                       <ProcessCreationButton type="text" icon={<PlusOutlined />}>

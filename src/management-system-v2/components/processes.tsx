@@ -280,23 +280,36 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     });
   };
 
+  const defaultDropdownItems = [
+    {
+      key: 'create-process',
+      label: (
+        <ProcessCreationButton
+          wrapperElement={
+            <Space>
+              <FileOutlined /> Create Process
+            </Space>
+          }
+        />
+      ),
+    },
+    {
+      key: 'create-folder',
+      label: (
+        <FolderCreationButton
+          wrapperElement={
+            <Space>
+              <FolderOutlined />
+              Create Folder
+            </Space>
+          }
+        />
+      ),
+    },
+  ];
   return (
     <>
-      <Dropdown
-        menu={{
-          items: [
-            {
-              key: 'create-process',
-              label: <ProcessCreationButton wrapperElement="Create Process" />,
-            },
-            {
-              key: 'create-folder',
-              label: <FolderCreationButton wrapperElement="Create Folder" />,
-            },
-          ],
-        }}
-        trigger={['contextMenu']}
-      >
+      <Dropdown menu={{ items: defaultDropdownItems }} trigger={['contextMenu']}>
         <div
           className={breakpoint.xs ? styles.MobileView : ''}
           style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
@@ -307,15 +320,22 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {breakpoint.xs ? null : (
-                      <>
-                        <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                          {breakpoint.xl ? 'New Process' : 'New'}
-                        </ProcessCreationButton>
+                    {!breakpoint.xs && (
+                      <Space>
+                        <Dropdown
+                          trigger={['click']}
+                          menu={{
+                            items: defaultDropdownItems,
+                          }}
+                        >
+                          <Button type="primary" icon={<PlusOutlined />}>
+                            New
+                          </Button>
+                        </Dropdown>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>
-                      </>
+                      </Space>
                     )}
 
                     {selectedRowKeys.length ? (
@@ -359,7 +379,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
                   {/* <!-- FloatButtonGroup needs a z-index of 101
         since BPMN Logo of the viewer has an z-index of 100 --> */}
-                  {breakpoint.xl ? undefined : (
+                  {!breakpoint.xl && (
                     <FloatButton.Group
                       className={styles.FloatButton}
                       trigger="click"

@@ -153,22 +153,22 @@ if (process.env.NODE_ENV === 'development') {
 
 export type ExtractedProvider =
   | {
-    id: string;
-    type: 'email';
-    name: string;
-  }
+      id: string;
+      type: 'email';
+      name: string;
+    }
   | {
-    id: string;
-    type: 'oauth';
-    name: string;
-    style?: OAuthProviderButtonStyles;
-  }
+      id: string;
+      type: 'oauth';
+      name: string;
+      style?: OAuthProviderButtonStyles;
+    }
   | {
-    id: string;
-    type: 'credentials';
-    name: string;
-    credentials: Record<string, CredentialInput>;
-  };
+      id: string;
+      type: 'credentials';
+      name: string;
+      credentials: Record<string, CredentialInput>;
+    };
 
 // Unfortunatly, next-auth's getProviders() function does not return enough information to render the signin page.
 // So we need to manually map the providers

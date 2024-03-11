@@ -111,7 +111,11 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     return {
       key: hierarchyElement.id,
       href: linksDisabled ? '' : `#${hierarchyElement.id}_page`,
-      title: <Text ellipsis={{ tooltip: label }}>{label}</Text>,
+      title: (
+        <Text style={{ color: 'inherit' }} ellipsis={{ tooltip: label }}>
+          {label}
+        </Text>
+      ),
       children,
     };
   }

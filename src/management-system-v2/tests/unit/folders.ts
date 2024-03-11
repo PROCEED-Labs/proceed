@@ -18,7 +18,8 @@ jest.mock('../../lib/data/legacy/_process.ts', () => ({
 }));
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
-  get: () => {
+  get: (storeName: string) => {
+    if (storeName !== 'folders') return [];
     return [
       {
         name: 'root',

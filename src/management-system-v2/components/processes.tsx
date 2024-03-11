@@ -162,6 +162,13 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+  filteredData.sort((a, b) => {
+    if (a.type === 'folder' && b.type == 'folder') return 0;
+    if (a.type === 'folder') return -1;
+    if (b.type === 'folder') return 1;
+
+    return 0;
+  });
 
   const CollapsePannelRef = useRef<MetaPanelRefType>(null);
 

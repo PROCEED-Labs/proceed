@@ -211,6 +211,9 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   const newParentData = foldersMetaObject.folders[newParentId];
   if (!newParentData) throw new Error('New parent folder not found');
 
+  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+    throw new Error('Cannot move folder to a different environment');
+
   const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
   if (!oldParentData)
     throw new Error(`Consistency error: current parent folder of ${folderId} not found`);

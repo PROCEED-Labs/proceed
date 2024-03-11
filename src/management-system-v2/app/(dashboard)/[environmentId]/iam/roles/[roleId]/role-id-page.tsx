@@ -10,13 +10,13 @@ import RoleMembers from './role-members';
 import { FC } from 'react';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-const RoleId: FC<{ role: Role; usersInRole: User[]; usersNotInRole: User[] }> = ({
-  role,
-  usersInRole,
-  usersNotInRole,
-}) => {
+const RoleId: FC<{
+  role: Role;
+  usersInRole: AuthenticatedUser[];
+  usersNotInRole: AuthenticatedUser[];
+}> = ({ role, usersInRole, usersNotInRole }) => {
   const environmentId = useEnvironment();
 
   return (

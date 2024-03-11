@@ -9,10 +9,10 @@ import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
+import UserAvatar from '@/components/user-avatar';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
-  const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
 
   const { message: messageApi } = App.useApp();
 
@@ -29,22 +29,6 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
   return (
     <>
-      <UserDataModal
-        userData={userData}
-        modalOpen={changeEmailModalOpen}
-        close={() => setChangeEmailModalOpen((open) => !open)}
-        structure={{
-          title: 'Change your email',
-          password: false,
-          inputFields: [
-            {
-              label: 'Email',
-              submitField: 'email',
-              userDataField: 'email',
-            },
-          ],
-        }}
-      />
       <UserDataModal
         userData={userData}
         modalOpen={changeNameModalOpen}
@@ -76,40 +60,47 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         <Card className={styles.Card} style={{ margin: 'auto' }}>
           <Typography.Title level={3}>Account Information</Typography.Title>
 
-          <Avatar size={64} src={userData.image || undefined} style={{ marginBottom: 16 }}>
-            {userData.image ? null : userData.firstName.slice(0, 1) + userData.lastName.slice(0, 1)}
-          </Avatar>
+          <UserAvatar
+            user={userData}
+            avatarProps={{
+              size: 90,
+              style: { marginBottom: '1rem' },
+            }}
+          />
 
           <Table
             dataSource={[
               {
                 title: 'Name',
-                value: `${(userData && userData.firstName) || ''} ${
-                  (userData && userData.lastName) || ''
+                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
+                  !userData.guest ? userData.lastName : ''
                 }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 title: 'Username',
-                value: userData && userData.username,
+                value: !userData.guest ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 title: 'Email',
-                value: userData && userData.email,
-                action: () => setChangeEmailModalOpen(true),
+                value: !userData.guest ? userData.email : 'Guest',
               },
             ]}
             columns={[
               { dataIndex: 'title' },
               { dataIndex: 'value' },
               {
-                render: () => <RightOutlined />,
+                render: (_, row) => row.action && <RightOutlined />,
               },
             ]}
-            onRow={(row) => ({
-              onClick: row.action,
-            })}
+            onRow={(row) =>
+              row.action
+                ? {
+                    onClick: row.action,
+                  }
+                : {}
+            }
             showHeader={false}
             pagination={false}
             className={styles.Table}

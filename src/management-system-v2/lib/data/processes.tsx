@@ -148,12 +148,11 @@ export const addProcesses = async (
   return newProcesses;
 };
 
-export const updateProcessMetaInfo = async (
+export const updateProcessShareInfo = async (
   definitionsId: string,
   shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,
   shareToken: string | undefined,
-  shareTimeStamp: number | undefined,
 ) => {
   const { ability } = await getCurrentEnvironment();
 
@@ -171,7 +170,6 @@ export const updateProcessMetaInfo = async (
   await updateProcessMetaData(definitionsId, {
     shared: shared,
     sharedAs: sharedAs,
-    shareTimeStamp: shareTimeStamp,
     shareToken: shareToken,
   });
 };

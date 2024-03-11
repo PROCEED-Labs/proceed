@@ -1,6 +1,6 @@
 import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
 import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
   generateProcessShareToken,
@@ -40,7 +40,7 @@ const ModelerShareModalOptionPublicLink = ({
     if (shared) {
       setToken(shareToken);
     }
-    setRegisteredUsersonlyChecked(sharedAs === 'protected' ? true : false);
+    setRegisteredUsersonlyChecked(sharedAs === 'protected');
   }, [shared, sharedAs, shareToken]);
 
   const handleCopyLink = async () => {
@@ -88,9 +88,11 @@ const ModelerShareModalOptionPublicLink = ({
     refresh();
   };
 
+  const canvasRef = useRef<HTMLDivElement>(null);
+
   const handleQRCodeAction = async (action: 'download' | 'copy') => {
     try {
-      const canvas = document.getElementById('qrcode')?.querySelector<HTMLCanvasElement>('canvas');
+      const canvas = canvasRef.current?.querySelector<HTMLCanvasElement>('canvas');
 
       if (canvas) {
         const blob = await new Promise<Blob | null>((resolve) =>
@@ -171,7 +173,7 @@ const ModelerShareModalOptionPublicLink = ({
                 align="center"
               >
                 {isShareLinkChecked && (
-                  <div id="qrcode">
+                  <div id="qrcode" ref={canvasRef}>
                     <QRCode
                       style={{
                         border: '1px solid #000',

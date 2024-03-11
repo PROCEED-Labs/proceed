@@ -42,6 +42,7 @@ import TableOfContents, { ElementInfo } from './table-of-content';
 import ProcessDocument, { VersionInfo } from './process-document';
 
 import { getTitle, getMetaDataFromBpmnElement, getChildElements } from './documentation-page-utils';
+import ErrorMessage from '@/components/error-message';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -247,7 +248,7 @@ const BPMNSharedViewer = ({ processData, isOwner, defaultSettings }: BPMNSharedV
   }, [processHierarchy, defaultSettings]);
 
   if (!isOwner && !processData.shared) {
-    return <Text type="danger">Process is no longer shared</Text>;
+    return <ErrorMessage message="Process is no longer shared" />;
   }
 
   const handleCopyToOwnWorkspace = async () => {

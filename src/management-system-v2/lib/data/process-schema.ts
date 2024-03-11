@@ -34,7 +34,6 @@ export type ProcessMetadata = Prettify<
     shared: boolean;
     sharedAs: 'public' | 'protected';
     shareToken: string;
-    shareTimeStamp: number;
     versions: {
       version: number;
       name: string;

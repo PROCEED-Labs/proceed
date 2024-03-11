@@ -7,10 +7,7 @@ import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
 import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
-import TokenExpired from './token-expired';
-import InvalidShareToken from './invalid-token';
-import ProcessNoLongerShared from './process-no-longer-shared';
-import ProcessDoesNotExist from './process-does-not-exist';
+import ErrorMessage from '../../components/error-message';
 
 import { SettingsOption } from './settings-modal';
 
@@ -24,7 +21,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const token = searchParams.token;
   const { session } = await getCurrentUser();
   if (typeof token !== 'string') {
-    return <InvalidShareToken />;
+    return <ErrorMessage message="Invalid Token " />;
   }
 
   let isOwner = false;
@@ -34,10 +31,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   let iframeMode;
   let defaultSettings: SettingsOption | undefined;
   try {
-    let { processId, version, embeddedMode, timestamp, settings } = jwt.verify(
-      token,
-      key!,
-    ) as TokenPayload;
+    let { processId, version, embeddedMode, settings } = jwt.verify(token, key!) as TokenPayload;
     defaultSettings = settings;
     processData = (await getProcess(processId as string)) as Process;
 
@@ -55,16 +49,16 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     iframeMode = embeddedMode;
 
     if (!processData) {
-      return <ProcessDoesNotExist />;
+      return <ErrorMessage message="Process no longer exists" />;
     }
 
     if (!isOwner) {
       if (!processData.shared) {
-        return <ProcessNoLongerShared />;
+        return <ErrorMessage message="Process is not shared" />;
       }
 
-      if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
-        return <TokenExpired />;
+      if (processData.shareToken !== token) {
+        return <ErrorMessage message="Token Expired" />;
       }
     }
   } catch (err) {

@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react';
-import { Modal, Button, Tooltip, Space, Divider, message, Grid } from 'antd';
+import { Modal, Button, Tooltip, Space, Divider, message, Grid, App } from 'antd';
 import {
   ShareAltOutlined,
   LinkOutlined,
@@ -19,11 +19,12 @@ import {
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
-import { shareProcessImage } from '@/lib/process-export/share-process-image-webshare-api';
+import { shareProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportTypes } from '@/components/process-export';
 import { getProcess } from '@/lib/data/processes';
 import { Process } from '@/lib/data/process-schema';
+import { error } from 'console';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -40,6 +41,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
   const [shareToken, setShareToken] = useState('');
+  const { message } = App.useApp();
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
@@ -47,10 +49,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     setShared(shared);
     setSharedAs(sharedAs);
     setShareToken(shareToken);
-  };
-
-  const refresh = async () => {
-    checkIfProcessShared();
   };
 
   const getProcessData = () => {
@@ -145,15 +143,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionTitle: 'Share Process as Image',
       optionOnClick: () => shareWrapper(shareProcessImage, modeler),
     },
-    //xml export using webshare api is not supported
-    /*{
-      optionIcon: (
-        <Image priority src="/proceed-icon.png" height={24} width={40} alt="proceed logo" />
-      ),
-      optionName: 'Share Process as BPMN File',
-      optionTitle: 'Share Process as BPMN File',
-      optionOnClick: () => onExportMobile('bpmn'),
-    },*/
   ];
 
   const optionsDesktop = [
@@ -169,7 +158,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
           shared={shared}
           sharedAs={sharedAs}
           shareToken={shareToken}
-          refresh={refresh}
+          refresh={checkIfProcessShared}
         />
       ),
     },
@@ -186,16 +175,24 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         setActiveIndex(1);
       },
       subOption: (
-        <ModelerShareModalOptionEmdedInWeb shared={shared} sharedAs={sharedAs} refresh={refresh} />
+        <ModelerShareModalOptionEmdedInWeb
+          shared={shared}
+          sharedAs={sharedAs}
+          refresh={checkIfProcessShared}
+        />
       ),
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
       optionTitle: 'Copy Diagram to Clipboard (PNG)',
       optionName: 'Copy Diagram as PNG',
-      optionOnClick: () => {
+      optionOnClick: async () => {
         setActiveIndex(2);
-        copyProcessImage(modeler!);
+        if (await copyProcessImage(modeler!)) {
+          message.success('Copied to clipboard');
+        } else {
+          message.error('Error while copying');
+        }
         setActiveIndex(null);
       },
     },

@@ -1,17 +1,8 @@
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import type ViewerType from 'bpmn-js/lib/Viewer';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
-import {
-  getElementDI,
-  getMetaDataFromElement,
-  getMilestonesFromElement,
-  getTargetDefinitionsAndProcessIdForCallActivityByObject,
-} from '@proceed/bpmn-helper';
-
-import { getProcessBPMN } from '@/lib/data/processes';
-import { getSVGFromBPMN } from '@/lib/process-export/util';
+import { getMetaDataFromElement, getMilestonesFromElement } from '@proceed/bpmn-helper';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {

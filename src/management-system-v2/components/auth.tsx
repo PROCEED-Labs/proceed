@@ -57,24 +57,3 @@ export const getCurrentEnvironment = cache(
     return { ability, activeEnvironment };
   },
 );
-
-// HOC for server-side auth checking
-const Auth = <P extends {}>(authOptions: AuthCanProps, Component: ComponentType<P>) => {
-  async function WrappedComponent(props: ComponentProps<ComponentType<P>>) {
-    const { session } = await getCurrentUser();
-
-    if (!session && authOptions.fallbackRedirect) {
-      redirect(authOptions.fallbackRedirect);
-    }
-
-    return (
-      <AuthCan {...authOptions}>
-        <Component {...props} />
-      </AuthCan>
-    );
-  }
-
-  return WrappedComponent;
-};
-
-export default Auth;

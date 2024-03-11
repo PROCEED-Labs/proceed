@@ -32,6 +32,14 @@ export type AuthCanProps = ResourceActionOneOf &
 // TODO: Weil client side werden evtl. sensible Daten an den Client geschickt.
 // Auf server side ändern und eigene component für client side die aber nur für
 // buttons etc. benutzt werden sollte
+/**
+ * Component to check if a user is allowed to perform an action on a resource
+ *
+ * @example
+ * <AuthCan create Process={record} fallback={<p>Not allowed</p>}>
+ *   <button onClick={createProcess}> Create Process </button>
+ * </AuthCan>
+ * */
 export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
   const { fallback, loading: loadingAuth, notLoggedIn, children, fallbackRedirect } = props;
 

@@ -70,8 +70,7 @@ import {
 } from '@dnd-kit/core';
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
-import { create, useStore } from 'zustand';
-import { group } from 'console';
+import { create } from 'zustand';
 
 export const contextMenuStore = create<{
   setSelected: (id?: string) => void;

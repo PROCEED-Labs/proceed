@@ -24,21 +24,22 @@ type PermissionErrorHandling =
   | { action: 'throw-error' };
 export const getCurrentEnvironment = cache(
   async (
-    activeEnvironment?: string,
+    spaceIdParam: string,
     opts: { permissionErrorHandling: PermissionErrorHandling } = {
       permissionErrorHandling: { action: 'redirect' },
     },
   ) => {
     const { userId } = await getCurrentUser();
 
-    if (!activeEnvironment) {
-      const url = new URL(headers().get('referer') || '');
-      activeEnvironment = url.pathname.split('/')[1];
+    // Use hardcoded environment /my/processes for personal spaces.
+    if (spaceIdParam === 'my') {
+      // Note: will be undefined for not logged in users
+      spaceIdParam = userId;
     }
 
-    activeEnvironment = decodeURIComponent(activeEnvironment);
+    const activeSpace = decodeURIComponent(spaceIdParam);
 
-    if (!isMember(decodeURIComponent(activeEnvironment), userId)) {
+    if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');
@@ -46,14 +47,17 @@ export const getCurrentEnvironment = cache(
         default:
           if (opts.permissionErrorHandling.redirectUrl)
             return redirect(opts.permissionErrorHandling.redirectUrl);
-          else if (userId) return redirect(`/${userId}/processes`);
+          else if (userId) return redirect(`/processes`);
           //NOTE this needs to be removed for guest users
           else return redirect(`/api/auth/signin`);
       }
     }
 
-    const ability = await getAbilityForUser(userId, activeEnvironment);
+    const ability = await getAbilityForUser(userId, activeSpace);
 
-    return { ability, activeEnvironment };
+    return {
+      ability,
+      activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+    };
   },
 );

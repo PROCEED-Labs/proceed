@@ -27,6 +27,7 @@ import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
 import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import { Root } from 'bpmn-js/lib/model/Types';
+import { spaceURL } from '@/lib/utils';
 
 type SubprocessInfo = {
   id?: string;
@@ -43,7 +44,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
   const pathname = usePathname();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
@@ -54,7 +55,8 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   } = theme.useToken();
 
   /// Derived State
-  const minimized = decodeURIComponent(pathname) !== `/${environmentId}/processes/${processId}`;
+  const minimized =
+    decodeURIComponent(pathname) !== spaceURL(environment, `/processes/${processId}`);
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   const subprocessChain = useMemo(() => {
@@ -112,7 +114,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
               // prevents a warning caused by the label for the select element being different from the selected option (https://github.com/ant-design/ant-design/issues/34048#issuecomment-1225491622)
               optionLabelProp="children"
               onSelect={(_, option) => {
-                router.push(`/${environmentId}/processes/${option.value}`);
+                router.push(spaceURL(environment, `/processes/${option.value}`));
               }}
               dropdownRender={(menu) => (
                 <>
@@ -215,7 +217,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
       canvas.setRootElement(canvas.findRoot(currentSubprocess.id) as Root);
       modeler.fitViewport();
     } else {
-      router.push(`/${environmentId}/processes`);
+      router.push(spaceURL(environment, `/processes`));
     }
   };
 

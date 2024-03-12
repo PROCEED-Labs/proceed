@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, useEffect, useMemo, FC, PropsWithChildren } from 'react';
+import { ReactElement, useEffect, useMemo, FC, PropsWithChildren, use } from 'react';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
@@ -12,6 +12,7 @@ import {
   resourceAction,
 } from '@/lib/ability/caslAbility';
 import { usePathname, useRouter } from 'next/navigation';
+import { SpaceContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 
 /** Makes at least one key of an object required */
 type OneOf<Key, Object> = Key extends keyof Object ? Partial<Object> & Pick<Object, Key> : never;
@@ -42,7 +43,7 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
 
   const router = useRouter();
   const { status } = useSession();
-  const environmentId = useEnvironment();
+  const spaceId = useEnvironment().spaceId;
 
   const ability = useAbilityStore((store) => store.ability);
   const abilityFetched = useAbilityStore((store) => store.abilityFetched);
@@ -68,7 +69,7 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
 
     for (const r of selectedResources) {
       for (const a of actions) {
-        if (!ability.can(a, r, { environmentId })) return false;
+        if (!ability.can(a, r, { environmentId: spaceId })) return false;
       }
     }
 
@@ -76,7 +77,7 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
   }, [
     ...resources.map((r) => props[r]),
     ...resourceAction.map((a) => props[a]),
-    environmentId,
+    spaceId,
     status,
     loadingState,
   ]);
@@ -97,7 +98,6 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
 };
 
 export const useEnvironment = () => {
-  const pathname = usePathname();
-  const environmentId = pathname.split('/')[1];
-  return decodeURIComponent(environmentId);
+  const environment = use(SpaceContext);
+  return environment;
 };

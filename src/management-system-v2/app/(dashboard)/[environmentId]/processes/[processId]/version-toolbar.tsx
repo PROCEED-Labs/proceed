@@ -7,13 +7,14 @@ import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
+import { spaceURL } from '@/lib/utils';
 
 type VersionToolbarProps = { processId: string };
 
 const VersionToolbar = ({ processId }: VersionToolbarProps) => {
   const router = useRouter();
   const query = useSearchParams();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
   // This component should only be rendered when a version is selected
   const selectedVersionId = query.get('version') as string;
 
@@ -33,13 +34,16 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
             <ProcessCreationButton
               icon={<PlusOutlined />}
               customAction={async (values) => {
-                const result = await copyProcesses([
-                  {
-                    ...values,
-                    originalId: processId as string,
-                    originalVersion: selectedVersionId,
-                  },
-                ]);
+                const result = await copyProcesses(
+                  [
+                    {
+                      ...values,
+                      originalId: processId as string,
+                      originalVersion: selectedVersionId,
+                    },
+                  ],
+                  environment.spaceId,
+                );
                 if (Array.isArray(result)) {
                   return result[0];
                 } else {
@@ -55,8 +59,8 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           description="Any changes that are not stored in another version are irrecoverably lost!"
           tooltip="Set as latest Version and enable editing"
           onConfirm={async () => {
-            await setVersionAsLatest(processId, Number(selectedVersionId));
-            router.push(`/${environmentId}/processes/${processId}`);
+            await setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId);
+            router.push(spaceURL(environment, `/processes/${processId}`));
           }}
           modalProps={{
             okText: 'Set as latest Version',

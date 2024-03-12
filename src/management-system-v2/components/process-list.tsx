@@ -38,7 +38,7 @@ import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
-import { generateDateString } from '@/lib/utils';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
@@ -92,6 +92,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const environment = useEnvironment();
 
   const favourites = [0];
 
@@ -478,7 +479,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(`processes/${record.id}`);
+            router.push(spaceURL(environment, `/processes/${record.id}`));
           },
           onMouseEnter: (event) => {
             setHovered(record);

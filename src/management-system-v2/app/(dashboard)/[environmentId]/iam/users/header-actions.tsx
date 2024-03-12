@@ -13,7 +13,7 @@ const AddUsersModal: FC<{
 }> = ({ modalOpen, close }) => {
   const { message: messageApi } = App.useApp();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [form] = Form.useForm();
   const breakpoint = Grid.useBreakpoint();
@@ -43,7 +43,7 @@ const AddUsersModal: FC<{
       try {
         form.validateFields();
 
-        const result = inviteUsersToEnvironment(environmentId, values.users);
+        const result = inviteUsersToEnvironment(environment.spaceId, values.users);
 
         if (result && 'error' in result) throw new Error();
 

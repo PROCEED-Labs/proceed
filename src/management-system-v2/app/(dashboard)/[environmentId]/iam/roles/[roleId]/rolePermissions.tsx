@@ -261,12 +261,12 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
   const ability = useAbilityStore((store) => store.ability);
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function updateRole() {
     setLoading(true);
     try {
-      const result = await serverUpdateRole(environmentId, role.id, {
+      const result = await serverUpdateRole(environment.spaceId, role.id, {
         permissions,
       });
       if (result && 'error' in result) {

@@ -29,6 +29,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+
 let firstInit = false;
 // @ts-ignore
 if (!global.processMetaObjects) {

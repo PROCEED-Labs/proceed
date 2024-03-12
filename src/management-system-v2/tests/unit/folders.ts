@@ -18,7 +18,8 @@ jest.mock('../../lib/data/legacy/_process.ts', () => ({
 }));
 
 jest.mock('../../lib/data/legacy/store.js', () => ({
-  get: () => {
+  get: (storeName: string) => {
+    if (storeName !== 'folders') return [];
     return [
       {
         name: 'root',
@@ -458,7 +459,7 @@ describe('Create Folders', () => {
 
     expect(
       foldersMetaObject.folders[rootId1]?.children.some(
-        (child) => !('type' in child) && child.id === newFolder.id,
+        (child) => child.type === 'folder' && child.id === newFolder.id,
       ),
     ).toBe(true);
   });
@@ -531,6 +532,121 @@ describe('Delete Folders', () => {
       Object.values(foldersMetaObject.folders).some((folderData) =>
         folderData?.folder.id.includes('2-'),
       ),
+    ).toBe(false);
+
+    expect(() => getRootFolder('2')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+  });
+
+  test('delete environment 1 folder', () => {
+    deleteFolder('1-2');
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        ['1-2', '1-8', '1-9', '1-10'].includes(folderData?.folder.id as string),
+      ),
+    ).toBe(false);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test('delete environment 2 folder', () => {
+    deleteFolder('2-3');
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        ['2-3', '2-10', '2-11', '2-12'].includes(folderData?.folder.id as string),
+      ),
+    ).toBe(false);
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+  });
+});
+
+describe('Move Folders', () => {
+  test('Environment 1: move folder to root', () => {
+    moveFolder('1-5', rootId1);
+    const expectedAtRoot = ['1-1', '1-2', '1-3', '1-4', '1-5'];
+
+    const movedFolder = getFolderById('1-5');
+    expect(movedFolder?.parentId).toBe(rootId1);
+
+    expect(ids(foldersMetaObject.folders[rootId1]?.children ?? [])).toEqual(expectedAtRoot.sort());
+
+    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId1);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test('Environment 2: move folder to root', () => {
+    moveFolder('2-10', rootId2);
+    const expectedAtRoot = ['2-1', '2-2', '2-3', '2-10'];
+
+    const movedFolder = getFolderById('2-10');
+    expect(movedFolder?.parentId).toBe(rootId2);
+
+    expect(ids(foldersMetaObject.folders[rootId2]?.children ?? [])).toEqual(expectedAtRoot.sort());
+
+    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId2);
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+  });
+
+  test("Environment 1: move folder into it's children", () => {
+    expect(() => moveFolder('1-1', '1-5')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test("Environment 2: move folder into it's children", () => {
+    expect(() => moveFolder('2-2', '2-7')).toThrowError();
+
+    expect(environmentFoldersUnchanged('1')).toBe(true);
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test('Move root', () => {
+    expect(() => moveFolder(rootId1, '1-1')).toThrowError();
+  });
+
+  test('Move to different environment', () => {
+    expect(() => moveFolder('2-1', rootId1)).toThrowError();
+  });
+});
+
+describe('Delete Folders', () => {
+  test("delete environment 1's root", () => {
+    deleteFolder(rootId1);
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        folderData?.folder.id.includes('1-'),
+      ),
+    ).toBe(false);
+
+    expect(
+      Object.values(foldersMetaObject.rootFolders).some((folderId) => folderId?.includes('1-')),
+    ).toBe(false);
+
+    expect(() => getRootFolder('1')).toThrowError();
+
+    expect(environmentFoldersUnchanged('2')).toBe(true);
+  });
+
+  test("delete environment 2's root", () => {
+    deleteFolder(rootId2);
+
+    expect(
+      Object.values(foldersMetaObject.folders).some((folderData) =>
+        folderData?.folder.id.includes('2-'),
+      ),
+    ).toBe(false);
+
+    expect(
+      Object.values(foldersMetaObject.rootFolders).some((folderId) => folderId?.includes('2-')),
     ).toBe(false);
 
     expect(() => getRootFolder('2')).toThrowError();

@@ -236,6 +236,9 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
     setDragInfo({ dragging: false });
 
+    // prevent parent folder from being dragged
+    if (e.active.id === folder.parentId) return;
+
     const active = processes.find((item) => item.id === e.active.id);
     const over = processes.find((item) => item.id === e.over?.id);
 
@@ -436,6 +439,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               ) : (
                 <ProcessList
                   data={filteredData}
+                  folder={folder}
                   dragInfo={dragInfo}
                   setSelectionElements={setSelectedRowElements}
                   selection={selectedRowKeys}

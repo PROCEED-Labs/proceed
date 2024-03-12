@@ -45,6 +45,19 @@ const ProcessesPage = async ({
     }
   })) satisfies ListItem[];
 
+  if (folder.parentId) {
+    const parentFolder = getFolderById(folder.parentId);
+
+    //Change display
+    parentFolder.name = '< Parent Folder >';
+    parentFolder.createdAt = '';
+    parentFolder.updatedAt = '';
+    parentFolder.description = '';
+    parentFolder.createdBy = '';
+
+    folderContents.unshift({ ...parentFolder, type: 'folder' });
+  }
+
   return (
     <Content
       title={

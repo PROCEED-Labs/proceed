@@ -70,12 +70,7 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   return fallback || null;
 };
 
-export const useEnvironment = (returnUserId: boolean = false) => {
-  const { data } = useSession();
-  const userId = data?.user.id;
-  const environmentId = use(SpaceContext);
-
-  // Optionally return the user id, if the active space is the user's personal
-  // space.
-  return environmentId === 'my' && returnUserId && userId ? userId : environmentId;
+export const useEnvironment = () => {
+  const environment = use(SpaceContext);
+  return environment;
 };

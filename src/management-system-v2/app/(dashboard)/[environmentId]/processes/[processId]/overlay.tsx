@@ -14,11 +14,11 @@ type OverlayProps = {
 
 const Overlay: FC<OverlayProps> = ({ processId, onClose }) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
   return (
     <div
       className={styles.Overlay}
-      onClick={() => router.push(spaceURL(environmentId, `/processes/${processId}`))}
+      onClick={() => router.push(spaceURL(environment, `/processes/${processId}`))}
     >
       <CloseOutlined
         className={styles.Close}

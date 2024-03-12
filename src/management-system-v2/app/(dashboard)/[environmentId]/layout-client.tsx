@@ -24,14 +24,14 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
-export const SpaceContext = createContext('my');
+export const SpaceContext = createContext({ spaceId: '', isOrganization: false });
 
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
     userEnvironments: Environment[];
     layoutMenuItems: NonNullable<MenuProps['items']>;
-    activeSpace: string;
+    activeSpace: { spaceId: string; isOrganization: boolean };
   }>
 > = ({ loggedIn, userEnvironments, layoutMenuItems: _layoutMenuItems, activeSpace, children }) => {
   const session = useSession();
@@ -85,10 +85,18 @@ const Layout: FC<
               <Select
                 options={userEnvironments.map((environment) => ({
                   label: environment.organization ? environment.name : 'Personal Environment',
-                  value: environment.organization ? environment.id : 'my',
+                  value: environment.id,
                 }))}
-                defaultValue={activeSpace}
-                onChange={(environmentId) => router.push(spaceURL(environmentId, `/processes`))}
+                defaultValue={activeSpace.spaceId}
+                onChange={(envId) => {
+                  const space = userEnvironments.find((env) => env.id === envId);
+                  router.push(
+                    spaceURL(
+                      { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                      `/processes`,
+                    ),
+                  );
+                }}
                 style={{ width: '100%' }}
               />
             </div>

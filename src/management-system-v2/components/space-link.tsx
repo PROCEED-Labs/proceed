@@ -10,9 +10,9 @@ const SpaceLink = ({
   children,
   ...linkProps
 }: { href: string; children: ReactNode } & LinkProps) => {
-  const spaceId = useEnvironment();
+  const space = useEnvironment();
   return (
-    <Link {...linkProps} href={spaceURL(spaceId, href)}>
+    <Link {...linkProps} href={spaceURL(space, href)}>
       {children}
     </Link>
   );

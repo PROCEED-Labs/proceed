@@ -26,19 +26,19 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const createNewProcess = async (values: { name: string; description: string }[]) => {
     // Invoke the custom handler otherwise use the default server action.
     const process = await (customAction?.(values[0]) ??
-      addProcesses(values).then((res) => (Array.isArray(res) ? res[0] : res)));
+      addProcesses(values, environment.spaceId).then((res) => (Array.isArray(res) ? res[0] : res)));
     if (process && 'error' in process) {
       return process;
     }
     setIsProcessModalOpen(false);
 
     if (process && 'id' in process) {
-      router.push(spaceURL(environmentId, `/processes/${process.id}`));
+      router.push(spaceURL(environment, `/processes/${process.id}`));
     } else {
       router.refresh();
     }

@@ -22,7 +22,7 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
   const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
@@ -39,7 +39,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /// Derived State
-  const minimized = decodeURIComponent(pathname) !== `/${environmentId}/processes/${process.id}`;
+  const minimized =
+    decodeURIComponent(pathname) !== spaceURL(environment, `/processes/${process.id}`);
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 
@@ -51,7 +52,14 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     () =>
       debounce(async (xml: string, invalidate: boolean = false) => {
         try {
-          await updateProcess(process.id, xml, undefined, undefined, invalidate);
+          await updateProcess(
+            process.id,
+            environment.spaceId,
+            xml,
+            undefined,
+            undefined,
+            invalidate,
+          );
         } catch (err) {
           console.log(err);
         }
@@ -127,7 +135,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         } else {
           router.push(
             spaceURL(
-              environmentId,
+              environment,
               `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
             ),
           );
@@ -217,7 +225,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       // automatically => make sure the stored bpmn is the same as the one in
       // the modeler.
       const cleanedBpmn = await modeler.current.getXML();
-      await updateProcess(process.id, cleanedBpmn);
+      await updateProcess(process.id, environment.spaceId, cleanedBpmn);
     }
   };
 

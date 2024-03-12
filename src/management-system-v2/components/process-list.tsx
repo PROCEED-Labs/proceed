@@ -92,7 +92,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const favourites = [0];
 
@@ -479,7 +479,7 @@ const ProcessList: FC<ProcessListProps> = ({
             // TODO: This is a hack to clear the parallel route when selecting
             // another process. (needs upstream fix)
             //router.refresh();
-            router.push(spaceURL(environmentId, `/processes/${record.id}`));
+            router.push(spaceURL(environment, `/processes/${record.id}`));
           },
           onMouseEnter: (event) => {
             setHovered(record);

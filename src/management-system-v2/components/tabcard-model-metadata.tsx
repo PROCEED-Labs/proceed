@@ -116,7 +116,7 @@ const TabCard: FC<TabCardProps> = ({
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
   const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -190,7 +190,7 @@ const TabCard: FC<TabCardProps> = ({
         setLastProcessId(item?.id);
       }}
       onDoubleClick={() => {
-        router.push(spaceURL(environmentId, `/processes/${item.id}`));
+        router.push(spaceURL(environment, `/processes/${item.id}`));
       }}
     >
       {generateContentList(item, isVisible)[activeTabKey]}

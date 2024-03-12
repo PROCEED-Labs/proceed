@@ -40,7 +40,7 @@ const ModelerToolbar = ({
   versions,
 }: ModelerToolbarProps) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -64,9 +64,14 @@ const ModelerToolbar = ({
   }) => {
     // Ensure latest BPMN on server.
     const xml = (await modeler?.getXML()) as string;
-    await updateProcess(processId, xml);
+    await updateProcess(processId, environment.spaceId, xml);
 
-    await createVersion(values.versionName, values.versionDescription, processId);
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      processId,
+      environment.spaceId,
+    );
     // TODO: navigate to new version?
     router.refresh();
   };
@@ -154,7 +159,7 @@ const ModelerToolbar = ({
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
                   spaceURL(
-                    environmentId,
+                    environment,
                     `/processes/${processId as string}${
                       searchParams.size ? '?' + searchParams.toString() : ''
                     }`,

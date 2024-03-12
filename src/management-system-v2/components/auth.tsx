@@ -24,7 +24,7 @@ type PermissionErrorHandling =
   | { action: 'throw-error' };
 export const getCurrentEnvironment = cache(
   async (
-    activeEnvironment?: string,
+    spaceIdParam: string,
     opts: { permissionErrorHandling: PermissionErrorHandling } = {
       permissionErrorHandling: { action: 'redirect' },
     },
@@ -32,21 +32,14 @@ export const getCurrentEnvironment = cache(
     const { userId } = await getCurrentUser();
 
     // Use hardcoded environment /my/processes for personal spaces.
-    if (activeEnvironment === 'my') {
+    if (spaceIdParam === 'my') {
       // Note: will be undefined for not logged in users
-      activeEnvironment = userId;
+      spaceIdParam = userId;
     }
 
-    // FIXME: This might fail for personal spaces now, we should always define
-    // the active space id.
-    /*if (!activeEnvironment) {
-      const url = new URL(headers().get('referer') || '');
-      activeEnvironment = url.pathname.split('/')[1];
-    }*/
+    const activeSpace = decodeURIComponent(spaceIdParam);
 
-    activeEnvironment = decodeURIComponent(activeEnvironment ?? '');
-
-    if (!userId || !isMember(decodeURIComponent(activeEnvironment), userId)) {
+    if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');
@@ -60,9 +53,12 @@ export const getCurrentEnvironment = cache(
       }
     }
 
-    const ability = await getAbilityForUser(userId, activeEnvironment);
+    const ability = await getAbilityForUser(userId, activeSpace);
 
-    return { ability, activeEnvironment };
+    return {
+      ability,
+      activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+    };
   },
 );
 

@@ -9,7 +9,7 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
 
   if (!ability.can('manage', 'Role')) return <UnauthorizedFallback />;
 
-  const roles = getRoles(activeEnvironment, ability);
+  const roles = getRoles(activeEnvironment.spaceId, ability);
 
   return (
     <Content title="Identity and Access Management">

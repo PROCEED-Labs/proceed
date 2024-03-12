@@ -34,7 +34,7 @@ export async function inviteUsersToEnvironment(
       // don't return an error if the user doesn't exist
       // to avoid users from finding out who, what emails are registered
       if (invitedUser) {
-        addMember(activeEnvironment, invitedUser.id);
+        addMember(activeEnvironment.spaceId, invitedUser.id);
       }
     }
   } catch (_) {

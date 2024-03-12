@@ -7,6 +7,7 @@ import ProcessCreationButton from '@/components/process-creation-button';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
+import { spaceURL } from '@/lib/utils';
 
 type VersionToolbarProps = { processId: string };
 
@@ -56,7 +57,7 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           tooltip="Set as latest Version and enable editing"
           onConfirm={async () => {
             await setVersionAsLatest(processId, Number(selectedVersionId));
-            router.push(`/${environmentId}/processes/${processId}`);
+            router.push(spaceURL(environmentId, `/processes/${processId}`));
           }}
           modalProps={{
             okText: 'Set as latest Version',

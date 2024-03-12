@@ -21,6 +21,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
+import { spaceURL } from '@/lib/utils';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -152,9 +153,12 @@ const ModelerToolbar = ({
                 if (!option.value || option.value === -1) searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
-                  `/${environmentId}/processes/${processId as string}${
-                    searchParams.size ? '?' + searchParams.toString() : ''
-                  }`,
+                  spaceURL(
+                    environmentId,
+                    `/processes/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
+                    }`,
+                  ),
                 );
               }}
               options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({

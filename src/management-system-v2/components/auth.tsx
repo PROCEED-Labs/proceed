@@ -31,14 +31,22 @@ export const getCurrentEnvironment = cache(
   ) => {
     const { userId } = await getCurrentUser();
 
-    if (!activeEnvironment) {
-      const url = new URL(headers().get('referer') || '');
-      activeEnvironment = url.pathname.split('/')[1];
+    // Use hardcoded environment /my/processes for personal spaces.
+    if (activeEnvironment === 'my') {
+      // Note: will be undefined for not logged in users
+      activeEnvironment = userId;
     }
 
-    activeEnvironment = decodeURIComponent(activeEnvironment);
+    // FIXME: This might fail for personal spaces now, we should always define
+    // the active space id.
+    /*if (!activeEnvironment) {
+      const url = new URL(headers().get('referer') || '');
+      activeEnvironment = url.pathname.split('/')[1];
+    }*/
 
-    if (!isMember(decodeURIComponent(activeEnvironment), userId)) {
+    activeEnvironment = decodeURIComponent(activeEnvironment ?? '');
+
+    if (!userId || !isMember(decodeURIComponent(activeEnvironment), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');
@@ -46,7 +54,7 @@ export const getCurrentEnvironment = cache(
         default:
           if (opts.permissionErrorHandling.redirectUrl)
             return redirect(opts.permissionErrorHandling.redirectUrl);
-          else if (userId) return redirect(`/${userId}/processes`);
+          else if (userId) return redirect(`/processes`);
           //NOTE this needs to be removed for guest users
           else return redirect(`/api/auth/signin`);
       }

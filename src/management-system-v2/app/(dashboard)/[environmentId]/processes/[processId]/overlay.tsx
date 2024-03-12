@@ -5,6 +5,7 @@ import { FC } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
+import { spaceURL } from '@/lib/utils';
 
 type OverlayProps = {
   processId: string;
@@ -17,7 +18,7 @@ const Overlay: FC<OverlayProps> = ({ processId, onClose }) => {
   return (
     <div
       className={styles.Overlay}
-      onClick={() => router.push(`/${environmentId}/processes/${processId}`)}
+      onClick={() => router.push(spaceURL(environmentId, `/processes/${processId}`))}
     >
       <CloseOutlined
         className={styles.Close}

@@ -16,6 +16,7 @@ import RoleSidePanel from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
+import { spaceURL } from '@/lib/utils';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
@@ -62,7 +63,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
       dataIndex: 'name',
       key: 'display',
       render: (name: FilteredRole['name'], role: FilteredRole) => (
-        <Link style={{ color: '#000' }} href={`/${environmentId}/iam/roles/${role.id}`}>
+        <Link style={{ color: '#000' }} href={spaceURL(environmentId, `/iam/roles/${role.id}`)}>
           {name.highlighted}
         </Link>
       ),
@@ -138,7 +139,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
             onRow={(element) => ({
               onMouseEnter: () => setHoveredRow(element.id),
               onMouseLeave: () => setHoveredRow(null),
-              onDoubleClick: () => router.push(`/${environmentId}/iam/roles/${element.id}`),
+              onDoubleClick: () => router.push(spaceURL(environmentId, `/iam/roles/${element.id}`)),
               onClick: () => {
                 setSelectedRowKeys([element.id]);
                 setSelectedRows([element]);

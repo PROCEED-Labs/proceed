@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import XmlEditor from './xml-editor';
 import useModelerStateStore from './use-modeler-state-store';
-import { debounce } from '@/lib/utils';
+import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
@@ -126,7 +126,10 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
           router.replace(pathname + '?' + searchParams.toString());
         } else {
           router.push(
-            `/${environmentId}/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+            spaceURL(
+              environmentId,
+              `/processes/${process.id}${searchParams.size ? '?' + searchParams.toString() : ''}`,
+            ),
           );
         }
       }

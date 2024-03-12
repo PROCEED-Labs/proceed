@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, ReactNode, useEffect, useMemo, FC, PropsWithChildren } from 'react';
+import { ReactElement, ReactNode, useEffect, useMemo, FC, PropsWithChildren, use } from 'react';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
@@ -9,6 +9,7 @@ import { PackRule } from '@casl/ability/extra';
 import { useCsrfTokenStore } from '@/lib/csrfTokenStore';
 import { usePathname, useRouter } from 'next/navigation';
 import Ability from '@/lib/ability/abilityHelper';
+import { SpaceContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 
 export type AuthCanProps = {
   action: ResourceActionType | ResourceActionType[];
@@ -70,7 +71,6 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
 };
 
 export const useEnvironment = () => {
-  const pathname = usePathname();
-  const environmentId = pathname.split('/')[1];
+  const environmentId = use(SpaceContext);
   return decodeURIComponent(environmentId);
 };

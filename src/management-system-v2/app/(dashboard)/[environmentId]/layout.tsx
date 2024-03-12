@@ -18,6 +18,7 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes } from 'react-icons/lu';
+import { spaceURL } from '@/lib/utils';
 
 const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } }>> = async ({
   children,
@@ -45,14 +46,14 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
     if (can('view', 'Process'))
       children.push({
         key: 'processes',
-        label: <Link href={`/${activeEnvironment}/processes`}>Process List</Link>,
+        label: <Link href={spaceURL(params.environmentId, `/processes`)}>Process List</Link>,
         icon: <FileOutlined />,
       });
 
     if (can('view', 'Template'))
       children.push({
         key: 'templates',
-        label: <Link href={`/${activeEnvironment}/templates`}>Templates</Link>,
+        label: <Link href={spaceURL(params.environmentId, `/templates`)}>Templates</Link>,
         icon: <ProfileOutlined />,
       });
 
@@ -73,7 +74,7 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
 
     children.push({
       key: 'executions',
-      label: <Link href={`/${activeEnvironment}/executions`}>Instances</Link>,
+      label: <Link href={spaceURL(params.environmentId, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
     });
 
@@ -100,14 +101,14 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
     if (can('manage', 'User'))
       children.push({
         key: 'users',
-        label: <Link href={`/${activeEnvironment}/iam/users`}>Users</Link>,
+        label: <Link href={spaceURL(params.environmentId, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
       });
 
     if (ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
       children.push({
         key: 'roles',
-        label: <Link href={`/${activeEnvironment}/iam/roles`}>Roles</Link>,
+        label: <Link href={spaceURL(params.environmentId, `/iam/roles`)}>Roles</Link>,
         icon: <UnlockOutlined />,
       });
 
@@ -132,7 +133,9 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
       children: [
         {
           key: 'general-settings',
-          label: <Link href={`/${activeEnvironment}/general-settings`}>General Settings</Link>,
+          label: (
+            <Link href={spaceURL(params.environmentId, `/general-settings`)}>General Settings</Link>
+          ),
           icon: <SettingOutlined />,
         },
       ],
@@ -146,6 +149,7 @@ const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } 
         loggedIn={!!userId}
         userEnvironments={userEnvironments}
         layoutMenuItems={layoutMenuItems}
+        activeSpace={params.environmentId}
       >
         {children}
       </Layout>

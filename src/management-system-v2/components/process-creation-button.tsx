@@ -8,6 +8,7 @@ import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
+import { spaceURL } from '@/lib/utils';
 
 type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -37,7 +38,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
     setIsProcessModalOpen(false);
 
     if (process && 'id' in process) {
-      router.push(`/${environmentId}/processes/${process.id}`);
+      router.push(spaceURL(environmentId, `/processes/${process.id}`));
     } else {
       router.refresh();
     }

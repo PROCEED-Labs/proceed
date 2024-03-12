@@ -27,7 +27,8 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import { generateDateString } from '@/lib/utils';
+import classNames from 'classnames';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
@@ -80,6 +81,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const environment = useEnvironment();
 
   const favourites = [0];
 
@@ -347,14 +349,29 @@ const ProcessList: FC<ProcessListProps> = ({
             /* Always */
             setLastProcessId(record?.id);
           },
-          onDoubleClick: () =>
-            router.push(
-              record.type === 'folder'
-                ? `/${environmentId}/processes/folder/${record.id}`
-                : `/${environmentId}/processes/${record.id}`,
-            ),
-          onMouseEnter: () => setHovered(record),
-          onMouseLeave: () => setHovered(undefined),
+          // onClick: (event) => {
+          //   if (event.ctrlKey) {
+          //     if (!selection.includes(record.definitionId)) {
+          //       setSelection([record.definitionId, ...selection]);
+          //     } else {
+          //       setSelection(selection.filter((id) => id !== record.definitionId));
+          //     }
+          //   } else {
+          //     setSelection([record.definitionId]);
+          //   }
+          // },
+          onDoubleClick: () => {
+            // TODO: This is a hack to clear the parallel route when selecting
+            // another process. (needs upstream fix)
+            //router.refresh();
+            router.push(spaceURL(environment, `/processes/${record.id}`));
+          },
+          onMouseEnter: (event) => {
+            setHovered(record);
+          }, // mouse enter row
+          onMouseLeave: (event) => {
+            setHovered(undefined);
+          }, // mouse leave row
         })}
         /* ---- */
         /* Breaks Side-Panel */

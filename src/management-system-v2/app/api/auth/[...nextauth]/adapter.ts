@@ -7,7 +7,7 @@ import {
   getOauthAccountByProviderId,
 } from '@/lib/data/legacy/iam/users';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
-import { Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
+import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 
 const invitationTokens = new Map<string, VerificationToken>();
 

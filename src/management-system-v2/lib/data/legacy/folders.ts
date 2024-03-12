@@ -9,9 +9,7 @@ import {
 import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
-import { z } from 'zod';
 import { Process, ProcessMetadata } from '../process-schema';
-import { removeProcess } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
@@ -283,7 +281,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
-  newParentData.children.push(folderData.folder);
+  newParentData.children.push({ type: 'folder', id: folderData.folder.id });
   newParentData.folder.updatedAt = new Date().toISOString();
   store.update('folders', newParentData.folder.id, newParentData.folder);
 

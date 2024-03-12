@@ -7,6 +7,7 @@ export const ProcessInputSchema = z.object({
   description: z.string().optional(),
   shared: z.boolean().optional(),
   originalId: z.string().optional(),
+  folderId: z.string().optional(),
 });
 export type ProcessInput = z.infer<typeof ProcessInputSchema>;
 
@@ -17,7 +18,7 @@ export const ProcessServerInputSchema = ProcessInputSchema.extend({
 export type ProcessServerInput = z.infer<typeof ProcessServerInputSchema>;
 
 export type ProcessMetadata = Prettify<
-  WithRequired<ProcessServerInput, 'id' | 'name' | 'description'> & {
+  WithRequired<ProcessServerInput, 'id' | 'name' | 'description' | 'folderId'> & {
     type: 'process' | 'project' | 'process-instance';
     processIds: string[];
     variables: {

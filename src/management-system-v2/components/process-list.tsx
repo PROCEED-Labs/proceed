@@ -31,7 +31,12 @@ import { generateDateString } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import { DragInfo, DraggableElementGenerator, ProcessListProcess } from './processes';
+import {
+  DragInfo,
+  DraggableElementGenerator,
+  ProcessListProcess,
+  contextMenuStore,
+} from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 
@@ -87,6 +92,8 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
+
+  const setContextMenuItem = contextMenuStore((store) => store.setSelected);
 
   const favourites = [0];
 
@@ -374,6 +381,10 @@ const ProcessList: FC<ProcessListProps> = ({
           }
         },
         onMouseLeave: () => setHovered(undefined),
+        onContextMenu: () => {
+          setSelectionElements([record]);
+          setContextMenuItem(record.id);
+        },
       })}
       components={{
         body: {

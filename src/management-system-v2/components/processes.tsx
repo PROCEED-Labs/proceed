@@ -23,6 +23,7 @@ import {
   Dropdown,
   Card,
   Badge,
+  MenuProps,
 } from 'antd';
 import cn from 'classnames';
 import {
@@ -34,6 +35,9 @@ import {
   ImportOutlined,
   FolderOutlined,
   FileOutlined,
+  ScissorOutlined,
+  CopyOutlined,
+  FolderAddOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -66,6 +70,16 @@ import {
 } from '@dnd-kit/core';
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import { create, useStore } from 'zustand';
+import { group } from 'console';
+
+export const contextMenuStore = create<{
+  setSelected: (id?: string) => void;
+  selected?: string;
+}>((set) => ({
+  setSelected: (id) => set({ selected: id }),
+  selected: undefined,
+}));
 
 export type DragInfo =
   | { dragging: false }
@@ -283,36 +297,66 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     });
   };
 
+  const selectedContextMenuItemId = contextMenuStore((store) => store.selected);
+  const selectedContextMenuItem = selectedContextMenuItemId
+    ? processes.find((item) => item.id === selectedContextMenuItemId)
+    : undefined;
+
+  const contextMenuItems: MenuProps['items'] = selectedContextMenuItem
+    ? [
+        {
+          type: 'group',
+          label: selectedContextMenuItem.name,
+          children: [
+            {
+              key: 'cut-selected',
+              label: 'Cut',
+              icon: <ScissorOutlined />,
+            },
+            {
+              key: 'copy-selected',
+              label: 'Copy',
+              icon: <CopyOutlined />,
+            },
+            {
+              key: 'delete-selected',
+              label: 'Delete',
+              icon: <DeleteOutlined />,
+            },
+            {
+              key: 'move-selected',
+              label: 'Move',
+              icon: <FolderAddOutlined />,
+            },
+            {
+              key: 'item-divider',
+              type: 'divider',
+            },
+          ],
+        },
+      ]
+    : [];
+
   const defaultDropdownItems = [
     {
       key: 'create-process',
-      label: (
-        <ProcessCreationButton
-          wrapperElement={
-            <Space>
-              <FileOutlined /> Create Process
-            </Space>
-          }
-        />
-      ),
+      label: <ProcessCreationButton wrapperElement="Create Process" />,
+      icon: <FileOutlined />,
     },
     {
       key: 'create-folder',
-      label: (
-        <FolderCreationButton
-          wrapperElement={
-            <Space>
-              <FolderOutlined />
-              Create Folder
-            </Space>
-          }
-        />
-      ),
+      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      icon: <FolderOutlined />,
     },
   ];
   return (
     <>
-      <Dropdown menu={{ items: defaultDropdownItems }} trigger={['contextMenu']}>
+      <Dropdown
+        menu={{
+          items: [...contextMenuItems, ...defaultDropdownItems],
+        }}
+        trigger={['contextMenu']}
+      >
         <div
           className={breakpoint.xs ? styles.MobileView : ''}
           style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}

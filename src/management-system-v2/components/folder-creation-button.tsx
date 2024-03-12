@@ -67,6 +67,7 @@ const FolderCreationButton: React.FC<ProcessCreationButtonProps> = ({
         destroyOnClose
         onOk={form.submit}
         onCancel={() => setModalOpen(false)}
+        okButtonProps={{ loading: isLoading }}
       >
         <Form onFinish={createFolder} form={form} layout="vertical">
           <Form.Item

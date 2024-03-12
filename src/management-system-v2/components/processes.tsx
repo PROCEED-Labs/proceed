@@ -236,6 +236,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     openEditModal,
   ]);
 
+  // NOTE: I plan to move this to a separate file
   const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
   const [movingItem, startMovingItemTransition] = useTransition();
   const dndSensors = useSensors(
@@ -608,7 +609,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
 export default Processes;
 
-// NOTE I plan to move this to a separate file
+// NOTE: I plan to move this to a separate file
 export function DraggableElementGenerator<TPropId extends string>(
   element: keyof ReactHTML,
   propId: TPropId,

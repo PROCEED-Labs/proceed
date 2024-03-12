@@ -73,7 +73,13 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
     }
 
     return true;
-  }, [props]);
+  }, [
+    ...resources.map((r) => props[r]),
+    ...resourceAction.map((a) => props[a]),
+    environmentId,
+    status,
+    loadingState,
+  ]);
 
   useEffect(() => {
     if (!loadingState && !allow && fallbackRedirect) {

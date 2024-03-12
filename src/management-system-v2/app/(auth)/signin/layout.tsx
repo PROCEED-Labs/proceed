@@ -42,6 +42,7 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
             processes={[
               {
                 id: '',
+                folderId: '',
                 environmentId: '',
                 owner: '',
                 name: 'How to PROCEED',

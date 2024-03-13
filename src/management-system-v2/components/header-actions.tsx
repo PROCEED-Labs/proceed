@@ -3,15 +3,13 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import Link from 'next/link';
 import { FC } from 'react';
-import { useEnvironment } from './auth-can';
 import UserAvatar from './user-avatar';
+import SpaceLink from './space-link';
 
 const HeaderActions: FC = () => {
   const session = useSession();
   const isGuest = session.data?.user.guest;
-  const environmentId = useEnvironment();
   const loggedIn = session.status === 'authenticated';
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {
@@ -36,14 +34,14 @@ const HeaderActions: FC = () => {
     {
       key: 'profile',
       title: 'Account Settings',
-      label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
+      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
     },
   ];
   if (!isGuest)
     avatarDropdownItems.push({
       key: 'environments',
       title: 'My environments',
-      label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
+      label: <SpaceLink href={`/environments`}>My environments</SpaceLink>,
     });
 
   return (
@@ -57,9 +55,9 @@ const HeaderActions: FC = () => {
           items: avatarDropdownItems,
         }}
       >
-        <Link href={`/${environmentId}/profile`}>
+        <SpaceLink href={`/profile`}>
           <UserAvatar user={session.data.user} />
-        </Link>
+        </SpaceLink>
       </Dropdown>
     </Space>
   );

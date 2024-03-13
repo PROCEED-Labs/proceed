@@ -23,7 +23,7 @@ export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) =>
       const keep = await cb(entry);
       return keep ? entry : undefined;
     })
-  ).filter((entry) => entry);
+  ).filter((entry) => entry) as Array<Type>;
 }
 
 // TODO: Typescriptify or remove

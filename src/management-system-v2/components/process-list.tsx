@@ -27,7 +27,8 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import { generateDateString } from '@/lib/utils';
+import classNames from 'classnames';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
@@ -84,6 +85,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const environment = useEnvironment();
 
   const favourites = [0];
 

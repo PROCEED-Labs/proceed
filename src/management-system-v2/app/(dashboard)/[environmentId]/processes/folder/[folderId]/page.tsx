@@ -30,7 +30,7 @@ const ProcessesPage = async ({
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   let folderId = params.folderId;
-  if (!folderId) folderId = getRootFolder(activeEnvironment, ability).id;
+  if (!folderId) folderId = getRootFolder(activeEnvironment.spaceId, ability).id;
 
   const folder = getFolderById(folderId);
 

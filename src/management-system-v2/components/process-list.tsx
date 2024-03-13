@@ -361,10 +361,14 @@ const ProcessList: FC<ProcessListProps> = ({
           //   }
           // },
           onDoubleClick: () => {
-            // TODO: This is a hack to clear the parallel route when selecting
-            // another process. (needs upstream fix)
-            //router.refresh();
-            router.push(spaceURL(environment, `/processes/${record.id}`));
+            router.push(
+              spaceURL(
+                environment,
+                record.type === 'folder'
+                  ? `/processes/folder/${record.id}`
+                  : `/processes/${record.id}`,
+              ),
+            );
           },
           onMouseEnter: (event) => {
             setHovered(record);

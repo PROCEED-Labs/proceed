@@ -6,13 +6,14 @@ import { headers } from 'next/headers';
 
 export interface TokenPayload {
   processId: string | string[];
+  timestamp: number;
   embeddedMode?: boolean;
 }
 
 export interface ProcessGuestAccessRights {
   shared?: boolean;
   sharedAs?: 'public' | 'protected';
-  shareToken?: string;
+  shareTimestamp?: number;
 }
 
 export async function updateProcessGuestAccessRights(
@@ -23,18 +24,14 @@ export async function updateProcessGuestAccessRights(
     processId as string,
     newMeta.shared,
     newMeta.sharedAs,
-    newMeta.shareToken,
+    newMeta.shareTimestamp,
   );
 }
 
 async function generateProcessShareToken(payload: TokenPayload) {
   const secretKey = process.env.JWT_SHARE_SECRET;
   const token = jwt.sign(payload, secretKey!);
-  const newMeta: ProcessGuestAccessRights = {
-    shareToken: token,
-  };
-  await updateProcessGuestAccessRights(payload.processId as string, newMeta);
-  return { token };
+  return token;
 }
 
 export async function generateSharedViewerUrl(
@@ -42,7 +39,7 @@ export async function generateSharedViewerUrl(
   version?: string,
   settings?: string[],
 ) {
-  const { token } = await generateProcessShareToken(payload);
+  const token = await generateProcessShareToken(payload);
 
   const header = headers();
   const host = header.get('host');

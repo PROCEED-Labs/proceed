@@ -13,12 +13,14 @@ const { TextArea } = Input;
 type ModelerShareModalOptionEmdedInWebProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
+  shareTimestamp?: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
   shared,
   sharedAs,
+  shareTimestamp,
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
@@ -28,14 +30,19 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [embeddingUrl, setEmbeddingUrl] = useState('');
 
   const initialize = async () => {
-    if (shared && sharedAs === 'public') {
-      const url = await generateSharedViewerUrl({ processId, embeddedMode: true });
+    if (shared && sharedAs === 'public' && shareTimestamp) {
+      // TODO: handle this separate from the shareTimestamp (embedTimestamp?)
+      const url = await generateSharedViewerUrl({
+        processId,
+        embeddedMode: true,
+        timestamp: shareTimestamp,
+      });
       setEmbeddingUrl(url);
     }
   };
   useEffect(() => {
     initialize();
-  }, [shared, sharedAs]);
+  }, [shared, sharedAs, shareTimestamp]);
 
   if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
 
@@ -45,12 +52,21 @@ const ModelerShareModalOptionEmdedInWeb = ({
     const isChecked = e.target.checked;
     setIsAllowEmbeddingChecked(isChecked);
     if (isChecked) {
-      const url = await generateSharedViewerUrl({ processId, embeddedMode: true });
+      const timestamp = +new Date();
+      const url = await generateSharedViewerUrl({
+        processId,
+        embeddedMode: true,
+        timestamp,
+      });
       setEmbeddingUrl(url);
-      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      await updateProcessGuestAccessRights(processId, {
+        shared: true,
+        sharedAs: 'public',
+        shareTimestamp: timestamp,
+      });
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false });
+      await updateProcessGuestAccessRights(processId, { shared: false, shareTimestamp: undefined });
       message.success('Process unshared');
     }
     refresh();

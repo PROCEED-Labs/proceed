@@ -31,7 +31,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
   try {
-    let { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
+    let { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     processData = (await getProcess(processId as string)) as Process;
 
     if (session) {
@@ -59,7 +59,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
         return <ErrorMessage message="Process is not shared" />;
       }
 
-      if (processData.shareToken !== token) {
+      if (processData.shareTimestamp !== timestamp) {
         return <ErrorMessage message="Token Expired" />;
       }
     }

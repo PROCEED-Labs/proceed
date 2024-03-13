@@ -12,17 +12,20 @@ import styles from './modeler-share-modal-option-public-link.module.scss';
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
+  shareTimestamp?: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
   shared,
   sharedAs,
+  shareTimestamp,
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
   const query = useSearchParams();
   const selectedVersionId = query.get('version');
+  const [currentShareTimestamp, setCurrentShareTimestamp] = useState(shareTimestamp);
   const [shareLink, setShareLink] = useState('');
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
@@ -34,11 +37,15 @@ const ModelerShareModalOptionPublicLink = ({
   useEffect(() => {
     setIsShareLinkChecked(shared);
 
-    if (shared) {
-      generateSharedViewerUrl({ processId }, selectedVersionId || undefined).then(setShareLink);
+    if (shared && shareTimestamp) {
+      generateSharedViewerUrl(
+        { processId, timestamp: shareTimestamp },
+        selectedVersionId || undefined,
+      ).then(setShareLink);
+      setCurrentShareTimestamp(shareTimestamp);
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected');
-  }, [shared, sharedAs, processId, selectedVersionId]);
+  }, [shared, sharedAs, shareTimestamp, processId, selectedVersionId]);
 
   const handleCopyLink = async () => {
     try {
@@ -72,16 +79,21 @@ const ModelerShareModalOptionPublicLink = ({
     setIsShareLinkChecked(isChecked);
 
     if (isChecked) {
+      const timestamp = +new Date();
       const url = await generateSharedViewerUrl(
-        { processId: processId },
+        { processId: processId, timestamp },
         selectedVersionId || undefined,
       );
       setShareLink(url);
-
-      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      setCurrentShareTimestamp(timestamp);
+      await updateProcessGuestAccessRights(processId, {
+        shared: true,
+        sharedAs: 'public',
+        shareTimestamp: timestamp,
+      });
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false });
+      await updateProcessGuestAccessRights(processId, { shared: false, shareTimestamp: undefined });
       setRegisteredUsersonlyChecked(false);
       message.success('Process unshared');
     }
@@ -124,10 +136,15 @@ const ModelerShareModalOptionPublicLink = ({
   };
 
   const handleOpenSharedPage = async () => {
-    const url = await generateSharedViewerUrl({ processId }, selectedVersionId || undefined);
+    if (currentShareTimestamp) {
+      const url = await generateSharedViewerUrl(
+        { processId, timestamp: currentShareTimestamp },
+        selectedVersionId || undefined,
+      );
 
-    // open the documentation page in a new tab
-    window.open(url, `${processId}-${selectedVersionId}-tab`);
+      // open the documentation page in a new tab
+      window.open(url, `${processId}-${selectedVersionId}-tab`);
+    }
   };
 
   return (

@@ -39,14 +39,16 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const breakpoint = Grid.useBreakpoint();
   const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
+  const [shareTimestamp, setShareTimeStamp] = useState<number>();
   const [isSharing, setIsSharing] = useState(false);
   const { message } = App.useApp();
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs } = await getProcess(processId as string);
+    const { shared, sharedAs, shareTimestamp } = (await getProcess(processId as string)) as Process;
     setShared(shared);
     setSharedAs(sharedAs);
+    setShareTimeStamp(shareTimestamp);
   };
 
   const getProcessData = () => {
@@ -87,8 +89,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    const link = await generateSharedViewerUrl({ processId });
-    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+    let timestamp = shareTimestamp ? shareTimestamp : +new Date();
+    const link = await generateSharedViewerUrl({ processId, timestamp });
+    await updateProcessGuestAccessRights(processId, {
+      shared: true,
+      sharedAs: sharedAs,
+      shareTimestamp: timestamp,
+    });
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
@@ -155,6 +162,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         <ModelerShareModalOptionPublicLink
           shared={shared}
           sharedAs={sharedAs}
+          shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
         />
       ),
@@ -175,6 +183,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         <ModelerShareModalOptionEmdedInWeb
           shared={shared}
           sharedAs={sharedAs}
+          shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
         />
       ),

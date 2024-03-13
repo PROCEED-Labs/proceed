@@ -133,9 +133,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     if (selectedType === 'pdf') {
       const { definitionId, processVersion } = processes[0];
 
+      // the timestamp does not matter here since it is overriden by the user being an owner of the process
       const url = await generateSharedViewerUrl(
         {
           processId: definitionId,
+          timestamp: 0,
         },
         processVersion ? `${processVersion}` : undefined,
         selectedOptions as string[],

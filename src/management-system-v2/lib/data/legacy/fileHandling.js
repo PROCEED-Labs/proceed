@@ -569,7 +569,7 @@ async function getProcessInfo(bpmn, process) {
     environmentId: process.environmentId,
     shared: process.shared,
     sharedAs: process.sharedAs,
-    shareToken: process.shareToken,
+    shareTimestamp: process.shareTimestamp,
   };
   if (newProcess.type === 'project') {
     newProcess = {

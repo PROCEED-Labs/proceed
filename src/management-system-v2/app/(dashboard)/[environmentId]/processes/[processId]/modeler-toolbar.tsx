@@ -129,7 +129,11 @@ const ModelerToolbar = ({
   };
 
   const handleOpenDocumentation = async () => {
-    const url = await generateSharedViewerUrl({ processId }, selectedVersionId || undefined);
+    // the timestamp does not matter here since it is overriden by the user being an owner of the process
+    const url = await generateSharedViewerUrl(
+      { processId, timestamp: 0 },
+      selectedVersionId || undefined,
+    );
 
     // open the documentation page in a new tab
     window.open(url, `${processId}-${selectedVersionId}-tab`);

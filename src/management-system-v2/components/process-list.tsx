@@ -108,19 +108,25 @@ const ProcessList: FC<ProcessListProps> = ({
       const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
       return (
         <>
-          <AuthCan resource={resource} action="create">
-            <Tooltip placement="top" title={'Copy'}>
-              <CopyOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopyItem(record);
-                }}
-              />
+          {record.type !== 'folder' && (
+            <AuthCan resource={resource} action="create">
+              <Tooltip placement="top" title={'Copy'}>
+                <CopyOutlined
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopyItem(record);
+                  }}
+                />
+              </Tooltip>
+            </AuthCan>
+          )}
+
+          {record.type !== 'folder' && (
+            <Tooltip placement="top" title={'Export'}>
+              <ExportOutlined onClick={() => onExportProcess(record)} />
             </Tooltip>
-          </AuthCan>
-          <Tooltip placement="top" title={'Export'}>
-            <ExportOutlined onClick={() => onExportProcess(record)} />
-          </Tooltip>
+          )}
+
           <AuthCan resource={resource} action="update">
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined onClick={() => onEditItem(record)} />

@@ -11,7 +11,7 @@ type FolderModalProps = {
   spaceId: string;
   parentId: string;
   onSubmit: (values: FolderUserInput) => void;
-  modalProps: ModalProps;
+  modalProps?: ModalProps;
 };
 
 const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModalProps) => {

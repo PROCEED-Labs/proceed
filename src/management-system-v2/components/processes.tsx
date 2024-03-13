@@ -99,6 +99,21 @@ type ProcessesProps = {
 };
 
 const Processes = ({ processes, folder }: ProcessesProps) => {
+  if (folder.parentId)
+    processes = [
+      {
+        name: '< Parent Folder >',
+        parentId: null,
+        type: 'folder',
+        id: folder.parentId,
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        environmentId: '',
+      },
+      ...processes,
+    ];
+
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
 

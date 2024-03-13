@@ -71,3 +71,19 @@ export async function updateFolder(folderInput: Partial<FolderUserInput>, folder
     return userError("Couldn't create folder");
   }
 }
+
+export async function deleteFolder(folderId: string) {
+  try {
+    const folder = getFolderById(folderId);
+    if (!folder) return userError('Folder not found');
+
+    const { ability } = await getCurrentEnvironment(folder.environmentId);
+
+    _deleteFolder(folderId, ability);
+  } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError('Permission denied', UserErrorType.PermissionError);
+
+    return userError("Couldn't create folder");
+  }
+}

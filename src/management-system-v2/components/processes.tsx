@@ -98,6 +98,18 @@ type ProcessesProps = {
 };
 
 const Processes = ({ processes, folder }: ProcessesProps) => {
+  if (folder.parentId)
+    processes.unshift({
+      name: '< Parent Folder >',
+      parentId: null,
+      type: 'folder',
+      id: '',
+      createdAt: '',
+      createdBy: '',
+      updatedAt: '',
+      environmentId: '',
+    });
+
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
 

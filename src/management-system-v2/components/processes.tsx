@@ -74,6 +74,7 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { create } from 'zustand';
 import useFolderModal from './folder-modal';
+import { Arguments } from '@dnd-kit/core/dist/components/Accessibility/types';
 
 export const contextMenuStore = create<{
   setSelected: (id: ListItem[]) => void;
@@ -207,7 +208,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   const deselectAll = () => {
     setSelectedRowElements([]);
   };
-  const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
+  const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -230,7 +231,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
         /* CTRL + C */
       } else if (e.ctrlKey && e.key === 'c') {
         if (ability.can('create', 'Process')) {
-          setCopySelection(selectedRowKeys);
+          setCopySelection(selectedRowElements);
         }
         /* CTRL + V */
       } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
@@ -281,28 +282,15 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     // don't allow to move selected items into themselves
     if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
 
-    startMovingItemTransition(async () => {
-      try {
-        const items =
-          selectedRowKeys.length > 0
-            ? selectedRowElements.map((element) => ({
-                type: element.type,
-                id: element.id,
-              }))
-            : [{ type: active.type, id: active.id }];
+    const items =
+      selectedRowKeys.length > 0
+        ? selectedRowElements.map((element) => ({
+            type: element.type,
+            id: element.id,
+          }))
+        : [{ type: active.type, id: active.id }];
 
-        const response = await moveIntoFolder(items, over.id);
-
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-      } catch (e) {
-        message.open({
-          type: 'error',
-          content: `Someting went wrong while moving the ${active.type}`,
-        });
-      }
-    });
+    moveItems(items, over.id);
   };
 
   const dragStartHandler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
@@ -319,45 +307,61 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   const selectedContextMenuItems = contextMenuStore((store) => store.selected);
   const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
 
-  const contextMenuItems: MenuProps['items'] =
-    selectedContextMenuItems.length > 0
-      ? [
-          {
-            type: 'group',
-            label:
-              selectedContextMenuItems.length > 1
-                ? `${selectedContextMenuItems.length} selected`
-                : selectedContextMenuItems[0].name.value,
-            children: [
-              {
-                key: 'cut-selected',
-                label: 'Cut',
-                icon: <ScissorOutlined />,
-              },
-              {
-                key: 'copy-selected',
-                label: 'Copy',
-                icon: <CopyOutlined />,
-              },
-              {
-                key: 'delete-selected',
-                label: 'Delete',
-                icon: <DeleteOutlined />,
-                onClick: () => onDeleteItems(selectedContextMenuItems),
-              },
-              {
-                key: 'move-selected',
-                label: 'Move',
-                icon: <FolderAddOutlined />,
-              },
-              {
-                key: 'item-divider',
-                type: 'divider',
-              },
-            ],
-          },
-        ]
-      : [];
+  const contextMenuItems: MenuProps['items'] = [];
+  if (selectedContextMenuItems.length > 0) {
+    const children: MenuProps['items'] = [
+      // {
+      //   key: 'cut-selected',
+      //   label: 'Cut',
+      //   icon: <ScissorOutlined />,
+      // },
+      {
+        key: 'delete-selected',
+        label: 'Delete',
+        icon: <DeleteOutlined />,
+        onClick: () => onDeleteItems(selectedContextMenuItems),
+      },
+    ];
+
+    if (folder.parentId)
+      children.push({
+        key: 'move-selected',
+        label: 'Move to parent',
+        icon: <FolderAddOutlined />,
+        onClick: () =>
+          moveItems(
+            selectedContextMenuItems.map((item) => ({ type: item.type, id: item.id })),
+            folder.parentId as string,
+          ),
+      });
+
+    if (selectedContextMenuItems.find((item) => item.type !== 'folder'))
+      children.push({
+        key: 'copy-selected',
+        label: 'Copy',
+        icon: <CopyOutlined />,
+        onClick: () => {
+          setCopySelection([...selectedContextMenuItems]);
+          setOpenCopyModal(true);
+        },
+      });
+
+    contextMenuItems.push(
+      {
+        type: 'group',
+        label:
+          selectedContextMenuItems.length > 1
+            ? `${selectedContextMenuItems.length} selected`
+            : selectedContextMenuItems[0].name.value,
+        children,
+      },
+
+      {
+        key: 'item-divider',
+        type: 'divider',
+      },
+    );
+  }
 
   const defaultDropdownItems = [
     {
@@ -403,6 +407,23 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     modalProps: { title: 'Edit folder', okButtonProps: { loading: updatingFolder } },
   });
 
+  const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
+    startMovingItemTransition(async () => {
+      try {
+        const response = await moveIntoFolder(items, folderId);
+
+        if (response && 'error' in response) throw new Error();
+
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong`,
+        });
+      }
+    });
+  };
+
   async function onDeleteItems(items: ListItem[]) {
     const promises = [];
 
@@ -420,7 +441,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
   function onCopyItem(item: ListItem) {
     setOpenCopyModal(true);
-    setSelectedRowElements([item]);
+    setCopySelection([item]);
   }
 
   function onEditItem(item: ListItem) {
@@ -644,8 +665,8 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
         open={openCopyModal}
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
-        initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.id) && process.type !== 'folder')
+        initialData={copySelection
+          .filter((item) => item.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
             description: process.description.value,

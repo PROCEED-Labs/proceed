@@ -11,6 +11,7 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
       {children}
       <SetAbility rules={[]} environmentId={''} />
       <Layout
+        activeSpace={{ spaceId: '', isOrganization: false }}
         loggedIn={true}
         userEnvironments={[{ organization: false, ownerId: '', id: '' }]}
         layoutMenuItems={[

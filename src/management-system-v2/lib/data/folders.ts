@@ -72,14 +72,11 @@ export async function updateFolder(folderInput: Partial<FolderUserInput>, folder
   }
 }
 
-export async function deleteFolder(folderId: string) {
+export async function deleteFolder(folderIds: string[], spaceId: string) {
   try {
-    const folder = getFolderById(folderId);
-    if (!folder) return userError('Folder not found');
+    const { ability } = await getCurrentEnvironment(spaceId);
 
-    const { ability } = await getCurrentEnvironment(folder.environmentId);
-
-    _deleteFolder(folderId, ability);
+    for (const folderId of folderIds) _deleteFolder(folderId, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

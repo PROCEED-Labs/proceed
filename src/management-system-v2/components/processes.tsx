@@ -59,7 +59,7 @@ import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
-import { moveIntoFolder, updateFolder } from '@/lib/data/folders';
+import { deleteFolder, moveIntoFolder, updateFolder } from '@/lib/data/folders';
 import {
   DndContext,
   DragOverlay,
@@ -76,11 +76,11 @@ import { create } from 'zustand';
 import useFolderModal from './folder-modal';
 
 export const contextMenuStore = create<{
-  setSelected: (id?: string) => void;
-  selected?: string;
+  setSelected: (id: ListItem[]) => void;
+  selected: ListItem[];
 }>((set) => ({
-  setSelected: (id) => set({ selected: id }),
-  selected: undefined,
+  setSelected: (item) => set({ selected: item }),
+  selected: [],
 }));
 
 export type DragInfo =
@@ -316,45 +316,48 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     });
   };
 
-  const selectedContextMenuItemId = contextMenuStore((store) => store.selected);
-  const selectedContextMenuItem = selectedContextMenuItemId
-    ? processes.find((item) => item.id === selectedContextMenuItemId)
-    : undefined;
+  const selectedContextMenuItems = contextMenuStore((store) => store.selected);
+  const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
 
-  const contextMenuItems: MenuProps['items'] = selectedContextMenuItem
-    ? [
-        {
-          type: 'group',
-          label: selectedContextMenuItem.name,
-          children: [
-            {
-              key: 'cut-selected',
-              label: 'Cut',
-              icon: <ScissorOutlined />,
-            },
-            {
-              key: 'copy-selected',
-              label: 'Copy',
-              icon: <CopyOutlined />,
-            },
-            {
-              key: 'delete-selected',
-              label: 'Delete',
-              icon: <DeleteOutlined />,
-            },
-            {
-              key: 'move-selected',
-              label: 'Move',
-              icon: <FolderAddOutlined />,
-            },
-            {
-              key: 'item-divider',
-              type: 'divider',
-            },
-          ],
-        },
-      ]
-    : [];
+  const contextMenuItems: MenuProps['items'] =
+    selectedContextMenuItems.length > 0
+      ? [
+          {
+            type: 'group',
+            label:
+              selectedContextMenuItems.length > 1
+                ? `${selectedContextMenuItems.length} selected`
+                : selectedContextMenuItems[0].name.value,
+            children: [
+              {
+                key: 'cut-selected',
+                label: 'Cut',
+                icon: <ScissorOutlined />,
+              },
+              {
+                key: 'copy-selected',
+                label: 'Copy',
+                icon: <CopyOutlined />,
+              },
+              {
+                key: 'delete-selected',
+                label: 'Delete',
+                icon: <DeleteOutlined />,
+                onClick: () => onDeleteItems(selectedContextMenuItems),
+              },
+              {
+                key: 'move-selected',
+                label: 'Move',
+                icon: <FolderAddOutlined />,
+              },
+              {
+                key: 'item-divider',
+                type: 'divider',
+              },
+            ],
+          },
+        ]
+      : [];
 
   const defaultDropdownItems = [
     {
@@ -400,8 +403,17 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     modalProps: { title: 'Edit folder', okButtonProps: { loading: updatingFolder } },
   });
 
-  async function onDeleteItem(item: ListItem) {
-    await deleteProcesses([item.id], space.spaceId);
+  async function onDeleteItems(items: ListItem[]) {
+    const promises = [];
+
+    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
+    if (folderIds.length > 0) promises.push(deleteFolder(folderIds, space.spaceId));
+
+    const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
+    if (folderIds.length > 0) promises.push(deleteProcesses(processIds, space.spaceId));
+
+    await Promise.allSettled(promises);
+
     setSelectedRowElements([]);
     router.refresh();
   }
@@ -431,6 +443,9 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
           items: [...contextMenuItems, ...defaultDropdownItems],
         }}
         trigger={['contextMenu']}
+        onOpenChange={(open) => {
+          if (!open) setSelectedContextMenuItem([]);
+        }}
       >
         <div
           className={breakpoint.xs ? styles.MobileView : ''}
@@ -562,13 +577,14 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                   dragInfo={dragInfo}
                   setSelectionElements={setSelectedRowElements}
                   selection={selectedRowKeys}
+                  selectedElements={selectedRowElements}
                   isLoading={loading}
                   // TODO: Replace with server component loading state
                   //isLoading={isLoading}
                   onExportProcess={(id) => {
                     setOpenExportModal(true);
                   }}
-                  onDeleteItem={onDeleteItem}
+                  onDeleteItem={onDeleteItems}
                   onCopyItem={onCopyItem}
                   onEditItem={onEditItem}
                   setShowMobileMetaData={setShowMobileMetaData}

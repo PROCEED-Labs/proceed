@@ -47,11 +47,12 @@ type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
   selection: Key[];
+  selectedElements: ProcessListProcess[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteItem: (process: ProcessListProcess) => void;
+  onDeleteItem: (process: ProcessListProcess[]) => void;
   onEditItem: (process: ProcessListProcess) => void;
   onCopyItem: (process: ProcessListProcess) => void;
   dragInfo: DragInfo;
@@ -73,6 +74,7 @@ const ProcessList: FC<ProcessListProps> = ({
   data,
   folder,
   selection,
+  selectedElements,
   setSelectionElements,
   isLoading,
   onExportProcess,
@@ -140,7 +142,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <ConfirmationButton
                 title="Delete Process"
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteItem(record)}
+                onConfirm={() => onDeleteItem([record])}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -390,8 +392,12 @@ const ProcessList: FC<ProcessListProps> = ({
         },
         onMouseLeave: () => setHovered(undefined),
         onContextMenu: () => {
-          setSelectionElements([record]);
-          setContextMenuItem(record.id);
+          if (selection.includes(record.id)) {
+            setContextMenuItem(selectedElements);
+          } else {
+            setSelectionElements([record]);
+            setContextMenuItem([record]);
+          }
         },
       })}
       components={{

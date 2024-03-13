@@ -35,7 +35,6 @@ import {
   ImportOutlined,
   FolderOutlined,
   FileOutlined,
-  ScissorOutlined,
   CopyOutlined,
   FolderAddOutlined,
 } from '@ant-design/icons';
@@ -55,7 +54,6 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
-import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
@@ -74,7 +72,7 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { create } from 'zustand';
 import useFolderModal from './folder-modal';
-import { Arguments } from '@dnd-kit/core/dist/components/Accessibility/types';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 export const contextMenuStore = create<{
   setSelected: (id: ListItem[]) => void;
@@ -118,9 +116,18 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
 
+  function canDeleteItems(items: ListItem[], action: Parameters<typeof ability.can>[0]) {
+    for (const item of items) {
+      const resource = toCaslResource(item.type === 'folder' ? 'Folder' : 'Process', item);
+      if (!ability.can(action, resource)) return false;
+    }
+
+    return true;
+  }
+
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = selectedRowElements.every((element) => ability.can('delete', element));
+  const canDeleteSelected = canDeleteItems(selectedRowElements, 'delete');
 
   const router = useRouter();
   const { message } = App.useApp();
@@ -309,21 +316,17 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
-    const children: MenuProps['items'] = [
-      // {
-      //   key: 'cut-selected',
-      //   label: 'Cut',
-      //   icon: <ScissorOutlined />,
-      // },
-      {
+    const children: MenuProps['items'] = [];
+
+    if (canDeleteItems(selectedContextMenuItems, 'delete'))
+      children.push({
         key: 'delete-selected',
         label: 'Delete',
         icon: <DeleteOutlined />,
         onClick: () => onDeleteItems(selectedContextMenuItems),
-      },
-    ];
+      });
 
-    if (folder.parentId)
+    if ((folder.parentId, canDeleteItems(selectedContextMenuItems, 'update')))
       children.push({
         key: 'move-selected',
         label: 'Move to parent',
@@ -335,7 +338,10 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
           ),
       });
 
-    if (selectedContextMenuItems.find((item) => item.type !== 'folder'))
+    if (
+      selectedContextMenuItems.find((item) => item.type !== 'folder') &&
+      ability.can('create', 'Process')
+    )
       children.push({
         key: 'copy-selected',
         label: 'Copy',
@@ -355,7 +361,6 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
             : selectedContextMenuItems[0].name.value,
         children,
       },
-
       {
         key: 'item-divider',
         type: 'divider',
@@ -363,18 +368,20 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     );
   }
 
-  const defaultDropdownItems = [
-    {
+  const defaultDropdownItems = [];
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="Create Process" />,
+      label: <ProcessCreationButton wrapperElement="create process" />,
       icon: <FileOutlined />,
-    },
-    {
+    });
+
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
       key: 'create-folder',
       label: <FolderCreationButton wrapperElement="Create Folder" />,
       icon: <FolderOutlined />,
-    },
-  ];
+    });
 
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const {

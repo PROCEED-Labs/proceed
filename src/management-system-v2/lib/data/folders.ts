@@ -8,8 +8,9 @@ import {
   getFolderById,
   getRootFolder,
   moveFolder,
+  updateFolderMetaData,
 } from './legacy/folders';
-import { userError } from '../user-error';
+import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
 import { moveProcess } from './legacy/_process';
 
@@ -46,5 +47,22 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
     } else if (item.type === 'folder') {
       moveFolder(item.id, folderId, ability);
     }
+  }
+}
+
+/** This is only for updating a folder's metadata, to move a folder use moveIntoFolder */
+export async function updateFolder(folderInput: Partial<FolderUserInput>, folderId: string) {
+  try {
+    const folder = getFolderById(folderId);
+    if (!folder) return userError('Folder not found');
+
+    const { ability } = await getCurrentEnvironment(folder.environmentId);
+
+    const folderUpdate = FolderUserInputSchema.partial().parse(folderInput);
+    if (folderUpdate.parentId) return userError('Wrong method for moving folders');
+
+    updateFolderMetaData(folderId, folderUpdate, ability);
+  } catch (e) {
+    return userError("Couldn't create folder");
   }
 }

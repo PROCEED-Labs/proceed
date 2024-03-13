@@ -295,7 +295,7 @@ const ProcessList: FC<ProcessListProps> = ({
               opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
             }}
           >
-            {record.type !== 'folder' ? actionBarGenerator(record) : null}
+            {actionBarGenerator(record)}
           </Row>
         ),
       responsive: ['xl'],

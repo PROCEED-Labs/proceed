@@ -59,7 +59,7 @@ import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
-import { moveIntoFolder } from '@/lib/data/folders';
+import { moveIntoFolder, updateFolder } from '@/lib/data/folders';
 import {
   DndContext,
   DragOverlay,
@@ -354,11 +354,35 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     },
   ];
 
-  const {} = useFolderModal({
+  const [updatingFolder, startUpdatingFolderTransition] = useTransition();
+  const {
+    modal: folderModal,
+    open: openFolderModal,
+    close: closeFolderModal,
+  } = useFolderModal({
     spaceId: space.spaceId,
     parentId: folder.id,
-    onSubmit: () => {},
-    modalProps: { title: 'Edit folder' },
+    onSubmit: (values, folder) => {
+      if (!folder) return;
+
+      startUpdatingFolderTransition(async () => {
+        try {
+          const response = updateFolder(
+            { name: values.name, description: values.description },
+            folder.id,
+          );
+
+          if (response && 'error' in response) throw new Error();
+
+          message.open({ type: 'success', content: 'Folder updated successfully' });
+          closeFolderModal();
+          router.refresh();
+        } catch (e) {
+          message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
+        }
+      });
+    },
+    modalProps: { title: 'Edit folder', okButtonProps: { loading: updatingFolder } },
   });
 
   async function onDeleteItem(item: ListItem) {
@@ -373,9 +397,17 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   }
 
   function onEditItem(item: ListItem) {
-    setOpenEditModal(true);
-    setSelectedRowElements([item]);
+    if (item.type === 'folder') {
+      const folder = processes.find((process) => process.id === item.id) as Folder;
+      openFolderModal(folder);
+    } else {
+      setOpenEditModal(true);
+      setSelectedRowElements([item]);
+    }
   }
+
+  // Here all the loading states shoud be ORed together
+  const loading = movingItem;
 
   return (
     <>
@@ -515,7 +547,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                   dragInfo={dragInfo}
                   setSelectionElements={setSelectedRowElements}
                   selection={selectedRowKeys}
-                  isLoading={movingItem}
+                  isLoading={loading}
                   // TODO: Replace with server component loading state
                   //isLoading={isLoading}
                   onExportProcess={(id) => {
@@ -620,6 +652,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
           router.refresh();
         }}
       />
+      {folderModal}
     </>
   );
 };

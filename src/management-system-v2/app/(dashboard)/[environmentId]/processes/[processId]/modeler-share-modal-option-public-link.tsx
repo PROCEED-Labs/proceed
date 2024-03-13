@@ -3,7 +3,7 @@ import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/ico
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  generateProcessShareToken,
+  generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 
@@ -12,40 +12,37 @@ import styles from './modeler-share-modal-option-public-link.module.scss';
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
-  shareToken: string;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
   shared,
   sharedAs,
-  shareToken,
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
   const query = useSearchParams();
   const selectedVersionId = query.get('version');
-  const [token, setToken] = useState<String | null>(null);
+  const [shareLink, setShareLink] = useState('');
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
     sharedAs === 'protected',
   );
 
-  const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
-
   const { message } = App.useApp();
 
   useEffect(() => {
     setIsShareLinkChecked(shared);
+
     if (shared) {
-      setToken(shareToken);
+      generateSharedViewerUrl({ processId }, selectedVersionId || undefined).then(setShareLink);
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected');
-  }, [shared, sharedAs, shareToken]);
+  }, [shared, sharedAs, processId, selectedVersionId]);
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(publicLinkValue);
+      await navigator.clipboard.writeText(shareLink);
       message.success('Link Copied');
     } catch (err) {
       message.error('Error copying link');
@@ -75,8 +72,11 @@ const ModelerShareModalOptionPublicLink = ({
     setIsShareLinkChecked(isChecked);
 
     if (isChecked) {
-      const { token } = await generateProcessShareToken({ processId: processId });
-      setToken(token);
+      const url = await generateSharedViewerUrl(
+        { processId: processId },
+        selectedVersionId || undefined,
+      );
+      setShareLink(url);
 
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       message.success('Process shared');
@@ -124,12 +124,10 @@ const ModelerShareModalOptionPublicLink = ({
   };
 
   const handleOpenSharedPage = async () => {
-    const { token } = await generateProcessShareToken({ processId, version: selectedVersionId });
+    const url = await generateSharedViewerUrl({ processId }, selectedVersionId || undefined);
+
     // open the documentation page in a new tab
-    window.open(
-      `${window.location.origin}/shared-viewer?token=${token}`,
-      `${processId}-${selectedVersionId}-tab`,
-    );
+    window.open(url, `${processId}-${selectedVersionId}-tab`);
   };
 
   return (
@@ -139,7 +137,7 @@ const ModelerShareModalOptionPublicLink = ({
           Share Process with Public Link
         </Checkbox>
       </div>
-      {isShareLinkChecked && !token ? (
+      {isShareLinkChecked && !shareLink ? (
         <Flex justify="center">
           <LoadingOutlined style={{ fontSize: '40px' }} />
         </Flex>
@@ -160,7 +158,7 @@ const ModelerShareModalOptionPublicLink = ({
             <Col span={18}>
               <Input
                 type={'text'}
-                value={publicLinkValue}
+                value={shareLink}
                 disabled={!isShareLinkChecked}
                 style={{ border: '1px solid #000' }}
               />
@@ -178,7 +176,7 @@ const ModelerShareModalOptionPublicLink = ({
                       style={{
                         border: '1px solid #000',
                       }}
-                      value={publicLinkValue}
+                      value={shareLink}
                       size={158}
                     />
                   </div>

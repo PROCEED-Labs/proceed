@@ -25,7 +25,7 @@ import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
 
-import { generateProcessShareToken } from '@/lib/sharing/process-sharing';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -129,12 +129,10 @@ const ModelerToolbar = ({
   };
 
   const handleOpenDocumentation = async () => {
-    const { token } = await generateProcessShareToken({ processId, version: selectedVersionId });
+    const url = await generateSharedViewerUrl({ processId }, selectedVersionId || undefined);
+
     // open the documentation page in a new tab
-    window.open(
-      `${window.location.origin}/shared-viewer?token=${token}`,
-      `${processId}-${selectedVersionId}-tab`,
-    );
+    window.open(url, `${processId}-${selectedVersionId}-tab`);
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>

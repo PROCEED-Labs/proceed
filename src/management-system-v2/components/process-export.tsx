@@ -12,7 +12,7 @@ import {
   settings as pdfSettings,
   settingsOptions as pdfOptions,
 } from '@/app/shared-viewer/settings-modal';
-import { generateProcessShareToken } from '@/lib/sharing/process-sharing';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -133,16 +133,16 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     if (selectedType === 'pdf') {
       const { definitionId, processVersion } = processes[0];
 
-      const { token } = await generateProcessShareToken({
-        processId: definitionId,
-        version: processVersion,
-        settings: selectedOptions as any,
-      });
-      // open the documentation page in a new tab
-      window.open(
-        `${window.location.origin}/shared-viewer?token=${token}`,
-        `${definitionId}-${processVersion}-tab`,
+      const url = await generateSharedViewerUrl(
+        {
+          processId: definitionId,
+        },
+        processVersion ? `${processVersion}` : undefined,
+        selectedOptions as string[],
       );
+
+      // open the documentation page in a new tab
+      window.open(url, `${definitionId}-${processVersion}-tab`);
     } else {
       await exportProcesses(
         {

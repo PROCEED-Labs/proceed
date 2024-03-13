@@ -18,7 +18,7 @@ interface PageProps {
 }
 
 const SharedViewer = async ({ searchParams }: PageProps) => {
-  const token = searchParams.token;
+  const { token, version, settings } = searchParams;
   const { session } = await getCurrentUser();
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
@@ -29,10 +29,9 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
   const key = process.env.JWT_SHARE_SECRET!;
   let processData: Process | undefined = undefined;
   let iframeMode;
-  let defaultSettings: SettingsOption | undefined;
+  let defaultSettings = settings as SettingsOption;
   try {
-    let { processId, version, embeddedMode, settings } = jwt.verify(token, key!) as TokenPayload;
-    defaultSettings = settings;
+    let { processId, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
     processData = (await getProcess(processId as string)) as Process;
 
     if (session) {
@@ -41,9 +40,12 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       const ownedProcesses = await getProcesses(ability);
       isOwner = ownedProcesses.some((process) => process.id === processId);
     }
+
     if (version) {
-      version = typeof version === 'number' ? version : parseInt(version);
-      processData.bpmn = await getProcessVersionBpmn(processId as string, version);
+      processData.bpmn = await getProcessVersionBpmn(
+        processId as string,
+        parseInt(version as string),
+      );
     }
 
     iframeMode = embeddedMode;

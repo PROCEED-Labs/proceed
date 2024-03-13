@@ -3,7 +3,7 @@ import { CopyOutlined } from '@ant-design/icons';
 import { Button, message, Input, Checkbox, Typography } from 'antd';
 import { useParams } from 'next/navigation';
 import {
-  generateProcessShareToken,
+  generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import ErrorMessage from '@/components/error-message';
@@ -25,13 +25,12 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(
     shared && sharedAs === 'public',
   );
-  const [token, setToken] = useState('');
+  const [embeddingUrl, setEmbeddingUrl] = useState('');
 
   const initialize = async () => {
     if (shared && sharedAs === 'public') {
-      const { token } = await generateProcessShareToken({ processId, embeddedMode: true });
-      setToken(token);
-      //await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      const url = await generateSharedViewerUrl({ processId, embeddedMode: true });
+      setEmbeddingUrl(url);
     }
   };
   useEffect(() => {
@@ -46,8 +45,8 @@ const ModelerShareModalOptionEmdedInWeb = ({
     const isChecked = e.target.checked;
     setIsAllowEmbeddingChecked(isChecked);
     if (isChecked) {
-      const { token } = await generateProcessShareToken({ processId, embeddedMode: true });
-      setToken(token);
+      const url = await generateSharedViewerUrl({ processId, embeddedMode: true });
+      setEmbeddingUrl(url);
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       message.success('Process shared');
     } else {
@@ -57,7 +56,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
     refresh();
   };
 
-  const iframeCode = `<iframe src='${window.location.origin}/shared-viewer?token=${token}' height="100%" width="100%"></iframe>`;
+  const iframeCode = `<iframe src='${embeddingUrl}' height="100%" width="100%"></iframe>`;
 
   const handleCopyCodeSection = async () => {
     await navigator.clipboard.writeText(iframeCode);

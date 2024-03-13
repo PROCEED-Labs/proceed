@@ -15,7 +15,7 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
 import {
-  generateProcessShareToken,
+  generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
@@ -40,15 +40,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
-  const [shareToken, setShareToken] = useState('');
   const { message } = App.useApp();
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs, shareToken } = await getProcess(processId as string);
+    const { shared, sharedAs } = await getProcess(processId as string);
     setShared(shared);
     setSharedAs(sharedAs);
-    setShareToken(shareToken);
   };
 
   const getProcessData = () => {
@@ -89,13 +87,13 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    const { token } = await generateProcessShareToken({ processId });
+    const link = await generateSharedViewerUrl({ processId });
     await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
       text: 'Here is a shared process for you',
-      url: `${window.location.origin}/shared-viewer?token=${token}`,
+      url: `${link}`,
     };
 
     if (navigator.share) {
@@ -157,7 +155,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
         <ModelerShareModalOptionPublicLink
           shared={shared}
           sharedAs={sharedAs}
-          shareToken={shareToken}
           refresh={checkIfProcessShared}
         />
       ),

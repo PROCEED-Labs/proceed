@@ -4,18 +4,20 @@ import React, { useState } from 'react';
 import { Form, Input, Modal } from 'antd';
 import type { ModalProps } from 'antd';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
+import { Folder, FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import TextArea from 'antd/es/input/TextArea';
 
 type FolderModalProps = {
   spaceId: string;
   parentId: string;
-  onSubmit: (values: FolderUserInput) => void;
+  onSubmit: (values: FolderUserInput, initialValues?: Folder) => void;
   modalProps?: ModalProps;
 };
 
 const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModalProps) => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [initialValues, setInitialValues] = useState<Folder | undefined>(undefined);
+
   const [form] = Form.useForm();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
 
@@ -23,7 +25,12 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
     const values = parseInput({ ...formInput, environmentId: spaceId, parentId });
     if (!values) return;
 
-    onSubmit(values);
+    onSubmit(values, initialValues);
+  }
+
+  function open(folder?: Folder) {
+    setInitialValues(folder);
+    setModalOpen(true);
   }
 
   const modal = (
@@ -36,7 +43,7 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
       onOk={form.submit}
       onCancel={() => setModalOpen(false)}
     >
-      <Form onFinish={checkInput} form={form} layout="vertical">
+      <Form onFinish={checkInput} initialValues={initialValues} form={form} layout="vertical">
         <Form.Item
           name="name"
           label="Folder name"
@@ -58,7 +65,7 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
 
   return {
     modal,
-    open: () => setModalOpen(true),
+    open,
     close: () => setModalOpen(false),
     errors,
   };

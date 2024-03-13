@@ -83,7 +83,7 @@ const ProcessList: FC<ProcessListProps> = ({
   dragInfo,
 }) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -377,8 +377,8 @@ const ProcessList: FC<ProcessListProps> = ({
         onDoubleClick: () =>
           router.push(
             record.type === 'folder'
-              ? `/${environmentId}/processes/folder/${record.id}`
-              : `/${environmentId}/processes/${record.id}`,
+              ? `/${space.spaceId}/processes/folder/${record.id}`
+              : `/${space.spaceId}/processes/${record.id}`,
           ),
         onMouseEnter: (e) => {
           if (dragInfo.dragging) {

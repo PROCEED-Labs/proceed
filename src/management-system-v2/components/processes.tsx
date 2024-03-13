@@ -71,6 +71,8 @@ import {
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { create } from 'zustand';
+import { useEnvironment } from './auth-can';
+import useFolderModal from './folder-modal';
 
 export const contextMenuStore = create<{
   setSelected: (id?: string) => void;
@@ -97,6 +99,7 @@ type ProcessesProps = {
 
 const Processes = ({ processes, folder }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
+  const space = useEnvironment();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -349,6 +352,30 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
       icon: <FolderOutlined />,
     },
   ];
+
+  const {} = useFolderModal({
+    spaceId: space,
+    parentId: folder.id,
+    onSubmit: () => {},
+    modalProps: { title: 'Edit folder' },
+  });
+
+  async function onDeleteItem(item: ListItem) {
+    await deleteProcesses([item.id]);
+    setSelectedRowElements([]);
+    router.refresh();
+  }
+
+  function onCopyItem(item: ListItem) {
+    setOpenCopyModal(true);
+    setSelectedRowElements([item]);
+  }
+
+  function onEditItem(item: ListItem) {
+    setOpenEditModal(true);
+    setSelectedRowElements([item]);
+  }
+
   return (
     <>
       <Dropdown
@@ -493,19 +520,9 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                   onExportProcess={(id) => {
                     setOpenExportModal(true);
                   }}
-                  onDeleteProcess={async ({ id }) => {
-                    await deleteProcesses([id]);
-                    setSelectedRowElements([]);
-                    router.refresh();
-                  }}
-                  onCopyProcess={(process) => {
-                    setOpenCopyModal(true);
-                    setSelectedRowElements([process]);
-                  }}
-                  onEditProcess={(process) => {
-                    setOpenEditModal(true);
-                    setSelectedRowElements([process]);
-                  }}
+                  onDeleteItem={onDeleteItem}
+                  onCopyItem={onCopyItem}
+                  onEditItem={onEditItem}
                   setShowMobileMetaData={setShowMobileMetaData}
                 />
               )}

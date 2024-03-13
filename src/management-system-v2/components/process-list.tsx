@@ -50,9 +50,9 @@ type ProcessListProps = PropsWithChildren<{
   isLoading?: boolean;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteProcess: (process: ProcessListProcess) => void;
-  onEditProcess: (process: ProcessListProcess) => void;
-  onCopyProcess: (process: ProcessListProcess) => void;
+  onDeleteItem: (process: ProcessListProcess) => void;
+  onEditItem: (process: ProcessListProcess) => void;
+  onCopyItem: (process: ProcessListProcess) => void;
   dragInfo: DragInfo;
 }>;
 
@@ -75,9 +75,9 @@ const ProcessList: FC<ProcessListProps> = ({
   setSelectionElements,
   isLoading,
   onExportProcess,
-  onDeleteProcess,
-  onEditProcess,
-  onCopyProcess,
+  onDeleteItem,
+  onEditItem,
+  onCopyItem,
   setShowMobileMetaData,
   dragInfo,
 }) => {
@@ -111,7 +111,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <CopyOutlined
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCopyProcess(record);
+                  onCopyItem(record);
                 }}
               />
             </Tooltip>
@@ -121,7 +121,7 @@ const ProcessList: FC<ProcessListProps> = ({
           </Tooltip>
           <AuthCan resource={resource} action="update">
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => onEditProcess(record)} />
+              <EditOutlined onClick={() => onEditItem(record)} />
             </Tooltip>
           </AuthCan>
 
@@ -132,7 +132,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <ConfirmationButton
                 title="Delete Process"
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteProcess(record)}
+                onConfirm={() => onDeleteItem(record)}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -143,7 +143,7 @@ const ProcessList: FC<ProcessListProps> = ({
         </>
       );
     },
-    [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
+    [onCopyItem, onDeleteItem, onEditItem, onExportProcess],
   );
 
   const columnCheckBoxItems: MenuProps['items'] = ColumnHeader.map((title) => ({

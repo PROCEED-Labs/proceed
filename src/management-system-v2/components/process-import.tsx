@@ -14,6 +14,7 @@ import {
 import ProcessModal from './process-modal';
 import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
+import { useEnvironment } from './auth-can';
 
 export type ProcessData = {
   name: string;
@@ -26,6 +27,7 @@ export type ProcessData = {
 const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
   const [importProcessData, setImportProcessData] = useState<ProcessData[]>([]);
   const router = useRouter();
+  const environment = useEnvironment();
 
   return (
     <>
@@ -61,7 +63,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
         okText="Import"
         onCancel={() => setImportProcessData([])}
         onSubmit={async (processesData) => {
-          const res = await addProcesses(processesData);
+          const res = await addProcesses(processesData, environment.spaceId);
           // Let modal handle errors
           if ('error' in res) {
             return res;

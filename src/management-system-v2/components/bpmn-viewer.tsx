@@ -5,6 +5,7 @@ import cn from 'classnames';
 import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { useEnvironment } from './auth-can';
 
 type BPMNViewerProps = {
   definitionId: string;
@@ -14,9 +15,10 @@ type BPMNViewerProps = {
 
 const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) => {
   const viewer = useRef<BPMNCanvasRef | null>(null);
+  const environment = useEnvironment();
 
   const { data } = useSuspenseQuery({
-    queryKey: ['process', definitionId, 'bpmn'],
+    queryKey: [environment.spaceId, 'process', definitionId, 'bpmn'],
     queryFn: async () => {
       // Without this, we would call a server action as the first thing after
       // suspending. Apparently, this leads to an error that you can't call
@@ -24,7 +26,7 @@ const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) 
       // prevent that.
       await Promise.resolve();
 
-      const res = await getProcessBPMN(definitionId);
+      const res = await getProcessBPMN(definitionId, environment.spaceId);
       if (typeof res === 'object' && 'error' in res) {
         throw res.error;
       }

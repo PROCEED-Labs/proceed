@@ -23,13 +23,13 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
   };
 
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
     startTransition(async () => {
       unsetIds();
 
-      const result = await removeUsersFromEnvironment(environmentId, ids);
+      const result = await removeUsersFromEnvironment(environment.spaceId, ids);
 
       if (result && 'error' in result)
         messageApi.open({ type: 'error', content: 'Something went wrong' });

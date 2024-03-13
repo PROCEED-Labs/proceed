@@ -37,11 +37,11 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
           <h5>
             <b>Last Edited</b>
           </h5>
-          <p>{generateDateString(selectedElement.lastEdited, true)}</p>
+          <p>{/**generateDateString(selectedElement.lastEdited, true)*/}</p>
           <h5>
             <b>Created On</b>
           </h5>
-          <p>{generateDateString(selectedElement.createdOn, false)}</p>
+          <p>{/**generateDateString(selectedElement.createdOn, true)*/}</p>
           <h5>
             <b>File Size</b>
           </h5>

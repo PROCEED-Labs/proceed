@@ -55,6 +55,8 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
+import { useEnvironment } from './auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
 import { moveIntoFolder } from '@/lib/data/folders';
@@ -97,6 +99,7 @@ type ProcessesProps = {
 
 const Processes = ({ processes, folder }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
+  const environment = useEnvironment();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -110,7 +113,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
-      const res = await deleteProcesses(selectedRowKeys as string[]);
+      const res = await deleteProcesses(selectedRowKeys as string[], environment.spaceId);
       // UserError
       if (res && 'error' in res) {
         return message.open({
@@ -572,7 +575,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
             folderId: folder.id,
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values);
+          const res = await copyProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
@@ -593,7 +596,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
             description: process.description.value,
           }))}
         onSubmit={async (values) => {
-          const res = await updateProcesses(values);
+          const res = await updateProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if (res && 'error' in res) {
             return res;

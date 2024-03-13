@@ -29,7 +29,7 @@ const Page = async ({
   ) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
-  const memberships = getMemebers(activeEnvironment, ability);
+  const memberships = getMemebers(activeEnvironment.spaceId, ability);
   const usersNotInRole = memberships
     .filter(({ userId }) => !roleUserSet.has(userId))
     .map((user) => getUserById(user.userId)) as AuthenticatedUser[];

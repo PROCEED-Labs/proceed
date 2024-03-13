@@ -16,7 +16,7 @@ type FolderCreationButtonProps = ButtonProps & {
 const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, ...props }) => {
   const { message } = App.useApp();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const space = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
 
@@ -36,7 +36,7 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
   };
 
   const { modal, open, close } = useFolderModal({
-    spaceId: environmentId,
+    spaceId: space.spaceId,
     parentId: folderId,
     onSubmit: createFolder,
     modalProps: {
@@ -48,9 +48,9 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
   return (
     <>
       {wrapperElement ? (
-        <div onClick={open}>{wrapperElement}</div>
+        <div onClick={() => open()}>{wrapperElement}</div>
       ) : (
-        <Button {...props} onClick={open}>
+        <Button {...props} onClick={() => open()}>
           Create Folder
         </Button>
       )}

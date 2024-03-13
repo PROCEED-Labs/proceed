@@ -9,10 +9,12 @@ import {
   getRootFolder,
   moveFolder,
   updateFolderMetaData,
+  deleteFolder as _deleteFolder,
 } from './legacy/folders';
 import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
 import { moveProcess } from './legacy/_process';
+import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {
@@ -63,6 +65,9 @@ export async function updateFolder(folderInput: Partial<FolderUserInput>, folder
 
     updateFolderMetaData(folderId, folderUpdate, ability);
   } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError('Permission denied', UserErrorType.PermissionError);
+
     return userError("Couldn't create folder");
   }
 }

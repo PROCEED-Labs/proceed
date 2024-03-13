@@ -37,6 +37,7 @@ import {
   FileOutlined,
   CopyOutlined,
   FolderAddOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -317,6 +318,14 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
     const children: MenuProps['items'] = [];
+
+    if (selectedContextMenuItems.length === 1 && canDeleteItems(selectedContextMenuItems, 'delete'))
+      children.push({
+        key: 'edit-selected',
+        label: 'Edit',
+        icon: <EditOutlined />,
+        onClick: () => onEditItem(selectedContextMenuItems[0]),
+      });
 
     if (canDeleteItems(selectedContextMenuItems, 'delete'))
       children.push({

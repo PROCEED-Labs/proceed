@@ -29,6 +29,7 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
   }
 
   function open(folder?: Folder) {
+    form.resetFields();
     setInitialValues(folder);
     setModalOpen(true);
   }

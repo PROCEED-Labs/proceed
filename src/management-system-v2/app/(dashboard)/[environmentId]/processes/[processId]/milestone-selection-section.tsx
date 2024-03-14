@@ -181,9 +181,16 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
 
   return (
     <>
-      <Space direction="vertical" style={{ width: '100%' }} data-testid="milestonesSection">
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        role="group"
+        aria-labelledby="milestones-title"
+      >
         <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-          <span style={{ marginRight: '0.3em' }}>Milestones</span>
+          <span id="milestones-title" style={{ marginRight: '0.3em' }}>
+            Milestones
+          </span>
           <PlusOutlined
             onClick={() => {
               setIsMilestoneModalOpen(true);

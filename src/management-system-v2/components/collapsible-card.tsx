@@ -21,6 +21,8 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
 }) => {
   return (
     <Card
+      role="region"
+      aria-label={title}
       className={classNames({ 'Hide-Scroll-Bar': !show })}
       style={{
         scrollBehavior: 'smooth',

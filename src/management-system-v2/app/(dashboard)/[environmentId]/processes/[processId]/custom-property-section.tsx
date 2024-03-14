@@ -193,8 +193,17 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} data-testid="customPropertiesSection">
-      <Divider style={{ fontSize: '0.85rem' }}>Custom Properties</Divider>
+    <Space
+      direction="vertical"
+      style={{ width: '100%' }}
+      role="group"
+      aria-labelledby="custom-properties-title"
+    >
+      <Divider>
+        <span id="custom-properties-title" style={{ fontSize: '0.85rem' }}>
+          Custom Properties
+        </span>
+      </Divider>
       {customProperties.map((element: { name: string; value: any }, index) => (
         <CustomPropertyForm
           key={element.name || 'newCustomProperty'}

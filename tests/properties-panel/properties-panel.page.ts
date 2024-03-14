@@ -14,11 +14,11 @@ export class PropertiesPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.generalSection = page.getByTestId('generalSection');
-    this.imageSection = page.getByTestId('imageSection');
-    this.descriptionSection = page.getByTestId('descriptionSection');
-    this.milestonesSection = page.getByTestId('milestonesSection');
-    this.customPropertiesSection = page.getByTestId('customPropertiesSection');
+    this.generalSection = page.getByRole('group', { name: 'General' });
+    this.imageSection = page.getByRole('group', { name: 'image-section' });
+    this.descriptionSection = page.getByRole('group', { name: 'Description' });
+    this.milestonesSection = page.getByRole('group', { name: 'Milestones' });
+    this.customPropertiesSection = page.getByRole('group', { name: 'Custom Properties' });
   }
 
   async goto() {
@@ -146,7 +146,7 @@ export class PropertiesPanelPage {
 
   async addDescription(descriptionText: string) {
     const page = this.page;
-    const descriptionSection = page.getByTestId('descriptionSection');
+    const descriptionSection = this.descriptionSection;
 
     await descriptionSection.getByLabel('edit').click(); // click edit description button
     await page

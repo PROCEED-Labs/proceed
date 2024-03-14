@@ -94,7 +94,8 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
           </div>
         ),
       }}
-      data-testid="imageSection"
+      role="group"
+      aria-label="image-section"
     ></Image>
   );
 };

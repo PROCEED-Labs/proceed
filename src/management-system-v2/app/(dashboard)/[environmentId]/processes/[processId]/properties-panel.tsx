@@ -120,8 +120,17 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       style={{ width: '100%', fontSize: '0.75rem' }}
       className={styles.PropertiesPanel}
     >
-      <Space direction="vertical" style={{ width: '100%' }} data-testid="generalSection">
-        <Divider style={{ fontSize: '0.85rem' }}>General</Divider>
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        role="group"
+        aria-labelledby="general-title"
+      >
+        <Divider>
+          <span id="general-title" style={{ fontSize: '0.85rem' }}>
+            General
+          </span>
+        </Divider>
         <Input
           name="Name"
           style={{ fontSize: '0.85rem' }}

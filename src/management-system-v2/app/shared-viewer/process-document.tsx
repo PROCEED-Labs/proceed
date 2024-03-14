@@ -2,7 +2,7 @@ import React from 'react';
 
 import { getProcess } from '@/lib/data/legacy/process';
 
-import { Typography, Table, Grid, Image } from 'antd';
+import { Typography, Table, Grid, Image, Spin } from 'antd';
 
 const { Title } = Typography;
 
@@ -183,53 +183,66 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   return (
     <>
       <div className={styles.ProcessDocument}>
-        {/* TODO: the header that is repeating on each page seems to break the links in the final pdf (i think it is not correctly considered when calculating the position of the link target) */}
-        <div className={styles.Header}>
-          <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="169,5pt" height="15pt" />
-          <h3>www.proceed-labs.org</h3>
-        </div>
-        <div className={styles.Main}>
-          <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
-            <Title>{processData.name}</Title>
-            <div className={styles.TitleInfos}>
-              <div>Owner: {processData.owner.split('|').pop()}</div>
-              {version.id ? (
-                <>
-                  <div>Version: {version.name || version.id}</div>
-                  {version.description ? (
-                    <div>Version Description: {version.description}</div>
-                  ) : null}
-                </>
-              ) : (
-                <div>Version: Latest</div>
-              )}
-              {version.id ? (
-                <div>Creation Time: {new Date(version.id).toUTCString()}</div>
-              ) : (
-                <div>Last Edit: {processData.lastEdited}</div>
-              )}
-            </div>
-          </div>
-          {settings.tableOfContents ? (
-            <div
-              className={cn(styles.TableOfContents, {
-                [styles.WebTableOfContents]: !breakpoint.lg,
-                [styles.TableOfContentPage]: settings.titlepage,
-              })}
-            >
-              <Title level={2}>Table Of Contents</Title>
-              <TableOfContents
-                affix={false}
-                getCurrentAnchor={() => ''}
-                settings={settings}
-                processHierarchy={processHierarchy}
-                linksDisabled
+        {!processHierarchy ? (
+          <Spin tip="Loading" size="large" style={{ top: '50px' }}>
+            <div></div>
+          </Spin>
+        ) : (
+          <>
+            {/* TODO: the header that is repeating on each page seems to break the links in the final pdf (i think it is not correctly considered when calculating the position of the link target) */}
+            <div className={styles.Header}>
+              <Image
+                src="/proceed-labs-logo.svg"
+                alt="Proceed Logo"
+                width="169,5pt"
+                height="15pt"
               />
+              <h3>www.proceed-labs.org</h3>
             </div>
-          ) : null}
+            <div className={styles.Main}>
+              <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
+                <Title>{processData.name}</Title>
+                <div className={styles.TitleInfos}>
+                  <div>Owner: {processData.owner.split('|').pop()}</div>
+                  {version.id ? (
+                    <>
+                      <div>Version: {version.name || version.id}</div>
+                      {version.description ? (
+                        <div>Version Description: {version.description}</div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div>Version: Latest</div>
+                  )}
+                  {version.id ? (
+                    <div>Creation Time: {new Date(version.id).toUTCString()}</div>
+                  ) : (
+                    <div>Last Edit: {processData.lastEdited}</div>
+                  )}
+                </div>
+              </div>
+              {settings.tableOfContents ? (
+                <div
+                  className={cn(styles.TableOfContents, {
+                    [styles.WebTableOfContents]: !breakpoint.lg,
+                    [styles.TableOfContentPage]: settings.titlepage,
+                  })}
+                >
+                  <Title level={2}>Table Of Contents</Title>
+                  <TableOfContents
+                    affix={false}
+                    getCurrentAnchor={() => ''}
+                    settings={settings}
+                    processHierarchy={processHierarchy}
+                    linksDisabled
+                  />
+                </div>
+              ) : null}
 
-          {...processPages}
-        </div>
+              {...processPages}
+            </div>
+          </>
+        )}
       </div>
     </>
   );

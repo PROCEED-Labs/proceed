@@ -112,7 +112,7 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip> */}
-          <AuthCan resource={toCaslResource('Process', record)} action="create">
+          <AuthCan create Process={record}>
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
                 onClick={(e) => {
@@ -129,7 +129,7 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip>
-          <AuthCan resource={toCaslResource('Process', record)} action="update">
+          <AuthCan update Process={record}>
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined
                 onClick={() => {
@@ -141,7 +141,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan action="delete" resource={toCaslResource('Process', record)}>
+          <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"

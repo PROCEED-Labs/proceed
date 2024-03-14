@@ -313,13 +313,13 @@ jobs:
 
       - uses: 'google-github-actions/auth@v2'
         with:
-          project_id: 'proceed-274611'
-          workload_identity_provider: 'projects/116613464484/locations/global/workloadIdentityPools/github-ci/providers/github'
-          service_account: 'github-actions@proceed-274611.iam.gserviceaccount.com'
+          project_id: 'proceed-bpms'
+          workload_identity_provider: 'projects/1062024918148/locations/global/workloadIdentityPools/github-ci/providers/github'
+          service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
 
       - id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
           service: ${{ env.SERVICE_NAME }}
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
-          region: 'europe-west3'
+          region: 'europe-west1'

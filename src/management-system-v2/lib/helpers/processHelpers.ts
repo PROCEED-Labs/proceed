@@ -49,7 +49,8 @@ export function getDefaultProcessMetaInfo() {
     lastEdited: date,
     shared: false,
     versions: [],
-  } as ProcessMetadata;
+    folderId: '',
+  } satisfies ProcessMetadata;
 }
 
 /**

@@ -4,13 +4,21 @@ import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { z } from 'zod';
+import { Process, ProcessMetadata } from '../process-schema';
+import { removeProcess } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
 export let foldersMetaObject: {
-  folders: Partial<{ [Id: string]: { folder: Folder; children: Folder[] } }>;
-  rootFolders: Partial<{ [environmentId: string]: Folder }>;
+  folders: Partial<{
+    [Id: string]: {
+      folder: Folder;
+      // NOTE: the fact that folders don't have a type is needed to differentiate them
+      children: ({ id: string } | { id: string; type: Process['type'] })[];
+    };
+  }>;
+  rootFolders: Partial<{ [environmentId: string]: string }>;
 } =
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
@@ -19,8 +27,10 @@ export let foldersMetaObject: {
 export function init() {
   if (!firstInit) return;
 
+  foldersMetaObject.folders = {};
+  foldersMetaObject.rootFolders = {};
+
   const storedFolders = store.get('folders') as Folder[];
-  foldersMetaObject = { folders: {}, rootFolders: {} };
 
   //first create all the folders
   for (const folder of storedFolders) {
@@ -28,7 +38,7 @@ export function init() {
       if (foldersMetaObject.rootFolders[folder.environmentId])
         throw new Error(`Environment ${folder.environmentId} has multiple root folders`);
 
-      foldersMetaObject.rootFolders[folder.environmentId] = folder;
+      foldersMetaObject.rootFolders[folder.environmentId] = folder.id;
     }
 
     foldersMetaObject.folders[folder.id] = { folder, children: [] };
@@ -44,19 +54,29 @@ export function init() {
     if (!parentData)
       throw new Error(`Inconsistency in folder structure: folder ${folder.id} has no parent`);
 
-    parentData.children.push(folder);
+    parentData.children.push({ id: folder.id });
+  }
+
+  for (const process of store.get('processes') as ProcessMetadata[]) {
+    const folderData = foldersMetaObject.folders[process.folderId];
+    if (!folderData) throw new Error(`Consistency error: process ${process.id}'s folder not found`);
+
+    folderData.children.push({ id: process.id, type: process.type });
   }
 }
 init();
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
-  const rootFolder = foldersMetaObject.rootFolders[environmentId];
-  if (!rootFolder) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
+  const rootFolderId = foldersMetaObject.rootFolders[environmentId];
+  if (!rootFolderId) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
 
-  if (ability && !ability.can('view', toCaslResource('Folder', rootFolder)))
+  const rootFolderData = foldersMetaObject.folders[rootFolderId];
+  if (!rootFolderData) throw new Error('Root folder not found');
+
+  if (ability && !ability.can('view', toCaslResource('Folder', rootFolderData.folder)))
     throw new Error('Permission denied');
 
-  return rootFolder;
+  return rootFolderData.folder;
 }
 
 export function getFolderById(folderId: string, ability?: Ability) {
@@ -112,8 +132,8 @@ export function createFolder(folderInput: z.infer<typeof FolderSchema>, ability?
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
 
-  if (parentFolderData) parentFolderData.children.push(newFolder);
-  else foldersMetaObject.rootFolders[newFolder.environmentId] = newFolder;
+  if (parentFolderData) parentFolderData.children.push({ id: newFolder.id });
+  else foldersMetaObject.rootFolders[newFolder.environmentId] = newFolder.id;
 
   store.add('folders', newFolder);
 
@@ -151,14 +171,16 @@ function _deleteFolder(
     throw new Error('Permission denied');
 
   for (const child of folderData.children) {
+    if ('type' in child && child.type === 'process') {
+      removeProcess(child.id);
+      continue;
+    }
+
     const childData = foldersMetaObject.folders[child.id];
     if (!childData) throw new Error('Inconsistency in folder structure: child folder not found');
 
     _deleteFolder(childData, ability);
   }
-
-  // TODO: remove processes
-
   delete foldersMetaObject.folders[folderData.folder.id];
   if (!folderData.folder.parentId)
     delete foldersMetaObject.rootFolders[folderData.folder.environmentId];
@@ -194,6 +216,8 @@ function isInSubtree(rootId: string, nodeId: string) {
   if (rootId === nodeId) return true;
 
   for (const child of folderData.children) {
+    if ('type' in child) continue; // skip elements that aren't folders
+
     if (isInSubtree(child.id, nodeId)) return true;
   }
 
@@ -211,11 +235,14 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   const newParentData = foldersMetaObject.folders[newParentId];
   if (!newParentData) throw new Error('New parent folder not found');
 
+  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+    throw new Error('Cannot move folder to a different environment');
+
   const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
   if (!oldParentData)
     throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
 
-  const folderIndex = oldParentData.children.findIndex((f) => f.id === folderId);
+  const folderIndex = oldParentData.children.findIndex((f) => !('type' in f) && f.id === folderId);
   if (folderIndex === -1)
     throw new Error("Consistency error: folder not found in parent's children");
 

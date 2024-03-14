@@ -7,6 +7,7 @@ import { addRoleMappings } from './role-mappings';
 import { addMember, membershipMetaObject, removeMember } from './memberships';
 import { Environment, EnvironmentInput, environmentSchema } from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
+import { createFolder } from '../folders';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -75,6 +76,14 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
       permissions: {},
     });
   }
+
+  // add root folder
+  createFolder({
+    environmentId: id,
+    name: '',
+    parentId: null,
+    createdBy: newEnvironment.ownerId,
+  });
 
   return newEnvironmentWithId;
 }

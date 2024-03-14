@@ -119,7 +119,7 @@ const HeaderActions: FC = () => {
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
-      <AuthCan action="create" resource="User">
+      <AuthCan create User>
         {/* TODO: fix icon for float button in button group */}
         <Button type="primary" onClick={() => setCreateUserModalOpen(true)} icon={<PlusOutlined />}>
           {breakpoint.xl ? (

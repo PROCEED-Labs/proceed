@@ -53,7 +53,7 @@ const SignIn: FC<{
         width: '90%',
       }}
       styles={{
-        mask: { backdropFilter: 'blur(5px)' },
+        mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
       }}
       className={styles.Card}
     >

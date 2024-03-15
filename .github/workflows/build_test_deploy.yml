@@ -254,8 +254,9 @@ jobs:
 
   buildMS:
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
     environment: ${{ inputs.environment || 'Staging' }}
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
     needs:
       - lint
       - testEngine
@@ -285,7 +286,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           path: ${{ env.DOCKER_PATH_MS_SERVER }}
-          tag: ${{ vars.IMAGE_TAG }}
+          tag: ${{ (github.ref == 'refs/heads/main' && vars.IMAGE_TAG) || '' }}
+
+      - name: Store tag
+        id: set_tag
+        run: echo "::set-output name=tag::$TAG"
 
   deploy:
     runs-on: ubuntu-latest
@@ -301,7 +306,7 @@ jobs:
     #      - serviceName: engine
     #      - serviceName: management_system
     env:
-      MS_TAG: ${{ vars.IMAGE_TAG }}
+      MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
     steps:
       - uses: actions/cache@v4

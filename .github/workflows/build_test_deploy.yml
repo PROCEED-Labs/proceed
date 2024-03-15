@@ -277,9 +277,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: buildMS
-    environment:
-      name: ${{ inputs.environment || (github.ref == 'refs/heads/main' && 'Staging') }}
-      url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
     permissions:
       contents: read
       id-token: write
@@ -325,3 +322,15 @@ jobs:
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           region: 'europe-west1'
+
+  # Extra job to show environments in GitHub without failing deploy on PRs.
+  githubEnvironment:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment:
+      name: ${{ inputs.environment || 'Staging' }}
+      url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
+      # NOOP job to show environment in GitHub
+    steps:
+      - run: echo "${{ inputs.environment || 'Staging' }}"

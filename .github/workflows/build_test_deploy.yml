@@ -279,6 +279,11 @@ jobs:
 
       - run: yarn build-ms
 
+      - id: set_tag
+        run: |
+          TAG=(echo "$GITHUB_REF" | sed -E "s/refs\/(heads|tags)\///g" | sed -e "s/\//-/g")
+          echo "tag=${{ (github.ref == 'refs/heads/main' && vars.IMAGE_TAG) || '$TAG' }}" >> "$GITHUB_OUTPUT"
+
       - name: Kaniko build
         uses: aevea/action-kaniko@master
         with:
@@ -286,11 +291,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           path: ${{ env.DOCKER_PATH_MS_SERVER }}
-          tag: ${{ (github.ref == 'refs/heads/main' && vars.IMAGE_TAG) || '' }}
-
-      - name: Store tag
-        id: set_tag
-        run: echo "::set-output name=tag::$TAG"
+          tag: ${{ steps.set_tag.outputs.tag }}
 
   deploy:
     runs-on: ubuntu-latest

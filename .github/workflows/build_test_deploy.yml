@@ -257,7 +257,7 @@ jobs:
       # name for PRs. Taken from https://github.com/aevea/action-kaniko/blob/master/entrypoint.sh
       - id: set_tag
         run: |
-          TAG=$(echo "$GITHUB_REF" | sed -E "s/refs\/(heads|tags)\///g" | sed -e "s/\//-/g")
+          TAG=$(git describe --tags --always --dirty --abbrev=7)
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             echo "tag=${{ vars.IMAGE_TAG }}" >> $GITHUB_OUTPUT
           else

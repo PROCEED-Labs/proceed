@@ -320,3 +320,4 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          region: 'europe-west1'

@@ -226,32 +226,6 @@ jobs:
   #       name: PROCEED_Engine_Android
   #       path: ${{ env.OUTPUT_PATH_ENGINE_ANDROID }}/${{ env.FILE_NAME_ANDROID }}
 
-  checkTypes:
-    runs-on: ubuntu-latest
-    # only run on PRs to check types
-    if: ${{ github.event_name == 'pull_request' }}
-    needs:
-      - lint
-      - testEngine
-      - testEngineE2E
-      - testMS
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
-
-      - run: yarn build-ms
-
   buildMS:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'Staging' }}
@@ -280,7 +254,7 @@ jobs:
       - run: yarn build-ms
 
       # Get the tag for the image, either var for staging/production or branch
-      # name for PRs.
+      # name for PRs. Taken from https://github.com/aevea/action-kaniko/blob/master/entrypoint.sh
       - id: set_tag
         run: |
           TAG=$(echo "$GITHUB_REF" | sed -E "s/refs\/(heads|tags)\///g" | sed -e "s/\//-/g")
@@ -301,11 +275,12 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'Staging' }}
     needs: buildMS
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
+      pull-requests: write
+      issues: write
     #strategy:
     #  matrix:
     #    # Run a job each for the engine and MS server images
@@ -330,8 +305,18 @@ jobs:
           service_account: 'github-actions@proceed-bpms.iam.gserviceaccount.com'
 
       - id: 'deploy'
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
           service: ${{ env.SERVICE_NAME }}
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
           region: 'europe-west1'
+
+      - id: 'deploy-preview'
+        if: ${{ github.event_name == 'pull_request' }}
+        name: Preview Cloud Run Deployment
+        uses: OhKai/preview-cloudrun@main
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: docker.io/proceed/ms-server:${{ env.MS_TAG }}
+          token: ${{ secrets.GITHUB_TOKEN }}

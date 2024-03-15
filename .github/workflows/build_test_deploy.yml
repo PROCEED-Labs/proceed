@@ -284,7 +284,7 @@ jobs:
       - id: set_tag
         run: |
           TAG=$(echo "$GITHUB_REF" | sed -E "s/refs\/(heads|tags)\///g" | sed -e "s/\//-/g")
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             echo "tag=${{ vars.IMAGE_TAG }}" >> $GITHUB_OUTPUT
           else
             echo "tag=$TAG" >> $GITHUB_OUTPUT

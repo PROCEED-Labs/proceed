@@ -331,3 +331,6 @@ jobs:
     environment:
       name: ${{ inputs.environment || 'Staging' }}
       url: ${{ inputs.environment == 'Production' && 'https://app.proceed-labs.org' || 'https://staging.proceed-labs.org' }}
+      # NOOP job to show environment in GitHub
+    steps:
+      - run: echo "${{ inputs.environment || 'Staging' }}"

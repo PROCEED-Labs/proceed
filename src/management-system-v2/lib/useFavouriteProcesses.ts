@@ -1,33 +1,52 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getFavouritesProcessIds } from './data/processes';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { updateUser } from './data/users';
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 
-export const useFavouriteProcesses = () => {
-  const queryClient = useQueryClient();
-  const { data: favourites } = useQuery({
-    queryKey: ['user', 'processes', 'favourites'],
-    queryFn: async () => {
-      return await getFavouritesProcessIds();
-    },
-  });
-
-  const [updateFavouriteProcesses, setUpdateFavouriteProcesses] = useState(() => {});
-  useEffect(() => {
-    const update = (id: string) => {
-      if (favourites?.includes(id)) {
-        // remove from favourites
-        updateUser({ favourites: favourites.filter((fav) => fav !== id) as string[] });
-      } else if (favourites == undefined) {
-        updateUser({ favourites: [id] });
-      } else {
-        // add to favourites
-        updateUser({ favourites: [...favourites, id] as string[] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['user', 'processes', 'favourites'] });
-    };
-    setUpdateFavouriteProcesses((id) => update);
-  }, [favourites, queryClient]);
-
-  return [favourites, updateFavouriteProcesses];
+type FavouritesStore = {
+  favourites: string[];
+  initialise: (ids: string[]) => void;
+  updateFavouriteProcesses: (id: string | string[]) => void;
 };
+
+const useFavouritesStore = create<FavouritesStore>()(
+  immer((set, get) => ({
+    favourites: [],
+    initialise: (ids) => {
+      set((state) => {
+        state.favourites = ids;
+      });
+    },
+    updateFavouriteProcesses: (id) => {
+      let newId: string[] = [];
+      if (!Array.isArray(id)) newId = [id];
+
+      const oldFavourites = get().favourites;
+      let newFavourites: string[] = [];
+
+      newId.forEach((id) => {
+        if (oldFavourites.includes(id)) {
+          newFavourites = oldFavourites.filter((fav) => fav !== id);
+        } else {
+          newFavourites = [...oldFavourites, id];
+        }
+      });
+
+      updateUser({ favourites: newFavourites }).then(() => {
+        set((state) => {
+          state.favourites = newFavourites;
+        });
+      });
+    },
+  })),
+);
+
+export const initialiseFavourites = (ids: string[]) => {
+  const { initialise } = useFavouritesStore();
+
+  useEffect(() => {
+    initialise(ids);
+  }, []);
+};
+
+export default useFavouritesStore;

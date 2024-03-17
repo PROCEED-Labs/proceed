@@ -44,7 +44,7 @@ import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import FavouriteStar from './favouriteStar';
-import { useFavouriteProcesses } from '@/lib/useFavouriteProcesses';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -93,7 +93,8 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
-  const [favProcesses] = useFavouriteProcesses();
+  // const [favProcesses] = useFavouriteProcesses();
+  const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
 
   const showMobileMetaData = () => {

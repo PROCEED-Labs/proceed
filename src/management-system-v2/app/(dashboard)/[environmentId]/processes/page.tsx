@@ -8,16 +8,18 @@ import { getCurrentEnvironment } from '@/components/auth';
 // otherwise. It might be possible in the future with turbopack without this
 // import.
 import '@/lib/data/processes';
+import { getUsersFavourites } from '@/lib/data/users';
 
 const ProcessesPage = async ({ params }: { params: { environmentId: string } }) => {
   const { ability } = await getCurrentEnvironment(params.environmentId);
 
   const processes = await getProcesses(ability);
+  const favs = await getUsersFavourites();
 
   return (
     <Content title="Processes">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes processes={processes} />
+        <Processes processes={processes} favourites={favs} />
       </Space>
     </Content>
   );

@@ -87,9 +87,9 @@ const ProcessModal = <T extends { name: string; description: string }>({
     'process-list',
     'controlenter',
     () => {
-      onOk();
+      if (open) onOk();
     },
-    { level: 2, blocking: open },
+    { level: 2, blocking: open, dependencies: [open] },
   );
 
   return (

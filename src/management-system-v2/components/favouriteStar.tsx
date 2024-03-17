@@ -1,7 +1,7 @@
 'use client';
 import { FC } from 'react';
 import { StarOutlined } from '@ant-design/icons';
-import { useFavouriteProcesses } from '@/lib/useFavouriteProcesses';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 
 type StartType = {
   id: string;
@@ -9,7 +9,7 @@ type StartType = {
 };
 
 const FavouriteStar: FC<StartType> = ({ id, hovered }) => {
-  const [favs, updateFavs] = useFavouriteProcesses();
+  const { favourites: favs, updateFavouriteProcesses: updateFavs } = useFavouriteProcesses();
 
   return (
     <>

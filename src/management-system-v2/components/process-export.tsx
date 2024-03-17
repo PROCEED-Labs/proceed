@@ -170,7 +170,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     () => {
       if (selectedType) handleOk();
     },
-    { level: 2, blocking: open, dependencies: [selectedType] },
+    { level: 1, blocking: open, dependencies: [selectedType] },
   );
 
   const typeSelection = (

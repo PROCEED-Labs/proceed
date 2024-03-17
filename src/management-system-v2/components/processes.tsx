@@ -43,6 +43,7 @@ import {
 } from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
+import { initialiseFavourites } from '@/lib/useFavouriteProcesses';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -73,11 +74,14 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
 
 type ProcessesProps = {
   processes: Omit<Process, 'bpmn'>[];
+  favourites: string[];
 };
 
-const Processes = ({ processes }: ProcessesProps) => {
+const Processes = ({ processes, favourites }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
+
+  initialiseFavourites(favourites);
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -182,11 +186,18 @@ const Processes = ({ processes }: ProcessesProps) => {
     import: (e) => e.ctrlKey && e.key === 'i',
   };
   useControler('process-list', controlChecker);
-  useAddControlCallback('process-list', 'selectall', (e) => {
-    e.preventDefault();
-    setSelectedRowElements(filteredData ?? []);
-  });
+
+  useAddControlCallback(
+    'process-list',
+    'selectall',
+    (e) => {
+      e.preventDefault();
+      setSelectedRowElements(filteredData ?? []);
+    },
+    { dependencies: [processes] },
+  );
   useAddControlCallback('process-list', 'esc', deselectAll);
+
   useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
 
   useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
@@ -201,12 +212,6 @@ const Processes = ({ processes }: ProcessesProps) => {
     },
     { dependencies: [selectedRowKeys.length] },
   );
-
-  useAddControlCallback('process-list', 'controlenter', () =>
-    console.log('controlenter in process list'),
-  );
-
-  useAddControlCallback('process-list', 'cut', () => console.log('cut in process list'));
 
   return (
     <>

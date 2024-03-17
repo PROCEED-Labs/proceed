@@ -1,33 +1,28 @@
-'use client';
-
 import Content from '@/components/content';
 import { Button, Card, Space, Tabs } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
-import Link from 'next/link';
 import RoleGeneralData from './roleGeneralData';
 import RolePermissions from './rolePermissions';
 import RoleMembers from './role-members';
 import { FC } from 'react';
 import { Role } from '@/lib/data/role-schema';
-import { useEnvironment } from '@/components/auth-can';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
+import SpaceLink from '@/components/space-link';
 
-const RoleId: FC<{ role: Role; usersInRole: User[]; usersNotInRole: User[] }> = ({
-  role,
-  usersInRole,
-  usersNotInRole,
-}) => {
-  const environmentId = useEnvironment();
-
+const RoleId: FC<{
+  role: Role;
+  usersInRole: AuthenticatedUser[];
+  usersNotInRole: AuthenticatedUser[];
+}> = ({ role, usersInRole, usersNotInRole }) => {
   return (
     <Content
       title={
         <Space>
-          <Link href={`/${environmentId}/iam/roles`}>
+          <SpaceLink href={`/iam/roles`}>
             <Button icon={<LeftOutlined />} type="text">
               Roles
             </Button>
-          </Link>
+          </SpaceLink>
           {role?.name}
         </Space>
       }

@@ -1,19 +1,8 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, useState } from 'react';
-import {
-  Layout as AntLayout,
-  Avatar,
-  Button,
-  Drawer,
-  Grid,
-  Menu,
-  MenuProps,
-  Select,
-  Space,
-  Tooltip,
-} from 'antd';
+import { FC, PropsWithChildren, createContext, useState } from 'react';
+import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Select, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
@@ -23,6 +12,8 @@ import { create } from 'zustand';
 import { useRouter } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
 import { useEnvironment } from '@/components/auth-can';
+import UserAvatar from '@/components/user-avatar';
+import { spaceURL } from '@/lib/utils';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -31,16 +22,20 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
   }),
 );
 
+/** Provide all client components an easy way to read the active space id
+ * without filtering the usePath() for /processes etc. */
+export const SpaceContext = createContext({ spaceId: '', isOrganization: false });
+
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
     userEnvironments: Environment[];
     layoutMenuItems: NonNullable<MenuProps['items']>;
+    activeSpace: { spaceId: string; isOrganization: boolean };
   }>
-> = ({ loggedIn, userEnvironments, layoutMenuItems: _layoutMenuItems, children }) => {
+> = ({ loggedIn, userEnvironments, layoutMenuItems: _layoutMenuItems, activeSpace, children }) => {
   const session = useSession();
   const router = useRouter();
-  const environmentId = useEnvironment();
 
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
@@ -55,7 +50,7 @@ const Layout: FC<
   const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
 
   return (
-    <>
+    <SpaceContext.Provider value={activeSpace}>
       <AntLayout style={{ height: '100vh' }}>
         <AntLayout hasSider>
           <AntLayout.Sider
@@ -72,7 +67,7 @@ const Layout: FC<
             trigger={null}
           >
             <div className={styles.LogoContainer}>
-              <Link href={`/${environmentId}/processes`}>
+              <Link href={spaceURL(activeSpace, `/processes`)}>
                 <Image
                   src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
                   alt="PROCEED Logo"
@@ -92,8 +87,16 @@ const Layout: FC<
                   label: environment.organization ? environment.name : 'Personal Environment',
                   value: environment.id,
                 }))}
-                defaultValue={environmentId}
-                onChange={(environmentId) => router.push(`/${environmentId}/processes`)}
+                defaultValue={activeSpace.spaceId}
+                onChange={(envId) => {
+                  const space = userEnvironments.find((env) => env.id === envId);
+                  router.push(
+                    spaceURL(
+                      { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                      `/processes`,
+                    ),
+                  );
+                }}
                 style={{ width: '100%' }}
               />
             </div>
@@ -111,17 +114,7 @@ const Layout: FC<
           loggedIn ? (
             <>
               <Tooltip title="Account Settings">
-                <Avatar
-                  src={session.data?.user.image}
-                  onClick={() => router.push(`/${environmentId}/profile`)}
-                >
-                  {session.data?.user.image
-                    ? null
-                    : session.status === 'authenticated'
-                      ? session.data?.user.firstName.slice(0, 1) +
-                        session.data?.user.lastName.slice(0, 1)
-                      : null}
-                </Avatar>
+                <UserAvatar user={session.data?.user} />
               </Tooltip>
             </>
           ) : (
@@ -142,7 +135,7 @@ const Layout: FC<
       >
         {menu}
       </Drawer>
-    </>
+    </SpaceContext.Provider>
   );
 };
 

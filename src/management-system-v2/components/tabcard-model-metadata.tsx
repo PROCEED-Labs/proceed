@@ -6,10 +6,11 @@ import Viewer from './bpmn-viewer';
 import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
 
-import { generateDateString } from '@/lib/utils';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import { useLazyLoading } from './scrollbar';
 import { ProcessListProcess } from './processes';
+import { useEnvironment } from './auth-can';
 
 type TabCardProps = {
   item: ProcessListProcess;
@@ -115,6 +116,7 @@ const TabCard: FC<TabCardProps> = ({
   const [activeTabKey, setActiveTabKey] = useState<Tab>('viewer');
   const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
+  const environment = useEnvironment();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -198,7 +200,7 @@ const TabCard: FC<TabCardProps> = ({
         setLastProcessId(item?.id);
       }}
       onDoubleClick={() => {
-        router.push(`processes/${item.id}`);
+        router.push(spaceURL(environment, `/processes/${item.id}`));
       }}
     >
       {generateContentList(item, isVisible)[activeTabKey]}

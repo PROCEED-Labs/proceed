@@ -37,10 +37,10 @@ import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
-import { generateDateString } from '@/lib/utils';
+import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import FavouriteStar from './favouriteStar';
@@ -93,8 +93,8 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
-  // const [columnsFiltered, setColumnsFiltered] = useState<TableColumnsType>();
   const [favProcesses] = useFavouriteProcesses();
+  const environment = useEnvironment();
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -112,7 +112,15 @@ const ProcessList: FC<ProcessListProps> = ({
     (record: ProcessListProcess) => {
       return (
         <>
-          <AuthCan resource={toCaslResource('Process', record)} action="create">
+          {/* <Tooltip placement="top" title={'Preview'}>
+            <EyeOutlined
+              onClick={() => {
+                setPreviewProcess(record);
+                setPreviewerOpen(true);
+              }}
+            />
+          </Tooltip> */}
+          <AuthCan create Process={record}>
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
                 onClick={(e) => {
@@ -129,7 +137,7 @@ const ProcessList: FC<ProcessListProps> = ({
               }}
             />
           </Tooltip>
-          <AuthCan resource={toCaslResource('Process', record)} action="update">
+          <AuthCan update Process={record}>
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined
                 onClick={() => {
@@ -139,7 +147,9 @@ const ProcessList: FC<ProcessListProps> = ({
             </Tooltip>
           </AuthCan>
 
-          <AuthCan action="delete" resource={toCaslResource('Process', record)}>
+          {/*TODO: errors regarding query */}
+
+          <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"

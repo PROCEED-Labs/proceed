@@ -41,6 +41,8 @@ import {
   useControlStore,
   useControler,
 } from '@/lib/controls-store';
+import ResizableElement, { ResizableElementRefType } from './ResizableElement';
+import { useEnvironment } from './auth-can';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -75,6 +77,7 @@ type ProcessesProps = {
 
 const Processes = ({ processes }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
+  const environment = useEnvironment();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -88,7 +91,7 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
-      const res = await deleteProcesses(selectedRowKeys as string[]);
+      const res = await deleteProcesses(selectedRowKeys as string[], environment.spaceId);
       // UserError
       if (res && 'error' in res) {
         return message.open({
@@ -317,7 +320,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                 setOpenExportModal(true);
               }}
               onDeleteProcess={async ({ id }) => {
-                await deleteProcesses([id]);
+                await deleteProcesses([id], environment.spaceId);
                 setSelectedRowElements([]);
                 router.refresh();
               }}
@@ -371,7 +374,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             originalId: process.id,
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values);
+          const res = await copyProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
@@ -392,7 +395,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             description: process.description.value,
           }))}
         onSubmit={async (values) => {
-          const res = await updateProcesses(values);
+          const res = await updateProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if (res && 'error' in res) {
             return res;

@@ -43,6 +43,8 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
+import FavouriteStar from './favouriteStar';
+import { useFavouriteProcesses } from '@/lib/useFavouriteProcesses';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -92,8 +94,7 @@ const ProcessList: FC<ProcessListProps> = ({
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
   // const [columnsFiltered, setColumnsFiltered] = useState<TableColumnsType>();
-
-  const favourites = [0];
+  const [favProcesses] = useFavouriteProcesses();
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -210,14 +211,8 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'id',
       key: 'Favorites',
       width: '40px',
-      render: (id, _, index) => (
-        <StarOutlined
-          style={{
-            color: favourites?.includes(index) ? '#FFD700' : undefined,
-            opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
-          }}
-        />
-      ),
+      render: (id, process, index) => <FavouriteStar id={id} hovered={hovered?.id === id} />,
+      sorter: (a, b) => (favProcesses?.includes(a.id) ? -1 : 1),
     },
     {
       title: 'Process Name',
@@ -350,7 +345,6 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  //TODO: fix types
   const onRowActions = (record: any) => ({
     onClick: (event: any) => {
       /* CTRL */
@@ -407,13 +401,6 @@ const ProcessList: FC<ProcessListProps> = ({
       setHovered(undefined);
     }, // mouse leave row
   });
-
-  // useEffect (() => {
-  //   breakpoint.xl ?
-  //   setColumnsFiltered(columns.filter((c) => selectedColumns.includes(c?.key as string))) :
-  //   setColumnsFiltered(columns.filter((c) => useUserPreferences.use['process-list-columns-mobile']().includes(c?.key as string)))
-
-  // }, [breakpoint, columns, selectedColumns])
 
   const columnsFiltered = breakpoint.xl
     ? columns.filter((c) => selectedColumns.includes(c?.key as string))

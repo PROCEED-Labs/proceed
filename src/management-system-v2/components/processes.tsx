@@ -35,6 +35,12 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import {
+  CheckerType,
+  useAddControlCallback,
+  useControlStore,
+  useControler,
+} from '@/lib/controls-store';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -157,50 +163,47 @@ const Processes = ({ processes }: ProcessesProps) => {
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (openCopyModal || openExportModal || openEditModal) {
-        return;
-      }
+  /* User-Controls */
+  // const modalOpened = openCopyModal || openExportModal || openEditModal;
+  const controlChecker: CheckerType = {
+    selectall: (e) => e.ctrlKey && e.key === 'a',
+    esc: (e) => e.key === 'Escape',
+    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
+    copy: (e) => e.ctrlKey && e.key === 'c' && ability.can('create', 'Process'),
+    paste: (e) => e.ctrlKey && e.key === 'v' && ability.can('create', 'Process'),
+    controlenter: (e) => e.ctrlKey && e.key === 'Enter',
+    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
+    enter: (e) => !e.ctrlKey && e.key === 'Enter',
+    cut: (e) => e.ctrlKey && e.key === 'x' /* TODO: ability */,
+    export: (e) => e.ctrlKey && e.key === 'e',
+    import: (e) => e.ctrlKey && e.key === 'i',
+  };
+  useControler('process-list', controlChecker);
+  useAddControlCallback('process-list', 'selectall', (e) => {
+    e.preventDefault();
+    setSelectedRowElements(filteredData ?? []);
+  });
+  useAddControlCallback('process-list', 'esc', deselectAll);
+  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
 
-      /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a') {
-        e.preventDefault();
-        setSelectedRowElements(filteredData ?? []);
-        /* DEL */
-      } else if (e.key === 'Delete' && selectedRowKeys.length) {
-        if (ability.can('delete', 'Process')) {
-          setOpenDeleteModal(true);
-        }
-        /* ESC */
-      } else if (e.key === 'Escape') {
-        deselectAll();
-        /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c') {
-        if (ability.can('create', 'Process')) {
-          setCopySelection(selectedRowKeys);
-        }
-        /* CTRL + V */
-      } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        if (ability.can('create', 'Process')) {
-          setOpenCopyModal(true);
-        }
-      }
-    };
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
+  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    copySelection,
-    filteredData,
-    selectedRowKeys,
-    ability,
-    openCopyModal,
-    openExportModal,
-    openEditModal,
-  ]);
+  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+
+  useAddControlCallback(
+    'process-list',
+    'export',
+    () => {
+      if (selectedRowKeys.length) setOpenExportModal(true);
+    },
+    { dependencies: [selectedRowKeys.length] },
+  );
+
+  useAddControlCallback('process-list', 'controlenter', () =>
+    console.log('controlenter in process list'),
+  );
+
+  useAddControlCallback('process-list', 'cut', () => console.log('cut in process list'));
 
   return (
     <>

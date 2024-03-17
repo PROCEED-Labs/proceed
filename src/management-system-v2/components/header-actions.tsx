@@ -8,6 +8,7 @@ import { useEnvironment } from './auth-can';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
+import { enableChatbot } from 'FeatureFlags';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -48,7 +49,7 @@ const HeaderActions: FC = () => {
 
   return (
     <Space style={{ float: 'right', padding: '16px' }}>
-      <Assistant />
+      {enableChatbot && <Assistant />}
 
       <Button type="text" onClick={() => signOut({ redirect: true, callbackUrl: '/' })}>
         <u>Logout</u>

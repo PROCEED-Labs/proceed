@@ -43,7 +43,7 @@ import {
 } from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
-import { initialiseFavourites } from '@/lib/useFavouriteProcesses';
+import useFavouritesStore, { initialiseFavourites } from '@/lib/useFavouriteProcesses';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -82,6 +82,7 @@ const Processes = ({ processes, favourites }: ProcessesProps) => {
   const environment = useEnvironment();
 
   initialiseFavourites(favourites);
+  const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -102,6 +103,10 @@ const Processes = ({ processes, favourites }: ProcessesProps) => {
           type: 'error',
           content: res.error.message,
         });
+      } else {
+        // Success -> Remove from favourites if stared
+        removeFromFavouriteProcesses(selectedRowKeys as string[]);
+        // TODO: Remove from favourites for all users
       }
     } catch (e) {
       // Unkown server error or was not sent from server (e.g. network error)

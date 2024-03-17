@@ -7,6 +7,7 @@ type FavouritesStore = {
   favourites: string[];
   initialise: (ids: string[]) => void;
   updateFavouriteProcesses: (id: string | string[]) => void;
+  removeIfPresent: (id: string | string[]) => void;
 };
 
 const useFavouritesStore = create<FavouritesStore>()(
@@ -32,6 +33,16 @@ const useFavouritesStore = create<FavouritesStore>()(
         }
       });
 
+      updateUser({ favourites: newFavourites }).then(() => {
+        set((state) => {
+          state.favourites = newFavourites;
+        });
+      });
+    },
+    removeIfPresent: (id) => {
+      const ids = Array.isArray(id) ? id : [id];
+      const oldFavourites = get().favourites;
+      const newFavourites = oldFavourites.filter((fav) => !ids.includes(fav));
       updateUser({ favourites: newFavourites }).then(() => {
         set((state) => {
           state.favourites = newFavourites;

@@ -14,6 +14,9 @@ export const test = base.extend<MyFixtures>({
 
     // use the fixture value in the test
     await use(processListPage);
+
+    // ensure any created processes are cleaned up
+    await processListPage.removeAllProcesses();
   },
 });
 

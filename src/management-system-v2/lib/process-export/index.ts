@@ -96,16 +96,16 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       }
     } else {
       if (options.type === 'bpmn') {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(processData.definitionName.split(' ').join('_'));
         await bpmnExport(processData, folder);
       }
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(processData.definitionName.split(' ').join('_'));
         await svgExport(exportData, processData, options.exportSelectionOnly, folder);
       }
       if (options.type === 'png' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(processData.definitionName.split(' ').join('_'));
         await pngExport(
           exportData,
           processData,

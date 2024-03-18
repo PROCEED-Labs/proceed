@@ -1,12 +1,18 @@
-import { Locator, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { PlatformPath } from 'path';
 import * as path from 'path';
+import fs from 'fs';
+import JsZip from 'jszip';
+import { getDefinitionsInfos } from '@proceed/bpmn-helper';
 
 export class ProcessListPage {
   readonly page: Page;
   readonly path: PlatformPath;
   processListPageURL?: string;
   processDefinitionIds: string[] = [];
+  importedProcessInfo: {
+    [filename: string]: { definitionId: string; bpmn: string; definitionName: string };
+  } = {};
 
   constructor(page: Page) {
     this.page = page;
@@ -29,33 +35,47 @@ export class ProcessListPage {
     this.processListPageURL = page.url();
   }
 
-  async createProcess(
-    options: {
-      processName?: string;
-      description?: string;
-    } = { processName: 'My Process', description: 'Process Description' },
-  ) {
-    const { page, processListPageURL } = this;
-    const { processName, description } = options;
+  async importProcess(filename: string) {
+    const { page } = this;
+    // import the test process
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Import Process' }).click();
+    const filechooser = await fileChooserPromise;
+    const importFilePath = path.join(__dirname, 'fixtures', filename);
+    await filechooser.setFiles(importFilePath);
+    await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
 
-    // TODO: reuse other page models for these set ups.
-    // Add a new process.
-    await page.goto(processListPageURL);
-    await page.getByRole('button', { name: 'New Process' }).click();
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName);
-    await page.getByLabel('Process Description').click();
-    await page.getByLabel('Process Description').fill(description);
-    await page.getByRole('button', { name: 'Create' }).click();
-    await page.waitForTimeout(2000);
+    if (!this.importedProcessInfo[filename]) {
+      const bpmn = fs.readFileSync(importFilePath, 'utf-8');
+      const { id, name } = await getDefinitionsInfos(bpmn);
+      this.importedProcessInfo[filename] = { bpmn, definitionId: id, definitionName: name };
+    }
 
-    const pageURL = page.url();
-    const processDefinitionID = pageURL.split(processListPageURL + '/').pop();
-    this.processDefinitionIds.push(processDefinitionID);
+    return this.importedProcessInfo[filename];
+  }
 
-    // return to the process list
-    await page.goto(processListPageURL);
+  async handleDownload(downloadTrigger: () => Promise<void>, type: 'bpmn'): Promise<string>;
+  async handleDownload(downloadTrigger: () => Promise<void>, type: 'zip'): Promise<JsZip>;
+  async handleDownload(downloadTrigger: () => Promise<void>, type: 'bpmn' | 'zip') {
+    const { page } = this;
+    const downloadPromise = page.waitForEvent('download');
 
-    return processDefinitionID;
+    await downloadTrigger();
+
+    const download = await downloadPromise;
+
+    const stream = await download.createReadStream();
+
+    // stream to string: https://stackoverflow.com/a/49428486
+    const data: Buffer = await new Promise((resolve, reject) => {
+      let chunks = [];
+      stream.on('data', (chunk) => chunks.push(chunk));
+      stream.on('error', (err) => reject(err));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+
+    if (type === 'bpmn') return data.toString('utf-8');
+    if (type === 'zip') return JsZip.loadAsync(data.toString('base64'), { base64: true });
   }
 
   getDefinitionIds() {
@@ -80,6 +100,9 @@ export class ProcessListPage {
 
     await page.goto(processListPageURL);
     await page.waitForTimeout(500);
+    // check if there are processes to remove
+    if (!(await page.locator('tr[data-row-key]').all()).length) return;
+    // remove all processes
     await page.getByLabel('Select all').check();
     await page.getByRole('button', { name: 'delete' }).first().click();
     await page.getByRole('button', { name: 'OK' }).click();

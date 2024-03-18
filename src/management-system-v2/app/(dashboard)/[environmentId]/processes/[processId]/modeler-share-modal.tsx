@@ -24,6 +24,7 @@ import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
 import { Process } from '@/lib/data/process-schema';
+import { useEnvironment } from '@/components/auth-can';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -32,6 +33,7 @@ type ShareModalProps = {
 
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
   const { processId } = useParams();
+  const environment = useEnvironment();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
@@ -94,8 +96,12 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    const { token } = await generateProcessShareToken({ processId });
-    await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: sharedAs });
+    const { token } = await generateProcessShareToken({ processId }, environment.spaceId);
+    await updateProcessGuestAccessRights(
+      processId,
+      { shared: true, sharedAs: sharedAs },
+      environment.spaceId,
+    );
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,

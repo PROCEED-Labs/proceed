@@ -19,6 +19,7 @@ export interface ProcessGuestAccessRights {
 export async function updateProcessGuestAccessRights(
   processId: string | string[],
   newMeta: ProcessGuestAccessRights,
+  spaceId: string,
 ) {
   await updateProcessShareInfo(
     processId as string,
@@ -26,10 +27,15 @@ export async function updateProcessGuestAccessRights(
     newMeta.sharedAs,
     newMeta.shareTimeStamp,
     newMeta.allowIframeTimestamp,
+    spaceId,
   );
 }
 
-export async function generateProcessShareToken(payload: TokenPayload, oldTimestamp?: number) {
+export async function generateProcessShareToken(
+  payload: TokenPayload,
+  spaceId: string,
+  oldTimestamp?: number,
+) {
   const secretKey = process.env.JWT_SHARE_SECRET;
 
   let timestamp = 0;
@@ -52,6 +58,6 @@ export async function generateProcessShareToken(payload: TokenPayload, oldTimest
     newMeta = { shareTimeStamp: timestamp };
   }
 
-  await updateProcessGuestAccessRights(payload.processId as string, newMeta);
+  await updateProcessGuestAccessRights(payload.processId as string, newMeta, spaceId);
   return { token };
 }

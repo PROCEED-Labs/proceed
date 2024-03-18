@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react';
 import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 import ErrorMessage from '@/components/error-message';
+import { useEnvironment } from '@/components/auth-can';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: Process;
@@ -21,6 +22,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const router = useRouter();
   const session = useSession();
   const pathname = usePathname();
+  const environment = useEnvironment();
+
   const searchParams = useSearchParams();
 
   const { message } = App.useApp();
@@ -47,7 +50,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       },
     ];
 
-    const copiedProcesses = await copyProcesses(processesToCopy);
+    const copiedProcesses = await copyProcesses(processesToCopy, environment.spaceId);
 
     if ('error' in copiedProcesses) {
       message.error(copiedProcesses.error.message);

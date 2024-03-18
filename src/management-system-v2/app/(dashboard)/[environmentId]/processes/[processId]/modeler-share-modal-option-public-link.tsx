@@ -6,6 +6,7 @@ import {
   generateProcessShareToken,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
+import { useEnvironment } from '@/components/auth-can';
 
 type ModelerShareModalOptionPublicLinkProps = {
   shared: boolean;
@@ -21,6 +22,8 @@ const ModelerShareModalOptionPublicLink = ({
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
+  const environment = useEnvironment();
+
   const [token, setToken] = useState<String | null>(null);
   const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
@@ -34,6 +37,7 @@ const ModelerShareModalOptionPublicLink = ({
   const generateProcessShareTokenFromOldTimestamp = async () => {
     const { token: shareToken } = await generateProcessShareToken(
       { processId: processId },
+      environment.spaceId,
       shareTimestamp,
     );
     setToken(shareToken);
@@ -63,10 +67,14 @@ const ModelerShareModalOptionPublicLink = ({
     setRegisteredUsersonlyChecked(isChecked);
     if (isShareLinkChecked) {
       const sharedAsValue = isChecked ? 'protected' : 'public';
-      await updateProcessGuestAccessRights(processId, {
-        shared: true,
-        sharedAs: sharedAsValue,
-      });
+      await updateProcessGuestAccessRights(
+        processId,
+        {
+          shared: true,
+          sharedAs: sharedAsValue,
+        },
+        environment.spaceId,
+      );
     }
     refresh();
   };
@@ -79,13 +87,20 @@ const ModelerShareModalOptionPublicLink = ({
     setIsShareLinkChecked(isChecked);
 
     if (isChecked) {
-      const { token } = await generateProcessShareToken({ processId: processId });
+      const { token } = await generateProcessShareToken(
+        { processId: processId },
+        environment.spaceId,
+      );
       setToken(token);
 
-      await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+      await updateProcessGuestAccessRights(
+        processId,
+        { shared: true, sharedAs: 'public' },
+        environment.spaceId,
+      );
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false });
+      await updateProcessGuestAccessRights(processId, { shared: false }, environment.spaceId);
       setRegisteredUsersonlyChecked(false);
       message.success('Process unshared');
     }

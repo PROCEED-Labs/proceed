@@ -19,21 +19,6 @@ const Message: FC<MessageType> = ({
   oldMessage,
   scrollToBottom,
 }) => {
-  if (loading) {
-    scrollToBottom && scrollToBottom();
-    return (
-      <>
-        <div className={cn(styles[author], styles.Message)}>
-          <div className={styles.DotContainer}>
-            <div className={styles.Dots}></div>
-            <div className={styles.Dots}></div>
-            <div className={styles.Dots}></div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   let [displayedMessage, setDisplayedMessage] = useState<any>(
     author === 'system' && !oldMessage ? '' : message,
   );
@@ -72,6 +57,21 @@ const Message: FC<MessageType> = ({
             </>
           );
         })}
+      </>
+    );
+  }
+
+  if (loading) {
+    scrollToBottom && scrollToBottom();
+    return (
+      <>
+        <div className={cn(styles[author], styles.Message)}>
+          <div className={styles.DotContainer}>
+            <div className={styles.Dots}></div>
+            <div className={styles.Dots}></div>
+            <div className={styles.Dots}></div>
+          </div>
+        </div>
       </>
     );
   }

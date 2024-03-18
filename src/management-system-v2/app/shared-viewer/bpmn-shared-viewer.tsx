@@ -4,7 +4,7 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
-import { Button, Typography, message } from 'antd';
+import { App, Button } from 'antd';
 import { copyProcesses } from '@/lib/data/processes';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -23,8 +23,9 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const { message } = App.useApp();
   const processBpmn = processData.bpmn;
-  const bpmnViewer = useRef<BPMNCanvasRef>(null);
+  const bpmnViewerRef = useRef<BPMNCanvasRef>(null);
 
   if (!processData.shared) {
     return <ErrorMessage message="Process is no longer shared" />;
@@ -35,22 +36,26 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}`;
       const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
-      router.replace(loginPath);
+      router.push(loginPath);
     }
-    const res = await copyProcesses([
+
+    const processesToCopy = [
       {
         name: processData.name,
         description: processData.description,
         originalId: processData.id,
       },
-    ]);
-    if ('error' in res) {
-      message.error(res.error.message);
-      return res;
+    ];
+
+    const copiedProcesses = await copyProcesses(processesToCopy);
+
+    if ('error' in copiedProcesses) {
+      message.error(copiedProcesses.error.message);
     } else {
       message.success('Diagram has been successfully copied to your workspace');
-      //router.push(`/processes/${newDefinitionID}`);
-      if (res.length == 1) router.push(`/processes/${res[0].id}`);
+      if (copiedProcesses.length === 1) {
+        router.push(`/processes/${copiedProcesses[0].id}`);
+      }
     }
   };
 
@@ -71,7 +76,8 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         ) : null}
         <div className="bpmn-viewer" style={{ height: '90vh', width: '90vw' }}>
           <BPMNCanvas
-            ref={bpmnViewer}
+            key={processBpmn}
+            ref={bpmnViewerRef}
             className={divProps.className}
             type={'viewer'}
             bpmn={{ bpmn: processBpmn }}

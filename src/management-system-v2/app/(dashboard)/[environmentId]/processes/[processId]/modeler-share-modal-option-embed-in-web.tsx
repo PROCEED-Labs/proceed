@@ -13,12 +13,14 @@ const { TextArea } = Input;
 type ModelerShareModalOptionEmdedInWebProps = {
   shared: boolean;
   sharedAs: 'public' | 'protected';
+  allowIframeTimestamp: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
   shared,
   sharedAs,
+  allowIframeTimestamp,
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
@@ -28,10 +30,12 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [token, setToken] = useState('');
 
   const initialize = async () => {
-    if (shared && sharedAs === 'public') {
-      const { token } = await generateProcessShareToken({ processId, embeddedMode: true });
-      setToken(token);
-      //await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
+    if (shared && sharedAs !== 'protected' && allowIframeTimestamp > 0) {
+      const { token: shareToken } = await generateProcessShareToken(
+        { processId: processId, embeddedMode: true },
+        allowIframeTimestamp,
+      );
+      setToken(shareToken);
     }
   };
   useEffect(() => {
@@ -51,7 +55,9 @@ const ModelerShareModalOptionEmdedInWeb = ({
       await updateProcessGuestAccessRights(processId, { shared: true, sharedAs: 'public' });
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false });
+      await updateProcessGuestAccessRights(processId, {
+        allowIframeTimestamp: 0,
+      });
       message.success('Process unshared');
     }
     refresh();
@@ -66,7 +72,10 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   return (
     <>
-      <Checkbox checked={isAllowEmbeddingChecked} onChange={(e) => handleAllowEmbeddingChecked(e)}>
+      <Checkbox
+        checked={isAllowEmbeddingChecked && allowIframeTimestamp > 0}
+        onChange={(e) => handleAllowEmbeddingChecked(e)}
+      >
         Allow iframe Embedding
       </Checkbox>
       {isAllowEmbeddingChecked ? (

@@ -144,7 +144,8 @@ export const updateProcessShareInfo = async (
   definitionsId: string,
   shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,
-  shareToken: string | undefined,
+  shareTimeStamp: number | undefined,
+  allowIframeTimestamp: number | undefined,
 ) => {
   const { ability } = await getCurrentEnvironment();
 
@@ -162,7 +163,8 @@ export const updateProcessShareInfo = async (
   await updateProcessMetaData(definitionsId, {
     shared: shared,
     sharedAs: sharedAs,
-    shareToken: shareToken,
+    shareTimeStamp: shareTimeStamp,
+    allowIframeTimestamp: allowIframeTimestamp,
   });
 };
 
@@ -235,7 +237,6 @@ export const copyProcesses = async (
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment();
   const { userId } = await getCurrentUser();
-
   const copiedProcesses: Process[] = [];
 
   for (const copyProcess of processes) {

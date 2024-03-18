@@ -49,7 +49,8 @@ export function getDefaultProcessMetaInfo() {
     lastEdited: date,
     shared: false,
     sharedAs: 'protected',
-    shareToken: '',
+    shareTimeStamp: 0,
+    allowIframeTimestamp: 0,
     versions: [],
   } as ProcessMetadata;
 }

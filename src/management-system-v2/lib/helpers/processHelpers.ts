@@ -52,7 +52,8 @@ export function getDefaultProcessMetaInfo() {
     shareTimeStamp: 0,
     allowIframeTimestamp: 0,
     versions: [],
-  } as ProcessMetadata;
+    folderId: '',
+  } satisfies ProcessMetadata;
 }
 
 /**

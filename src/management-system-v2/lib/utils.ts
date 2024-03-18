@@ -55,3 +55,15 @@ export function debounce(func: Function, timeout = 1000) {
 
   return debounced;
 }
+
+/**
+ * Returns the canonical URL for a path including the spaceId for organization
+ * spaces and without for personal spaces.
+ *
+ * @param space The space to use for the URL.
+ * @param path The path to the resource.
+ * @returns The canonical URL for the resource.
+ */
+export const spaceURL = (space: { spaceId: string; isOrganization: boolean }, path: string) => {
+  return `${space.isOrganization ? '/' + space.spaceId : ''}${path}`;
+};

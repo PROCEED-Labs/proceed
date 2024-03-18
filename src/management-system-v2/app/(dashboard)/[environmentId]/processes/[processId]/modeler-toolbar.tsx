@@ -21,6 +21,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
+import { spaceURL } from '@/lib/utils';
 import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 
@@ -41,7 +42,7 @@ const ModelerToolbar = ({
   versions,
 }: ModelerToolbarProps) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -68,9 +69,14 @@ const ModelerToolbar = ({
   }) => {
     // Ensure latest BPMN on server.
     const xml = (await modeler?.getXML()) as string;
-    await updateProcess(processId, xml);
+    await updateProcess(processId, environment.spaceId, xml);
 
-    await createVersion(values.versionName, values.versionDescription, processId);
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      processId,
+      environment.spaceId,
+    );
     // TODO: navigate to new version?
     router.refresh();
   };
@@ -164,9 +170,12 @@ const ModelerToolbar = ({
                 if (!option.value || option.value === -1) searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
-                  `/${environmentId}/processes/${processId as string}${
-                    searchParams.size ? '?' + searchParams.toString() : ''
-                  }`,
+                  spaceURL(
+                    environment,
+                    `/processes/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
+                    }`,
+                  ),
                 );
               }}
               options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({

@@ -16,7 +16,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -41,7 +41,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
     }
 
     try {
-      const result = await updateRole(environmentId, role.id, values);
+      const result = await updateRole(environment.spaceId, role.id, values);
       if (result && 'error' in result) throw new Error();
       router.refresh();
       message.open({ type: 'success', content: 'Role updated' });

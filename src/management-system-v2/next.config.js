@@ -31,6 +31,32 @@ const nextConfig = {
         }
       : {}),
   },
+  redirects: async () => {
+    return [
+      {
+        source: '/',
+        destination: '/processes',
+        // Permanent redirects get cached by browsers for a lifetime, so they
+        // are effectively a de-commision of the old URL.
+        // https://lists.w3.org/Archives/Public/ietf-http-wg/2017OctDec/0363.html
+        permanent: false,
+      },
+    ];
+  },
+  rewrites: async () => {
+    return [
+      'processes',
+      'environments',
+      'executions',
+      'general-settings',
+      'iam',
+      'profile',
+      'projects',
+    ].map((folder) => ({
+      source: `/${folder}/:path*`,
+      destination: `/my/${folder}/:path*`,
+    }));
+  },
 };
 
 module.exports = nextConfig;

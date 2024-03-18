@@ -14,7 +14,10 @@ export async function addRoleMappings(
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   _addRoleMappings(
-    roleMappings.map((roleMapping) => ({ ...roleMapping, environmentId: activeEnvironment })),
+    roleMappings.map((roleMapping) => ({
+      ...roleMapping,
+      environmentId: activeEnvironment.spaceId,
+    })),
     ability,
   );
 }
@@ -29,7 +32,7 @@ export async function deleteRoleMappings(
 
   for (const { userId, roleId } of roleMappings) {
     try {
-      _deleteRoleMapping(userId, roleId, activeEnvironment, ability);
+      _deleteRoleMapping(userId, roleId, activeEnvironment.spaceId, ability);
     } catch (error) {
       errors.push({ roleId, error: error as Error });
     }

@@ -74,14 +74,15 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
 
 type ProcessesProps = {
   processes: Omit<Process, 'bpmn'>[];
-  favourites: string[];
+  favourites?: string[];
 };
 
 const Processes = ({ processes, favourites }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
 
-  useInitialiseFavourites(favourites);
+  const favs = favourites ?? [];
+  useInitialiseFavourites(favs);
   const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);

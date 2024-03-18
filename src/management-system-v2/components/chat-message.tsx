@@ -49,7 +49,7 @@ const Message: FC<MessageType> = ({
   } else {
     formatedDisplayMessage = (
       <>
-        {formatedDisplayMessage.map((line, i) => {
+        {formatedDisplayMessage.map((line: string, i: number) => {
           return (
             <>
               <span key={i}>{line}</span>

@@ -35,5 +35,10 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 export async function getUsersFavourites(): Promise<String[]> {
   const { userId } = await getCurrentUser();
 
-  return usersMetaObject[userId].favourites ?? [];
+  const user = usersMetaObject[userId];
+
+  if (user.guest) {
+    return []; // Guest users have no favourites
+  }
+  return user.favourites ?? [];
 }

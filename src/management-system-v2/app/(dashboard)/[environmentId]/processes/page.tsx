@@ -19,7 +19,7 @@ const ProcessesPage = async ({ params }: { params: { environmentId: string } }) 
   return (
     <Content title="Processes">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes processes={processes} favourites={favs} />
+        <Processes processes={processes} favourites={favs as string[]} />
       </Space>
     </Content>
   );

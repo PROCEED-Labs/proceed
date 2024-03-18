@@ -15,6 +15,7 @@ type RegisteredCallback = {
   '3': Array<[boolean, (event: any) => void]>;
   '4': Array<[boolean, (event: any) => void]>;
   '5': Array<[boolean, (event: any) => void]>;
+  [key: string]: Array<[boolean, (event: any) => void]>;
 };
 
 type RegisteredCallbacks = Record<string, RegisteredCallback>;
@@ -192,6 +193,8 @@ const defaultChecker: CheckerType = {
   cut: (e) => e.ctrlKey && e.key === 'x',
 };
 
+type ControlEventListener<T extends Event> = (event: T) => void;
+
 /**
  * Register a control-area with custom event-mapping.
  * 
@@ -232,7 +235,7 @@ export const useControler = (
     if (element == undefined && typeof window == 'undefined') return;
     let el = element?.current ?? window;
 
-    const eventListener = (e: KeyboardEvent) => {
+    const eventListener: ControlEventListener<KeyboardEvent> = (e: KeyboardEvent) => {
       for (const eventname in eventChecker) {
         if (eventChecker[eventname](e)) {
           controlInterface[eventname](e);
@@ -241,11 +244,11 @@ export const useControler = (
     };
 
     // Add event listener
-    el.addEventListener(eventType, eventListener);
+    el.addEventListener(eventType, eventListener as EventListener);
 
     // Remove event listener on cleanup
     return () => {
-      el.removeEventListener(eventType, eventListener);
+      el.removeEventListener(eventType, eventListener as EventListener);
       // controlStore.removeCallback({ id: name, action: eventname, callback });
     };
   }, [controlInterface, eventChecker, eventType]);

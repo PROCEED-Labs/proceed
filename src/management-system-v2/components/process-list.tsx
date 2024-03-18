@@ -343,7 +343,7 @@ const ProcessList: FC<ProcessListProps> = ({
         <Button
           style={{ float: 'right' }}
           type="text"
-          onClick={(e) => {
+          onClick={(e: any) => {
             // e.stopPropagation()
             e.proceedClickedInfoButton = true;
             showMobileMetaData();

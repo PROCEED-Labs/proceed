@@ -42,8 +42,12 @@ import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
-const checkValidity = async (definitionId: string, operation: 'view' | 'update' | 'delete') => {
-  const { ability } = await getCurrentEnvironment();
+const checkValidity = async (
+  definitionId: string,
+  operation: 'view' | 'update' | 'delete',
+  spaceId: string,
+) => {
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
@@ -63,16 +67,16 @@ const checkValidity = async (definitionId: string, operation: 'view' | 'update' 
   }
 };
 
-export const getProcess = async (definitionId: string) => {
-  const error = await checkValidity(definitionId, 'view');
+export const getProcess = async (definitionId: string, spaceId: string) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
 
   return getProcessMetaObjects()[definitionId];
 };
 
-export const getProcessBPMN = async (definitionId: string, versionId?: number) => {
-  const error = await checkValidity(definitionId, 'view');
+export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
 
@@ -95,9 +99,9 @@ export const getProcessBPMN = async (definitionId: string, versionId?: number) =
   return bpmn;
 };
 
-export const deleteProcesses = async (definitionIds: string[]) => {
+export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
   for (const definitionId of definitionIds) {
-    const error = await checkValidity(definitionId, 'delete');
+    const error = await checkValidity(definitionId, 'delete', spaceId);
 
     if (error) return error;
 
@@ -107,8 +111,9 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 
 export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const newProcesses: Process[] = [];
@@ -123,7 +128,7 @@ export const addProcesses = async (
     const newProcess = {
       bpmn,
       owner: userId,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -145,12 +150,13 @@ export const addProcesses = async (
 
 export const updateProcess = async (
   definitionsId: string,
+  spaceId: string,
   bpmn?: string,
   description?: string,
   name?: string,
   invalidate = false,
 ) => {
-  const error = await checkValidity(definitionsId, 'update');
+  const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
 
@@ -181,10 +187,17 @@ export const updateProcesses = async (
     bpmn?: string;
     id: string;
   }[],
+  spaceId: string,
 ) => {
   const res = await Promise.all(
     processes.map(async (process) => {
-      return await updateProcess(process.id, process.bpmn, process.description, process.name);
+      return await updateProcess(
+        process.id,
+        spaceId,
+        process.bpmn,
+        process.description,
+        process.name,
+      );
     }),
   );
 
@@ -200,8 +213,9 @@ export const copyProcesses = async (
     originalId: string;
     originalVersion?: string;
   }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const copiedProcesses: Process[] = [];
@@ -222,7 +236,7 @@ export const copyProcesses = async (
       owner: userId,
       definitionId: newId,
       bpmn: newBpmn,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -244,8 +258,9 @@ export const createVersion = async (
   versionName: string,
   versionDescription: string,
   processId: string,
+  spaceId: string,
 ) => {
-  const error = await checkValidity(processId, 'update');
+  const error = await checkValidity(processId, 'update', spaceId);
 
   if (error) return error;
 
@@ -286,24 +301,32 @@ export const createVersion = async (
   return epochTime;
 };
 
-export const setVersionAsLatest = async (processId: string, version: number) => {
-  const error = await checkValidity(processId, 'update');
+export const setVersionAsLatest = async (processId: string, version: number, spaceId: string) => {
+  const error = await checkValidity(processId, 'update', spaceId);
 
   if (error) return error;
 
   await selectAsLatestVersion(processId, version);
 };
 
-export const getProcessUserTaskHTML = async (definitionId: string, taskFileName: string) => {
-  const error = await checkValidity(definitionId, 'view');
+export const getProcessUserTaskHTML = async (
+  definitionId: string,
+  taskFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
 
   return _getProcessUserTaskHtml(definitionId, taskFileName);
 };
 
-export const getProcessImage = async (definitionId: string, imageFileName: string) => {
-  const error = await checkValidity(definitionId, 'view');
+export const getProcessImage = async (
+  definitionId: string,
+  imageFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
 

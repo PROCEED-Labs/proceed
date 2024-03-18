@@ -19,7 +19,7 @@ const AddUserModal: FC<{
 }> = ({ role, usersNotInRole, open, close }) => {
   const [loading, startTransition] = useTransition();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
 
@@ -27,7 +27,7 @@ const AddUserModal: FC<{
     startTransition(async () => {
       if (clearIds) clearIds();
       await addRoleMappings(
-        environmentId,
+        environment.spaceId,
         users.map((user) => ({
           userId: user.id,
           roleId: role.id,
@@ -83,14 +83,14 @@ const RoleMembers: FC<{
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
-      environmentId,
+      environment.spaceId,
       userIds.map((userId) => ({
         roleId: role.id,
         userId: userId,

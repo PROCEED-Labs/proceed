@@ -58,8 +58,12 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
  * @param options the options that were selected by the user
  * @param processes the processes(and versions) to export
  */
-export async function exportProcesses(options: ProcessExportOptions, processes: ExportProcessInfo) {
-  const exportData = await prepareExport(options, processes);
+export async function exportProcesses(
+  options: ProcessExportOptions,
+  processes: ExportProcessInfo,
+  spaceId: string,
+) {
+  const exportData = await prepareExport(options, processes, spaceId);
 
   // determine if a zip export is required
   let needsZip = false;

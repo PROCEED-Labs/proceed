@@ -86,9 +86,13 @@ export type ProcessesExportData = ProcessExportData[];
  * @param definitionId
  * @param processVersion
  */
-async function getVersionBpmn(definitionId: string, processVersion?: string | number) {
+async function getVersionBpmn(
+  definitionId: string,
+  spaceId: string,
+  processVersion?: string | number,
+) {
   processVersion = typeof processVersion === 'string' ? parseInt(processVersion) : processVersion;
-  const bpmn = await getProcessBPMN(definitionId, processVersion);
+  const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion);
 
   if (typeof bpmn !== 'string') {
     throw bpmn.error;
@@ -201,10 +205,11 @@ async function ensureProcessInfo(
     selectedElements,
     rootSubprocessLayerId,
   }: ArrayEntryType<ExportProcessInfo>,
+  spaceId: string,
   isImport = false,
 ) {
   if (!exportData[definitionId]) {
-    const process = await getProcess(definitionId);
+    const process = await getProcess(definitionId, spaceId);
 
     if ('error' in process) {
       throw process.error;
@@ -223,7 +228,7 @@ async function ensureProcessInfo(
   const versionName = getVersionName(processVersion);
 
   if (!exportData[definitionId].versions[versionName]) {
-    const versionBpmn = await getVersionBpmn(definitionId, processVersion);
+    const versionBpmn = await getVersionBpmn(definitionId, spaceId, processVersion);
     const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
 
     // add the default root process layer if there is no rootSubprocessLayer given
@@ -256,6 +261,7 @@ async function ensureProcessInfo(
 export async function prepareExport(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
+  spaceId: string,
 ): Promise<ProcessesExportData> {
   if (!processes.length) {
     throw new Error('Tried exporting without specifying the processes to export!');
@@ -279,6 +285,7 @@ export async function prepareExport(
       await ensureProcessInfo(
         exportData,
         { definitionId, processVersion, selectedElements, rootSubprocessLayerId },
+        spaceId,
         isImport,
       );
 
@@ -385,7 +392,7 @@ export async function prepareExport(
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
-        const html = await getProcessUserTaskHTML(definitionId, filename);
+        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
 
         if (typeof html !== 'string') {
           throw html.error;
@@ -416,7 +423,7 @@ export async function prepareExport(
 
       // fetch the required image files from the backend
       for (const filename of allRequiredImageFiles) {
-        const image = await getProcessImage(definitionId, filename);
+        const image = await getProcessImage(definitionId, filename, spaceId);
 
         if ('error' in image) throw image.error;
 

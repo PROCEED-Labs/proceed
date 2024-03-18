@@ -30,7 +30,7 @@ export class ProcessListPage {
   async login() {
     const { page } = this;
     await page.goto('http://localhost:3000');
-    await page.getByRole('button', { name: 'Sign in with Guest' }).click();
+    await page.getByRole('button', { name: 'Continue as a Guest' }).click();
     await page.waitForTimeout(2000);
     this.processListPageURL = page.url();
   }

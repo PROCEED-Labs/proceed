@@ -52,7 +52,7 @@ const useFavouritesStore = create<FavouritesStore>()(
   })),
 );
 
-export const initialiseFavourites = (ids: string[]) => {
+export const useInitialiseFavourites = (ids: string[]) => {
   const { initialise } = useFavouritesStore();
 
   useEffect(() => {

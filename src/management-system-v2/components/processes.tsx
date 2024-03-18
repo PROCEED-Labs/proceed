@@ -43,7 +43,7 @@ import {
 } from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
-import useFavouritesStore, { initialiseFavourites } from '@/lib/useFavouriteProcesses';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -81,7 +81,7 @@ const Processes = ({ processes, favourites }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
 
-  initialiseFavourites(favourites);
+  useInitialiseFavourites(favourites);
   const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);

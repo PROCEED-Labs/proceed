@@ -57,6 +57,15 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
                 description: 'How to PROCEED',
               },
             ]}
+            folder={{
+              id: '',
+              name: '',
+              parentId: null,
+              createdAt: '',
+              createdBy: '',
+              updatedAt: '',
+              environmentId: '',
+            }}
           />
         </Content>
       </Layout>

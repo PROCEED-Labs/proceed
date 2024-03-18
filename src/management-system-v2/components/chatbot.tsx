@@ -75,7 +75,7 @@ const ChatBot: FC<ChatBotType> = () => {
 
   const messageEndRef = useRef(null);
   const scrollToBottom = () => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    (messageEndRef.current as unknown as HTMLElement).scrollIntoView({ behavior: 'smooth' });
   };
   useEffect(scrollToBottom, [messageLog]);
 

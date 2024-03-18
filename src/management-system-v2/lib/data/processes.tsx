@@ -147,8 +147,9 @@ export const updateProcessShareInfo = async (
   sharedAs: 'public' | 'protected' | undefined,
   shareTimeStamp: number | undefined,
   allowIframeTimestamp: number | undefined,
+  spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionsId];

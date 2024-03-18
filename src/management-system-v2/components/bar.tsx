@@ -17,7 +17,10 @@ type BarProps = {
 const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
   const breakpoint = Grid.useBreakpoint();
   const [inFocus, setInFocus] = useState(false);
-  useAddControlCallback('process-list', 'selectall', (e) => {}, { level: 2, blocking: inFocus });
+  useAddControlCallback('process-list', ['selectall', 'del', 'copy', 'paste'], (e) => {}, {
+    level: 2,
+    blocking: inFocus,
+  });
 
   return (
     <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>

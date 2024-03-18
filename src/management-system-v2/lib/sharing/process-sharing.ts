@@ -53,7 +53,7 @@ export async function generateProcessShareToken(
   let newMeta: ProcessGuestAccessRights = {};
 
   if (payload.embeddedMode) {
-    newMeta = { allowIframeTimestamp: payload.embeddedMode ? timestamp : 0 };
+    newMeta = { allowIframeTimestamp: timestamp };
   } else {
     newMeta = { shareTimeStamp: timestamp };
   }

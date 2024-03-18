@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, Tabs, TabsProps, Tour } from 'antd';
+import { Avatar, Tabs, TabsProps, Tour, TourProps } from 'antd';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './assistant.module.scss';
 import TutorialTour from './tours';
@@ -18,7 +18,11 @@ const Assistant: FC = () => {
     if (!document) return;
 
     const handleClickOutside = (event: any) => {
-      if (windowOpen && windowRef.current && !windowRef.current.contains(event.target)) {
+      if (
+        windowOpen &&
+        windowRef.current &&
+        !(windowRef.current as HTMLElement).contains(event.target)
+      ) {
         setWindowOpen(false);
       }
     };

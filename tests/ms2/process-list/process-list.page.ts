@@ -3,16 +3,14 @@ import { PlatformPath } from 'path';
 import * as path from 'path';
 import fs from 'fs';
 import JsZip from 'jszip';
-import { getDefinitionsInfos } from '@proceed/bpmn-helper';
+import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
+import { v4 } from 'uuid';
 
 export class ProcessListPage {
   readonly page: Page;
   readonly path: PlatformPath;
   processListPageURL?: string;
   processDefinitionIds: string[] = [];
-  importedProcessInfo: {
-    [filename: string]: { definitionId: string; bpmn: string; definitionName: string };
-  } = {};
 
   constructor(page: Page) {
     this.page = page;
@@ -35,24 +33,35 @@ export class ProcessListPage {
     this.processListPageURL = page.url();
   }
 
-  async importProcess(filename: string) {
+  /**
+   * Imports a process file that is stored in fixtures into the MS
+   *
+   * @param filename the name of the file in /fixtures to import
+   * @param definitionId will be used to identify the process in the MS (two imports with the same id will clash)
+   * @returns meta data about the imported process (id and name)
+   */
+  async importProcess(filename: string, definitionId = `_${v4()}`) {
     const { page } = this;
+
+    const importFilePath = path.join(__dirname, 'fixtures', filename);
+    let bpmn = fs.readFileSync(importFilePath, 'utf-8');
+    bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
+    bpmn = (await setTargetNamespace(bpmn, definitionId)) as string;
+    const { name } = await getDefinitionsInfos(bpmn);
+
     // import the test process
-    // TODO: write a random id into the bpmn
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Import Process' }).click();
     const filechooser = await fileChooserPromise;
-    const importFilePath = path.join(__dirname, 'fixtures', filename);
-    await filechooser.setFiles(importFilePath);
+
+    await filechooser.setFiles({
+      name: filename,
+      mimeType: 'text/xml',
+      buffer: Buffer.from(bpmn, 'utf-8'),
+    });
     await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
 
-    if (!this.importedProcessInfo[filename]) {
-      const bpmn = fs.readFileSync(importFilePath, 'utf-8');
-      const { id, name } = await getDefinitionsInfos(bpmn);
-      this.importedProcessInfo[filename] = { bpmn, definitionId: id, definitionName: name || '' };
-    }
-
-    return this.importedProcessInfo[filename];
+    return { definitionName: name as string, definitionId, bpmn };
   }
 
   async handleDownload(

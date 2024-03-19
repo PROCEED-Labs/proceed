@@ -24,7 +24,7 @@ export class ProcessListPage {
   }
 
   async goto() {
-    await this.page.goto(this.processListPageURL);
+    if (this.processListPageURL) await this.page.goto(this.processListPageURL);
   }
 
   async login() {
@@ -38,6 +38,7 @@ export class ProcessListPage {
   async importProcess(filename: string) {
     const { page } = this;
     // import the test process
+    // TODO: write a random id into the bpmn
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Import Process' }).click();
     const filechooser = await fileChooserPromise;
@@ -48,15 +49,21 @@ export class ProcessListPage {
     if (!this.importedProcessInfo[filename]) {
       const bpmn = fs.readFileSync(importFilePath, 'utf-8');
       const { id, name } = await getDefinitionsInfos(bpmn);
-      this.importedProcessInfo[filename] = { bpmn, definitionId: id, definitionName: name };
+      this.importedProcessInfo[filename] = { bpmn, definitionId: id, definitionName: name || '' };
     }
 
     return this.importedProcessInfo[filename];
   }
 
-  async handleDownload(downloadTrigger: () => Promise<void>, type: 'bpmn'): Promise<string>;
-  async handleDownload(downloadTrigger: () => Promise<void>, type: 'zip'): Promise<JsZip>;
-  async handleDownload(downloadTrigger: () => Promise<void>, type: 'bpmn' | 'zip') {
+  async handleDownload(
+    downloadTrigger: () => Promise<void>,
+    returnType: 'string',
+  ): Promise<{ filename: string; content: string }>;
+  async handleDownload(
+    downloadTrigger: () => Promise<void>,
+    returnType: 'zip',
+  ): Promise<{ filename: string; content: JsZip }>;
+  async handleDownload(downloadTrigger: () => Promise<void>, returnType: 'string' | 'zip') {
     const { page } = this;
     const downloadPromise = page.waitForEvent('download');
 
@@ -68,14 +75,21 @@ export class ProcessListPage {
 
     // stream to string: https://stackoverflow.com/a/49428486
     const data: Buffer = await new Promise((resolve, reject) => {
-      let chunks = [];
+      let chunks: any[] = [];
       stream.on('data', (chunk) => chunks.push(chunk));
       stream.on('error', (err) => reject(err));
       stream.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
-    if (type === 'bpmn') return data.toString('utf-8');
-    if (type === 'zip') return JsZip.loadAsync(data.toString('base64'), { base64: true });
+    if (returnType === 'string') {
+      return { filename: download.suggestedFilename(), content: data.toString('utf-8') };
+    }
+    if (returnType === 'zip') {
+      return {
+        filename: download.suggestedFilename(),
+        content: await JsZip.loadAsync(data.toString('base64'), { base64: true }),
+      };
+    }
   }
 
   getDefinitionIds() {
@@ -98,15 +112,17 @@ export class ProcessListPage {
   async removeAllProcesses() {
     const { page, processListPageURL } = this;
 
-    await page.goto(processListPageURL);
-    await page.waitForTimeout(500);
-    // check if there are processes to remove
-    if (!(await page.locator('tr[data-row-key]').all()).length) return;
-    // remove all processes
-    await page.getByLabel('Select all').check();
-    await page.getByRole('button', { name: 'delete' }).first().click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    if (processListPageURL) {
+      await page.goto(processListPageURL);
+      await page.waitForTimeout(500);
+      // check if there are processes to remove
+      if (!(await page.locator('tr[data-row-key]').all()).length) return;
+      // remove all processes
+      await page.getByLabel('Select all').check();
+      await page.getByRole('button', { name: 'delete' }).first().click();
+      await page.getByRole('button', { name: 'OK' }).click();
 
-    this.processDefinitionIds = [];
+      this.processDefinitionIds = [];
+    }
   }
 }

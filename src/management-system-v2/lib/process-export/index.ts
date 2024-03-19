@@ -5,7 +5,7 @@ import {
   ProcessExportData,
 } from './export-preparation';
 
-import { downloadFile } from './util';
+import { getProcessFilePathName, downloadFile } from './util';
 
 import jsZip from 'jszip';
 import 'svg2pdf.js';
@@ -27,9 +27,9 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     // b) if we output as a single file use the process name as the file name
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
-      zipFolder.file(`${filename}.bpmn`, bpmnBlob);
+      zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
     } else {
-      downloadFile(`${filename}.bpmn`, bpmnBlob);
+      downloadFile(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
     }
   }
 

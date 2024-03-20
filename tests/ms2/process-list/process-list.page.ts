@@ -64,6 +64,12 @@ export class ProcessListPage {
     return { definitionName: name as string, definitionId, bpmn };
   }
 
+  /**
+   * Helper function that returns the data that is download when an export is triggered in the MS
+   *
+   * @param downloadTrigger the user input that triggers the download (e.g. confirming the export modal)
+   * @param returnType the type of file that is exported (zip or clear text)
+   */
   async handleDownload(
     downloadTrigger: () => Promise<void>,
     returnType: 'string',

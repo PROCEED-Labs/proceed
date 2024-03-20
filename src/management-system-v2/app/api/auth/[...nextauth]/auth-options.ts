@@ -32,6 +32,7 @@ const nextAuthOptions: AuthOptions = {
           subject: 'Sign in',
         });
       },
+      maxAge: 24 * 60 * 60, // one day
     }),
   ],
   callbacks: {

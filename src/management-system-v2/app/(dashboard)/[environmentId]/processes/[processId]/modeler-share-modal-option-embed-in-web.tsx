@@ -27,19 +27,19 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(sharedAs === 'public');
   const [token, setToken] = useState('');
 
-  const initialize = async () => {
-    if (sharedAs !== 'protected' && allowIframeTimestamp > 0) {
-      const { token: shareToken } = await generateProcessShareToken(
-        { processId: processId, embeddedMode: true },
-        environment.spaceId,
-        allowIframeTimestamp,
-      );
-      setToken(shareToken);
-    }
-  };
   useEffect(() => {
+    const initialize = async () => {
+      if (sharedAs !== 'protected' && allowIframeTimestamp > 0) {
+        const { token: shareToken } = await generateProcessShareToken(
+          { processId: processId, embeddedMode: true },
+          environment.spaceId,
+          allowIframeTimestamp,
+        );
+        setToken(shareToken);
+      }
+    };
     initialize();
-  }, [sharedAs]);
+  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs]);
 
   if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
 

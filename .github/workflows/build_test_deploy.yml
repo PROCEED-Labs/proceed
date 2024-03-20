@@ -291,6 +291,7 @@ jobs:
     env:
       MS_TAG: ${{ needs.buildMS.outputs.tag }}
       SERVICE_NAME: ${{ inputs.environment == 'Production' && 'ms-server-production' || 'ms-server-staging' }}
+      SUBDOMAIN: ${{ inputs.environment == 'Production' && 'app' || 'staging' }}
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -311,7 +312,10 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           image: 'docker.io/proceed/ms-server:${{ env.MS_TAG }}'
+          env_vars: |
+            NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
           region: 'europe-west1'
+          revision_traffic: LATEST=100
 
       - id: 'deploy-preview'
         if: ${{ github.event_name == 'pull_request' }}

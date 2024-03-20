@@ -3,7 +3,7 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC } from 'react';
+import { FC, ReactNode } from 'react';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
 
@@ -44,12 +44,23 @@ const HeaderActions: FC = () => {
       label: <SpaceLink href={`/environments`}>My environments</SpaceLink>,
     });
 
-  return (
-    <Space style={{ float: 'right', padding: '16px' }}>
+  let actionButton;
+  if (!isGuest) {
+    actionButton = (
       <Button type="text" onClick={() => signOut({ redirect: true, callbackUrl: '/' })}>
         <u>Logout</u>
       </Button>
+    );
+  } else
+    actionButton = (
+      <Button type="text" onClick={() => signIn()}>
+        <u>Sign In</u>
+      </Button>
+    );
 
+  return (
+    <Space style={{ float: 'right', padding: '16px' }}>
+      {actionButton}
       <Dropdown
         menu={{
           items: avatarDropdownItems,

@@ -315,6 +315,7 @@ jobs:
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
           region: 'europe-west1'
+          revision_traffic: LATEST=100
 
       - id: 'deploy-preview'
         if: ${{ github.event_name == 'pull_request' }}

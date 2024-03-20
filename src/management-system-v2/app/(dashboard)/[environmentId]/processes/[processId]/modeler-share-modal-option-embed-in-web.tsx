@@ -12,27 +12,23 @@ import { useEnvironment } from '@/components/auth-can';
 const { TextArea } = Input;
 
 type ModelerShareModalOptionEmdedInWebProps = {
-  shared: boolean;
   sharedAs: 'public' | 'protected';
   allowIframeTimestamp: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
-  shared,
   sharedAs,
   allowIframeTimestamp,
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
   const environment = useEnvironment();
-  const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(
-    shared && sharedAs === 'public',
-  );
+  const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(sharedAs === 'public');
   const [token, setToken] = useState('');
 
   const initialize = async () => {
-    if (shared && sharedAs !== 'protected' && allowIframeTimestamp > 0) {
+    if (sharedAs !== 'protected' && allowIframeTimestamp > 0) {
       const { token: shareToken } = await generateProcessShareToken(
         { processId: processId, embeddedMode: true },
         environment.spaceId,
@@ -43,7 +39,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
   };
   useEffect(() => {
     initialize();
-  }, [shared, sharedAs]);
+  }, [sharedAs]);
 
   if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
 
@@ -58,11 +54,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         environment.spaceId,
       );
       setToken(token);
-      await updateProcessGuestAccessRights(
-        processId,
-        { shared: true, sharedAs: 'public' },
-        environment.spaceId,
-      );
+      await updateProcessGuestAccessRights(processId, { sharedAs: 'public' }, environment.spaceId);
       message.success('Process shared');
     } else {
       await updateProcessGuestAccessRights(

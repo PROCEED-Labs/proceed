@@ -163,7 +163,6 @@ export const updateProcessShareInfo = async (
   }
 
   await updateProcessMetaData(definitionsId, {
-    shared: shared,
     sharedAs: sharedAs,
     shareTimeStamp: shareTimeStamp,
     allowIframeTimestamp: allowIframeTimestamp,

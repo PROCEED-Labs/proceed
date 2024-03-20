@@ -569,7 +569,6 @@ async function getProcessInfo(bpmn, process) {
     owner: process.owner,
     environmentId: process.environmentId,
     folderId: process.folderId,
-    shared: process.shared,
     sharedAs: process.sharedAs,
     shareTimeStamp: process.shareTimeStamp,
     allowIframeTimestamp: process.allowIframeTimestamp,

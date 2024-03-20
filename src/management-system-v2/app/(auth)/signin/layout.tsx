@@ -55,7 +55,6 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
                 departments: [],
                 processIds: [],
                 description: 'How to PROCEED',
-                shared: false,
                 sharedAs: 'protected',
                 shareTimeStamp: 0,
                 allowIframeTimestamp: 0,

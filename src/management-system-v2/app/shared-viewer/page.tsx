@@ -32,25 +32,24 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       return <ErrorMessage message="Process no longer exists" />;
     }
 
-    if (!processData.shared) {
+    if (processData.shareTimeStamp === 0) {
       return <ErrorMessage message="Process is not shared" />;
     }
 
-    if (processData.shareTimeStamp && timestamp! < processData.shareTimeStamp) {
-      return <ErrorMessage message="Token Expired" />;
-    }
-
     if (
-      iframeMode &&
-      processData.allowIframeTimestamp &&
-      timestamp! !== processData.allowIframeTimestamp
+      (embeddedMode && timestamp !== processData.allowIframeTimestamp) ||
+      (!embeddedMode && timestamp !== processData.shareTimeStamp)
     ) {
-      return <ErrorMessage message="Embedding not allowed" />;
+      return <ErrorMessage message="Token expired" />;
     }
   } catch (err) {
     console.error('error while verifying token... ', err);
   }
-  if (processData!.shared && processData!.sharedAs === 'protected' && !session?.user.id) {
+  if (
+    processData!.shareTimeStamp > 0 &&
+    processData!.sharedAs === 'protected' &&
+    !session?.user.id
+  ) {
     const callbackUrl = `/shared-viewer?token=${searchParams.token}`;
     const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
     redirect(loginPath);

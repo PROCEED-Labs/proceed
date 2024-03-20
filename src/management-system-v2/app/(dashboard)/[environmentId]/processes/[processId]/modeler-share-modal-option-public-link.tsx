@@ -9,14 +9,12 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 
 type ModelerShareModalOptionPublicLinkProps = {
-  shared: boolean;
   sharedAs: 'public' | 'protected';
   shareTimestamp: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionPublicLink = ({
-  shared,
   sharedAs,
   shareTimestamp,
   refresh,
@@ -25,7 +23,7 @@ const ModelerShareModalOptionPublicLink = ({
   const environment = useEnvironment();
 
   const [token, setToken] = useState<String | null>(null);
-  const [isShareLinkChecked, setIsShareLinkChecked] = useState(shared);
+  const [isShareLinkChecked, setIsShareLinkChecked] = useState(shareTimestamp > 0);
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
     sharedAs === 'protected',
   );
@@ -34,22 +32,25 @@ const ModelerShareModalOptionPublicLink = ({
 
   const { message } = App.useApp();
 
-  const generateProcessShareTokenFromOldTimestamp = async () => {
-    const { token: shareToken } = await generateProcessShareToken(
-      { processId: processId },
-      environment.spaceId,
-      shareTimestamp,
-    );
-    setToken(shareToken);
-  };
-
   useEffect(() => {
-    setIsShareLinkChecked(shared);
-    if (shared) {
+    const generateProcessShareTokenFromOldTimestamp = async () => {
+      try {
+        const { token: shareToken } = await generateProcessShareToken(
+          { processId },
+          environment.spaceId,
+          shareTimestamp,
+        );
+        setToken(shareToken);
+      } catch (error) {
+        console.error('Error while generating process share token:', error);
+      }
+    };
+    setIsShareLinkChecked(shareTimestamp > 0);
+    if (shareTimestamp > 0) {
       generateProcessShareTokenFromOldTimestamp();
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected');
-  }, [shared, sharedAs, shareTimestamp]);
+  }, [sharedAs, shareTimestamp, processId, environment.spaceId]);
 
   const handleCopyLink = async () => {
     try {
@@ -70,7 +71,6 @@ const ModelerShareModalOptionPublicLink = ({
       await updateProcessGuestAccessRights(
         processId,
         {
-          shared: true,
           sharedAs: sharedAsValue,
         },
         environment.spaceId,
@@ -93,14 +93,10 @@ const ModelerShareModalOptionPublicLink = ({
       );
       setToken(token);
 
-      await updateProcessGuestAccessRights(
-        processId,
-        { shared: true, sharedAs: 'public' },
-        environment.spaceId,
-      );
+      await updateProcessGuestAccessRights(processId, { sharedAs: 'public' }, environment.spaceId);
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false }, environment.spaceId);
+      await updateProcessGuestAccessRights(processId, { shareTimeStamp: 0 }, environment.spaceId);
       setRegisteredUsersonlyChecked(false);
       message.success('Process unshared');
     }

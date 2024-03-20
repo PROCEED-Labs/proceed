@@ -38,7 +38,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
-  const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
   const [shareToken, setShareToken] = useState('');
@@ -48,10 +47,9 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs, allowIframeTimestamp, shareTimeStamp } = await getProcess(
+    const { sharedAs, allowIframeTimestamp, shareTimeStamp } = await getProcess(
       processId as string,
     );
-    setShared(shared);
     setSharedAs(sharedAs);
     setShareToken(shareToken);
     setShareTimestamp(shareTimeStamp);
@@ -97,11 +95,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
     const { token } = await generateProcessShareToken({ processId }, environment.spaceId);
-    await updateProcessGuestAccessRights(
-      processId,
-      { shared: true, sharedAs: sharedAs },
-      environment.spaceId,
-    );
+    await updateProcessGuestAccessRights(processId, { sharedAs: sharedAs }, environment.spaceId);
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
@@ -166,7 +160,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       },
       subOption: (
         <ModelerShareModalOptionPublicLink
-          shared={shared}
           sharedAs={sharedAs}
           shareTimestamp={shareTimeStamp}
           refresh={checkIfProcessShared}
@@ -187,7 +180,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       },
       subOption: (
         <ModelerShareModalOptionEmdedInWeb
-          shared={shared}
           sharedAs={sharedAs}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}

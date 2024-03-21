@@ -32,13 +32,13 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       return <ErrorMessage message="Process no longer exists" />;
     }
 
-    if (processData.shareTimeStamp === 0) {
+    if (processData.shareTimestamp === 0) {
       return <ErrorMessage message="Process is not shared" />;
     }
 
     if (
       (embeddedMode && timestamp !== processData.allowIframeTimestamp) ||
-      (!embeddedMode && timestamp !== processData.shareTimeStamp)
+      (!embeddedMode && timestamp !== processData.shareTimestamp)
     ) {
       return <ErrorMessage message="Token expired" />;
     }
@@ -46,7 +46,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     console.error('error while verifying token... ', err);
   }
   if (
-    processData!.shareTimeStamp > 0 &&
+    processData!.shareTimestamp > 0 &&
     processData!.sharedAs === 'protected' &&
     !session?.user.id
   ) {

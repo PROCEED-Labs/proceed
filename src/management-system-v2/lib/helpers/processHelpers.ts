@@ -48,7 +48,7 @@ export function getDefaultProcessMetaInfo() {
     createdOn: date,
     lastEdited: date,
     sharedAs: 'protected',
-    shareTimeStamp: 0,
+    shareTimestamp: 0,
     allowIframeTimestamp: 0,
     versions: [],
     folderId: '',

@@ -22,13 +22,14 @@ const ModelerShareModalOptionPublicLink = ({
   const { processId } = useParams();
   const environment = useEnvironment();
 
-  const [token, setToken] = useState<String | null>(null);
-  const [isShareLinkChecked, setIsShareLinkChecked] = useState(shareTimestamp > 0);
+  const [token, setToken] = useState<String>('');
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
     sharedAs === 'protected',
   );
 
   const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
+  const isTokenEmpty = token.length === 0;
+  const isShareLinkChecked = shareTimestamp > 0;
 
   const { message } = App.useApp();
 
@@ -45,12 +46,11 @@ const ModelerShareModalOptionPublicLink = ({
         console.error('Error while generating process share token:', error);
       }
     };
-    setIsShareLinkChecked(shareTimestamp > 0);
-    if (shareTimestamp > 0) {
+    if (isShareLinkChecked) {
       generateProcessShareTokenFromOldTimestamp();
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected');
-  }, [sharedAs, shareTimestamp, processId, environment.spaceId]);
+  }, [sharedAs, shareTimestamp, processId, environment.spaceId, isShareLinkChecked]);
 
   const handleCopyLink = async () => {
     try {
@@ -84,8 +84,6 @@ const ModelerShareModalOptionPublicLink = ({
   }) => {
     const isChecked = e.target.checked;
 
-    setIsShareLinkChecked(isChecked);
-
     if (isChecked) {
       const { token } = await generateProcessShareToken(
         { processId: processId },
@@ -96,8 +94,9 @@ const ModelerShareModalOptionPublicLink = ({
       await updateProcessGuestAccessRights(processId, { sharedAs: 'public' }, environment.spaceId);
       message.success('Process shared');
     } else {
-      await updateProcessGuestAccessRights(processId, { shareTimeStamp: 0 }, environment.spaceId);
+      await updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId);
       setRegisteredUsersonlyChecked(false);
+      setToken('');
       message.success('Process unshared');
     }
     refresh();
@@ -145,107 +144,101 @@ const ModelerShareModalOptionPublicLink = ({
           Share Process with Public Link
         </Checkbox>
       </div>
-      {isShareLinkChecked && !token ? (
-        <Flex justify="center">
-          <LoadingOutlined style={{ fontSize: '40px' }} />
-        </Flex>
-      ) : (
-        <div>
-          <Row>
-            <Col span={18} style={{ paddingBottom: '10px', paddingLeft: '25px' }}>
-              <Flex vertical gap="small" justify="left" align="left">
-                <Checkbox
-                  checked={registeredUsersonlyChecked}
-                  onChange={handlePermissionChanged}
-                  disabled={!isShareLinkChecked}
-                >
-                  Visible only for registered user
-                </Checkbox>
-              </Flex>
-            </Col>
-            <Col span={18}>
-              <Input
-                type={'text'}
-                value={publicLinkValue}
-                disabled={!isShareLinkChecked}
-                style={{ border: '1px solid #000' }}
-              />
-            </Col>
-            <Col span={12}>
-              <Flex
-                vertical={false}
-                style={{ paddingTop: '10px', flexWrap: 'wrap-reverse' }}
-                justify="center"
-                align="center"
+      <div>
+        <Row>
+          <Col span={18} style={{ paddingBottom: '10px', paddingLeft: '25px' }}>
+            <Flex vertical gap="small" justify="left" align="left">
+              <Checkbox
+                checked={registeredUsersonlyChecked}
+                onChange={handlePermissionChanged}
+                disabled={isTokenEmpty}
               >
-                {isShareLinkChecked && (
-                  <div id="qrcode" ref={canvasRef}>
-                    <QRCode
-                      style={{
-                        border: '1px solid #000',
-                      }}
-                      value={publicLinkValue}
-                      size={130}
-                    />
-                  </div>
-                )}
-              </Flex>
-            </Col>
-            <Col span={6} style={{ paddingTop: '10px' }}>
-              <Flex vertical gap={10}>
-                <Button
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
-                  onClick={handleCopyLink}
-                  disabled={!isShareLinkChecked}
-                >
-                  Copy link
-                </Button>
-                <Button
-                  icon={<DownloadOutlined />}
-                  title="Save as PNG"
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
-                  hidden={!isShareLinkChecked}
-                  onClick={() => handleQRCodeAction('download')}
-                  disabled={!isShareLinkChecked}
-                >
-                  Save QR Code
-                </Button>
-                <Button
-                  icon={<CopyOutlined />}
-                  title="Copy as PNG"
-                  style={{
-                    marginLeft: '10px',
-                    border: '1px solid black',
-                    borderRadius: '50px',
-                    overflow: 'hidden',
-                    whiteSpace: 'normal',
-                    textOverflow: 'ellipsis',
-                  }}
-                  hidden={!isShareLinkChecked}
-                  onClick={() => handleQRCodeAction('copy')}
-                  disabled={!isShareLinkChecked}
-                >
-                  Copy QR Code
-                </Button>
-              </Flex>
-            </Col>
-          </Row>
-        </div>
-      )}
+                Visible only for registered user
+              </Checkbox>
+            </Flex>
+          </Col>
+          <Col span={18}>
+            <Input
+              type={'text'}
+              value={publicLinkValue}
+              disabled={isTokenEmpty}
+              style={{ border: '1px solid #000' }}
+            />
+          </Col>
+          <Col span={12}>
+            <Flex
+              vertical={false}
+              style={{ paddingTop: '10px', flexWrap: 'wrap-reverse' }}
+              justify="center"
+              align="center"
+            >
+              {isShareLinkChecked && (
+                <div id="qrcode" ref={canvasRef}>
+                  <QRCode
+                    style={{
+                      border: '1px solid #000',
+                    }}
+                    value={publicLinkValue}
+                    size={130}
+                  />
+                </div>
+              )}
+            </Flex>
+          </Col>
+          <Col span={6} style={{ paddingTop: '10px' }}>
+            <Flex vertical gap={10}>
+              <Button
+                style={{
+                  marginLeft: '10px',
+                  border: '1px solid black',
+                  borderRadius: '50px',
+                  overflow: 'hidden',
+                  whiteSpace: 'normal',
+                  textOverflow: 'ellipsis',
+                }}
+                onClick={handleCopyLink}
+                disabled={isTokenEmpty}
+              >
+                Copy link
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                title="Save as PNG"
+                style={{
+                  marginLeft: '10px',
+                  border: '1px solid black',
+                  borderRadius: '50px',
+                  overflow: 'hidden',
+                  whiteSpace: 'normal',
+                  textOverflow: 'ellipsis',
+                }}
+                hidden={isTokenEmpty}
+                onClick={() => handleQRCodeAction('download')}
+                disabled={isTokenEmpty}
+              >
+                Save QR Code
+              </Button>
+              <Button
+                icon={<CopyOutlined />}
+                title="Copy as PNG"
+                style={{
+                  marginLeft: '10px',
+                  border: '1px solid black',
+                  borderRadius: '50px',
+                  overflow: 'hidden',
+                  whiteSpace: 'normal',
+                  textOverflow: 'ellipsis',
+                }}
+                hidden={isTokenEmpty}
+                onClick={() => handleQRCodeAction('copy')}
+                disabled={isTokenEmpty}
+              >
+                Copy QR Code
+              </Button>
+            </Flex>
+          </Col>
+        </Row>
+      </div>
     </>
   );
 };

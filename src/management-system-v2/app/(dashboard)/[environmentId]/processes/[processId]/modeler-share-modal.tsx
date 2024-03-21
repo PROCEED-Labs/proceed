@@ -41,18 +41,18 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
   const [isSharing, setIsSharing] = useState(false);
   const [shareToken, setShareToken] = useState('');
-  const [shareTimeStamp, setShareTimestamp] = useState(0);
+  const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
   const { message } = App.useApp();
   const [processData, setProcessData] = useState<Process | undefined>();
 
   const checkIfProcessShared = async () => {
-    const { sharedAs, allowIframeTimestamp, shareTimeStamp } = await getProcess(
+    const { sharedAs, allowIframeTimestamp, shareTimestamp } = await getProcess(
       processId as string,
     );
     setSharedAs(sharedAs);
     setShareToken(shareToken);
-    setShareTimestamp(shareTimeStamp);
+    setShareTimestamp(shareTimestamp);
     setAllowIframeTimestamp(allowIframeTimestamp);
   };
 
@@ -161,7 +161,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       subOption: (
         <ModelerShareModalOptionPublicLink
           sharedAs={sharedAs}
-          shareTimestamp={shareTimeStamp}
+          shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
         />
       ),

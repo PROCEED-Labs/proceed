@@ -12,7 +12,7 @@ export interface TokenPayload {
 export interface ProcessGuestAccessRights {
   shared?: boolean;
   sharedAs?: 'public' | 'protected';
-  shareTimeStamp?: number;
+  shareTimestamp?: number;
   allowIframeTimestamp?: number;
 }
 
@@ -23,9 +23,8 @@ export async function updateProcessGuestAccessRights(
 ) {
   await updateProcessShareInfo(
     processId as string,
-    newMeta.shared,
     newMeta.sharedAs,
-    newMeta.shareTimeStamp,
+    newMeta.shareTimestamp,
     newMeta.allowIframeTimestamp,
     spaceId,
   );
@@ -55,7 +54,7 @@ export async function generateProcessShareToken(
   if (payload.embeddedMode) {
     newMeta = { allowIframeTimestamp: timestamp };
   } else {
-    newMeta = { shareTimeStamp: timestamp };
+    newMeta = { shareTimestamp: timestamp };
   }
 
   await updateProcessGuestAccessRights(payload.processId as string, newMeta, spaceId);

@@ -570,7 +570,7 @@ async function getProcessInfo(bpmn, process) {
     environmentId: process.environmentId,
     folderId: process.folderId,
     sharedAs: process.sharedAs,
-    shareTimeStamp: process.shareTimeStamp,
+    shareTimestamp: process.shareTimestamp,
     allowIframeTimestamp: process.allowIframeTimestamp,
   };
 

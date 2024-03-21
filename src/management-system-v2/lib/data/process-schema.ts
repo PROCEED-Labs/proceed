@@ -33,7 +33,7 @@ export type ProcessMetadata = Prettify<
     createdOn: string;
     lastEdited: string;
     sharedAs: 'public' | 'protected';
-    shareTimeStamp: number;
+    shareTimestamp: number;
     allowIframeTimestamp: number;
     versions: {
       version: number;

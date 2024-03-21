@@ -24,12 +24,11 @@ const ModelerShareModalOptionEmdedInWeb = ({
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
   const environment = useEnvironment();
-  const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(sharedAs === 'public');
   const [token, setToken] = useState('');
 
   useEffect(() => {
     const initialize = async () => {
-      if (sharedAs !== 'protected' && allowIframeTimestamp > 0) {
+      if (allowIframeTimestamp > 0) {
         const { token: shareToken } = await generateProcessShareToken(
           { processId: processId, embeddedMode: true },
           environment.spaceId,
@@ -41,13 +40,10 @@ const ModelerShareModalOptionEmdedInWeb = ({
     initialize();
   }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs]);
 
-  if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
-
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
   }) => {
     const isChecked = e.target.checked;
-    setIsAllowEmbeddingChecked(isChecked);
     if (isChecked) {
       const { token } = await generateProcessShareToken(
         { processId, embeddedMode: true },
@@ -64,6 +60,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         },
         environment.spaceId,
       );
+      setToken('');
       message.success('Process unshared');
     }
     refresh();
@@ -79,12 +76,12 @@ const ModelerShareModalOptionEmdedInWeb = ({
   return (
     <>
       <Checkbox
-        checked={isAllowEmbeddingChecked && allowIframeTimestamp > 0}
+        checked={token.length > 0 && allowIframeTimestamp > 0}
         onChange={(e) => handleAllowEmbeddingChecked(e)}
       >
         Allow iframe Embedding
       </Checkbox>
-      {isAllowEmbeddingChecked ? (
+      {token.length > 0 ? (
         <>
           <div>
             <Button

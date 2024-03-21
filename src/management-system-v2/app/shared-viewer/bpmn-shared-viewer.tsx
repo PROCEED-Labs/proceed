@@ -30,7 +30,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const processBpmn = processData.bpmn;
   const bpmnViewerRef = useRef<BPMNCanvasRef>(null);
 
-  if (processData.shareTimeStamp === 0) {
+  if (processData.shareTimestamp === 0) {
     return <ErrorMessage message="Process is no longer shared" />;
   }
 

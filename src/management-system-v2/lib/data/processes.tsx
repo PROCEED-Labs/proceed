@@ -143,9 +143,8 @@ export const addProcesses = async (
 
 export const updateProcessShareInfo = async (
   definitionsId: string,
-  shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,
-  shareTimeStamp: number | undefined,
+  shareTimestamp: number | undefined,
   allowIframeTimestamp: number | undefined,
   spaceId: string,
 ) => {
@@ -164,7 +163,7 @@ export const updateProcessShareInfo = async (
 
   await updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
-    shareTimeStamp: shareTimeStamp,
+    shareTimestamp: shareTimestamp,
     allowIframeTimestamp: allowIframeTimestamp,
   });
 };

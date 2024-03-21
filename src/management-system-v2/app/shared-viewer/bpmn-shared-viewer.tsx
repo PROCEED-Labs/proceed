@@ -12,6 +12,7 @@ import BPMNCanvas, { BPMNCanvasRef } from '../../components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 import ErrorMessage from '@/components/error-message';
 import { useEnvironment } from '@/components/auth-can';
+import { getCurrentUser } from '@/components/auth';
 
 type BPMNSharedViewerProps = React.HTMLAttributes<HTMLDivElement> & {
   processData: Process;
@@ -50,7 +51,7 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
       },
     ];
 
-    const copiedProcesses = await copyProcesses(processesToCopy, environment.spaceId);
+    const copiedProcesses = await copyProcesses(processesToCopy, session.data?.user.id as string);
 
     if ('error' in copiedProcesses) {
       message.error(copiedProcesses.error.message);

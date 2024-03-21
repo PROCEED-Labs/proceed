@@ -6,14 +6,20 @@ import SignIn from './signin';
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
   const { session } = await getCurrentUser();
-  if (session?.user) {
+  const isGuest = session?.user.guest;
+
+  if (session?.user && !isGuest) {
     const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
     redirect(callbackUrl);
   }
 
-  const providers = getProviders();
+  let providers = getProviders();
 
-  providers.sort((a, b) => {
+  providers = providers.filter(
+    (provider) => !isGuest || !['guest-signin', 'development-users'].includes(provider.id),
+  );
+
+  providers = providers.sort((a, b) => {
     if (a.type === 'email') {
       return -2;
     }

@@ -27,7 +27,6 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -71,7 +70,6 @@ const ProcessList: FC<ProcessListProps> = ({
   setShowMobileMetaData,
 }) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);

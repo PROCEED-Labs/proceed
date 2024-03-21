@@ -36,6 +36,7 @@ export type ProcessExportOptions = {
   a4: boolean; // if an a4 format should be used for the pdf pages (pdf)
   scaling: number; // the scaling factor that should be used for png export
   exportSelectionOnly: boolean; // if only selected elements (and their children) should be in the final export
+  useWebshareApi: boolean; // if true, the process is shared using web share api
 };
 
 /**

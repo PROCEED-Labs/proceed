@@ -31,7 +31,7 @@ function addAuthHeaders<TApiCall extends (typeof apiClient)[keyof typeof apiClie
           : 'include'
         : undefined,
       headers: {
-        'csrf-token': csrfToken,
+        'x-csrf-token': csrfToken,
       },
       // @ts-ignore
       ...options,

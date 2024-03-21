@@ -5,10 +5,10 @@ export const ProcessInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
-  shared: z.boolean().optional(),
   originalId: z.string().optional(),
   folderId: z.string().optional(),
 });
+
 export type ProcessInput = z.infer<typeof ProcessInputSchema>;
 
 export const ProcessServerInputSchema = ProcessInputSchema.extend({
@@ -32,6 +32,9 @@ export type ProcessMetadata = Prettify<
     }[];
     createdOn: string;
     lastEdited: string;
+    sharedAs: 'public' | 'protected';
+    shareTimestamp: number;
+    allowIframeTimestamp: number;
     versions: {
       version: number;
       name: string;

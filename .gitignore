@@ -52,6 +52,7 @@ package-lock.json
 /test-results/
 /playwright-report/
 /playwright/.cache/
+dataEval.json
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json

@@ -14,6 +14,7 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
+  updateProcessMetaData,
 } from './legacy/_process';
 import {
   addDocumentation,
@@ -36,9 +37,30 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
+
+export const getProcess = async (definitionId: string) => {
+  const processMetaObjects: any = getProcessMetaObjects();
+
+  /* TODO: Add ability check */
+
+  // Get ability again since it might have changed.
+  //const { ability } = await getCurrentUser();
+
+  const process = processMetaObjects[definitionId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  /*if (!ability.can('view', toCaslResource('Process', process))) {
+    return userError('Not allowed to delete this process', UserErrorType.PermissionError);
+  }*/
+
+  const bpmn = await _getProcessBpmn(definitionId);
+  return { ...process, bpmn };
+};
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string) => {
   const { ability } = await getCurrentEnvironment(spaceId);
@@ -119,6 +141,33 @@ export const addProcesses = async (
   return newProcesses;
 };
 
+export const updateProcessShareInfo = async (
+  definitionsId: string,
+  sharedAs: 'public' | 'protected' | undefined,
+  shareTimestamp: number | undefined,
+  allowIframeTimestamp: number | undefined,
+  spaceId: string,
+) => {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[definitionsId];
+
+  if (!process) {
+    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (!ability.can('update', toCaslResource('Process', process))) {
+    return userError('Not allowed to update this process', UserErrorType.PermissionError);
+  }
+
+  await updateProcessMetaData(definitionsId, {
+    sharedAs: sharedAs,
+    shareTimestamp: shareTimestamp,
+    allowIframeTimestamp: allowIframeTimestamp,
+  });
+};
+
 export const updateProcess = async (
   definitionsId: string,
   spaceId: string,
@@ -197,7 +246,6 @@ export const copyProcesses = async (
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
-
   const copiedProcesses: Process[] = [];
 
   for (const copyProcess of processes) {

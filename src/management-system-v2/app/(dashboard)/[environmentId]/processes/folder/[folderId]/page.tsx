@@ -14,6 +14,9 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
+import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
+import { ComponentProps } from 'react';
+import { spaceURL } from '@/lib/utils';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({
@@ -23,12 +26,13 @@ const ProcessesPage = async ({
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
-  let folderId = params.folderId;
-  if (!folderId) folderId = getRootFolder(activeEnvironment.spaceId, ability).id;
+  const rootFolder = getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = getFolderById(folderId);
+  const folder = getFolderById(
+    params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
+  );
 
-  const folderContents = (await asyncMap(getFolderChildren(folderId, ability), async (item) => {
+  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
     if (item.type === 'folder') {
       return {
         ...getFolderById(item.id),
@@ -38,6 +42,21 @@ const ProcessesPage = async ({
       return await getProcess(item.id);
     }
   })) satisfies ListItem[];
+
+  const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
+  let currentFolder = folder;
+  while (currentFolder.parentId) {
+    pathToFolder.push({
+      title: currentFolder.name,
+      href: spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`),
+    });
+    currentFolder = getFolderById(currentFolder.parentId);
+  }
+  pathToFolder.push({
+    title: 'Processes',
+    href: spaceURL(activeEnvironment, `/processes/folder/${rootFolder.id}`),
+  });
+  pathToFolder.reverse();
 
   return (
     <Content
@@ -50,7 +69,8 @@ const ProcessesPage = async ({
               </Button>
             </Link>
           )}
-          {folder.parentId ? folder.name : 'Processes'}
+
+          <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
         </Space>
       }
     >

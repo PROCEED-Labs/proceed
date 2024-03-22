@@ -1,26 +1,25 @@
 'use client';
 
-import { FC, useMemo, useState, useTransition } from 'react';
+import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { useGetAsset } from '@/lib/fetch-data';
 import UserList, { UserListProps } from '@/components/user-list';
 import { Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
 import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
 
 const AddUserModal: FC<{
   role: Role;
-  usersNotInRole: User[];
+  usersNotInRole: AuthenticatedUser[];
   open: boolean;
   close: () => void;
 }> = ({ role, usersNotInRole, open, close }) => {
   const [loading, startTransition] = useTransition();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
 
@@ -28,7 +27,7 @@ const AddUserModal: FC<{
     startTransition(async () => {
       if (clearIds) clearIds();
       await addRoleMappings(
-        environmentId,
+        environment.spaceId,
         users.map((user) => ({
           userId: user.id,
           roleId: role.id,
@@ -76,22 +75,22 @@ const AddUserModal: FC<{
   );
 };
 
-const RoleMembers: FC<{ role: Role; usersInRole: User[]; usersNotInRole: User[] }> = ({
-  role,
-  usersInRole,
-  usersNotInRole,
-}) => {
+const RoleMembers: FC<{
+  role: Role;
+  usersInRole: AuthenticatedUser[];
+  usersNotInRole: AuthenticatedUser[];
+}> = ({ role, usersInRole, usersNotInRole }) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
-      environmentId,
+      environment.spaceId,
       userIds.map((userId) => ({
         roleId: role.id,
         userId: userId,
@@ -149,11 +148,11 @@ const RoleMembers: FC<{ role: Role; usersInRole: User[]; usersNotInRole: User[] 
             />
           </Tooltip>
         )}
-        searchBarRightNode={
+        /*searchBarRightNode={
           <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
             Add Member
           </Button>
-        }
+        }*/
       />
     </>
   );

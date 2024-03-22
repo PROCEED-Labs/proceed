@@ -555,6 +555,7 @@ async function getProcessInfo(bpmn, process) {
   const { id, originalId, name, processIds, description } = await parseProcessInfo(bpmn);
 
   const currentDate = new Date().toUTCString();
+
   let newProcess = {
     id,
     originalId,
@@ -569,7 +570,9 @@ async function getProcessInfo(bpmn, process) {
     versions: [],
     owner: process.owner,
     environmentId: process.environmentId,
+    folderId: process.folderId,
   };
+
   if (newProcess.type === 'project') {
     newProcess = {
       ...newProcess,

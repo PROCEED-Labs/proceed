@@ -3,13 +3,13 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { FC } from 'react';
-import { useEnvironment } from './auth-can';
+import { FC, ReactNode } from 'react';
+import UserAvatar from './user-avatar';
+import SpaceLink from './space-link';
 
 const HeaderActions: FC = () => {
   const session = useSession();
-  const environmentId = useEnvironment();
+  const isGuest = session.data?.user.guest;
   const loggedIn = session.status === 'authenticated';
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {
@@ -30,35 +30,45 @@ const HeaderActions: FC = () => {
     );
   }
 
-  return (
-    <Space style={{ float: 'right', padding: '16px' }}>
-      <Button type="text" onClick={() => signOut()}>
+  const avatarDropdownItems = [
+    {
+      key: 'profile',
+      title: 'Account Settings',
+      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+    },
+  ];
+  if (!isGuest)
+    avatarDropdownItems.push({
+      key: 'environments',
+      title: 'My environments',
+      label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+    });
+
+  let actionButton;
+  if (!isGuest) {
+    actionButton = (
+      <Button type="text" onClick={() => signOut({ redirect: true, callbackUrl: '/' })}>
         <u>Logout</u>
       </Button>
+    );
+  } else
+    actionButton = (
+      <Button type="text" onClick={() => signIn()}>
+        <u>Sign In</u>
+      </Button>
+    );
 
+  return (
+    <Space style={{ float: 'right', padding: '16px' }}>
+      {actionButton}
       <Dropdown
         menu={{
-          items: [
-            {
-              key: 'profile',
-              title: 'Account Settings',
-              label: <Link href={`/${environmentId}/profile`}>Account Settings</Link>,
-            },
-            {
-              key: 'environments',
-              title: 'My environments',
-              label: <Link href={`/${environmentId}/environments`}>My environments</Link>,
-            },
-          ],
+          items: avatarDropdownItems,
         }}
       >
-        <Link href={`/${environmentId}/profile`}>
-          <Avatar style={{ cursor: 'pointer' }} src={session.data.user.image}>
-            {session.data.user.image
-              ? null
-              : session.data.user.firstName.slice(0, 1) + session.data.user.lastName.slice(0, 1)}
-          </Avatar>
-        </Link>
+        <SpaceLink href={`/profile`}>
+          <UserAvatar user={session.data.user} />
+        </SpaceLink>
       </Dropdown>
     </Space>
   );

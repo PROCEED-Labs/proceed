@@ -18,7 +18,7 @@ const CreateRoleModal: FC<{
   const { message: messageApi } = App.useApp();
   type ErrorsObject = { [field in PostRoleKeys]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [submittable, setSubmittable] = useState(false);
   const values = Form.useWatch('name', form);
@@ -45,10 +45,10 @@ const CreateRoleModal: FC<{
       expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
 
     try {
-      const result = await serverAddRoles(environmentId, {
+      const result = await serverAddRoles(environment.spaceId, {
         ...values,
         permissions: {},
-        environmentId,
+        environmentId: environment.spaceId,
       });
       if (result && 'error' in result) throw new Error();
     } catch (e) {
@@ -112,7 +112,7 @@ const HeaderActions: FC = () => {
         close={() => setCreateRoleModalOpen(false)}
       />
 
-      <AuthCan action="create" resource="Role">
+      <AuthCan create Role>
         <Button type="primary" onClick={() => setCreateRoleModalOpen(true)}>
           <PlusOutlined /> Create Role
         </Button>

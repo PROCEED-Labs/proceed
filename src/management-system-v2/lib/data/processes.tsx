@@ -42,8 +42,8 @@ import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { v4 } from 'uuid';
 
-export const getProcessBPMN = async (definitionId: string) => {
-  const { ability } = await getCurrentEnvironment();
+export const getProcessBPMN = async (definitionId: string, spaceId: string) => {
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
@@ -61,11 +61,11 @@ export const getProcessBPMN = async (definitionId: string) => {
   return bpmn;
 };
 
-export const deleteProcesses = async (definitionIds: string[]) => {
+export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
 
   // Get ability again since it might have changed.
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   for (const definitionId of definitionIds) {
     const process = processMetaObjects[definitionId];
@@ -84,8 +84,9 @@ export const deleteProcesses = async (definitionIds: string[]) => {
 
 export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const newProcesses: Process[] = [];
@@ -100,7 +101,7 @@ export const addProcesses = async (
     const newProcess = {
       bpmn,
       owner: userId,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -122,12 +123,13 @@ export const addProcesses = async (
 
 export const updateProcess = async (
   definitionsId: string,
+  spaceId: string,
   bpmn?: string,
   description?: string,
   name?: string,
   invalidate = false,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionsId];
@@ -167,10 +169,17 @@ export const updateProcesses = async (
     bpmn?: string;
     id: string;
   }[],
+  spaceId: string,
 ) => {
   const res = await Promise.all(
     processes.map(async (process) => {
-      return await updateProcess(process.id, process.bpmn, process.description, process.name);
+      return await updateProcess(
+        process.id,
+        spaceId,
+        process.bpmn,
+        process.description,
+        process.name,
+      );
     }),
   );
 
@@ -186,8 +195,9 @@ export const copyProcesses = async (
     originalId: string;
     originalVersion?: string;
   }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const copiedProcesses: Process[] = [];
@@ -208,7 +218,7 @@ export const copyProcesses = async (
       owner: userId,
       definitionId: newId,
       bpmn: newBpmn,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -230,8 +240,9 @@ export const createVersion = async (
   versionName: string,
   versionDescription: string,
   processId: string,
+  spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];
@@ -278,8 +289,8 @@ export const createVersion = async (
   return epochTime;
 };
 
-export const setVersionAsLatest = async (processId: string, version: number) => {
-  const { ability } = await getCurrentEnvironment();
+export const setVersionAsLatest = async (processId: string, version: number, spaceId: string) => {
+  const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];

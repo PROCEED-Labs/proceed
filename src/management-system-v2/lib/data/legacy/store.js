@@ -51,8 +51,10 @@ if (!global.stores) {
   stores.roles = { store: getStore('roles') };
   stores.roleMappings = { store: getStore('roleMappings') };
   stores.users = { store: getStore('users') };
+  stores.accounts = { store: getStore('accounts') };
   stores.environments = { store: getStore('environments') };
   stores.environmentMemberships = { store: getStore('environmentMemberships') };
+  stores.folders = { store: getStore('folders') };
 }
 
 /**

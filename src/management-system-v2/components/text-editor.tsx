@@ -1,13 +1,13 @@
 import { Editor as EditorClass, EditorProps } from '@toast-ui/react-editor';
 import { Tabs } from 'antd';
-import React, { forwardRef, useEffect } from 'react';
+import React, { FC, RefAttributes, forwardRef, useEffect } from 'react';
 import styles from './text-editor.module.scss';
 import dynamic from 'next/dynamic';
 
 // Editor uses `navigator` in top level scope, which is not available in server side rendering.
 const ToastUIEditor = dynamic(() => import('./toastui-editor').then((res) => res.ToastUIEditor), {
   ssr: false,
-});
+}) as FC<RefAttributes<EditorClass> & EditorProps>;
 
 const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(props, ref) {
   const editorRef = ref as React.MutableRefObject<EditorClass>;

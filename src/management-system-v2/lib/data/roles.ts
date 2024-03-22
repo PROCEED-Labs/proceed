@@ -15,7 +15,7 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
     for (const roleId of roleIds) {
       deleteRole(roleId, ability);
     }
-  } catch (_) {
+  } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
     else return userError('Error deleting roles');
@@ -27,9 +27,9 @@ export async function addRole(environmentId: string, role: Parameters<typeof _ad
 
   let newRoleId;
   try {
-    const { ability } = await getCurrentEnvironment();
+    const { ability } = await getCurrentEnvironment(environmentId);
 
-    const newRole = _addRole({ ...role, environmentId: activeEnvironment }, ability);
+    const newRole = _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
     newRoleId = newRole.id;
   } catch (e) {
     if (e instanceof UnauthorizedError)
@@ -47,7 +47,7 @@ export async function updateRole(
 ) {
   try {
     const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-    _updateRole(roleId, { ...updatedRole, environmentId: activeEnvironment }, ability);
+    _updateRole(roleId, { ...updatedRole, environmentId: activeEnvironment.spaceId }, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

@@ -6,9 +6,6 @@ const nextConfig = {
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // This is due to needing to init our in-memory db before accessing the getters.
     // Can probably be removed once we switch to a real db.
@@ -29,6 +26,32 @@ const nextConfig = {
             process.env.NEXTAUTH_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
         }
       : {}),
+  },
+  redirects: async () => {
+    return [
+      {
+        source: '/',
+        destination: '/processes',
+        // Permanent redirects get cached by browsers for a lifetime, so they
+        // are effectively a de-commision of the old URL.
+        // https://lists.w3.org/Archives/Public/ietf-http-wg/2017OctDec/0363.html
+        permanent: false,
+      },
+    ];
+  },
+  rewrites: async () => {
+    return [
+      'processes',
+      'environments',
+      'executions',
+      'general-settings',
+      'iam',
+      'profile',
+      'projects',
+    ].map((folder) => ({
+      source: `/${folder}/:path*`,
+      destination: `/my/${folder}/:path*`,
+    }));
   },
 };
 

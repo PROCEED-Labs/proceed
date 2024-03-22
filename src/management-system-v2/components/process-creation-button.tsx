@@ -8,6 +8,7 @@ import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
+import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 
 type ProcessCreationButtonProps = ButtonProps & {
@@ -43,6 +44,20 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
       router.refresh();
     }
   };
+
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (!isProcessModalOpen) {
+        setIsProcessModalOpen(true);
+      }
+    },
+    {
+      level: 1,
+      blocking: false,
+    },
+  );
 
   return (
     <>

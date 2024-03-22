@@ -21,6 +21,7 @@ export const AuthenticatedUserDataSchema = z.object({
     .max(35, 'The Username cannot be longer than 35 characters')
     .optional(),
   image: z.string().url().nullable().optional(),
+  favourites: z.array(z.string()).optional(),
 });
 export type AuthenticatedUserData = z.infer<typeof AuthenticatedUserDataSchema>;
 

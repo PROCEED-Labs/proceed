@@ -19,6 +19,7 @@ import React, {
   Key,
   Dispatch,
   SetStateAction,
+  useEffect,
 } from 'react';
 import {
   CopyOutlined,
@@ -26,16 +27,14 @@ import {
   EditOutlined,
   DeleteOutlined,
   StarOutlined,
-  EyeOutlined,
   MoreOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import cn from 'classnames';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { TableRowSelection } from 'antd/es/table/interface';
 import styles from './process-list.module.scss';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
-import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
@@ -44,6 +43,8 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
+import FavouriteStar from './favouriteStar';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 
 type ProcessListProps = PropsWithChildren<{
   data?: ProcessListProcess[];
@@ -91,14 +92,22 @@ const ProcessList: FC<ProcessListProps> = ({
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
+  // const [favProcesses] = useFavouriteProcesses();
+  const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
-
-  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
   };
+
+  const processListColumnsMobile = [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Meta Data Button',
+  ];
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -160,8 +169,6 @@ const ProcessList: FC<ProcessListProps> = ({
     [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
   );
 
-  // rowSelection object indicates the need for row selection
-
   const rowSelection: TableRowSelection<ProcessListProcess> = {
     selectedRowKeys: selection,
     onChange: (selectedRowKeys: React.Key[], selectedRows) => {
@@ -171,14 +178,12 @@ const ProcessList: FC<ProcessListProps> = ({
       name: record.id,
     }),
     onSelect: (_, __, selectedRows) => {
-      // setSelection(selectedRows);
       setSelectionElements(selectedRows);
     },
     onSelectNone: () => {
       setSelectionElements([]);
     },
     onSelectAll: (_, selectedRows) => {
-      // setSelection(selectedRows)
       setSelectionElements(selectedRows);
     },
   };
@@ -187,12 +192,10 @@ const ProcessList: FC<ProcessListProps> = ({
     e.stopPropagation();
     const { checked, value } = e.target;
     if (checked) {
-      //setSelectedColumns([...selectedColumns, value]);
-      addPreferences({ 'process-list-columns': [...selectedColumns, value] });
+      addPreferences({ 'process-list-columns-desktop': [...selectedColumns, value] });
     } else {
-      //setSelectedColumns(selectedColumns.filter((column) => column !== value));
       addPreferences({
-        'process-list-columns': selectedColumns.filter((column: any) => column !== value),
+        'process-list-columns-desktop': selectedColumns.filter((column: any) => column !== value),
       });
     }
   };
@@ -217,34 +220,17 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: <StarOutlined />,
       dataIndex: 'id',
-      key: '',
+      key: 'Favorites',
       width: '40px',
-      render: (id, _, index) => (
-        <StarOutlined
-          style={{
-            color: favourites?.includes(index) ? '#FFD700' : undefined,
-            opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
-          }}
-        />
-      ),
+      render: (id, process, index) => <FavouriteStar id={id} hovered={hovered?.id === id} />,
+      sorter: (a, b) => (favProcesses?.includes(a.id) ? -1 : 1),
     },
-
     {
       title: 'Process Name',
       dataIndex: 'name',
       key: 'Process Name',
       className: styles.Title,
       sorter: (a, b) => a.name.value.localeCompare(b.name.value),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          //   // TODO:
-          //   setSelectedProcess(record);
-          //   router.refresh();
-          //   router.push(`/processes/${record.definitionId}`);
-        },
-      }),
       render: (_, record) => (
         <div
           className={
@@ -265,21 +251,11 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['xs', 'sm'],
     },
-
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
       sorter: (a, b) => a.description.value.localeCompare(b.description.value),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       render: (_, record) => (
         <div
           style={{
@@ -294,82 +270,41 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['sm'],
     },
-
     {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
       sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
-
     {
       title: 'Created On',
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
       sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
+      onCell: (record, rowIndex) => ({}),
       responsive: ['md'],
     },
-
     {
       title: 'File Size',
       key: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
-
     {
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
       sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
-
     {
       fixed: 'right',
       width: 160,
-      // add title but only if at least one row is selected
       dataIndex: 'id',
-      key: '',
+      key: 'Selected Columns',
       title: (
         <div style={{ float: 'right' }}>
           <Dropdown
@@ -398,15 +333,22 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['xl'],
     },
-
     {
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
-      key: '',
+      key: 'Meta Data Button',
       title: '',
       render: () => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+        <Button
+          style={{ float: 'right' }}
+          type="text"
+          onClick={(e: any) => {
+            // e.stopPropagation()
+            e.proceedClickedInfoButton = true;
+            showMobileMetaData();
+          }}
+        >
           <InfoCircleOutlined />
         </Button>
       ),
@@ -414,7 +356,66 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
+  const onRowActions = (record: any) => ({
+    onClick: (event: any) => {
+      /* CTRL */
+      if (event.ctrlKey) {
+        /* Not selected yet -> Add to selection */
+        if (!selection.includes(record?.id)) {
+          setSelectionElements((prev) => [record, ...prev]);
+          /* Already in selection -> deselect */
+        } else {
+          setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
+        }
+        /* SHIFT */
+      } else if (event.shiftKey) {
+        /* At least one element selected */
+        if (selection.length) {
+          const iLast = data!.findIndex((process) => process.id === lastProcessId);
+          const iCurr = data!.findIndex((process) => process.id === record?.id);
+          /* Identical to last clicked */
+          if (iLast === iCurr) {
+            setSelectionElements([record]);
+          } else if (iLast < iCurr) {
+            /* Clicked comes after last slected */
+            setSelectionElements(data!.slice(iLast, iCurr + 1));
+          } else if (iLast > iCurr) {
+            /* Clicked comes before last slected */
+            setSelectionElements(data!.slice(iCurr, iLast + 1));
+          }
+        } else {
+          /* Nothing selected */
+          setSelectionElements([record]);
+        }
+        /* Normal Click */
+      } else {
+        setSelectionElements([record]);
+        // const element = event.target as HTMLElement;
+        if (!breakpoint.xl) {
+          setSelectionElements([record]);
+          // console.log(event.proceedClickedInfoButton)
+          if (!event.proceedClickedInfoButton) router.push(`processes/${record.id}`);
+        }
+        // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);
+      }
+      /* Always */
+      setLastProcessId(record?.id);
+    },
+
+    onDoubleClick: () => {
+      router.push(`processes/${record.id}`);
+    },
+    onMouseEnter: () => {
+      setHovered(record);
+    }, // mouse enter row
+    onMouseLeave: () => {
+      setHovered(undefined);
+    }, // mouse leave row
+  });
+
+  const columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+    : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
     <>
@@ -423,71 +424,7 @@ const ProcessList: FC<ProcessListProps> = ({
           type: 'checkbox',
           ...rowSelection,
         }}
-        onRow={(record, rowIndex) => ({
-          onClick: (event) => {
-            // event.stopPropagation();
-            // event.preventDefault();
-            /* CTRL */
-            if (event.ctrlKey) {
-              /* Not selected yet -> Add to selection */
-              if (!selection.includes(record?.id)) {
-                setSelectionElements((prev) => [record, ...prev]);
-                /* Already in selection -> deselect */
-              } else {
-                setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
-              }
-              /* SHIFT */
-            } else if (event.shiftKey) {
-              /* At least one element selected */
-              if (selection.length) {
-                const iLast = data!.findIndex((process) => process.id === lastProcessId);
-                const iCurr = data!.findIndex((process) => process.id === record?.id);
-                /* Identical to last clicked */
-                if (iLast === iCurr) {
-                  setSelectionElements([record]);
-                } else if (iLast < iCurr) {
-                  /* Clicked comes after last slected */
-                  setSelectionElements(data!.slice(iLast, iCurr + 1));
-                } else if (iLast > iCurr) {
-                  /* Clicked comes before last slected */
-                  setSelectionElements(data!.slice(iCurr, iLast + 1));
-                }
-              } else {
-                /* Nothing selected */
-                setSelectionElements([record]);
-              }
-              /* Normal Click */
-            } else {
-              setSelectionElements([record]);
-            }
-
-            /* Always */
-            setLastProcessId(record?.id);
-          },
-          // onClick: (event) => {
-          //   if (event.ctrlKey) {
-          //     if (!selection.includes(record.definitionId)) {
-          //       setSelection([record.definitionId, ...selection]);
-          //     } else {
-          //       setSelection(selection.filter((id) => id !== record.definitionId));
-          //     }
-          //   } else {
-          //     setSelection([record.definitionId]);
-          //   }
-          // },
-          onDoubleClick: () => {
-            // TODO: This is a hack to clear the parallel route when selecting
-            // another process. (needs upstream fix)
-            //router.refresh();
-            router.push(spaceURL(environment, `/processes/${record.id}`));
-          },
-          onMouseEnter: (event) => {
-            setHovered(record);
-          }, // mouse enter row
-          onMouseLeave: (event) => {
-            setHovered(undefined);
-          }, // mouse leave row
-        })}
+        onRow={onRowActions}
         /* ---- */
         /* Breaks Side-Panel */
         // sticky

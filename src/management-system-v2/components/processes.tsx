@@ -3,21 +3,18 @@
 import styles from './processes.module.scss';
 import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  CloseOutlined,
-  InfoCircleOutlined,
   PlusOutlined,
   ImportOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
-import MetaData, { MetaPanelRefType } from './process-info-card';
+import MetaData from './process-info-card';
 import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
@@ -38,8 +35,15 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { Process } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import {
+  CheckerType,
+  useAddControlCallback,
+  useControlStore,
+  useControler,
+} from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 
 //TODO stop using external process
 export type ProcessListProcess = ReplaceKeysWithHighlighted<
@@ -64,23 +68,22 @@ const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
     versionDescription: undefined,
     versionBasedOn: undefined,
   });
-  // newBPMN = await manipulateElementsByTagName(newBPMN, 'bpmn:Definitions', (definitions: any) => {
-  //   delete definitions.version;
-  //   delete definitions.versionName;
-  //   delete definitions.versionDescription;
-  //   delete definitions.versionBasedOn;
-  // });
 
   return newBPMN;
 };
 
 type ProcessesProps = {
   processes: Omit<Process, 'bpmn'>[];
+  favourites?: string[];
 };
 
-const Processes = ({ processes }: ProcessesProps) => {
+const Processes = ({ processes, favourites }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
+
+  const favs = favourites ?? [];
+  useInitialiseFavourites(favs);
+  const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -101,6 +104,10 @@ const Processes = ({ processes }: ProcessesProps) => {
           type: 'error',
           content: res.error.message,
         });
+      } else {
+        // Success -> Remove from favourites if stared
+        removeFromFavouriteProcesses(selectedRowKeys as string[]);
+        // TODO: Remove from favourites for all users
       }
     } catch (e) {
       // Unkown server error or was not sent from server (e.g. network error)
@@ -164,67 +171,53 @@ const Processes = ({ processes }: ProcessesProps) => {
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const CollapsePannelRef = useRef<MetaPanelRefType>(null);
-
-  const collapseCard = CollapsePannelRef.current;
-  // () => {
-  //   addPreferences({
-  //     'process-meta-data': {
-  //       open: !showInfo,
-  //       width: getWidth(),
-  //     },
-  //   });
-  // };
-
   const deselectAll = () => {
     setSelectedRowElements([]);
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (openCopyModal || openExportModal || openEditModal) {
-        return;
-      }
+  /* User-Controls */
+  // const modalOpened = openCopyModal || openExportModal || openEditModal;
+  const controlChecker: CheckerType = {
+    selectall: (e) => e.ctrlKey && e.key === 'a',
+    esc: (e) => e.key === 'Escape',
+    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
+    copy: (e) => e.ctrlKey && e.key === 'c' && ability.can('create', 'Process'),
+    paste: (e) => e.ctrlKey && e.key === 'v' && ability.can('create', 'Process'),
+    controlenter: (e) => e.ctrlKey && e.key === 'Enter',
+    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
+    enter: (e) => !e.ctrlKey && e.key === 'Enter',
+    cut: (e) => e.ctrlKey && e.key === 'x' /* TODO: ability */,
+    export: (e) => e.ctrlKey && e.key === 'e',
+    import: (e) => e.ctrlKey && e.key === 'i',
+  };
+  useControler('process-list', controlChecker);
 
-      /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a') {
-        e.preventDefault();
-        setSelectedRowElements(filteredData ?? []);
-        /* DEL */
-      } else if (e.key === 'Delete' && selectedRowKeys.length) {
-        if (ability.can('delete', 'Process')) {
-          setOpenDeleteModal(true);
-        }
-        /* ESC */
-      } else if (e.key === 'Escape') {
-        deselectAll();
-        /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c') {
-        if (ability.can('create', 'Process')) {
-          setCopySelection(selectedRowKeys);
-        }
-        /* CTRL + V */
-      } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        if (ability.can('create', 'Process')) {
-          setOpenCopyModal(true);
-        }
-      }
-    };
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
+  useAddControlCallback(
+    'process-list',
+    'selectall',
+    (e) => {
+      e.preventDefault();
+      setSelectedRowElements(filteredData ?? []);
+    },
+    { dependencies: [processes] },
+  );
+  useAddControlCallback('process-list', 'esc', deselectAll);
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    copySelection,
-    filteredData,
-    selectedRowKeys,
-    ability,
-    openCopyModal,
-    openExportModal,
-    openEditModal,
-  ]);
+  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+
+  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
+
+  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+
+  useAddControlCallback(
+    'process-list',
+    'export',
+    () => {
+      if (selectedRowKeys.length) setOpenExportModal(true);
+    },
+    { dependencies: [selectedRowKeys.length] },
+  );
 
   return (
     <>
@@ -232,7 +225,6 @@ const Processes = ({ processes }: ProcessesProps) => {
         className={breakpoint.xs ? styles.MobileView : ''}
         style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
       >
-        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
         <div style={{ flex: '1' }}>
           <Bar
             leftNode={
@@ -277,16 +269,6 @@ const Processes = ({ processes }: ProcessesProps) => {
                         <AppstoreOutlined />
                       </Button>
                     </Space.Compact>
-                    {/* {breakpoint.xl ? (
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          if (collapseCard) collapseCard();
-                        }}
-                      >
-                        <InfoCircleOutlined />
-                      </Button>
-                    ) : undefined} */}
                   </span>
                 }
 
@@ -297,7 +279,7 @@ const Processes = ({ processes }: ProcessesProps) => {
                     className={styles.FloatButton}
                     trigger="click"
                     type="primary"
-                    style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                    style={{ marginBottom: '20px', marginRight: '10px', zIndex: '101' }}
                     icon={<PlusOutlined />}
                   >
                     <Tooltip trigger="hover" placement="left" title="Create a process">
@@ -368,7 +350,7 @@ const Processes = ({ processes }: ProcessesProps) => {
 
         {/*Meta Data Panel*/}
         {breakpoint.xl ? (
-          <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
+          <MetaData data={filteredData} selection={selectedRowKeys} />
         ) : (
           <Drawer
             onClose={closeMobileMetaData}
@@ -383,6 +365,7 @@ const Processes = ({ processes }: ProcessesProps) => {
           </Drawer>
         )}
       </div>
+
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,

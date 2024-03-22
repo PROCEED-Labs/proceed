@@ -39,6 +39,7 @@ import {
 import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
+import { getUsersFavourites } from './users';
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string) => {
   const { ability } = await getCurrentEnvironment(spaceId);
@@ -302,4 +303,10 @@ export const setVersionAsLatest = async (processId: string, version: number, spa
   }
 
   await selectAsLatestVersion(processId, version);
+};
+
+export const getFavouritesProcessIds = async () => {
+  const favs = await getUsersFavourites();
+
+  return favs ?? [];
 };

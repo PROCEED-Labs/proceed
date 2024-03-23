@@ -62,9 +62,11 @@ const checkValidity = async (
     delete: 'Not allowed to delete this process',
   };
 
-  if (!ability.can(operation, toCaslResource('Process', process), {
+  if (
+    !ability.can(operation, toCaslResource('Process', process), {
       environmentId: process.environmentId,
-    })) {
+    })
+  ) {
     return userError(errorMessages[operation], UserErrorType.PermissionError);
   }
 };

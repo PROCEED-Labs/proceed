@@ -62,7 +62,9 @@ const checkValidity = async (
     delete: 'Not allowed to delete this process',
   };
 
-  if (!ability.can(operation, toCaslResource('Process', process))) {
+  if (!ability.can(operation, toCaslResource('Process', process), {
+      environmentId: process.environmentId,
+    })) {
     return userError(errorMessages[operation], UserErrorType.PermissionError);
   }
 };
@@ -110,7 +112,7 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string }[],
+  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
   spaceId: string,
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
@@ -136,7 +138,7 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess });
+    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
@@ -212,6 +214,7 @@ export const copyProcesses = async (
     description: string;
     originalId: string;
     originalVersion?: string;
+    folderId?: string;
   }[],
   spaceId: string,
 ) => {

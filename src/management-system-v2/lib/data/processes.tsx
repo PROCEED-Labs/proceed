@@ -46,12 +46,16 @@ export const getProcessBPMN = async (definitionId: string, spaceId: string) => {
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
 
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to read this process', UserErrorType.PermissionError);
-  }
-
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  }
+
+  if (
+    !ability.can('view', toCaslResource('Process', process), {
+      environmentId: process.environmentId,
+    })
+  ) {
+    return userError('Not allowed to read this process', UserErrorType.PermissionError);
   }
 
   const bpmn = await _getProcessBpmn(definitionId);
@@ -81,7 +85,7 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string }[],
+  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
   spaceId: string,
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
@@ -107,7 +111,7 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess });
+    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
@@ -192,6 +196,7 @@ export const copyProcesses = async (
     description: string;
     originalId: string;
     originalVersion?: string;
+    folderId?: string;
   }[],
   spaceId: string,
 ) => {

@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import jsZip from 'jszip';
 
 import { ProcessExportData, ProcessesExportData } from './export-preparation';
-import { downloadFile, getSVGFromBPMN } from './util';
+import { getProcessFilePathName, downloadFile, getSVGFromBPMN } from './util';
 
 import PDFPagebuilder from './PDFPageBuilder';
 
@@ -188,9 +188,12 @@ async function pdfExport(
   }
 
   if (zip) {
-    zip.file(`${processData.definitionName}.pdf`, await pdf.output('blob'));
+    zip.file(`${getProcessFilePathName(processData.definitionName)}.pdf`, await pdf.output('blob'));
   } else {
-    downloadFile(`${processData.definitionName}.pdf`, await pdf.output('blob'));
+    downloadFile(
+      `${getProcessFilePathName(processData.definitionName)}.pdf`,
+      await pdf.output('blob'),
+    );
   }
 }
 

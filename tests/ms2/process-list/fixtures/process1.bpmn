@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="_8127415b-e8ab-4b89-b03e-6993391bdcf5" name="Process 1" targetNamespace="https://docs.proceed-labs.org/_8127415b-e8ab-4b89-b03e-6993391bdcf5" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_05s7742" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <documentation>Process 1</documentation>
+    <startEvent id="StartEvent_1eclh91">
+      <outgoing>Flow_034bmxw</outgoing>
+    </startEvent>
+    <task id="Activity_1m5esxh">
+      <incoming>Flow_034bmxw</incoming>
+      <outgoing>Flow_0evtfpc</outgoing>
+    </task>
+    <sequenceFlow id="Flow_034bmxw" sourceRef="StartEvent_1eclh91" targetRef="Activity_1m5esxh" />
+    <endEvent id="Event_1oxwp3r">
+      <incoming>Flow_0evtfpc</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0evtfpc" sourceRef="Activity_1m5esxh" targetRef="Event_1oxwp3r" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_05s7742">
+      <bpmndi:BPMNShape id="StartEvent_1eclh91_di" bpmnElement="StartEvent_1eclh91">
+        <dc:Bounds x="350" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m5esxh_di" bpmnElement="Activity_1m5esxh">
+        <dc:Bounds x="440" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1oxwp3r_di" bpmnElement="Event_1oxwp3r">
+        <dc:Bounds x="602" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_034bmxw_di" bpmnElement="Flow_034bmxw">
+        <di:waypoint x="386" y="218" />
+        <di:waypoint x="440" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0evtfpc_di" bpmnElement="Flow_0evtfpc">
+        <di:waypoint x="540" y="218" />
+        <di:waypoint x="602" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -5,7 +5,7 @@ import {
   ProcessExportData,
 } from './export-preparation';
 
-import { downloadFile } from './util';
+import { getProcessFilePathName, downloadFile } from './util';
 
 import jsZip from 'jszip';
 import 'svg2pdf.js';
@@ -27,9 +27,9 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     // b) if we output as a single file use the process name as the file name
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
-      zipFolder.file(`${filename}.bpmn`, bpmnBlob);
+      zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
     } else {
-      downloadFile(`${filename}.bpmn`, bpmnBlob);
+      downloadFile(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
     }
   }
 
@@ -58,8 +58,12 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
  * @param options the options that were selected by the user
  * @param processes the processes(and versions) to export
  */
-export async function exportProcesses(options: ProcessExportOptions, processes: ExportProcessInfo) {
-  const exportData = await prepareExport(options, processes);
+export async function exportProcesses(
+  options: ProcessExportOptions,
+  processes: ExportProcessInfo,
+  spaceId: string,
+) {
+  const exportData = await prepareExport(options, processes, spaceId);
 
   // determine if a zip export is required
   let needsZip = false;
@@ -96,16 +100,16 @@ export async function exportProcesses(options: ProcessExportOptions, processes: 
       }
     } else {
       if (options.type === 'bpmn') {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
         await bpmnExport(processData, folder);
       }
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
         await svgExport(exportData, processData, options.exportSelectionOnly, folder);
       }
       if (options.type === 'png' && !processData.isImport) {
-        const folder = zip?.folder(processData.definitionName);
+        const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
         await pngExport(
           exportData,
           processData,

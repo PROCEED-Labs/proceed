@@ -233,7 +233,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [process.id, process.bpmn, selectedVersionId],
+    [process.id, selectedVersionId],
   );
 
   return (

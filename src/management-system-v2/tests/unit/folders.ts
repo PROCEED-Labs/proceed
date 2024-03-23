@@ -459,7 +459,7 @@ describe('Create Folders', () => {
 
     expect(
       foldersMetaObject.folders[rootId1]?.children.some(
-        (child) => !('type' in child) && child.id === newFolder.id,
+        (child) => child.type === 'folder' && child.id === newFolder.id,
       ),
     ).toBe(true);
   });

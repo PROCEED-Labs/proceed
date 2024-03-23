@@ -84,7 +84,7 @@ const Layout: FC<
             <div style={{ padding: '1rem' }}>
               <Select
                 options={userEnvironments.map((environment) => ({
-                  label: environment.organization ? environment.name : 'Personal Environment',
+                  label: environment.organization ? environment.name : 'My Space',
                   value: environment.id,
                 }))}
                 defaultValue={activeSpace.spaceId}

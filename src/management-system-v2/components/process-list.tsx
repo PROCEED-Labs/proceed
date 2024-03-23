@@ -11,33 +11,22 @@ import {
   TableColumnsType,
   Tooltip,
 } from 'antd';
-import React, {
-  useCallback,
-  useState,
-  FC,
-  PropsWithChildren,
-  Key,
-  Dispatch,
-  SetStateAction,
-} from 'react';
+import { useCallback, useState, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
 import {
   CopyOutlined,
   ExportOutlined,
   EditOutlined,
   DeleteOutlined,
   StarOutlined,
-  EyeOutlined,
   MoreOutlined,
   InfoCircleOutlined,
+  FolderOutlined as FolderFilled,
+  FileOutlined as FileFilled,
 } from '@ant-design/icons';
 import cn from 'classnames';
-import { usePathname, useRouter } from 'next/navigation';
-import { TableRowSelection } from 'antd/es/table/interface';
+import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
-import { CheckboxChangeEvent } from 'antd/es/checkbox';
-import Preview from './previewProcess';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -46,7 +35,7 @@ import { ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 
 type ProcessListProps = PropsWithChildren<{
-  data?: ProcessListProcess[];
+  data: ProcessListProcess[];
   selection: Key[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
@@ -82,10 +71,8 @@ const ProcessList: FC<ProcessListProps> = ({
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
-  //const [previewerOpen, setPreviewerOpen] = useState(false);
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [previewProcess, setPreviewProcess] = useState<ProcessListProcess>();
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -102,6 +89,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
+      const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
       return (
         <>
           {/* <Tooltip placement="top" title={'Preview'}>
@@ -123,19 +111,11 @@ const ProcessList: FC<ProcessListProps> = ({
             </Tooltip>
           </AuthCan>
           <Tooltip placement="top" title={'Export'}>
-            <ExportOutlined
-              onClick={() => {
-                onExportProcess(record);
-              }}
-            />
+            <ExportOutlined onClick={() => onExportProcess(record)} />
           </Tooltip>
           <AuthCan update Process={record}>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined
-                onClick={() => {
-                  onEditProcess(record);
-                }}
-              />
+              <EditOutlined onClick={() => onEditProcess(record)} />
             </Tooltip>
           </AuthCan>
 
@@ -160,55 +140,26 @@ const ProcessList: FC<ProcessListProps> = ({
     [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
   );
 
-  // rowSelection object indicates the need for row selection
-
-  const rowSelection: TableRowSelection<ProcessListProcess> = {
-    selectedRowKeys: selection,
-    onChange: (selectedRowKeys: React.Key[], selectedRows) => {
-      setSelectionElements(selectedRows);
-    },
-    getCheckboxProps: (record: ProcessListProcess) => ({
-      name: record.id,
-    }),
-    onSelect: (_, __, selectedRows) => {
-      // setSelection(selectedRows);
-      setSelectionElements(selectedRows);
-    },
-    onSelectNone: () => {
-      setSelectionElements([]);
-    },
-    onSelectAll: (_, selectedRows) => {
-      // setSelection(selectedRows)
-      setSelectionElements(selectedRows);
-    },
-  };
-
-  const onCheckboxChange = (e: CheckboxChangeEvent) => {
-    e.stopPropagation();
-    const { checked, value } = e.target;
-    if (checked) {
-      //setSelectedColumns([...selectedColumns, value]);
-      addPreferences({ 'process-list-columns': [...selectedColumns, value] });
-    } else {
-      //setSelectedColumns(selectedColumns.filter((column) => column !== value));
-      addPreferences({
-        'process-list-columns': selectedColumns.filter((column: any) => column !== value),
-      });
-    }
-  };
-
-  const items: MenuProps['items'] = ColumnHeader.map((title) => ({
+  const columnCheckBoxItems: MenuProps['items'] = ColumnHeader.map((title) => ({
     label: (
-      <>
-        <Checkbox
-          checked={selectedColumns.includes(title)}
-          onChange={onCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-          value={title}
-        >
-          {title}
-        </Checkbox>
-      </>
+      <Checkbox
+        checked={selectedColumns.includes(title)}
+        onChange={(e) => {
+          e.stopPropagation();
+          const { checked, value } = e.target;
+          if (checked) {
+            addPreferences({ 'process-list-columns': [...selectedColumns, value] });
+          } else {
+            addPreferences({
+              'process-list-columns': selectedColumns.filter((column) => column !== value),
+            });
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
+        value={title}
+      >
+        {title}
+      </Checkbox>
     ),
     key: title,
   }));
@@ -228,23 +179,12 @@ const ProcessList: FC<ProcessListProps> = ({
         />
       ),
     },
-
     {
-      title: 'Process Name',
+      title: 'Name',
       dataIndex: 'name',
       key: 'Process Name',
       className: styles.Title,
-      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
-      onCell: (record, rowIndex) => ({
-        onClick: (event) => {
-          // TODO: This is a hack to clear the parallel route when selecting
-          // another process. (needs upstream fix)
-          //   // TODO:
-          //   setSelectedProcess(record);
-          //   router.refresh();
-          //   router.push(`/processes/${record.definitionId}`);
-        },
-      }),
+      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
         <div
           className={
@@ -260,26 +200,16 @@ const ProcessList: FC<ProcessListProps> = ({
             textOverflow: 'ellipsis',
           }}
         >
-          {record.name.highlighted}
+          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
         </div>
       ),
       responsive: ['xs', 'sm'],
     },
-
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      sorter: (a, b) => a.description.value.localeCompare(b.description.value),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
+      // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
         <div
           style={{
@@ -294,76 +224,35 @@ const ProcessList: FC<ProcessListProps> = ({
       ),
       responsive: ['sm'],
     },
-
     {
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
+      // sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
       responsive: ['md'],
     },
-
     {
       title: 'Created On',
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
+      // sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
       responsive: ['md'],
     },
-
     {
       title: 'File Size',
       key: 'File Size',
       sorter: (a, b) => (a < b ? -1 : 1),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
       responsive: ['md'],
     },
-
     {
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
-      onCell: (record, rowIndex) => ({
-        // onClick: (event) => {
-        //   // TODO: This is a hack to clear the parallel route when selecting
-        //   // another process. (needs upstream fix)
-        //   setSelectedProcess(record);
-        //   router.refresh();
-        //   router.push(`/processes/${record.definitionId}`);
-        // },
-      }),
+      // sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
       responsive: ['md'],
     },
-
     {
       fixed: 'right',
       width: 160,
@@ -376,7 +265,7 @@ const ProcessList: FC<ProcessListProps> = ({
             open={dropdownOpen}
             onOpenChange={(open) => setDropdownOpen(open)}
             menu={{
-              items,
+              items: columnCheckBoxItems,
             }}
             trigger={['click']}
           >
@@ -386,19 +275,18 @@ const ProcessList: FC<ProcessListProps> = ({
           </Dropdown>
         </div>
       ),
-      render: (id, record, index) => (
+      render: (id, record) => (
         <Row
           justify="space-evenly"
           style={{
             opacity: hovered?.id === id ? 1 : 0,
           }}
         >
-          {actionBarGenerator(record)}
+          {record.type !== 'folder' ? actionBarGenerator(record) : null}
         </Row>
       ),
       responsive: ['xl'],
     },
-
     {
       fixed: 'right',
       width: 160,
@@ -421,12 +309,15 @@ const ProcessList: FC<ProcessListProps> = ({
       <Table
         rowSelection={{
           type: 'checkbox',
-          ...rowSelection,
+          selectedRowKeys: selection,
+          onChange: (_, selectedRows) => setSelectionElements(selectedRows),
+          getCheckboxProps: (record: ProcessListProcess) => ({ name: record.id }),
+          onSelect: (_, __, selectedRows) => setSelectionElements(selectedRows),
+          onSelectNone: () => setSelectionElements([]),
+          onSelectAll: (_, selectedRows) => setSelectionElements(selectedRows),
         }}
-        onRow={(record, rowIndex) => ({
+        onRow={(record) => ({
           onClick: (event) => {
-            // event.stopPropagation();
-            // event.preventDefault();
             /* CTRL */
             if (event.ctrlKey) {
               /* Not selected yet -> Add to selection */
@@ -440,8 +331,8 @@ const ProcessList: FC<ProcessListProps> = ({
             } else if (event.shiftKey) {
               /* At least one element selected */
               if (selection.length) {
-                const iLast = data!.findIndex((process) => process.id === lastProcessId);
-                const iCurr = data!.findIndex((process) => process.id === record?.id);
+                const iLast = data.findIndex((process) => process.id === lastProcessId);
+                const iCurr = data.findIndex((process) => process.id === record?.id);
                 /* Identical to last clicked */
                 if (iLast === iCurr) {
                   setSelectionElements([record]);
@@ -476,10 +367,14 @@ const ProcessList: FC<ProcessListProps> = ({
           //   }
           // },
           onDoubleClick: () => {
-            // TODO: This is a hack to clear the parallel route when selecting
-            // another process. (needs upstream fix)
-            //router.refresh();
-            router.push(spaceURL(environment, `/processes/${record.id}`));
+            router.push(
+              spaceURL(
+                environment,
+                record.type === 'folder'
+                  ? `/processes/folder/${record.id}`
+                  : `/processes/${record.id}`,
+              ),
+            );
           },
           onMouseEnter: (event) => {
             setHovered(record);

@@ -8,6 +8,7 @@ import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
+import renderSigninLinkEmail from './signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -26,12 +27,16 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
+        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+
         sendEmail({
           to: params.identifier,
-          body: params.url,
-          subject: 'Sign in',
+          subject: 'Sign in to PROCEED',
+          html: signinMail.html,
+          text: signinMail.text,
         });
       },
+      maxAge: 24 * 60 * 60, // one day
     }),
   ],
   callbacks: {

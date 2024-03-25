@@ -69,7 +69,6 @@ const ProcessesPage = async ({
               </Button>
             </Link>
           )}
-
           <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
         </Space>
       }

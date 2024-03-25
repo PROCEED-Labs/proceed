@@ -1,7 +1,7 @@
 import jsZip from 'jszip';
 
 import { ProcessesExportData, ProcessExportData } from './export-preparation';
-import { downloadFile, getSVGFromBPMN, getImageDimensions } from './util';
+import { getProcessFilePathName, downloadFile, getSVGFromBPMN, getImageDimensions } from './util';
 
 /**
  * Executes the logic that adds the file for a specific process version/collapsed subprocess
@@ -54,7 +54,7 @@ async function addImageFile(
   if (subprocessId) {
     filename += `_subprocess_${subprocessName || subprocessId}`;
   }
-
+  filename = getProcessFilePathName(filename);
   if (zipFolder) {
     zipFolder.file(`${filename}.${filetype}`, blob);
   } else {

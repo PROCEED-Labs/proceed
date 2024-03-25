@@ -1,5 +1,5 @@
-import { Button, Card, Descriptions, DescriptionsProps, Grid } from 'antd';
-import React, { Dispatch, FC, Key, ReactNode, SetStateAction, useRef, useState } from 'react';
+import { Card, Descriptions, DescriptionsProps, Grid } from 'antd';
+import { Dispatch, FC, Key, ReactNode, SetStateAction, useRef, useState } from 'react';
 
 import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
 import Viewer from './bpmn-viewer';
@@ -9,7 +9,7 @@ import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
 import { useLazyLoading } from './scrollbar';
-import { DraggableElementGenerator, ProcessListProcess } from './processes';
+import { DraggableElementGenerator, ProcessListProcess, contextMenuStore } from './processes';
 import { useEnvironment } from './auth-can';
 
 const DraggableDiv = DraggableElementGenerator('div', 'item-id');
@@ -122,6 +122,7 @@ const TabCard: FC<TabCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
   const environment = useEnvironment();
+  const setSelectredContextMenuItem = contextMenuStore((store) => store.setSelected);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -205,6 +206,7 @@ const TabCard: FC<TabCardProps> = ({
         onDoubleClick={() => {
           router.push(spaceURL(environment, `/processes/${item.id}`));
         }}
+        onContextMenu={() => setSelectredContextMenuItem([item])}
       >
         {item.type !== 'folder' ? (
           generateContentList(item, isVisible)[activeTabKey]

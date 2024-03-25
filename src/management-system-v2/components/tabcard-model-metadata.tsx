@@ -204,7 +204,9 @@ const TabCard: FC<TabCardProps> = ({
           setLastProcessId(item?.id);
         }}
         onDoubleClick={() => {
-          router.push(spaceURL(environment, `/processes/${item.id}`));
+          const url =
+            item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
+          router.push(spaceURL(environment, url));
         }}
         onContextMenu={() => setSelectredContextMenuItem([item])}
       >

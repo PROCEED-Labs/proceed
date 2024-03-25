@@ -422,7 +422,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                     setOpenExportModal(true);
                   }}
                   onDeleteProcess={async ({ id }) => {
-                    await deleteProcesses([id]);
+                    await deleteProcesses([id], environment.spaceId);
                     setSelectedRowElements([]);
                     router.refresh();
                   }}

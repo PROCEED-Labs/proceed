@@ -1,15 +1,9 @@
-import {
-  getFolderChildren,
-  getRootFolder,
-  getFolderById,
-  createFolder,
-} from '@/lib/data/legacy/folders';
+import { getFolderChildren, getRootFolder, getFolderById } from '@/lib/data/legacy/folders';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
-import { Button, Result, Space } from 'antd';
-import NotLoggedInFallback from './not-logged-in-fallback';
-import { getProcess, getProcesses } from '@/lib/data/legacy/process';
-import Auth, { getCurrentEnvironment } from '@/components/auth';
+import { Button, Space } from 'antd';
+import { getProcess } from '@/lib/data/legacy/process';
+import { getCurrentEnvironment } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
 // otherwise. It might be possible in the future with turbopack without this

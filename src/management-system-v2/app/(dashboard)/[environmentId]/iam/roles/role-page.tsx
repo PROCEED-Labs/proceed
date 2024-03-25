@@ -104,59 +104,61 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Bar
-        rightNode={<HeaderActions />}
-        leftNode={
-          selectedRowKeys.length > 0 ? (
-            <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected:</span>
-              <ConfirmationButton
-                title="Delete Roles"
-                description="Are you sure you want to delete the selected roles?"
-                onConfirm={() => deleteRoles(selectedRowKeys)}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  disabled: cannotDeleteSelected,
-                  type: 'text',
-                }}
-              />
-            </Space>
-          ) : null
-        }
-        searchProps={{
-          onChange: (e) => setSearchQuery(e.target.value),
-          onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
-          placeholder: 'Search Role ...',
-        }}
-      />
-      <div style={{ display: 'flex', height: '100%', gap: 20 }}>
-        <div style={{ flex: 1 }}>
-          <Table<FilteredRole>
-            columns={columns}
-            dataSource={filteredRoles}
-            onRow={(element) => ({
-              onMouseEnter: () => setHoveredRow(element.id),
-              onMouseLeave: () => setHoveredRow(null),
-              onDoubleClick: () => router.push(spaceURL(environment, `/iam/roles/${element.id}`)),
-              onClick: () => {
-                setSelectedRowKeys([element.id]);
-                setSelectedRows([element]);
-              },
-            })}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (selectedRowKeys, selectedRows) => {
-                setSelectedRowKeys(selectedRowKeys as string[]);
-                setSelectedRows(selectedRows);
-              },
-            }}
-            rowKey="id"
-          />
-        </div>
-        <RoleSidePanel role={lastSelectedElement} />
+    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: 20 }}>
+      <div style={{ display: 'flex', height: '100%', flexDirection: 'column', flexGrow: 1 }}>
+        <Bar
+          rightNode={<HeaderActions />}
+          leftNode={
+            selectedRowKeys.length > 0 ? (
+              <Space size={20}>
+                <Button
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={() => setSelectedRowKeys([])}
+                />
+                <span>{selectedRowKeys.length} selected:</span>
+                <ConfirmationButton
+                  title="Delete Roles"
+                  description="Are you sure you want to delete the selected roles?"
+                  onConfirm={() => deleteRoles(selectedRowKeys)}
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    disabled: cannotDeleteSelected,
+                    type: 'text',
+                  }}
+                />
+              </Space>
+            ) : null
+          }
+          searchProps={{
+            onChange: (e) => setSearchQuery(e.target.value),
+            onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
+            placeholder: 'Search Role ...',
+          }}
+        />
+        <Table<FilteredRole>
+          columns={columns}
+          dataSource={filteredRoles}
+          onRow={(element) => ({
+            onMouseEnter: () => setHoveredRow(element.id),
+            onMouseLeave: () => setHoveredRow(null),
+            onDoubleClick: () => router.push(spaceURL(environment, `/iam/roles/${element.id}`)),
+            onClick: () => {
+              setSelectedRowKeys([element.id]);
+              setSelectedRows([element]);
+            },
+          })}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedRowKeys, selectedRows) => {
+              setSelectedRowKeys(selectedRowKeys as string[]);
+              setSelectedRows(selectedRows);
+            },
+          }}
+          rowKey="id"
+        />
       </div>
+      <RoleSidePanel role={lastSelectedElement} />
     </div>
   );
 };

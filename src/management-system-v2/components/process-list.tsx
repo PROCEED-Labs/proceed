@@ -27,7 +27,6 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -98,7 +97,15 @@ const ProcessList: FC<ProcessListProps> = ({
       const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
       return (
         <>
-          <AuthCan resource={resource} action="create">
+          {/* <Tooltip placement="top" title={'Preview'}>
+            <EyeOutlined
+              onClick={() => {
+                setPreviewProcess(record);
+                setPreviewerOpen(true);
+              }}
+            />
+          </Tooltip> */}
+          <AuthCan create Process={record}>
             <Tooltip placement="top" title={'Copy'}>
               <CopyOutlined
                 onClick={(e) => {
@@ -111,7 +118,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <Tooltip placement="top" title={'Export'}>
             <ExportOutlined onClick={() => onExportProcess(record)} />
           </Tooltip>
-          <AuthCan resource={resource} action="update">
+          <AuthCan update Process={record}>
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined onClick={() => onEditProcess(record)} />
             </Tooltip>
@@ -119,7 +126,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan action="delete" resource={resource}>
+          <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"

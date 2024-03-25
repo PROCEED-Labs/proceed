@@ -1348,6 +1348,14 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
+"@bpmn-io/diagram-js-ui@^0.2.3":
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.3.tgz#7ace8aadb1b701eb770d0b34595dc1d1fb4c327c"
+  integrity sha512-OGyjZKvGK8tHSZ0l7RfeKhilGoOGtFDcoqSGYkX0uhFlo99OVZ9Jn1K7TJGzcE9BdKwvA5Y5kGqHEhdTxHvFfw==
+  dependencies:
+    htm "^3.1.1"
+    preact "^10.11.2"
+
 "@casl/ability-v6@npm:@casl/ability@^6.5.0", "@casl/ability@6.5.0":
   name "@casl/ability-v6"
   version "6.5.0"
@@ -5325,19 +5333,18 @@ bpmn-js-differ@2.0.2, bpmn-js-differ@^2.0.2:
     diffpatch "^0.5.1"
     min-dash "^3.0.0"
 
-bpmn-js@13.2.0:
-  version "13.2.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-13.2.0.tgz#86a475f4127db53aa3fb648b418c7c9441ac6fa7"
-  integrity sha512-kqoWRzfEBhq4e/izf/+SWkC3eo/738FHRz6bcsw6E7xRIdn8Ke8WZT7HcB+PQ/UoSACUClk/sxtwtlRYLMRtLg==
+bpmn-js@17.2.1:
+  version "17.2.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.2.1.tgz#a856aa35f0721e33eee402cd61efc574d1100d36"
+  integrity sha512-gj39OuDwZlAnpMpy4t1jZA7srNVlT9hvveZut42aTWZvg3bbxfhtCZE9LuGyCTi1sxCB05s9Z4xiGpACziTDgQ==
   dependencies:
-    bpmn-moddle "^8.0.0"
-    diagram-js "^12.2.0"
-    diagram-js-direct-editing "^2.0.0"
-    ids "^1.0.0"
+    bpmn-moddle "^8.1.0"
+    diagram-js "^14.3.1"
+    diagram-js-direct-editing "^2.1.2"
+    ids "^1.0.5"
     inherits-browser "^0.1.0"
-    min-dash "^4.0.0"
+    min-dash "^4.1.1"
     min-dom "^4.0.3"
-    object-refs "^0.3.0"
     tiny-svg "^3.0.0"
 
 bpmn-js@^11.1.1:
@@ -5373,7 +5380,7 @@ bpmn-moddle@^6.0.0:
     moddle "^5.0.1"
     moddle-xml "^8.0.8"
 
-bpmn-moddle@^8.0.0, bpmn-moddle@^8.0.1:
+bpmn-moddle@^8.0.0, bpmn-moddle@^8.0.1, bpmn-moddle@^8.1.0:
   version "8.1.0"
   resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-8.1.0.tgz#80d70e88c78347c95184ce6044160658970613d7"
   integrity sha512-yI5OAFfYVJwViKTsTsonVfCBPtB3MlefADUORwNIxxBOMp21vnoxuxsdgUWlPH/dvAEZh/+mr8UtqOBNu8NC5Q==
@@ -6389,7 +6396,7 @@ clsx@^1.2.1:
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.2.1.tgz#0ddc4a20a549b59c93a4116bb26f5294ca17dc12"
   integrity sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==
 
-clsx@^2.0.0:
+clsx@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-2.1.0.tgz#e851283bcb5c80ee7608db18487433f7b23f77cb"
   integrity sha512-m3iNNWpd9rl3jvvcBnu70ylMdrXt8Vlq4HYadnU5fwcOtvkSQWPmj7amUcDT2qYI7risszBjI5AUIUox9D16pg==
@@ -7911,7 +7918,7 @@ devtools-protocol@0.0.1107588:
   resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1107588.tgz#f8cac707840b97cc30b029359341bcbbb0ad8ffa"
   integrity sha512-yIR+pG9x65Xko7bErCUSQaDLrO/P1p3JUzEk7JCU4DowPcGHkTGUGQapcfcLc4qj0UaALwZ+cr0riFgiqpixcg==
 
-diagram-js-direct-editing@^2.0.0:
+diagram-js-direct-editing@^2.0.0, diagram-js-direct-editing@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-2.1.2.tgz#1d561ef9ff8c61615bb8a1c8168cc3186d7f5992"
   integrity sha512-VpccLAnLqLF1cp3fk363QUbRVTd/qTcj2oOb+IqgcmOiWszJp7J9Ta6y5GjUvw48hDZpzCatlmWwA4CJ3MaYGQ==
@@ -7935,20 +7942,19 @@ diagram-js@^11.4.3, diagram-js@^11.9.1:
     path-intersection "^2.2.1"
     tiny-svg "^3.0.1"
 
-diagram-js@^12.2.0:
-  version "12.8.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.8.1.tgz#b4f0875a7b5f204894c6cea7dace65d6b3b4e7af"
-  integrity sha512-LF9BiwjbOPpZd0ez5VSlYRbdbEA59YQX43bWvNDp1rLMv0xwZ5yIg4oaYDK82nIQ0kH1tjvoQRpNevMTCgQVyw==
+diagram-js@^14.3.1:
+  version "14.3.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.3.1.tgz#45ce299a8bc3d4bc3fd2f00e7d7c36f76c1ff514"
+  integrity sha512-QXwH2kdlTP8cfWDCfYnnhvJ9PXX8UQ/M8TJaeLfcIjJPBOrfSEfLI/wuI7VNtAZZ9munlcGmCnh8hEBtcjB8kA==
   dependencies:
-    "@bpmn-io/diagram-js-ui" "^0.2.2"
-    clsx "^2.0.0"
-    didi "^9.0.2"
-    hammerjs "^2.0.1"
+    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    clsx "^2.1.0"
+    didi "^10.2.2"
     inherits-browser "^0.1.0"
     min-dash "^4.1.0"
     min-dom "^4.1.0"
-    object-refs "^0.3.0"
-    path-intersection "^2.2.1"
+    object-refs "^0.4.0"
+    path-intersection "^3.0.0"
     tiny-svg "^3.0.1"
 
 dicer@0.3.0:
@@ -7957,6 +7963,11 @@ dicer@0.3.0:
   integrity sha512-MdceRRWqltEG2dZqO769g27N/3PXfcKl04VhYnBlo2YhH7zPi88VebsjTKclaOyiuMaGU72hTfw3VkUitGcVCA==
   dependencies:
     streamsearch "0.1.2"
+
+didi@^10.2.2:
+  version "10.2.2"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-10.2.2.tgz#438741b8281be97cdedd8da2a42c307a918b9706"
+  integrity sha512-l8NYkYFXV1izHI65EyT8EXOjUZtKmQkHLTT89cSP7HU5J/G7AOj0dXKtLc04EXYlga99PBY18IPjOeZ+c3DI4w==
 
 didi@^9.0.2:
   version "9.0.2"
@@ -11329,7 +11340,7 @@ icss-utils@^4.1.0:
   dependencies:
     postcss "^7.0.14"
 
-ids@^1.0.0:
+ids@^1.0.0, ids@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.5.tgz#0aeb4777e77e0017a983c9f7b0ca0cccf352afe4"
   integrity sha512-XQ0yom/4KWTL29sLG+tyuycy7UmeaM/79GRtSJq6IG9cJGIPeBz5kwDCguie3TwxaMNIc3WtPi0cTa1XYHicpw==
@@ -15340,6 +15351,11 @@ object-refs@^0.3.0:
   resolved "https://registry.yarnpkg.com/object-refs/-/object-refs-0.3.0.tgz#934f4f0fb6b409e78be15fa60f616108aed63786"
   integrity sha512-eP0ywuoWOaDoiake/6kTJlPJhs+k0qNm4nYRzXLNHj6vh+5M3i9R1epJTdxIPGlhWc4fNRQ7a6XJNCX+/L4FOQ==
 
+object-refs@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/object-refs/-/object-refs-0.4.0.tgz#c04d929b32061f469a513724b7d0334ab2d90ede"
+  integrity sha512-6kJqKWryKZmtte6QYvouas0/EIJKPI1/MMIuRsiBlNuhIMfqYTggzX2F1AJ2+cDs288xyi9GL7FyasHINR98BQ==
+
 object-visit@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/object-visit/-/object-visit-1.0.1.tgz#f79c4493af0c5377b59fe39d395e41042dd045bb"
@@ -15980,6 +15996,11 @@ path-intersection@^2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/path-intersection/-/path-intersection-2.2.1.tgz#8476b75fefb7ac402f810d304e0eb0c080c11fe7"
   integrity sha512-9u8xvMcSfuOiStv9bPdnRJQhGQXLKurew94n4GPQCdH1nj9QKC9ObbNoIpiRq8skiOBxKkt277PgOoFgAt3/rA==
+
+path-intersection@^3.0.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/path-intersection/-/path-intersection-3.1.0.tgz#a983d9fbce161a3b03d94c1deadbf979b6364ad5"
+  integrity sha512-3xS3lvv/vuwm5aH2BVvNRvnvwR2Drde7jQClKpCXTYXIMMjcw/EnMhzCgeHwqbCpzi760PEfAkU53vSIlrNr9A==
 
 path-is-absolute@^1.0.0, path-is-absolute@^1.0.1:
   version "1.0.1"

@@ -24,6 +24,7 @@ import {
   Card,
   Badge,
   MenuProps,
+  Spin,
 } from 'antd';
 import cn from 'classnames';
 import {
@@ -600,33 +601,34 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
               onDragEnd={dragEndHanler}
               onDragStart={dragStartHandler}
             >
-              {iconView ? (
-                <IconView
-                  data={filteredData}
-                  selection={selectedRowKeys}
-                  setSelectionElements={setSelectedRowElements}
-                  setShowMobileMetaData={setShowMobileMetaData}
-                />
-              ) : (
-                <ProcessList
-                  data={filteredData}
-                  folder={folder}
-                  dragInfo={dragInfo}
-                  setSelectionElements={setSelectedRowElements}
-                  selection={selectedRowKeys}
-                  selectedElements={selectedRowElements}
-                  isLoading={loading}
-                  // TODO: Replace with server component loading state
-                  //isLoading={isLoading}
-                  onExportProcess={(id) => {
-                    setOpenExportModal(true);
-                  }}
-                  onDeleteItem={onDeleteItems}
-                  onCopyItem={onCopyItem}
-                  onEditItem={onEditItem}
-                  setShowMobileMetaData={setShowMobileMetaData}
-                />
-              )}
+              <Spin spinning={loading}>
+                {iconView ? (
+                  <IconView
+                    data={filteredData}
+                    selection={selectedRowKeys}
+                    setSelectionElements={setSelectedRowElements}
+                    setShowMobileMetaData={setShowMobileMetaData}
+                  />
+                ) : (
+                  <ProcessList
+                    data={filteredData}
+                    folder={folder}
+                    dragInfo={dragInfo}
+                    setSelectionElements={setSelectedRowElements}
+                    selection={selectedRowKeys}
+                    selectedElements={selectedRowElements}
+                    // TODO: Replace with server component loading state
+                    //isLoading={isLoading}
+                    onExportProcess={(id) => {
+                      setOpenExportModal(true);
+                    }}
+                    onDeleteItem={onDeleteItems}
+                    onCopyItem={onCopyItem}
+                    onEditItem={onEditItem}
+                    setShowMobileMetaData={setShowMobileMetaData}
+                  />
+                )}
+              </Spin>
               <DragOverlay dropAnimation={null}>
                 {dragInfo.dragging ? (
                   <Badge

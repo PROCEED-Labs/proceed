@@ -49,7 +49,6 @@ type ProcessListProps = PropsWithChildren<{
   selection: Key[];
   selectedElements: ProcessListProcess[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
-  isLoading?: boolean;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
   onDeleteItem: (process: ProcessListProcess[]) => void;
@@ -76,7 +75,6 @@ const ProcessList: FC<ProcessListProps> = ({
   selection,
   selectedElements,
   setSelectionElements,
-  isLoading,
   onExportProcess,
   onDeleteItem,
   onEditItem,
@@ -414,7 +412,6 @@ const ProcessList: FC<ProcessListProps> = ({
       rowKey="id"
       columns={columnsFiltered}
       dataSource={data}
-      loading={isLoading}
       className={cn(breakpoint.xs ? styles.MobileTable : '')}
       size={breakpoint.xs ? 'large' : 'middle'}
     />

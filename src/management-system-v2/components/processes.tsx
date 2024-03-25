@@ -545,12 +545,13 @@ export function DraggableElementGenerator<TPropId extends string>(
     HTMLAttributes<HTMLElement> & { [key in TPropId]: string };
 
   const DraggableElement = (props: Props) => {
+    const elementId = props[propId] ?? '';
     const {
       attributes,
       listeners,
       setNodeRef: setDraggableNodeRef,
       isDragging,
-    } = useDraggable({ id: props[propId] });
+    } = useDraggable({ id: elementId });
 
     const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
       id: props[propId],
@@ -558,7 +559,7 @@ export function DraggableElementGenerator<TPropId extends string>(
 
     const className = cn(
       {
-        [styles.HoveredByFile]: !isDragging && over?.id === props[propId],
+        [styles.HoveredByFile]: !isDragging && over?.id === elementId,
         [styles.RowBeingDragged]: isDragging,
       },
       props.className,

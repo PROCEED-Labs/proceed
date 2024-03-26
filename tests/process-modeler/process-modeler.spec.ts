@@ -63,7 +63,7 @@ test('process modeler', async ({ processModelerPage }) => {
   await processModelerPage.page.getByRole('option', { name: 'Version 1' }).click();
   await processModelerPage.page.waitForTimeout(500);
   const expectedURLWithVersion = new RegExp(
-    `^http:\\/\\/localhost:3000\\/credentials:development-id%7Cadmin\\/processes\\/${processModelerPage.processDefinitionID}\\?version=\\d+$`,
+    `^http:\\/\\/localhost:3000\\/processes\\/${processModelerPage.processDefinitionID}\\?version=\\d+$`,
   );
   expect(expectedURLWithVersion.test(processModelerPage.page.url())).toBeTruthy();
 
@@ -105,8 +105,24 @@ test('process modeler', async ({ processModelerPage }) => {
   await processModelerPage.page.waitForTimeout(500);
   const newDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   const expectedURLNewProcess = new RegExp(
-    `^http:\\/\\/localhost:3000\\/credentials:development-id%7Cadmin\\/processes\\/[a-zA-Z0-9-_]+`,
+    `^http:\\/\\/localhost:3000\\/processes\\/[a-zA-Z0-9-_]+`,
   );
   expect(expectedURLNewProcess.test(processModelerPage.page.url())).toBeTruthy();
   expect(newDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
+
+  // Create subprocess and navigate
+  await processModelerPage.createSubprocess();
+  await processModelerPage.page.locator('.djs-shape[data-element-id^="Activity_"]').click();
+  const openSubprocessButton = processModelerPage.page.getByRole('button', {
+    name: 'Open Subprocess',
+  });
+  await expect(openSubprocessButton).toBeVisible();
+  await openSubprocessButton.click();
+  await processModelerPage.page.waitForTimeout(500);
+  const newSubprocessDefinitionID = processModelerPage.page.url().split('/processes/').pop();
+  const expectedURLSubprocess = new RegExp(
+    `^http:\\/\\/localhost:3000\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
+  );
+  expect(expectedURLSubprocess.test(processModelerPage.page.url())).toBeTruthy();
+  expect(newSubprocessDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
 });

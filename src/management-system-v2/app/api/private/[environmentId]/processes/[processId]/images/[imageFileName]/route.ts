@@ -11,10 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(
   request: NextRequest,
   {
-    params: { processId, imageFileName },
-  }: { params: { processId: string; imageFileName: string } },
+    params: { environmentId, processId, imageFileName },
+  }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[processId];
@@ -47,8 +47,8 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   {
-    params: { processId, imageFileName },
-  }: { params: { processId: string; imageFileName: string } },
+    params: { environmentId, processId, imageFileName },
+  }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
   const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
 
@@ -104,7 +104,7 @@ export async function PUT(
     throw err;
   }
 
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];
@@ -133,10 +133,10 @@ export async function PUT(
 export async function DELETE(
   request: NextRequest,
   {
-    params: { processId, imageFileName },
-  }: { params: { processId: string; imageFileName: string } },
+    params: { environmentId, processId, imageFileName },
+  }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[processId];

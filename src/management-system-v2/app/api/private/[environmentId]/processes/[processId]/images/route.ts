@@ -10,9 +10,11 @@ import { v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  { params: { processId } }: { params: { processId: string } },
+  {
+    params: { environmentId, processId },
+  }: { params: { environmentId: string; processId: string } },
 ) {
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[processId];
@@ -38,7 +40,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params: { processId } }: { params: { processId: string } },
+  {
+    params: { environmentId, processId },
+  }: { params: { environmentId: string; processId: string } },
 ) {
   const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
 
@@ -94,7 +98,7 @@ export async function POST(
     throw err;
   }
 
-  const { ability } = await getCurrentEnvironment();
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   const processMetaObjects: any = getProcessMetaObjects();
   const process = processMetaObjects[processId];

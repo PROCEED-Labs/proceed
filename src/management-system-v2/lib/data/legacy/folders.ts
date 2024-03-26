@@ -14,6 +14,7 @@ import { Process, ProcessMetadata } from '../process-schema';
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
+export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {

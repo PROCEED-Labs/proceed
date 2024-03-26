@@ -260,10 +260,16 @@ export async function updateProcessMetaData(
 
 /** Removes an existing process */
 export async function removeProcess(processDefinitionsId: string) {
-  if (!processMetaObjects[processDefinitionsId]) {
+  const process = processMetaObjects[processDefinitionsId];
+
+  if (!process) {
     return;
   }
 
+  // remove process from frolder
+  foldersMetaObject.folders[process.folderId]!.children = foldersMetaObject.folders[
+    process.folderId
+  ]!.children.filter((folder) => folder.id !== processDefinitionsId);
   // remove process directory
   deleteProcess(processDefinitionsId);
   // remove from store

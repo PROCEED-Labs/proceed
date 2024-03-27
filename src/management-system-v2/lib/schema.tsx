@@ -39,7 +39,7 @@ export const schema = {
         {
           name: 'value',
           isBody: true,
-          type: 'String',
+          type: 'Number',
         },
         {
           name: 'unit',

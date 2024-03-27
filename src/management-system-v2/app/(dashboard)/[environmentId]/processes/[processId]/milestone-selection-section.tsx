@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { createRef, useEffect, useState } from 'react';
 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './milestone-selection-section.module.scss';
@@ -10,7 +10,7 @@ import { getMilestonesFromElement, setProceedElement } from '@proceed/bpmn-helpe
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
-import { Editor } from '@toast-ui/react-editor';
+import { Editor, Viewer } from '@toast-ui/react-editor';
 import TextEditor from '@/components/text-editor';
 import TextViewer from '@/components/text-viewer';
 
@@ -181,9 +181,16 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
 
   return (
     <>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        role="group"
+        aria-labelledby="milestones-title"
+      >
         <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-          <span style={{ marginRight: '0.3em' }}>Milestones</span>
+          <span id="milestones-title" style={{ marginRight: '0.3em' }}>
+            Milestones
+          </span>
           <PlusOutlined
             onClick={() => {
               setIsMilestoneModalOpen(true);
@@ -194,14 +201,32 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
           pagination={{ pageSize: 5 }}
           rowKey="id"
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id' },
-            { title: 'Name', dataIndex: 'name', key: 'name' },
+            {
+              title: 'ID',
+              dataIndex: 'id',
+              key: 'id',
+              sorter: (a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }),
+            },
+            {
+              title: 'Name',
+              dataIndex: 'name',
+              key: 'name',
+              sorter: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
+            },
             {
               title: 'Description',
               dataIndex: 'description',
               key: 'description',
               render: (description) => {
-                return <TextViewer initialValue={description}></TextViewer>;
+                const viewerRef = createRef<Viewer>();
+                if (viewerRef.current && description) {
+                  const viewer = viewerRef.current as Viewer;
+                  const viewerInstance = viewer.getInstance();
+
+                  viewerInstance.setMarkdown(description);
+                }
+
+                return <TextViewer ref={viewerRef} initialValue={description}></TextViewer>;
               },
             },
             {

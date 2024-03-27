@@ -1,0 +1,9 @@
+.PlannedCostInput :global {
+  .ant-input-group-addon {
+    padding-inline: 0px !important;
+
+    .ant-select {
+      width: 100% !important;
+    }
+  }
+}

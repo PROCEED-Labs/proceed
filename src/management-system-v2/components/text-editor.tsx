@@ -5,9 +5,9 @@ import styles from './text-editor.module.scss';
 import dynamic from 'next/dynamic';
 
 // Editor uses `navigator` in top level scope, which is not available in server side rendering.
-const Editor = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Editor), {
+const ToastUIEditor = dynamic(() => import('./toastui-editor').then((res) => res.ToastUIEditor), {
   ssr: false,
-}) as FC<RefAttributes<EditorClass> & EditorProps>;
+});
 
 const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(props, ref) {
   const editorRef = ref as React.MutableRefObject<EditorClass>;
@@ -26,8 +26,8 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
 
   return (
     <div className={styles.EditorContainer}>
-      <Editor
-        ref={editorRef}
+      <ToastUIEditor
+        editorRef={editorRef}
         previewStyle="tab"
         autofocus={true}
         viewer={true}
@@ -68,6 +68,6 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
       </div>
     </div>
   );
-});
+}) as FC<RefAttributes<EditorClass> & EditorProps>;
 
 export default TextEditor;

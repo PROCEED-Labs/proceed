@@ -1,9 +1,12 @@
-export async function scaleDownImage(imageFile: any, desiredMaxLength: number) {
+export async function scaleDownImage(
+  imageFile: File,
+  desiredMaxLength: number,
+): Promise<File | Blob> {
   const blob = new Blob([imageFile], { type: imageFile.type });
   const scaledDownImage = new Image();
   scaledDownImage.src = URL.createObjectURL(blob);
 
-  return new Promise(async (resolve) => {
+  return new Promise(async (resolve, reject) => {
     scaledDownImage.onload = function () {
       URL.revokeObjectURL(scaledDownImage.src);
 
@@ -22,7 +25,11 @@ export async function scaleDownImage(imageFile: any, desiredMaxLength: number) {
         ctx.drawImage(scaledDownImage, 0, 0, scaledDownImage.width, scaledDownImage.height);
 
         canvas.toBlob((blob) => {
-          resolve(blob);
+          if (!blob) {
+            reject('Received error while converting canvas element to blob');
+          } else {
+            resolve(blob);
+          }
         }, imageFile.type);
       } else {
         resolve(imageFile);

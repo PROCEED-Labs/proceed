@@ -14,7 +14,6 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
-  saveProcessImage,
 } from './legacy/_process';
 import {
   addDocumentation,

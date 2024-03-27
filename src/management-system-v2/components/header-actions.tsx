@@ -4,8 +4,10 @@ import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FC, ReactNode } from 'react';
+import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
+import { enableChatbot } from 'FeatureFlags';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -60,6 +62,7 @@ const HeaderActions: FC = () => {
 
   return (
     <Space style={{ float: 'right', padding: '16px' }}>
+      {enableChatbot && <Assistant />}
       {actionButton}
       <Dropdown
         menu={{

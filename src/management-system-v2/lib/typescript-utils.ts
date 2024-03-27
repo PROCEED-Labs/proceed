@@ -58,3 +58,10 @@ export type OmitDistributive<T, K extends keyof any> = T extends any ? Omit<T, K
  */
 export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = OmitDistributive<T, K> &
   Partial<Pick<T, K>>;
+
+/**
+ * The normal Omit breaks union types. This is a fix for that.
+ */
+export type UnionAwareOmit<TObj extends Record<string, any>, TKeys extends keyof TObj> = Prettify<
+  TObj extends any ? Omit<TObj, TKeys> : never
+>;

@@ -8,11 +8,10 @@ import CreateEnvironmentButton from './create-environment-button';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import EnvironmentSidePanel from './environments-side-panel';
 import ConfirmationButton from '@/components/confirmation-button';
-import { useAbilityStore } from '@/lib/abilityStore';
-import { DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import { useSession } from 'next-auth/react';
 import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
+import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -67,7 +66,7 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
           leftNode={
             selectedRowKeys.length > 0 ? (
               <Space size={20}>
-                <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRows([])} />
+                <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
                 <span>{selectedRowKeys.length} selected:</span>
                 <ConfirmationButton
                   title="Delete Organizations"
@@ -83,7 +82,7 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                   }
                   onConfirm={() => deleteEnvironments(selectedRowKeys)}
                   buttonProps={{
-                    icon: <DeleteOutlined />,
+                    icon: <AiOutlineDelete />,
                     disabled: false, // TODO check ability
                     type: 'text',
                   }}
@@ -135,7 +134,7 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                       top: '0',
                       bottom: '0',
                     },
-                    icon: <DeleteOutlined />,
+                    icon: <AiOutlineDelete />,
                     type: 'text',
                   }}
                 />

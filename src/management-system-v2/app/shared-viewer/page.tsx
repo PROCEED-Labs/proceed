@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentUser } from '@/components/auth';
-import { getProcess } from '@/lib/data/processes';
+import { getSharedProcessWithBpmn } from '@/lib/data/processes';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/bpmn-shared-viewer';
@@ -16,24 +16,25 @@ interface PageProps {
 const SharedViewer = async ({ searchParams }: PageProps) => {
   const token = searchParams.token;
   const { session } = await getCurrentUser();
+
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
   }
 
   const key = process.env.JWT_SHARE_SECRET!;
-  let processData: Process;
+  let processData: Process | null = null;
   let iframeMode;
   try {
     const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
     iframeMode = embeddedMode;
-    processData = await getProcess(processId as string);
-
+    const res = await getSharedProcessWithBpmn(processId as string);
+    if ('error' in res) {
+      return <ErrorMessage message={res.error.message as string} />;
+    } else {
+      processData = res;
+    }
     if (!processData) {
       return <ErrorMessage message="Process no longer exists" />;
-    }
-
-    if (processData.shareTimestamp === 0) {
-      return <ErrorMessage message="Process is not shared" />;
     }
 
     if (
@@ -43,7 +44,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
       return <ErrorMessage message="Token expired" />;
     }
   } catch (err) {
-    console.error('error while verifying token... ', err);
+    return <ErrorMessage message="Invalid Token" />;
   }
   if (
     processData!.shareTimestamp > 0 &&

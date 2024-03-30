@@ -23,7 +23,7 @@ import { shareProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOption from './modeler-share-modal-option';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
-import { Process } from '@/lib/data/process-schema';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 
 type ShareModalProps = {
@@ -44,22 +44,28 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   const [shareTimestamp, setShareTimestamp] = useState(0);
   const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
   const { message } = App.useApp();
-  const [processData, setProcessData] = useState<Process | undefined>();
+  const [processData, setProcessData] = useState<Omit<ProcessMetadata, 'bpmn'>>();
 
   const checkIfProcessShared = async () => {
-    const { sharedAs, allowIframeTimestamp, shareTimestamp } = await getProcess(
-      processId as string,
-    );
-    setSharedAs(sharedAs);
-    setShareToken(shareToken);
-    setShareTimestamp(shareTimestamp);
-    setAllowIframeTimestamp(allowIframeTimestamp);
+    const res = await getProcess(processId as string, environment.spaceId);
+    if ('error' in res) {
+      console.log('Failed to fetch process');
+    } else {
+      const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
+      setSharedAs(sharedAs);
+      setShareToken(shareToken);
+      setShareTimestamp(shareTimestamp);
+      setAllowIframeTimestamp(allowIframeTimestamp);
+    }
   };
 
   const getProcessData = () => {
-    return getProcess(processId as string)
-      .then((processData) => {
-        setProcessData(processData);
+    return getProcess(processId as string, environment.spaceId)
+      .then((res) => {
+        if ('error' in res) {
+        } else {
+          setProcessData(res);
+        }
       })
       .catch((error) => {
         console.error('Error fetching process data:', error);
@@ -115,6 +121,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       navigator.clipboard.writeText(shareObject.url);
       message.success('Copied to clipboard');
     }
+    checkIfProcessShared();
   };
 
   const handleShareButtonClick = async () => {

@@ -42,28 +42,6 @@ import {
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 
-export const getProcess = async (definitionId: string) => {
-  const processMetaObjects: any = getProcessMetaObjects();
-
-  /* TODO: Add ability check */
-
-  // Get ability again since it might have changed.
-  //const { ability } = await getCurrentUser();
-
-  const process = processMetaObjects[definitionId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  /*if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to delete this process', UserErrorType.PermissionError);
-  }*/
-
-  const bpmn = await _getProcessBpmn(definitionId);
-  return { ...process, bpmn };
-};
-
 const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
@@ -95,6 +73,22 @@ const checkValidity = async (
   ) {
     return userError(errorMessages[operation], UserErrorType.PermissionError);
   }
+};
+
+export const getSharedProcessWithBpmn = async (definitionId: string) => {
+  const processMetaObj = getProcessMetaObjects()[definitionId];
+
+  if (!processMetaObj) {
+    return userError(`Process does not exist `);
+  }
+
+  if (processMetaObj.shareTimestamp > 0) {
+    const bpmn = await _getProcessBpmn(definitionId);
+    const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
+    return processWithBPMN;
+  }
+
+  return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
 };
 
 export const getProcess = async (definitionId: string, spaceId: string) => {
@@ -185,18 +179,9 @@ export const updateProcessShareInfo = async (
   allowIframeTimestamp: number | undefined,
   spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  const error = await checkValidity(definitionsId, 'update', spaceId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[definitionsId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   await updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
@@ -205,12 +190,13 @@ export const updateProcessShareInfo = async (
   });
 };
 
-export const updateProcessShareInfo = async (
+export const updateProcess = async (
   definitionsId: string,
-  sharedAs: 'public' | 'protected' | undefined,
-  shareTimestamp: number | undefined,
-  allowIframeTimestamp: number | undefined,
   spaceId: string,
+  bpmn?: string,
+  description?: string,
+  name?: string,
+  invalidate = false,
 ) => {
   const error = await checkValidity(definitionsId, 'update', spaceId);
 

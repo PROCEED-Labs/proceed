@@ -1,6 +1,7 @@
 'use client';
 
 import { Typography } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 interface ErrorMessageProps {
   message: string;
@@ -8,8 +9,13 @@ interface ErrorMessageProps {
 
 const ErrorMessage = ({ message }: ErrorMessageProps) => {
   return (
-    <div>
-      <Typography.Text type="danger">{message}</Typography.Text>
+    <div
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh' }}
+    >
+      <Typography.Title type="danger">
+        <ExclamationCircleOutlined style={{ fontSize: '24px', marginRight: '10px' }} />
+        {message}
+      </Typography.Title>
     </div>
   );
 };

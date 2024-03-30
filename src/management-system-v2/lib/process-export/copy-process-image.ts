@@ -84,5 +84,6 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
     }
   } else {
     console.log('Webshare api not supported');
+    await copyProcessImage(modeler);
   }
 }

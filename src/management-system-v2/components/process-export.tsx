@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
+import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
 
@@ -133,6 +134,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
 
+  const environment = useEnvironment();
+
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
   };
@@ -164,6 +167,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         useWebshareApi: preselectedExportType !== undefined,
       },
       processes,
+      environment.spaceId,
     );
 
     handleClose();
@@ -247,6 +251,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         zIndex={200}
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
         width={540}
+        data-testId="Export Modal"
       >
         <Flex>
           {preselectedExportType ? null : typeSelection}

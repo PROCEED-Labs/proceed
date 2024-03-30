@@ -8,6 +8,16 @@ import { asyncFilter } from '../helpers/javascriptHelpers';
 import { getElementsByTagName } from '@proceed/bpmn-helper/src/util';
 
 /**
+ * Transforms a definitionName of a process into a valid file path by replacing spaces
+ *
+ * @param definitionName the name written into the definitions element of the process
+ * @returns the name that can be given to a process file or folder
+ */
+export function getProcessFilePathName(definitionName: string) {
+  return definitionName.split(' ').join('_');
+}
+
+/**
  * Downloads the data onto the device of the user
  *
  * @param filename

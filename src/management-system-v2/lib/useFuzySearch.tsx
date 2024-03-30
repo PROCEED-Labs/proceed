@@ -1,12 +1,12 @@
 import Fuse, { FuseResult } from 'fuse.js';
 import { useMemo, useState, JSX } from 'react';
-import { Prettify } from './typescript-utils';
+import { Prettify, UnionAwareOmit } from './typescript-utils';
 import { useSearchParamState } from './use-search-param-state';
 
 export type ReplaceKeysWithHighlighted<
   TData extends Record<string, any>,
   TKeys extends keyof TData,
-> = Prettify<Omit<TData, TKeys> & Record<TKeys, ReturnType<typeof highlightText<TData>>>>;
+> = Prettify<UnionAwareOmit<TData, TKeys> & Record<TKeys, ReturnType<typeof highlightText<TData>>>>;
 
 function highlightText<TObj>(
   fuseElement: FuseResult<TObj>,

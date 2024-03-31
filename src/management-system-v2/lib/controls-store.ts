@@ -183,14 +183,14 @@ export const useAddControlCallback = (
 export type CheckerType = Record<string, (event: any) => boolean> /* (event: any) => boolean> */;
 
 const defaultChecker: CheckerType = {
-  selectall: (e) => e.ctrlKey && e.key === 'a',
+  selectall: (e) => (e.ctrlKey || e.metaKey) && e.key === 'a',
   del: (e) => e.key === 'Delete',
   esc: (e) => e.key === 'Escape',
-  copy: (e) => e.ctrlKey && e.key === 'c',
-  paste: (e) => e.ctrlKey && e.key === 'v',
-  controlenter: (e) => e.ctrlKey && e.key === 'Enter',
-  enter: (e) => !e.ctrlKey && e.key === 'Enter',
-  cut: (e) => e.ctrlKey && e.key === 'x',
+  copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c',
+  paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v',
+  controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
+  enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
+  cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x',
 };
 
 type ControlEventListener<T extends Event> = (event: T) => void;

@@ -90,10 +90,9 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
+  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
-  // const [favProcesses] = useFavouriteProcesses();
   const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
 
@@ -284,7 +283,6 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
       sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      onCell: (record, rowIndex) => ({}),
       responsive: ['md'],
     },
     {
@@ -392,8 +390,6 @@ const ProcessList: FC<ProcessListProps> = ({
         setSelectionElements([record]);
         // const element = event.target as HTMLElement;
         if (!breakpoint.xl) {
-          setSelectionElements([record]);
-          // console.log(event.proceedClickedInfoButton)
           if (!event.proceedClickedInfoButton) router.push(`processes/${record.id}`);
         }
         // breakpoint.xl ? setSelectionElements([record]) : router.push(`processes/${record.id}`);

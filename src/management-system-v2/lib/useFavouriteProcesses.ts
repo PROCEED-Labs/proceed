@@ -19,8 +19,7 @@ const useFavouritesStore = create<FavouritesStore>()(
       });
     },
     updateFavouriteProcesses: (id) => {
-      let newId: string[] = [];
-      if (!Array.isArray(id)) newId = [id];
+      let newId: string[] = Array.isArray(id) ? id : [id];
 
       const oldFavourites = get().favourites;
       let newFavourites: string[] = [];

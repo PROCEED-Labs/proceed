@@ -144,9 +144,7 @@ const TabCard: FC<TabCardProps> = ({
           </span>
           <span style={{ flex: 1 }}></span>
           {breakpoint.xl ? null : (
-            // <Button type="text">
             <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />
-            // </Button>
           )}
         </div>
       }

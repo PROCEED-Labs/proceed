@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Input, Checkbox, Typography } from 'antd';
+import { Button, message, Input, Checkbox } from 'antd';
 import { useParams } from 'next/navigation';
 import {
   generateProcessShareToken,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
-import ErrorMessage from '@/components/error-message';
 import { useEnvironment } from '@/components/auth-can';
 
 const { TextArea } = Input;

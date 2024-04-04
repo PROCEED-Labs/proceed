@@ -1,5 +1,5 @@
 import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
-import { DownloadOutlined, CopyOutlined, LoadingOutlined } from '@ant-design/icons';
+import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
@@ -162,6 +162,7 @@ const ModelerShareModalOptionPublicLink = ({
               type={'text'}
               value={publicLinkValue}
               disabled={isTokenEmpty}
+              name="generated share link"
               style={{ border: '1px solid #000' }}
             />
           </Col>

@@ -1,0 +1,52 @@
+name: Deploy Research
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Research
+    strategy:
+      matrix:
+        # Run a job each for the engine and MS server images
+        include:
+          # - serviceName: engine
+          - serviceName: management_system
+    env:
+      ENV: Research
+      ENGINE_TAG: ${{ vars.IMAGE_TAG }}
+      MS_TAG: ${{ vars.IMAGE_TAG }}
+      SERVICE_NAME: ${{ matrix.serviceName }}
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/$ENV.key
+          chmod 600 ~/.ssh/$ENV.key
+          cat >>~/.ssh/config <<END
+          Host $ENV
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/$ENV.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      # Pull the latest image
+      - run: ssh $ENV "sudo docker pull proceed/ms-server:$MS_TAG"
+
+      # Stop the container
+      - run: ssh $ENV "sudo docker stop $SERVICE_NAME || true"
+
+      # Remove the container
+      - run: ssh $ENV "sudo docker rm $SERVICE_NAME || true"
+
+      # Restart the container with the new image
+      - run: ssh $ENV "sudo docker run -d --name $SERVICE_NAME -p 33081:33081 --env-file .env.research -v /opt/proceed-ms-server:/app/volume proceed/ms-server:$MS_TAG"
+
+      # Remove unused images
+      - run: ssh $ENV "sudo docker image prune -f -a"

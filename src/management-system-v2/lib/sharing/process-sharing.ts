@@ -2,6 +2,9 @@
 
 import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
+import { Environment } from '../data/environment-schema';
+import { getEnvironmentById } from '../data/legacy/iam/environments';
+import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -59,4 +62,14 @@ export async function generateProcessShareToken(
 
   await updateProcessGuestAccessRights(payload.processId as string, newMeta, spaceId);
   return { token };
+}
+
+export async function getAllUserWorkspaces(userId: string) {
+  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+  userEnvironments.push(
+    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+      getEnvironmentById(environmentId),
+    ),
+  );
+  return userEnvironments;
 }

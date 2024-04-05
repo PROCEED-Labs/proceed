@@ -74,7 +74,6 @@ const ProcessList: FC<ProcessListProps> = ({
   dragInfo,
 }) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);

@@ -9,6 +9,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 // otherwise. It might be possible in the future with turbopack without this
 // import.
 import '@/lib/data/processes';
+import { getUsersFavourites } from '@/lib/data/users';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
@@ -25,6 +26,8 @@ const ProcessesPage = async ({
   params: { environmentId: string; folderId?: string };
 }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+
+  const favs = await getUsersFavourites();
 
   const rootFolder = getRootFolder(activeEnvironment.spaceId, ability);
 
@@ -74,7 +77,7 @@ const ProcessesPage = async ({
       }
     >
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes processes={folderContents} folder={folder} />
+        <Processes processes={folderContents} favourites={favs as string[]} folder={folder} />
       </Space>
     </Content>
   );

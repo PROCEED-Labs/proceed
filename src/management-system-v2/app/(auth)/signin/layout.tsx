@@ -3,7 +3,7 @@ import Content from '@/components/content';
 import Processes from '@/components/processes';
 import { SetAbility } from '@/lib/abilityStore';
 import { FC, PropsWithChildren } from 'react';
-import { FileOutlined, ProfileOutlined } from '@ant-design/icons';
+import { AiOutlineFile, AiOutlineProfile } from 'react-icons/ai';
 
 const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
   return (
@@ -23,12 +23,12 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
               {
                 key: 'processes',
                 label: 'Process List',
-                icon: <FileOutlined />,
+                icon: <AiOutlineFile />,
               },
               {
                 key: 'templates',
                 label: 'Templates',
-                icon: <ProfileOutlined />,
+                icon: <AiOutlineProfile />,
               },
             ],
           },
@@ -57,6 +57,15 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
                 description: 'How to PROCEED',
               },
             ]}
+            folder={{
+              id: '',
+              name: '',
+              parentId: null,
+              createdAt: '',
+              createdBy: '',
+              updatedAt: '',
+              environmentId: '',
+            }}
           />
         </Content>
       </Layout>

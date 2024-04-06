@@ -2,17 +2,16 @@
 
 import { generateDateString } from '@/lib/utils';
 import { Divider } from 'antd';
-import React, { FC, Key } from 'react';
+import React, { FC } from 'react';
 import Viewer from './bpmn-viewer';
 import { ProcessListProcess } from './processes';
 import { useUserPreferences } from '@/lib/user-preferences';
 
 type MetaDataContentType = {
-  data?: ProcessListProcess[];
-  selection: Key[];
+  selectedElement?: ProcessListProcess;
 };
 
-const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
+const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
   const hydrated = useUserPreferences.use._hydrated();
 
   if (!hydrated) return null;
@@ -25,24 +24,24 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
         width: '100%',
       }}
     >
-      {Boolean(selection.length) ? (
+      {selectedElement ? (
         <>
-          <Viewer definitionId={selection[0] as string} reduceLogo={true} fitOnResize />
+          {selectedElement.type !== 'folder' && (
+            <>
+              <Viewer definitionId={selectedElement.id} reduceLogo={true} fitOnResize />
+              <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+            </>
+          )}
 
-          <Divider style={{ width: '100%', marginLeft: '-20%' }} />
           <h3>Meta Data</h3>
           <h5>
             <b>Last Edited</b>
           </h5>
-          <p>
-            {generateDateString(data?.find((item) => item.id === selection[0])?.lastEdited, true)}
-          </p>
+          <p>{/**generateDateString(selectedElement.lastEdited, true)*/}</p>
           <h5>
             <b>Created On</b>
           </h5>
-          <p>
-            {generateDateString(data?.find((item) => item.id === selection[0])?.createdOn, false)}
-          </p>
+          <p>{/**generateDateString(selectedElement.createdOn, true)*/}</p>
           <h5>
             <b>File Size</b>
           </h5>
@@ -54,7 +53,7 @@ const MetaDataContent: FC<MetaDataContentType> = ({ data, selection }) => {
           <h5>
             <b>Description</b>
           </h5>
-          <p>{data?.find((item) => item.id === selection[0])?.description.value}</p>
+          <p>{selectedElement.description.value}</p>
 
           <Divider style={{ width: '100%', marginLeft: '-20%' }} />
           <h3>Access Rights</h3>

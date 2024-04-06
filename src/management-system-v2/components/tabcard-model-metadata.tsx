@@ -35,48 +35,50 @@ const tabList = [
 type Tab = 'viewer' | 'meta'; // has to be defined manually, antdesign errors if tabList is defined 'as const'
 
 const generateDescription = (data: ProcessListProcess) => {
-  const { description, createdOn, lastEdited, owner } = data;
-  const desc: DescriptionsProps['items'] = [
-    {
-      key: `1`,
-      label: 'Last Edited',
-      children: generateDateString(lastEdited),
-    },
-    {
-      key: `2`,
-      label: 'Created On',
-      children: generateDateString(createdOn),
-    },
-    {
-      key: `3`,
-      label: 'File Size',
-      children: `${'1.2 MB'}`,
-    },
-    {
-      key: `4`,
-      label: 'Owner',
-      children: owner,
-    },
-    {
-      key: `5`,
-      label: 'Description',
-      children: (
-        <span
-          style={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            lineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}
-        >
-          {description.highlighted}
-        </span>
-      ),
-    },
-  ];
-  return desc;
+  return [];
+  // TODO: enable this
+  // const { description, createdOn, lastEdited, owner } = data;
+  // const desc: DescriptionsProps['items'] = [
+  //   {
+  //     key: `1`,
+  //     label: 'Last Edited',
+  //     children: generateDateString(lastEdited),
+  //   },
+  //   {
+  //     key: `2`,
+  //     label: 'Created On',
+  //     children: generateDateString(createdOn),
+  //   },
+  //   {
+  //     key: `3`,
+  //     label: 'File Size',
+  //     children: `${'1.2 MB'}`,
+  //   },
+  //   {
+  //     key: `4`,
+  //     label: 'Owner',
+  //     children: owner,
+  //   },
+  //   {
+  //     key: `5`,
+  //     label: 'Description',
+  //     children: (
+  //       <span
+  //         style={{
+  //           overflow: 'hidden',
+  //           textOverflow: 'ellipsis',
+  //           display: '-webkit-box',
+  //           WebkitLineClamp: 2,
+  //           lineClamp: 2,
+  //           WebkitBoxOrient: 'vertical',
+  //         }}
+  //       >
+  //         {description.highlighted}
+  //       </span>
+  //     ),
+  //   },
+  // ];
+  // return desc;
 };
 
 const generateContentList = (data: ProcessListProcess, showViewer: boolean = true) => {

@@ -31,10 +31,12 @@ import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import { ListItem, ProcessListProcess } from './processes';
+import { DragInfo, DraggableElementGenerator, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import FavouriteStar from './favouriteStar';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+
+const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
@@ -46,6 +48,7 @@ type ProcessListProps = PropsWithChildren<{
   onDeleteProcess: (process: ProcessListProcess) => void;
   onEditProcess: (process: ProcessListProcess) => void;
   onCopyProcess: (process: ProcessListProcess) => void;
+  dragInfo: DragInfo;
 }>;
 
 const ColumnHeader = [
@@ -70,6 +73,7 @@ const ProcessList: FC<ProcessListProps> = ({
   onEditProcess,
   onCopyProcess,
   setShowMobileMetaData,
+  dragInfo,
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
@@ -281,7 +285,7 @@ const ProcessList: FC<ProcessListProps> = ({
         <Row
           justify="space-evenly"
           style={{
-            opacity: hovered?.id === id ? 1 : 0,
+            opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
           }}
         >
           {record.type !== 'folder' ? actionBarGenerator(record) : null}
@@ -317,98 +321,92 @@ const ProcessList: FC<ProcessListProps> = ({
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
-    <>
-      <Table
-        rowSelection={{
-          type: 'checkbox',
-          selectedRowKeys: selection,
-          onChange: (_, selectedRows) => setSelectionElements(selectedRows),
-          getCheckboxProps: (record: ProcessListProcess) => ({ name: record.id }),
-          onSelect: (_, __, selectedRows) => setSelectionElements(selectedRows),
-          onSelectNone: () => setSelectionElements([]),
-          onSelectAll: (_, selectedRows) => setSelectionElements(selectedRows),
-        }}
-        onRow={(record) => ({
-          onClick: (event) => {
-            /* CTRL */
-            if (event.ctrlKey) {
-              /* Not selected yet -> Add to selection */
-              if (!selection.includes(record?.id)) {
-                setSelectionElements((prev) => [record, ...prev]);
-                /* Already in selection -> deselect */
-              } else {
-                setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
-              }
-              /* SHIFT */
-            } else if (event.shiftKey) {
-              /* At least one element selected */
-              if (selection.length) {
-                const iLast = data.findIndex((process) => process.id === lastProcessId);
-                const iCurr = data.findIndex((process) => process.id === record?.id);
-                /* Identical to last clicked */
-                if (iLast === iCurr) {
-                  setSelectionElements([record]);
-                } else if (iLast < iCurr) {
-                  /* Clicked comes after last slected */
-                  setSelectionElements(data!.slice(iLast, iCurr + 1));
-                } else if (iLast > iCurr) {
-                  /* Clicked comes before last slected */
-                  setSelectionElements(data!.slice(iCurr, iLast + 1));
-                }
-              } else {
-                /* Nothing selected */
-                setSelectionElements([record]);
-              }
-              /* Normal Click */
+    <Table
+      rowSelection={{
+        type: 'checkbox',
+        selectedRowKeys: selection,
+        onChange: (_, selectedRows) => setSelectionElements(selectedRows),
+        getCheckboxProps: (record: ProcessListProcess) => ({ name: record.id }),
+        onSelect: (_, __, selectedRows) => setSelectionElements(selectedRows),
+        onSelectNone: () => setSelectionElements([]),
+        onSelectAll: (_, selectedRows) => setSelectionElements(selectedRows),
+      }}
+      onRow={(record) => ({
+        onClick: (event) => {
+          /* CTRL */
+          if (event.ctrlKey) {
+            /* Not selected yet -> Add to selection */
+            if (!selection.includes(record?.id)) {
+              setSelectionElements((prev) => [record, ...prev]);
+              /* Already in selection -> deselect */
             } else {
+              setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
+            }
+            /* SHIFT */
+          } else if (event.shiftKey) {
+            /* At least one element selected */
+            if (selection.length) {
+              const iLast = data.findIndex((process) => process.id === lastProcessId);
+              const iCurr = data.findIndex((process) => process.id === record?.id);
+              /* Identical to last clicked */
+              if (iLast === iCurr) {
+                setSelectionElements([record]);
+              } else if (iLast < iCurr) {
+                /* Clicked comes after last slected */
+                setSelectionElements(data!.slice(iLast, iCurr + 1));
+              } else if (iLast > iCurr) {
+                /* Clicked comes before last slected */
+                setSelectionElements(data!.slice(iCurr, iLast + 1));
+              }
+            } else {
+              /* Nothing selected */
               setSelectionElements([record]);
             }
+            /* Normal Click */
+          } else {
+            setSelectionElements([record]);
+          }
 
-            /* Always */
-            setLastProcessId(record?.id);
-          },
-          // onClick: (event) => {
-          //   if (event.ctrlKey) {
-          //     if (!selection.includes(record.definitionId)) {
-          //       setSelection([record.definitionId, ...selection]);
-          //     } else {
-          //       setSelection(selection.filter((id) => id !== record.definitionId));
-          //     }
-          //   } else {
-          //     setSelection([record.definitionId]);
-          //   }
-          // },
-          onDoubleClick: () => {
-            router.push(
-              spaceURL(
-                environment,
-                record.type === 'folder'
-                  ? `/processes/folder/${record.id}`
-                  : `/processes/${record.id}`,
-              ),
-            );
-          },
-          onMouseEnter: (event) => {
+          /* Always */
+          setLastProcessId(record?.id);
+        },
+        onDoubleClick: () =>
+          router.push(
+            spaceURL(
+              environment,
+              record.type === 'folder'
+                ? `/processes/folder/${record.id}`
+                : `/processes/${record.id}`,
+            ),
+          ),
+        onMouseEnter: (e) => {
+          if (dragInfo.dragging) {
+            e.preventDefault();
+            e.stopPropagation();
+          } else {
             setHovered(record);
-          }, // mouse enter row
-          onMouseLeave: (event) => {
-            setHovered(undefined);
-          }, // mouse leave row
-        })}
-        /* ---- */
-        /* Breaks Side-Panel */
-        // sticky
-        // scroll={{ x: 1200, y: 500 }}
-        /* ---- */
-        pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
-        rowKey="id"
-        columns={columnsFiltered}
-        dataSource={data}
-        loading={isLoading}
-        className={cn(breakpoint.xs ? styles.MobileTable : '')}
-        size={breakpoint.xs ? 'large' : 'middle'}
-      />
-    </>
+          }
+        },
+        onMouseLeave: () => setHovered(undefined),
+      })}
+      components={{
+        body: {
+          row: DraggableRow,
+        },
+      }}
+      /* ---- */
+      /* Breaks Side-Panel */
+      // sticky
+      // scroll={{ x: 1200, y: 500 }}
+      /* ---- */
+      pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
+      rowKey="id"
+      columns={columnsFiltered}
+      dataSource={data}
+      loading={isLoading}
+      className={cn(breakpoint.xs ? styles.MobileTable : '')}
+      size={breakpoint.xs ? 'large' : 'middle'}
+    />
   );
 };
 

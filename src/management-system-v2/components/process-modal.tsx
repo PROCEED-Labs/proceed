@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -41,6 +42,56 @@ const ProcessModal = <T extends { name: string; description: string }>({
         }))
       : undefined;
 
+  const onOk = async () => {
+    try {
+      // form.validateFields() only contains field values (that have been
+      // rendered), so we have to merge with initalData. If you only open
+      // the third accordion item, the object would look like this:
+      // { 2: { definitionName: 'test', description: 'test' } }
+      const values = Object.entries(await form.validateFields()) as any[];
+      const mergedValues = (initialData ?? [{}]).map((value, index) => ({
+        ...value,
+        ...values.find(([key]) => key === index.toString())?.[1],
+      }));
+
+      // Let the parent of this modal handle the submission.
+      setSubmitting(true);
+      try {
+        const res = await onSubmit(mergedValues);
+        if (res?.error) {
+          // UserError was thrown by the server
+          message.open({ type: 'error', content: res.error.message });
+        }
+      } catch (e) {
+        // Unkown server error or was not sent from server (e.g. network error)
+        message.open({
+          type: 'error',
+          content: 'Someting went wrong while submitting the data',
+        });
+      }
+      setSubmitting(false);
+    } catch (info) {
+      // Validate Failed
+    }
+  };
+
+  useAddControlCallback(
+    'process-list',
+    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 2, blocking: open },
+  );
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (open) onOk();
+    },
+    { level: 2, blocking: open, dependencies: [open] },
+  );
+
   return (
     <Modal
       title={title}
@@ -56,38 +107,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
       okButtonProps={{ loading: submitting }}
       okText={okText}
       wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
-      onOk={async () => {
-        try {
-          // form.validateFields() only contains field values (that have been
-          // rendered), so we have to merge with initalData. If you only open
-          // the third accordion item, the object would look like this:
-          // { 2: { definitionName: 'test', description: 'test' } }
-          const values = Object.entries(await form.validateFields()) as any[];
-          const mergedValues = (initialData ?? [{}]).map((value, index) => ({
-            ...value,
-            ...values.find(([key]) => key === index.toString())?.[1],
-          }));
-
-          // Let the parent of this modal handle the submission.
-          setSubmitting(true);
-          try {
-            const res = await onSubmit(mergedValues);
-            if (res?.error) {
-              // UserError was thrown by the server
-              message.open({ type: 'error', content: res.error.message });
-            }
-          } catch (e) {
-            // Unkown server error or was not sent from server (e.g. network error)
-            message.open({
-              type: 'error',
-              content: 'Someting went wrong while submitting the data',
-            });
-          }
-          setSubmitting(false);
-        } catch (info) {
-          // Validate Failed
-        }
-      }}
+      onOk={onOk}
     >
       <Form
         form={form}
@@ -125,7 +145,7 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
       <Form.Item
         name={[index, 'description']}
         label="Process Description"
-        rules={[{ required: true, message: 'Please fill out the Process description' }]}
+        rules={[{ required: false, message: 'Please fill out the Process description' }]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>

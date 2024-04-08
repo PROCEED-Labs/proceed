@@ -135,7 +135,15 @@ const TabCard: FC<TabCardProps> = ({
       title={
         <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
           {/* <span>{item?.definitionName}</span> */}
-          {item?.name.highlighted}
+          <span
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {item?.name.highlighted}
+          </span>
           <span style={{ flex: 1 }}></span>
           {breakpoint.xl ? null : (
             <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />

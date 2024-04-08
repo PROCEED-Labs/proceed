@@ -18,6 +18,7 @@ import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -158,6 +159,23 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
 
     handleClose();
   };
+
+  useAddControlCallback(
+    'process-list',
+    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 2, blocking: open },
+  );
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (selectedType) handleOk();
+    },
+    { level: 1, blocking: open, dependencies: [selectedType] },
+  );
 
   const typeSelection = (
     <Radio.Group onChange={handleTypeSelectionChange} value={selectedType} style={{ width: '50%' }}>

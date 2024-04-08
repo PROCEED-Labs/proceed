@@ -63,7 +63,7 @@ const ProcessesPage = async ({
       title={
         <Space>
           {folder.parentId && (
-            <Link href={`/${params.environmentId}/processes/folder/${folder.parentId}`}>
+            <Link href={spaceURL(activeEnvironment, `/processes/folder/${folder.parentId}`)}>
               <Button icon={<LeftOutlined />} type="text">
                 Back
               </Button>

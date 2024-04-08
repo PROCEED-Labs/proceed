@@ -360,9 +360,12 @@ const ProcessList: FC<ProcessListProps> = ({
         },
         onDoubleClick: () =>
           router.push(
-            record.type === 'folder'
-              ? `/${environmentId}/processes/folder/${record.id}`
-              : `/${environmentId}/processes/${record.id}`,
+            spaceURL(
+              environment,
+              record.type === 'folder'
+                ? `/processes/folder/${record.id}`
+                : `/processes/${record.id}`,
+            ),
           ),
         onMouseEnter: (e) => {
           if (dragInfo.dragging) {

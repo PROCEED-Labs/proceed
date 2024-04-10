@@ -1,32 +1,14 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
-import type {
-  Editor as EditorClass,
-  Viewer as ViewerClass,
-  ViewerProps,
-} from '@toast-ui/react-editor';
-import React, {
-  Component,
-  ComponentPropsWithRef,
-  FC,
-  RefAttributes,
-  forwardRef,
-  useEffect,
-  useState,
-} from 'react';
-import dynamic from 'next/dynamic';
+import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
+import React, { useEffect, useState } from 'react';
 
 import { EditOutlined } from '@ant-design/icons';
 
 import { Divider, Grid, Modal, Space } from 'antd';
 import TextEditor from '@/components/text-editor';
 import TextViewer from '@/components/text-viewer';
-
-// Editor uses `navigator` in top level scope, which is not available in server side rendering.
-const Viewer = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Viewer), {
-  ssr: false,
-}) as FC<RefAttributes<ViewerClass> & ViewerProps>;
 
 const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
   const description =

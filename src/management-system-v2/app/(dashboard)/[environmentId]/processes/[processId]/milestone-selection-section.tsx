@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createRef, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './milestone-selection-section.module.scss';
@@ -128,6 +128,24 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close, initi
   );
 };
 
+type MilestoneDescriptionViewerProperties = {
+  description: string;
+};
+
+const MilestoneDescriptionViewer: React.FC<MilestoneDescriptionViewerProperties> = ({
+  description,
+}) => {
+  const viewerRef = useRef<Viewer>(null);
+  if (viewerRef.current && description) {
+    const viewer = viewerRef.current as Viewer;
+    const viewerInstance = viewer.getInstance();
+
+    viewerInstance.setMarkdown(description);
+  }
+
+  return <TextViewer ref={viewerRef} initialValue={description}></TextViewer>;
+};
+
 type MilestoneSelectionProperties = {
   selectedElement: ElementLike;
 };
@@ -217,17 +235,9 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
               title: 'Description',
               dataIndex: 'description',
               key: 'description',
-              render: (description) => {
-                const viewerRef = createRef<Viewer>();
-                if (viewerRef.current && description) {
-                  const viewer = viewerRef.current as Viewer;
-                  const viewerInstance = viewer.getInstance();
-
-                  viewerInstance.setMarkdown(description);
-                }
-
-                return <TextViewer ref={viewerRef} initialValue={description}></TextViewer>;
-              },
+              render: (description) => (
+                <MilestoneDescriptionViewer description={description}></MilestoneDescriptionViewer>
+              ),
             },
             {
               title: '',

@@ -3,7 +3,7 @@ import { EditOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
 import styles from './planned-cost-input.module.scss';
 
-import worldCurrencies from '@/lib/worldCurrencies.json';
+import worldCurrencies from '@/lib/worldCurrencies';
 
 type PlannedCostInputProperties = {
   costsPlanned: { value?: number; currency?: string };

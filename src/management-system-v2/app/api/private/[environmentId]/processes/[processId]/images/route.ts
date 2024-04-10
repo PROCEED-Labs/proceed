@@ -119,9 +119,8 @@ export async function POST(
 
   const imageType = contentType.split('image/').pop() || '';
   const imageFileName = `_image${v4()}.${imageType}`;
-  const imageBlob = new Blob([imageBuffer], { type: contentType });
 
-  await saveProcessImage(processId, imageFileName, imageBlob);
+  await saveProcessImage(processId, imageFileName, imageBuffer);
 
   return new NextResponse(imageFileName, { status: 201, statusText: 'Created' });
 }

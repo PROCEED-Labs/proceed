@@ -1,3 +1,4 @@
+import { fileTypeFromBuffer } from 'file-type';
 import { getCurrentEnvironment } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
@@ -35,11 +36,17 @@ export async function GET(
 
   const image = await getProcessImage(processId, imageFileName);
 
-  const imageType = imageFileName.split('.').pop();
-  const contentType = `image/${imageType || '*'}`;
+  const fileType = await fileTypeFromBuffer(image);
+
+  if (!fileType) {
+    return new NextResponse(null, {
+      status: 415,
+      statusText: 'Can not read file type of requested image',
+    });
+  }
 
   const headers = new Headers();
-  headers.set('Content-Type', contentType);
+  headers.set('Content-Type', fileType.mime);
 
   return new NextResponse(image, { status: 200, statusText: 'OK', headers });
 }
@@ -50,6 +57,25 @@ export async function PUT(
     params: { environmentId, processId, imageFileName },
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
+  const { ability } = await getCurrentEnvironment(environmentId);
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
+
+  if (!process) {
+    return new NextResponse(null, {
+      status: 404,
+      statusText: 'Process with this id does not exist.',
+    });
+  }
+
+  if (!ability.can('view', toCaslResource('Process', process))) {
+    return new NextResponse(null, {
+      status: 403,
+      statusText: 'Not allowed to view image in this process',
+    });
+  }
+
   const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
 
   const contentType = request.headers.get('content-Type');
@@ -104,28 +130,7 @@ export async function PUT(
     throw err;
   }
 
-  const { ability } = await getCurrentEnvironment(environmentId);
-
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
-
-  if (!process) {
-    return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
-    });
-  }
-
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to view image in this process',
-    });
-  }
-
-  const imageBlob = new Blob([imageBuffer]);
-
-  await saveProcessImage(processId, imageFileName, imageBlob);
+  await saveProcessImage(processId, imageFileName, imageBuffer);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });
 }

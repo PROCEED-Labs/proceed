@@ -69,6 +69,12 @@ export const useControlStore = create<ControlsStore>()(
     },
     addCallback: ({ id, action, callback, priority = 1, blocking = false }) => {
       set((state) => {
+        // Check that the control-area is registered
+        if (!state.ids.includes(id)) {
+          console.error(`Control-area ${id} is not registered.`);
+          return;
+        }
+
         /* Check for duplicates */
         const callbackMap = new Map();
         for (const entry of state.controls[id][action][`${priority}`]) {
@@ -83,6 +89,12 @@ export const useControlStore = create<ControlsStore>()(
     },
     removeCallback: ({ id, action, priority, callback }) => {
       set((state) => {
+        // Check that the control-area is registered
+        if (!state.ids.includes(id)) {
+          console.error(`Control-area ${id} is not registered.`);
+          return;
+        }
+
         state.controls[id][action][`${priority}`] = state.controls[id][action][
           `${priority}`
         ].filter((entry) => entry[1] !== callback);
@@ -162,6 +174,11 @@ export const useAddControlCallback = (
   const { level = 1, blocking = false, dependencies = [] } = options || {};
   const controlStore = useControlStore();
   useEffect(() => {
+    // Early return if control is not registered.
+    if (!controlStore.ids.includes(name)) {
+      return;
+    }
+
     if (Array.isArray(eventname)) {
       for (const e of eventname) {
         controlStore.addCallback({ id: name, action: e, callback, priority: level, blocking });

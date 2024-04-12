@@ -37,10 +37,14 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({ meta
     }
   }, [imageFileName, processId]);
 
-  const { data: imageFile } = useGetAsset('/process/{definitionId}/images/{imageFileName}', {
-    params: { path: { definitionId: processId as string, imageFileName } },
-    parseAs: 'blob',
-  });
+  const { data: imageFile } = useGetAsset(
+    '/process/{definitionId}/images/{imageFileName}',
+    {
+      params: { path: { definitionId: processId as string, imageFileName } },
+      parseAs: 'blob',
+    },
+    { enabled: !!imageFileName },
+  );
 
   useEffect(() => {
     if (imageURL && imageFile) {

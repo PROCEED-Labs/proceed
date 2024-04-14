@@ -318,6 +318,7 @@ jobs:
       - run: echo "${{ inputs.environment || 'Staging' }}"
 
   testE2E:
+    needs: deploy
     timeout-minutes: 60
     runs-on: ubuntu-latest
     if: ${{ inputs.environment != 'Production' }}

@@ -1,4 +1,4 @@
-import { Input, InputNumber, Select } from 'antd';
+import { Input, Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
 import styles from './planned-cost-input.module.scss';
@@ -23,6 +23,11 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
     setCostsPlanned({ value: value, currency: currency });
   }, [value, currency]);
 
+  const currencyOptions = worldCurrencies.map((currency) => ({
+    value: currency.cc,
+    label: `${currency.cc} - ${currency.symbol}`,
+  }));
+
   const [isEditing, setIsEditing] = useState(false);
   return (
     <Input
@@ -33,16 +38,8 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
         <Select
           suffixIcon={null}
           value={costsPlanned.currency}
-          options={worldCurrencies.map((currency) => ({ value: currency.cc, label: currency.cc }))}
-          optionRender={(option) => {
-            const currency = worldCurrencies.find((currency) => currency.cc === option.value)!;
-
-            return (
-              <span>
-                {currency.cc} - {currency.symbol}
-              </span>
-            );
-          }}
+          options={currencyOptions}
+          optionLabelProp="value"
           onChange={(value) => {
             setCostsPlanned({ value: costsPlanned.value, currency: value });
             if (costsPlanned.value) {

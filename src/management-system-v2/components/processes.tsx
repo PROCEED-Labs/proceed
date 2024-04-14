@@ -77,7 +77,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
     }
     setSelectedRowElements([]);
     router.refresh();
-  }, [message, router, selectedRowKeys]);
+  }, [environment.spaceId, message, router, selectedRowKeys]);
 
   const breakpoint = Grid.useBreakpoint();
   const [openExportModal, setOpenExportModal] = useState(false);

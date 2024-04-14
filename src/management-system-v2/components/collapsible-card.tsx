@@ -4,6 +4,7 @@ import { Card, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import React, { FC, PropsWithChildren } from 'react';
 import classNames from 'classnames';
+import { headers } from 'next/headers';
 
 type CollapsibleCardProps = PropsWithChildren<{
   show: boolean;
@@ -29,7 +30,7 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
         scrollbarWidth: 'none',
         width: show ? '100%' : collapsedWidth,
       }}
-      headStyle={{ padding: 0 }}
+      styles={{ header: { padding: 0 } }}
       title={
         show ? (
           <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>

@@ -1,4 +1,4 @@
-import { init as initFolders } from './folders';
+import { init as initFolders, removeChildFromFolder } from './folders';
 import eventHandler from './eventHandler.js';
 import store from './store.js';
 import logger from './logging.js';
@@ -234,15 +234,6 @@ export async function updateProcessMetaData(
   };
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
-  /* // add shared_with if process is shared
-    if (metaChanges.shared_with) {
-      newMetaData.shared_with = metaChanges.shared_with;
-    }
-
-    // remove shared_with if not shared anymore
-    if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
-      delete newMetaData.shared_with;
-    } */
 
   processMetaObjects[processDefinitionsId] = newMetaData;
 
@@ -262,12 +253,16 @@ export async function removeProcess(processDefinitionsId: string) {
     return;
   }
 
+  const folderId = processMetaObjects[processDefinitionsId].folderId;
+
+  removeChildFromFolder(processDefinitionsId, folderId);
+
   // remove process directory
   deleteProcess(processDefinitionsId);
+
   // remove from store
   store.remove('processes', processDefinitionsId);
   delete processMetaObjects[processDefinitionsId];
-
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }
 

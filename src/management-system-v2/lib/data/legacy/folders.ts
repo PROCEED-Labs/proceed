@@ -287,13 +287,3 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
 
   store.update('folders', folderId, folderData.folder);
 }
-
-export function removeChildFromFolder(childId: string, folderId: string) {
-  if (foldersMetaObject.folders[folderId]) {
-    foldersMetaObject.folders[folderId]!.children = foldersMetaObject.folders[
-      folderId
-    ]!.children.filter((child) => child.id !== childId);
-  } else {
-    throw new Error(`Folder with ID ${folderId} not found`);
-  }
-}

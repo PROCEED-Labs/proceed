@@ -1,4 +1,4 @@
-import { init as initFolders, removeChildFromFolder } from './folders';
+import { init as initFolders } from './folders';
 import eventHandler from './eventHandler.js';
 import store from './store.js';
 import logger from './logging.js';

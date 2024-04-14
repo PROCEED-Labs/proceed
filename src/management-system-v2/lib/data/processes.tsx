@@ -38,10 +38,9 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
-import { v4 } from 'uuid';
+import { getUsersFavourites } from './users';
 
 const checkValidity = async (
   definitionId: string,
@@ -313,6 +312,12 @@ export const setVersionAsLatest = async (processId: string, version: number, spa
   if (error) return error;
 
   await selectAsLatestVersion(processId, version);
+};
+
+export const getFavouritesProcessIds = async () => {
+  const favs = await getUsersFavourites();
+
+  return favs ?? [];
 };
 
 export const getProcessUserTaskHTML = async (

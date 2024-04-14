@@ -33,6 +33,8 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { DragInfo, DraggableElementGenerator, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
+import FavouriteStar from './favouriteStar';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -80,16 +82,23 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
+  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
-
-  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
   };
+
+  const processListColumnsMobile = [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Meta Data Button',
+  ];
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
@@ -172,16 +181,10 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: <StarOutlined />,
       dataIndex: 'id',
-      key: '',
+      key: 'Favorites',
       width: '40px',
-      render: (id, _, index) => (
-        <StarOutlined
-          style={{
-            color: favourites?.includes(index) ? '#FFD700' : undefined,
-            opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
-          }}
-        />
-      ),
+      render: (id, process, index) => <FavouriteStar id={id} hovered={hovered?.id === id} />,
+      sorter: (a, b) => (favProcesses?.includes(a.id) ? -1 : 1),
     },
     {
       title: 'Name',
@@ -260,9 +263,8 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       fixed: 'right',
       width: 160,
-      // add title but only if at least one row is selected
       dataIndex: 'id',
-      key: '',
+      key: 'Selected Columns',
       title: (
         <div style={{ float: 'right' }}>
           <Dropdown
@@ -295,10 +297,18 @@ const ProcessList: FC<ProcessListProps> = ({
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
-      key: '',
+      key: 'Meta Data Button',
       title: '',
       render: () => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+        <Button
+          style={{ float: 'right' }}
+          type="text"
+          onClick={(e: any) => {
+            // e.stopPropagation()
+            e.proceedClickedInfoButton = true;
+            showMobileMetaData();
+          }}
+        >
           <InfoCircleOutlined />
         </Button>
       ),
@@ -306,7 +316,9 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
+  const columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+    : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
     <Table

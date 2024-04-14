@@ -1,7 +1,12 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { deleteuser, addUser as _addUser, updateUser as _updateUser } from './legacy/iam/users';
+import {
+  deleteuser,
+  addUser as _addUser,
+  updateUser as _updateUser,
+  usersMetaObject,
+} from './legacy/iam/users';
 import { userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 
@@ -25,4 +30,15 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
   } catch (_) {
     return userError('Error updating user');
   }
+}
+
+export async function getUsersFavourites(): Promise<String[]> {
+  const { userId } = await getCurrentUser();
+
+  const user = usersMetaObject[userId];
+
+  if (user.guest) {
+    return []; // Guest users have no favourites
+  }
+  return user.favourites ?? [];
 }

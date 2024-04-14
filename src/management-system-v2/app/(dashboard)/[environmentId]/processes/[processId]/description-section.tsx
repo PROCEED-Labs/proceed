@@ -1,38 +1,22 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
-
 import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
 import React, { useEffect, useState } from 'react';
-
 import { EditOutlined } from '@ant-design/icons';
-
 import { Divider, Grid, Modal, Space } from 'antd';
-import TextEditor from '@/components/text-editor';
-import TextViewer from '@/components/text-viewer';
+import dynamic from 'next/dynamic';
+const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
+const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
 const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
   const description =
     (selectedElement.businessObject.documentation &&
       selectedElement.businessObject.documentation[0]?.text) ||
     '';
-
-  const viewerRef = React.useRef<ViewerClass>(null);
   const modalEditorRef = React.useRef<EditorClass>(null);
-
   const modeler = useModelerStateStore((state) => state.modeler);
-
   const [showPopupEditor, setShowPopupEditor] = useState(false);
-
   const breakpoint = Grid.useBreakpoint();
-
-  useEffect(() => {
-    if (viewerRef.current) {
-      const viewer = viewerRef.current as ViewerClass;
-      const viewerInstance = viewer.getInstance();
-
-      viewerInstance.setMarkdown(description);
-    }
-  }, [description, viewerRef]);
 
   const onSubmit = (editorRef: React.RefObject<EditorClass>) => {
     const editor = editorRef.current as EditorClass;
@@ -79,7 +63,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
         role="textbox"
         aria-label="description-viewer"
       >
-        <TextViewer ref={viewerRef} initialValue={description}></TextViewer>
+        <TextViewer initialValue={description}></TextViewer>
       </div>
 
       <Modal
@@ -94,7 +78,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
         onOk={() => onSubmit(modalEditorRef)}
         onCancel={() => setShowPopupEditor(false)}
       >
-        <TextEditor ref={modalEditorRef} initialValue={description}></TextEditor>
+        <TextEditor editorRef={modalEditorRef} initialValue={description}></TextEditor>
       </Modal>
     </Space>
   );

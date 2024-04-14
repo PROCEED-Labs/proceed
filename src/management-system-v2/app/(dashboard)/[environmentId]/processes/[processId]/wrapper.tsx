@@ -102,7 +102,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
         {
           title: (
             <Select
-              bordered={false}
+              variant="borderless"
               popupMatchSelectWidth={false}
               placeholder="Select Process"
               showSearch

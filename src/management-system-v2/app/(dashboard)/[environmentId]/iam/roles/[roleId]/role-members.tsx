@@ -46,6 +46,14 @@ const AddUserModal: FC<{
       title={`Add members to ${role.name}`}
     >
       <UserList
+        /* ---- */
+        /* TODO: unify role-members and users-page in terms of side panel
+        Pretty sure that many states and prop drilling are not needed that way 
+      */
+        selectedUser={null}
+        setShowMobileUserSider={() => {}}
+        showMobileUserSider={false}
+        /* ---- */
         users={usersNotInRole}
         loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
@@ -111,6 +119,14 @@ const RoleMembers: FC<{
       />
 
       <UserList
+        /* ---- */
+        /* TODO: unify role-members and users-page in terms of side panel
+        Pretty sure that many states and prop drilling are not needed that way 
+      */
+        selectedUser={null}
+        setShowMobileUserSider={() => {}}
+        showMobileUserSider={false}
+        /* ---- */
         users={usersInRole}
         loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [

@@ -1,6 +1,7 @@
 import { Row, Col, Input, InputProps, Grid } from 'antd';
 import styles from './bar.module.scss';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type BarProps = {
   leftNode?: ReactNode;
@@ -15,6 +16,11 @@ type BarProps = {
  */
 const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
   const breakpoint = Grid.useBreakpoint();
+  const [inFocus, setInFocus] = useState(false);
+  useAddControlCallback('process-list', ['selectall', 'del', 'copy', 'paste'], (e) => {}, {
+    level: 2,
+    blocking: inFocus,
+  });
 
   return (
     <Row className={styles.Headerrow} gutter={[8, 8]} align={'middle'}>
@@ -23,8 +29,16 @@ const Bar = ({ leftNode, searchProps, rightNode }: BarProps) => {
           {leftNode}
         </Col>
       )}
-      <Col xs={23} sm={24} xl={{ flex: 'auto' }}>
-        {searchProps && <Input.Search allowClear placeholder="Search ..." {...searchProps} />}
+      <Col xs={23} sm={24} xl={24} /* {{ flex: 'auto' }} */>
+        {searchProps && (
+          <Input.Search
+            allowClear
+            placeholder="Search ..."
+            {...searchProps}
+            onFocus={() => setInFocus(true)}
+            onBlur={() => setInFocus(false)}
+          />
+        )}
       </Col>
       {rightNode && (
         <Col xs={23} sm={24} xl={{ flex: 'none' }} style={breakpoint.xl ? {} : {}}>

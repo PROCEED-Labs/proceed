@@ -30,8 +30,6 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
     ref,
   ) {
     const [width, setWidth] = useState(initialWidth);
-    // const [minWidth, setMinWidth] = useState(initialMinWidth);
-    // const [maxWidth, setMaxWidth] = useState(initialMaxWidth);
 
     useImperativeHandle(
       ref,
@@ -41,14 +39,6 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
           if (width) {
             setWidth(cssSizeToPixel(width));
           }
-
-          // if (minWidth) {
-          //   setMinWidth(minWidth);
-          // }
-
-          // if (maxWidth) {
-          //   setMaxWidth(maxWidth);
-          // }
         } else {
           setWidth(cssSizeToPixel(size));
         }

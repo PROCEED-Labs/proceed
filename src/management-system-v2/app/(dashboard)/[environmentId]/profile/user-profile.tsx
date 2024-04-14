@@ -71,6 +71,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           <Table
             dataSource={[
               {
+                key: 'name',
                 title: 'Name',
                 value: `${!userData.guest ? userData.firstName : 'Guest'} ${
                   !userData.guest ? userData.lastName : ''
@@ -78,11 +79,13 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 action: () => setChangeNameModalOpen(true),
               },
               {
+                key: 'username',
                 title: 'Username',
                 value: !userData.guest ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
+                key: 'email',
                 title: 'Email',
                 value: !userData.guest ? userData.email : 'Guest',
               },
@@ -91,6 +94,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               { dataIndex: 'title' },
               { dataIndex: 'value' },
               {
+                key: 'action',
                 render: (_, row) => row.action && <RightOutlined />,
               },
             ]}

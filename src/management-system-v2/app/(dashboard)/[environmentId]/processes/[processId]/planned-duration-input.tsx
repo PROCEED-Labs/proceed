@@ -143,9 +143,9 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
         (years ? `${years} Y, ` : '') +
         (months ? `${months} M, ` : '') +
         (days ? `${days} D, ` : '') +
-        (hours ? `${hours} H, ` : '') +
-        (minutes ? `${minutes} M, ` : '') +
-        (seconds ? `${seconds} S ` : '');
+        (hours ? `${hours} h, ` : '') +
+        (minutes ? `${minutes} m, ` : '') +
+        (seconds ? `${seconds} s ` : '');
     }
 
     return durationString.replace(/,\s*$/, ''); // if string ends with a comma, remove that

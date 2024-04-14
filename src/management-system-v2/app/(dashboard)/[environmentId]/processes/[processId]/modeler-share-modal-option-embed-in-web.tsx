@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Input, Checkbox } from 'antd';
+import { Button, message, Input, Checkbox, App } from 'antd';
 import { useParams } from 'next/navigation';
 import {
   generateProcessShareToken,
@@ -24,6 +24,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const { processId } = useParams();
   const environment = useEnvironment();
   const [token, setToken] = useState('');
+  const { message } = App.useApp();
 
   useEffect(() => {
     const initialize = async () => {
@@ -50,7 +51,6 @@ const ModelerShareModalOptionEmdedInWeb = ({
       );
       setToken(token);
       await updateProcessGuestAccessRights(processId, { sharedAs: 'public' }, environment.spaceId);
-      message.success('Process shared');
     } else {
       await updateProcessGuestAccessRights(
         processId,
@@ -60,7 +60,6 @@ const ModelerShareModalOptionEmdedInWeb = ({
         environment.spaceId,
       );
       setToken('');
-      message.success('Process unshared');
     }
     refresh();
   };

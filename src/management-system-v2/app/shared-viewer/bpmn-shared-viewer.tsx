@@ -4,7 +4,7 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
-import { App, Button, Modal, Space, Typography } from 'antd';
+import { App, Avatar, Button, Modal, Space, Typography } from 'antd';
 import { LaptopOutlined } from '@ant-design/icons';
 import { copyProcesses } from '@/lib/data/processes';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -33,10 +33,14 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       if (session.status === 'authenticated') {
         const userWorkspaces = await getAllUserWorkspaces(session.data?.user.id as string);
-        setWorkspaces(userWorkspaces);
+        if (!cancelled) {
+          setWorkspaces(userWorkspaces);
+        }
         if (searchParams.get('redirected') === 'true') {
           setIsModalOpen(true);
         }
@@ -44,6 +48,10 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
         setWorkspaces([]);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [session, searchParams]);
 
   const handleModalClose = () => {
@@ -79,9 +87,15 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
     }
   };
 
-  const userWorkspaces = workspaces.map((workspace) => ({
+  const userWorkspaces = workspaces.map((workspace, index) => ({
     label: workspace.organization ? workspace.name : 'My Space',
-    key: workspace.id,
+    key: `${workspace.id}-${index}`,
+    logo:
+      workspace.organization && workspace.logoUrl ? (
+        <Avatar size={'large'} src={workspace.logoUrl} />
+      ) : (
+        <Avatar size={50} icon={<LaptopOutlined style={{ color: 'black' }} />} />
+      ),
     optionOnClick: () => handleCopyToOwnWorkspace(workspace),
   }));
 
@@ -103,7 +117,11 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
               <>
                 <Button onClick={() => setIsModalOpen(true)}>Add to your workspace</Button>
                 <Modal
-                  title={<div style={{ textAlign: 'center' }}>Select your workspace</div>}
+                  title={
+                    <div style={{ textAlign: 'center', padding: '10px' }}>
+                      Select your workspace
+                    </div>
+                  }
                   open={isModalOpen}
                   closeIcon={false}
                   onCancel={handleModalClose}
@@ -124,35 +142,35 @@ const BPMNSharedViewer = ({ processData, embeddedMode, ...divProps }: BPMNShared
                     }}
                   >
                     {userWorkspaces.map((workspace) => (
-                      <>
-                        <Button
-                          icon={<LaptopOutlined style={{ fontSize: '24px' }} />}
-                          size="middle"
+                      <Button
+                        type="default"
+                        key={workspace.key}
+                        icon={workspace.logo}
+                        style={{
+                          border: '1px solid black',
+                          width: '150px',
+                          height: '100px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          overflow: 'hidden',
+                          whiteSpace: 'normal',
+                          textOverflow: 'ellipsis',
+                          borderColor: 'black',
+                          boxShadow: '2px 2px 2px grey',
+                        }}
+                        onClick={workspace.optionOnClick}
+                      >
+                        <Typography.Text
                           style={{
-                            border: '1px solid black',
-                            width: '124px',
-                            height: '90px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            overflow: 'hidden',
-                            whiteSpace: 'normal',
-                            textOverflow: 'ellipsis',
+                            margin: '5px',
+                            textAlign: 'center',
                           }}
-                          onClick={workspace.optionOnClick}
                         >
-                          <Typography.Text
-                            style={{
-                              marginTop: '5px',
-                              textAlign: 'center',
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            {workspace.label}
-                          </Typography.Text>
-                        </Button>
-                      </>
+                          {workspace.label}
+                        </Typography.Text>
+                      </Button>
                     ))}
                   </Space>
                 </Modal>

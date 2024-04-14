@@ -263,8 +263,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
       minWidth={300}
       maxWidth={'30vw'}
       style={{
-        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 70px and Header with 64px, Padding of Toolbar 12px (=> Total 184px)
-        height: 'calc(100vh - 190px)',
+        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
+        height: 'calc(100vh - 150px)',
       }}
       ref={resizableElementRef}
     >

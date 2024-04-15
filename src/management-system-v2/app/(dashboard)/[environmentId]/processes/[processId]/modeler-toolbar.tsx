@@ -10,6 +10,7 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -17,6 +18,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
+import UserTaskBuilder from './user-task-builder';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
@@ -43,6 +45,7 @@ const ModelerToolbar = ({
   const environment = useEnvironment();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
+  const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
@@ -194,6 +197,18 @@ const ModelerToolbar = ({
                 </Tooltip>
               </>
             )}
+          </ToolbarGroup>
+
+          <ToolbarGroup>
+            {selectedElement?.type === 'bpmn:UserTask' && (
+              <Tooltip title="Edit User Task Form">
+                <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+              </Tooltip>
+            )}
+            <UserTaskBuilder
+              open={showUserTaskEditor}
+              onClose={() => setShowUserTaskEditor(false)}
+            />
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>

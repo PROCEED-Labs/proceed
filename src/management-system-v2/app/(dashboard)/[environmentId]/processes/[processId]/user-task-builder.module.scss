@@ -1,0 +1,24 @@
+.BuilderUI {
+  height: 100%;
+
+  .HtmlCanvas {
+  }
+
+  .ElementSelection {
+    border-left: 1px solid grey;
+    display: flex;
+    // flex-wrap: wrap;
+    flex: 1 1 auto;
+
+    .FormElement {
+      max-width: 100px;
+      max-height: 100px;
+      text-align: center;
+
+      svg {
+        height: 70%;
+        width: 70%;
+      }
+    }
+  }
+}

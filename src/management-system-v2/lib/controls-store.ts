@@ -176,8 +176,8 @@ type AddControlCallbackOptions = {
  * The callback can block other callbacks with lower priority from being invoked.
  * The callback will be removed when the component is unmounted.
  * 
- * @param name The name of the control-area to add the callback to.
- * @param eventname The event-type to listen to, can be string or list of strings for multiple.
+ * @param names The name or names of the control-area to add the callback to.
+ * @param eventname The event-type(s) to listen to, can be string or list of strings for multiple.
  * @param callback The callback to invoke when the event is emitted.
  * @param options : {
     level?: 1 | 2 | 3 | 4 | 5; // The higher the number, the earlier the callback gets invoked

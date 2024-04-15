@@ -161,7 +161,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   };
 
   useAddControlCallback(
-    'process-list',
+    ['process-list' /* , 'processes-page' */],
+    // 'process-list',
     ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
     (e) => {
       // e.preventDefault();
@@ -169,7 +170,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     { level: 2, blocking: open },
   );
   useAddControlCallback(
-    'process-list',
+    ['process-list', 'modeler'],
+    // 'process-list',
     'controlenter',
     () => {
       if (selectedType) handleOk();

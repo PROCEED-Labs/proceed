@@ -75,6 +75,7 @@ import {
 } from '@dnd-kit/core';
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import AddUserControls from './add-user-controls';
 
 export type DragInfo =
   | { dragging: false }
@@ -188,23 +189,6 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     setSelectedRowElements([]);
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
-
-  /* User-Controls */
-  // const modalOpened = openCopyModal || openExportModal || openEditModal;
-  const controlChecker: CheckerType = {
-    selectall: (e) => e.ctrlKey && e.key === 'a',
-    esc: (e) => e.key === 'Escape',
-    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
-    copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),
-    paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v' && ability.can('create', 'Process'),
-    controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
-    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
-    enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
-    cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x' /* TODO: ability */,
-    export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
-    import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
-  };
-  useControler('process-list', controlChecker);
 
   useAddControlCallback(
     'process-list',
@@ -544,6 +528,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
           router.refresh();
         }}
       />
+      <AddUserControls name={'process-list'} />
     </>
   );
 };

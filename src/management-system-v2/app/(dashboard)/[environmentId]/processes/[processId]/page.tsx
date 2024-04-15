@@ -4,6 +4,7 @@ import styles from './page.module.scss';
 import Modeler from './modeler';
 import { getProcess, getProcessVersionBpmn, getProcesses } from '@/lib/data/legacy/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import AddUserControls from '@/components/add-user-controls';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -35,14 +36,17 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   // Since the user is able to minimize and close the page, everyting is in a
   // client component from here.
   return (
-    <Wrapper processName={process.name} processes={processes}>
-      <Modeler
-        className={styles.Modeler}
-        process={{ ...process, bpmn: selectedVersionBpmn as string }}
-        versions={process.versions}
-        versionName={selectedVersion?.name}
-      />
-    </Wrapper>
+    <>
+      <Wrapper processName={process.name} processes={processes}>
+        <Modeler
+          className={styles.Modeler}
+          process={{ ...process, bpmn: selectedVersionBpmn as string }}
+          versions={process.versions}
+          versionName={selectedVersion?.name}
+        />
+      </Wrapper>
+      <AddUserControls name={'modeler'} />
+    </>
   );
 };
 

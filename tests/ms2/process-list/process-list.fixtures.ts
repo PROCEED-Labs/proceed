@@ -8,7 +8,7 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
   processListPage: async ({ page }, use) => {
     // set up the fixture
-    await page.goto('http://localhost:3000');
+    await page.goto('/');
     const processListPage = new ProcessListPage(page);
     await processListPage.login();
 

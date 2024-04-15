@@ -17,7 +17,7 @@ type ConfirmationModalProps = PropsWithChildren<{
   onExternalClose?: () => void;
 }>;
 
-const ConfirmationButton = forwardRef<HTMLElement, ConfirmationModalProps>(
+const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>(
   (
     {
       children,

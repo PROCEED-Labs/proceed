@@ -63,7 +63,7 @@ const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
 type VersionCreationButtonProps = ButtonProps & {
   createVersion: (values: { versionName: string; versionDescription: string }) => any;
 };
-const VersionCreationButton = forwardRef<HTMLElement, VersionCreationButtonProps>(
+const VersionCreationButton = forwardRef<HTMLAnchorElement, VersionCreationButtonProps>(
   ({ createVersion, ...props }, ref) => {
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
 

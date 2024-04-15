@@ -6,6 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 // require('dotenv').config();
 
+const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -18,7 +20,7 @@ export default defineConfig({
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000,
+    timeout: 3000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -35,7 +37,7 @@ export default defineConfig({
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'https://localhost:33083',
+    baseURL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -45,7 +47,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], ignoreHTTPSErrors: true },
+      use: {
+        ...devices['Desktop Chrome'],
+        ignoreHTTPSErrors: true,
+        contextOptions: {
+          permissions: ['clipboard-read', 'clipboard-write'],
+        },
+      },
     },
 
     {
@@ -82,13 +90,9 @@ export default defineConfig({
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  // Run your local dev server before starting the tests */
-
-  // dev-ms-server takes too long before it can take requests, so you should
-  // start this manually.
   /*webServer: {
-    command: 'yarn dev-ms-server',
-    port: 33083,
+    command: 'yarn dev-ms',
+    port: 3000,
     reuseExistingServer: !process.env.CI,
   },*/
 });

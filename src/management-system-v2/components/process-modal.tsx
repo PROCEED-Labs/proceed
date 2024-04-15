@@ -28,11 +28,9 @@ const ProcessModal = <T extends { name: string; description: string }>({
 
   useEffect(() => {
     if (open) {
-      // form.resetFields is not working directly, because initialData has not been
+      // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
-      setTimeout(() => {
-        form.resetFields();
-      }, 0);
+      form.setFieldsValue(initialData);
     }
   }, [form, open]);
 
@@ -117,7 +115,8 @@ const ProcessModal = <T extends { name: string; description: string }>({
         name="process_form"
         initialValues={initialData}
         autoComplete="off"
-        // This resets the fields when the modal is opened again.
+        // This resets the fields when the modal is opened again. (apparently
+        // doesn't work in production, that's why we use the useEffect above)
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (

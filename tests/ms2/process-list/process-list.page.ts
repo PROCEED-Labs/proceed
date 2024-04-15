@@ -29,7 +29,7 @@ export class ProcessListPage {
     const { page } = this;
     await page.goto('/');
     await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL('**/processes');
     this.processListPageURL = page.url();
   }
 
@@ -129,7 +129,7 @@ export class ProcessListPage {
 
     if (processListPageURL) {
       await page.goto(processListPageURL);
-      await page.waitForTimeout(500);
+      await page.waitForURL('**/processes');
       // check if there are processes to remove
       if (!(await page.locator('tr[data-row-key]').all()).length) return;
       // remove all processes

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -26,13 +26,15 @@ const ProcessModal = <T extends { name: string; description: string }>({
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
-  /*useEffect(() => {
+  useEffect(() => {
     if (open) {
-      // form.resetFields is not working, because initialData has not been
+      // form.resetFields is not working directly, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
-      //form.setFieldsValue(initialData);
+      setTimeout(() => {
+        form.resetFields();
+      }, 0);
     }
-  }, [form, open]);*/
+  }, [form, open]);
 
   const items: CollapseProps['items'] =
     (initialData?.length ?? 0) > 1

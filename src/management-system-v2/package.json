@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build && rm -rf ./volume",
+    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
     "docker:build": "docker build -t proceed .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env.development proceed",
+    "docker:run": "docker run -p 33081:33081 -v ${PWD}/volume:/app/volume --env-file .env.development proceed",
     "start": "next start",
     "lint": "next lint",
     "predev": "ts-node --project ./tsconfig.node.json ./scripts/genAntdCss.tsx",

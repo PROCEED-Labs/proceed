@@ -49,14 +49,7 @@ export async function copyProcessImage(
 ): Promise<Boolean> {
   try {
     // this is necessary to avoid this error in safari: https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
-    await navigator.clipboard
-      .write([new ClipboardItem({ 'image/png': await getPNG(modeler) })])
-      .then(function () {
-        console.log('copied');
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);
     console.log('Copied to clipboard');
     return true;
   } catch (error) {

@@ -301,3 +301,65 @@ test('export multiple processes', async ({ processListPage }) => {
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.png')).toBeTruthy();
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
 });
+
+test.describe('shortcuts in process-list', () => {
+  /* Create Process - ctrl / meta + enter */
+  test('create a new process with ctrl / meta + enter', async ({ processListPage }) => {
+    const { page } = processListPage;
+    /* Open Modal */
+    await page.getByRole('main').press('Control+Enter');
+    const modal = await page.getByRole('dialog');
+    /* Check if Modal opened */
+    expect(modal).toBeVisible();
+
+    /* Fill in the form */
+    // await page
+    //   .getByLabel('Create Process')
+    //   .locator('div')
+    //   .filter({ hasText: 'Create ProcessProcess' })
+    //   .first()
+    //   .press('Tab');
+    // await page.getByLabel('Close', { exact: true }).press('Tab');
+    await page.getByRole('dialog').press('Tab');
+    await page.getByRole('dialog').press('Tab');
+
+    await page.getByLabel('Process Name').fill('Some Name');
+    await page.getByLabel('Process Name').press('Tab');
+    await page.getByLabel('Process Description').fill('Some Description');
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Go back to list */
+    const processDefinitionID = page
+      .url()
+      .split(processListPage.getPageURL() + '/')
+      .pop();
+    await processListPage.goto();
+    // await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
+
+    // await page
+    //   .getByLabel('Create Process')
+    //   .locator('div')
+    //   .filter({ hasText: 'Create ProcessProcess' })
+    //   .first()
+    //   .press('Tab');
+    // await page.getByLabel('Close', { exact: true }).press('Tab');
+    // await page.getByLabel('Process Name').fill('Some Process Name');
+    // await page.getByLabel('Process Name').press('Tab');
+    // await page.getByLabel('Process Description').fill('Some description');
+    // await page.getByRole('button', { name: 'Cancel' }).press('Control+Enter');
+  });
+
+  /* Delete Process - del*/
+  test('delete a process with del', async ({ processListPage }) => {});
+
+  /*  Select all Processes - ctrl / meta + a */
+  test('select all processes with ctrl / meta + a', async ({ processListPage }) => {});
+
+  /* Deselect all Processes - esc */
+  test('deselect all processes with esc', async ({ processListPage }) => {});
+
+  /* Copy and Paste Processes - ctrl + c -> ctrl + v */
+  test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {});
+});
+
+/* Reloads */

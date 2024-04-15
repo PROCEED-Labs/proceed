@@ -51,7 +51,7 @@ export const useControlStore = create<ControlsStore>()(
     controls: {},
     registerControls: ({ id, actions }) => {
       set((state) => {
-        /* Check if already registered */
+        /* If not registerd yet */
         if (!state.ids.includes(id)) {
           state.ids.push(id);
           state.controls[id] = {};
@@ -63,6 +63,20 @@ export const useControlStore = create<ControlsStore>()(
               '4': [],
               '5': [],
             };
+          });
+        } else {
+          /* If already registered, only overwrite not existing actions with default*/
+          let alreadrRegisteredActions = get().controls[id];
+          actions.forEach((action) => {
+            if (!alreadrRegisteredActions[action]) {
+              state.controls[id][action] = {
+                '1': [],
+                '2': [],
+                '3': [],
+                '4': [],
+                '5': [],
+              };
+            }
           });
         }
       });
@@ -174,9 +188,17 @@ export const useAddControlCallback = (
   const { level = 1, blocking = false, dependencies = [] } = options || {};
   const controlStore = useControlStore();
   useEffect(() => {
-    // Early return if control is not registered.
+    /* Check whether the control is registered yet */
     if (!controlStore.ids.includes(name)) {
-      return;
+      /* Now add control area with only specified (single) action */
+      const eventnames = Array.isArray(eventname) ? eventname : [eventname];
+      controlStore.registerControls({
+        id: name,
+        actions: eventnames,
+      }); /* 
+      This allows to register Callbacks to any control-area and event-type, even if it does not exist (this would mean, it is never invoked) 
+      However, this enables an arbitrary order of registering a control-area and callbacks
+      */
     }
 
     if (Array.isArray(eventname)) {

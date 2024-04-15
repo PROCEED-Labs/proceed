@@ -27,12 +27,12 @@ const ProcessModal = <T extends { name: string; description: string }>({
   const { message } = App.useApp();
 
   useEffect(() => {
-    if (open) {
+    if (initialData) {
       // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
       form.setFieldsValue(initialData);
     }
-  }, [form, open]);
+  }, [form, initialData]);
 
   const items: CollapseProps['items'] =
     (initialData?.length ?? 0) > 1

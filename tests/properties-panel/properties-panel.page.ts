@@ -23,15 +23,15 @@ export class PropertiesPanelPage {
 
   async goto() {
     if (this.processDefinitionID) {
-      await this.page.goto(`http://localhost:3000/${this.processDefinitionID}`);
+      await this.page.goto(`/processes/${this.processDefinitionID}`);
     } else {
-      await this.page.goto('http://localhost:3000/processes');
+      await this.page.goto('/processes');
     }
   }
 
   async login() {
     const page = this.page;
-    await page.goto('http://localhost:3000');
+    await page.goto('/');
     await page.getByRole('button', { name: 'Continue as a Guest' }).click();
     await page.waitForTimeout(2000);
   }
@@ -59,7 +59,7 @@ export class PropertiesPanelPage {
     await page.waitForTimeout(2000);
 
     const pageURL = page.url();
-    const processDefinitionID = pageURL.split('http://localhost:3000/processes/').pop();
+    const processDefinitionID = pageURL.split('/processes/').pop();
     this.processDefinitionID = processDefinitionID;
     this.processName = processName;
     this.processDescription = description;
@@ -163,7 +163,7 @@ export class PropertiesPanelPage {
   async removeAllProcesses() {
     const page = this.page;
 
-    await page.goto('http://localhost:3000/processes');
+    await page.goto('/processes');
     await page.waitForTimeout(500);
     await page.getByLabel('Select all').check();
     await page.getByRole('button', { name: 'delete' }).first().click();

@@ -5,7 +5,7 @@ test('process modeler', async ({ processModelerPage }) => {
   await processModelerPage.page.getByRole('button', { name: 'xml-sign' }).click();
   await expect(processModelerPage.page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
   //todo: check xml for startevent
-  await processModelerPage.page.waitForTimeout(500);
+  await processModelerPage.page.waitForTimeout(2000); // wait for dialog to show before closing
   await processModelerPage.page.getByRole('button', { name: 'Ok' }).click();
 
   // Open/collapse/close properties panel
@@ -61,10 +61,10 @@ test('process modeler', async ({ processModelerPage }) => {
   ).toBeVisible();
   await expect(processModelerPage.page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await processModelerPage.page.getByRole('option', { name: 'Version 1' }).click();
-  await processModelerPage.page.waitForTimeout(500);
   const expectedURLWithVersion = new RegExp(
-    `^http:\\/\\/localhost:3000\\/processes\\/${processModelerPage.processDefinitionID}\\?version=\\d+$`,
+    `\\/processes\\/${processModelerPage.processDefinitionID}\\?version=\\d+$`,
   );
+  await processModelerPage.page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(processModelerPage.page.url())).toBeTruthy();
 
   // Open/close process select menu and process creation dialog
@@ -102,27 +102,22 @@ test('process modeler', async ({ processModelerPage }) => {
       exact: true,
     })
     .click();
-  await processModelerPage.page.waitForTimeout(500);
-  const newDefinitionID = processModelerPage.page.url().split('/processes/').pop();
-  const expectedURLNewProcess = new RegExp(
-    `^http:\\/\\/localhost:3000\\/processes\\/[a-zA-Z0-9-_]+`,
-  );
+  const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
+  await processModelerPage.page.waitForURL(expectedURLNewProcess);
   expect(expectedURLNewProcess.test(processModelerPage.page.url())).toBeTruthy();
+  const newDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   expect(newDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
 
   // Create subprocess and navigate
   await processModelerPage.createSubprocess();
-  await processModelerPage.page.locator('.djs-shape[data-element-id^="Activity_"]').click();
-  const openSubprocessButton = processModelerPage.page.getByRole('button', {
-    name: 'Open Subprocess',
-  });
+  const openSubprocessButton = processModelerPage.page.locator('.bjs-drilldown');
   await expect(openSubprocessButton).toBeVisible();
   await openSubprocessButton.click();
-  await processModelerPage.page.waitForTimeout(500);
-  const newSubprocessDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   const expectedURLSubprocess = new RegExp(
-    `^http:\\/\\/localhost:3000\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
+    `\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
   );
+  await processModelerPage.page.waitForURL(expectedURLSubprocess);
   expect(expectedURLSubprocess.test(processModelerPage.page.url())).toBeTruthy();
+  const newSubprocessDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   expect(newSubprocessDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
 });

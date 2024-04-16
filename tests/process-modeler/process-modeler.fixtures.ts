@@ -11,7 +11,7 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
   processModelerPage: async ({ page }, use) => {
     // Set up the fixture.
-    await page.goto('http://localhost:3000');
+    await page.goto('/');
     const processModelerPage = new ProcessModelerPage(page);
     await processModelerPage.login();
     await processModelerPage.createProcess();

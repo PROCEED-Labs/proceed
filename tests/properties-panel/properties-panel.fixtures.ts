@@ -11,7 +11,7 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
   propertiesPanelPage: async ({ page }, use) => {
     // Set up the fixture.
-    await page.goto('http://localhost:3000');
+    await page.goto('/');
     const propertiesPanelPage = new PropertiesPanelPage(page);
     await propertiesPanelPage.login();
     await propertiesPanelPage.createProcess();

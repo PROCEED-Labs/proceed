@@ -1,4 +1,4 @@
-import { getSVGFromBPMN } from './util';
+import { downloadFile, getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import Modeler from 'bpmn-js/lib/Modeler';
@@ -57,10 +57,8 @@ export async function copyProcessImage(
       return true;
     } else {
       // Fallback: Download the image
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(await getPNG(modeler));
-      a.download = 'process.png';
-      a.click();
+      const blob = await getPNG(modeler);
+      downloadFile('process.png', blob);
       return false;
     }
   } catch (error) {

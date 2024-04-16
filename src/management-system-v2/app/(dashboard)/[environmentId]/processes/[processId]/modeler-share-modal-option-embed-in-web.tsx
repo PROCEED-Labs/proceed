@@ -1,6 +1,7 @@
+'use client';
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Input, Checkbox, App } from 'antd';
+import { Button, Input, Checkbox, App } from 'antd';
 import { useParams } from 'next/navigation';
 import {
   generateProcessShareToken,

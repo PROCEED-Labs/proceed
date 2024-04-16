@@ -1,4 +1,5 @@
-import React, { FC, useEffect, useState } from 'react';
+'use client';
+import React, { FC, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message, Grid, App } from 'antd';
 import {
   ShareAltOutlined,

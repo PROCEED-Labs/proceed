@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { Button, Grid, Tooltip, Typography } from 'antd';
 import { ReactNode } from 'react';

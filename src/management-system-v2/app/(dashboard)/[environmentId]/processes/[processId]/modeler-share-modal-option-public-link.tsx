@@ -1,3 +1,4 @@
+'use client';
 import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
 import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';

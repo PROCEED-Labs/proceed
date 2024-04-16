@@ -8,6 +8,8 @@ import {
   saveProcessImage,
 } from '@/lib/data/legacy/_process';
 import { NextRequest, NextResponse } from 'next/server';
+import stream from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
 
 export async function GET(
   request: NextRequest,
@@ -34,9 +36,9 @@ export async function GET(
     });
   }
 
-  const image = await getProcessImage(processId, imageFileName);
+  const imageBuffer = await getProcessImage(processId, imageFileName);
 
-  const fileType = await fileTypeFromBuffer(image);
+  const fileType = await fileTypeFromBuffer(imageBuffer);
 
   if (!fileType) {
     return new NextResponse(null, {
@@ -48,7 +50,7 @@ export async function GET(
   const headers = new Headers();
   headers.set('Content-Type', fileType.mime);
 
-  return new NextResponse(image, { status: 200, statusText: 'OK', headers });
+  return new NextResponse(imageBuffer, { status: 200, statusText: 'OK', headers });
 }
 
 export async function PUT(
@@ -94,40 +96,36 @@ export async function PUT(
     });
   }
 
-  const reader = request.body.getReader();
-  let imageBuffer: Buffer = Buffer.from('');
-  try {
-    // read() returns a promise that resolves when a value has been received.
-    // See https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#reading_the_stream for details
-    await reader.read().then(async function handleImageStream({
-      done,
-      value,
-    }: {
-      done: boolean;
-      value?: Uint8Array;
-    }): Promise<any> {
-      if (value) {
-        imageBuffer = Buffer.concat([imageBuffer, value]);
-
-        if (imageBuffer.byteLength > 2000000) {
-          throw new Error('Allowed image size of 2MB exceed');
-        }
+  const reader = stream.Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
+  const chunks: Uint8Array[] = [];
+  let totalLength = 0;
+  for await (const chunk of reader) {
+    if (chunk) {
+      chunks.push(chunk);
+      totalLength += chunk.length;
+      if (totalLength > 2000000) {
+        // 2MB limit
+        reader.destroy(new Error('Allowed image size of 2MB exceeded'));
+        return new NextResponse(null, {
+          status: 413,
+          statusText: 'Allowed image size of 2MB exceeded',
+        });
       }
-
-      if (!done) {
-        // call async read function again to read further chunks of stream when available
-        return reader.read().then(handleImageStream);
-      }
-    });
-  } catch (err) {
-    if (err instanceof Error && err.message === 'Allowed image size of 2MB exceed') {
-      await reader.cancel(err.message);
-      return new NextResponse(null, {
-        status: 413,
-        statusText: err.message,
-      });
     }
-    throw err;
+  }
+  // Proceed with processing if the size limit is not exceeded
+  const imageBuffer = Buffer.concat(
+    chunks.map((chunk) => Buffer.from(chunk)),
+    totalLength,
+  );
+
+  const fileType = await fileTypeFromBuffer(imageBuffer);
+
+  if (!fileType) {
+    return new NextResponse(null, {
+      status: 415,
+      statusText: 'Can not store image with unknown file type',
+    });
   }
 
   await saveProcessImage(processId, imageFileName, imageBuffer);

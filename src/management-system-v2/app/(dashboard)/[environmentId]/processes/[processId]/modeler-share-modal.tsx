@@ -199,10 +199,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Copy Diagram as PNG',
       optionOnClick: async () => {
         setActiveIndex(2);
-        if (await copyProcessImage(modeler!)) {
-          message.success('Copied to clipboard');
-        } else {
-          message.error('Error while copying');
+        try {
+          if (await copyProcessImage(modeler!)) message.success('Copied to clipboard');
+          else message.info('ClipboardAPI not supported in your browser');
+        } catch (err) {
+          message.error(`${err}`);
         }
         setActiveIndex(null);
       },

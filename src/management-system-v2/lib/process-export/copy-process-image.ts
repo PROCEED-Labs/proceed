@@ -48,13 +48,23 @@ export async function copyProcessImage(
   modeler: BPMNCanvasRef | Modeler | NavigatedViewer,
 ): Promise<Boolean> {
   try {
-    // this is necessary to avoid this error in safari: https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);
-    console.log('Copied to clipboard');
-    return true;
+    // Check if clipboard writing is supported
+    if (navigator.clipboard && 'write' in navigator.clipboard) {
+      // this is necessary to avoid permission error in safari: can't call await before clipboard.write
+      // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);
+      console.log('Copied to clipboard');
+      return true;
+    } else {
+      // Fallback: Download the image
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await getPNG(modeler));
+      a.download = 'process.png';
+      a.click();
+      return false;
+    }
   } catch (error) {
-    console.error(`Error while copying the diagram: ${error}`);
-    return false;
+    throw new Error(`${error}`);
   }
 }
 

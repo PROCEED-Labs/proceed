@@ -138,8 +138,9 @@ const ModelerShareModalOptionPublicLink = ({
       } else {
         throw new Error('Invalid action specified');
       }
-    } catch (err) {
-      message.error(`${err}`);
+    } catch (err: any) {
+      if (err instanceof ReferenceError) message.info(`ClipboardAPI not supported in your browser`);
+      else message.error(`${err}`);
     }
   };
 

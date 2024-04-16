@@ -34,6 +34,7 @@ const AddUserControls: FC<ControlComponent> = ({ name, checker }) => {
     export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
     import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
   };
+
   useControler(name, controlChecker);
 
   return <></>;

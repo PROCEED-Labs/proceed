@@ -661,7 +661,6 @@ export function DraggableElementGenerator<TPropId extends string>(
     const className = cn(
       {
         [styles.HoveredByFile]: !isDragging && over?.id === elementId,
-        [styles.HoveredByFile]: !isDragging && over?.id === elementId,
         [styles.RowBeingDragged]: isDragging,
       },
       props.className,

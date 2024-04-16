@@ -33,11 +33,11 @@ import {
   AppstoreOutlined,
   PlusOutlined,
   ImportOutlined,
-  FolderOutlined,
-  FileOutlined,
   ScissorOutlined,
   CopyOutlined,
   FolderAddOutlined,
+  FolderOutlined,
+  FileOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -55,8 +55,15 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import {
+  CheckerType,
+  useAddControlCallback,
+  useControlStore,
+  useControler,
+} from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
 import { moveIntoFolder } from '@/lib/data/folders';
@@ -94,10 +101,11 @@ export type ListItem = ReplaceKeysWithHighlighted<InputItem, 'name' | 'descripti
 
 type ProcessesProps = {
   processes: InputItem[];
+  favourites?: string[];
   folder: Folder;
 };
 
-const Processes = ({ processes, folder }: ProcessesProps) => {
+const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   if (folder.parentId)
     processes.unshift({
       name: '< Parent Folder >',
@@ -112,6 +120,10 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
 
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
+
+  const favs = favourites ?? [];
+  useInitialiseFavourites(favs);
+  const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -132,6 +144,10 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
           type: 'error',
           content: res.error.message,
         });
+      } else {
+        // Success -> Remove from favourites if stared
+        removeFromFavouriteProcesses(selectedRowKeys as string[]);
+        // TODO: Remove from favourites for all users
       }
     } catch (e) {
       // Unkown server error or was not sent from server (e.g. network error)
@@ -205,50 +221,48 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (openCopyModal || openExportModal || openEditModal) {
-        return;
-      }
+  /* User-Controls */
+  // const modalOpened = openCopyModal || openExportModal || openEditModal;
+  const controlChecker: CheckerType = {
+    selectall: (e) => e.ctrlKey && e.key === 'a',
+    esc: (e) => e.key === 'Escape',
+    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
+    copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),
+    paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v' && ability.can('create', 'Process'),
+    controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
+    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
+    enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
+    cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x' /* TODO: ability */,
+    export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
+    import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
+  };
+  useControler('process-list', controlChecker);
 
-      /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a') {
-        e.preventDefault();
-        setSelectedRowElements(filteredData ?? []);
-        /* DEL */
-      } else if (e.key === 'Delete' && selectedRowKeys.length) {
-        if (ability.can('delete', 'Process')) {
-          setOpenDeleteModal(true);
-        }
-        /* ESC */
-      } else if (e.key === 'Escape') {
-        deselectAll();
-        /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c') {
-        if (ability.can('create', 'Process')) {
-          setCopySelection(selectedRowKeys);
-        }
-        /* CTRL + V */
-      } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        if (ability.can('create', 'Process')) {
-          setOpenCopyModal(true);
-        }
-      }
-    };
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
+  useAddControlCallback(
+    'process-list',
+    'selectall',
+    (e) => {
+      e.preventDefault();
+      setSelectedRowElements(filteredData ?? []);
+    },
+    { dependencies: [processes] },
+  );
+  useAddControlCallback('process-list', 'esc', deselectAll);
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    copySelection,
-    filteredData,
-    selectedRowKeys,
-    ability,
-    openCopyModal,
-    openExportModal,
-    openEditModal,
-  ]);
+  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+
+  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
+
+  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+
+  useAddControlCallback(
+    'process-list',
+    'export',
+    () => {
+      if (selectedRowKeys.length) setOpenExportModal(true);
+    },
+    { dependencies: [selectedRowKeys.length] },
+  );
 
   // NOTE: I plan to move this to a separate file
   const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
@@ -509,7 +523,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                     setOpenExportModal(true);
                   }}
                   onDeleteProcess={async ({ id }) => {
-                    await deleteProcesses([id]);
+                    await deleteProcesses([id], environment.spaceId);
                     setSelectedRowElements([]);
                     router.refresh();
                   }}
@@ -632,6 +646,7 @@ export function DraggableElementGenerator<TPropId extends string>(
     HTMLAttributes<HTMLElement> & { [key in TPropId]: string };
 
   const DraggableElement = (props: Props) => {
+    const elementId = props[propId] ?? '';
     const {
       attributes,
       listeners,
@@ -646,6 +661,7 @@ export function DraggableElementGenerator<TPropId extends string>(
     const className = cn(
       {
         [styles.HoveredByFile]: !isDragging && over?.id === props[propId],
+        [styles.HoveredByFile]: !isDragging && over?.id === elementId,
         [styles.RowBeingDragged]: isDragging,
       },
       props.className,

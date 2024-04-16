@@ -119,17 +119,34 @@ const HeaderActions: FC = () => {
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
-      <AuthCan action="create" resource="User">
+      <AuthCan create User>
         {/* TODO: fix icon for float button in button group */}
-        <Button type="primary" onClick={() => setCreateUserModalOpen(true)} icon={<PlusOutlined />}>
-          {breakpoint.xl ? (
-            <>
-              <PlusOutlined /> Add User
-            </>
-          ) : (
-            <PlusOutlined />
-          )}
+        <Button
+          type="primary"
+          onClick={() => setCreateUserModalOpen(true)}
+          style={{ marginRight: '10px' }}
+        >
+          {breakpoint.xl ? 'New User' : 'New'}
         </Button>
+      </AuthCan>
+    </>
+  );
+};
+
+export const FloatButtonActions: FC = () => {
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const breakpoint = Grid.useBreakpoint();
+
+  return (
+    <>
+      <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
+      <AuthCan create User>
+        {/* TODO: fix icon for float button in button group */}
+        <PlusOutlined
+          type="primary"
+          onClick={() => setCreateUserModalOpen(true)}
+          style={{ marginRight: '10px' }}
+        />
       </AuthCan>
     </>
   );

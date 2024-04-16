@@ -1,39 +1,49 @@
 'use client';
 
-import { ReactElement, ReactNode, useEffect, useMemo, FC, PropsWithChildren, use } from 'react';
+import { ReactElement, useEffect, useMemo, FC, PropsWithChildren, use } from 'react';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { useSession } from 'next-auth/react';
 import { Route } from 'next';
-import { AbilityRule, ResourceActionType } from '@/lib/ability/caslAbility';
-import { PackRule } from '@casl/ability/extra';
-import { useCsrfTokenStore } from '@/lib/csrfTokenStore';
+import {
+  ResourceActionType,
+  ResourceType,
+  resources,
+  toCaslResource,
+  resourceAction,
+} from '@/lib/ability/caslAbility';
 import { usePathname, useRouter } from 'next/navigation';
-import Ability from '@/lib/ability/abilityHelper';
 import { SpaceContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 
-export type AuthCanProps = {
-  action: ResourceActionType | ResourceActionType[];
-  resource: Parameters<Ability['can']>[1];
-  notLoggedIn?: ReactElement;
-  fallback?: ReactElement;
-  fallbackRedirect?: Route;
-  loading?: ReactElement;
-};
+/** Makes at least one key of an object required */
+type OneOf<Key, Object> = Key extends keyof Object ? Partial<Object> & Pick<Object, Key> : never;
 
-// TODO: Weil client side werden evtl. sensible Daten an den Client geschickt.
-// Auf server side ändern und eigene component für client side die aber nur für
-// buttons etc. benutzt werden sollte
-export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
-  action,
-  resource,
-  fallback,
-  loading: loadingAuth,
-  notLoggedIn,
-  children,
-  fallbackRedirect,
-}) => {
+type ResourceActionOneOf = OneOf<ResourceActionType, Record<ResourceActionType, true>>;
+
+type ResourceParams = Parameters<typeof toCaslResource>;
+type ResourceOneOf = OneOf<ResourceType, Record<ResourceType, ResourceParams[1] | true>>;
+
+export type AuthCanProps = ResourceActionOneOf &
+  ResourceOneOf & {
+    notLoggedIn?: ReactElement;
+    fallback?: ReactElement;
+    fallbackRedirect?: Route;
+    loading?: ReactElement;
+  };
+
+/**
+ * Component to check if a user is allowed to perform an action on a resource
+ *
+ * @example
+ * <AuthCan create Process={record} fallback={<p>Not allowed</p>}>
+ *   <button onClick={createProcess}> Create Process </button>
+ * </AuthCan>
+ * */
+export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
+  const { fallback, loading: loadingAuth, notLoggedIn, children, fallbackRedirect } = props;
+
   const router = useRouter();
   const { status } = useSession();
+  const spaceId = useEnvironment().spaceId;
 
   const ability = useAbilityStore((store) => store.ability);
   const abilityFetched = useAbilityStore((store) => store.abilityFetched);
@@ -43,17 +53,34 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = ({
   const allow = useMemo(() => {
     if (status !== 'authenticated' || loadingState) return false;
 
-    const resources = Array.isArray(resource) ? resource : [resource];
-    const actions = Array.isArray(action) ? action : [action];
+    const selectedResources: (ResourceType | ReturnType<typeof toCaslResource>)[] = [];
+    for (const resource of resources) {
+      const selectedResource = props[resource];
+      if (!selectedResource) continue;
 
-    for (const r of resources) {
+      if (typeof selectedResource === 'boolean') selectedResources.push(resource);
+      else selectedResources.push(toCaslResource(resource, selectedResource));
+    }
+    if (selectedResources.length === 0) throw new Error('No resources were provided');
+
+    const actions: ResourceActionType[] = [];
+    for (const action of resourceAction) if (props[action]) actions.push(action);
+    if (selectedResources.length === 0) throw new Error('No actions were provided');
+
+    for (const r of selectedResources) {
       for (const a of actions) {
-        if (!ability.can(a, r)) return false;
+        if (!ability.can(a, r, { environmentId: spaceId })) return false;
       }
     }
 
     return true;
-  }, [action, resource, ability, loadingState, status]);
+  }, [
+    ...resources.map((r) => props[r]),
+    ...resourceAction.map((a) => props[a]),
+    spaceId,
+    status,
+    loadingState,
+  ]);
 
   useEffect(() => {
     if (!loadingState && !allow && fallbackRedirect) {

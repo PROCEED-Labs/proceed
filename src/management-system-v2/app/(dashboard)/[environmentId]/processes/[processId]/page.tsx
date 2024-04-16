@@ -1,8 +1,7 @@
-import Auth, { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
-import cn from 'classnames';
 import { getProcess, getProcessVersionBpmn, getProcesses } from '@/lib/data/legacy/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 

@@ -5,9 +5,10 @@ import { App, Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
-import { FolderUserInput } from '@/lib/data/folder-schema';
+import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import useFolderModal from './folder-modal';
+import useParseZodErrors from '@/lib/useParseZodErrors';
 
 type FolderCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;
@@ -16,14 +17,18 @@ type FolderCreationButtonProps = ButtonProps & {
 const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, ...props }) => {
   const { message } = App.useApp();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
+  const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       try {
-        const response = await serverCreateFolder(values);
+        const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
+        if (!folderInput) throw new Error();
+
+        const response = await serverCreateFolder(folderInput);
         if (response && 'error' in response) throw new Error();
 
         router.refresh();
@@ -36,7 +41,7 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
   };
 
   const { modal, open, close } = useFolderModal({
-    spaceId: environmentId,
+    spaceId,
     parentId: folderId,
     onSubmit: createFolder,
     modalProps: {

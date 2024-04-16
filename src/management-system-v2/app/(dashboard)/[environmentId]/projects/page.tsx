@@ -1,11 +1,14 @@
 import Processes from '@/components/processes';
-import { FC } from 'react';
 import ProjectStats from './project-stats';
 import Content from '@/components/content';
 import { Space } from 'antd';
-import Auth from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
+import { redirect } from 'next/navigation';
 
-const Projects: FC = () => {
+const Projects = async ({ params }: { params: { environmentId: string } }) => {
+  const { ability } = await getCurrentEnvironment(params.environmentId);
+  if (!ability.can('view', 'Setting')) return redirect('/');
+
   return (
     <Content title="Projects">
       <Space direction="vertical" size="large" style={{ display: 'flex' }}>
@@ -27,4 +30,4 @@ const Projects: FC = () => {
   );
 };
 
-export default Auth({ action: 'view', resource: 'Project', fallbackRedirect: '/' }, Projects);
+export default Projects;

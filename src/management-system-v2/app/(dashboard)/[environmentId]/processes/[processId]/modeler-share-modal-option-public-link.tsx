@@ -104,33 +104,39 @@ const ModelerShareModalOptionPublicLink = ({
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const handleQRCodeAction = async (action: 'download' | 'copy') => {
+  const getQRCodeBlob = async () => {
     try {
       const canvas = canvasRef.current?.querySelector<HTMLCanvasElement>('canvas');
 
-      if (canvas) {
-        const blob = await new Promise<Blob | null>((resolve) =>
-          canvas.toBlob(resolve, 'image/png'),
-        );
-
-        if (blob) {
-          if (action === 'copy') {
-            const item = new ClipboardItem({ 'image/png': blob });
-            await navigator.clipboard.write([item]);
-            message.success('QR Code copied as PNG');
-          } else if (action === 'download') {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'qrcode.png';
-            a.click();
-          } else {
-            throw new Error('Invalid action specified');
-          }
-        } else {
-          throw new Error('Failed to create PNG blob');
-        }
-      } else {
+      if (!canvas) {
         throw new Error('QR Code canvas not found');
+      }
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+
+      if (!blob) {
+        throw new Error('Failed to create PNG blob');
+      }
+
+      return blob;
+    } catch (err) {
+      throw new Error(`${err}`);
+    }
+  };
+
+  const handleQRCodeAction = async (action: 'download' | 'copy') => {
+    try {
+      if (action === 'copy') {
+        const item = new ClipboardItem({ 'image/png': getQRCodeBlob() });
+        await navigator.clipboard.write([item]);
+        message.success('QR Code copied as PNG');
+      } else if (action === 'download') {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(await getQRCodeBlob());
+        a.download = 'qrcode.png';
+        a.click();
+      } else {
+        throw new Error('Invalid action specified');
       }
     } catch (err) {
       message.error(`${err}`);

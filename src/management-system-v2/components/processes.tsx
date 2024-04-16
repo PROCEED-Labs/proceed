@@ -652,15 +652,15 @@ export function DraggableElementGenerator<TPropId extends string>(
       listeners,
       setNodeRef: setDraggableNodeRef,
       isDragging,
-    } = useDraggable({ id: props[propId] });
+    } = useDraggable({ id: elementId });
 
     const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
-      id: props[propId],
+      id: elementId,
     });
 
     const className = cn(
       {
-        [styles.HoveredByFile]: !isDragging && over?.id === props[propId],
+        [styles.HoveredByFile]: !isDragging && over?.id === elementId,
         [styles.HoveredByFile]: !isDragging && over?.id === elementId,
         [styles.RowBeingDragged]: isDragging,
       },

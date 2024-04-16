@@ -21,15 +21,6 @@ const MilestoneDescriptionEditor: React.FC<{
 }> = ({ onChange, initialValue }) => {
   const editorRef = React.useRef<Editor>(null);
 
-  useEffect(() => {
-    if (editorRef.current && initialValue) {
-      const editor = editorRef.current as Editor;
-      const editorInstance = editor.getInstance();
-
-      editorInstance.setMarkdown(initialValue);
-    }
-  }, [initialValue, editorRef]);
-
   return (
     <TextEditor
       editorRef={editorRef}

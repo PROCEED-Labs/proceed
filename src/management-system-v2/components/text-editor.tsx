@@ -1,33 +1,42 @@
-import { Editor as EditorClass, EditorProps } from '@toast-ui/react-editor';
+import { Editor, EditorProps } from '@toast-ui/react-editor';
 import { Tabs } from 'antd';
-import React, { FC, RefAttributes, forwardRef, useEffect } from 'react';
+import React, { RefObject, useEffect } from 'react';
 import styles from './text-editor.module.scss';
-import dynamic from 'next/dynamic';
 
-// Editor uses `navigator` in top level scope, which is not available in server side rendering.
-const Editor = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Editor), {
-  ssr: false,
-}) as FC<RefAttributes<EditorClass> & EditorProps>;
+// IMPORTANT: This component is a wrapper around the Viewer component from
+// @toast-ui/react-editor, which cannot be used directly since it uses
+// `navigator` at the top-level module scope. Using next/dynamic to import the
+// viewer doesn't work as expected because next/dynamic doesn't support refs.
+// This component is a workaround to this issue by using the viewer component
+// directly (with working refs) and optionally exposing that ref with a custom
+// prop name. Then, other components can use this component through next/dynamic
+// instead of the viewer directly, and pass the ref prop to it as needed.
 
-const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(props, ref) {
-  const editorRef = ref as React.MutableRefObject<EditorClass>;
+// This component cannot receive a ref named "ref", it has to be called
+// "editorRef" or similar because next/dynamic doesn't support "ref".
+const TextEditor = ({
+  initialValue,
+  editorRef,
+  ...editorProps
+}: EditorProps & { editorRef: RefObject<Editor> }) => {
   useEffect(() => {
     if (editorRef.current) {
-      const editor = editorRef.current as EditorClass;
+      const editor = editorRef.current;
       const editorInstance = editor.getInstance();
 
-      if (props.initialValue && props.initialValue.length > 0) {
-        editorInstance.setMarkdown(props.initialValue);
+      if (initialValue && initialValue.length > 0) {
+        editorInstance.setMarkdown(initialValue);
       } else {
         editorInstance.reset();
       }
     }
-  }, [editorRef, props.initialValue]);
+  }, [initialValue]);
 
   return (
     <div className={styles.EditorContainer}>
       <Editor
         ref={editorRef}
+        initialValue={initialValue}
         previewStyle="tab"
         autofocus={true}
         viewer={true}
@@ -41,7 +50,7 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
           ['scrollSync'],
         ]}
         usageStatistics={false}
-        {...props}
+        {...editorProps}
       />
       <div style={{ display: 'flex', justifyContent: 'start' }}>
         <Tabs
@@ -52,7 +61,7 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
           size="small"
           type="card"
           onChange={(value) => {
-            const editor = editorRef.current as EditorClass;
+            const editor = editorRef.current!;
             const editorInstance = editor.getInstance();
             if (value === 'source') {
               editorInstance.changeMode('markdown');
@@ -68,6 +77,6 @@ const TextEditor = forwardRef<EditorClass, EditorProps>(function TextEditor(prop
       </div>
     </div>
   );
-});
+};
 
 export default TextEditor;

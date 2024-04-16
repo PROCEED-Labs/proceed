@@ -36,3 +36,6 @@ next-env.d.ts
 
 # ant design build output
 /public/antd.min.css
+
+# Build storage directory for running the production build locally (in docker)
+/volume

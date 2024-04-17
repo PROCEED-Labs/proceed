@@ -106,10 +106,8 @@ export async function POST(
     chunks.map((chunk) => Buffer.from(chunk)),
     totalLength,
   );
-  console.log('IMAGEBUFFER', imageBuffer);
 
   const fileType = await fileTypeFromBuffer(imageBuffer);
-  console.log('filetype', fileType);
 
   if (!fileType) {
     return new NextResponse(null, {

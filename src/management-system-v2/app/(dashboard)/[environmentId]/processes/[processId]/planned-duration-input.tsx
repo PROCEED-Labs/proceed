@@ -82,12 +82,7 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
         ></FormSubmitButton>,
       ]}
     >
-      <Form
-        layout="inline"
-        form={form}
-        initialValues={durationValues}
-        style={{ marginBlock: '1.5rem' }}
-      >
+      <Form form={form} initialValues={durationValues} style={{ marginBlock: '1.5rem' }}>
         <Row gutter={16}>
           {Object.keys(durationValues).map((key) => {
             return (

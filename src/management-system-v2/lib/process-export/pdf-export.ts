@@ -150,7 +150,9 @@ async function handleProcessVersionPdfExport(
  * @param forceA4 if the pdf pages should always have an A4 page format
  * @param showOnlySelected if all elements that are not in the selected elements (in processData) should be hidden
  * @param zip a zip archive this pdf should be added to in case multiple processes should be exported
- */
+ * @param useWebShare pdf is shared using webshare api if the browser supports
+ 
+*/
 async function pdfExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
@@ -158,6 +160,7 @@ async function pdfExport(
   forceA4: boolean,
   showOnlySelected?: boolean,
   zip?: jsZip | null,
+  useWebshareApi?: boolean,
 ) {
   // create the pdf file for the process
   const pdf = new jsPDF({
@@ -189,6 +192,20 @@ async function pdfExport(
 
   if (zip) {
     zip.file(`${getProcessFilePathName(processData.definitionName)}.pdf`, await pdf.output('blob'));
+  } else if (useWebshareApi && 'canShare' in navigator) {
+    try {
+      await navigator.share({
+        files: [
+          new File([await pdf.output('blob')], `${processData.definitionName}.pdf`, {
+            type: 'application/pdf',
+          }),
+        ],
+      });
+    } catch (err: any) {
+      if (!err.toString().includes('AbortError')) {
+        throw new Error(err);
+      }
+    }
   } else {
     downloadFile(
       `${getProcessFilePathName(processData.definitionName)}.pdf`,

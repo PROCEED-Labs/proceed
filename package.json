@@ -52,8 +52,8 @@
     "build-web": "yarn build && cd src/engine/native/web/server && yarn build",
     "docker:run": "docker container run --publish 33029:33029 --rm --network host --detach --name engine proceed/engine:latest",
     "docker:stop": "docker container stop engine",
-    "docker:run-server": "docker container run --detach --rm -p 443:33080 -p 33081:33081 --cap-add=SYS_ADMIN --name ms-server proceed/ms-server:latest",
-    "docker:stop-server": "docker container stop ms-server",
+    "docker:run-ms": "cd src/management-system-v2 && yarn docker:run",
+    "docker:build-ms": "cd src/management-system-v2 && yarn docker:build",
     "test": "yarn test-engine",
     "test-engine": "cross-env USE_PROJECTS=\"capabilities helper-modules engine-unit-integration\" jest",
     "test-ms": "cd src/management-system && yarn test:unit",
@@ -99,6 +99,7 @@
     "jest": "29.7.0",
     "jest-when": "3.6.0",
     "jsdoc": "^3.6.6",
+    "lint-staged": "^14.0.1",
     "mini-css-extract-plugin": "^0.6.0",
     "nodemon": "^2.0.12",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
@@ -112,7 +113,6 @@
     "uuid": "9.0.1",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1",
-    "lint-staged": "^14.0.1"
+    "webpack-dev-server": "^3.2.1"
   }
 }

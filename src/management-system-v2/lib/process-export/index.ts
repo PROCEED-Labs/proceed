@@ -13,7 +13,11 @@ import 'svg2pdf.js';
 import pdfExport from './pdf-export';
 import { pngExport, svgExport } from './image-export';
 
-async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | null) {
+async function bpmnExport(
+  processData: ProcessExportData,
+  zipFolder?: jsZip | null,
+  useWebshareApi?: boolean,
+) {
   for (let [versionName, versionData] of Object.entries(processData.versions)) {
     // if the version data contains an explicit name use that instead of the the current versionName which is just the version id
     if (versionData.name) {
@@ -28,6 +32,18 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
     const filename = zipFolder ? versionName : processData.definitionName;
     if (zipFolder) {
       zipFolder.file(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
+    } else if (useWebshareApi && 'canShare' in navigator) {
+      try {
+        await navigator.share({
+          // the process bpmn file has to be shared as text due to share() restrictions for XML support
+          //( see MDN Shareable file objects : https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share )
+          files: [new File([bpmnBlob], `${filename}.txt`, { type: 'text/plain' })],
+        });
+      } catch (err: any) {
+        if (!err.toString().includes('AbortError')) {
+          throw new Error(err);
+        }
+      }
     } else {
       downloadFile(`${getProcessFilePathName(filename)}.bpmn`, bpmnBlob);
     }
@@ -96,12 +112,13 @@ export async function exportProcesses(
           options.a4,
           options.exportSelectionOnly,
           zip,
+          options.useWebshareApi,
         );
       }
     } else {
       if (options.type === 'bpmn') {
         const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
-        await bpmnExport(processData, folder);
+        await bpmnExport(processData, folder, options.useWebshareApi);
       }
       // handle imports inside the svgExport function
       if (options.type === 'svg' && !processData.isImport) {

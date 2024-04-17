@@ -47,7 +47,9 @@ export function getDefaultProcessMetaInfo() {
     inEditingBy: [],
     createdOn: date,
     lastEdited: date,
-    shared: false,
+    sharedAs: 'protected',
+    shareTimestamp: 0,
+    allowIframeTimestamp: 0,
     versions: [],
     folderId: '',
   } satisfies ProcessMetadata;

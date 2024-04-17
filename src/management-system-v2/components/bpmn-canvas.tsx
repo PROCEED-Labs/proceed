@@ -173,7 +173,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         .addListener(async ({ keyEvent }: { keyEvent: KeyboardEvent }) => {
           // handle the copy shortcut
           if (keyEvent.ctrlKey && keyEvent.key === 'c') {
-            await copyProcessImage(modeler.current);
+            await copyProcessImage(modeler.current!);
           }
         }, 'keyboard.keyup');
 

@@ -140,4 +140,18 @@ export class ProcessListPage {
       this.processDefinitionIds = [];
     }
   }
+
+  async readClipboard(readAsText) {
+    const { page } = this;
+    const result = await page.evaluate(async (readAsText) => {
+      if (readAsText) {
+        return await navigator.clipboard.readText();
+      } else {
+        const clipboardItems = await navigator.clipboard.read();
+        return clipboardItems[0].types[0];
+      }
+    }, readAsText);
+
+    return result;
+  }
 }

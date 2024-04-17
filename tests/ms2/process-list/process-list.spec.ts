@@ -306,7 +306,8 @@ test('share-modal-test', async ({ processListPage }) => {
   let clipboardData: string;
 
   const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
-  await page.goto(`/processes/${process1Id}`);
+  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
+
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
   await page.getByRole('button', { name: 'share-alt' }).click();
@@ -324,16 +325,24 @@ test('share-modal-test', async ({ processListPage }) => {
   clipboardData = await processListPage.readClipboard(true);
 
   const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z]+:[0-9]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
 
   /*************************** Copy Diagram As PNG ********************************/
   // skip this test for firebox
   if (page.context().browser().browserType() !== firefox) {
     await page.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(100);
     clipboardData = await processListPage.readClipboard(false);
     await expect(clipboardData).toMatch('image/png');
+  } else {
+    // download as fallback
+    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
+      async () => await page.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
+      'string',
+    );
+
+    expect(pngFilename).toMatch(/.png$/);
   }
 
   /*************************** Copy Diagram As XML ********************************/

@@ -59,6 +59,7 @@ export default defineConfig({
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], ignoreHTTPSErrors: true },
+      timeout: 40 * 1000,
     },
 
     {

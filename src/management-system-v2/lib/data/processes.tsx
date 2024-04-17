@@ -83,7 +83,7 @@ export const getSharedProcessWithBpmn = async (definitionId: string) => {
     return userError(`Process does not exist `);
   }
 
-  if (processMetaObj.shareTimestamp > 0) {
+  if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
     const bpmn = await _getProcessBpmn(definitionId);
     const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
     return processWithBPMN;

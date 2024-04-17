@@ -49,7 +49,7 @@ export async function copyProcessImage(
 ): Promise<Boolean> {
   try {
     // Check if clipboard writing is supported
-    if (navigator.clipboard && 'write' in navigator.clipboard) {
+    if (navigator.clipboard && 'write' in navigator.clipboard && window.ClipboardItem) {
       // this is necessary to avoid permission error in safari: can't call await before clipboard.write
       // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);

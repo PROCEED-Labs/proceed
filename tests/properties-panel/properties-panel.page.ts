@@ -59,8 +59,8 @@ export class PropertiesPanelPage {
     await page.waitForTimeout(2000);
 
     const pageURL = page.url();
-    const processDefinitionID = pageURL.split('/processes/').pop();
-    this.processDefinitionID = processDefinitionID;
+    const match = pageURL.match(/\/processes\/([a-zA-Z0-9-_]+)/);
+    this.processDefinitionID = match ? match[1] : null;
     this.processName = processName;
     this.processDescription = description;
   }
@@ -124,6 +124,7 @@ export class PropertiesPanelPage {
     const milestonesSection = this.milestonesSection;
 
     await milestonesSection.getByLabel('plus').click();
+    await page.waitForTimeout(1000); // wait until modal loaded
     const milestonesModal = page.getByLabel('Create new Milestone');
     await milestonesModal.getByPlaceholder('Milestone ID').fill(ID);
     await milestonesModal.getByPlaceholder('Milestone Name').fill(name);
@@ -135,7 +136,7 @@ export class PropertiesPanelPage {
     }
 
     await milestonesModal.getByRole('button', { name: 'Create Milestone' }).click();
-    await page.waitForTimeout(500); // wait until milestone modal is closed
+    await page.waitForTimeout(1000); // wait until milestone modal is closed
   }
 
   async addDescription(descriptionText: string) {
@@ -147,7 +148,7 @@ export class PropertiesPanelPage {
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(500); // wait until description dialog is closed
+    await page.waitForTimeout(1000); // wait until description dialog is closed
   }
 
   async addCustomProperty(name: string, value: string) {
@@ -164,7 +165,7 @@ export class PropertiesPanelPage {
     const page = this.page;
 
     await page.goto('/processes');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000); // wait until route is loaded
     await page.getByLabel('Select all').check();
     await page.getByRole('button', { name: 'delete' }).first().click();
     await page.getByRole('button', { name: 'OK' }).click();

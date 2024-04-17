@@ -4,7 +4,6 @@ import { Card, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import React, { FC, PropsWithChildren } from 'react';
 import classNames from 'classnames';
-import { headers } from 'next/headers';
 
 type CollapsibleCardProps = PropsWithChildren<{
   show: boolean;

@@ -13,7 +13,6 @@ export interface TokenPayload {
 }
 
 export interface ProcessGuestAccessRights {
-  shared?: boolean;
   sharedAs?: 'public' | 'protected';
   shareTimestamp?: number;
   allowIframeTimestamp?: number;
@@ -40,13 +39,7 @@ export async function generateProcessShareToken(
 ) {
   const secretKey = process.env.JWT_SHARE_SECRET;
 
-  let timestamp = 0;
-
-  if (oldTimestamp) {
-    timestamp = oldTimestamp;
-  } else {
-    timestamp = Date.now();
-  }
+  const timestamp = oldTimestamp ?? Date.now();
 
   payload.timestamp = timestamp;
 

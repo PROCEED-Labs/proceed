@@ -112,7 +112,7 @@ type ProcessExportModalProps = {
   open: boolean;
   giveSelectionOption?: boolean;
   preselectedExportType?: ProcessExportOptions['type'];
-  resetPreselectedExportType?: () => void; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
+  resetPreselectedExportType?: () => void;
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
@@ -266,7 +266,6 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         onOk={handleOk}
         onCancel={handleClose}
         centered
-        zIndex={200}
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
         width={540}
         data-testid="Export Modal"

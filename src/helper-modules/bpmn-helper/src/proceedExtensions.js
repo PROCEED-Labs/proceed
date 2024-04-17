@@ -146,7 +146,23 @@ function getElementAttributes(element) {
     }, {});
 }
 
-function setProceedElement(element, proceedElementType, value, attributes = {}) {
+/**
+ * Sets values and attributes for custom proceed element
+ *
+ * @param {object} element the element to be updated
+ * @param {string} proceedElementType the type of proceed element
+ * @param {any} value the value to be inserted into element
+ * @param {object} [attributes] the attributes to be set in element
+ * @param {object} [oldAttributes] optional old attributes of element
+ * @returns {object} attributes of old element
+ */
+function setProceedElement(
+  element,
+  proceedElementType,
+  value,
+  attributes = {},
+  oldAttributes = attributes,
+) {
   let parent;
   if (proceedElementType === 'property') {
     // properties that are not explicitly defined are stored as a property element inside a property container in the meta element
@@ -158,12 +174,30 @@ function setProceedElement(element, proceedElementType, value, attributes = {}) 
   // get the existing container element that should contain the element or create it if it does not yet exist
   const container = ensureContainerElement(element, parent);
 
-  const oldElement = getOldElement(container, proceedElementType, attributes);
+  const oldElement = getOldElement(container, proceedElementType, oldAttributes);
 
-  // remove the old version of an element if it exists
-  if (oldElement) {
+  const { identifier } = proceedExtensionElements[proceedElementType];
+
+  if (value !== null) {
+    const proceedElement = moddle.create(`proceed:${proceedElementType}`, attributes);
+
     if (Array.isArray(container)) {
-      const { identifier } = proceedExtensionElements[proceedElementType];
+      const oldElementIndex = container.findIndex(
+        (el) => el[identifier] === oldAttributes[identifier],
+      );
+
+      if (oldElementIndex !== -1) {
+        container[oldElementIndex] = proceedElement;
+      } else {
+        container.push(proceedElement);
+      }
+    } else {
+      container[proceedElementType] = proceedElement;
+    }
+    proceedElement.value = value;
+  } else if (oldElement) {
+    // Remove the element
+    if (Array.isArray(container)) {
       container.splice(
         container.findIndex((el) => el[identifier] === attributes[identifier]),
         1,
@@ -171,18 +205,6 @@ function setProceedElement(element, proceedElementType, value, attributes = {}) 
     } else {
       delete container[proceedElementType];
     }
-  }
-
-  if (value !== null) {
-    const proceedElement = moddle.create(`proceed:${proceedElementType}`, attributes);
-
-    if (Array.isArray(container)) {
-      container.push(proceedElement);
-    } else {
-      container[proceedElementType] = proceedElement;
-    }
-
-    proceedElement.value = value;
   }
 
   removeEmptyContainerElement(element, parent, container);

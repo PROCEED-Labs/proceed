@@ -338,7 +338,7 @@ export function getImages(processDefinitionsId) {
  *
  * @param {String} processDefinitionsId the id of the process that contains the image
  * @param {String} imageId the id of the specific image
- * @param {String} image an image
+ * @param {Buffer} image an image
  */
 export async function saveImage(processDefinitionsId, imageFileName, image) {
   const imagesDir = getImagesDir(processDefinitionsId);

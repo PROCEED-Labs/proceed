@@ -8,6 +8,14 @@
     font-size: 0.75rem !important;
   }
 
+  .ant-input-number-group-addon {
+    padding-inline: 0px !important;
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
   /* Needed to allow setting width of child (.ant-input-number-group-addon) with display: table-cell */
   .ant-input-number-wrapper {
     table-layout: fixed;
@@ -16,5 +24,13 @@
   .ant-input-group-addon,
   .ant-input-number-group-addon {
     width: 4rem !important;
+  }
+
+  .ant-input-affix-wrapper {
+    font-size: 0.75rem !important;
+  }
+
+  .ant-btn-text:not(:disabled):not(.ant-btn-disabled):hover {
+    background-color: white;
   }
 }

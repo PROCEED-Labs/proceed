@@ -22,7 +22,7 @@ export class ProcessModelerPage {
     const page = this.page;
     await page.goto('/');
     await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL('**/processes');
   }
 
   /**
@@ -45,7 +45,7 @@ export class ProcessModelerPage {
     await page.getByLabel('Process Description').click();
     await page.getByLabel('Process Description').fill('Process Description');
     await page.getByRole('button', { name: 'Create' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
     const pageURL = page.url();
     const processDefinitionID = pageURL.split('/processes/').pop();

@@ -41,16 +41,28 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%' }}
+      role="group"
+      aria-labelledby="description-title"
+    >
       <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-        <span style={{ marginRight: '0.3em' }}>Description</span>
+        <span id="description-title" style={{ marginRight: '0.3em' }}>
+          Description
+        </span>
         <EditOutlined
           onClick={() => {
             setShowPopupEditor(true);
           }}
         ></EditOutlined>
       </Divider>
-      <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+      <div
+        style={{ maxHeight: '40vh', overflowY: 'auto' }}
+        role="textbox"
+        aria-label="description-viewer"
+      >
         <TextViewer initialValue={description}></TextViewer>
       </div>
 

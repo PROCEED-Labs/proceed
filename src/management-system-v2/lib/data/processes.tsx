@@ -16,6 +16,7 @@ import {
   addProcessVersion,
   getProcessUserTaskHtml as _getProcessUserTaskHtml,
   getProcessImage as _getProcessImage,
+  updateProcessMetaData,
 } from './legacy/_process';
 import {
   addDocumentation,
@@ -38,7 +39,6 @@ import {
 } from '../helpers/processVersioning';
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
-import Button from 'antd/es/button';
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
@@ -57,6 +57,10 @@ const checkValidity = async (
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
 
+  /*if (!ability.can('view', toCaslResource('Process', process))) {
+    return userError('Not allowed to delete this process', UserErrorType.PermissionError);
+  }*/
+
   const errorMessages = {
     view: 'Not allowed to read this process',
     update: 'Not allowed to update this process',
@@ -70,6 +74,22 @@ const checkValidity = async (
   ) {
     return userError(errorMessages[operation], UserErrorType.PermissionError);
   }
+};
+
+export const getSharedProcessWithBpmn = async (definitionId: string) => {
+  const processMetaObj = getProcessMetaObjects()[definitionId];
+
+  if (!processMetaObj) {
+    return userError(`Process does not exist `);
+  }
+
+  if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
+    const bpmn = await _getProcessBpmn(definitionId);
+    const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
+    return processWithBPMN;
+  }
+
+  return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
 };
 
 export const getProcess = async (definitionId: string, spaceId: string) => {
@@ -153,6 +173,24 @@ export const addProcesses = async (
   return newProcesses;
 };
 
+export const updateProcessShareInfo = async (
+  definitionsId: string,
+  sharedAs: 'public' | 'protected' | undefined,
+  shareTimestamp: number | undefined,
+  allowIframeTimestamp: number | undefined,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionsId, 'update', spaceId);
+
+  if (error) return error;
+
+  await updateProcessMetaData(definitionsId, {
+    sharedAs: sharedAs,
+    shareTimestamp: shareTimestamp,
+    allowIframeTimestamp: allowIframeTimestamp,
+  });
+};
+
 export const updateProcess = async (
   definitionsId: string,
   spaceId: string,
@@ -223,7 +261,6 @@ export const copyProcesses = async (
 ) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
-
   const copiedProcesses: Process[] = [];
 
   for (const copyProcess of processes) {

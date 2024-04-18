@@ -35,7 +35,7 @@ export const validateRequest = (requireCsrf = true) => {
 
     const requestData = {
       preflightCsrf: req.headers.hasOwnProperty('x-csrf') ? true : false,
-      csrfHeader: req.headers && req.headers['x-csrf-token'],
+      csrfHeader: req.headers && req.headers['csrf-token'],
       origin: (req.headers && req.headers['origin']) || (req.headers && req.headers['referer']),
       encryptionKey: config.secretKey,
       requireCsrf,

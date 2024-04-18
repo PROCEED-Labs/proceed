@@ -33,7 +33,7 @@ export class PropertiesPanelPage {
     const page = this.page;
     await page.goto('/');
     await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL('**/processes');
   }
 
   /**
@@ -56,7 +56,7 @@ export class PropertiesPanelPage {
     await page.getByLabel('Process Description').click();
     await page.getByLabel('Process Description').fill('Process Description');
     await page.getByRole('button', { name: 'Create' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
     const pageURL = page.url();
     const match = pageURL.match(/\/processes\/([a-zA-Z0-9-_]+)/);

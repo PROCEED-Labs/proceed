@@ -9,7 +9,7 @@ test('create a new process and remove it again', async ({ processListPage }) => 
   await page.getByLabel('Process Description').click();
   await page.getByLabel('Process Description').fill('Process Description');
   await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
   const processDefinitionID = page.url().split('processes/').pop();
 
@@ -34,7 +34,7 @@ test('import a process', async ({ processListPage }) => {
 
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
   // check if the process in the modeler is the one that we tried to import
   await expect(page.locator('svg[data-element-id="Process_05s7742"]')).toBeVisible();

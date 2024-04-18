@@ -29,7 +29,7 @@ export function getAppDataPath() {
 
   if (!process.env.IS_ELECTRON && process.env.NODE_ENV === 'production') {
     // TODO: make this environment variable configurable
-    const isPreview = process.env.NEXTAUTH_URL.startsWith('https://pr-');
+    const isPreview = process.env.NEXTAUTH_URL?.startsWith('https://pr-');
     const preview = isPreview
       ? ['previews', process.env.NEXTAUTH_URL.split('---')[0].substring(8)]
       : '';

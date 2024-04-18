@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './milestone-selection-section.module.scss';
@@ -20,15 +20,6 @@ const MilestoneDescriptionEditor: React.FC<{
   initialValue?: string;
 }> = ({ onChange, initialValue }) => {
   const editorRef = React.useRef<Editor>(null);
-
-  useEffect(() => {
-    if (editorRef.current && initialValue) {
-      const editor = editorRef.current as Editor;
-      const editorInstance = editor.getInstance();
-
-      editorInstance.setMarkdown(initialValue);
-    }
-  }, [initialValue, editorRef]);
 
   return (
     <TextEditor
@@ -129,6 +120,16 @@ const MilestoneModal: React.FC<MilestoneModalProperties> = ({ show, close, initi
   );
 };
 
+type MilestoneDescriptionViewerProperties = {
+  description: string;
+};
+
+const MilestoneDescriptionViewer: React.FC<MilestoneDescriptionViewerProperties> = ({
+  description,
+}) => {
+  return <TextViewer initialValue={description}></TextViewer>;
+};
+
 type MilestoneSelectionProperties = {
   selectedElement: ElementLike;
 };
@@ -182,9 +183,16 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
 
   return (
     <>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        role="group"
+        aria-labelledby="milestones-title"
+      >
         <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-          <span style={{ marginRight: '0.3em' }}>Milestones</span>
+          <span id="milestones-title" style={{ marginRight: '0.3em' }}>
+            Milestones
+          </span>
           <PlusOutlined
             onClick={() => {
               setIsMilestoneModalOpen(true);
@@ -195,15 +203,25 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
           pagination={{ pageSize: 5 }}
           rowKey="id"
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id' },
-            { title: 'Name', dataIndex: 'name', key: 'name' },
+            {
+              title: 'ID',
+              dataIndex: 'id',
+              key: 'id',
+              sorter: (a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }),
+            },
+            {
+              title: 'Name',
+              dataIndex: 'name',
+              key: 'name',
+              sorter: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
+            },
             {
               title: 'Description',
               dataIndex: 'description',
               key: 'description',
-              render: (description) => {
-                return <TextViewer initialValue={description}></TextViewer>;
-              },
+              render: (description) => (
+                <MilestoneDescriptionViewer description={description}></MilestoneDescriptionViewer>
+              ),
             },
             {
               title: '',

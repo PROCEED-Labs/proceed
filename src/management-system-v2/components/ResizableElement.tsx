@@ -26,10 +26,20 @@ export type ResizableElementRefType = (
 let isResizing = false;
 const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementProps>(
   function ResizableElement(
-    { children, initialWidth, minWidth, maxWidth, style = {}, onWidthChange, lock = false },
+    {
+      children,
+      initialWidth,
+      minWidth: initialMinWidth,
+      maxWidth: initialMaxWidth,
+      style = {},
+      onWidthChange,
+      lock = false,
+    },
     ref,
   ) {
     const [width, setWidth] = useState(initialWidth);
+    const [minWidth, setMinWidth] = useState(initialMinWidth);
+    const [maxWidth, setMaxWidth] = useState(initialMaxWidth);
 
     useImperativeHandle(
       ref,
@@ -38,6 +48,14 @@ const ResizableElement = forwardRef<ResizableElementRefType, ResizableElementPro
           const { width, minWidth, maxWidth } = size;
           if (width) {
             setWidth(cssSizeToPixel(width));
+          }
+
+          if (minWidth) {
+            setMinWidth(minWidth);
+          }
+
+          if (maxWidth) {
+            setMaxWidth(maxWidth);
           }
         } else {
           setWidth(cssSizeToPixel(size));

@@ -3,7 +3,8 @@ import { test, expect } from './process-list.fixtures';
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  await page.getByRole('button', { name: 'New Process' }).click();
+  await page.getByRole('button', { name: 'plus New' }).click();
+  await page.getByRole('menuitem', { name: 'file Create Process' }).click();
   await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
   await page.getByLabel('Process Description').click();
   await page.getByLabel('Process Description').fill('Process Description');

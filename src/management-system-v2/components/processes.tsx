@@ -1,19 +1,39 @@
 'use client';
 
 import styles from './processes.module.scss';
-import React, { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { Space, Button, Tooltip, Grid, App, Drawer, FloatButton } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
+import React, {
+  ComponentProps,
+  HTMLAttributes,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  ClassAttributes,
+  ReactHTML,
+} from 'react';
+import {
+  Space,
+  Button,
+  Tooltip,
+  Grid,
+  App,
+  Drawer,
+  FloatButton,
+  Dropdown,
+  Card,
+  Badge,
+} from 'antd';
 import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  CloseOutlined,
-  InfoCircleOutlined,
   PlusOutlined,
   ImportOutlined,
+  FolderOutlined,
+  FileOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -22,13 +42,6 @@ import ProcessExportModal from './process-export';
 import Bar from './bar';
 import ProcessCreationButton from './process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
-import {
-  setDefinitionsId,
-  setDefinitionsName,
-  generateDefinitionsId,
-  setTargetNamespace,
-  setDefinitionsVersionInformation,
-} from '@proceed/bpmn-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
@@ -36,49 +49,56 @@ import { copyProcesses, deleteProcesses, updateProcesses } from '@/lib/data/proc
 import ProcessModal from './process-modal';
 import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
-import { Process } from '@/lib/data/process-schema';
+import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
+import {
+  CheckerType,
+  useAddControlCallback,
+  useControlStore,
+  useControler,
+} from '@/lib/controls-store';
 import ResizableElement, { ResizableElementRefType } from './ResizableElement';
+import { useEnvironment } from './auth-can';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
+import { Folder } from '@/lib/data/folder-schema';
+import FolderCreationButton from './folder-creation-button';
+import { moveIntoFolder } from '@/lib/data/folders';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
+
+export type DragInfo =
+  | { dragging: false }
+  | { dragging: true; activeId: string; activeElement: InputItem };
 
 //TODO stop using external process
-export type ProcessListProcess = ReplaceKeysWithHighlighted<
-  Omit<Process, 'bpmn'>,
-  'name' | 'description'
->;
+export type ProcessListProcess = ListItem;
 
-type CopyProcessType = {
-  bpmn: string;
-  newName?: string;
-};
-
-const copyProcess = async ({ bpmn, newName }: CopyProcessType) => {
-  const newDefinitionsId = await generateDefinitionsId();
-  let newBPMN = await setDefinitionsId(bpmn, newDefinitionsId);
-  newBPMN = await setDefinitionsName(newBPMN, newName || 'Copy of Process');
-  newBPMN = await setTargetNamespace(newBPMN, newDefinitionsId);
-
-  newBPMN = await setDefinitionsVersionInformation(newBPMN, {
-    version: undefined,
-    versionName: undefined,
-    versionDescription: undefined,
-    versionBasedOn: undefined,
-  });
-  // newBPMN = await manipulateElementsByTagName(newBPMN, 'bpmn:Definitions', (definitions: any) => {
-  //   delete definitions.version;
-  //   delete definitions.versionName;
-  //   delete definitions.versionDescription;
-  //   delete definitions.versionBasedOn;
-  // });
-
-  return newBPMN;
-};
+type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
+export type ListItem = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 type ProcessesProps = {
-  processes: Omit<Process, 'bpmn'>[];
+  processes: InputItem[];
+  favourites?: string[];
+  folder: Folder;
 };
 
-const Processes = ({ processes }: ProcessesProps) => {
+const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   const ability = useAbilityStore((state) => state.ability);
+  const environment = useEnvironment();
+
+  const favs = favourites ?? [];
+  useInitialiseFavourites(favs);
+  const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
@@ -92,13 +112,17 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
-      const res = await deleteProcesses(selectedRowKeys as string[]);
+      const res = await deleteProcesses(selectedRowKeys as string[], environment.spaceId);
       // UserError
       if (res && 'error' in res) {
         return message.open({
           type: 'error',
           content: res.error.message,
         });
+      } else {
+        // Success -> Remove from favourites if stared
+        removeFromFavouriteProcesses(selectedRowKeys as string[]);
+        // TODO: Remove from favourites for all users
       }
     } catch (e) {
       // Unkown server error or was not sent from server (e.g. network error)
@@ -109,7 +133,7 @@ const Processes = ({ processes }: ProcessesProps) => {
     }
     setSelectedRowElements([]);
     router.refresh();
-  }, [message, router, selectedRowKeys]);
+  }, [environment.spaceId, message, router, selectedRowKeys]);
 
   const breakpoint = Grid.useBreakpoint();
   const [openExportModal, setOpenExportModal] = useState(false);
@@ -151,11 +175,7 @@ const Processes = ({ processes }: ProcessesProps) => {
     </>
   );
 
-  const {
-    filteredData,
-    searchQuery: searchTerm,
-    setSearchQuery: setSearchTerm,
-  } = useFuzySearch({
+  const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: processes ?? [],
     keys: ['name', 'description'],
     highlightedKeys: ['name', 'description'],
@@ -164,98 +184,158 @@ const Processes = ({ processes }: ProcessesProps) => {
 
   const CollapsePannelRef = useRef<MetaPanelRefType>(null);
 
-  const collapseCard = CollapsePannelRef.current;
-  // () => {
-  //   addPreferences({
-  //     'process-meta-data': {
-  //       open: !showInfo,
-  //       width: getWidth(),
-  //     },
-  //   });
-  // };
-
   const deselectAll = () => {
     setSelectedRowElements([]);
   };
   const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (openCopyModal || openExportModal || openEditModal) {
-        return;
-      }
+  /* User-Controls */
+  // const modalOpened = openCopyModal || openExportModal || openEditModal;
+  const controlChecker: CheckerType = {
+    selectall: (e) => e.ctrlKey && e.key === 'a',
+    esc: (e) => e.key === 'Escape',
+    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
+    copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),
+    paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v' && ability.can('create', 'Process'),
+    controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
+    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
+    enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
+    cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x' /* TODO: ability */,
+    export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
+    import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
+  };
+  useControler('process-list', controlChecker);
 
-      /* CTRL + A */
-      if (e.ctrlKey && e.key === 'a') {
-        e.preventDefault();
-        setSelectedRowElements(filteredData ?? []);
-        /* DEL */
-      } else if (e.key === 'Delete' && selectedRowKeys.length) {
-        if (ability.can('delete', 'Process')) {
-          setOpenDeleteModal(true);
-        }
-        /* ESC */
-      } else if (e.key === 'Escape') {
-        deselectAll();
-        /* CTRL + C */
-      } else if (e.ctrlKey && e.key === 'c') {
-        if (ability.can('create', 'Process')) {
-          setCopySelection(selectedRowKeys);
-        }
-        /* CTRL + V */
-      } else if (e.ctrlKey && e.key === 'v' && copySelection.length) {
-        if (ability.can('create', 'Process')) {
-          setOpenCopyModal(true);
-        }
-      }
-    };
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
+  useAddControlCallback(
+    'process-list',
+    'selectall',
+    (e) => {
+      e.preventDefault();
+      setSelectedRowElements(filteredData ?? []);
+    },
+    { dependencies: [processes] },
+  );
+  useAddControlCallback('process-list', 'esc', deselectAll);
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    copySelection,
-    filteredData,
-    selectedRowKeys,
-    ability,
-    openCopyModal,
-    openExportModal,
-    openEditModal,
-  ]);
+  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+
+  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
+
+  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+
+  useAddControlCallback(
+    'process-list',
+    'export',
+    () => {
+      if (selectedRowKeys.length) setOpenExportModal(true);
+    },
+    { dependencies: [selectedRowKeys.length] },
+  );
+
+  const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
+  const [movingItem, startMovingItemTransition] = useTransition();
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  );
+
+  const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
+    setDragInfo({ dragging: false });
+
+    const active = processes.find((item) => item.id === e.active.id);
+    const over = processes.find((item) => item.id === e.over?.id);
+
+    if (!active || !over) return;
+    if (over.type != 'folder' || active.id === over.id) return;
+
+    // don't allow to move selected items into themselves
+    if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
+
+    startMovingItemTransition(async () => {
+      try {
+        const items =
+          selectedRowKeys.length > 0
+            ? selectedRowElements.map((element) => ({
+                type: element.type,
+                id: element.id,
+              }))
+            : [{ type: active.type, id: active.id }];
+
+        const response = await moveIntoFolder(items, over.id);
+
+        if (response && 'error' in response) throw new Error();
+
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong while moving the ${active.type}`,
+        });
+      }
+    });
+  };
+
+  const dragStartHandler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
+    if (selectedRowKeys.length > 0 && !selectedRowKeys.includes(e.active.id as string))
+      setSelectedRowElements([]);
+
+    setDragInfo({
+      dragging: true,
+      activeId: e.active.id as string,
+      activeElement: processes.find((item) => item.id === e.active.id) as InputItem,
+    });
+  };
 
   return (
     <>
-      <div
-        className={breakpoint.xs ? styles.MobileView : ''}
-        style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+      <Dropdown
+        menu={{
+          items: [
+            {
+              key: 'create-process',
+              label: <ProcessCreationButton wrapperElement="Create Process" />,
+            },
+            {
+              key: 'create-folder',
+              label: <FolderCreationButton wrapperElement="Create Folder" />,
+            },
+          ],
+        }}
+        trigger={['contextMenu']}
       >
-        {/* 73% for list / icon view, 27% for meta data panel (if active) */}
-        <div style={{ flex: '1' }}>
-          <Bar
-            leftNode={
-              <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  {breakpoint.xs ? null : (
-                    <>
-                      <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                        {breakpoint.xl ? 'New Process' : 'New'}
-                      </ProcessCreationButton>
-                      <ProcessImportButton type="default">
-                        {breakpoint.xl ? 'Import Process' : 'Import'}
-                      </ProcessImportButton>
-                    </>
-                  )}
+        <div
+          className={breakpoint.xs ? styles.MobileView : ''}
+          style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+        >
+          {/* 73% for list / icon view, 27% for meta data panel (if active) */}
+          <div style={{ flex: '1' }}>
+            <Bar
+              leftNode={
+                <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    {breakpoint.xs ? null : (
+                      <>
+                        <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
+                          {breakpoint.xl ? 'New Process' : 'New'}
+                        </ProcessCreationButton>
+                        <ProcessImportButton type="default">
+                          {breakpoint.xl ? 'Import Process' : 'Import'}
+                        </ProcessImportButton>
+                      </>
+                    )}
 
-                  {selectedRowKeys.length ? (
-                    <span className={styles.SelectedRow}>
-                      {selectedRowKeys.length} selected:
-                      <span className={styles.Icons}>{actionBar}</span>
-                    </span>
-                  ) : undefined}
-                </span>
+                    {selectedRowKeys.length ? (
+                      <span className={styles.SelectedRow}>
+                        {selectedRowKeys.length} selected:
+                        <span className={styles.Icons}>{actionBar}</span>
+                      </span>
+                    ) : undefined}
+                  </span>
 
-                {
                   <span>
                     <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
                       <Button
@@ -276,111 +356,144 @@ const Processes = ({ processes }: ProcessesProps) => {
                       </Button>
                     </Space.Compact>
                     {/* {breakpoint.xl ? (
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          if (collapseCard) collapseCard();
-                        }}
-                      >
-                        <InfoCircleOutlined />
-                      </Button>
-                    ) : undefined} */}
+          <Button
+          type="text"
+          onClick={() => {
+          if (collapseCard) collapseCard();
+          }}
+          >
+          <InfoCircleOutlined />
+          </Button>
+          ) : undefined} */}
                   </span>
-                }
 
-                {/* <!-- FloatButtonGroup needs a z-index of 101
-              since BPMN Logo of the viewer has an z-index of 100 --> */}
-                {breakpoint.xl ? undefined : (
-                  <FloatButton.Group
-                    className={styles.FloatButton}
-                    trigger="click"
-                    type="primary"
-                    style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
-                    icon={<PlusOutlined />}
+                  {/* <!-- FloatButtonGroup needs a z-index of 101
+        since BPMN Logo of the viewer has an z-index of 100 --> */}
+                  {breakpoint.xl ? undefined : (
+                    <FloatButton.Group
+                      className={styles.FloatButton}
+                      trigger="click"
+                      type="primary"
+                      style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
+                      icon={<PlusOutlined />}
+                    >
+                      <Tooltip trigger="hover" placement="left" title="Create a process">
+                        <FloatButton
+                          icon={
+                            <ProcessCreationButton
+                              type="text"
+                              icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
+                            />
+                          }
+                        />
+                      </Tooltip>
+                      <Tooltip trigger="hover" placement="left" title="Import a process">
+                        <FloatButton
+                          icon={
+                            <ProcessImportButton
+                              type="text"
+                              icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
+                            />
+                          }
+                        />
+                      </Tooltip>
+                    </FloatButton.Group>
+                  )}
+                </span>
+              }
+              searchProps={{
+                onChange: (e) => setSearchTerm(e.target.value),
+                onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
+                placeholder: 'Search Processes ...',
+              }}
+            />
+
+            <DndContext
+              // Without an id Next throws a id mismatch
+              id="processes-dnd-context"
+              modifiers={[snapCenterToCursor]}
+              sensors={dndSensors}
+              onDragEnd={dragEndHanler}
+              onDragStart={dragStartHandler}
+            >
+              {iconView ? (
+                <IconView
+                  data={filteredData}
+                  selection={selectedRowKeys}
+                  setSelectionElements={setSelectedRowElements}
+                  setShowMobileMetaData={setShowMobileMetaData}
+                />
+              ) : (
+                <ProcessList
+                  data={filteredData}
+                  dragInfo={dragInfo}
+                  setSelectionElements={setSelectedRowElements}
+                  selection={selectedRowKeys}
+                  isLoading={movingItem}
+                  // TODO: Replace with server component loading state
+                  //isLoading={isLoading}
+                  onExportProcess={(id) => {
+                    setOpenExportModal(true);
+                  }}
+                  onDeleteProcess={async ({ id }) => {
+                    await deleteProcesses([id], environment.spaceId);
+                    setSelectedRowElements([]);
+                    router.refresh();
+                  }}
+                  onCopyProcess={(process) => {
+                    setOpenCopyModal(true);
+                    setSelectedRowElements([process]);
+                  }}
+                  onEditProcess={(process) => {
+                    setOpenEditModal(true);
+                    setSelectedRowElements([process]);
+                  }}
+                  setShowMobileMetaData={setShowMobileMetaData}
+                />
+              )}
+              <DragOverlay dropAnimation={null}>
+                {dragInfo.dragging ? (
+                  <Badge
+                    count={selectedRowElements.length > 1 ? selectedRowElements.length : undefined}
                   >
-                    <Tooltip trigger="hover" placement="left" title="Create a process">
-                      <FloatButton
-                        icon={
-                          <ProcessCreationButton
-                            type="text"
-                            icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
-                          />
-                        }
-                      />
-                    </Tooltip>
-                    <Tooltip trigger="hover" placement="left" title="Import a process">
-                      <FloatButton
-                        icon={
-                          <ProcessImportButton
-                            type="text"
-                            icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
-                          />
-                        }
-                      />
-                    </Tooltip>
-                  </FloatButton.Group>
-                )}
-              </span>
-            }
-            searchProps={{
-              onChange: (e) => setSearchTerm(e.target.value),
-              onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
-              placeholder: 'Search Processes ...',
-            }}
-          />
+                    <Card
+                      style={{
+                        width: 'fit-content',
+                        cursor: 'move',
+                      }}
+                    >
+                      {dragInfo.activeElement.type === 'folder' ? (
+                        <FolderOutlined />
+                      ) : (
+                        <FileOutlined />
+                      )}{' '}
+                      {dragInfo.activeElement.name}
+                    </Card>
+                  </Badge>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
 
-          {iconView ? (
-            <IconView
-              data={filteredData}
-              selection={selectedRowKeys}
-              setSelectionElements={setSelectedRowElements}
-              setShowMobileMetaData={setShowMobileMetaData}
-            />
+          {/*Meta Data Panel*/}
+          {breakpoint.xl ? (
+            <MetaData selectedElement={selectedRowElements.at(-1)} ref={CollapsePannelRef} />
           ) : (
-            <ProcessList
-              data={filteredData}
-              setSelectionElements={setSelectedRowElements}
-              selection={selectedRowKeys}
-              // TODO: Replace with server component loading state
-              //isLoading={isLoading}
-              onExportProcess={(id) => {
-                setOpenExportModal(true);
-              }}
-              onDeleteProcess={async ({ id }) => {
-                await deleteProcesses([id]);
-                setSelectedRowElements([]);
-                router.refresh();
-              }}
-              onCopyProcess={(process) => {
-                setOpenCopyModal(true);
-                setSelectedRowElements([process]);
-              }}
-              onEditProcess={(process) => {
-                setOpenEditModal(true);
-                setSelectedRowElements([process]);
-              }}
-              setShowMobileMetaData={setShowMobileMetaData}
-            />
+            <Drawer
+              onClose={closeMobileMetaData}
+              title={
+                <span>
+                  {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
+                </span>
+              }
+              open={showMobileMetaData}
+            >
+              <MetaDataContent selectedElement={selectedRowElements.at(-1)} />
+            </Drawer>
           )}
         </div>
+      </Dropdown>
 
-        {/*Meta Data Panel*/}
-        {breakpoint.xl ? (
-          <MetaData data={filteredData} selection={selectedRowKeys} ref={CollapsePannelRef} />
-        ) : (
-          <Drawer
-            onClose={closeMobileMetaData}
-            title={
-              <span>
-                {filteredData?.find((item) => item.id === selectedRowKeys[0])?.name.value!}
-              </span>
-            }
-            open={showMobileMetaData}
-          >
-            <MetaDataContent data={filteredData} selection={selectedRowKeys} />
-          </Drawer>
-        )}
-      </div>
       <ProcessExportModal
         processes={selectedRowKeys.map((definitionId) => ({
           definitionId: definitionId as string,
@@ -393,14 +506,15 @@ const Processes = ({ processes }: ProcessesProps) => {
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.id))
+          .filter((process) => selectedRowKeys.includes(process.id) && process.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
             description: process.description.value,
             originalId: process.id,
+            folderId: folder.id,
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values);
+          const res = await copyProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
@@ -421,7 +535,7 @@ const Processes = ({ processes }: ProcessesProps) => {
             description: process.description.value,
           }))}
         onSubmit={async (values) => {
-          const res = await updateProcesses(values);
+          const res = await updateProcesses(values, environment.spaceId);
           // Errors are handled in the modal.
           if (res && 'error' in res) {
             return res;
@@ -435,3 +549,49 @@ const Processes = ({ processes }: ProcessesProps) => {
 };
 
 export default Processes;
+
+// NOTE I plan to move this to a separate file
+export function DraggableElementGenerator<TPropId extends string>(
+  element: keyof ReactHTML,
+  propId: TPropId,
+) {
+  type Props = ClassAttributes<HTMLElement> &
+    HTMLAttributes<HTMLElement> & { [key in TPropId]: string };
+
+  const DraggableElement = (props: Props) => {
+    const elementId = props[propId] ?? '';
+    const {
+      attributes,
+      listeners,
+      setNodeRef: setDraggableNodeRef,
+      isDragging,
+    } = useDraggable({ id: elementId });
+
+    const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
+      id: props[propId],
+    });
+
+    const className = cn(
+      {
+        [styles.HoveredByFile]: !isDragging && over?.id === elementId,
+        [styles.RowBeingDragged]: isDragging,
+      },
+      props.className,
+    );
+
+    return React.createElement(element, {
+      ...props,
+      ...attributes,
+      ...listeners,
+      ref(elementRef) {
+        setDraggableNodeRef(elementRef);
+        setNodeRefDroppable(elementRef);
+      },
+      className,
+    });
+  };
+
+  DraggableElement.displayName = 'DraggableRow';
+
+  return DraggableElement;
+}

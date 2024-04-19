@@ -11,8 +11,9 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 import useModelerStateStore from './use-modeler-state-store';
 import FormSubmitButton from '@/components/form-submit-button';
 import { Editor } from '@toast-ui/react-editor';
-import TextEditor from '@/components/text-editor';
-import TextViewer from '@/components/text-viewer';
+import dynamic from 'next/dynamic';
+const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
+const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
 const MilestoneDescriptionEditor: React.FC<{
   onChange: (content: string) => void;
@@ -31,7 +32,7 @@ const MilestoneDescriptionEditor: React.FC<{
 
   return (
     <TextEditor
-      ref={editorRef}
+      editorRef={editorRef}
       placeholder="Milestone Description"
       initialValue={initialValue}
       onChange={() => {

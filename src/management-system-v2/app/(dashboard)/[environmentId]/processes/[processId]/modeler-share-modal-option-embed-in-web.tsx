@@ -1,73 +1,73 @@
+'use client';
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Input, Checkbox, Typography } from 'antd';
+import { Button, Input, Checkbox, App } from 'antd';
 import { useParams } from 'next/navigation';
 import {
   generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
-import ErrorMessage from '@/components/error-message';
+import { useEnvironment } from '@/components/auth-can';
 
 const { TextArea } = Input;
 
 type ModelerShareModalOptionEmdedInWebProps = {
-  shared: boolean;
   sharedAs: 'public' | 'protected';
-  shareTimestamp?: number;
+  allowIframeTimestamp: number;
   refresh: () => void;
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
-  shared,
   sharedAs,
-  shareTimestamp,
+  allowIframeTimestamp,
   refresh,
 }: ModelerShareModalOptionEmdedInWebProps) => {
   const { processId } = useParams();
-  const [isAllowEmbeddingChecked, setIsAllowEmbeddingChecked] = useState(
-    shared && sharedAs === 'public',
-  );
+  const environment = useEnvironment();
   const [embeddingUrl, setEmbeddingUrl] = useState('');
+  const { message } = App.useApp();
 
-  const initialize = async () => {
-    if (shared && sharedAs === 'public' && shareTimestamp) {
-      // TODO: handle this separate from the shareTimestamp (embedTimestamp?)
-      const url = await generateSharedViewerUrl({
-        processId,
-        embeddedMode: true,
-        timestamp: shareTimestamp,
-      });
-      setEmbeddingUrl(url);
-    }
-  };
   useEffect(() => {
+    const initialize = async () => {
+      if (allowIframeTimestamp > 0) {
+        const url = await generateSharedViewerUrl({
+          processId,
+          embeddedMode: true,
+          timestamp: allowIframeTimestamp,
+        });
+        setEmbeddingUrl(url);
+      }
+    };
     initialize();
-  }, [shared, sharedAs, shareTimestamp]);
-
-  if (sharedAs === 'protected') return <ErrorMessage message="Process is not shared as public" />;
+  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs]);
 
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
   }) => {
     const isChecked = e.target.checked;
-    setIsAllowEmbeddingChecked(isChecked);
     if (isChecked) {
-      const timestamp = +new Date();
+      const timestamp = Date.now();
       const url = await generateSharedViewerUrl({
         processId,
         embeddedMode: true,
         timestamp,
       });
       setEmbeddingUrl(url);
-      await updateProcessGuestAccessRights(processId, {
-        shared: true,
-        sharedAs: 'public',
-        shareTimestamp: timestamp,
-      });
-      message.success('Process shared');
+      await updateProcessGuestAccessRights(
+        processId,
+        {
+          sharedAs: 'public',
+          allowIframeTimestamp: timestamp,
+        },
+        environment.spaceId,
+      );
     } else {
-      await updateProcessGuestAccessRights(processId, { shared: false, shareTimestamp: undefined });
-      message.success('Process unshared');
+      await updateProcessGuestAccessRights(
+        processId,
+        { allowIframeTimestamp: 0 },
+        environment.spaceId,
+      );
+      setEmbeddingUrl('');
     }
     refresh();
   };
@@ -81,10 +81,13 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   return (
     <>
-      <Checkbox checked={isAllowEmbeddingChecked} onChange={(e) => handleAllowEmbeddingChecked(e)}>
+      <Checkbox
+        checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
+        onChange={(e) => handleAllowEmbeddingChecked(e)}
+      >
         Allow iframe Embedding
       </Checkbox>
-      {isAllowEmbeddingChecked ? (
+      {embeddingUrl.length > 0 ? (
         <>
           <div>
             <Button

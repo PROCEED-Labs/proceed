@@ -1,9 +1,9 @@
 import {
-  fetchProcessVersionBpmn,
-  fetchProcess,
-  fetchProcessUserTaskHTML,
-  fetchProcessImageData,
-} from '../process-queries';
+  getProcess,
+  getProcessBPMN,
+  getProcessUserTaskHTML,
+  getProcessImage,
+} from '@/lib/data/processes';
 
 import {
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
@@ -85,13 +85,16 @@ export type ProcessesExportData = ProcessExportData[];
  * @param definitionId
  * @param processVersion
  */
-async function getVersionBpmn(definitionId: string, processVersion?: string | number) {
-  const bpmn = await fetchProcessVersionBpmn(definitionId, processVersion);
+async function getVersionBpmn(
+  definitionId: string,
+  spaceId: string,
+  processVersion?: string | number,
+) {
+  processVersion = typeof processVersion === 'string' ? parseInt(processVersion) : processVersion;
+  const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion);
 
-  if (!bpmn) {
-    throw new Error(
-      `Failed to get the bpmn for a version (${processVersion}) of a process (definitionId: ${definitionId})`,
-    );
+  if (typeof bpmn !== 'string') {
+    throw bpmn.error;
   }
 
   return bpmn;
@@ -201,19 +204,18 @@ async function ensureProcessInfo(
     selectedElements,
     rootSubprocessLayerId,
   }: ArrayEntryType<ExportProcessInfo>,
+  spaceId: string,
   isImport = false,
 ) {
   if (!exportData[definitionId]) {
-    const process = await fetchProcess(definitionId);
+    const process = await getProcess(definitionId, spaceId);
 
-    if (!process) {
-      throw new Error(
-        `Failed to get process info (definitionId: ${definitionId}) during process export`,
-      );
+    if ('error' in process) {
+      throw process.error;
     }
 
     exportData[definitionId] = {
-      definitionName: process.definitionName,
+      definitionName: process.name,
       isImport,
       versions: {},
       userTasks: [],
@@ -225,7 +227,7 @@ async function ensureProcessInfo(
   const versionName = getVersionName(processVersion);
 
   if (!exportData[definitionId].versions[versionName]) {
-    const versionBpmn = await getVersionBpmn(definitionId, processVersion);
+    const versionBpmn = await getVersionBpmn(definitionId, spaceId, processVersion);
     const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
 
     // add the default root process layer if there is no rootSubprocessLayer given
@@ -258,6 +260,7 @@ async function ensureProcessInfo(
 export async function prepareExport(
   options: ProcessExportOptions,
   processes: ExportProcessInfo,
+  spaceId: string,
 ): Promise<ProcessesExportData> {
   if (!processes.length) {
     throw new Error('Tried exporting without specifying the processes to export!');
@@ -281,6 +284,7 @@ export async function prepareExport(
       await ensureProcessInfo(
         exportData,
         { definitionId, processVersion, selectedElements, rootSubprocessLayerId },
+        spaceId,
         isImport,
       );
 
@@ -387,12 +391,10 @@ export async function prepareExport(
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
-        const html = await fetchProcessUserTaskHTML(definitionId, filename);
+        const html = await getProcessUserTaskHTML(definitionId, filename, spaceId);
 
-        if (!html) {
-          throw new Error(
-            `Failed to get the html for a user task (filename: ${filename}) of a process (definitionId: ${definitionId})`,
-          );
+        if (typeof html !== 'string') {
+          throw html.error;
         }
 
         exportData[definitionId].userTasks.push({ filename, html });
@@ -420,9 +422,13 @@ export async function prepareExport(
 
       // fetch the required image files from the backend
       for (const filename of allRequiredImageFiles) {
+        const image = await getProcessImage(definitionId, filename, spaceId);
+
+        if ('error' in image) throw image.error;
+
         exportData[definitionId].images.push({
           filename,
-          data: await fetchProcessImageData(definitionId, filename),
+          data: new Blob([image]),
         });
       }
     }

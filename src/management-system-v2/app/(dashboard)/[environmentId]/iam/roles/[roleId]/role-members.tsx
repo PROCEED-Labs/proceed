@@ -19,7 +19,7 @@ const AddUserModal: FC<{
 }> = ({ role, usersNotInRole, open, close }) => {
   const [loading, startTransition] = useTransition();
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   type AddUserParams = Parameters<NonNullable<UserListProps['selectedRowActions']>>;
 
@@ -27,7 +27,7 @@ const AddUserModal: FC<{
     startTransition(async () => {
       if (clearIds) clearIds();
       await addRoleMappings(
-        environmentId,
+        environment.spaceId,
         users.map((user) => ({
           userId: user.id,
           roleId: role.id,
@@ -46,6 +46,14 @@ const AddUserModal: FC<{
       title={`Add members to ${role.name}`}
     >
       <UserList
+        /* ---- */
+        /* TODO: unify role-members and users-page in terms of side panel
+        Pretty sure that many states and prop drilling are not needed that way 
+      */
+        selectedUser={null}
+        setShowMobileUserSider={() => {}}
+        showMobileUserSider={false}
+        /* ---- */
         users={usersNotInRole}
         loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [
@@ -83,14 +91,14 @@ const RoleMembers: FC<{
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
-      environmentId,
+      environment.spaceId,
       userIds.map((userId) => ({
         roleId: role.id,
         userId: userId,
@@ -111,6 +119,14 @@ const RoleMembers: FC<{
       />
 
       <UserList
+        /* ---- */
+        /* TODO: unify role-members and users-page in terms of side panel
+        Pretty sure that many states and prop drilling are not needed that way 
+      */
+        selectedUser={null}
+        setShowMobileUserSider={() => {}}
+        showMobileUserSider={false}
+        /* ---- */
         users={usersInRole}
         loading={loading}
         columns={(clearSelected, hoveredId, selectedRowKeys) => [

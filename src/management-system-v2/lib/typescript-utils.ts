@@ -64,3 +64,10 @@ export type OptionalKeys<T extends Record<any, any>, K extends keyof T> = OmitDi
  * (Found here: https://stackoverflow.com/a/63541957)
  */
 export const truthyFilter = <T>(x: T | false | undefined | null | '' | 0): x is T => !!x;
+
+/**
+ * The normal Omit breaks union types. This is a fix for that.
+ */
+export type UnionAwareOmit<TObj extends Record<string, any>, TKeys extends keyof TObj> = Prettify<
+  TObj extends any ? Omit<TObj, TKeys> : never
+>;

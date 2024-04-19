@@ -5,8 +5,10 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
+import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 import {
   settings as pdfSettings,
@@ -84,9 +86,9 @@ type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
-  giveSelectionOption?: boolean;
+  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
   preselectedExportType?: ProcessExportTypes;
-  resetPreselectedExportType?: () => void; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
+  resetPreselectedExportType?: () => void;
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
@@ -108,8 +110,11 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(
     ['metaData'].concat(pdfOptions),
   );
+
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
+
+  const environment = useEnvironment();
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -157,11 +162,29 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
           useWebshareApi: preselectedExportType !== undefined,
         },
         processes,
+        environment.spaceId,
       );
     }
 
     handleClose();
   };
+
+  useAddControlCallback(
+    'process-list',
+    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 2, blocking: open },
+  );
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (selectedType) handleOk();
+    },
+    { level: 1, blocking: open, dependencies: [selectedType] },
+  );
 
   const typeSelection = (
     <Radio.Group onChange={handleTypeSelectionChange} value={selectedType} style={{ width: '50%' }}>
@@ -249,6 +272,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
             : undefined,
         }}
         width={540}
+        data-testid="Export Modal"
       >
         <Flex>
           {preselectedExportType ? null : typeSelection}

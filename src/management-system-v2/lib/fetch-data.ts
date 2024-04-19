@@ -143,7 +143,11 @@ function getKeys(path: any, params: any) {
 export function useGetAsset<
   TFirstParam extends Parameters<typeof apiClient.GET>[0],
   TSecondParam extends Parameters<typeof apiClient.GET<TFirstParam>>[1],
->(path: TFirstParam, params: TSecondParam, reactQueryOptions?: Omit<UseQueryOptions, 'queryFn'>) {
+>(
+  path: TFirstParam,
+  params: TSecondParam,
+  reactQueryOptions?: Omit<UseQueryOptions, 'queryFn' | 'queryKey'>,
+) {
   const keys = useMemo(() => getKeys(path, params), [path, params]);
 
   type Data = QueryData<typeof apiClient.GET<TFirstParam>> | undefined;

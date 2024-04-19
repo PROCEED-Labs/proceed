@@ -6,8 +6,10 @@ import type { ButtonProps } from 'antd';
 import ProcessModal from './process-modal';
 import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter, useSelectedLayoutSegments } from 'next/navigation';
 import { useEnvironment } from './auth-can';
+import { useAddControlCallback } from '@/lib/controls-store';
+import { spaceURL } from '@/lib/utils';
 
 type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -25,23 +27,41 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
+  const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
   const createNewProcess = async (values: { name: string; description: string }[]) => {
     // Invoke the custom handler otherwise use the default server action.
     const process = await (customAction?.(values[0]) ??
-      addProcesses(values).then((res) => (Array.isArray(res) ? res[0] : res)));
+      addProcesses(
+        values.map((value) => ({ ...value, folderId })),
+        environment.spaceId,
+      ).then((res) => (Array.isArray(res) ? res[0] : res)));
     if (process && 'error' in process) {
       return process;
     }
     setIsProcessModalOpen(false);
 
     if (process && 'id' in process) {
-      router.push(`/${environmentId}/processes/${process.id}`);
+      router.push(spaceURL(environment, `/processes/${process.id}`));
     } else {
       router.refresh();
     }
   };
+
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (!isProcessModalOpen) {
+        setIsProcessModalOpen(true);
+      }
+    },
+    {
+      level: 1,
+      blocking: false,
+    },
+  );
 
   return (
     <>

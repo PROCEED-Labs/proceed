@@ -1,0 +1,69 @@
+$outline-color: #f4f4f4;
+$bg-color: #ffffff;
+$borderRadius: 8px;
+$bg-color-user: #0000801a;
+$bg-color-system: #0080001a;
+
+.Message {
+  border-radius: $borderRadius;
+  border: 1px solid $outline-color;
+  padding: 5px 10px;
+  margin: 1px 15px 3px;
+  max-width: 80%;
+  box-shadow: 2px 2px #ecebeb;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.user {
+  align-self: flex-end;
+  background-color: $bg-color-user;
+}
+
+.system {
+  align-self: flex-start;
+  background-color: $bg-color-system;
+}
+
+.DotContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.4rem 0.25rem;
+}
+
+.Dots {
+  border-radius: 50%;
+  padding: 1.5px;
+  margin: 0px 1px;
+  margin-top: 2px;
+  background-color: black;
+  animation: bounce 1.5s infinite alternate;
+}
+
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+  60% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.Dots:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.Dots:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.Dots:nth-child(3) {
+  animation-delay: 0.4s;
+}

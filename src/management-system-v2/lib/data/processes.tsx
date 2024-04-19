@@ -14,6 +14,8 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
+  getProcessUserTaskHtml as _getProcessUserTaskHtml,
+  getProcessImage as _getProcessImage,
   updateProcessMetaData,
 } from './legacy/_process';
 import {
@@ -39,15 +41,16 @@ import {
 // antd components directly from their files in this server actions file.
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
+import { getUsersFavourites } from './users';
 
-export const getProcess = async (definitionId: string) => {
-  const processMetaObjects: any = getProcessMetaObjects();
+const checkValidity = async (
+  definitionId: string,
+  operation: 'view' | 'update' | 'delete',
+  spaceId: string,
+) => {
+  const { ability } = await getCurrentEnvironment(spaceId);
 
-  /* TODO: Add ability check */
-
-  // Get ability again since it might have changed.
-  //const { ability } = await getCurrentUser();
-
+  const processMetaObjects = getProcessMetaObjects();
   const process = processMetaObjects[definitionId];
 
   if (!process) {
@@ -58,62 +61,90 @@ export const getProcess = async (definitionId: string) => {
     return userError('Not allowed to delete this process', UserErrorType.PermissionError);
   }*/
 
-  const bpmn = await _getProcessBpmn(definitionId);
-  return { ...process, bpmn };
+  const errorMessages = {
+    view: 'Not allowed to read this process',
+    update: 'Not allowed to update this process',
+    delete: 'Not allowed to delete this process',
+  };
+
+  if (
+    !ability.can(operation, toCaslResource('Process', process), {
+      environmentId: process.environmentId,
+    })
+  ) {
+    return userError(errorMessages[operation], UserErrorType.PermissionError);
+  }
 };
 
-export const getProcessBPMN = async (definitionId: string, version?: number) => {
-  const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[definitionId];
+const getBpmnVersion = async (definitionId: string, versionId?: number) => {
+  const process = getProcessMetaObjects()[definitionId];
 
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
+  if (versionId) {
+    if (!process.versions.some((version) => version.version === versionId)) {
+      return userError(
+        `The requested version does not exist for the requested process.`,
+        UserErrorType.NotFoundError,
+      );
+    }
+
+    return await getProcessVersionBpmn(definitionId, versionId);
+  } else {
+    return await _getProcessBpmn(definitionId);
   }
-
-  if (version && !process.versions.some((versionInfo) => versionInfo.version === version)) {
-    return userError(
-      'The requested version does not exist for the process.',
-      UserErrorType.NotFoundError,
-    );
-  }
-
-  const { ability } = await getCurrentEnvironment(process.environmentId);
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return userError('Not allowed to read this process', UserErrorType.PermissionError);
-  }
-
-  const bpmn = version
-    ? await getProcessVersionBpmn(definitionId, version)
-    : await _getProcessBpmn(definitionId);
-
-  return bpmn;
 };
 
-export const deleteProcesses = async (definitionIds: string[]) => {
-  const processMetaObjects: any = getProcessMetaObjects();
+export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
+  const processMetaObj = getProcessMetaObjects()[definitionId];
 
-  // Get ability again since it might have changed.
-  const { ability } = await getCurrentEnvironment();
+  if (!processMetaObj) {
+    return userError(`Process does not exist `);
+  }
 
+  if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
+    const bpmn = await getBpmnVersion(definitionId, versionId);
+
+    if (typeof bpmn === 'object') {
+      return bpmn;
+    }
+
+    const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
+    return processWithBPMN;
+  }
+
+  return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
+};
+
+export const getProcess = async (definitionId: string, spaceId: string) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  return getProcessMetaObjects()[definitionId];
+};
+
+export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  return await getBpmnVersion(definitionId, versionId);
+};
+
+export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
   for (const definitionId of definitionIds) {
-    const process = processMetaObjects[definitionId];
+    const error = await checkValidity(definitionId, 'delete', spaceId);
 
-    if (!process) {
-      return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-    }
-
-    if (!ability.can('delete', toCaslResource('Process', process))) {
-      return userError('Not allowed to delete this process', UserErrorType.PermissionError);
-    }
+    if (error) return error;
 
     await removeProcess(definitionId);
   }
 };
 
 export const addProcesses = async (
-  values: { name: string; description: string; bpmn?: string }[],
+  values: { name: string; description: string; bpmn?: string; folderId?: string }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
   const newProcesses: Process[] = [];
@@ -128,7 +159,7 @@ export const addProcesses = async (
     const newProcess = {
       bpmn,
       owner: userId,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -136,7 +167,7 @@ export const addProcesses = async (
     }
 
     // bpmn prop gets deleted in addProcess()
-    const process = await _addProcess({ ...newProcess });
+    const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
     if (typeof process !== 'object') {
       return userError('A process with this id does already exist');
@@ -150,49 +181,33 @@ export const addProcesses = async (
 
 export const updateProcessShareInfo = async (
   definitionsId: string,
-  shared: boolean | undefined,
   sharedAs: 'public' | 'protected' | undefined,
   shareTimestamp: number | undefined,
+  allowIframeTimestamp: number | undefined,
+  spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(definitionsId, 'update', spaceId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[definitionsId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   await updateProcessMetaData(definitionsId, {
-    shared,
-    sharedAs,
-    shareTimestamp,
+    sharedAs: sharedAs,
+    shareTimestamp: shareTimestamp,
+    allowIframeTimestamp: allowIframeTimestamp,
   });
 };
 
 export const updateProcess = async (
   definitionsId: string,
+  spaceId: string,
   bpmn?: string,
   description?: string,
   name?: string,
   invalidate = false,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(definitionsId, 'update', spaceId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[definitionsId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   // Either replace or update the old BPMN.
   let newBpmn = bpmn ?? (await _getProcessBpmn(definitionsId));
@@ -221,10 +236,17 @@ export const updateProcesses = async (
     bpmn?: string;
     id: string;
   }[],
+  spaceId: string,
 ) => {
   const res = await Promise.all(
     processes.map(async (process) => {
-      return await updateProcess(process.id, process.bpmn, process.description, process.name);
+      return await updateProcess(
+        process.id,
+        spaceId,
+        process.bpmn,
+        process.description,
+        process.name,
+      );
     }),
   );
 
@@ -239,11 +261,12 @@ export const copyProcesses = async (
     description: string;
     originalId: string;
     originalVersion?: string;
+    folderId?: string;
   }[],
+  spaceId: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment();
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
-
   const copiedProcesses: Process[] = [];
 
   for (const copyProcess of processes) {
@@ -262,7 +285,7 @@ export const copyProcesses = async (
       owner: userId,
       definitionId: newId,
       bpmn: newBpmn,
-      environmentId: activeEnvironment,
+      environmentId: activeEnvironment.spaceId,
     };
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
@@ -284,19 +307,11 @@ export const createVersion = async (
   versionName: string,
   versionDescription: string,
   processId: string,
+  spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment();
+  const error = await checkValidity(processId, 'update', spaceId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   const bpmn = await _getProcessBpmn(processId);
   const bpmnObj = await toBpmnObject(bpmn);
@@ -311,6 +326,9 @@ export const createVersion = async (
     versionDescription,
     versionBasedOn,
   });
+
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
 
   await versionUserTasks(process, epochTime, bpmnObj);
 
@@ -332,19 +350,40 @@ export const createVersion = async (
   return epochTime;
 };
 
-export const setVersionAsLatest = async (processId: string, version: number) => {
-  const { ability } = await getCurrentEnvironment();
+export const setVersionAsLatest = async (processId: string, version: number, spaceId: string) => {
+  const error = await checkValidity(processId, 'update', spaceId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
-
-  if (!process) {
-    return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
-  }
-
-  if (!ability.can('update', toCaslResource('Process', process))) {
-    return userError('Not allowed to update this process', UserErrorType.PermissionError);
-  }
+  if (error) return error;
 
   await selectAsLatestVersion(processId, version);
+};
+
+export const getFavouritesProcessIds = async () => {
+  const favs = await getUsersFavourites();
+
+  return favs ?? [];
+};
+
+export const getProcessUserTaskHTML = async (
+  definitionId: string,
+  taskFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  return _getProcessUserTaskHtml(definitionId, taskFileName);
+};
+
+export const getProcessImage = async (
+  definitionId: string,
+  imageFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  return _getProcessImage(definitionId, imageFileName);
 };

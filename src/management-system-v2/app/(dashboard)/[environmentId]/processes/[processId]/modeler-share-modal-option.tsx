@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { Button, Grid, Tooltip, Typography } from 'antd';
 import { ReactNode } from 'react';
@@ -26,6 +27,7 @@ const ModelerShareModalOption = ({
   return (
     <>
       <Button
+        title={optionName}
         size={breakpoint.lg ? 'middle' : 'small'}
         style={{
           boxShadow: isActive ? '3px 2px 2px #3D91DB' : '3px 2px 2px gray',

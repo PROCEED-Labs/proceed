@@ -1,8 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { DeleteOutlined } from '@ant-design/icons';
-import { Space, Button, Table, App } from 'antd';
+import {
+  DeleteOutlined,
+  InfoCircleOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { Space, Button, Table, App, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -16,6 +22,13 @@ import RoleSidePanel from './role-side-panel';
 import { deleteRoles as serverDeleteRoles } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
+import styles from './role-page.module.scss';
+import { useUserPreferences } from '@/lib/user-preferences';
+import cn from 'classnames';
+
+const numberOfRows =
+  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
+import { spaceURL } from '@/lib/utils';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
@@ -23,7 +36,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const { setSearchQuery, filteredData: filteredRoles } = useFuzySearch({
     data: roles || [],
@@ -35,6 +48,16 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<FilteredRole[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [showMobileRoleSider, setShowMobileRoleSider] = useState(false);
+
+  const addPreferences = useUserPreferences.use.addPreferences();
+  const iconView = useUserPreferences.use['icon-view-in-role-list']();
+
+  const breakpoint = Grid.useBreakpoint();
+
+  const openMobileRoleSider = () => {
+    setShowMobileRoleSider(true);
+  };
 
   const lastSelectedElement =
     selectedRows.length > 0 ? selectedRows[selectedRows.length - 1] : null;
@@ -45,7 +68,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
 
   async function deleteRoles(roleIds: string[]) {
     try {
-      const result = await serverDeleteRoles(environmentId, roleIds);
+      const result = await serverDeleteRoles(environment.spaceId, roleIds);
       if (result && 'error' in result) throw new Error();
 
       setSelectedRowKeys([]);
@@ -62,7 +85,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
       dataIndex: 'name',
       key: 'display',
       render: (name: FilteredRole['name'], role: FilteredRole) => (
-        <Link style={{ color: '#000' }} href={`/${environmentId}/iam/roles/${role.id}`}>
+        <Link style={{ color: '#000' }} href={spaceURL(environment, `/iam/roles/${role.id}`)}>
           {name.highlighted}
         </Link>
       ),
@@ -100,63 +123,149 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
         />
       ),
     },
+    {
+      dataIndex: 'info',
+      key: '',
+      title: '',
+      render: (): React.ReactNode => (
+        <Button style={{ float: 'right' }} type="text" onClick={openMobileRoleSider}>
+          <InfoCircleOutlined />
+        </Button>
+      ),
+      responsive: (breakpoint.xl ? ['xs'] : ['xs', 'sm']) as Breakpoint[],
+    },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Bar
-        rightNode={<HeaderActions />}
-        leftNode={
-          selectedRowKeys.length > 0 ? (
-            <Space size={20}>
-              <Button type="text" icon={<CloseOutlined />} onClick={() => setSelectedRowKeys([])} />
-              <span>{selectedRowKeys.length} selected:</span>
-              <ConfirmationButton
-                title="Delete Roles"
-                description="Are you sure you want to delete the selected roles?"
-                onConfirm={() => deleteRoles(selectedRowKeys)}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  disabled: cannotDeleteSelected,
-                  type: 'text',
-                }}
-              />
-            </Space>
-          ) : null
-        }
-        searchProps={{
-          onChange: (e) => setSearchQuery(e.target.value),
-          onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
-          placeholder: 'Search Role ...',
-        }}
-      />
-      <div style={{ display: 'flex', height: '100%', gap: 20 }}>
-        <div style={{ flex: 1 }}>
-          <Table<FilteredRole>
-            columns={columns}
-            dataSource={filteredRoles}
-            onRow={(element) => ({
-              onMouseEnter: () => setHoveredRow(element.id),
-              onMouseLeave: () => setHoveredRow(null),
-              onDoubleClick: () => router.push(`/${environmentId}/iam/roles/${element.id}`),
-              onClick: () => {
-                setSelectedRowKeys([element.id]);
-                setSelectedRows([element]);
-              },
-            })}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (selectedRowKeys, selectedRows) => {
-                setSelectedRowKeys(selectedRowKeys as string[]);
-                setSelectedRows(selectedRows);
-              },
+    <>
+      <div
+        className={breakpoint.xs ? styles.MobileView : ''}
+        style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
+      >
+        <div style={{ flex: '1' }}>
+          <Bar
+            leftNode={
+              <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  {breakpoint.xs ? null : (
+                    <>
+                      {/*TODO: Add "create role" button with functionality*/}
+                      <Button type="primary">
+                        {breakpoint.xl ? 'New Role (tba)' : 'New (tba)'}
+                      </Button>
+                      {/* <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
+                        {breakpoint.xl ? 'New Process' : 'New'}
+                      </ProcessCreationButton>
+                      <ProcessImportButton type="default">
+                        {breakpoint.xl ? 'Import Process' : 'Import'}
+                      </ProcessImportButton> */}
+                    </>
+                  )}
+
+                  {selectedRowKeys.length > 0 ? (
+                    <Space size={20}>
+                      <Button
+                        type="text"
+                        icon={<CloseOutlined />}
+                        onClick={() => setSelectedRowKeys([])}
+                      />
+                      <span>{selectedRowKeys.length} selected:</span>
+                      <ConfirmationButton
+                        title="Delete Roles"
+                        description="Are you sure you want to delete the selected roles?"
+                        onConfirm={() => deleteRoles(selectedRowKeys)}
+                        buttonProps={{
+                          icon: <DeleteOutlined />,
+                          disabled: cannotDeleteSelected,
+                          type: 'text',
+                        }}
+                      />
+                    </Space>
+                  ) : undefined}
+                </span>
+
+                {
+                  <span>
+                    <Space.Compact className={cn(breakpoint.xs ? styles.MobileToggleView : '')}>
+                      <Button
+                        style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                        onClick={() => {
+                          addPreferences({ 'icon-view-in-process-list': false });
+                        }}
+                      >
+                        <UnorderedListOutlined />
+                      </Button>
+                      <Button
+                        style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                        onClick={() => {
+                          addPreferences({ 'icon-view-in-process-list': true });
+                        }}
+                      >
+                        <AppstoreOutlined />
+                      </Button>
+                    </Space.Compact>
+                  </span>
+                }
+
+                {/* <!-- FloatButtonGroup needs a z-index of 101
+              since BPMN Logo of the viewer has an z-index of 100 --> */}
+                {breakpoint.xl ? undefined : (
+                  <FloatButton.Group
+                    className={styles.FloatButton}
+                    trigger="click"
+                    type="primary"
+                    style={{ marginBottom: '100px', marginRight: '10px', zIndex: '101' }}
+                    icon={<PlusOutlined />}
+                  >
+                    <Tooltip trigger="hover" placement="left" title="Create a role">
+                      {/*TODO: Add "create role" button with functionality*/}
+                      <FloatButton icon={<PlusOutlined />} />
+                    </Tooltip>
+                  </FloatButton.Group>
+                )}
+              </span>
+            }
+            searchProps={{
+              onChange: (e) => setSearchQuery(e.target.value),
+              onPressEnter: (e) => setSearchQuery(e.currentTarget.value),
+              placeholder: 'Search Role ...',
             }}
-            rowKey="id"
           />
+
+          {iconView ? undefined : ( //IconView
+            //TODO: add IconView for roles?
+            //ListView
+            <Table<FilteredRole>
+              columns={columns}
+              dataSource={filteredRoles}
+              onRow={(element) => ({
+                onMouseEnter: () => setHoveredRow(element.id),
+                onMouseLeave: () => setHoveredRow(null),
+                onDoubleClick: () => router.push(spaceURL(environment, `/iam/roles/${element.id}`)),
+                onClick: () => {
+                  setSelectedRowKeys([element.id]);
+                  setSelectedRows([element]);
+                },
+              })}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedRowKeys, selectedRows) => {
+                  setSelectedRowKeys(selectedRowKeys as string[]);
+                  setSelectedRows(selectedRows);
+                },
+              }}
+              rowKey="id"
+              pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
+            />
+          )}
         </div>
-        <RoleSidePanel role={lastSelectedElement} />
+        <RoleSidePanel
+          role={lastSelectedElement}
+          setShowMobileRoleSider={setShowMobileRoleSider}
+          showMobileRoleSider={showMobileRoleSider}
+        />
       </div>
-    </div>
+    </>
   );
 };
 

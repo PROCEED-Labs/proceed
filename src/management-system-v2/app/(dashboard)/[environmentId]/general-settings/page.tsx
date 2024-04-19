@@ -1,12 +1,16 @@
-import Auth from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import { Card } from 'antd';
 import Content from '@/components/content';
 import SettingsForm from './settings-form';
 // Card throws a react children error if you don't import Title separately.
 import Title from 'antd/es/typography/Title';
 import { changeBackendConfig, getBackendConfig } from '@/lib/data/legacy/config';
+import { redirect } from 'next/navigation';
 
-const GeneralSettingsPage = async () => {
+const GeneralSettingsPage = async ({ params }: { params: { environmentId: string } }) => {
+  const { ability } = await getCurrentEnvironment(params.environmentId);
+  if (!ability.can('view', 'Setting')) return redirect('/');
+
   const settings = getBackendConfig();
 
   const updateSettings = async (newSettings: Object) => {
@@ -26,11 +30,4 @@ const GeneralSettingsPage = async () => {
   );
 };
 
-export default Auth(
-  {
-    action: 'view',
-    resource: 'Setting',
-    fallbackRedirect: '/',
-  },
-  GeneralSettingsPage,
-);
+export default GeneralSettingsPage;

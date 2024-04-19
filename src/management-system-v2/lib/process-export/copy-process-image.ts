@@ -1,4 +1,4 @@
-import { getSVGFromBPMN } from './util';
+import { downloadFile, getSVGFromBPMN } from './util';
 import { getPNGFromSVG } from './image-export';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import Modeler from 'bpmn-js/lib/Modeler';
@@ -48,16 +48,21 @@ export async function copyProcessImage(
   modeler: BPMNCanvasRef | Modeler | NavigatedViewer,
 ): Promise<Boolean> {
   try {
-    const blob = await getPNG(modeler);
-
-    // Copy the PNG to the clipboard
-    const data = [new ClipboardItem({ 'image/png': blob })];
-    await navigator.clipboard.write(data);
-    console.log('Copied to clipboard');
-    return true;
+    // Check if clipboard writing is supported
+    if (navigator.clipboard && 'write' in navigator.clipboard && window.ClipboardItem) {
+      // this is necessary to avoid permission error in safari: can't call await before clipboard.write
+      // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': getPNG(modeler) })]);
+      console.log('Copied to clipboard');
+      return true;
+    } else {
+      // Fallback: Download the image
+      const blob = await getPNG(modeler);
+      downloadFile('process.png', blob);
+      return false;
+    }
   } catch (error) {
-    console.error(`Error while copying the diagram: ${error}`);
-    return false;
+    throw new Error(`${error}`);
   }
 }
 
@@ -84,5 +89,6 @@ export async function shareProcessImage(modeler: BPMNCanvasRef) {
     }
   } else {
     console.log('Webshare api not supported');
+    await copyProcessImage(modeler);
   }
 }

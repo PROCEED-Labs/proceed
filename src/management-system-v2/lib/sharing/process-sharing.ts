@@ -3,28 +3,33 @@
 import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
+import { Environment } from '../data/environment-schema';
+import { getEnvironmentById } from '../data/legacy/iam/environments';
+import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
 
 export interface TokenPayload {
   processId: string | string[];
-  timestamp: number;
   embeddedMode?: boolean;
+  timestamp: number;
 }
 
 export interface ProcessGuestAccessRights {
-  shared?: boolean;
   sharedAs?: 'public' | 'protected';
   shareTimestamp?: number;
+  allowIframeTimestamp?: number;
 }
 
 export async function updateProcessGuestAccessRights(
   processId: string | string[],
   newMeta: ProcessGuestAccessRights,
+  spaceId: string,
 ) {
   await updateProcessShareInfo(
     processId as string,
-    newMeta.shared,
     newMeta.sharedAs,
     newMeta.shareTimestamp,
+    newMeta.allowIframeTimestamp,
+    spaceId,
   );
 }
 
@@ -59,4 +64,14 @@ export async function generateSharedViewerUrl(
   }
 
   return url;
+}
+
+export async function getAllUserWorkspaces(userId: string) {
+  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+  userEnvironments.push(
+    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+      getEnvironmentById(environmentId),
+    ),
+  );
+  return userEnvironments;
 }

@@ -24,7 +24,7 @@ import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
-
+import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -44,7 +44,7 @@ const ModelerToolbar = ({
   versions,
 }: ModelerToolbarProps) => {
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -68,9 +68,14 @@ const ModelerToolbar = ({
   }) => {
     // Ensure latest BPMN on server.
     const xml = (await modeler?.getXML()) as string;
-    await updateProcess(processId, xml);
+    await updateProcess(processId, environment.spaceId, xml);
 
-    await createVersion(values.versionName, values.versionDescription, processId);
+    await createVersion(
+      values.versionName,
+      values.versionDescription,
+      processId,
+      environment.spaceId,
+    );
     // TODO: navigate to new version?
     router.refresh();
   };
@@ -175,9 +180,12 @@ const ModelerToolbar = ({
                 if (!option.value || option.value === -1) searchParams.delete('version');
                 else searchParams.set(`version`, `${option.value}`);
                 router.push(
-                  `/${environmentId}/processes/${processId as string}${
-                    searchParams.size ? '?' + searchParams.toString() : ''
-                  }`,
+                  spaceURL(
+                    environment,
+                    `/processes/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
+                    }`,
+                  ),
                 );
               }}
               options={[LATEST_VERSION].concat(versions ?? []).map(({ version, name }) => ({
@@ -241,6 +249,7 @@ const ModelerToolbar = ({
                 </>
               )}
             </ToolbarGroup>
+
             {showPropertiesPanel && selectedElement && (
               <PropertiesPanel
                 isOpen={showPropertiesPanel}

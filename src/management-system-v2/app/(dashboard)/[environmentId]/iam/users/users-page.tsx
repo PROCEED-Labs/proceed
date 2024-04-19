@@ -2,7 +2,7 @@
 
 import { FC, useState, useTransition } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Tooltip, App } from 'antd';
+import { Tooltip, App, Grid } from 'antd';
 import HeaderActions from './header-actions';
 import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -18,18 +18,18 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
   const [deletingUser, startTransition] = useTransition();
   const [showMobileUserSider, setShowMobileUserSider] = useState(false);
 
-  const closeMobileUserSider = () => {
-    setShowMobileUserSider(false);
-  };
+  // const closeMobileUserSider = () => {
+  //   setShowMobileUserSider(false);
+  // };
 
   const router = useRouter();
-  const environmentId = useEnvironment();
+  const environment = useEnvironment();
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
     startTransition(async () => {
       unsetIds();
 
-      const result = await removeUsersFromEnvironment(environmentId, ids);
+      const result = await removeUsersFromEnvironment(environment.spaceId, ids);
 
       if (result && 'error' in result)
         messageApi.open({ type: 'error', content: 'Something went wrong' });
@@ -75,11 +75,13 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
           }}
         />
       )}
+      selectedUser={selectedUser}
       createUserNode={<HeaderActions />}
       onSelectedRows={(users) => {
         setSelectedUser(users.length > 0 ? users[users.length - 1] : null);
       }}
       setShowMobileUserSider={setShowMobileUserSider}
+      showMobileUserSider={showMobileUserSider}
       sidePanel={
         <UserSidePanel
           user={selectedUser}

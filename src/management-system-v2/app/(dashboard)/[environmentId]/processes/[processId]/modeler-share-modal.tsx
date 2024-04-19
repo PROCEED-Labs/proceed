@@ -1,4 +1,5 @@
-import React, { FC, useEffect, useState } from 'react';
+'use client';
+import React, { FC, useState } from 'react';
 import { Modal, Button, Tooltip, Space, Divider, message, Grid, App } from 'antd';
 import {
   ShareAltOutlined,
@@ -21,40 +22,51 @@ import {
 import { useParams } from 'next/navigation';
 import { shareProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOption from './modeler-share-modal-option';
-import { ProcessExportTypes } from '@/components/process-export';
+import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
-import { Process } from '@/lib/data/process-schema';
-import { error } from 'console';
+import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { useEnvironment } from '@/components/auth-can';
 
 type ShareModalProps = {
   onExport: () => void;
-  onExportMobile: (type: ProcessExportTypes) => void;
+  onExportMobile: (type: ProcessExportOptions['type']) => void;
 };
 
 const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile }) => {
   const { processId } = useParams();
+  const environment = useEnvironment();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const modeler = useModelerStateStore((state) => state.modeler);
   const breakpoint = Grid.useBreakpoint();
-  const [shared, setShared] = useState(false);
   const [sharedAs, setSharedAs] = useState<'public' | 'protected'>('public');
-  const [shareTimestamp, setShareTimeStamp] = useState<number>();
   const [isSharing, setIsSharing] = useState(false);
+  const [shareToken, setShareToken] = useState('');
+  const [shareTimestamp, setShareTimestamp] = useState(0);
+  const [allowIframeTimestamp, setAllowIframeTimestamp] = useState(0);
   const { message } = App.useApp();
-  const [processData, setProcessData] = useState<Process | undefined>();
+  const [processData, setProcessData] = useState<Omit<ProcessMetadata, 'bpmn'>>();
 
   const checkIfProcessShared = async () => {
-    const { shared, sharedAs, shareTimestamp } = (await getProcess(processId as string)) as Process;
-    setShared(shared);
-    setSharedAs(sharedAs);
-    setShareTimeStamp(shareTimestamp);
+    const res = await getProcess(processId as string, environment.spaceId);
+    if ('error' in res) {
+      console.log('Failed to fetch process');
+    } else {
+      const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
+      setSharedAs(sharedAs);
+      setShareToken(shareToken);
+      setShareTimestamp(shareTimestamp);
+      setAllowIframeTimestamp(allowIframeTimestamp);
+    }
   };
 
   const getProcessData = () => {
-    return getProcess(processId as string)
-      .then((processData) => {
-        setProcessData(processData);
+    return getProcess(processId as string, environment.spaceId)
+      .then((res) => {
+        if ('error' in res) {
+        } else {
+          setProcessData(res);
+        }
       })
       .catch((error) => {
         console.error('Error fetching process data:', error);
@@ -89,13 +101,16 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    let timestamp = shareTimestamp ? shareTimestamp : +new Date();
+    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
     const link = await generateSharedViewerUrl({ processId, timestamp });
-    await updateProcessGuestAccessRights(processId, {
-      shared: true,
-      sharedAs: sharedAs,
-      shareTimestamp: timestamp,
-    });
+    await updateProcessGuestAccessRights(
+      processId,
+      {
+        sharedAs: sharedAs,
+        shareTimestamp: timestamp,
+      },
+      environment.spaceId,
+    );
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
@@ -115,6 +130,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       navigator.clipboard.writeText(shareObject.url);
       message.success('Copied to clipboard');
     }
+    checkIfProcessShared();
   };
 
   const handleShareButtonClick = async () => {
@@ -160,7 +176,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       },
       subOption: (
         <ModelerShareModalOptionPublicLink
-          shared={shared}
           sharedAs={sharedAs}
           shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
@@ -181,9 +196,8 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       },
       subOption: (
         <ModelerShareModalOptionEmdedInWeb
-          shared={shared}
           sharedAs={sharedAs}
-          shareTimestamp={shareTimestamp}
+          allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
         />
       ),
@@ -194,10 +208,11 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Copy Diagram as PNG',
       optionOnClick: async () => {
         setActiveIndex(2);
-        if (await copyProcessImage(modeler!)) {
-          message.success('Copied to clipboard');
-        } else {
-          message.error('Error while copying');
+        try {
+          if (await copyProcessImage(modeler!)) message.success('Copied to clipboard');
+          else message.info('ClipboardAPI not supported in your browser');
+        } catch (err) {
+          message.error(`${err}`);
         }
         setActiveIndex(null);
       },
@@ -219,7 +234,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionOnClick: () => {
         setActiveIndex(4);
         onExport();
-        handleClose();
+        setActiveIndex(null);
       },
     },
   ];

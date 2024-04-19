@@ -1,5 +1,6 @@
 import { ComponentProps, FC, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
 import { Button, Modal, Tooltip, Typography } from 'antd';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type ConfirmationModalProps = PropsWithChildren<{
   onConfirm: () => Promise<any> | any;
@@ -16,7 +17,7 @@ type ConfirmationModalProps = PropsWithChildren<{
   onExternalClose?: () => void;
 }>;
 
-const ConfirmationButton = forwardRef<HTMLElement, ConfirmationModalProps>(
+const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>(
   (
     {
       children,
@@ -34,6 +35,39 @@ const ConfirmationButton = forwardRef<HTMLElement, ConfirmationModalProps>(
   ) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useAddControlCallback(
+      'process-list',
+      [
+        'selectall',
+        'esc',
+        // 'del',
+        'copy',
+        'paste',
+        'enter',
+        'cut',
+        'export',
+        'import',
+        'shiftenter',
+        'controlenter',
+      ],
+      (e) => {
+        // e.preventDefault();
+        // onConfirmWrapper();
+      },
+      { level: 2, blocking: externalOpen || modalOpen },
+    );
+
+    useAddControlCallback(
+      'process-list',
+      ['controlenter'],
+      () => {
+        if (externalOpen || modalOpen) {
+          onConfirmWrapper();
+        }
+      },
+      { level: 2, blocking: externalOpen || modalOpen },
+    );
 
     const clearModal = () => {
       setModalOpen(false);

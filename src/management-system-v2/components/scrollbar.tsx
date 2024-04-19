@@ -1,12 +1,11 @@
 import { useIntervalLock } from '@/lib/useIntervalLock';
-import { clear, time } from 'console';
 import React, { FC, useEffect, useState, useRef, useCallback, use, MouseEventHandler } from 'react';
 import styles from './scrollbar.module.scss';
 import classNames from 'classnames';
 
 type ScrollBarType = {
   children: React.ReactNode;
-  width: string;
+  width?: string;
   threshold?: number;
   reachedEndCallBack?: () => void;
   maxCallInterval?: number;
@@ -16,7 +15,7 @@ const [maxThumbHeight, minThumbHeight] = [15, 5]; /* In % */
 
 const ScrollBar: FC<ScrollBarType> = ({
   children,
-  width,
+  width = '12px',
   threshold,
   reachedEndCallBack,
   maxCallInterval,
@@ -24,6 +23,7 @@ const ScrollBar: FC<ScrollBarType> = ({
   const [thumbHeight, setThumbHeight] = useState(0);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -51,6 +51,7 @@ const ScrollBar: FC<ScrollBarType> = ({
 
       setThumbHeight(newThumbHeight);
       setScrollPosition(newScrollPosition);
+      setIsOverflowing(scrollHeight > clientHeight);
     }
   }, [reachedEndCallBack, scrolledToTH, threshold]);
 
@@ -138,32 +139,34 @@ const ScrollBar: FC<ScrollBarType> = ({
       >
         {children}
       </div>
-      <div
-        className={classNames(styles.Scrollbar, { [styles.Dragging]: isDragging })}
-        style={{
-          width: `${width}`,
-          height: '100%',
-          position: 'relative',
-          marginLeft: '4px',
-          borderRadius: '8px',
-        }}
-        onDoubleClick={handleScrollbarClick}
-      >
+      {isOverflowing && (
         <div
-          ref={thumbRef}
-          onMouseDown={handleMouseDown}
+          className={classNames(styles.Scrollbar, { [styles.Dragging]: isDragging })}
           style={{
-            position: 'absolute',
-            top: `${scrollPosition}%`,
-            width: '80%',
-            marginLeft: '10%',
-            height: `${thumbHeight}%`,
-            backgroundColor: '#888',
+            width: `${width}`,
+            height: '100%',
+            position: 'relative',
+            marginLeft: '4px',
             borderRadius: '8px',
-            cursor: 'grab',
           }}
-        />
-      </div>
+          onDoubleClick={handleScrollbarClick}
+        >
+          <div
+            ref={thumbRef}
+            onMouseDown={handleMouseDown}
+            style={{
+              position: 'absolute',
+              top: `${scrollPosition}%`,
+              width: '80%',
+              marginLeft: '10%',
+              height: `${thumbHeight}%`,
+              backgroundColor: '#888',
+              borderRadius: '8px',
+              cursor: 'grab',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

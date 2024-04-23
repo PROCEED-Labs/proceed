@@ -299,12 +299,10 @@ const BPMNSharedViewer = ({
         name: processData.name,
         description: processData.description,
         originalId: processData.id,
+        originalVersion: typeof versionInfo.id === 'number' ? `${versionInfo.id}` : undefined,
       },
     ];
 
-    // TODO: what should be done if the currently open bpmn is that of a specific process version
-    // 1. the copied process should have a copy of the specific version as its initial diagram
-    // 2. just copy the process in the latest form and maybe add the specific version (or all versions) to the copy
     const copiedProcesses = await copyProcesses(processesToCopy, workspace.id);
 
     if ('error' in copiedProcesses) {

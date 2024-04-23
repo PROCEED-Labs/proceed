@@ -13,6 +13,8 @@ import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
+import styles from './modeler.module.scss';
+import ModelerZoombar from './modeler-zoombar';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -37,6 +39,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
+  const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
 
   /// Derived State
   const minimized =
@@ -78,6 +81,13 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       setModeler(null);
     };
   }, [canEdit, setModeler]);
+
+  const onZoom = useCallback<Required<BPMNCanvasProps>['onZoom']>(
+    (zoomLevel) => {
+      setZoomLevel(zoomLevel);
+    },
+    [setZoomLevel],
+  );
 
   const onSelectionChange = useCallback<Required<BPMNCanvasProps>['onSelectionChange']>(
     (oldSelection, newSelection) => {
@@ -237,7 +247,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   );
 
   return (
-    <div className="bpmn-js-modeler-with-toolbar" style={{ height: '100%' }}>
+    <div className={styles.Modeler} style={{ height: '100%' }}>
       {!minimized && (
         <>
           {loaded && (
@@ -250,6 +260,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
             />
           )}
           {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
+          <ModelerZoombar></ModelerZoombar>
           {!!xmlEditorBpmn && (
             <XmlEditor
               bpmn={xmlEditorBpmn}
@@ -272,6 +283,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         onRootChange={onRootChange}
         onChange={canEdit ? onChange : undefined}
         onSelectionChange={onSelectionChange}
+        onZoom={onZoom}
       />
     </div>
   );

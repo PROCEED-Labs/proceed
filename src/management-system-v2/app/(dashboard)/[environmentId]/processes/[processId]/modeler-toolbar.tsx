@@ -10,6 +10,8 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
+  ArrowDownOutlined,
+  FullscreenOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -134,6 +136,14 @@ const ModelerToolbar = ({
     }
   };
 
+  const handleOpeningSubprocess = async () => {
+    if (modeler && selectedElement) {
+      const canvas = modeler.getCanvas();
+      canvas.setRootElement(canvas.findRoot(selectedElement.id + '_plane') as Root);
+      modeler.fitViewport();
+    }
+  };
+
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
@@ -206,6 +216,18 @@ const ModelerToolbar = ({
                 </Tooltip>
               </>
             )}
+          </ToolbarGroup>
+
+          <ToolbarGroup>
+            {selectedElement &&
+              bpmnIs(selectedElement, 'bpmn:SubProcess') &&
+              selectedElement.collapsed && (
+                <Tooltip title="Open Subprocess">
+                  <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+                    Open Subprocess
+                  </Button>
+                </Tooltip>
+              )}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>

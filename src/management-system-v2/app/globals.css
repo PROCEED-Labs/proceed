@@ -1,13 +1,3 @@
-.bpmn-js-modeler-with-toolbar .djs-palette {
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.bpmn-js-modeler-with-toolbar .bjs-breadcrumbs {
-  display: none !important;
-}
-
 /* Workaround to make flex with breakpoints work. See: https://github.com/ant-design/ant-design/issues/28961#issuecomment-1712966521 */
 .ant-col.ant-col-xs-flex-initial {
   flex: initial;
@@ -128,24 +118,6 @@
 
 .fit-height {
   height: calc(100vh - 64px - 70px);
-}
-
-/* Adapt BPMN.js toolbar styles */
-.djs-palette {
-  background-color: white !important;
-  border: solid 1px #d9d9d9 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02) !important;
-}
-
-.group .entry {
-  border-bottom: solid 1px #d9d9d9;
-}
-.group .entry :last-child {
-  border-bottom: none;
-}
-.group .separator {
-  display: none;
 }
 
 :where(.css-dev-only-do-not-override-baxwvh).ant-float-btn {

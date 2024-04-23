@@ -66,7 +66,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
-          content: 'Someting went wrong while submitting the data',
+          content: 'Someting went wrong while submitting the data Modal',
         });
       }
       setSubmitting(false);
@@ -88,6 +88,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
     'controlenter',
     () => {
       if (open) onOk();
+      console.log(`trying to submit in process export. Modal is open: ${open}`);
     },
     { level: 2, blocking: open, dependencies: [open] },
   );

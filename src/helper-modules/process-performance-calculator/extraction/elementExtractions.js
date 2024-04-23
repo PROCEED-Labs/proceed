@@ -18,7 +18,7 @@ function extractElementInfos(elem, settings) {
     duration: timeInfos.duration,
     start: timeInfos.start, //Date or 'none'
     end: timeInfos.end, //Date or 'none'
-    cost: Number(meta.costsPlanned || 0),
+    cost: Number((meta.costsPlanned && meta.costsPlanned.value) || 0),
     probability: Number(meta.occurrenceProbability || 100), //only relevant for certain sequence flows
     gateways: elem.gateways || [], //only relevant for call activities and sub processes
     validatedElements: elem.validatedElements || [], //only relevant for call activities and sub processes

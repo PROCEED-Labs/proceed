@@ -1,3 +1,4 @@
+import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from './process-list.fixtures';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
@@ -8,7 +9,7 @@ test('create a new process and remove it again', async ({ processListPage }) => 
   await page.getByLabel('Process Description').click();
   await page.getByLabel('Process Description').fill('Process Description');
   await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
   const processDefinitionID = page.url().split('processes/').pop();
 
@@ -33,7 +34,7 @@ test('import a process', async ({ processListPage }) => {
 
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
 
   // check if the process in the modeler is the one that we tried to import
   await expect(page.locator('svg[data-element-id="Process_05s7742"]')).toBeVisible();
@@ -345,7 +346,6 @@ test.describe('shortcuts in process-list', () => {
     // await page.getByLabel('Process Description').fill('Some description');
     // await page.getByRole('button', { name: 'Cancel' }).press('Control+Enter');
   });
-
   /* Delete Process - del*/
   test('delete a process with del', async ({ processListPage }) => {});
 
@@ -360,3 +360,98 @@ test.describe('shortcuts in process-list', () => {
 });
 
 /* Reloads */
+test('share-modal-test', async ({ processListPage }) => {
+  const { page } = processListPage;
+
+  let clipboardData: string;
+
+  const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
+  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
+
+  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+
+  await page.getByRole('button', { name: 'share-alt' }).click();
+
+  //await expect(page.getByText('Share', { exact: true })).toBeVisible();
+
+  /*************************** Embed in Website ********************************/
+
+  await page.getByRole('button', { name: 'Embed in Website' }).click();
+  await expect(page.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(page.locator('div[class="code"]')).toBeVisible();
+  await page.getByTitle('copy code', { exact: true }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  const regex =
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+  expect(clipboardData).toMatch(regex);
+
+  /*************************** Copy Diagram As PNG ********************************/
+  // skip this test for firebox
+  if (page.context().browser().browserType() !== firefox) {
+    await page.getByTitle('Copy Diagram as PNG', { exact: true }).click();
+    await page.waitForTimeout(100);
+    clipboardData = await processListPage.readClipboard(false);
+    await expect(clipboardData).toMatch('image/png');
+  } else {
+    // download as fallback
+    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
+      async () => await page.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
+      'string',
+    );
+
+    expect(pngFilename).toMatch(/.png$/);
+  }
+
+  /*************************** Copy Diagram As XML ********************************/
+
+  await page.getByTitle('Copy Diagram as XML', { exact: true }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
+  await expect(clipboardData).toMatch(xmlRegex);
+
+  /*************************** Export as File ********************************/
+  await page.getByTitle('Export as file', { exact: true }).click();
+  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'cancel' }).click();
+
+  /*************************** Share Process with link ********************************/
+  await page.getByRole('button', { name: 'Share Public Link' }).click();
+  await page.getByText('Share Process with Public Link').click();
+
+  await expect(page.locator('input[name="generated share link"]')).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy link' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Copy link' }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  // Visit the shared link
+  const browser: Browser = await chromium.launch();
+  const newPage: Page = await browser.newPage();
+
+  await newPage.goto(`${clipboardData}`);
+  await newPage.waitForURL(`${clipboardData}`);
+
+  // Add the shared process to the workspace
+  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
+
+  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
+  await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
+
+  await newPage.getByRole('button', { name: 'My Space' }).click();
+  await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
+
+  const newProcessId = newPage.url().split('/processes/').pop();
+
+  await newPage.getByRole('link', { name: 'process list' }).click();
+  await newPage.waitForURL(/processes/);
+  await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
+});

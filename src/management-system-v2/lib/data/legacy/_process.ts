@@ -65,7 +65,6 @@ export async function getProcesses(ability: Ability, includeBPMN = false) {
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
   const process = processMetaObjects[processDefinitionsId];
-
   if (!process) {
     throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
   }
@@ -236,16 +235,6 @@ export async function updateProcessMetaData(
 
   mergeIntoObject(newMetaData, metaChanges, true, true, true);
 
-  /* // add shared_with if process is shared
-    if (metaChanges.shared_with) {
-      newMetaData.shared_with = metaChanges.shared_with;
-    }
-
-    // remove shared_with if not shared anymore
-    if (newMetaData.shared_with && metaChanges.shared_with && metaChanges.shared_with.length === 0) {
-      delete newMetaData.shared_with;
-    } */
-
   processMetaObjects[processDefinitionsId] = newMetaData;
 
   store.update('processes', processDefinitionsId, removeExcessiveInformation(newMetaData));
@@ -272,10 +261,10 @@ export async function removeProcess(processDefinitionsId: string) {
   ]!.children.filter((folder) => folder.id !== processDefinitionsId);
   // remove process directory
   deleteProcess(processDefinitionsId);
+
   // remove from store
   store.remove('processes', processDefinitionsId);
   delete processMetaObjects[processDefinitionsId];
-
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }
 
@@ -478,7 +467,7 @@ export async function getProcessImages(processDefinitionsId: string) {
 export async function saveProcessImage(
   processDefinitionsId: string,
   imageFileName: string,
-  image: string,
+  image: Buffer,
 ) {
   checkIfProcessExists(processDefinitionsId);
 

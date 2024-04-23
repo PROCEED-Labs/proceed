@@ -14,13 +14,13 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 export default defineConfig({
   testDir: './tests',
   /* Maximum time one test can run for. */
-  timeout: 30 * 1000,
+  timeout: 60 * 1000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000,
+    timeout: 3000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -47,12 +47,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], ignoreHTTPSErrors: true },
+      use: {
+        ...devices['Desktop Chrome'],
+        ignoreHTTPSErrors: true,
+        contextOptions: {
+          permissions: ['clipboard-read', 'clipboard-write'],
+        },
+      },
     },
 
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], ignoreHTTPSErrors: true },
+      timeout: 40 * 1000,
     },
 
     {

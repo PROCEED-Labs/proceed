@@ -62,24 +62,26 @@ const ProcessesPage = async ({
   pathToFolder.reverse();
 
   return (
-    <Content
-      title={
-        <Space>
-          {folder.parentId && (
-            <Link href={spaceURL(activeEnvironment, `/processes/folder/${folder.parentId}`)}>
-              <Button icon={<LeftOutlined />} type="text">
-                Back
-              </Button>
-            </Link>
-          )}
-          <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
+    <>
+      <Content
+        title={
+          <Space>
+            {folder.parentId && (
+              <Link href={spaceURL(activeEnvironment, `/processes/folder/${folder.parentId}`)}>
+                <Button icon={<LeftOutlined />} type="text">
+                  Back
+                </Button>
+              </Link>
+            )}
+            <EllipsisBreadcrumb keepInBack={2} keepInFront={2} items={pathToFolder} />
+          </Space>
+        }
+      >
+        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+          <Processes processes={folderContents} favourites={favs as string[]} folder={folder} />
         </Space>
-      }
-    >
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Processes processes={folderContents} favourites={favs as string[]} folder={folder} />
-      </Space>
-    </Content>
+      </Content>
+    </>
   );
 };
 

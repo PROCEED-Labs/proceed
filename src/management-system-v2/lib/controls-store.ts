@@ -35,9 +35,6 @@ type AddCallback = {
 };
 type DerigisterCallback = {
   id: UUID;
-  area: string;
-  action: string;
-  priority: 1 | 2 | 3 | 4 | 5;
 };
 
 type ControlsStore = {
@@ -87,6 +84,7 @@ export const useControlStore = create<ControlsStore>()(
     },
     addCallback: ({ id, area, action, callback, priority = 1, blocking = false }) => {
       set((state) => {
+        // console.log(`Adding callback to ${area} for ${action} with priority ${priority}`);
         // Check that the control-area is registered
         if (!state.areas.includes(area)) {
           console.error(`Control-area ${area} is not registered.`);
@@ -105,17 +103,20 @@ export const useControlStore = create<ControlsStore>()(
     getCallbacks: (area) => {
       return get().controls[area];
     },
-    removeCallback: ({ id, area, action, priority }) => {
+    removeCallback: ({ id }) => {
       set((state) => {
-        // Check that the control-area is registered
-        if (!state.areas.includes(area)) {
-          console.error(`Control-area ${area} is not registered.`);
-          return;
-        }
+        /* Filter for all: Areas, Actions and Prioritys */
+        const originalControls = get().controls;
 
-        state.controls[area][action][`${priority}`] = get().controls[area][action][
-          `${priority}`
-        ].filter((entry) => entry[2] !== id);
+        for (const area in originalControls) {
+          for (const action in originalControls[area]) {
+            for (const priority in originalControls[area][action]) {
+              state.controls[area][action][`${priority}`] = get().controls[area][action][
+                `${priority}`
+              ].filter((entry) => entry[2] !== id);
+            }
+          }
+        }
       });
     },
   })),
@@ -195,6 +196,8 @@ export const useAddControlCallback = (
     const nameArray = Array.isArray(names) ? names : [names];
     const eventnames = Array.isArray(eventname) ? eventname : [eventname];
 
+    let ids: string[] = [];
+
     nameArray.forEach((name) => {
       /* Check whether the control is registered yet */
       if (!controlStore.areas.includes(name)) {
@@ -204,15 +207,18 @@ export const useAddControlCallback = (
           actions: eventnames,
         }); /* 
       This allows to register Callbacks to any control-area and event-type, even if they do not exist, yet.
-      This means, that cllbacks registered to non-existing control-areas will never be invoked!
+      This means, that callbacks registered to non-existing control-areas will never be invoked!
       However, this enables an arbitrary order of registering a control-area and callbacks
       */
       }
-      /* Create unique id for each callback */
-      const id = randomUUID();
 
       /* Register the callback */
       for (const e of eventnames) {
+        /* Create unique id for each callback */
+        const id = randomUUID();
+        /* Append to overview */
+        ids.push(id);
+        /* Add callback to store */
         controlStore.addCallback({
           id,
           area: name,
@@ -222,13 +228,13 @@ export const useAddControlCallback = (
           blocking,
         });
       }
-
-      return () => {
-        for (const e of eventnames) {
-          controlStore.removeCallback({ id, area: name, action: e, priority: level });
-        }
-      };
     });
+    /* Cleanup: Remove all added callbacks */
+    return () => {
+      ids.forEach((id) => {
+        controlStore.removeCallback({ id });
+      });
+    };
   }, [level, blocking, ...dependencies]);
 };
 
@@ -297,12 +303,12 @@ export const useControler = (
 
     // Add event listener
     el.addEventListener(eventType, eventListener as EventListener);
-    console.log(`Registered control-area ${name}`);
+    // console.log(`Registered control-area ${name}`);
 
     // Remove event listener on cleanup
     return () => {
       el.removeEventListener(eventType, eventListener as EventListener);
-      console.log(`Removed control-area ${name}`);
+      // console.log(`Removed control-area ${name}`);
     };
   }, [controlInterface, eventChecker, eventType]);
 };

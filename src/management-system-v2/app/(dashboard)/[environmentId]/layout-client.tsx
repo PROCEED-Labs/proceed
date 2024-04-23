@@ -14,6 +14,7 @@ import { Environment } from '@/lib/data/environment-schema';
 import { useEnvironment } from '@/components/auth-can';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
+import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -40,6 +41,8 @@ const Layout: FC<
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
 
+  const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
+
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
@@ -57,6 +60,7 @@ const Layout: FC<
             style={{
               backgroundColor: '#fff',
               borderRight: '1px solid #eee',
+              display: modelerIsFullScreen ? 'none' : 'block',
             }}
             className={cn(styles.Sider)}
             collapsible
@@ -106,7 +110,12 @@ const Layout: FC<
 
           <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
         </AntLayout>
-        <AntLayout.Footer className={cn(styles.Footer)}>© 2024 PROCEED Labs GmbH</AntLayout.Footer>
+        <AntLayout.Footer
+          style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+          className={cn(styles.Footer)}
+        >
+          © 2024 PROCEED Labs GmbH
+        </AntLayout.Footer>
       </AntLayout>
 
       <Drawer

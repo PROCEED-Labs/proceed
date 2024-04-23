@@ -1,7 +1,7 @@
 'use client';
 
 import { useAbilityStore } from '@/lib/abilityStore';
-import { CheckerType, useControler } from '@/lib/controls-store';
+import { CheckerType, useAddControlCallback, useControler } from '@/lib/controls-store';
 import React, { FC } from 'react';
 
 type ControlComponent = {
@@ -36,6 +36,95 @@ const AddUserControls: FC<ControlComponent> = ({ name, checker }) => {
   };
 
   useControler(name, controlChecker);
+
+  // useAddControlCallback(
+  //   name,
+  //   'selectall',
+  //   () => {
+  //     console.log(`selectall from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'esc',
+  //   () => {
+  //     console.log(`esc from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'del',
+  //   () => {
+  //     console.log(`del from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'copy',
+  //   () => {
+  //     console.log(`copy from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'paste',
+  //   () => {
+  //     console.log(`paste from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'controlenter',
+  //   () => {
+  //     console.log(`controlenter from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'shiftenter',
+  //   () => {
+  //     console.log(`shiftenter from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'enter',
+  //   () => {
+  //     console.log(`enter from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'cut',
+  //   () => {
+  //     console.log(`cut from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'export',
+  //   () => {
+  //     console.log(`export from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
+  // useAddControlCallback(
+  //   name,
+  //   'import',
+  //   () => {
+  //     console.log(`import from ${name}`);
+  //   },
+  //   { level: 5 },
+  // );
 
   return <></>;
 };

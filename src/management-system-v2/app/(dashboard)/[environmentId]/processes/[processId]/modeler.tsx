@@ -13,6 +13,7 @@ import { App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -37,6 +38,25 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setSelectedElementId = useModelerStateStore((state) => state.setSelectedElementId);
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
+
+  /* Pressing ESC twice (in 500ms) lets user return to Process List */
+  const [escCounter, setEscCounter] = useState(0);
+  useAddControlCallback(
+    'modeler',
+    'esc',
+    () => {
+      setEscCounter((state) => {
+        if (state === 1) {
+          Promise.resolve().then(() => router.push(spaceURL(environment, `/processes`)));
+          return 0;
+        } else {
+          setTimeout(() => setEscCounter(0), 500);
+          return 1;
+        }
+      });
+    },
+    { dependencies: [router, setEscCounter] },
+  );
 
   /// Derived State
   const minimized =

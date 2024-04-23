@@ -154,4 +154,27 @@ export class ProcessListPage {
 
     return result;
   }
+
+  async createProcess(name: string, desciption: string = '') {
+    const { page } = this;
+    /* Create Process */
+    await page.getByRole('button', { name: 'Create Process' }).click();
+    await page.getByRole('textbox', { name: 'Name' }).fill(name);
+    await page.getByRole('textbox', { name: 'Description' }).fill(desciption);
+    await page.getByRole('button', { name: 'Create' }).click();
+
+    /* Wait for modeler to open */
+    await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
+
+    /* Get Process ID */
+    const processDefinitionID = page
+      .url()
+      .split(this.getPageURL() + '/')
+      .pop();
+
+    /* Go back to Process-List */
+    await this.goto();
+
+    return processDefinitionID;
+  }
 }

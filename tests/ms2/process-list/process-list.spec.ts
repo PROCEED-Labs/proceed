@@ -302,52 +302,74 @@ test('export multiple processes', async ({ processListPage }) => {
 
 test.describe('shortcuts in process-list', () => {
   /* Create Process - ctrl / meta + enter */
-  test('create a new process with ctrl / meta + enter', async ({ processListPage }) => {
+  test('create and submit a new process with shortcuts', async ({ processListPage }) => {
     const { page } = processListPage;
-    /* Open Modal */
+    /* Open Modal with ctrl + enter */
     await page.getByRole('main').press('Control+Enter');
-    const modal = await page.getByRole('dialog');
+    let modal = await page.getByRole('dialog');
+
     /* Check if Modal opened */
     expect(modal).toBeVisible();
 
-    /* Fill in the form */
-    // await page
-    //   .getByLabel('Create Process')
-    //   .locator('div')
-    //   .filter({ hasText: 'Create ProcessProcess' })
-    //   .first()
-    //   .press('Tab');
-    // await page.getByLabel('Close', { exact: true }).press('Tab');
-    await page.getByRole('dialog').press('Tab');
-    await page.getByRole('dialog').press('Tab');
+    /* Close Modal with esc */
+    await page.getByRole('main').press('Escape');
 
+    /* Check if Modal closed */
+    expect(modal).not.toBeVisible();
+
+    /* Open Modal with meta + enter */
+    await page.getByRole('main').press('Meta+Enter');
+
+    modal = await page.getByRole('dialog');
+
+    /* Check if Modal opened */
+    expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
+
+    /* Fill in the form */
+    await page.getByRole('dialog').press('Tab');
+    await page.getByRole('dialog').press('Tab');
     await page.getByLabel('Process Name').fill('Some Name');
     await page.getByLabel('Process Name').press('Tab');
     await page.getByLabel('Process Description').fill('Some Description');
+
+    /* Submit form with ctrl + enter */
     await page.getByRole('main').press('Control+Enter');
 
-    /* Go back to list */
+    /* Wait for Modeler to open */
+    // await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/); /* TODO: should this be an expect / is this part of the test? */
+    await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
+      /\/processes\/([a-zA-Z0-9-_]+)/,
+    );
+
+    /* Save Process-ID*/
     const processDefinitionID = page
       .url()
       .split(processListPage.getPageURL() + '/')
       .pop();
-    await processListPage.goto();
-    // await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
 
-    // await page
-    //   .getByLabel('Create Process')
-    //   .locator('div')
-    //   .filter({ hasText: 'Create ProcessProcess' })
-    //   .first()
-    //   .press('Tab');
-    // await page.getByLabel('Close', { exact: true }).press('Tab');
-    // await page.getByLabel('Process Name').fill('Some Process Name');
-    // await page.getByLabel('Process Name').press('Tab');
-    // await page.getByLabel('Process Description').fill('Some description');
-    // await page.getByRole('button', { name: 'Cancel' }).press('Control+Enter');
+    /* Go back to process list by pressing esc twice */
+    await Promise.all([
+      page.getByRole('main').press('Escape'),
+      page.getByRole('main').press('Escape'),
+    ]);
+
+    /* The /processes page should be visibe again */
+    await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
+
+    /* New created Process should be in List */
+    await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
   });
   /* Delete Process - del*/
-  test('delete a process with del', async ({ processListPage }) => {});
+  test('delete a process with del', async ({ processListPage }) => {
+    const { page } = processListPage;
+    /* Create Process */
+    const processID = await processListPage.createProcess('Delete me via shortcut');
+
+    /* Select Process */
+    await page.locator(`tr[data-row-key="${processID}"]`).getByRole('checkbox').click();
+
+    /* --- */
+  });
 
   /*  Select all Processes - ctrl / meta + a */
   test('select all processes with ctrl / meta + a', async ({ processListPage }) => {});

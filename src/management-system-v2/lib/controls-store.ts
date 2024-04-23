@@ -105,7 +105,6 @@ export const useControlStore = create<ControlsStore>()(
     },
     removeCallback: ({ id }) => {
       set((state) => {
-        console.log(`Removing callback with id ${id}`);
         /* Filter for all: Areas, Actions and Prioritys */
         const originalControls = get().controls;
 

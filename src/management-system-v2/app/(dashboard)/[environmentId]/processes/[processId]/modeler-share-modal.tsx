@@ -153,12 +153,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionOnClick: () => handleShareMobile('protected'),
     },
     {
-      optionIcon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process as PDF',
-      optionTitle: 'Share Process as PDF',
-      optionOnClick: () => onExportMobile('pdf'),
-    },
-    {
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Process as Image',
       optionTitle: 'Share Process as Image',

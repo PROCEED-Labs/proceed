@@ -140,7 +140,7 @@ const ModelerToolbar = ({
       selectedVersionId || undefined,
     );
 
-    // open the documentation page in a new tab
+    // open the documentation page in a new tab (unless it is already open in which case just show the tab)
     window.open(url, `${processId}-${selectedVersionId}-tab`);
   };
 

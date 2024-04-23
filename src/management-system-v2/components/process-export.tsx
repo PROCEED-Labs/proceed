@@ -148,7 +148,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         selectedOptions as string[],
       );
 
-      // open the documentation page in a new tab
+      // open the documentation page in a new tab (the print menu will be opened automatically)
       window.open(url, `${definitionId}-${processVersion}-tab`);
     } else {
       await exportProcesses(
@@ -263,7 +263,6 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         onOk={handleOk}
         onCancel={handleClose}
         centered
-        zIndex={200}
         okButtonProps={{
           disabled: !selectedType || disabledPdfExport,
           loading: isExporting,

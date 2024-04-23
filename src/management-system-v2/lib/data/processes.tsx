@@ -103,6 +103,7 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionId?:
   if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
     const bpmn = await getBpmnVersion(definitionId, versionId);
 
+    // check if getBpmnVersion returned an error that should be shown to the user instead of the bpmn
     if (typeof bpmn === 'object') {
       return bpmn;
     }

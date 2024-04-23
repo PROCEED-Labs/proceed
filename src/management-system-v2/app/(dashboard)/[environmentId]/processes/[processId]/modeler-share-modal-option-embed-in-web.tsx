@@ -30,6 +30,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
   useEffect(() => {
     const initialize = async () => {
       if (allowIframeTimestamp > 0) {
+        // generate an url with a token that contains the currently active embedding timestamp
         const url = await generateSharedViewerUrl({
           processId,
           embeddedMode: true,
@@ -47,12 +48,14 @@ const ModelerShareModalOptionEmdedInWeb = ({
     const isChecked = e.target.checked;
     if (isChecked) {
       const timestamp = Date.now();
+      // generate an url containing a token with the newly generated timestamp
       const url = await generateSharedViewerUrl({
         processId,
         embeddedMode: true,
         timestamp,
       });
       setEmbeddingUrl(url);
+      // activate embedding for that specific timestamp
       await updateProcessGuestAccessRights(
         processId,
         {
@@ -62,6 +65,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
         environment.spaceId,
       );
     } else {
+      // deactivate embedding
       await updateProcessGuestAccessRights(
         processId,
         { allowIframeTimestamp: 0 },

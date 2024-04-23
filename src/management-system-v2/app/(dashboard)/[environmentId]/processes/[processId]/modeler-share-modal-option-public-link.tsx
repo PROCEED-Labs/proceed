@@ -40,6 +40,7 @@ const ModelerShareModalOptionPublicLink = ({
   useEffect(() => {
     const generateProcessShareUrlFromOldTimestamp = async () => {
       try {
+        // generate an url with a token that contains the currently active sharing timestamp
         const url = await generateSharedViewerUrl(
           { processId, timestamp: shareTimestamp },
           selectedVersionId || undefined,
@@ -90,11 +91,14 @@ const ModelerShareModalOptionPublicLink = ({
 
     if (isChecked) {
       const timestamp = Date.now();
+      // generate an url containing a token with the newly generated timestamp
       const url = await generateSharedViewerUrl(
         { processId: processId, timestamp },
+        // if there is a specific process version open in the modeler then link to that version (otherwise latest will be shown)
         selectedVersionId || undefined,
       );
       setShareLink(url);
+      // activate sharing for that specific timestamp
       await updateProcessGuestAccessRights(
         processId,
         {
@@ -105,6 +109,7 @@ const ModelerShareModalOptionPublicLink = ({
       );
       message.success('Process shared');
     } else {
+      // deactivate sharing
       await updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId);
       setRegisteredUsersonlyChecked(false);
       setShareLink('');
@@ -162,7 +167,7 @@ const ModelerShareModalOptionPublicLink = ({
         selectedVersionId || undefined,
       );
 
-      // open the documentation page in a new tab
+      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
       window.open(url, `${processId}-${selectedVersionId}-tab`);
     }
   };

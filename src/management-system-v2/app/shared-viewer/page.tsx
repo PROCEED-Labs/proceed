@@ -20,11 +20,11 @@ interface PageProps {
 }
 
 /**
- * Will return the process meta data and bpmn for the requested process if possible (process is shared or accessible by the logged in user)
+ * Will return the process meta data and bpmn for the requested process if possible (process is shared or it is accessible by the logged in user)
  *
  * @param definitionId
  * @param timestamp the share/embed timestamp known to the user
- * @param embeddedMode if the process is requested in an embed (required the correct embed timestamp)
+ * @param embeddedMode if the process is requested in an embed (requires the correct embed timestamp)
  * @param isImport if the process is requested as part of the information about another process (will bypass the specific timestamp check)
  * @param versionId a specific version of the process to get (otherwise it will return the latest version)
  * @returns
@@ -42,13 +42,13 @@ const getProcessInfo = async (
   let isOwner = false;
   let processData;
 
-  // check if there is a session (if the user is already logged in)
+  // check if there is a session (=> the user is already logged in)
   if (session) {
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(ability);
-    // check if the current user is the owner of the process (has access to the process) => if yes give access regardless of sharing status
+    // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
   }
 

@@ -126,7 +126,7 @@ const BPMNSharedViewer = ({
   useEffect(() => {
     let viewerElement: HTMLDivElement;
 
-    // transforms an element into a representation that contains the necessary meta information that should be presented in on this page
+    // transforms an element into a representation that contains the necessary meta information that should be presented on this page
     async function transform(
       bpmnViewer: ViewerType,
       el: any, // the element to transform
@@ -213,7 +213,7 @@ const BPMNSharedViewer = ({
 
       let children: ElementInfo[] | undefined = [];
 
-      // recursively transform any children of this element
+      // recursively transform all children of this element
       const childElements = getChildElements(el);
       for (const childEl of childElements) {
         children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
@@ -282,7 +282,7 @@ const BPMNSharedViewer = ({
 
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
-      // open the print dialog automatically after everything has loaded when the page is opened from the export modal
+      // open the print dialog automatically when loading has finished if the page is opened from the export modal
       window.print();
     }
   }, [processHierarchy, defaultSettings]);
@@ -348,7 +348,7 @@ const BPMNSharedViewer = ({
         const contentTableBox = contentTableDiv.getBoundingClientRect();
         const activeLinkBox = activeLink.getBoundingClientRect();
 
-        // if the link is outside of the viewbox of the content table div scroll the div to show the link
+        // if the link is outside of the viewbox of the content table div => scroll the div to show the link
         if (activeLinkBox.bottom > contentTableBox.bottom) {
           contentTableDiv.scrollBy({ top: activeLinkBox.bottom - contentTableBox.bottom });
         } else if (activeLinkBox.top < contentTableBox.top) {

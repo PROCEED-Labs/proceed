@@ -634,7 +634,6 @@ function getMetaDataFromElement(element) {
   // check if there is a extensionElements entry that might contain a proceed:Meta element
   if (element.extensionElements && Array.isArray(element.extensionElements.values)) {
     let meta = element.extensionElements.values.find((child) => child.$type == 'proceed:Meta');
-
     if (meta) {
       for (let attribute in meta) {
         // ignore attributes defined by bpmn-moddle or emtpty attributes
@@ -652,6 +651,14 @@ function getMetaDataFromElement(element) {
               topic,
               user,
               password,
+            };
+          }
+          // TODO: Generic extraction of attribute values without distinction of cases
+          else if (attribute === 'costsPlanned') {
+            const { value, unit } = meta[attribute];
+            properties[attribute] = {
+              value,
+              unit,
             };
           } else {
             properties[attribute] = meta[attribute].value;

@@ -238,7 +238,10 @@ const ModelerToolbar = ({
               {!showMobileView && (
                 <>
                   <Tooltip title="Show XML">
-                    <Button icon={<Icon component={SvgXML} />} onClick={onOpenXmlEditor}></Button>
+                    <Button
+                      icon={<Icon aria-label="xml-sign" component={SvgXML} />}
+                      onClick={onOpenXmlEditor}
+                    ></Button>
                   </Tooltip>
                   <Tooltip title="Export">
                     <Button

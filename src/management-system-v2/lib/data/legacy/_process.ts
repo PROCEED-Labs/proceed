@@ -467,7 +467,7 @@ export async function getProcessImages(processDefinitionsId: string) {
 export async function saveProcessImage(
   processDefinitionsId: string,
   imageFileName: string,
-  image: string,
+  image: Buffer,
 ) {
   checkIfProcessExists(processDefinitionsId);
 

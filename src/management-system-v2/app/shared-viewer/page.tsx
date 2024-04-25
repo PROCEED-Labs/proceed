@@ -9,6 +9,12 @@ import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 import ErrorMessage from '../../components/error-message';
 
+import styles from './page.module.scss';
+import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
+import { Environment } from '@/lib/data/environment-schema';
+import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
+import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 import { SettingsOption } from './settings-modal';
@@ -117,10 +123,17 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
 
 const SharedViewer = async ({ searchParams }: PageProps) => {
   const { token, version, settings } = searchParams;
-  const { session } = await getCurrentUser();
+  const { session, userId } = await getCurrentUser();
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
   }
+
+  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+  userEnvironments.push(
+    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+      getEnvironmentById(environmentId),
+    ),
+  );
 
   let isOwner = false;
 
@@ -184,12 +197,22 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
         {iframeMode ? (
           <BPMNCanvas type="viewer" bpmn={{ bpmn: processData.bpmn }} />
         ) : (
-          <BPMNSharedViewer
-            isOwner={isOwner}
-            processData={processData!}
-            defaultSettings={defaultSettings}
-            availableImports={availableImports}
-          />
+          <div className={styles.ProcessOverview}>
+            <Layout
+              hideSider={true}
+              loggedIn={!!userId}
+              layoutMenuItems={[]}
+              userEnvironments={userEnvironments}
+              activeSpace={{ spaceId: '', isOrganization: false }}
+            >
+              <BPMNSharedViewer
+                isOwner={isOwner}
+                processData={processData!}
+                defaultSettings={defaultSettings}
+                availableImports={availableImports}
+              />
+            </Layout>
+          </div>
         )}
       </div>
     </>

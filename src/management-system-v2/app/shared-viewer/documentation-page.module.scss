@@ -1,75 +1,32 @@
-.ProcessOverview {
-  :global(h1.ant-typography) {
-    font-size: 4em;
-    text-align: center;
-    font-weight: 500;
-  }
-  :global(h2.ant-typography) {
-    font-size: 3em;
-    margin-bottom: 2em;
-    font-weight: 500;
-    margin-bottom: 60px;
-  }
-  :global(h3.ant-typography) {
-    font-size: 2em;
-    margin-bottom: 1.5em;
-    font-weight: 500;
+.MainContent {
+  display: flex;
+  height: 100%;
+  width: 100vw;
+
+  @media print {
+    overflow-y: visible;
   }
 
-  :global(.ant-layout-header) {
-    // hide the page header on the printed page
-    @media print {
-      display: none;
-    }
-  }
-
-  :global(.ant-layout-footer) {
-    // hide the page footer on the printed page
-    @media print {
-      display: none;
-    }
-  }
-
-  :global(.ant-layout-content) {
-    padding: 0;
-    overflow: hidden;
-
-    // needed for multi page print (otherwise only the currently visible content is printed)
-    @media print {
-      overflow: visible;
-    }
-  }
-
-  .MainContent {
-    display: flex;
+  .ProcessInfoCol {
     height: 100%;
-    width: 100vw;
+    background-color: rgb(241, 241, 241);
+    width: 100%;
+    overflow: auto;
 
     @media print {
       overflow-y: visible;
+      height: fit-content;
     }
+  }
 
-    .ProcessInfoCol {
-      height: 100%;
-      background-color: rgb(241, 241, 241);
-      width: 100%;
-      overflow: auto;
+  .ContentTableCol {
+    height: 100%;
+    max-width: 320px;
+    padding: 0 10px 0 0;
+    overflow-y: hidden;
 
-      @media print {
-        overflow-y: visible;
-        height: fit-content;
-      }
-    }
-
-    .ContentTableCol {
-      height: 100%;
-      max-width: 320px;
-      padding: 0 10px 0 0;
-      overflow-y: hidden;
-
-      @media print {
-        display: none;
-      }
+    @media print {
+      display: none;
     }
   }
 }

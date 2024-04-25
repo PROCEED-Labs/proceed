@@ -16,7 +16,6 @@ import { Button, message, Tooltip, Typography, Space, Grid, Avatar, Modal } from
 
 import { PrinterOutlined, LaptopOutlined } from '@ant-design/icons';
 
-import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
 import { copyProcesses } from '@/lib/data/processes';
 import { getProcess } from '@/lib/data/legacy/process';
@@ -86,7 +85,6 @@ const BPMNSharedViewer = ({
   );
   const [workspaces, setWorkspaces] = useState<Environment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -357,140 +355,127 @@ const BPMNSharedViewer = ({
   };
 
   return (
-    <div className={styles.ProcessOverview}>
-      <Layout
-        hideSider={true}
-        loggedIn={true}
-        layoutMenuItems={[]}
-        userEnvironments={workspaces}
-        activeSpace={{ spaceId: '', isOrganization: false }}
-      >
-        <Content
-          headerLeft={
-            <div>
-              <Space>
-                <Button
-                  size="large"
-                  onClick={() => {
-                    router.push('/');
-                  }}
-                >
-                  Go to PROCEED
-                </Button>
-                {!isOwner && (
+    <Content
+      headerLeft={
+        <div>
+          <Space>
+            <Button
+              size="large"
+              onClick={() => {
+                router.push('/');
+              }}
+            >
+              Go to PROCEED
+            </Button>
+            {!isOwner && (
+              <>
+                {session.status === 'authenticated' ? (
                   <>
-                    {session.status === 'authenticated' ? (
-                      <>
-                        <Button size="large" onClick={() => setIsModalOpen(true)}>
-                          Add to your workspace
+                    <Button size="large" onClick={() => setIsModalOpen(true)}>
+                      Add to your workspace
+                    </Button>
+                    <Modal
+                      title={
+                        <div style={{ textAlign: 'center', padding: '10px' }}>
+                          Select your workspace
+                        </div>
+                      }
+                      open={isModalOpen}
+                      closeIcon={false}
+                      onCancel={handleModalClose}
+                      zIndex={200}
+                      footer={
+                        <Button onClick={handleModalClose} style={{ border: '1px solid black' }}>
+                          Close
                         </Button>
-                        <Modal
-                          title={
-                            <div style={{ textAlign: 'center', padding: '10px' }}>
-                              Select your workspace
-                            </div>
-                          }
-                          open={isModalOpen}
-                          closeIcon={false}
-                          onCancel={handleModalClose}
-                          zIndex={200}
-                          footer={
-                            <Button
-                              onClick={handleModalClose}
-                              style={{ border: '1px solid black' }}
-                            >
-                              Close
-                            </Button>
-                          }
-                        >
-                          <Space
+                      }
+                    >
+                      <Space
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          justifyContent: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        {userWorkspaces.map((workspace) => (
+                          <Button
+                            type="default"
+                            key={workspace.key}
+                            icon={workspace.logo}
                             style={{
+                              border: '1px solid black',
+                              width: '150px',
+                              height: '100px',
                               display: 'flex',
-                              flexDirection: 'row',
-                              flexWrap: 'wrap',
+                              flexDirection: 'column',
                               justifyContent: 'center',
-                              gap: 10,
+                              alignItems: 'center',
+                              overflow: 'hidden',
+                              whiteSpace: 'normal',
+                              textOverflow: 'ellipsis',
+                              borderColor: 'black',
+                              boxShadow: '2px 2px 2px grey',
                             }}
+                            onClick={workspace.optionOnClick}
                           >
-                            {userWorkspaces.map((workspace) => (
-                              <Button
-                                type="default"
-                                key={workspace.key}
-                                icon={workspace.logo}
-                                style={{
-                                  border: '1px solid black',
-                                  width: '150px',
-                                  height: '100px',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  justifyContent: 'center',
-                                  alignItems: 'center',
-                                  overflow: 'hidden',
-                                  whiteSpace: 'normal',
-                                  textOverflow: 'ellipsis',
-                                  borderColor: 'black',
-                                  boxShadow: '2px 2px 2px grey',
-                                }}
-                                onClick={workspace.optionOnClick}
-                              >
-                                <Typography.Text
-                                  style={{
-                                    margin: '5px',
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  {workspace.label}
-                                </Typography.Text>
-                              </Button>
-                            ))}
-                          </Space>
-                        </Modal>
-                      </>
-                    ) : (
-                      <Button size="large" onClick={redirectToLoginPage}>
-                        Add to your workspace
-                      </Button>
-                    )}
+                            <Typography.Text
+                              style={{
+                                margin: '5px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {workspace.label}
+                            </Typography.Text>
+                          </Button>
+                        ))}
+                      </Space>
+                    </Modal>
                   </>
+                ) : (
+                  <Button size="large" onClick={redirectToLoginPage}>
+                    Add to your workspace
+                  </Button>
                 )}
-                <Tooltip title="Print">
-                  <Button size="large" icon={<PrinterOutlined />} onClick={() => window.print()} />
-                </Tooltip>
-                <SettingsModal checkedSettings={checkedSettings} onConfirm={setCheckedSettings} />
-              </Space>
-            </div>
-          }
-          headerCenter={
-            <Typography.Text strong style={{ padding: '0 5px' }}>
-              {processData.name}
-            </Typography.Text>
-          }
-        >
-          <div className={styles.MainContent}>
-            <div className={styles.ProcessInfoCol} ref={mainContent}>
-              <ProcessDocument
-                settings={activeSettings}
-                processHierarchy={processHierarchy}
-                processData={processData}
-                version={versionInfo}
-              />
-            </div>
-            {breakpoint.lg && (
-              <div className={styles.ContentTableCol} ref={contentTableRef}>
-                <TableOfContents
-                  settings={activeSettings}
-                  processHierarchy={processHierarchy}
-                  affix={false}
-                  getContainer={() => mainContent.current!}
-                  targetOffset={100}
-                  onChange={handleContentTableChange}
-                />
-              </div>
+              </>
             )}
+            <Tooltip title="Print">
+              <Button size="large" icon={<PrinterOutlined />} onClick={() => window.print()} />
+            </Tooltip>
+            <SettingsModal checkedSettings={checkedSettings} onConfirm={setCheckedSettings} />
+          </Space>
+        </div>
+      }
+      headerCenter={
+        <Typography.Text strong style={{ padding: '0 5px' }}>
+          {processData.name}
+        </Typography.Text>
+      }
+    >
+      <div className={styles.MainContent}>
+        <div className={styles.ProcessInfoCol} ref={mainContent}>
+          <ProcessDocument
+            settings={activeSettings}
+            processHierarchy={processHierarchy}
+            processData={processData}
+            version={versionInfo}
+          />
+        </div>
+        {breakpoint.lg && (
+          <div className={styles.ContentTableCol} ref={contentTableRef}>
+            <TableOfContents
+              settings={activeSettings}
+              processHierarchy={processHierarchy}
+              affix={false}
+              getContainer={() => mainContent.current!}
+              targetOffset={100}
+              onChange={handleContentTableChange}
+            />
           </div>
-        </Content>
-      </Layout>
-    </div>
+        )}
+      </div>
+    </Content>
   );
 };
 

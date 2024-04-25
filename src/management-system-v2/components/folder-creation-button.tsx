@@ -1,37 +1,29 @@
 'use client';
 
-import React, { ReactNode, useState, useTransition } from 'react';
-import { App, Button, Form, Input, Modal } from 'antd';
+import { FC, ReactNode, useState, useTransition } from 'react';
+import { App, Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
-import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import { FolderUserInputSchema } from '@/lib/data/folder-schema';
+import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
-import TextArea from 'antd/es/input/TextArea';
+import FolderModal from './folder-modal';
+import useParseZodErrors from '@/lib/useParseZodErrors';
 
-type ProcessCreationButtonProps = ButtonProps & {
+type FolderCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;
 };
 
-/**
- *
- * Button to create Processes including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
- */
-const FolderCreationButton: React.FC<ProcessCreationButtonProps> = ({
-  wrapperElement,
-  ...props
-}) => {
+const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, ...props }) => {
   const { message } = App.useApp();
-  const [form] = Form.useForm();
-  const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
   const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const createFolder = (values: Record<string, any>) => {
+  const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       try {
         const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
@@ -58,32 +50,18 @@ const FolderCreationButton: React.FC<ProcessCreationButtonProps> = ({
           Create Folder
         </Button>
       )}
-      <Modal
-        title="Create Folder"
-        closeIcon={null}
+
+      <FolderModal
         open={modalOpen}
-        destroyOnClose
-        onOk={form.submit}
-        onCancel={() => setModalOpen(false)}
-      >
-        <Form onFinish={createFolder} form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Folder name"
-            required
-            {...antDesignInputProps(errors, 'name')}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-            {...antDesignInputProps(errors, 'description')}
-          >
-            <TextArea />
-          </Form.Item>
-        </Form>
-      </Modal>
+        setOpen={setModalOpen}
+        spaceId={spaceId}
+        parentId={folderId}
+        onSubmit={createFolder}
+        modalProps={{
+          title: 'Create Folder',
+          okButtonProps: { loading: isLoading },
+        }}
+      />
     </>
   );
 };

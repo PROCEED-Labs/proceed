@@ -40,9 +40,9 @@ export class ProcessModelerPage {
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
-    await page.getByRole('button', { name: 'New Process' }).click();
+    await page.getByRole('button', { name: 'plus New' }).click();
+    await page.getByRole('menuitem', { name: 'file Create Process' }).click();
     await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
-    await page.getByLabel('Process Description').click();
     await page.getByLabel('Process Description').fill('Process Description');
     await page.getByRole('button', { name: 'Create' }).click();
     await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);

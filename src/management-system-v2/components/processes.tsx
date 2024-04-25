@@ -11,6 +11,7 @@ import React, {
   useTransition,
   ClassAttributes,
   ReactHTML,
+  useMemo,
 } from 'react';
 import {
   Space,
@@ -23,6 +24,7 @@ import {
   Dropdown,
   Card,
   Badge,
+  MenuProps,
 } from 'antd';
 import cn from 'classnames';
 import {
@@ -32,6 +34,9 @@ import {
   AppstoreOutlined,
   PlusOutlined,
   ImportOutlined,
+  ScissorOutlined,
+  CopyOutlined,
+  FolderAddOutlined,
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';
@@ -75,6 +80,15 @@ import {
 } from '@dnd-kit/core';
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import { create } from 'zustand';
+
+export const contextMenuStore = create<{
+  setSelected: (id?: string) => void;
+  selected?: string;
+}>((set) => ({
+  setSelected: (id) => set({ selected: id }),
+  selected: undefined,
+}));
 
 export type DragInfo =
   | { dragging: false }
@@ -92,7 +106,25 @@ type ProcessesProps = {
   folder: Folder;
 };
 
-const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
+const Processes = ({ processes: _processes, favourites, folder }: ProcessesProps) => {
+  const processes = useMemo(() => {
+    const newProcesses = [..._processes];
+
+    if (folder.parentId)
+      newProcesses.unshift({
+        name: '< Parent Folder >',
+        parentId: null,
+        type: 'folder',
+        id: folder.parentId,
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        environmentId: '',
+      });
+
+    return newProcesses;
+  }, [_processes]);
+
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();
 
@@ -181,6 +213,13 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+  filteredData.sort((a, b) => {
+    if (a.type === 'folder' && b.type == 'folder') return 0;
+    if (a.type === 'folder') return -1;
+    if (b.type === 'folder') return 1;
+
+    return 0;
+  });
 
   const CollapsePannelRef = useRef<MetaPanelRefType>(null);
 
@@ -232,6 +271,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     { dependencies: [selectedRowKeys.length] },
   );
 
+  // NOTE: I plan to move this to a separate file
   const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
   const [movingItem, startMovingItemTransition] = useTransition();
   const dndSensors = useSensors(
@@ -245,6 +285,9 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
   const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
     setDragInfo({ dragging: false });
+
+    // prevent parent folder from being dragged
+    if (e.active.id === folder.parentId) return;
 
     const active = processes.find((item) => item.id === e.active.id);
     const over = processes.find((item) => item.id === e.over?.id);
@@ -290,20 +333,63 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     });
   };
 
+  const selectedContextMenuItemId = contextMenuStore((store) => store.selected);
+  const selectedContextMenuItem = selectedContextMenuItemId
+    ? processes.find((item) => item.id === selectedContextMenuItemId)
+    : undefined;
+
+  const contextMenuItems: MenuProps['items'] = selectedContextMenuItem
+    ? [
+        {
+          type: 'group',
+          label: selectedContextMenuItem.name,
+          children: [
+            {
+              key: 'cut-selected',
+              label: 'Cut',
+              icon: <ScissorOutlined />,
+            },
+            {
+              key: 'copy-selected',
+              label: 'Copy',
+              icon: <CopyOutlined />,
+            },
+            {
+              key: 'delete-selected',
+              label: 'Delete',
+              icon: <DeleteOutlined />,
+            },
+            {
+              key: 'move-selected',
+              label: 'Move',
+              icon: <FolderAddOutlined />,
+            },
+            {
+              key: 'item-divider',
+              type: 'divider',
+            },
+          ],
+        },
+      ]
+    : [];
+
+  const defaultDropdownItems = [
+    {
+      key: 'create-process',
+      label: <ProcessCreationButton wrapperElement="Create Process" />,
+      icon: <FileOutlined />,
+    },
+    {
+      key: 'create-folder',
+      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      icon: <FolderOutlined />,
+    },
+  ];
   return (
     <>
       <Dropdown
         menu={{
-          items: [
-            {
-              key: 'create-process',
-              label: <ProcessCreationButton wrapperElement="Create Process" />,
-            },
-            {
-              key: 'create-folder',
-              label: <FolderCreationButton wrapperElement="Create Folder" />,
-            },
-          ],
+          items: [...contextMenuItems, ...defaultDropdownItems],
         }}
         trigger={['contextMenu']}
       >
@@ -317,15 +403,22 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {breakpoint.xs ? null : (
-                      <>
-                        <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                          {breakpoint.xl ? 'New Process' : 'New'}
-                        </ProcessCreationButton>
+                    {!breakpoint.xs && (
+                      <Space>
+                        <Dropdown
+                          trigger={['click']}
+                          menu={{
+                            items: defaultDropdownItems,
+                          }}
+                        >
+                          <Button type="primary" icon={<PlusOutlined />}>
+                            New
+                          </Button>
+                        </Dropdown>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>
-                      </>
+                      </Space>
                     )}
 
                     {selectedRowKeys.length ? (
@@ -393,6 +486,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
               ) : (
                 <ProcessList
                   data={filteredData}
+                  folder={folder}
                   dragInfo={dragInfo}
                   setSelectionElements={setSelectedRowElements}
                   selection={selectedRowKeys}
@@ -517,7 +611,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
 export default Processes;
 
-// NOTE I plan to move this to a separate file
+// NOTE: I plan to move this to a separate file
 export function DraggableElementGenerator<TPropId extends string>(
   element: keyof ReactHTML,
   propId: TPropId,
@@ -535,7 +629,7 @@ export function DraggableElementGenerator<TPropId extends string>(
     } = useDraggable({ id: elementId });
 
     const { setNodeRef: setNodeRefDroppable, over } = useDroppable({
-      id: props[propId],
+      id: elementId,
     });
 
     const className = cn(

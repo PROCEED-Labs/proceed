@@ -31,15 +31,22 @@ import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import { DragInfo, DraggableElementGenerator, ProcessListProcess } from './processes';
+import {
+  DragInfo,
+  DraggableElementGenerator,
+  ProcessListProcess,
+  contextMenuStore,
+} from './processes';
 import ConfirmationButton from './confirmation-button';
 import FavouriteStar from './favouriteStar';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+import { Folder } from '@/lib/data/folder-schema';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
+  folder: Folder;
   selection: Key[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
@@ -65,6 +72,7 @@ const numberOfRows =
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
+  folder,
   selection,
   setSelectionElements,
   isLoading,
@@ -87,6 +95,10 @@ const ProcessList: FC<ProcessListProps> = ({
   const addPreferences = useUserPreferences.use.addPreferences();
   const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
+
+  const setContextMenuItem = contextMenuStore((store) => store.setSelected);
+
+  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -205,9 +217,12 @@ const ProcessList: FC<ProcessListProps> = ({
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
+            // TODO color
+            color: record.id === folder.parentId ? 'grey' : undefined,
+            fontStyle: record.id === folder.parentId ? 'italic' : undefined,
           }}
         >
-          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.value}
         </div>
       ),
       responsive: ['xs', 'sm'],
@@ -281,16 +296,17 @@ const ProcessList: FC<ProcessListProps> = ({
           </Dropdown>
         </div>
       ),
-      render: (id, record) => (
-        <Row
-          justify="space-evenly"
-          style={{
-            opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
-          }}
-        >
-          {record.type !== 'folder' ? actionBarGenerator(record) : null}
-        </Row>
-      ),
+      render: (id, record) =>
+        id !== folder.parentId && (
+          <Row
+            justify="space-evenly"
+            style={{
+              opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
+            }}
+          >
+            {record.type !== 'folder' ? actionBarGenerator(record) : null}
+          </Row>
+        ),
       responsive: ['xl'],
     },
     {
@@ -300,15 +316,7 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Meta Data Button',
       title: '',
       render: () => (
-        <Button
-          style={{ float: 'right' }}
-          type="text"
-          onClick={(e: any) => {
-            // e.stopPropagation()
-            e.proceedClickedInfoButton = true;
-            showMobileMetaData();
-          }}
-        >
+        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
           <InfoCircleOutlined />
         </Button>
       ),
@@ -388,6 +396,10 @@ const ProcessList: FC<ProcessListProps> = ({
           }
         },
         onMouseLeave: () => setHovered(undefined),
+        onContextMenu: () => {
+          setSelectionElements([record]);
+          setContextMenuItem(record.id);
+        },
       })}
       components={{
         body: {

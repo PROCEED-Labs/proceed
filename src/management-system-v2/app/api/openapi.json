@@ -1,0 +1,411 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PROCEED Management System API",
+    "description": "### About us\nPROCEED is a decentralized Business Process Management System (dBPMS) specialized on the creation, execution and monitoring of individual IoT processes. The execution is done decentralized without a controlling instance. Instead there are multiple machines that cooperate with each other to achieve the designed process goal. Thereby, all machines communicate their capabilities to the vicinity and the process is taking the best fitting one for its next execution ##step.\n\n### More resources: \n- [Documentation](https://docs.proceed-labs.org/)\n- [Wiki](https://github.com/PROCEED-Labs/proceed/wiki)",
+    "contact": {
+      "email": "proceed@snet.tu-berlin.de",
+      "url": "mailto:proceed@snet.tu-berlin.de",
+      "name": "proceed"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://github.com/PROCEED-Labs/proceed/blob/main/LICENSE"
+    },
+    "version": "1.0.0"
+  },
+  "externalDocs": {
+    "description": "Find out more about spec",
+    "url": "https://github.com/PROCEED-Labs/proceed/wiki"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:3000/api",
+      "description": "Managent system in development"
+    },
+    {
+      "url": "https://proceed.snet.tu-berlin.de/api",
+      "description": ""
+    }
+  ],
+  "tags": [
+    {
+      "name": "Process",
+      "description": "All endpoints that deal with processes."
+    }
+  ],
+  "security": [
+    {
+      "id": [],
+      "x-csrf-token": [],
+      "x-csrf": []
+    }
+  ],
+  "paths": {
+    "/process/{definitionId}/images": {
+      "get": {
+        "operationId": "getImageFilenamesByDefinitionId",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 0,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Process not found"
+          }
+        },
+        "description": "Get all image filenames used in a process."
+      },
+      "post": {
+        "operationId": "postImageByProcessId",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/png image/svg+xml image/jpeg": {}
+          },
+          "description": "Image file to be stored"
+        },
+        "responses": {
+          "201": {
+            "description": "Image created in the server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "imageFileName": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Process not found"
+          },
+          "413": {
+            "description": "Image size exceed"
+          }
+        },
+        "description": "Post a new image for a process."
+      }
+    },
+    "/process/{definitionId}/images/{imageFileName}": {
+      "get": {
+        "description": "Get a specific image of a process.",
+        "operationId": "getImageByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "imageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png image/svg+xml image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "description": "Requested image\n"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Process not found"
+          }
+        }
+      },
+      "put": {
+        "description": "Update a specific image of a process.",
+        "operationId": "updateImageByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "imageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/png image/svg+xml image/jpeg": {}
+          },
+          "description": "Image file to be stored"
+        },
+        "responses": {
+          "200": {
+            "description": "Image updated"
+          },
+          "400": {
+            "$ref": "#/components/responses/400_error_message"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Process not found"
+          },
+          "413": {
+            "description": "Image size exceed"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteImageByFilename",
+        "tags": ["Process"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/definitionId"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "ImageFileName",
+            "in": "path",
+            "required": true,
+            "description": "Filename of the image"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request returns 200 wether the image exists or not"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_validationFailed"
+          },
+          "404": {
+            "description": "Process not found"
+          }
+        },
+        "description": "Delete a specific image of a process."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "image": {
+        "title": "image",
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": ["Buffer"]
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "x-csrf-token": {
+        "name": "Cross-site request forgery token",
+        "type": "apiKey",
+        "in": "header",
+        "description": "Cross-site request forgery token obtained after logging in."
+      },
+      "x-csrf": {
+        "name": "Cross-site request forgery enabled",
+        "type": "apiKey",
+        "in": "header",
+        "description": "Needs to be set to '1' in order for the x-csrf-token to be acknowledged by the server and make authenticated requests."
+      },
+      "id": {
+        "name": "Session id",
+        "type": "apiKey",
+        "in": "cookie",
+        "description": "Session id given by the server after logging in."
+      }
+    },
+    "parameters": {
+      "definitionId": {
+        "name": "definitionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Id of an existing process"
+      }
+    },
+    "responses": {
+      "400_Error_Json": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "string",
+              "description": "Error description."
+            }
+          },
+          "text/html": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "headers": {}
+      },
+      "400_error_message": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "": {
+                  "type": "string"
+                }
+              },
+              "required": ["error"]
+            }
+          }
+        }
+      },
+      "400_error_string_or_message": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "400_error_string": {
+        "description": "400 Error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "401_unauthenticated": {
+        "description": "Authentication error.",
+        "content": {
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "description": "Authentication error."
+            }
+          }
+        }
+      },
+      "403_validationFailed": {
+        "description": "Request validation failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "x-examples": {
+                "Example 1": {
+                  "aditionalProperties": true
+                }
+              },
+              "description": "Request validation error."
+            }
+          },
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "description": "Authorization error."
+            }
+          }
+        }
+      }
+    }
+  }
+}

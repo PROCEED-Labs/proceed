@@ -51,7 +51,7 @@ function getCachedRulesForUser(userId: string, environmentId: string) {
 
 /**
  * Get a user's applied rules for a given environment.
- * If no environmentId is specified, the user's personal environment is used.
+ * If no environmentId is specified, the user's personal space is used.
  * */
 export async function getUserRules(userId: string, environmentId: string) {
   // let userRules = getCachedRulesForUser(userId, environmentId);

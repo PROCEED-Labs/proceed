@@ -44,7 +44,7 @@ const UserSidePanel: FC<UserSidePanelProps> = ({
           }
           minWidth={sidePanelOpen ? 300 : 30}
           maxWidth={600}
-          style={{ position: 'relative' }}
+          style={{ position: 'relative', marginLeft: '20px' }}
           onWidthChange={(width) =>
             setUserPreferences({
               'user-page-side-panel': {

@@ -84,7 +84,7 @@ const Layout: FC<
             <div style={{ padding: '1rem' }}>
               <Select
                 options={userEnvironments.map((environment) => ({
-                  label: environment.organization ? environment.name : 'Personal Environment',
+                  label: environment.organization ? environment.name : 'My Space',
                   value: environment.id,
                 }))}
                 defaultValue={activeSpace.spaceId}
@@ -106,7 +106,7 @@ const Layout: FC<
 
           <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
         </AntLayout>
-        <AntLayout.Footer className={cn(styles.Footer)}>© 2023 PROCEED Labs GmbH</AntLayout.Footer>
+        <AntLayout.Footer className={cn(styles.Footer)}>© 2024 PROCEED Labs GmbH</AntLayout.Footer>
       </AntLayout>
 
       <Drawer

@@ -157,6 +157,7 @@ const ModelerToolbar = ({
     <>
       <Toolbar className={styles.Toolbar}>
         <Space
+          aria-label="general-modeler-toolbar"
           style={{
             width: '100%',
             justifyContent: 'space-between',

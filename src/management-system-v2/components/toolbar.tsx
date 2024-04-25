@@ -11,6 +11,7 @@ type ToolbarProps = {
 export const Toolbar: React.FC<PropsWithChildren<ToolbarProps>> = ({ children, className }) => {
   return (
     <div
+      role="toolbar"
       className={className}
       style={{ position: 'absolute', zIndex: 10, padding: '12px', width: '100%' }}
     >

@@ -608,6 +608,7 @@ const Processes = ({ processes, folder }: ProcessesProps) => {
                     selection={selectedRowKeys}
                     setSelectionElements={setSelectedRowElements}
                     setShowMobileMetaData={setShowMobileMetaData}
+                    selectedElements={selectedRowElements}
                   />
                 ) : (
                   <ProcessList

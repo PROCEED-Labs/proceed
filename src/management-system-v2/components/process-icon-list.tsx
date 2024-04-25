@@ -13,6 +13,7 @@ import { Grid } from 'antd';
 type IconViewProps = {
   data: ProcessListProcess[];
   selection: Key[];
+  selectedElements: ProcessListProcess[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
@@ -20,6 +21,7 @@ type IconViewProps = {
 const IconView: FC<IconViewProps> = ({
   data,
   selection,
+  selectedElements,
   setSelectionElements,
   setShowMobileMetaData,
 }) => {
@@ -34,32 +36,8 @@ const IconView: FC<IconViewProps> = ({
   >[];
 
   return (
-    <>
-      <ScrollBar width="12px">
-        {folders.length > 0 && (
-          <div
-            className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-              justifyContent: 'space-between',
-              gridGap: '20px',
-              marginBottom: '20px',
-            }}
-          >
-            {folders.map((item) => (
-              <TabCard
-                setShowMobileMetaData={setShowMobileMetaData}
-                item={item}
-                completeList={data!}
-                selection={selection}
-                setSelectionElements={setSelectionElements}
-                tabcard={false}
-              />
-            ))}
-          </div>
-        )}
-
+    <ScrollBar width="12px">
+      {folders.length > 0 && (
         <div
           className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
           style={{
@@ -67,21 +45,47 @@ const IconView: FC<IconViewProps> = ({
             gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
             justifyContent: 'space-between',
             gridGap: '20px',
+            marginBottom: '20px',
           }}
         >
-          {processes.map((item) => (
+          {folders.map((item) => (
             <TabCard
               setShowMobileMetaData={setShowMobileMetaData}
               item={item}
               completeList={data!}
               selection={selection}
+              selectedElements={selectedElements}
               setSelectionElements={setSelectionElements}
               tabcard={false}
+              key={item.id}
             />
           ))}
         </div>
-      </ScrollBar>
-    </>
+      )}
+
+      <div
+        className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+          justifyContent: 'space-between',
+          gridGap: '20px',
+        }}
+      >
+        {processes.map((item) => (
+          <TabCard
+            setShowMobileMetaData={setShowMobileMetaData}
+            item={item}
+            completeList={data!}
+            selection={selection}
+            selectedElements={selectedElements}
+            setSelectionElements={setSelectionElements}
+            tabcard={false}
+            key={item.id}
+          />
+        ))}
+      </div>
+    </ScrollBar>
   );
 };
 

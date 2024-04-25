@@ -17,6 +17,7 @@ const DraggableDiv = DraggableElementGenerator('div', 'item-id');
 type TabCardProps = {
   item: ProcessListProcess;
   selection: Key[];
+  selectedElements: ProcessListProcess[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   tabcard?: boolean;
   completeList: ProcessListProcess[];
@@ -112,6 +113,7 @@ const generateContentList = (
 const TabCard: FC<TabCardProps> = ({
   item,
   selection,
+  selectedElements,
   setSelectionElements,
   tabcard,
   completeList,
@@ -122,7 +124,7 @@ const TabCard: FC<TabCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const isVisible = useLazyLoading(cardRef);
   const environment = useEnvironment();
-  const setSelectredContextMenuItem = contextMenuStore((store) => store.setSelected);
+  const setContextMenuItems = contextMenuStore((store) => store.setSelected);
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
@@ -208,7 +210,14 @@ const TabCard: FC<TabCardProps> = ({
             item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
           router.push(spaceURL(environment, url));
         }}
-        onContextMenu={() => setSelectredContextMenuItem([item])}
+        onContextMenu={() => {
+          if (selection.includes(item.id)) {
+            setContextMenuItems(selectedElements);
+          } else {
+            setSelectionElements([item]);
+            setContextMenuItems([item]);
+          }
+        }}
       >
         {item.type !== 'folder' ? (
           generateContentList(item, isVisible)[activeTabKey]

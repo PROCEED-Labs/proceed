@@ -454,7 +454,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     if (folderIds.length > 0) promises.push(deleteFolder(folderIds, space.spaceId));
 
     const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
-    if (folderIds.length > 0) promises.push(deleteProcesses(processIds, space.spaceId));
+    if (processIds.length > 0) promises.push(deleteProcesses(processIds, space.spaceId));
 
     await Promise.allSettled(promises);
 

@@ -150,7 +150,7 @@ const ProcessList: FC<ProcessListProps> = ({
           <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
-                title="Delete Process"
+                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
                 description="Are you sure you want to delete the selected process?"
                 onConfirm={() => onDeleteItem([record])}
                 buttonProps={{

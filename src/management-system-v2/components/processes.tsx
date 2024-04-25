@@ -366,39 +366,6 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
           </Button>
           ) : undefined} */}
                   </span>
-
-                  {/* <!-- FloatButtonGroup needs a z-index of 101
-        since BPMN Logo of the viewer has an z-index of 100 --> */}
-                  {breakpoint.xl ? undefined : (
-                    <FloatButton.Group
-                      className={styles.FloatButton}
-                      trigger="click"
-                      type="primary"
-                      style={{ marginBottom: '60px', marginRight: '10px', zIndex: '101' }}
-                      icon={<PlusOutlined />}
-                    >
-                      <Tooltip trigger="hover" placement="left" title="Create a process">
-                        <FloatButton
-                          icon={
-                            <ProcessCreationButton
-                              type="text"
-                              icon={<PlusOutlined style={{ marginLeft: '-0.81rem' }} />}
-                            />
-                          }
-                        />
-                      </Tooltip>
-                      <Tooltip trigger="hover" placement="left" title="Import a process">
-                        <FloatButton
-                          icon={
-                            <ProcessImportButton
-                              type="text"
-                              icon={<ImportOutlined style={{ marginLeft: '-0.81rem' }} />}
-                            />
-                          }
-                        />
-                      </Tooltip>
-                    </FloatButton.Group>
-                  )}
                 </span>
               }
               searchProps={{

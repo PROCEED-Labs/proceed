@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import styles from './planned-duration-input.module.scss';
 
-import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Space } from 'antd';
+import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row } from 'antd';
 
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, EditOutlined } from '@ant-design/icons';
 import FormSubmitButton from '@/components/form-submit-button';
 import { parseISODuration } from '@proceed/bpmn-helper/src/getters';
 import { calculateTimeFormalExpression } from '@/lib/helpers/timeHelper';
@@ -29,6 +29,18 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
   close,
 }) => {
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    const { years, months, days, hours, minutes, seconds } = durationValues;
+    form.setFieldsValue({
+      years: years || 0,
+      months: months || 0,
+      days: days || 0,
+      hours: hours || 0,
+      minutes: minutes || 0,
+      seconds: seconds || 0,
+    });
+  }, [form, durationValues]);
 
   // TODO: Create generic Modal using these widths for different viewport sizes
   const breakpoint = Grid.useBreakpoint();
@@ -70,18 +82,15 @@ const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
         ></FormSubmitButton>,
       ]}
     >
-      <Form
-        layout="inline"
-        form={form}
-        initialValues={durationValues}
-        style={{ marginBlock: '1.5rem' }}
-      >
+      <Form form={form} initialValues={durationValues} style={{ marginBlock: '1.5rem' }}>
         <Row gutter={16}>
           {Object.keys(durationValues).map((key) => {
             return (
               <Col span={24} key={key}>
                 <Form.Item name={key} style={{ marginBottom: '0.2rem' }}>
                   <InputNumber
+                    name={key}
+                    defaultValue={0}
                     addonBefore={key.charAt(0).toUpperCase() + key.slice(1)}
                     min={0}
                   ></InputNumber>
@@ -107,15 +116,51 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
 
   const durationValues = parseISODuration(timePlannedDuration);
 
+  const durationString = ((durationValues: DurationValues) => {
+    const { years, months, days, hours, minutes, seconds } = durationValues;
+
+    const numberOfDefinedDurationValues = Object.values(durationValues).filter(
+      (val) => typeof val === 'number',
+    ).length;
+
+    let durationString = '';
+
+    if (numberOfDefinedDurationValues < 4) {
+      durationString =
+        (years ? `${years} Years, ` : '') +
+        (months ? `${months} Months, ` : '') +
+        (days ? `${days} Days, ` : '') +
+        (hours ? `${hours} Hours, ` : '') +
+        (minutes ? `${minutes} Minutes, ` : '') +
+        (seconds ? `${seconds} Seconds ` : '');
+    } else {
+      durationString =
+        (years ? `${years} Y, ` : '') +
+        (months ? `${months} M, ` : '') +
+        (days ? `${days} D, ` : '') +
+        (hours ? `${hours} h, ` : '') +
+        (minutes ? `${minutes} m, ` : '') +
+        (seconds ? `${seconds} s ` : '');
+    }
+
+    return durationString.replace(/,\s*$/, ''); // if string ends with a comma, remove that
+  })(durationValues);
+
   return (
     <>
       <Input
         addonBefore={<ClockCircleOutlined className="clock-icon" />}
+        readOnly
+        value={durationString}
         placeholder="Planned Duration"
-        value={timePlannedDuration}
-        onClick={() => {
-          setIsPlannedDurationModalOpen(true);
-        }}
+        suffix={
+          <EditOutlined
+            onClick={() => {
+              setIsPlannedDurationModalOpen(true);
+            }}
+            data-testid="plannedDurationInputEdit"
+          ></EditOutlined>
+        }
       />
       <PlannedDurationModal
         durationValues={durationValues}

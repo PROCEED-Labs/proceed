@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Form, Input, Modal } from 'antd';
 import type { ModalProps } from 'antd';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
@@ -10,14 +10,22 @@ import TextArea from 'antd/es/input/TextArea';
 type FolderModalProps = {
   spaceId: string;
   parentId: string;
-  onSubmit: (values: FolderUserInput, initialValues?: Folder) => void;
+  onSubmit: (values: FolderUserInput) => void;
   modalProps?: ModalProps;
+  open: boolean;
+  close: () => void;
+  initialValues?: Partial<Folder>;
 };
 
-const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModalProps) => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [initialValues, setInitialValues] = useState<Folder | undefined>(undefined);
-
+const FolderModal = ({
+  spaceId,
+  parentId,
+  onSubmit,
+  modalProps,
+  open,
+  close,
+  initialValues,
+}: FolderModalProps) => {
   const [form] = Form.useForm();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
 
@@ -25,26 +33,25 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
     const values = parseInput({ ...formInput, environmentId: spaceId, parentId });
     if (!values) return;
 
-    onSubmit(values, initialValues);
+    onSubmit(values);
   }
 
-  function open(folder?: Folder) {
-    form.resetFields();
-    setInitialValues(folder);
-    setModalOpen(true);
-  }
+  useEffect(() => {
+    if (initialValues) form.setFieldsValue(initialValues);
+    else form.resetFields();
+  }, [open, initialValues]);
 
-  const modal = (
+  return (
     <Modal
       title="Folder"
       closeIcon={null}
       destroyOnClose
       {...modalProps}
-      open={modalOpen}
+      open={open}
+      onCancel={() => close()}
       onOk={form.submit}
-      onCancel={() => setModalOpen(false)}
     >
-      <Form onFinish={checkInput} initialValues={initialValues} form={form} layout="vertical">
+      <Form onFinish={checkInput} form={form} layout="vertical" initialValues={initialValues}>
         <Form.Item
           name="name"
           label="Folder name"
@@ -63,13 +70,6 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
       </Form>
     </Modal>
   );
-
-  return {
-    modal,
-    open,
-    close: () => setModalOpen(false),
-    errors,
-  };
 };
 
-export default useFolderModal;
+export default FolderModal;

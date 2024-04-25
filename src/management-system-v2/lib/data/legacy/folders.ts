@@ -19,7 +19,6 @@ export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {
       folder: Folder;
-      // NOTE: the fact that folders don't have a type is needed to differentiate them
       children: FolderChildren[];
     };
   }>;

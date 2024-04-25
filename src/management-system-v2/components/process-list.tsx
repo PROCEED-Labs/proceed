@@ -27,7 +27,6 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import classNames from 'classnames';
 import { generateDateString, spaceURL } from '@/lib/utils';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -39,6 +38,8 @@ import {
   contextMenuStore,
 } from './processes';
 import ConfirmationButton from './confirmation-button';
+import FavouriteStar from './favouriteStar';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
@@ -92,9 +93,10 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const lastProcessId = useLastClickedStore((state) => state.processId);
   const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
+  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const selectedColumns = useUserPreferences.use['process-list-columns']();
+  const { favourites: favProcesses } = useFavouriteProcesses();
   const environment = useEnvironment();
 
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
@@ -105,13 +107,21 @@ const ProcessList: FC<ProcessListProps> = ({
     setShowMobileMetaData(true);
   };
 
+  const processListColumnsMobile = [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Meta Data Button',
+  ];
+
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
-      const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
+      const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
       return (
         <>
           {record.type !== 'folder' && (
-            <AuthCan resource={resource} action="create">
+            <AuthCan {...resource} create>
               <Tooltip placement="top" title={'Copy'}>
                 <CopyOutlined
                   onClick={(e) => {
@@ -129,7 +139,7 @@ const ProcessList: FC<ProcessListProps> = ({
             </Tooltip>
           )}
 
-          <AuthCan resource={resource} action="update">
+          <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
               <EditOutlined onClick={() => onEditItem(record)} />
             </Tooltip>
@@ -137,7 +147,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan action="delete" resource={resource}>
+          <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title="Delete Process"
@@ -184,7 +194,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: <StarOutlined />,
       dataIndex: 'id',
-      key: '',
+      key: 'Favorites',
       width: '40px',
       render: (id, _, index) =>
         id !== folder.parentId && (
@@ -276,9 +286,8 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       fixed: 'right',
       width: 160,
-      // add title but only if at least one row is selected
       dataIndex: 'id',
-      key: '',
+      key: 'Selected Columns',
       title: (
         <div style={{ float: 'right' }}>
           <Dropdown
@@ -312,7 +321,7 @@ const ProcessList: FC<ProcessListProps> = ({
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
-      key: '',
+      key: 'Meta Data Button',
       title: '',
       render: (id) =>
         id !== folder.parentId && (
@@ -324,7 +333,9 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  const columnsFiltered = columns.filter((c) => selectedColumns.includes(c?.key as string));
+  const columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+    : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
     <Table

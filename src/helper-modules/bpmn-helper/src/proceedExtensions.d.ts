@@ -37,4 +37,5 @@ export function setProceedElement(
   proceedElementType: any,
   value: any,
   attributes?: {},
+  oldAttributes?: {},
 ): {};

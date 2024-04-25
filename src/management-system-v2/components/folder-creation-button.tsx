@@ -1,13 +1,14 @@
 'use client';
 
-import { FC, ReactNode, useTransition } from 'react';
+import { FC, ReactNode, useState, useTransition } from 'react';
 import { App, Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
-import { FolderUserInput } from '@/lib/data/folder-schema';
+import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
-import useFolderModal from './folder-modal';
+import FolderModal from './folder-modal';
+import useParseZodErrors from '@/lib/useParseZodErrors';
 
 type FolderCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;
@@ -16,45 +17,51 @@ type FolderCreationButtonProps = ButtonProps & {
 const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, ...props }) => {
   const { message } = App.useApp();
   const router = useRouter();
-  const space = useEnvironment();
+  const spaceId = useEnvironment().spaceId;
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
   const [isLoading, startTransition] = useTransition();
+  const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
       try {
-        const response = await serverCreateFolder(values);
+        const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
+        if (!folderInput) throw new Error();
+
+        const response = await serverCreateFolder(folderInput);
         if (response && 'error' in response) throw new Error();
 
         router.refresh();
         message.open({ type: 'success', content: 'Folder Created' });
-        close();
+        setModalOpen(false);
       } catch (e) {
         message.open({ type: 'error', content: 'Something went wrong' });
       }
     });
   };
 
-  const { modal, open, close } = useFolderModal({
-    spaceId: space.spaceId,
-    parentId: folderId,
-    onSubmit: createFolder,
-    modalProps: {
-      title: 'Create Folder',
-      okButtonProps: { loading: isLoading },
-    },
-  });
-
   return (
     <>
       {wrapperElement ? (
-        <div onClick={() => open()}>{wrapperElement}</div>
+        <div onClick={() => setModalOpen(true)}>{wrapperElement}</div>
       ) : (
-        <Button {...props} onClick={() => open()}>
+        <Button {...props} onClick={() => setModalOpen(true)}>
           Create Folder
         </Button>
       )}
-      {modal}
+
+      <FolderModal
+        open={modalOpen}
+        close={() => setModalOpen(false)}
+        spaceId={spaceId}
+        parentId={folderId}
+        onSubmit={createFolder}
+        modalProps={{
+          title: 'Create Folder',
+          okButtonProps: { loading: isLoading },
+        }}
+      />
     </>
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Modal,
@@ -15,8 +15,10 @@ import {
 } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
+import { useEnvironment } from './auth-can';
 import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
@@ -108,7 +110,9 @@ type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
-  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
+  giveSelectionOption?: boolean;
+  preselectedExportType?: ProcessExportOptions['type'];
+  resetPreselectedExportType?: () => void;
 };
 
 const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
@@ -116,11 +120,22 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   onClose,
   open,
   giveSelectionOption,
+  preselectedExportType,
+  resetPreselectedExportType,
 }) => {
-  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type']>();
+  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type'] | undefined>(
+    preselectedExportType,
+  );
+
+  useEffect(() => {
+    setSelectedType(preselectedExportType);
+  }, [preselectedExportType]);
+
   const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
+
+  const environment = useEnvironment();
 
   const handleTypeSelectionChange = ({ target: { value } }: RadioChangeEvent) => {
     setSelectedType(value);
@@ -133,6 +148,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   const handleClose = () => {
     setIsExporting(false);
     setSelectedOptions(selectedOptions.filter((el) => el !== 'onlySelection'));
+    if (preselectedExportType && resetPreselectedExportType) resetPreselectedExportType();
+    setSelectedType(undefined);
     onClose();
   };
 
@@ -148,12 +165,31 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         a4: selectedOptions.includes('a4'),
         scaling: pngScalingFactor,
         exportSelectionOnly: selectedOptions.includes('onlySelection'),
+        useWebshareApi: preselectedExportType !== undefined,
       },
       processes,
+      environment.spaceId,
     );
 
     handleClose();
   };
+
+  useAddControlCallback(
+    'process-list',
+    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+    (e) => {
+      // e.preventDefault();
+    },
+    { level: 2, blocking: open },
+  );
+  useAddControlCallback(
+    'process-list',
+    'controlenter',
+    () => {
+      if (selectedType) handleOk();
+    },
+    { level: 1, blocking: open, dependencies: [selectedType] },
+  );
 
   const typeSelection = (
     <Radio.Group onChange={handleTypeSelectionChange} value={selectedType} style={{ width: '50%' }}>
@@ -220,16 +256,22 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   return (
     <>
       <Modal
-        title={`Export selected Processes`}
+        title={
+          preselectedExportType
+            ? `Share selected Processes as ${preselectedExportType.toUpperCase()}`
+            : `Export selected Processes`
+        }
         open={open}
+        style={{ position: 'relative', zIndex: '1 !important' }}
         onOk={handleOk}
         onCancel={handleClose}
         centered
         okButtonProps={{ disabled: !selectedType, loading: isExporting }}
         width={540}
+        data-testid="Export Modal"
       >
         <Flex>
-          {typeSelection}
+          {preselectedExportType ? null : typeSelection}
           <Divider type="vertical" style={{ height: 'auto' }} />
           {!!selectedType && optionSelection}
         </Flex>

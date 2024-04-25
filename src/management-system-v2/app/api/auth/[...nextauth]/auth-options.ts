@@ -3,10 +3,12 @@ import Auth0Provider from 'next-auth/providers/auth0';
 import EmailProvider from 'next-auth/providers/email';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
+import renderSigninLinkEmail from './signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -16,8 +18,8 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Guest',
-      id: 'guest-loguin',
+      name: 'Continue as a Guest',
+      id: 'guest-signin',
       credentials: {},
       async authorize() {
         return addUser({ guest: true });
@@ -25,12 +27,16 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
+        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+
         sendEmail({
           to: params.identifier,
-          body: params.url,
-          subject: 'Sign in',
+          subject: 'Sign in to PROCEED',
+          html: signinMail.html,
+          text: signinMail.text,
         });
       },
+      maxAge: 24 * 60 * 60, // one day
     }),
   ],
   callbacks: {
@@ -72,6 +78,9 @@ const nextAuthOptions: AuthOptions = {
 
       return true;
     },
+  },
+  pages: {
+    signIn: '/signin',
   },
 };
 
@@ -126,7 +135,8 @@ if (process.env.NODE_ENV === 'development') {
 
   nextAuthOptions.providers.push(
     CredentialsProvider({
-      name: 'Development Users',
+      id: 'development-users',
+      name: 'Continue with Development Users',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
@@ -146,5 +156,36 @@ if (process.env.NODE_ENV === 'development') {
     }),
   );
 }
+
+export type ExtractedProvider =
+  | {
+      id: string;
+      type: 'email';
+      name: string;
+    }
+  | {
+      id: string;
+      type: 'oauth';
+      name: string;
+      style?: OAuthProviderButtonStyles;
+    }
+  | {
+      id: string;
+      type: 'credentials';
+      name: string;
+      credentials: Record<string, CredentialInput>;
+    };
+
+// Unfortunatly, next-auth's getProviders() function does not return enough information to render the signin page.
+// So we need to manually map the providers
+// NOTE be careful not to leak any sensitive information
+export const getProviders = () =>
+  nextAuthOptions.providers.map((provider) => ({
+    id: provider.options?.id ?? provider.id,
+    type: provider.type,
+    name: provider.options?.name ?? provider.name,
+    style: provider.type === 'oauth' ? provider.style : undefined,
+    credentials: provider.type === 'credentials' ? provider.options.credentials : undefined,
+  })) as ExtractedProvider[];
 
 export default nextAuthOptions;

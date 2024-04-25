@@ -22,12 +22,22 @@ type PreferencesStoreType = {
 
 const defaultPreferences = {
   /* Default User-Settings: */
-  /*
-      Delete user-preferences in localstorage, after adding a preference-setting
-      The new default won't be set otherwise
-    */
+  /* 
+  Increase version-number when default value changes
+  When adding a new field don't increase the version number
+  (Increasing the version number will reset the user's settings to the default settings)
+  */
+  version: 1,
   'icon-view-in-process-list': false,
-  'process-list-columns': ['', 'Process Name', 'Description', 'Last Edited'],
+  'icon-view-in-user-list': false,
+  'icon-view-in-role-list': false,
+  'process-list-columns-desktop': [
+    'Favorites',
+    'Process Name',
+    'Description',
+    'Last Edited',
+    'Selected Columns',
+  ],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },
@@ -79,7 +89,15 @@ const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) =>
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     setHydrated(true);
-    useUserPreferencesStore.setState({ _hydrated: true });
+    useUserPreferencesStore.setState((state) => {
+      if (!state.preferences.version || state.preferences.version < defaultPreferences.version)
+        return { defaultStore, _hydrated: true };
+
+      return {
+        preferences: { ...defaultPreferences, ...state.preferences },
+        _hydrated: true,
+      };
+    });
   }, [hydrated]);
 
   return hydrated ? storeValues : defaultValues;

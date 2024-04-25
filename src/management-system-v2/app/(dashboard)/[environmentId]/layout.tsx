@@ -20,10 +20,10 @@ import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 
-const DashboardLayout: FC<PropsWithChildren<{ params: { environmentId: string } }>> = async ({
+const DashboardLayout = async ({
   children,
   params,
-}) => {
+}: PropsWithChildren<{ params: { environmentId: string } }>) => {
   const { userId } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);

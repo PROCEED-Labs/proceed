@@ -1,55 +1,22 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
-
-import type {
-  Editor as EditorClass,
-  Viewer as ViewerClass,
-  ViewerProps,
-} from '@toast-ui/react-editor';
-import React, {
-  Component,
-  ComponentPropsWithRef,
-  FC,
-  RefAttributes,
-  forwardRef,
-  useEffect,
-  useState,
-} from 'react';
-import dynamic from 'next/dynamic';
-
+import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
+import React, { useEffect, useState } from 'react';
 import { EditOutlined } from '@ant-design/icons';
-
 import { Divider, Grid, Modal, Space } from 'antd';
-import TextEditor from '@/components/text-editor';
-
-// Editor uses `navigator` in top level scope, which is not available in server side rendering.
-const Viewer = dynamic(() => import('@toast-ui/react-editor').then((res) => res.Viewer), {
-  ssr: false,
-}) as FC<RefAttributes<ViewerClass> & ViewerProps>;
+import dynamic from 'next/dynamic';
+const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
+const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
 const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
   const description =
     (selectedElement.businessObject.documentation &&
       selectedElement.businessObject.documentation[0]?.text) ||
     '';
-
-  const viewerRef = React.useRef<ViewerClass>(null);
   const modalEditorRef = React.useRef<EditorClass>(null);
-
   const modeler = useModelerStateStore((state) => state.modeler);
-
   const [showPopupEditor, setShowPopupEditor] = useState(false);
-
   const breakpoint = Grid.useBreakpoint();
-
-  useEffect(() => {
-    if (viewerRef.current) {
-      const viewer = viewerRef.current as ViewerClass;
-      const viewerInstance = viewer.getInstance();
-
-      viewerInstance.setMarkdown(description);
-    }
-  }, [description, viewerRef]);
 
   const onSubmit = (editorRef: React.RefObject<EditorClass>) => {
     const editor = editorRef.current as EditorClass;
@@ -74,17 +41,29 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: '100%' }}
+      role="group"
+      aria-labelledby="description-title"
+    >
       <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-        <span style={{ marginRight: '0.3em' }}>Description</span>
+        <span id="description-title" style={{ marginRight: '0.3em' }}>
+          Description
+        </span>
         <EditOutlined
           onClick={() => {
             setShowPopupEditor(true);
           }}
         ></EditOutlined>
       </Divider>
-      <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
-        <Viewer ref={viewerRef} initialValue={description}></Viewer>
+      <div
+        style={{ maxHeight: '40vh', overflowY: 'auto' }}
+        role="textbox"
+        aria-label="description-viewer"
+      >
+        <TextViewer initialValue={description}></TextViewer>
       </div>
 
       <Modal
@@ -99,7 +78,7 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
         onOk={() => onSubmit(modalEditorRef)}
         onCancel={() => setShowPopupEditor(false)}
       >
-        <TextEditor ref={modalEditorRef} initialValue={description}></TextEditor>
+        <TextEditor editorRef={modalEditorRef} initialValue={description}></TextEditor>
       </Modal>
     </Space>
   );

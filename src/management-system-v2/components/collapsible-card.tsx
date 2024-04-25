@@ -21,6 +21,8 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
 }) => {
   return (
     <Card
+      role="region"
+      aria-label={title}
       className={classNames({ 'Hide-Scroll-Bar': !show })}
       style={{
         scrollBehavior: 'smooth',
@@ -29,7 +31,7 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
         scrollbarWidth: 'none',
         width: show ? '100%' : collapsedWidth,
       }}
-      headStyle={{ padding: 0 }}
+      styles={{ header: { padding: 0 } }}
       title={
         show ? (
           <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>

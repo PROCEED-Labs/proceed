@@ -121,7 +121,10 @@ export async function getSVGFromBPMN(
           ))
         );
       });
+
       unselectedElements.forEach((el: any) => {
+        // don't hide the surrounding process or subprocess plane
+        if (el.type === 'bpmn:Process' || el.id.includes(subprocessId)) return;
         const elementStyle = elementRegistry.getGraphics(el).style;
         originalVisibilityMap[el.id] = elementStyle.getPropertyValue('display');
         elementStyle.setProperty('display', 'none');

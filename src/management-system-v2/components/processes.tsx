@@ -11,6 +11,7 @@ import React, {
   useTransition,
   ClassAttributes,
   ReactHTML,
+  useMemo,
 } from 'react';
 import {
   Space,
@@ -105,18 +106,24 @@ type ProcessesProps = {
   folder: Folder;
 };
 
-const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
-  if (folder.parentId)
-    processes.unshift({
-      name: '< Parent Folder >',
-      parentId: null,
-      type: 'folder',
-      id: '',
-      createdAt: '',
-      createdBy: '',
-      updatedAt: '',
-      environmentId: '',
-    });
+const Processes = ({ processes: _processes, favourites, folder }: ProcessesProps) => {
+  const processes = useMemo(() => {
+    const newProcesses = [..._processes];
+
+    if (folder.parentId)
+      newProcesses.unshift({
+        name: '< Parent Folder >',
+        parentId: null,
+        type: 'folder',
+        id: folder.parentId,
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        environmentId: '',
+      });
+
+    return newProcesses;
+  }, [_processes]);
 
   const ability = useAbilityStore((state) => state.ability);
   const environment = useEnvironment();

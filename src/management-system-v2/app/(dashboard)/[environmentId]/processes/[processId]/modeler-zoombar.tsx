@@ -23,6 +23,19 @@ const ModelerZoombar = ({}: ModelerZoombarProps) => {
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
   const isFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
+  const exitFullScreenEventHandler = async (evt: KeyboardEvent) => {
+    if (evt.key === 'Escape') {
+      setFullScreen(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', exitFullScreenEventHandler);
+    return () => {
+      document.removeEventListener('keydown', exitFullScreenEventHandler);
+    };
+  }, []);
+
   useEffect(() => {
     setInputValue(zoomLevel * 100);
   }, [zoomLevel]);

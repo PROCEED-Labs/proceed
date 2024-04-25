@@ -11,11 +11,19 @@ type FolderModalProps = {
   spaceId: string;
   parentId: string;
   onSubmit: (values: FolderUserInput) => void;
-  modalProps: ModalProps;
+  modalProps?: ModalProps;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 };
 
-const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModalProps) => {
-  const [modalOpen, setModalOpen] = useState(false);
+const FolderModal = ({
+  spaceId,
+  parentId,
+  onSubmit,
+  modalProps,
+  open,
+  setOpen,
+}: FolderModalProps) => {
   const [form] = Form.useForm();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
 
@@ -26,15 +34,15 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
     onSubmit(values);
   }
 
-  const modal = (
+  return (
     <Modal
       title="Folder"
       closeIcon={null}
       destroyOnClose
       {...modalProps}
-      open={modalOpen}
+      open={open}
+      onCancel={() => setOpen(false)}
       onOk={form.submit}
-      onCancel={() => setModalOpen(false)}
     >
       <Form onFinish={checkInput} form={form} layout="vertical">
         <Form.Item
@@ -55,13 +63,6 @@ const useFolderModal = ({ spaceId, parentId, onSubmit, modalProps }: FolderModal
       </Form>
     </Modal>
   );
-
-  return {
-    modal,
-    open: () => setModalOpen(true),
-    close: () => setModalOpen(false),
-    errors,
-  };
 };
 
-export default useFolderModal;
+export default FolderModal;

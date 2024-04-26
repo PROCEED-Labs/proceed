@@ -8,10 +8,25 @@ import {
   getFolderById,
   getRootFolder,
   moveFolder,
+  getFolderChildren as _getFolderChildren,
 } from './legacy/folders';
 import { userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
-import { moveProcess } from './legacy/_process';
+import { getProcess, moveProcess } from './legacy/_process';
+import { asyncMap } from '../helpers/javascriptHelpers';
+
+export async function getFolder(folderId: string, spaceId: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    const folder = getFolderById(folderId, ability);
+    if (!folder) throw new Error();
+
+    return folder;
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {
@@ -46,5 +61,30 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
     } else if (item.type === 'folder') {
       moveFolder(item.id, folderId, ability);
     }
+  }
+}
+
+export async function getFolderChildren(folderId: string, spaceId: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    const children = _getFolderChildren(folderId, ability);
+    if (!children) throw new Error();
+
+    const folderContents = await asyncMap(children, async (item) => {
+      if (item.type === 'folder') {
+        return {
+          ...getFolderById(item.id),
+          type: 'folder' as const,
+        };
+      } else {
+        return await getProcess(item.id);
+      }
+    });
+
+    return folderContents;
+  } catch (e) {
+    console.error(e);
+    return userError('Something went wrong');
   }
 }

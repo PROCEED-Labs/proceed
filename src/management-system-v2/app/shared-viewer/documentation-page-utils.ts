@@ -28,6 +28,13 @@ export function getTitle(el: any) {
 export function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
   const meta = getMetaDataFromElement(el);
 
+  // transform the costs information into a [value] [currency-symbol] format (e.g. {value: 123, unit: 'EUR'} => '123 €')
+  if (meta.costsPlanned)
+    meta.costsPlanned = new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: meta.costsPlanned.unit,
+    }).format(meta.costsPlanned.value);
+
   function getHtmlFromMarkdown(markdown: string) {
     mdEditor.setMarkdown(markdown);
     return mdEditor.getHTML();

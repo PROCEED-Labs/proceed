@@ -10,6 +10,9 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import stream from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
+import jwt from 'jsonwebtoken';
+
+import { TokenPayload } from '@/lib/sharing/process-sharing';
 
 export async function GET(
   request: NextRequest,
@@ -17,19 +20,40 @@ export async function GET(
     params: { environmentId, processId, imageFileName },
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const { ability } = await getCurrentEnvironment(environmentId);
-
   const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const processMeta = processMetaObjects[processId];
 
-  if (!process) {
+  if (!processMeta) {
     return new NextResponse(null, {
       status: 404,
       statusText: 'Process with this id does not exist.',
     });
   }
 
-  if (!ability.can('view', toCaslResource('Process', process))) {
+  let canAccess = false;
+
+  // if the user is not unauthenticated check if they have access to the process due to being an owner
+  if (environmentId !== 'unauthenticated') {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    canAccess = ability.can('view', toCaslResource('Process', processMeta));
+  }
+
+  // if the user is not an owner check if they have access if a share token is provided in the query data of the url
+  const shareToken = request.nextUrl.searchParams.get('shareToken');
+  if (!canAccess && shareToken) {
+    const key = process.env.JWT_SHARE_SECRET!;
+    const {
+      processId: shareProcessId,
+      embeddedMode,
+      timestamp,
+    } = jwt.verify(shareToken, key!) as TokenPayload;
+
+    canAccess =
+      !embeddedMode && shareProcessId === processId && timestamp === processMeta.shareTimestamp;
+  }
+
+  if (!canAccess) {
     return new NextResponse(null, {
       status: 403,
       statusText: 'Not allowed to view image in this process',

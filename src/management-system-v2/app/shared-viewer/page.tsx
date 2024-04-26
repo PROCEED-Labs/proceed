@@ -203,7 +203,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
               loggedIn={!!userId}
               layoutMenuItems={[]}
               userEnvironments={userEnvironments}
-              activeSpace={{ spaceId: '', isOrganization: false }}
+              activeSpace={{ spaceId: userId || '', isOrganization: false }}
             >
               <BPMNSharedViewer
                 isOwner={isOwner}

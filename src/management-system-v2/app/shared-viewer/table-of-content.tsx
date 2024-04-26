@@ -21,6 +21,7 @@ type MetaInformation = {
   meta?: {
     [key: string]: any;
   };
+  image: string;
 };
 
 export type ElementInfo = MetaInformation & {
@@ -66,7 +67,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         .filter(truthyFilter);
     }
 
-    let { milestones, meta, description, importedProcess } = hierarchyElement;
+    let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
     let label = hierarchyElement.name || `<${hierarchyElement.id}>`;
 
@@ -87,6 +88,13 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         key: `${hierarchyElement.id}_meta`,
         href: linksDisabled ? '' : `#${hierarchyElement.id}_meta_page`,
         title: 'Meta Data',
+      });
+    }
+    if (image) {
+      children.unshift({
+        key: `${hierarchyElement.id}_image`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_image_page`,
+        title: 'Overview Image',
       });
     }
     if (description) {

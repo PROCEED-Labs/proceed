@@ -28,12 +28,19 @@ export function getTitle(el: any) {
 export function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
   const meta = getMetaDataFromElement(el);
 
+  let image = '';
+
   // transform the costs information into a [value] [currency-symbol] format (e.g. {value: 123, unit: 'EUR'} => '123 €')
   if (meta.costsPlanned)
     meta.costsPlanned = new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: meta.costsPlanned.unit,
     }).format(meta.costsPlanned.value);
+
+  if (meta.overviewImage) {
+    image = meta.overviewImage;
+    delete meta.overviewImage;
+  }
 
   function getHtmlFromMarkdown(markdown: string) {
     mdEditor.setMarkdown(markdown);
@@ -58,6 +65,7 @@ export function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
     description,
     meta: Object.keys(meta).length ? meta : undefined,
     milestones: milestones.length ? milestones : undefined,
+    image,
   };
 }
 

@@ -138,7 +138,7 @@ const BPMNSharedViewer = ({
       let nestedSubprocess;
       let importedProcess;
 
-      const { meta, milestones, description } = getMetaDataFromBpmnElement(el, mdEditor);
+      const { meta, milestones, description, image } = getMetaDataFromBpmnElement(el, mdEditor);
 
       // stores the bpmn of an importing process when the importing process is loaded into the modeler in the case of a call activity
       let oldBpmn: string | undefined;
@@ -239,6 +239,7 @@ const BPMNSharedViewer = ({
         importedProcess,
         nestedSubprocess,
         children,
+        image,
       };
     }
 

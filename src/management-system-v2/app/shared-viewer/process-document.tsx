@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import { getProcess } from '@/lib/data/legacy/process';
 
 import { Typography, Table, Grid, Image, Spin } from 'antd';
@@ -11,6 +13,8 @@ import cn from 'classnames';
 
 import { ActiveSettings } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
+
+import { useEnvironment } from '@/components/auth-can';
 
 export type VersionInfo = {
   id?: number;
@@ -36,6 +40,11 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
+  const environment = useEnvironment();
+
+  const query = useSearchParams();
+  const shareToken = query.get('token');
+
   /**
    * Transforms the hierarchical information about a process' elements into markup
    */
@@ -46,6 +55,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       !hierarchyElement.description &&
       !hierarchyElement.meta &&
       !hierarchyElement.milestones &&
+      !hierarchyElement.image &&
       !hierarchyElement.children?.length
     ) {
       return;
@@ -56,7 +66,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     // show the element as it is visible in its parent
     let elementSvg = hierarchyElement.svg;
     let elementLabel = hierarchyElement.name || `<${hierarchyElement.id}>`;
-    let { milestones, meta, description, importedProcess } = hierarchyElement;
+    let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
     if (settings.nestedSubprocesses && hierarchyElement.nestedSubprocess) {
       // show the sub-process plane with the sub-process' children if the respective option is selected
@@ -67,6 +77,10 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       elementLabel = importedProcess.name!;
       ({ milestones, meta, description } = importedProcess);
     }
+
+    const imageURL =
+      image &&
+      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${processData.id}/images/${image}?shareToken=${shareToken}`;
 
     pages.push(
       <div
@@ -118,6 +132,25 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                 dangerouslySetInnerHTML={{ __html: description }}
               ></div>
             </div>
+          </div>
+        )}
+        {imageURL && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`${hierarchyElement.id}_image_page`}>
+              Overview Image
+            </Title>
+            <Image
+              style={{
+                width: 'auto',
+                maxWidth: '80%',
+                height: '300px',
+                position: 'relative',
+                left: '50%',
+                transform: 'translate(-50%)',
+              }}
+              src={imageURL}
+              width={'100%'}
+            />
           </div>
         )}
         {meta && (

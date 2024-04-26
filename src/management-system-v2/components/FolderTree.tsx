@@ -52,8 +52,6 @@ export const FolderTree = ({
     return initialNodes;
   });
 
-  const loadData: DirectoryTreeProps['loadData'] = (node) => {};
-
   return (
     <Tree.DirectoryTree
       {...treeProps}

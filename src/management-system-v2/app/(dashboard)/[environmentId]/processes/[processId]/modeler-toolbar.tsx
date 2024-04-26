@@ -54,13 +54,16 @@ const ModelerToolbar = ({
     ProcessExportTypes | undefined
   >();
 
+  const query = useSearchParams();
+  const subprocessId = query.get('subprocess');
+
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const selectedElement = useMemo(() => {
     if (modeler) {
       return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
-  }, [modeler, selectedElementId]);
+  }, [modeler, selectedElementId, subprocessId]);
 
   const createProcessVersion = async (values: {
     versionName: string;
@@ -113,9 +116,7 @@ const ModelerToolbar = ({
     setShowProcessExportModal(!showProcessExportModal);
   };
 
-  const query = useSearchParams();
   const selectedVersionId = query.get('version');
-  const subprocessId = query.get('subprocess');
 
   const handleUndo = () => {
     modeler?.undo();

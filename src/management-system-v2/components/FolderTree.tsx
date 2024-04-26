@@ -29,9 +29,11 @@ function generateNode(element: FolderChildren): TreeNode {
 
 export const FolderTree = ({
   rootNodes,
+  newChildrenHook,
   treeProps,
 }: {
   rootNodes: FolderChildren[];
+  newChildrenHook?: (nodes: TreeNode[]) => TreeNode[];
   treeProps?: DirectoryTreeProps;
 }) => {
   const spaceId = useEnvironment().spaceId;
@@ -50,6 +52,8 @@ export const FolderTree = ({
     return initialNodes;
   });
 
+  const loadData: DirectoryTreeProps['loadData'] = (node) => {};
+
   return (
     <Tree.DirectoryTree
       {...treeProps}
@@ -61,7 +65,10 @@ export const FolderTree = ({
         const actualNode = nodeMap.current.get(node.key)!;
 
         if (children.length > 0) {
-          const childrenNodes = children.map(generateNode);
+          let childrenNodes = children.map(generateNode);
+
+          if (newChildrenHook) childrenNodes = newChildrenHook(childrenNodes);
+
           for (const node of childrenNodes) nodeMap.current.set(node.key, node);
           actualNode.children = childrenNodes;
         }

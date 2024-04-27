@@ -44,9 +44,6 @@ test('import a process', async ({ processListPage }) => {
   await expect(page.locator('.djs-shape[data-element-id="Activity_1m5esxh"]')).toBeVisible();
   await expect(page.locator('.djs-connection[data-element-id="Flow_0evtfpc"]')).toBeVisible();
   await expect(page.locator('.djs-shape[data-element-id="Event_1oxwp3r"]')).toBeVisible();
-
-  await processListPage.goto();
-  await processListPage.removeProcess(definitionId);
 });
 
 test('export a single process', async ({ processListPage }) => {

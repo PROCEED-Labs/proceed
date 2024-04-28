@@ -40,22 +40,25 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
-  const [escCounter, setEscCounter] = useState(0);
+  const escCounter = useRef(0);
   useAddControlCallback(
     'modeler',
     'esc',
     () => {
-      setEscCounter((state) => {
-        if (state === 1) {
-          Promise.resolve().then(() => router.push(spaceURL(environment, `/processes`)));
-          return 0;
-        } else {
-          setTimeout(() => setEscCounter(0), 500);
-          return 1;
-        }
-      });
+      if (escCounter.current == 1) {
+        router.push(spaceURL(environment, `/processes`));
+      } else {
+        escCounter.current++;
+        const timer = setTimeout(() => {
+          escCounter.current = 0;
+        }, 500);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }
     },
-    { dependencies: [router, setEscCounter] },
+    { dependencies: [router] },
   );
 
   /// Derived State

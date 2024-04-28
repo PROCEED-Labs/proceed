@@ -51,7 +51,8 @@ export class PropertiesPanelPage {
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
-    await page.getByRole('button', { name: 'New Process' }).click();
+    await page.getByRole('button', { name: 'plus New' }).click();
+    await page.getByRole('menuitem', { name: 'file Create Process' }).click();
     await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
     await page.getByLabel('Process Description').click();
     await page.getByLabel('Process Description').fill('Process Description');
@@ -169,6 +170,9 @@ export class PropertiesPanelPage {
     await page.getByLabel('Select all').check();
     await page.getByRole('button', { name: 'delete' }).first().click();
     await page.getByRole('button', { name: 'OK' }).click();
+
+    // Note: If used in a test, there should be a check for the empty list to
+    // avoid double navigations next.
 
     this.processDefinitionID = undefined;
     this.processName = undefined;

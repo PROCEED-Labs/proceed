@@ -12,7 +12,6 @@ export const test = base.extend<MyFixtures>({
 
     await mockClipboardAPI(page);
 
-    await page.goto('/');
     const processListPage = new ProcessListPage(page);
     await processListPage.login();
 

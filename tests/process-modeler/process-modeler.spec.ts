@@ -103,7 +103,12 @@ test('process modeler', async ({ processModelerPage }) => {
     })
     .click();
   const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
-  await processModelerPage.page.waitForURL(expectedURLNewProcess);
+  await processModelerPage.page.waitForURL((url) => {
+    return (
+      url.pathname.match(expectedURLNewProcess) &&
+      !url.pathname.includes(processModelerPage.processDefinitionID)
+    );
+  });
   expect(expectedURLNewProcess.test(processModelerPage.page.url())).toBeTruthy();
   const newDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   expect(newDefinitionID).not.toEqual(processModelerPage.processDefinitionID);

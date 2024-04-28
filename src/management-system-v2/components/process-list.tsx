@@ -48,13 +48,14 @@ type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
   selection: Key[];
+  selectedElements: ProcessListProcess[];
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   isLoading?: boolean;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteProcess: (process: ProcessListProcess) => void;
-  onEditProcess: (process: ProcessListProcess) => void;
-  onCopyProcess: (process: ProcessListProcess) => void;
+  onDeleteItem: (process: ProcessListProcess[]) => void;
+  onEditItem: (process: ProcessListProcess) => void;
+  onCopyItem: (process: ProcessListProcess) => void;
   dragInfo: DragInfo;
 }>;
 
@@ -74,16 +75,18 @@ const ProcessList: FC<ProcessListProps> = ({
   data,
   folder,
   selection,
+  selectedElements,
   setSelectionElements,
   isLoading,
   onExportProcess,
-  onDeleteProcess,
-  onEditProcess,
-  onCopyProcess,
+  onDeleteItem,
+  onEditItem,
+  onCopyItem,
   setShowMobileMetaData,
   dragInfo,
 }) => {
   const router = useRouter();
+  const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -114,33 +117,31 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const actionBarGenerator = useCallback(
     (record: ProcessListProcess) => {
-      const resource = toCaslResource(record.type === 'folder' ? 'Folder' : 'Process', record);
+      const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
       return (
         <>
-          {/* <Tooltip placement="top" title={'Preview'}>
-            <EyeOutlined
-              onClick={() => {
-                setPreviewProcess(record);
-                setPreviewerOpen(true);
-              }}
-            />
-          </Tooltip> */}
-          <AuthCan create Process={record}>
-            <Tooltip placement="top" title={'Copy'}>
-              <CopyOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopyProcess(record);
-                }}
-              />
+          {record.type !== 'folder' && (
+            <AuthCan {...resource} create>
+              <Tooltip placement="top" title={'Copy'}>
+                <CopyOutlined
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopyItem(record);
+                  }}
+                />
+              </Tooltip>
+            </AuthCan>
+          )}
+
+          {record.type !== 'folder' && (
+            <Tooltip placement="top" title={'Export'}>
+              <ExportOutlined onClick={() => onExportProcess(record)} />
             </Tooltip>
-          </AuthCan>
-          <Tooltip placement="top" title={'Export'}>
-            <ExportOutlined onClick={() => onExportProcess(record)} />
-          </Tooltip>
-          <AuthCan update Process={record}>
+          )}
+
+          <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => onEditProcess(record)} />
+              <EditOutlined onClick={() => onEditItem(record)} />
             </Tooltip>
           </AuthCan>
 
@@ -149,9 +150,9 @@ const ProcessList: FC<ProcessListProps> = ({
           <AuthCan delete Process={record}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
-                title="Delete Process"
+                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteProcess(record)}
+                onConfirm={() => onDeleteItem([record])}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -162,7 +163,7 @@ const ProcessList: FC<ProcessListProps> = ({
         </>
       );
     },
-    [onCopyProcess, onDeleteProcess, onEditProcess, onExportProcess],
+    [onCopyItem, onDeleteItem, onEditItem, onExportProcess],
   );
 
   const columnCheckBoxItems: MenuProps['items'] = ColumnHeader.map((title) => ({
@@ -195,8 +196,15 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'id',
       key: 'Favorites',
       width: '40px',
-      render: (id, process, index) => <FavouriteStar id={id} hovered={hovered?.id === id} />,
-      sorter: (a, b) => (favProcesses?.includes(a.id) ? -1 : 1),
+      render: (id, _, index) =>
+        id !== folder.parentId && (
+          <StarOutlined
+            style={{
+              color: favourites?.includes(index) ? '#FFD700' : undefined,
+              opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
+            }}
+          />
+        ),
     },
     {
       title: 'Name',
@@ -304,7 +312,7 @@ const ProcessList: FC<ProcessListProps> = ({
               opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
             }}
           >
-            {record.type !== 'folder' ? actionBarGenerator(record) : null}
+            {actionBarGenerator(record)}
           </Row>
         ),
       responsive: ['xl'],
@@ -315,11 +323,12 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: () => (
-        <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
-          <InfoCircleOutlined />
-        </Button>
-      ),
+      render: (id) =>
+        id !== folder.parentId && (
+          <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
+            <InfoCircleOutlined />
+          </Button>
+        ),
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
   ];
@@ -380,12 +389,9 @@ const ProcessList: FC<ProcessListProps> = ({
         },
         onDoubleClick: () =>
           router.push(
-            spaceURL(
-              environment,
-              record.type === 'folder'
-                ? `/processes/folder/${record.id}`
-                : `/processes/${record.id}`,
-            ),
+            record.type === 'folder'
+              ? `/${space.spaceId}/processes/folder/${record.id}`
+              : `/${space.spaceId}/processes/${record.id}`,
           ),
         onMouseEnter: (e) => {
           if (dragInfo.dragging) {
@@ -397,8 +403,12 @@ const ProcessList: FC<ProcessListProps> = ({
         },
         onMouseLeave: () => setHovered(undefined),
         onContextMenu: () => {
-          setSelectionElements([record]);
-          setContextMenuItem(record.id);
+          if (selection.includes(record.id)) {
+            setContextMenuItem(selectedElements);
+          } else {
+            setSelectionElements([record]);
+            setContextMenuItem([record]);
+          }
         },
       })}
       components={{

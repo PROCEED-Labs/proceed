@@ -171,6 +171,9 @@ export class PropertiesPanelPage {
     await page.getByRole('button', { name: 'delete' }).first().click();
     await page.getByRole('button', { name: 'OK' }).click();
 
+    // Note: If used in a test, there should be a check for the empty list to
+    // avoid double navigations next.
+
     this.processDefinitionID = undefined;
     this.processName = undefined;
     this.processDescription = undefined;

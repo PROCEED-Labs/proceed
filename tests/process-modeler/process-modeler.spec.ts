@@ -121,3 +121,40 @@ test('process modeler', async ({ processModelerPage }) => {
   const newSubprocessDefinitionID = processModelerPage.page.url().split('/processes/').pop();
   expect(newSubprocessDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
 });
+
+test.describe('Shortcuts in Modeler', () => {
+  test('close modeler / got to process list with shortcut', async ({ processModelerPage }) => {
+    const { page } = processModelerPage;
+
+    await page.waitForTimeout(1000);
+
+    /* Close modeler */
+    await page.getByRole('main').press('Escape');
+    await page.getByRole('main').press('Escape');
+
+    await page.waitForTimeout(1000);
+
+    /* Check if back at Process-List */
+    await expect(page.url(), 'Could not close modeler with shortcut (2*esc)').toMatch(
+      /\/processes$/,
+    );
+  });
+
+  /* ctrl / meta + enter */
+  test('open Property-Panel with shortcut', async ({ processModelerPage }) => {
+    const { page } = processModelerPage;
+  });
+
+  // test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
+  //   const { page } = processModelerPage;
+  // });
+
+  // test('open XML with shortcut', async ({ processModelerPage }) => {
+  //   const { page } = processModelerPage;
+  // });
+
+  /* ctrl / meta + e */
+  test('open Export-Modal with shortcut', async ({ processModelerPage }) => {
+    const { page } = processModelerPage;
+  });
+});

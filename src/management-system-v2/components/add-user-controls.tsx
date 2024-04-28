@@ -22,7 +22,7 @@ const AddUserControls: FC<ControlComponent> = ({ name, checker }) => {
 
   /* User-Controls */
   const controlChecker: CheckerType = checker ?? {
-    selectall: (e) => e.ctrlKey && e.key === 'a',
+    selectall: (e) => (e.ctrlKey || e.metaKey) && e.key === 'a',
     esc: (e) => e.key === 'Escape',
     del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
     copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),

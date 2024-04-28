@@ -306,16 +306,22 @@ test.describe('shortcuts in process-list', () => {
     const { page } = processListPage;
     /* Open Modal with ctrl + enter */
     await page.getByRole('main').press('Control+Enter');
-    let modal = await page.getByRole('dialog');
 
-    /* Check if Modal opened */
-    expect(modal).toBeVisible();
+    /* Check if Modal is visible */
+    let modal = await page.getByRole('dialog');
+    expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
+
+    /* Check if correct modal opened */
+    let modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /create/i,
+    );
 
     /* Close Modal with esc */
     await page.getByRole('main').press('Escape');
 
     /* Check if Modal closed */
-    expect(modal).not.toBeVisible();
+    expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
 
     /* Open Modal with meta + enter */
     await page.getByRole('main').press('Meta+Enter');
@@ -324,6 +330,12 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Modal opened */
     expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
+
+    /* Check if correct modal opened */
+    modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /create/i,
+    );
 
     /* Fill in the form */
     await page.getByRole('dialog').press('Tab');
@@ -336,28 +348,34 @@ test.describe('shortcuts in process-list', () => {
     await page.getByRole('main').press('Control+Enter');
 
     /* Wait for Modeler to open */
-    // await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/); /* TODO: should this be an expect / is this part of the test? */
-    await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
+    await page.waitForURL(
       /\/processes\/([a-zA-Z0-9-_]+)/,
-    );
+    ); /* TODO: should this be an expect / is this part of the test? */
+    // await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
+    //   /\/processes\/([a-zA-Z0-9-_]+)/,
+    // );
 
     /* Save Process-ID*/
-    const processDefinitionID = page
+    const processID = page
       .url()
       .split(processListPage.getPageURL() + '/')
       .pop();
 
+    /* Wait for page to be fully loaded */
+    await page.waitForTimeout(1000); /* TODO: better way? */
     /* Go back to process list by pressing esc twice */
-    await Promise.all([
-      page.getByRole('main').press('Escape'),
-      page.getByRole('main').press('Escape'),
-    ]);
+    await page.getByRole('main').press('Escape');
+    await page.getByRole('main').press('Escape');
 
     /* The /processes page should be visibe again */
-    await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
+    // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
+    await page.waitForURL('/processes');
 
     /* New created Process should be in List */
-    await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
+    await expect(
+      page.locator(`tr[data-row-key="${processID}"]`),
+      'Couldnot find newly added process in list',
+    ).toBeVisible();
   });
   /* Delete Process - del*/
   test('delete a process with del', async ({ processListPage }) => {
@@ -366,19 +384,142 @@ test.describe('shortcuts in process-list', () => {
     const processID = await processListPage.createProcess('Delete me via shortcut');
 
     /* Select Process */
-    await page.locator(`tr[data-row-key="${processID}"]`).getByRole('checkbox').click();
+    const processRowCheckbox = await page
+      .locator(`tr[data-row-key="${processID}"]`)
+      .getByRole('checkbox');
+    await processRowCheckbox.check();
 
-    /* --- */
+    /* Delete Process with del */
+    await page.getByRole('main').press('Delete');
+
+    /* Confirm deletion */
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Check if Process was removed */
+    await expect(
+      page.locator('tbody>tr[class="ant-table-placeholder"]'),
+      'Only the ant-design-placeholder row should be visible, if the list is empty',
+    ).toBeVisible();
   });
 
   /*  Select all Processes - ctrl / meta + a */
-  test('select all processes with ctrl / meta + a', async ({ processListPage }) => {});
+  test('select and deselect all processes with ctrl / meta + a & esc', async ({
+    processListPage,
+  }) => {
+    const { page } = processListPage;
+    /* Create 3 Processes */
+    const processIDs = [];
+    for (let i = 0; i < 3; i++) {
+      processIDs.push(await processListPage.createProcess(`Process ${i}`));
+    }
 
-  /* Deselect all Processes - esc */
-  test('deselect all processes with esc', async ({ processListPage }) => {});
+    /* Select all Processes with ctrl + a */
+    await page.getByRole('main').press('Control+a');
 
-  /* Copy and Paste Processes - ctrl + c -> ctrl + v */
-  test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {});
+    /* Check if all Processes are selected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not select all Processes in List with shortcut',
+      ).toHaveClass(/ant-table-row-selected/);
+    }
+
+    /* Deselect all Processes with ctrl + a */
+    await page.getByRole('main').press('Escape');
+
+    /* Check if all Processes are deselected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not deselect in Process-List',
+      ).not.toHaveClass(/ant-table-row-selected/);
+    }
+
+    /* Select all Processes with meta + a */
+    await page.getByRole('main').press('Meta+a');
+
+    /* Check if all Processes are selected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not select all Processes in List via shortcut (meta)',
+      ).toHaveClass(/ant-table-row-selected/);
+    }
+  });
+
+  /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
+  test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {
+    const { page } = processListPage;
+
+    /* Create a process */
+    const processID = await processListPage.createProcess('Copy me via shortcut');
+
+    /* Select process */
+    await page.locator(`input[name="${processID}"]`).click();
+
+    /* Copy & Paste*/
+    await page.getByRole('main').press('Control+c');
+    await page.getByRole('main').press('Control+v');
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+
+    /* Submit copy */
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Check if Process has been added */
+    await expect(
+      page.locator('tbody>tr'),
+      'Could not find copied process in Process-List',
+    ).toHaveCount(2);
+
+    /* Copy & Paste - META */
+    await page.getByRole('main').press('Meta+c');
+    await page.getByRole('main').press('Meta+v');
+
+    /* Check if Modal is visible */
+    const modal2 = await page.getByRole('dialog');
+    await expect(modal, 'Could not open copy modal with shortcut (meta)').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle2 = await modal2.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle2, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+
+    /* Submit copy */
+    await page.getByRole('main').press('Meta+Enter');
+
+    /* Check if Process has been added */
+    await expect(page.locator('tbody>tr')).toHaveCount(3);
+  });
+
+  /* Open Export Modal - ctrl / meta + e */
+  test('open export modal with ctrl / meta + e', async ({ processListPage }) => {
+    const { page } = processListPage;
+
+    /* Create a process */
+    const processID = await processListPage.createProcess('Export me via shortcut');
+
+    /* Select process */
+    await page.locator(`input[name="${processID}"]`).click();
+
+    /* Open Export Modal with ctrl + e */
+    await page.getByRole('main').press('Control+e');
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    expect(modal, 'Could not open delete modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /export/i,
+    );
+  });
 });
 
 /* Reloads */

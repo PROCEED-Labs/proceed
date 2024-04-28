@@ -24,6 +24,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { spaceURL } from '@/lib/utils';
 import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -83,6 +84,9 @@ const ModelerToolbar = ({
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
+  // useAddControlCallback('modeler', 'controlenter', handlePropertiesPanelToggle, {
+  //   dependencies: [],
+  // });
 
   const handleProcessExportModalToggle = async () => {
     if (!showProcessExportModal && modeler) {

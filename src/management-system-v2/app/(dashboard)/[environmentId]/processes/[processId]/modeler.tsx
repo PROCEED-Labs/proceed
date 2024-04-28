@@ -40,7 +40,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
 
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
-  const [escCounter, setEscCounter] = useState(0);
+  const [_, setEscCounter] = useState(0);
   useAddControlCallback(
     'modeler',
     'esc',

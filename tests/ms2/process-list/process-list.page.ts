@@ -158,9 +158,10 @@ export class ProcessListPage {
   async createProcess(name: string, desciption: string = '') {
     const { page } = this;
     /* Create Process */
-    await page.getByRole('button', { name: 'Create Process' }).click();
-    await page.getByRole('textbox', { name: 'Name' }).fill(name);
-    await page.getByRole('textbox', { name: 'Description' }).fill(desciption);
+    await page.getByRole('button', { name: 'New Process' }).click();
+    await page.getByRole('textbox', { name: '* Process Name :' }).fill(name);
+    await page.getByLabel('Process Description').click();
+    await page.getByLabel('Process Description').fill(desciption);
     await page.getByRole('button', { name: 'Create' }).click();
 
     /* Wait for modeler to open */

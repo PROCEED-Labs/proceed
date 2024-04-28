@@ -23,6 +23,7 @@ import {
   Dropdown,
   Card,
   Badge,
+  MenuProps,
 } from 'antd';
 import cn from 'classnames';
 import {
@@ -34,6 +35,9 @@ import {
   ImportOutlined,
   FolderOutlined,
   FileOutlined,
+  CopyOutlined,
+  FolderAddOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import IconView from './process-icon-list';
 import ProcessList from './process-list';
@@ -51,18 +55,14 @@ import ConfirmationButton from './confirmation-button';
 import ProcessImportButton from './process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from './process-info-card-content';
-import {
-  CheckerType,
-  useAddControlCallback,
-  useControlStore,
-  useControler,
-} from '@/lib/controls-store';
-import ResizableElement, { ResizableElementRefType } from './ResizableElement';
 import { useEnvironment } from './auth-can';
-import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from './folder-creation-button';
-import { moveIntoFolder } from '@/lib/data/folders';
+import {
+  deleteFolder,
+  moveIntoFolder,
+  updateFolder as updateFolderServer,
+} from '@/lib/data/folders';
 import {
   DndContext,
   DragOverlay,
@@ -76,6 +76,19 @@ import {
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import AddUserControls from './add-user-controls';
+import { create } from 'zustand';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import FolderModal from './folder-modal';
+import { CheckerType, useAddControlCallback, useControler } from '@/lib/controls-store';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
+
+export const contextMenuStore = create<{
+  setSelected: (id: ListItem[]) => void;
+  selected: ListItem[];
+}>((set) => ({
+  setSelected: (item) => set({ selected: item }),
+  selected: [],
+}));
 
 export type DragInfo =
   | { dragging: false }
@@ -94,8 +107,32 @@ type ProcessesProps = {
 };
 
 const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
+  if (folder.parentId)
+    processes = [
+      {
+        name: '< Parent Folder >',
+        parentId: null,
+        type: 'folder',
+        id: folder.parentId,
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        environmentId: '',
+      },
+      ...processes,
+    ];
+
   const ability = useAbilityStore((state) => state.ability);
-  const environment = useEnvironment();
+  const space = useEnvironment();
+
+  function canDeleteItems(items: ListItem[], action: Parameters<typeof ability.can>[0]) {
+    for (const item of items) {
+      const resource = toCaslResource(item.type === 'folder' ? 'Folder' : 'Process', item);
+      if (!ability.can(action, resource)) return false;
+    }
+
+    return true;
+  }
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -103,7 +140,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = selectedRowElements.every((element) => ability.can('delete', element));
+  const canDeleteSelected = canDeleteItems(selectedRowElements, 'delete');
 
   const router = useRouter();
   const { message } = App.useApp();
@@ -113,7 +150,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
   const deleteSelectedProcesses = useCallback(async () => {
     try {
-      const res = await deleteProcesses(selectedRowKeys as string[], environment.spaceId);
+      const res = await deleteProcesses(selectedRowKeys as string[], space.spaceId);
       // UserError
       if (res && 'error' in res) {
         return message.open({
@@ -134,7 +171,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     }
     setSelectedRowElements([]);
     router.refresh();
-  }, [environment.spaceId, message, router, selectedRowKeys]);
+  }, [message, router, selectedRowKeys]);
 
   const breakpoint = Grid.useBreakpoint();
   const [openExportModal, setOpenExportModal] = useState(false);
@@ -182,13 +219,20 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+  filteredData.sort((a, b) => {
+    if (a.type === 'folder' && b.type == 'folder') return 0;
+    if (a.type === 'folder') return -1;
+    if (b.type === 'folder') return 1;
+
+    return 0;
+  });
 
   const CollapsePannelRef = useRef<MetaPanelRefType>(null);
 
   const deselectAll = () => {
     setSelectedRowElements([]);
   };
-  const [copySelection, setCopySelection] = useState<React.Key[]>(selectedRowKeys);
+  const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
   useAddControlCallback(
     'process-list',
@@ -203,7 +247,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
   useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
 
-  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowKeys));
+  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowElements));
 
   useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
 
@@ -216,6 +260,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     { dependencies: [selectedRowKeys.length] },
   );
 
+  // NOTE: I plan to move this to a separate file
   const [dragInfo, setDragInfo] = useState<DragInfo>({ dragging: false });
   const [movingItem, startMovingItemTransition] = useTransition();
   const dndSensors = useSensors(
@@ -230,6 +275,9 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   const dragEndHanler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
     setDragInfo({ dragging: false });
 
+    // prevent parent folder from being dragged
+    if (e.active.id === folder.parentId) return;
+
     const active = processes.find((item) => item.id === e.active.id);
     const over = processes.find((item) => item.id === e.over?.id);
 
@@ -239,28 +287,15 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     // don't allow to move selected items into themselves
     if (selectedRowKeys.length > 0 && selectedRowKeys.includes(over.id)) return;
 
-    startMovingItemTransition(async () => {
-      try {
-        const items =
-          selectedRowKeys.length > 0
-            ? selectedRowElements.map((element) => ({
-                type: element.type,
-                id: element.id,
-              }))
-            : [{ type: active.type, id: active.id }];
+    const items =
+      selectedRowKeys.length > 0
+        ? selectedRowElements.map((element) => ({
+            type: element.type,
+            id: element.id,
+          }))
+        : [{ type: active.type, id: active.id }];
 
-        const response = await moveIntoFolder(items, over.id);
-
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-      } catch (e) {
-        message.open({
-          type: 'error',
-          content: `Someting went wrong while moving the ${active.type}`,
-        });
-      }
-    });
+    moveItems(items, over.id);
   };
 
   const dragStartHandler: ComponentProps<typeof DndContext>['onDragEnd'] = (e) => {
@@ -274,22 +309,171 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
     });
   };
 
+  const selectedContextMenuItems = contextMenuStore((store) => store.selected);
+  const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
+
+  const contextMenuItems: MenuProps['items'] = [];
+  if (selectedContextMenuItems.length > 0) {
+    const children: MenuProps['items'] = [];
+
+    if (selectedContextMenuItems.length === 1 && canDeleteItems(selectedContextMenuItems, 'delete'))
+      children.push({
+        key: 'edit-selected',
+        label: 'Edit',
+        icon: <EditOutlined />,
+        onClick: () => onEditItem(selectedContextMenuItems[0]),
+      });
+
+    if (canDeleteItems(selectedContextMenuItems, 'delete'))
+      children.push({
+        key: 'delete-selected',
+        label: 'Delete',
+        icon: <DeleteOutlined />,
+        onClick: () => onDeleteItems(selectedContextMenuItems),
+      });
+
+    if ((folder.parentId, canDeleteItems(selectedContextMenuItems, 'update')))
+      children.push({
+        key: 'move-selected',
+        label: 'Move to parent',
+        icon: <FolderAddOutlined />,
+        onClick: () =>
+          moveItems(
+            selectedContextMenuItems.map((item) => ({ type: item.type, id: item.id })),
+            folder.parentId as string,
+          ),
+      });
+
+    if (
+      selectedContextMenuItems.find((item) => item.type !== 'folder') &&
+      ability.can('create', 'Process')
+    )
+      children.push({
+        key: 'copy-selected',
+        label: 'Copy',
+        icon: <CopyOutlined />,
+        onClick: () => {
+          setCopySelection([...selectedContextMenuItems]);
+          setOpenCopyModal(true);
+        },
+      });
+
+    contextMenuItems.push(
+      {
+        type: 'group',
+        label:
+          selectedContextMenuItems.length > 1
+            ? `${selectedContextMenuItems.length} selected`
+            : selectedContextMenuItems[0].name.value,
+        children,
+      },
+      {
+        key: 'item-divider',
+        type: 'divider',
+      },
+    );
+  }
+
+  const defaultDropdownItems = [];
+  if (ability.can('create', 'Process'))
+    defaultDropdownItems.push({
+      key: 'create-process',
+      label: <ProcessCreationButton wrapperElement="create process" />,
+      icon: <FileOutlined />,
+    });
+
+  if (ability.can('create', 'Folder'))
+    defaultDropdownItems.push({
+      key: 'create-folder',
+      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      icon: <FolderOutlined />,
+    });
+
+  const [updatingFolder, startUpdatingFolderTransition] = useTransition();
+  const [updateFolderModalCurrentFolder, setUpdateFolderModalCurrentFolder] = useState<
+    Folder | undefined
+  >(undefined);
+  const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
+    if (!folder) return;
+
+    startUpdatingFolderTransition(async () => {
+      try {
+        const response = updateFolderServer(
+          { name: values.name, description: values.description },
+          folder.id,
+        );
+
+        if (response && 'error' in response) throw new Error();
+
+        message.open({ type: 'success', content: 'Folder updated successfully' });
+        setUpdateFolderModalCurrentFolder(undefined);
+        router.refresh();
+      } catch (e) {
+        message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
+      }
+    });
+  };
+
+  const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
+    startMovingItemTransition(async () => {
+      try {
+        const response = await moveIntoFolder(items, folderId);
+
+        if (response && 'error' in response) throw new Error();
+
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong`,
+        });
+      }
+    });
+  };
+
+  async function onDeleteItems(items: ListItem[]) {
+    const promises = [];
+
+    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
+    if (folderIds.length > 0) promises.push(deleteFolder(folderIds, space.spaceId));
+
+    const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
+    if (processIds.length > 0) promises.push(deleteProcesses(processIds, space.spaceId));
+
+    await Promise.allSettled(promises);
+
+    setSelectedRowElements([]);
+    router.refresh();
+  }
+
+  function onCopyItem(item: ListItem) {
+    setOpenCopyModal(true);
+    setCopySelection([item]);
+  }
+
+  function onEditItem(item: ListItem) {
+    if (item.type === 'folder') {
+      const folder = processes.find((process) => process.id === item.id) as Folder;
+      setUpdateFolderModalCurrentFolder(folder);
+    } else {
+      setOpenEditModal(true);
+      setSelectedRowElements([item]);
+    }
+  }
+
+  // Here all the loading states shoud be ORed together
+  const loading = movingItem;
+
   return (
     <>
       <Dropdown
         menu={{
-          items: [
-            {
-              key: 'create-process',
-              label: <ProcessCreationButton wrapperElement="Create Process" />,
-            },
-            {
-              key: 'create-folder',
-              label: <FolderCreationButton wrapperElement="Create Folder" />,
-            },
-          ],
+          items: [...contextMenuItems, ...defaultDropdownItems],
         }}
         trigger={['contextMenu']}
+        onOpenChange={(open) => {
+          if (!open) setSelectedContextMenuItem([]);
+        }}
       >
         <div
           className={breakpoint.xs ? styles.MobileView : ''}
@@ -301,15 +485,22 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
               leftNode={
                 <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    {breakpoint.xs ? null : (
-                      <>
-                        <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                          {breakpoint.xl ? 'New Process' : 'New'}
-                        </ProcessCreationButton>
+                    {!breakpoint.xs && (
+                      <Space>
+                        <Dropdown
+                          trigger={['click']}
+                          menu={{
+                            items: defaultDropdownItems,
+                          }}
+                        >
+                          <Button type="primary" icon={<PlusOutlined />}>
+                            New
+                          </Button>
+                        </Dropdown>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>
-                      </>
+                      </Space>
                     )}
 
                     {selectedRowKeys.length ? (
@@ -353,7 +544,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
                   {/* <!-- FloatButtonGroup needs a z-index of 101
         since BPMN Logo of the viewer has an z-index of 100 --> */}
-                  {breakpoint.xl ? undefined : (
+                  {!breakpoint.xl && (
                     <FloatButton.Group
                       className={styles.FloatButton}
                       trigger="click"
@@ -410,28 +601,20 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
               ) : (
                 <ProcessList
                   data={filteredData}
+                  folder={folder}
                   dragInfo={dragInfo}
                   setSelectionElements={setSelectedRowElements}
                   selection={selectedRowKeys}
-                  isLoading={movingItem}
+                  selectedElements={selectedRowElements}
+                  isLoading={loading}
                   // TODO: Replace with server component loading state
                   //isLoading={isLoading}
                   onExportProcess={(id) => {
                     setOpenExportModal(true);
                   }}
-                  onDeleteProcess={async ({ id }) => {
-                    await deleteProcesses([id], environment.spaceId);
-                    setSelectedRowElements([]);
-                    router.refresh();
-                  }}
-                  onCopyProcess={(process) => {
-                    setOpenCopyModal(true);
-                    setSelectedRowElements([process]);
-                  }}
-                  onEditProcess={(process) => {
-                    setOpenEditModal(true);
-                    setSelectedRowElements([process]);
-                  }}
+                  onDeleteItem={onDeleteItems}
+                  onCopyItem={onCopyItem}
+                  onEditItem={onEditItem}
                   setShowMobileMetaData={setShowMobileMetaData}
                 />
               )}
@@ -489,8 +672,8 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
         open={openCopyModal}
         title={`Copy Process${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
-        initialData={filteredData
-          .filter((process) => selectedRowKeys.includes(process.id) && process.type !== 'folder')
+        initialData={copySelection
+          .filter((item) => item.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
             description: process.description.value,
@@ -498,7 +681,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
             folderId: folder.id,
           }))}
         onSubmit={async (values) => {
-          const res = await copyProcesses(values, environment.spaceId);
+          const res = await copyProcesses(values, space.spaceId);
           // Errors are handled in the modal.
           if ('error' in res) {
             return res;
@@ -519,7 +702,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
             description: process.description.value,
           }))}
         onSubmit={async (values) => {
-          const res = await updateProcesses(values, environment.spaceId);
+          const res = await updateProcesses(values, space.spaceId);
           // Errors are handled in the modal.
           if (res && 'error' in res) {
             return res;
@@ -529,13 +712,22 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
         }}
       />
       <AddUserControls name={'process-list'} />
+      <FolderModal
+        open={!!updateFolderModalCurrentFolder}
+        close={() => setUpdateFolderModalCurrentFolder(undefined)}
+        spaceId={space.spaceId}
+        parentId={folder.id}
+        onSubmit={updateFolder}
+        modalProps={{ title: 'Edit folder', okButtonProps: { loading: updatingFolder } }}
+        initialValues={updateFolderModalCurrentFolder}
+      />
     </>
   );
 };
 
 export default Processes;
 
-// NOTE I plan to move this to a separate file
+// NOTE: I plan to move this to a separate file
 export function DraggableElementGenerator<TPropId extends string>(
   element: keyof ReactHTML,
   propId: TPropId,

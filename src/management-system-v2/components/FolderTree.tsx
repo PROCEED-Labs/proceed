@@ -33,7 +33,8 @@ export const FolderTree = ({
   treeProps,
 }: {
   rootNodes: FolderChildren[];
-  newChildrenHook?: (nodes: TreeNode[]) => TreeNode[];
+  /** The return value is used to update the tree */
+  newChildrenHook?: (nodes: TreeNode[], parent: TreeNode) => TreeNode[];
   treeProps?: DirectoryTreeProps;
 }) => {
   const spaceId = useEnvironment().spaceId;
@@ -65,7 +66,7 @@ export const FolderTree = ({
         if (children.length > 0) {
           let childrenNodes = children.map(generateNode);
 
-          if (newChildrenHook) childrenNodes = newChildrenHook(childrenNodes);
+          if (newChildrenHook) childrenNodes = newChildrenHook(childrenNodes, actualNode);
 
           for (const node of childrenNodes) nodeMap.current.set(node.key, node);
           actualNode.children = childrenNodes;

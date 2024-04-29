@@ -55,8 +55,7 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   } = theme.useToken();
 
   /// Derived State
-  const minimized =
-    decodeURIComponent(pathname) !== spaceURL(environment, `/processes/${processId}`);
+  const minimized = !decodeURIComponent(pathname).includes(processId as string);
 
   // update the subprocess breadcrumb information if the visible layer in the modeler is changed
   const subprocessChain = useMemo(() => {

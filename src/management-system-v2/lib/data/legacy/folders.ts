@@ -19,7 +19,7 @@ export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {
       folder: Folder;
-      children: ({ id: string; type: 'folder' } | { id: string; type: Process['type'] })[];
+      children: FolderChildren[];
     };
   }>;
   rootFolders: Partial<{ [environmentId: string]: string }>;

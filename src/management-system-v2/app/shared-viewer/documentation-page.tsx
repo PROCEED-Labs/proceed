@@ -5,9 +5,6 @@ import { is as isType } from 'bpmn-js/lib/util/ModelUtil';
 import type ViewerType from 'bpmn-js/lib/Viewer';
 
 import Canvas from 'diagram-js/lib/core/Canvas';
-import schema from '@/lib/schema';
-
-import { v4 } from 'uuid';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
@@ -26,18 +23,20 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 
 import styles from './documentation-page.module.scss';
 
-import {
-  getElementDI,
-  getRootFromElement,
-  getDefinitionsVersionInformation,
-  getTargetDefinitionsAndProcessIdForCallActivityByObject,
-} from '@proceed/bpmn-helper';
+import { getRootFromElement, getDefinitionsVersionInformation } from '@proceed/bpmn-helper';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
 import ProcessDocument, { VersionInfo } from './process-document';
 
-import { getTitle, getMetaDataFromBpmnElement, getChildElements } from './documentation-page-utils';
+import {
+  getTitle,
+  getMetaDataFromBpmnElement,
+  getChildElements,
+  getViewer,
+  ImportsInfo,
+  getElementSVG,
+} from './documentation-page-utils';
 import { getAllUserWorkspaces } from '@/lib/sharing/process-sharing';
 import { Environment } from '@/lib/data/environment-schema';
 
@@ -53,12 +52,6 @@ const markdownEditor: Promise<ToastEditorType> =
           return new Editor({ el: div });
         })
     : (Promise.resolve(null) as any);
-
-export type ImportsInfo = {
-  [definitionId: string]: {
-    [versionId: number]: string;
-  };
-};
 
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -85,6 +78,7 @@ const BPMNSharedViewer = ({
   );
   const [workspaces, setWorkspaces] = useState<Environment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -108,10 +102,6 @@ const BPMNSharedViewer = ({
     };
   }, [session, searchParams]);
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-  };
-
   const mainContent = useRef<HTMLDivElement>(null);
   const contentTableRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +112,6 @@ const BPMNSharedViewer = ({
   const mdEditor = use(markdownEditor);
 
   useEffect(() => {
-    let viewerElement: HTMLDivElement;
-
     // transforms an element into a representation that contains the necessary meta information that should be presented on this page
     async function transform(
       bpmnViewer: ViewerType,
@@ -132,8 +120,6 @@ const BPMNSharedViewer = ({
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
-      let id = el.id;
-      let name = getTitle(el);
 
       let nestedSubprocess;
       let importedProcess;
@@ -147,66 +133,15 @@ const BPMNSharedViewer = ({
         // get the svg representation of the root plane
         svg = await getSVGFromBPMN(bpmnViewer);
       } else {
-        const elementsToShow = [el.id];
-        // show incoming/outgoing sequence flows for the current element
-        if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
-        if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
-        // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
-        svg = await getSVGFromBPMN(bpmnViewer, currentRootId, elementsToShow);
-
-        if (isType(el, 'bpmn:SubProcess') && !getElementDI(el, definitions).isExpanded) {
-          nestedSubprocess = {
-            // getting the whole layer for a collapsed sub-process
-            planeSvg: await getSVGFromBPMN(bpmnViewer, el.id),
-          };
-          // set the new root for the following export of any children contained in this layer
-          currentRootId = el.id;
-        } else if (isType(el, 'bpmn:CallActivity')) {
-          // check if the call activity references another process which this user can access
-          let importDefinitionId: string | undefined;
-          let version: number | undefined;
-          try {
-            ({ definitionId: importDefinitionId, version: version } =
-              getTargetDefinitionsAndProcessIdForCallActivityByObject(
-                getRootFromElement(el),
-                el.id,
-              ));
-          } catch (err) {}
-
-          if (
-            importDefinitionId &&
-            version &&
-            availableImports[importDefinitionId] &&
-            availableImports[importDefinitionId][version]
-          ) {
-            // remember the bpmn currently loaded into the viewer so we can return to it after getting the svg for the elements in the imported process
-            ({ xml: oldBpmn } = await bpmnViewer.saveXML());
-
-            // get the bpmn for the import and load it into the viewer
-            const importBpmn = availableImports[importDefinitionId][version];
-
-            await bpmnViewer.importXML(importBpmn);
-
-            // set the current element and layer to the root of the imported process
-            const canvas = bpmnViewer.get<Canvas>('canvas');
-            const root = canvas.getRootElement();
-            el = root.businessObject;
-            definitions = el.$parent;
-            currentRootId = undefined;
-
-            const { name: versionName, description: versionDescription } =
-              await getDefinitionsVersionInformation(definitions);
-
-            importedProcess = {
-              name: `Imported Process: ${definitions.name}`,
-              ...getMetaDataFromBpmnElement(el, mdEditor),
-              planeSvg: await getSVGFromBPMN(bpmnViewer),
-              version,
-              versionName,
-              versionDescription,
-            };
-          }
-        }
+        ({ svg, el, definitions, oldBpmn, nestedSubprocess, importedProcess, currentRootId } =
+          await getElementSVG(
+            el,
+            bpmnViewer,
+            mdEditor,
+            definitions,
+            availableImports,
+            currentRootId,
+          ));
       }
 
       let children: ElementInfo[] | undefined = [];
@@ -231,8 +166,8 @@ const BPMNSharedViewer = ({
 
       return {
         svg,
-        id,
-        name,
+        id: el.id,
+        name: getTitle(el),
         description,
         meta,
         milestones,
@@ -243,40 +178,28 @@ const BPMNSharedViewer = ({
       };
     }
 
-    import('bpmn-js/lib/Viewer')
-      .then(async ({ default: Viewer }) => {
-        //Creating temporary element for BPMN Viewer
-        viewerElement = document.createElement('div');
+    async function loadProcessHierarchy() {
+      const viewer = await getViewer(processData.bpmn!);
 
-        //Assiging process id to temp element and append to DOM
-        viewerElement.id = 'canvas_' + v4();
-        document.body.appendChild(viewerElement);
+      const canvas = viewer.get<Canvas>('canvas');
+      const root = canvas.getRootElement();
 
-        //Create a viewer to transform the bpmn into an svg
-        const viewer = new Viewer({
-          container: '#' + viewerElement.id,
-          moddleExtensions: {
-            proceed: schema,
-          },
-        });
-        await viewer.importXML(processData.bpmn!);
-        return viewer;
-      })
-      .then(async (viewer) => {
-        const canvas = viewer.get<Canvas>('canvas');
-        const root = canvas.getRootElement();
+      const definitions = getRootFromElement(root.businessObject);
+      getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
+        setVersionInfo({ id: version, name, description }),
+      );
 
-        const definitions = getRootFromElement(root.businessObject);
-        getDefinitionsVersionInformation(definitions).then(({ version, name, description }) =>
-          setVersionInfo({ id: version, name, description }),
-        );
+      const hierarchy = await transform(
+        viewer,
+        root.businessObject,
+        root.businessObject.$parent,
+        undefined,
+      );
+      setProcessHierarchy(hierarchy);
+      viewer.destroy();
+    }
 
-        return await transform(viewer, root.businessObject, root.businessObject.$parent, undefined);
-      })
-      .then((rootElement) => {
-        setProcessHierarchy(rootElement);
-        document.body.removeChild(viewerElement);
-      });
+    loadProcessHierarchy();
   }, [mdEditor, processData]);
 
   useEffect(() => {
@@ -292,7 +215,7 @@ const BPMNSharedViewer = ({
     router.push(loginPath);
   };
 
-  const handleCopyToOwnWorkspace = async (workspace: Environment) => {
+  const copyToWorkspace = async (workspace: Environment) => {
     const processesToCopy = [
       {
         name: processData.name,
@@ -325,7 +248,7 @@ const BPMNSharedViewer = ({
       ) : (
         <Avatar size={50} icon={<LaptopOutlined style={{ color: 'black' }} />} />
       ),
-    optionOnClick: () => handleCopyToOwnWorkspace(workspace),
+    optionOnClick: () => copyToWorkspace(workspace),
   }));
 
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
@@ -355,128 +278,104 @@ const BPMNSharedViewer = ({
     }
   };
 
+  const handleAddToWorkspace = () => {
+    if (session.status === 'authenticated') setIsModalOpen(true);
+    else redirectToLoginPage();
+  };
+
   return (
-    <Content
-      headerLeft={
-        <div>
-          <Space>
-            <Button
-              size="large"
-              onClick={() => {
-                router.push('/');
-              }}
-            >
-              Go to PROCEED
-            </Button>
-            {!isOwner && (
-              <>
-                {session.status === 'authenticated' ? (
-                  <>
-                    <Button size="large" onClick={() => setIsModalOpen(true)}>
-                      Add to your workspace
-                    </Button>
-                    <Modal
-                      title={
-                        <div style={{ textAlign: 'center', padding: '10px' }}>
-                          Select your workspace
-                        </div>
-                      }
-                      open={isModalOpen}
-                      closeIcon={false}
-                      onCancel={handleModalClose}
-                      zIndex={200}
-                      footer={
-                        <Button onClick={handleModalClose} style={{ border: '1px solid black' }}>
-                          Close
-                        </Button>
-                      }
-                    >
-                      <Space
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'row',
-                          flexWrap: 'wrap',
-                          justifyContent: 'center',
-                          gap: 10,
-                        }}
-                      >
-                        {userWorkspaces.map((workspace) => (
-                          <Button
-                            type="default"
-                            key={workspace.key}
-                            icon={workspace.logo}
-                            style={{
-                              border: '1px solid black',
-                              width: '150px',
-                              height: '100px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              overflow: 'hidden',
-                              whiteSpace: 'normal',
-                              textOverflow: 'ellipsis',
-                              borderColor: 'black',
-                              boxShadow: '2px 2px 2px grey',
-                            }}
-                            onClick={workspace.optionOnClick}
-                          >
-                            <Typography.Text
-                              style={{
-                                margin: '5px',
-                                textAlign: 'center',
-                              }}
-                            >
-                              {workspace.label}
-                            </Typography.Text>
-                          </Button>
-                        ))}
-                      </Space>
-                    </Modal>
-                  </>
-                ) : (
-                  <Button size="large" onClick={redirectToLoginPage}>
+    <div className={styles.DocumentationPageContent}>
+      <Content
+        headerLeft={
+          <div>
+            <Space>
+              <Button
+                size="large"
+                onClick={() => {
+                  router.push('/');
+                }}
+              >
+                Go to PROCEED
+              </Button>
+              {!isOwner && (
+                <>
+                  <Button size="large" onClick={handleAddToWorkspace}>
                     Add to your workspace
                   </Button>
-                )}
-              </>
-            )}
-            <Tooltip title="Print">
-              <Button size="large" icon={<PrinterOutlined />} onClick={() => window.print()} />
-            </Tooltip>
-            <SettingsModal checkedSettings={checkedSettings} onConfirm={setCheckedSettings} />
-          </Space>
-        </div>
-      }
-      headerCenter={
-        <Typography.Text strong style={{ padding: '0 5px' }}>
-          {processData.name}
-        </Typography.Text>
-      }
-    >
-      <div className={styles.MainContent}>
-        <div className={styles.ProcessInfoCol} ref={mainContent}>
-          <ProcessDocument
-            settings={activeSettings}
-            processHierarchy={processHierarchy}
-            processData={processData}
-            version={versionInfo}
-          />
-        </div>
-        {breakpoint.lg && (
-          <div className={styles.ContentTableCol} ref={contentTableRef}>
-            <TableOfContents
+                  <Modal
+                    title={
+                      <div style={{ textAlign: 'center', padding: '10px' }}>
+                        Select your workspace
+                      </div>
+                    }
+                    open={isModalOpen}
+                    closeIcon={false}
+                    onCancel={() => setIsModalOpen(false)}
+                    zIndex={200}
+                    footer={
+                      <Button
+                        onClick={() => setIsModalOpen(false)}
+                        style={{ border: '1px solid black' }}
+                      >
+                        Close
+                      </Button>
+                    }
+                  >
+                    <Space className={styles.WorkspaceSelection}>
+                      {userWorkspaces.map((workspace) => (
+                        <Button
+                          type="default"
+                          key={workspace.key}
+                          icon={workspace.logo}
+                          className={styles.WorkspaceButton}
+                          onClick={workspace.optionOnClick}
+                        >
+                          <Typography.Text className={styles.WorkspaceButtonLabel}>
+                            {workspace.label}
+                          </Typography.Text>
+                        </Button>
+                      ))}
+                    </Space>
+                  </Modal>
+                </>
+              )}
+              <Tooltip title="Print">
+                <Button size="large" icon={<PrinterOutlined />} onClick={() => window.print()} />
+              </Tooltip>
+              <SettingsModal checkedSettings={checkedSettings} onConfirm={setCheckedSettings} />
+            </Space>
+          </div>
+        }
+        headerCenter={
+          <Typography.Text strong style={{ padding: '0 5px' }}>
+            {processData.name}
+          </Typography.Text>
+        }
+      >
+        <div className={styles.MainContent}>
+          <div className={styles.ProcessInfoCol} ref={mainContent}>
+            <ProcessDocument
               settings={activeSettings}
               processHierarchy={processHierarchy}
-              affix={false}
-              getContainer={() => mainContent.current!}
-              targetOffset={100}
-              onChange={handleContentTableChange}
+              processData={processData}
+              version={versionInfo}
             />
           </div>
-        )}
-      </div>
-    </Content>
+          {breakpoint.lg && (
+            <div className={styles.ContentTableCol} ref={contentTableRef}>
+              <TableOfContents
+                settings={activeSettings}
+                processHierarchy={processHierarchy}
+                affix={false}
+                getContainer={() => mainContent.current!}
+                targetOffset={100}
+                onChange={handleContentTableChange}
+              />
+            </div>
+          )}
+        </div>
+      </Content>
+    </div>
   );
 };
 

@@ -4,7 +4,8 @@ import { test, expect } from './process-list.fixtures';
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  await page.getByRole('button', { name: 'New Process' }).click();
+  await page.getByRole('button', { name: 'plus New' }).click();
+  await page.getByRole('menuitem', { name: 'file Create Process' }).click();
   await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
   await page.getByLabel('Process Description').click();
   await page.getByLabel('Process Description').fill('Process Description');
@@ -43,9 +44,6 @@ test('import a process', async ({ processListPage }) => {
   await expect(page.locator('.djs-shape[data-element-id="Activity_1m5esxh"]')).toBeVisible();
   await expect(page.locator('.djs-connection[data-element-id="Flow_0evtfpc"]')).toBeVisible();
   await expect(page.locator('.djs-shape[data-element-id="Event_1oxwp3r"]')).toBeVisible();
-
-  await processListPage.goto();
-  await processListPage.removeProcess(definitionId);
 });
 
 test('export a single process', async ({ processListPage }) => {

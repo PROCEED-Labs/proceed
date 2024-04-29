@@ -42,8 +42,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
 
   /// Derived State
-  const minimized =
-    decodeURIComponent(pathname) !== spaceURL(environment, `/processes/${process.id}`);
+  const minimized = !decodeURIComponent(pathname).includes(process.id);
+
   const selectedVersionId = query.get('version');
   const subprocessId = query.get('subprocess');
 

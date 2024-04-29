@@ -148,18 +148,134 @@ test.describe('Shortcuts in Modeler', () => {
   /* ctrl / meta + enter */
   test('open Property-Panel with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
+
+    await page.waitForTimeout(1000);
+
+    /* Open Modal */
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Check if Property-Panel is open */
+    // await page.waitForTimeout(10000);
+    await expect(
+      page.getByRole('region', { name: 'Properties' }),
+      'Property-Panel should be openable via shortcuts',
+    ).toBeVisible();
+
+    /* Close via esc */
+    await page.getByRole('main').press('Escape');
+
+    /* Check if panel closed */
+    await expect(
+      page.getByRole('region', { name: 'Properties' }),
+      'Property-Panel should be closeable via shortcuts',
+    ).not.toBeVisible();
+
+    /* Open with meta */
+    await page.getByRole('main').press('Meta+Enter');
+
+    /* Check if Property-Panel is open */
+    await expect(
+      page.getByRole('region', { name: 'Properties' }),
+      'Property-Panel should be openable via shortcuts',
+    ).toBeVisible();
   });
 
-  // test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
-  //   const { page } = processModelerPage;
-  // });
+  test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
+    const { page } = processModelerPage;
 
-  // test('open XML with shortcut', async ({ processModelerPage }) => {
-  //   const { page } = processModelerPage;
-  // });
+    await page.waitForTimeout(1000);
+
+    /* Open Share-Modal with Shift+Enter */
+    await page.getByRole('main').press('Shift+Enter');
+
+    /* Check if Share-Modal is open */
+    let modal = await page.getByRole('dialog');
+    await expect(modal, 'Share-Modal should be openable via shortcuts').toBeVisible();
+
+    /* Check if correct modal opened */
+    let modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/share/i);
+
+    /* Change between tabs */
+    // TODO:
+    /* --------------- */
+
+    /* --------------- */
+
+    await page.waitForTimeout(1000); /* TODO: expect fuer mehrere frames true account */
+
+    /* Close modal */
+    await page.getByRole('main').press('Escape');
+
+    /* Check if modal closed */
+    await expect(modal, 'Share-Modal should be closeable via shortcuts').not.toBeVisible();
+  });
+
+  test('open XML with shortcut', async ({ processModelerPage }) => {
+    const { page } = processModelerPage;
+
+    await page.waitForTimeout(1000);
+
+    /* Open XML with ctrl / meta + x */
+    await page.locator('body').press('Control+x');
+
+    /* Check if XML-Modal is open */
+    let modal = await page.getByRole('dialog');
+    expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
+
+    /* Check if correct modal opened */
+    let modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/xml/i);
+
+    await page.waitForTimeout(1000);
+
+    /* Close Modal */
+    await page.locator('body').press('Escape');
+
+    /* Check if modal closed */
+    await expect(modal, 'XML-Modal should be closeable via shortcuts').not.toBeVisible();
+
+    /* Open with meta */
+    await page.locator('body').press('Meta+x');
+
+    /* Check if XML-Modal is open */
+    modal = await page.getByRole('dialog');
+    expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
+  });
 
   /* ctrl / meta + e */
   test('open Export-Modal with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
+
+    await page.waitForTimeout(1000);
+
+    /* Open Export-Modal with ctrl / meta + e */
+    // await page.getByRole('main').press('Control+E');
+    await page.locator('body').press('Control+e');
+
+    /* Check if Export-Modal is open */
+    let modal = await page.getByRole('dialog');
+    expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
+
+    /* Check if correct modal opened */
+    let modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /export/i,
+    );
+
+    await page.waitForTimeout(1000);
+
+    /* Close Modal */
+    await page.locator('body').press('Escape');
+
+    /* Check if modal closed */
+    await expect(modal, 'Export-Modal should be closeable via shortcuts').not.toBeVisible();
+
+    /* Open with meta */
+    await page.getByRole('main').press('Meta+E');
+
+    /* Check if Export-Modal is open */
+    modal = await page.getByRole('dialog');
+    expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
   });
 });

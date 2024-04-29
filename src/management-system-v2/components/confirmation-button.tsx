@@ -38,19 +38,7 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
 
     useAddControlCallback(
       'process-list',
-      [
-        'selectall',
-        'esc',
-        // 'del',
-        'copy',
-        'paste',
-        'enter',
-        'cut',
-        'export',
-        'import',
-        'shiftenter',
-        'controlenter',
-      ],
+      ['selectall', 'esc', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
       (e) => {
         // e.preventDefault();
         // onConfirmWrapper();
@@ -60,7 +48,7 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
 
     useAddControlCallback(
       'process-list',
-      ['controlenter'],
+      ['control+enter'],
       () => {
         if (externalOpen || modalOpen) {
           onConfirmWrapper();

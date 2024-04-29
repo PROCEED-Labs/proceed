@@ -351,7 +351,7 @@ const ProcessList: FC<ProcessListProps> = ({
       onRow={(record) => ({
         onClick: (event) => {
           /* CTRL */
-          if (event.ctrlKey) {
+          if (event.ctrlKey || event.metaKey) {
             /* Not selected yet -> Add to selection */
             if (!selection.includes(record?.id)) {
               setSelectionElements((prev) => [record, ...prev]);

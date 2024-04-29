@@ -84,9 +84,12 @@ const ModelerToolbar = ({
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
-  // useAddControlCallback('modeler', 'controlenter', handlePropertiesPanelToggle, {
-  //   dependencies: [],
-  // });
+  useAddControlCallback('modeler', 'control+enter', () => {
+    setShowPropertiesPanel(true); /* This does not cause rerenders if it is already set to true */
+  });
+  useAddControlCallback('modeler', 'esc', () => {
+    setShowPropertiesPanel(false);
+  });
 
   const handleProcessExportModalToggle = async () => {
     if (!showProcessExportModal && modeler) {
@@ -111,6 +114,10 @@ const ModelerToolbar = ({
     setShowProcessExportModal(!showProcessExportModal);
   };
 
+  useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
+    dependencies: [modeler, showProcessExportModal],
+  });
+
   const handleProcessExportModalToggleMobile = async (
     preselectedExportType: ProcessExportOptions['type'],
   ) => {
@@ -129,6 +136,9 @@ const ModelerToolbar = ({
   const handleRedo = () => {
     modeler?.redo();
   };
+
+  useAddControlCallback('modeler', 'undo', handleUndo, { dependencies: [modeler] });
+  useAddControlCallback('modeler', 'redo', handleRedo, { dependencies: [modeler] });
 
   const handleReturnToParent = async () => {
     if (modeler) {

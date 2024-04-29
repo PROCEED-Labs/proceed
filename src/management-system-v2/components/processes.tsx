@@ -247,9 +247,18 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
 
   useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
 
-  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowElements));
+  useAddControlCallback(
+    'process-list',
+    'copy',
+    () => {
+      setCopySelection(selectedRowElements);
+    },
+    { dependencies: [selectedRowElements] },
+  );
 
-  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+  useAddControlCallback('process-list', 'paste', () => {
+    setOpenCopyModal(true);
+  });
 
   useAddControlCallback(
     'process-list',
@@ -378,7 +387,9 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="create process" />,
+      label: (
+        <ProcessCreationButton wrapperElement="create process" />
+      ) /* This only gets rendered once the user opened it at least once */,
       icon: <FileOutlined />,
     });
 
@@ -464,6 +475,9 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   // Here all the loading states shoud be ORed together
   const loading = movingItem;
 
+  const [creationButtonRendered, setCreaButtonRendered] = useState(false);
+  const doNotRerender = useRef(false);
+
   return (
     <>
       <Dropdown
@@ -479,6 +493,13 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
           className={breakpoint.xs ? styles.MobileView : ''}
           style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
         >
+          {!creationButtonRendered && (
+            <div
+              style={{ position: 'absolute', top: 0, left: 0, zIndex: -1000, visibility: 'hidden' }}
+            >
+              <ProcessCreationButton />
+            </div>
+          )}
           {/* 73% for list / icon view, 27% for meta data panel (if active) */}
           <div style={{ flex: '1' }}>
             <Bar
@@ -491,6 +512,13 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
                           trigger={['click']}
                           menu={{
                             items: defaultDropdownItems,
+                          }}
+                          onOpenChange={(open) => {
+                            /* Once this was opened for the first time, the creationButtonRendered state can be set to true */
+                            if (!doNotRerender.current) {
+                              doNotRerender.current = true;
+                              setCreaButtonRendered(true);
+                            }
                           }}
                         >
                           <Button type="primary" icon={<PlusOutlined />}>

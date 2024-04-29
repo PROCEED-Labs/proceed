@@ -161,7 +161,7 @@ export class ProcessListPage {
   async createProcess(name: string, desciption: string = '') {
     const { page } = this;
     /* Create Process */
-    await page.getByRole('button', { name: 'New Process' }).click();
+    await page.getByRole('main').press('Control+Enter');
     await page.getByRole('textbox', { name: '* Process Name :' }).fill(name);
     await page.getByLabel('Process Description').click();
     await page.getByLabel('Process Description').fill(desciption);

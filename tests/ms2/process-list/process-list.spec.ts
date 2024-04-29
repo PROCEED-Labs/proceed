@@ -298,6 +298,11 @@ test('export multiple processes', async ({ processListPage }) => {
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
 });
 
+/* Favourites */ //TODO:
+test('add and remove favourite processes', async ({ processListPage }) => {
+  const { page } = processListPage;
+});
+
 test.describe('shortcuts in process-list', () => {
   /* Create Process - ctrl / meta + enter */
   test('create and submit a new process with shortcuts', async ({ processListPage }) => {

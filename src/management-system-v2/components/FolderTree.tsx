@@ -3,7 +3,7 @@
 import { getFolderChildren } from '@/lib/data/folders';
 import { Tree, TreeProps } from 'antd';
 type DirectoryTreeProps = ComponentProps<typeof Tree.DirectoryTree>;
-import React, { ComponentProps, useRef, useState } from 'react';
+import React, { ComponentProps, useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
 
 type FolderChildren = {
@@ -32,9 +32,9 @@ export const FolderTree = ({
   newChildrenHook,
   treeProps,
 }: {
-  rootNodes: FolderChildren[];
+  rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
-  newChildrenHook?: (nodes: TreeNode[], parent: TreeNode) => TreeNode[];
+  newChildrenHook?: (nodes: TreeNode[], parent?: TreeNode) => TreeNode[];
   treeProps?: DirectoryTreeProps;
 }) => {
   const spaceId = useEnvironment().spaceId;
@@ -42,6 +42,8 @@ export const FolderTree = ({
   const nodeMap = useRef(new Map<React.Key, TreeNode>());
 
   const [tree, setTree] = useState<TreeNode[]>(() => {
+    if (!rootNodes) return [];
+
     const initialNodes = rootNodes.map(generateNode);
     for (const node of initialNodes) {
       // In development react runs this function twice,
@@ -53,28 +55,34 @@ export const FolderTree = ({
     return initialNodes;
   });
 
-  return (
-    <Tree.DirectoryTree
-      {...treeProps}
-      treeData={tree}
-      loadData={async (node) => {
-        const children = await getFolderChildren(spaceId, node.element.id);
-        if ('error' in children) return;
+  const loadData = async (node?: TreeNode) => {
+    const nodeId = node?.element.id;
 
-        const actualNode = nodeMap.current.get(node.key)!;
+    const children = await getFolderChildren(spaceId, nodeId);
+    if ('error' in children) return;
+    if (children.length === 0) return;
 
-        if (children.length > 0) {
-          let childrenNodes = children.map(generateNode);
+    let childrenNodes = children.map(generateNode);
 
-          if (newChildrenHook) childrenNodes = newChildrenHook(childrenNodes, actualNode);
+    const actualNode = nodeId ? nodeMap.current.get(nodeId) : undefined;
+    if (newChildrenHook) childrenNodes = newChildrenHook(childrenNodes, actualNode);
 
-          for (const node of childrenNodes) nodeMap.current.set(node.key, node);
-          actualNode.children = childrenNodes;
-        }
+    for (const node of childrenNodes) nodeMap.current.set(node.key, node);
 
-        // trigger re-render
-        setTree((currentTree) => [...currentTree]);
-      }}
-    />
-  );
+    if (nodeId) {
+      actualNode!.children = childrenNodes;
+      // trigger re-render
+      setTree((currentTree) => [...currentTree]);
+    } else {
+      setTree(childrenNodes);
+    }
+  };
+
+  useEffect(() => {
+    if (!rootNodes) {
+      loadData();
+    }
+  }, [rootNodes]);
+
+  return <Tree.DirectoryTree {...treeProps} treeData={tree} loadedKeys={[]} loadData={loadData} />;
 };

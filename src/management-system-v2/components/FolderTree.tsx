@@ -57,7 +57,7 @@ export const FolderTree = ({
       {...treeProps}
       treeData={tree}
       loadData={async (node) => {
-        const children = await getFolderChildren(node.element.id, spaceId);
+        const children = await getFolderChildren(spaceId, node.element.id);
         if ('error' in children) return;
 
         const actualNode = nodeMap.current.get(node.key)!;

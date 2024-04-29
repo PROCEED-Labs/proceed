@@ -64,9 +64,11 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
   }
 }
 
-export async function getFolderChildren(folderId: string, spaceId: string) {
+export async function getFolderChildren(spaceId: string, folderId?: string) {
   try {
     const { ability } = await getCurrentEnvironment(spaceId);
+
+    folderId = folderId || getRootFolder(spaceId).id;
 
     const children = _getFolderChildren(folderId, ability);
     if (!children) throw new Error();

@@ -49,9 +49,21 @@ export class ProcessModelerPage {
 
     const pageURL = page.url();
     const processDefinitionID = pageURL.split('/processes/').pop();
+
     this.processDefinitionID = processDefinitionID;
     this.processName = processName;
     this.processDescription = description;
+
+    await this.waitForHydration();
+  }
+
+  async waitForHydration() {
+    const { page } = this;
+    /* Gves time for everything to load */
+    const accountButton = await page.getByRole('link', { name: 'user' });
+    await accountButton.hover();
+    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor();
+    await page.getByRole('main').click();
   }
 
   async createSubprocess() {

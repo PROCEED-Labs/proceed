@@ -128,16 +128,14 @@ test('process modeler', async ({ processModelerPage }) => {
 });
 
 test.describe('Shortcuts in Modeler', () => {
-  test('close modeler / got to process list with shortcut', async ({ processModelerPage }) => {
+  test('close modeler / go to process list with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
-
-    await page.waitForTimeout(1000);
 
     /* Close modeler */
     await page.getByRole('main').press('Escape');
     await page.getByRole('main').press('Escape');
 
-    await page.waitForTimeout(1000);
+    await processModelerPage.waitForHydration();
 
     /* Check if back at Process-List */
     await expect(page.url(), 'Could not close modeler with shortcut (2*esc)').toMatch(
@@ -149,13 +147,10 @@ test.describe('Shortcuts in Modeler', () => {
   test('open Property-Panel with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
-    await page.waitForTimeout(1000);
-
     /* Open Modal */
     await page.getByRole('main').press('Control+Enter');
 
     /* Check if Property-Panel is open */
-    // await page.waitForTimeout(10000);
     await expect(
       page.getByRole('region', { name: 'Properties' }),
       'Property-Panel should be openable via shortcuts',
@@ -183,8 +178,6 @@ test.describe('Shortcuts in Modeler', () => {
   test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
-    await page.waitForTimeout(1000);
-
     /* Open Share-Modal with Shift+Enter */
     await page.getByRole('main').press('Shift+Enter');
 
@@ -202,7 +195,8 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* --------------- */
 
-    await page.waitForTimeout(1000); /* TODO: expect fuer mehrere frames true account */
+    /* Ensure entry-animation is done */
+    await page.waitForTimeout(1000);
 
     /* Close modal */
     await page.getByRole('main').press('Escape');
@@ -213,8 +207,6 @@ test.describe('Shortcuts in Modeler', () => {
 
   test('open XML with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
-
-    await page.waitForTimeout(1000);
 
     /* Open XML with ctrl / meta + x */
     await page.locator('body').press('Control+x');
@@ -227,6 +219,7 @@ test.describe('Shortcuts in Modeler', () => {
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
     await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/xml/i);
 
+    /* Ensure entry-animation is done */
     await page.waitForTimeout(1000);
 
     /* Close Modal */
@@ -247,8 +240,6 @@ test.describe('Shortcuts in Modeler', () => {
   test('open Export-Modal with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
-    await page.waitForTimeout(1000);
-
     /* Open Export-Modal with ctrl / meta + e */
     // await page.getByRole('main').press('Control+E');
     await page.locator('body').press('Control+e');
@@ -263,13 +254,18 @@ test.describe('Shortcuts in Modeler', () => {
       /export/i,
     );
 
+    /* Ensure entry-animation is done */
     await page.waitForTimeout(1000);
 
     /* Close Modal */
-    await page.locator('body').press('Escape');
+    // await page.locator('body').press('Escape');
+    await page.getByRole('main').press('Escape');
 
     /* Check if modal closed */
     await expect(modal, 'Export-Modal should be closeable via shortcuts').not.toBeVisible();
+
+    /* Ensure exit-animation is done */
+    await page.waitForTimeout(1000);
 
     /* Open with meta */
     await page.getByRole('main').press('Meta+E');

@@ -179,6 +179,9 @@ export class ProcessListPage {
     /* Go back to Process-List */
     await this.goto();
 
+    /* Wait until on Process-List */
+    await page.waitForURL('**/processes');
+
     return processDefinitionID;
   }
 }

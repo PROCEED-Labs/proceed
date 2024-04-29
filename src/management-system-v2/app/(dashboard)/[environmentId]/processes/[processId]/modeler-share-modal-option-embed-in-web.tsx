@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { CopyOutlined } from '@ant-design/icons';
 import { Button, Input, Checkbox, App } from 'antd';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   generateSharedViewerUrl,
   updateProcessGuestAccessRights,
@@ -27,20 +27,26 @@ const ModelerShareModalOptionEmdedInWeb = ({
   const [embeddingUrl, setEmbeddingUrl] = useState('');
   const { message } = App.useApp();
 
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
+
   useEffect(() => {
     const initialize = async () => {
       if (allowIframeTimestamp > 0) {
         // generate an url with a token that contains the currently active embedding timestamp
-        const url = await generateSharedViewerUrl({
-          processId,
-          embeddedMode: true,
-          timestamp: allowIframeTimestamp,
-        });
+        const url = await generateSharedViewerUrl(
+          {
+            processId,
+            embeddedMode: true,
+            timestamp: allowIframeTimestamp,
+          },
+          selectedVersionId || undefined,
+        );
         setEmbeddingUrl(url);
       }
     };
     initialize();
-  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs]);
+  }, [allowIframeTimestamp, environment.spaceId, processId, sharedAs, selectedVersionId]);
 
   const handleAllowEmbeddingChecked = async (e: {
     target: { checked: boolean | ((prevState: boolean) => boolean) };
@@ -49,11 +55,14 @@ const ModelerShareModalOptionEmdedInWeb = ({
     if (isChecked) {
       const timestamp = Date.now();
       // generate an url containing a token with the newly generated timestamp
-      const url = await generateSharedViewerUrl({
-        processId,
-        embeddedMode: true,
-        timestamp,
-      });
+      const url = await generateSharedViewerUrl(
+        {
+          processId,
+          embeddedMode: true,
+          timestamp,
+        },
+        selectedVersionId || undefined,
+      );
       setEmbeddingUrl(url);
       // activate embedding for that specific timestamp
       await updateProcessGuestAccessRights(

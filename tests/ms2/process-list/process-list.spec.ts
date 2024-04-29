@@ -364,8 +364,8 @@ test.describe('shortcuts in process-list', () => {
       .split(processListPage.getPageURL() + '/')
       .pop();
 
-    /* Wait for page to be fully loaded */
-    await page.waitForTimeout(1000); /* TODO: better way? */
+    await processListPage.waitForHydration();
+
     /* Go back to process list by pressing esc twice */
     await page.getByRole('main').press('Escape');
     await page.getByRole('main').press('Escape');

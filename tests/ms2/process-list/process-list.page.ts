@@ -182,6 +182,17 @@ export class ProcessListPage {
     /* Wait until on Process-List */
     await page.waitForURL('**/processes');
 
+    await this.waitForHydration();
+
     return processDefinitionID;
+  }
+
+  async waitForHydration() {
+    const { page } = this;
+    /* Gves time for everything to load */
+    const accountButton = await page.getByRole('link', { name: 'user' });
+    await accountButton.hover();
+    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor();
+    await page.getByRole('main').click();
   }
 }

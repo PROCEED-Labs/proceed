@@ -107,6 +107,7 @@ type ProcessesProps = {
 };
 
 const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
+  const originalProcesses = processes;
   if (folder.parentId)
     processes = [
       {
@@ -241,7 +242,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
       e.preventDefault();
       setSelectedRowElements(filteredData ?? []);
     },
-    { dependencies: [processes] },
+    { dependencies: [originalProcesses] },
   );
   useAddControlCallback('process-list', 'esc', deselectAll);
 

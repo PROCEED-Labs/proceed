@@ -207,7 +207,7 @@ const BPMNSharedViewer = ({
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
       // open the print dialog automatically when loading has finished if the page is opened from the export modal
-      window.print();
+      setTimeout(window.print, 100);
     }
   }, [processHierarchy, defaultSettings]);
 

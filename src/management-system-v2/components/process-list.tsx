@@ -174,10 +174,10 @@ const ProcessList: FC<ProcessListProps> = ({
           e.stopPropagation();
           const { checked, value } = e.target;
           if (checked) {
-            addPreferences({ 'process-list-columns': [...selectedColumns, value] });
+            addPreferences({ 'process-list-columns-desktop': [...selectedColumns, value] });
           } else {
             addPreferences({
-              'process-list-columns': selectedColumns.filter((column) => column !== value),
+              'process-list-columns-desktop': selectedColumns.filter((column) => column !== value),
             });
           }
         }}

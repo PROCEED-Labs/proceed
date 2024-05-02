@@ -126,13 +126,14 @@ const BPMNSharedViewer = ({
 
       const { meta, milestones, description, image } = getMetaDataFromBpmnElement(el, mdEditor);
 
-      // stores the bpmn of an importing process when the importing process is loaded into the modeler in the case of a call activity
+      // stores the bpmn of an importing process when the imported process is loaded into the modeler in the case of a call activity
       let oldBpmn: string | undefined;
 
       if (isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process')) {
         // get the svg representation of the root plane
         svg = await getSVGFromBPMN(bpmnViewer);
       } else {
+        // get svg representations of an element (the element as seen in the current layer and optionally an imported process or nested subprocess representing the element)
         ({ svg, el, definitions, oldBpmn, nestedSubprocess, importedProcess, currentRootId } =
           await getElementSVG(
             el,
@@ -196,6 +197,7 @@ const BPMNSharedViewer = ({
         undefined,
       );
       setProcessHierarchy(hierarchy);
+      // cleanup of the viewer and a temporary element inserted into the dom that wraps around it
       viewer.destroy();
     }
 

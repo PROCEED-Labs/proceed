@@ -111,7 +111,6 @@ export function getChildElements(el: any) {
  * Returns a bpmn-io viewer with the given bpmn already loaded
  *
  * @param bpmn
- * @returns
  */
 export async function getViewer(bpmn: string) {
   const ViewerClass = (await import('bpmn-js/lib/Viewer')).default;
@@ -119,11 +118,11 @@ export async function getViewer(bpmn: string) {
   //Creating temporary element for BPMN Viewer
   const viewerElement = document.createElement('div');
 
-  //Assiging process id to temp element and append to DOM
+  //Assigning a unique id to the temp element and append to DOM
   viewerElement.id = 'canvas_' + v4();
   document.body.appendChild(viewerElement);
 
-  //Create a viewer to transform the bpmn into an svg
+  //Create the viewer attached to the temporary element
   const viewer = new ViewerClass({
     container: '#' + viewerElement.id,
     moddleExtensions: {

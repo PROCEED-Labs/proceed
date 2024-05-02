@@ -147,7 +147,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan delete Process={record}>
+          <AuthCan {...resource} delete>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}

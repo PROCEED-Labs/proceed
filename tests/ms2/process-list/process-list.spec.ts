@@ -312,7 +312,7 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Modal is visible */
     let modal = await page.getByRole('dialog');
-    expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
+    await expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
@@ -324,7 +324,7 @@ test.describe('shortcuts in process-list', () => {
     await page.getByRole('main').press('Escape');
 
     /* Check if Modal closed */
-    expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
+    await expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
 
     /* Open Modal with meta + enter */
     await page.getByRole('main').press('Meta+Enter');
@@ -332,7 +332,7 @@ test.describe('shortcuts in process-list', () => {
     modal = await page.getByRole('dialog');
 
     /* Check if Modal opened */
-    expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
+    await expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
 
     /* Check if correct modal opened */
     modalTitle = await modal.locator('div[class="ant-modal-title"]');

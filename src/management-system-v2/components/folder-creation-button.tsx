@@ -53,7 +53,7 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
 
       <FolderModal
         open={modalOpen}
-        setOpen={setModalOpen}
+        close={() => setModalOpen(false)}
         spaceId={spaceId}
         parentId={folderId}
         onSubmit={createFolder}

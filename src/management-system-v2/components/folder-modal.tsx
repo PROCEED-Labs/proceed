@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Form, Input, Modal } from 'antd';
 import type { ModalProps } from 'antd';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
+import { Folder, FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema';
 import TextArea from 'antd/es/input/TextArea';
 
 type FolderModalProps = {
@@ -13,7 +13,8 @@ type FolderModalProps = {
   onSubmit: (values: FolderUserInput) => void;
   modalProps?: ModalProps;
   open: boolean;
-  setOpen: (open: boolean) => void;
+  close: () => void;
+  initialValues?: Partial<Folder>;
 };
 
 const FolderModal = ({
@@ -22,7 +23,8 @@ const FolderModal = ({
   onSubmit,
   modalProps,
   open,
-  setOpen,
+  close,
+  initialValues,
 }: FolderModalProps) => {
   const [form] = Form.useForm();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
@@ -34,6 +36,11 @@ const FolderModal = ({
     onSubmit(values);
   }
 
+  useEffect(() => {
+    if (initialValues) form.setFieldsValue(initialValues);
+    else form.resetFields();
+  }, [open, initialValues]);
+
   return (
     <Modal
       title="Folder"
@@ -41,10 +48,10 @@ const FolderModal = ({
       destroyOnClose
       {...modalProps}
       open={open}
-      onCancel={() => setOpen(false)}
+      onCancel={() => close()}
       onOk={form.submit}
     >
-      <Form onFinish={checkInput} form={form} layout="vertical">
+      <Form onFinish={checkInput} form={form} layout="vertical" initialValues={initialValues}>
         <Form.Item
           name="name"
           label="Folder name"

@@ -53,10 +53,10 @@
     "zod": "3.22.4",
     "zustand": "4.5.2",
     "react-icons": "5.1.0",
-    "@react-email/components": "^0.0.15",
     "nodemailer": "6.9.13",
     "@dnd-kit/core": "6.1.0",
-    "@dnd-kit/modifiers": "7.0.0"
+    "@dnd-kit/modifiers": "7.0.0",
+    "@react-email/components": "^0.0.15"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",

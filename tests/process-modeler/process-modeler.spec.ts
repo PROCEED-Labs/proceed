@@ -213,7 +213,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if XML-Modal is open */
     let modal = await page.getByRole('dialog');
-    expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
+    await expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
@@ -233,7 +233,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if XML-Modal is open */
     modal = await page.getByRole('dialog');
-    expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
+    await expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
   });
 
   /* ctrl / meta + e */
@@ -246,7 +246,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if Export-Modal is open */
     let modal = await page.getByRole('dialog');
-    expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
+    await expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
@@ -272,6 +272,6 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if Export-Modal is open */
     modal = await page.getByRole('dialog');
-    expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
+    await expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
   });
 });

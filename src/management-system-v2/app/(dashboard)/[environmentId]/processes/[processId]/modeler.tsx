@@ -15,6 +15,7 @@ import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-ca
 import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
+import { useAddControlCallback } from '@/lib/controls-store';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -40,6 +41,28 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
+
+  /* Pressing ESC twice (in 500ms) lets user return to Process List */
+  const escCounter = useRef(0);
+  useAddControlCallback(
+    'modeler',
+    'esc',
+    () => {
+      if (escCounter.current == 1) {
+        router.push(spaceURL(environment, `/processes`));
+      } else {
+        escCounter.current++;
+        const timer = setTimeout(() => {
+          escCounter.current = 0;
+        }, 500);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }
+    },
+    { dependencies: [router] },
+  );
 
   /// Derived State
   const minimized = !decodeURIComponent(pathname).includes(process.id);

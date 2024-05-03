@@ -76,6 +76,7 @@ import {
 } from '@dnd-kit/core';
 
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import AddUserControls from './add-user-controls';
 import { create } from 'zustand';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import FolderModal from './folder-modal';
@@ -107,6 +108,7 @@ type ProcessesProps = {
 };
 
 const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
+  const originalProcesses = processes;
   if (folder.parentId)
     processes = [
       {
@@ -234,23 +236,6 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
   };
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
-  /* User-Controls */
-  // const modalOpened = openCopyModal || openExportModal || openEditModal;
-  const controlChecker: CheckerType = {
-    selectall: (e) => e.ctrlKey && e.key === 'a',
-    esc: (e) => e.key === 'Escape',
-    del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
-    copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),
-    paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v' && ability.can('create', 'Process'),
-    controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
-    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
-    enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
-    cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x' /* TODO: ability */,
-    export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
-    import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
-  };
-  useControler('process-list', controlChecker);
-
   useAddControlCallback(
     'process-list',
     'selectall',
@@ -258,7 +243,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
       e.preventDefault();
       setSelectedRowElements(filteredData ?? []);
     },
-    { dependencies: [processes] },
+    { dependencies: [originalProcesses] },
   );
   useAddControlCallback('process-list', 'esc', deselectAll);
 
@@ -730,6 +715,7 @@ const Processes = ({ processes, favourites, folder }: ProcessesProps) => {
           router.refresh();
         }}
       />
+      <AddUserControls name={'process-list'} />
       <FolderModal
         open={!!updateFolderModalCurrentFolder}
         close={() => setUpdateFolderModalCurrentFolder(undefined)}

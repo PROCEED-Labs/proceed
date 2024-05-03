@@ -59,14 +59,7 @@ type ProcessListProps = PropsWithChildren<{
   dragInfo: DragInfo;
 }>;
 
-const ColumnHeader = [
-  'Process Name',
-  'Description',
-  'Last Edited',
-  'Created On',
-  'File Size',
-  'Owner',
-];
+const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
@@ -109,7 +102,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const processListColumnsMobile = [
     'Favorites',
-    'Process Name',
+    'Name',
     'Description',
     'Last Edited',
     'Meta Data Button',
@@ -209,7 +202,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'Process Name',
+      key: 'Name',
       className: styles.Title,
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (

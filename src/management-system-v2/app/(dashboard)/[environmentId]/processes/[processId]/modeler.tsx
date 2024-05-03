@@ -41,6 +41,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
   const setRootElement = useModelerStateStore((state) => state.setRootElement);
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
+  const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
 
   /* Pressing ESC twice (in 500ms) lets user return to Process List */
   const escCounter = useRef(0);
@@ -55,6 +56,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         const timer = setTimeout(() => {
           escCounter.current = 0;
         }, 500);
+
+        setFullScreen(false); // leave fullscreen when pressing ESC
 
         return () => {
           clearTimeout(timer);

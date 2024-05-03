@@ -418,3 +418,43 @@ test('toggle process list columns', async ({ processListPage }) => {
     await toggleMenu(); // close
   }
 });
+
+test('test that selected columns are persisted on reload', async ({ processListPage }) => {
+  const { page } = processListPage;
+
+  const VisibleColumns = ['Created On', 'File Size', 'Owner'];
+  const HiddenColumns = ['Name', 'Description', 'Last Edited'];
+
+  const toggleMenu = () =>
+    page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
+
+  for (const column of VisibleColumns) {
+    const checkbox = page.getByRole('checkbox', { name: column });
+
+    await toggleMenu(); // open
+    expect(checkbox).toBeVisible();
+    if (!(await checkbox.isChecked())) await checkbox.check();
+    await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
+    await toggleMenu(); // close
+  }
+
+  for (const column of HiddenColumns) {
+    const checkbox = page.getByRole('checkbox', { name: column });
+
+    await toggleMenu(); // open
+    expect(checkbox).toBeVisible();
+    if (await checkbox.isChecked()) await checkbox.uncheck();
+    await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
+    await toggleMenu(); // close
+  }
+
+  await page.reload();
+
+  for (const column of VisibleColumns) {
+    await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
+  }
+
+  for (const column of HiddenColumns) {
+    await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
+  }
+});

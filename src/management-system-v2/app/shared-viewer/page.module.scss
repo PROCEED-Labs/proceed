@@ -1,0 +1,42 @@
+.ProcessOverview {
+  :global(h1.ant-typography) {
+    font-size: 4em;
+    text-align: center;
+    font-weight: 500;
+  }
+  :global(h2.ant-typography) {
+    font-size: 3em;
+    margin-bottom: 2em;
+    font-weight: 500;
+    margin-bottom: 60px;
+  }
+  :global(h3.ant-typography) {
+    font-size: 2em;
+    margin-bottom: 1.5em;
+    font-weight: 500;
+  }
+
+  :global(.ant-layout-header) {
+    // hide the page header on the printed page
+    @media print {
+      display: none;
+    }
+  }
+
+  :global(.ant-layout-footer) {
+    // hide the page footer on the printed page
+    @media print {
+      display: none;
+    }
+  }
+
+  :global(.ant-layout-content) {
+    padding: 0;
+    overflow: hidden;
+
+    // needed for multi page print (otherwise only the currently visible content is printed)
+    @media print {
+      overflow: visible;
+    }
+  }
+}

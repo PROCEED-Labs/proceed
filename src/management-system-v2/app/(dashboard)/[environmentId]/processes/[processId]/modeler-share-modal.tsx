@@ -16,7 +16,7 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import ModelerShareModalOptionPublicLink from './modeler-share-modal-option-public-link';
 import ModelerShareModalOptionEmdedInWeb from './modeler-share-modal-option-embed-in-web';
 import {
-  generateProcessShareToken,
+  generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useParams } from 'next/navigation';
@@ -101,13 +101,21 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    const { token } = await generateProcessShareToken({ processId }, environment.spaceId);
-    await updateProcessGuestAccessRights(processId, { sharedAs: sharedAs }, environment.spaceId);
+    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
+    const link = await generateSharedViewerUrl({ processId, timestamp });
+    await updateProcessGuestAccessRights(
+      processId,
+      {
+        sharedAs: sharedAs,
+        shareTimestamp: timestamp,
+      },
+      environment.spaceId,
+    );
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,
       text: 'Here is a shared process for you',
-      url: `${window.location.origin}/shared-viewer?token=${token}`,
+      url: `${link}`,
     };
 
     if (navigator.share) {
@@ -143,12 +151,6 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionName: 'Share Process for Registered Users',
       optionTitle: 'Share Process for Registered Users',
       optionOnClick: () => handleShareMobile('protected'),
-    },
-    {
-      optionIcon: <FilePdfOutlined style={{ fontSize: '24px' }} />,
-      optionName: 'Share Process as PDF',
-      optionTitle: 'Share Process as PDF',
-      optionOnClick: () => onExportMobile('pdf'),
     },
     {
       optionIcon: <FileImageOutlined style={{ fontSize: '24px' }} />,

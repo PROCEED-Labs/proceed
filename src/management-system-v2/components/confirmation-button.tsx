@@ -38,7 +38,7 @@ const ConfirmationButton = forwardRef<HTMLAnchorElement, ConfirmationModalProps>
 
     useAddControlCallback(
       'process-list',
-      ['selectall', 'esc', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+      ['selectall', 'esc', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shift+enter'],
       (e) => {
         // e.preventDefault();
         // onConfirmWrapper();

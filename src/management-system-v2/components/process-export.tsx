@@ -172,7 +172,6 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   useAddControlCallback(
     ['process-list' /* , 'processes-page' */],
     // 'process-list',
-
     [
       'selectall',
       'esc',

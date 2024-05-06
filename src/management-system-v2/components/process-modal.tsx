@@ -100,6 +100,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
     'control+enter',
     () => {
       if (open) onOk();
+      console.log(`trying to submit in process export. Modal is ${open ? 'open' : 'closed'}`);
     },
     { level: 2, blocking: open, dependencies: [open] },
   );

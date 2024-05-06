@@ -76,7 +76,24 @@ const checkValidity = async (
   }
 };
 
-export const getSharedProcessWithBpmn = async (definitionId: string) => {
+const getBpmnVersion = async (definitionId: string, versionId?: number) => {
+  const process = getProcessMetaObjects()[definitionId];
+
+  if (versionId) {
+    if (!process.versions.some((version) => version.version === versionId)) {
+      return userError(
+        `The requested version does not exist for the requested process.`,
+        UserErrorType.NotFoundError,
+      );
+    }
+
+    return await getProcessVersionBpmn(definitionId, versionId);
+  } else {
+    return await _getProcessBpmn(definitionId);
+  }
+};
+
+export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
   const processMetaObj = getProcessMetaObjects()[definitionId];
 
   if (!processMetaObj) {
@@ -84,7 +101,13 @@ export const getSharedProcessWithBpmn = async (definitionId: string) => {
   }
 
   if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
-    const bpmn = await _getProcessBpmn(definitionId);
+    const bpmn = await getBpmnVersion(definitionId, versionId);
+
+    // check if getBpmnVersion returned an error that should be shown to the user instead of the bpmn
+    if (typeof bpmn === 'object') {
+      return bpmn;
+    }
+
     const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
     return processWithBPMN;
   }
@@ -105,23 +128,7 @@ export const getProcessBPMN = async (definitionId: string, spaceId: string, vers
 
   if (error) return error;
 
-  const process = getProcessMetaObjects()[definitionId];
-
-  let bpmn;
-  if (versionId) {
-    if (!process.versions.some((version) => version.version === versionId)) {
-      return userError(
-        `The requested version does not exist for the requested process.`,
-        UserErrorType.NotFoundError,
-      );
-    }
-
-    bpmn = await getProcessVersionBpmn(definitionId, versionId);
-  } else {
-    bpmn = await _getProcessBpmn(definitionId);
-  }
-
-  return bpmn;
+  return await getBpmnVersion(definitionId, versionId);
 };
 
 export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {

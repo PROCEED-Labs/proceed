@@ -2,17 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import {
-  Modal,
-  Checkbox,
-  Radio,
-  RadioChangeEvent,
-  Space,
-  Flex,
-  Divider,
-  Tooltip,
-  Slider,
-} from 'antd';
+import { Modal, Checkbox, Radio, RadioChangeEvent, Space, Flex, Divider, Tooltip } from 'antd';
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 
 import { useEnvironment } from './auth-can';
@@ -20,12 +10,20 @@ import { exportProcesses } from '@/lib/process-export';
 import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
 import { useAddControlCallback } from '@/lib/controls-store';
 
+import {
+  settings as pdfSettings,
+  settingsOptions as pdfOptions,
+} from '@/app/shared-viewer/settings-modal';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+
 const exportTypeOptions = [
   { label: 'BPMN', value: 'bpmn' },
   { label: 'PDF', value: 'pdf' },
   { label: 'SVG', value: 'svg' },
   { label: 'PNG', value: 'png' },
 ];
+
+export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';
 
 function getSubOptions(giveSelectionOption?: boolean) {
   const exportSubOptions = {
@@ -42,28 +40,7 @@ function getSubOptions(giveSelectionOption?: boolean) {
         tooltip: 'Also export all referenced processes used in call-activities',
       },
     ],
-    pdf: [
-      {
-        label: 'with meta data',
-        value: 'metaData',
-        tooltip: 'Add process meta information to each page (process name, version, etc.)',
-      },
-      {
-        label: 'A4 pages',
-        value: 'a4',
-        tooltip: 'Use A4 format for all pages (Scales down the process image if necessary)',
-      },
-      {
-        label: 'with referenced processes',
-        value: 'imports',
-        tooltip: 'Also export all referenced processes used in call-activities',
-      },
-      {
-        label: 'with collapsed subprocesses',
-        value: 'subprocesses',
-        tooltip: 'Also export content of all collapsed subprocesses',
-      },
-    ],
+    pdf: pdfSettings,
     svg: [
       {
         label: 'with referenced processes',
@@ -100,7 +77,6 @@ function getSubOptions(giveSelectionOption?: boolean) {
   if (giveSelectionOption) {
     exportSubOptions.png.push(selectionOption);
     exportSubOptions.svg.push(selectionOption);
-    exportSubOptions.pdf.push(selectionOption);
   }
 
   return exportSubOptions;
@@ -110,8 +86,8 @@ type ProcessExportModalProps = {
   processes: ExportProcessInfo; // the processes to export
   onClose: () => void;
   open: boolean;
-  giveSelectionOption?: boolean;
-  preselectedExportType?: ProcessExportOptions['type'];
+  giveSelectionOption?: boolean; // if the user can select to limit the export to elements selected in the modeler (only usable in the modeler)
+  preselectedExportType?: ProcessExportTypes;
   resetPreselectedExportType?: () => void;
 };
 
@@ -123,7 +99,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   preselectedExportType,
   resetPreselectedExportType,
 }) => {
-  const [selectedType, setSelectedType] = useState<ProcessExportOptions['type'] | undefined>(
+  const [selectedType, setSelectedType] = useState<ProcessExportTypes | undefined>(
     preselectedExportType,
   );
 
@@ -131,7 +107,10 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     setSelectedType(preselectedExportType);
   }, [preselectedExportType]);
 
-  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(['metaData']);
+  const [selectedOptions, setSelectedOptions] = useState<CheckboxValueType[]>(
+    ['metaData'].concat(pdfOptions),
+  );
+
   const [isExporting, setIsExporting] = useState(false);
   const [pngScalingFactor, setPngScalingFactor] = useState(1.5);
 
@@ -155,21 +134,37 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
 
   const handleOk = async () => {
     setIsExporting(true);
-    await exportProcesses(
-      {
-        type: selectedType!,
-        artefacts: selectedOptions.includes('artefacts'),
-        subprocesses: selectedOptions.includes('subprocesses'),
-        imports: selectedOptions.includes('imports'),
-        metaData: selectedOptions.includes('metaData'),
-        a4: selectedOptions.includes('a4'),
-        scaling: pngScalingFactor,
-        exportSelectionOnly: selectedOptions.includes('onlySelection'),
-        useWebshareApi: preselectedExportType !== undefined,
-      },
-      processes,
-      environment.spaceId,
-    );
+
+    if (selectedType === 'pdf') {
+      const { definitionId, processVersion } = processes[0];
+
+      // the timestamp does not matter here since it is overriden by the user being an owner of the process
+      const url = await generateSharedViewerUrl(
+        {
+          processId: definitionId,
+          timestamp: 0,
+        },
+        processVersion ? `${processVersion}` : undefined,
+        selectedOptions as string[],
+      );
+
+      // open the documentation page in a new tab (the print menu will be opened automatically)
+      window.open(url, `${definitionId}-${processVersion}-tab`);
+    } else {
+      await exportProcesses(
+        {
+          type: selectedType!,
+          artefacts: selectedOptions.includes('artefacts'),
+          subprocesses: selectedOptions.includes('subprocesses'),
+          imports: selectedOptions.includes('imports'),
+          scaling: pngScalingFactor,
+          exportSelectionOnly: selectedOptions.includes('onlySelection'),
+          useWebshareApi: preselectedExportType !== undefined,
+        },
+        processes,
+        environment.spaceId,
+      );
+    }
 
     handleClose();
   };
@@ -177,6 +172,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
   useAddControlCallback(
     ['process-list' /* , 'processes-page' */],
     // 'process-list',
+
     [
       'selectall',
       'esc',
@@ -187,7 +183,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
       'cut',
       'export',
       'import',
-      'shiftenter',
+      'shift+enter',
       'new',
     ],
     (e) => {
@@ -217,6 +213,8 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
     </Radio.Group>
   );
 
+  const disabledPdfExport = selectedType === 'pdf' && processes.length > 1;
+
   const optionSelection = (
     <Space direction="vertical">
       <Checkbox.Group
@@ -227,7 +225,7 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         <Space direction="vertical">
           {(selectedType ? getSubOptions(giveSelectionOption)[selectedType] : []).map(
             ({ label, value, tooltip }) => (
-              <Checkbox value={value} key={label}>
+              <Checkbox value={value} key={label} disabled={disabledPdfExport}>
                 <Tooltip placement="right" title={tooltip}>
                   {label}
                 </Tooltip>
@@ -280,7 +278,13 @@ const ProcessExportModal: React.FC<ProcessExportModalProps> = ({
         onOk={handleOk}
         onCancel={handleClose}
         centered
-        okButtonProps={{ disabled: !selectedType, loading: isExporting }}
+        okButtonProps={{
+          disabled: !selectedType || disabledPdfExport,
+          loading: isExporting,
+          title: disabledPdfExport
+            ? 'PDF export is only available when a single process is selected'
+            : undefined,
+        }}
         width={540}
         data-testid="Export Modal"
       >

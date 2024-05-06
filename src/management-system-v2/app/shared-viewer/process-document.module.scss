@@ -1,0 +1,148 @@
+.ProcessDocument {
+  min-height: 100%;
+  width: 95%;
+  max-width: 1200px;
+  background-color: white;
+
+  margin: 0 auto;
+
+  @media print {
+    // needed so that the table header workaround below actually works
+    display: table;
+    // since we cant use margins/padding inside table rows we will use invisible borders instead
+    border-collapse: collapse;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  // the proceed logo and url
+  .Header {
+    display: none;
+    text-align: right;
+
+    @media print {
+      // we use that table headers are repeated on the next page when a table spans multiple pages to put the header on every page
+      display: table-header-group;
+      // needed to get this workaround to work in chrome
+      break-inside: avoid;
+      // we use borders as makeshift margins
+      border-top: solid transparent 10pt;
+      border-right: solid transparent 10pt;
+      border-bottom: solid transparent 20pt;
+      font-size: x-small;
+    }
+  }
+
+  .Main {
+    @media screen {
+      width: 95%;
+      margin: auto;
+    }
+
+    @media print {
+      padding: 0 40pt 0 40pt;
+      box-sizing: border-box;
+    }
+
+    .Title {
+      padding-top: 20px;
+
+      @media print {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+
+    // used when the option that the title should be its own page is selected
+    .TitlePage {
+      @media print {
+        height: 90vh;
+      }
+    }
+
+    .TitleInfos {
+      margin-bottom: 7dvh;
+      @media print {
+        margin-top: 80pt;
+        padding: 20pt 0;
+        border-top: 2pt solid;
+        border-bottom: 2pt solid;
+      }
+
+      div {
+        font-size: 1.3em;
+      }
+    }
+
+    .TableOfContents {
+      // hide this on the web page but show it in print (or on small screens [controlled in the tsx file])
+      display: none;
+      @media print {
+        display: block;
+      }
+    }
+
+    // used for smaller displays to show the table of contents inside the process document on the web page
+    .WebTableOfContents {
+      display: block;
+    }
+
+    // used when the option for a separate title page is selected so there is a page break after the table of contents
+    .TableOfContentPage {
+      break-after: always;
+    }
+
+    .ElementPage {
+      margin-top: 7dvh;
+
+      .ElementOverview {
+        break-inside: avoid;
+
+        .ElementCanvas {
+          display: flex;
+          justify-content: center;
+
+          @media print {
+            max-height: 95%;
+            width: 100%;
+          }
+
+          svg {
+            max-width: 100%;
+            height: 100%;
+          }
+        }
+      }
+
+      .MetaInformation {
+        margin-top: 50px;
+
+        // prevent the header from being put at the end of a page with the content starting on the next page
+        h3 {
+          break-after: avoid;
+        }
+
+        :global(.toastui-editor-contents) {
+          table {
+            width: 100% !important;
+          }
+        }
+      }
+    }
+
+    .ContainerPage {
+      // start a new page for elements that contain other new elements and start with the container element at the top of the page
+      break-before: always;
+
+      @media print {
+        margin-top: 0;
+      }
+    }
+
+    :nth-child(1 of .ContainerPage) {
+      // the first page containing the main process diagram might follow directly after the table of contents based on the settings selected by the user
+      break-before: auto;
+    }
+  }
+}

@@ -2,12 +2,14 @@
 import { App, Button, Checkbox, Col, Flex, Input, QRCode, Row } from 'antd';
 import { DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
-  generateProcessShareToken,
+  generateSharedViewerUrl,
   updateProcessGuestAccessRights,
 } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
+
+import styles from './modeler-share-modal-option-public-link.module.scss';
 
 type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
@@ -21,41 +23,43 @@ const ModelerShareModalOptionPublicLink = ({
   refresh,
 }: ModelerShareModalOptionPublicLinkProps) => {
   const { processId } = useParams();
+  const query = useSearchParams();
+  const selectedVersionId = query.get('version');
   const environment = useEnvironment();
 
-  const [token, setToken] = useState<String>('');
+  const [shareLink, setShareLink] = useState('');
   const [registeredUsersonlyChecked, setRegisteredUsersonlyChecked] = useState(
     sharedAs === 'protected',
   );
 
-  const publicLinkValue = `${window.location.origin}/shared-viewer?token=${token}`;
-  const isTokenEmpty = token.length === 0;
-  const isShareLinkChecked = shareTimestamp > 0;
-
   const { message } = App.useApp();
 
+  const isShareLinkChecked = shareTimestamp > 0;
+  const isShareLinkEmpty = shareLink.length === 0;
+
   useEffect(() => {
-    const generateProcessShareTokenFromOldTimestamp = async () => {
+    const generateProcessShareUrlFromOldTimestamp = async () => {
       try {
-        const { token: shareToken } = await generateProcessShareToken(
-          { processId },
-          environment.spaceId,
-          shareTimestamp,
+        // generate an url with a token that contains the currently active sharing timestamp
+        const url = await generateSharedViewerUrl(
+          { processId, timestamp: shareTimestamp },
+          selectedVersionId || undefined,
         );
-        setToken(shareToken);
+        setShareLink(url);
       } catch (error) {
-        console.error('Error while generating process share token:', error);
+        console.error('Error while generating the url for sharing:', error);
       }
     };
+
     if (isShareLinkChecked) {
-      generateProcessShareTokenFromOldTimestamp();
+      generateProcessShareUrlFromOldTimestamp();
     }
     setRegisteredUsersonlyChecked(sharedAs === 'protected');
-  }, [sharedAs, shareTimestamp, processId, environment.spaceId, isShareLinkChecked]);
+  }, [sharedAs, shareTimestamp, processId, selectedVersionId, isShareLinkChecked]);
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(publicLinkValue);
+      await navigator.clipboard.writeText(shareLink);
       message.success('Link Copied');
     } catch (err) {
       message.error('Error copying link');
@@ -86,18 +90,29 @@ const ModelerShareModalOptionPublicLink = ({
     const isChecked = e.target.checked;
 
     if (isChecked) {
-      const { token } = await generateProcessShareToken(
-        { processId: processId },
+      const timestamp = Date.now();
+      // generate an url containing a token with the newly generated timestamp
+      const url = await generateSharedViewerUrl(
+        { processId: processId, timestamp },
+        // if there is a specific process version open in the modeler then link to that version (otherwise latest will be shown)
+        selectedVersionId || undefined,
+      );
+      setShareLink(url);
+      // activate sharing for that specific timestamp
+      await updateProcessGuestAccessRights(
+        processId,
+        {
+          sharedAs: 'public',
+          shareTimestamp: timestamp,
+        },
         environment.spaceId,
       );
-      setToken(token);
-
-      await updateProcessGuestAccessRights(processId, { sharedAs: 'public' }, environment.spaceId);
       message.success('Process shared');
     } else {
+      // deactivate sharing
       await updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId);
       setRegisteredUsersonlyChecked(false);
-      setToken('');
+      setShareLink('');
       message.success('Process unshared');
     }
     refresh();
@@ -145,6 +160,18 @@ const ModelerShareModalOptionPublicLink = ({
     }
   };
 
+  const handleOpenSharedPage = async () => {
+    if (shareTimestamp) {
+      const url = await generateSharedViewerUrl(
+        { processId, timestamp: shareTimestamp },
+        selectedVersionId || undefined,
+      );
+
+      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+      window.open(url, `${processId}-${selectedVersionId}-tab`);
+    }
+  };
+
   return (
     <>
       <div style={{ marginBottom: '5px' }}>
@@ -159,7 +186,7 @@ const ModelerShareModalOptionPublicLink = ({
               <Checkbox
                 checked={registeredUsersonlyChecked}
                 onChange={handlePermissionChanged}
-                disabled={isTokenEmpty}
+                disabled={isShareLinkEmpty}
               >
                 Visible only for registered user
               </Checkbox>
@@ -168,8 +195,8 @@ const ModelerShareModalOptionPublicLink = ({
           <Col span={18}>
             <Input
               type={'text'}
-              value={publicLinkValue}
-              disabled={isTokenEmpty}
+              value={shareLink}
+              disabled={isShareLinkEmpty}
               name="generated share link"
               style={{ border: '1px solid #000' }}
             />
@@ -187,7 +214,7 @@ const ModelerShareModalOptionPublicLink = ({
                     style={{
                       border: '1px solid #000',
                     }}
-                    value={publicLinkValue}
+                    value={shareLink}
                     size={130}
                   />
                 </div>
@@ -197,50 +224,36 @@ const ModelerShareModalOptionPublicLink = ({
           <Col span={6} style={{ paddingTop: '10px' }}>
             <Flex vertical gap={10}>
               <Button
-                style={{
-                  marginLeft: '10px',
-                  border: '1px solid black',
-                  borderRadius: '50px',
-                  overflow: 'hidden',
-                  whiteSpace: 'normal',
-                  textOverflow: 'ellipsis',
-                }}
+                className={styles.OptionButton}
                 onClick={handleCopyLink}
-                disabled={isTokenEmpty}
+                disabled={isShareLinkEmpty}
               >
                 Copy link
               </Button>
               <Button
+                className={styles.OptionButton}
+                onClick={handleOpenSharedPage}
+                disabled={isShareLinkEmpty}
+              >
+                Open
+              </Button>
+              <Button
                 icon={<DownloadOutlined />}
                 title="Save as PNG"
-                style={{
-                  marginLeft: '10px',
-                  border: '1px solid black',
-                  borderRadius: '50px',
-                  overflow: 'hidden',
-                  whiteSpace: 'normal',
-                  textOverflow: 'ellipsis',
-                }}
-                hidden={isTokenEmpty}
+                className={styles.OptionButton}
+                hidden={isShareLinkEmpty}
                 onClick={() => handleQRCodeAction('download')}
-                disabled={isTokenEmpty}
+                disabled={isShareLinkEmpty}
               >
                 Save QR Code
               </Button>
               <Button
                 icon={<CopyOutlined />}
                 title="Copy as PNG"
-                style={{
-                  marginLeft: '10px',
-                  border: '1px solid black',
-                  borderRadius: '50px',
-                  overflow: 'hidden',
-                  whiteSpace: 'normal',
-                  textOverflow: 'ellipsis',
-                }}
-                hidden={isTokenEmpty}
+                className={styles.OptionButton}
+                hidden={isShareLinkEmpty}
                 onClick={() => handleQRCodeAction('copy')}
-                disabled={isTokenEmpty}
+                disabled={isShareLinkEmpty}
               >
                 Copy QR Code
               </Button>

@@ -71,7 +71,7 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
-  getProcessElement: () => Element | undefined;
+  getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
   getSelection: () => Selection;
   getModeling: () => Modeling;
@@ -122,11 +122,16 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
       },
-      getProcessElement: () => {
+      getCurrentRoot: () => {
+        if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
+          return;
+        }
+
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
-          .getAll()
-          .filter((el) => el.businessObject?.$type === 'bpmn:Process')[0] as Element;
+          .get(
+            modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
+          ) as Element;
       },
       getCanvas: () => {
         return modeler.current!.get<Canvas>('canvas');

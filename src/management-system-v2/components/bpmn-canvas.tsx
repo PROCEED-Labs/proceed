@@ -54,7 +54,7 @@ export type BPMNCanvasProps = {
   onUnload?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
   /** Called when the BPMN selection changes. */
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
-  /** Called when the BPMN selection changes. */
+  /** Called when the zoom level changed */
   onZoom?: (zoomLevel: number) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;

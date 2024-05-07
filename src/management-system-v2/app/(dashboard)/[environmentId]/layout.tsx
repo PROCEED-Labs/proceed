@@ -17,7 +17,7 @@ import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { enableNewMSExecution } from 'FeatureFlags';
-import { LuBoxes } from 'react-icons/lu';
+import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 
 const DashboardLayout = async ({
@@ -87,6 +87,19 @@ const DashboardLayout = async ({
 
     layoutMenuItems.push({
       key: 'divider-executions',
+      type: 'divider',
+    });
+  }
+
+  if (process.env.ENABLE_MACHINE_CONFIG) {
+    layoutMenuItems.push({
+      key: 'machine-config',
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      icon: <LuTable2 />,
+    });
+
+    layoutMenuItems.push({
+      key: 'divider-machine-config',
       type: 'divider',
     });
   }

@@ -6,6 +6,7 @@ import React, { FC, PropsWithChildren } from 'react';
 import classNames from 'classnames';
 
 type CollapsibleCardProps = PropsWithChildren<{
+  className?: string;
   show: boolean;
   collapsedWidth?: string;
   onCollapse: () => void;
@@ -13,6 +14,7 @@ type CollapsibleCardProps = PropsWithChildren<{
 }>;
 
 const CollapsibleCard: FC<CollapsibleCardProps> = ({
+  className,
   title,
   show,
   collapsedWidth = '30px',
@@ -23,7 +25,7 @@ const CollapsibleCard: FC<CollapsibleCardProps> = ({
     <Card
       role="region"
       aria-label={title}
-      className={classNames({ 'Hide-Scroll-Bar': !show })}
+      className={classNames({ 'Hide-Scroll-Bar': !show }, className)}
       style={{
         scrollBehavior: 'smooth',
         overflowY: 'auto',

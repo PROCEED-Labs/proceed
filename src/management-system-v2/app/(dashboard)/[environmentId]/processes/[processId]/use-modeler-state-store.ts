@@ -16,11 +16,15 @@ type ModelerStateStore = {
    * updated BPMN to the child components. Therefore we need _something_ to
    * change to signal a rerender. */
   changeCounter: number;
+  zoomLevel: number;
   rootElement: Root | null;
+  isFullScreen: boolean;
   setModeler: (newModeler: BPMNCanvasRef | null) => void;
   setSelectedElementId: (newId: null | string) => void;
+  setZoomLevel: (newZoomLevel: number) => void;
   setRootElement: (newRoot: Root | null) => void;
   incrementChangeCounter: () => void;
+  setFullScreen: (isFullScreen: boolean) => void;
 };
 
 const useModelerStateStore = create<ModelerStateStore>()(
@@ -28,7 +32,9 @@ const useModelerStateStore = create<ModelerStateStore>()(
     modeler: null,
     selectedElementId: null,
     changeCounter: 0,
+    zoomLevel: 1,
     rootElement: null,
+    isFullScreen: false,
     setModeler: (newModeler) =>
       set((state) => {
         state.modeler = newModeler;
@@ -37,6 +43,10 @@ const useModelerStateStore = create<ModelerStateStore>()(
       set((state) => {
         state.selectedElementId = newId;
       }),
+    setZoomLevel: (newZoomLevel) =>
+      set((state) => {
+        state.zoomLevel = newZoomLevel;
+      }),
     setRootElement: (newRoot) =>
       set((state) => {
         state.rootElement = newRoot;
@@ -44,6 +54,10 @@ const useModelerStateStore = create<ModelerStateStore>()(
     incrementChangeCounter: () =>
       set((state) => {
         state.changeCounter += 1;
+      }),
+    setFullScreen: (isFullScreen) =>
+      set((state) => {
+        state.isFullScreen = isFullScreen;
       }),
   })),
 );

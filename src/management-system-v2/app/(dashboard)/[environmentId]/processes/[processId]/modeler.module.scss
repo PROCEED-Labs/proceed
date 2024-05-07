@@ -1,0 +1,22 @@
+.Modeler :global {
+  .djs-palette {
+    background-color: white !important;
+    border: none !important;
+    box-shadow:
+      0px 0px 1px 0px rgba(0, 0, 0, 0.17),
+      0px 0px 3px 0px rgba(0, 0, 0, 0.08),
+      0px 7px 14px 0px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .bjs-breadcrumbs {
+    display: none !important;
+  }
+
+  .djs-overlays:not(.selected) .djs-overlay-drilldown {
+    display: none !important;
+  }
+}

@@ -269,6 +269,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
       ref={resizableElementRef}
     >
       <CollapsibleCard
+        className={styles.PropertiesPanelCollapsibleCard}
         show={showInfo}
         onCollapse={() => {
           //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
@@ -276,7 +277,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
             if (showInfo) {
               resizableElementRef.current({ width: 40, minWidth: 40, maxWidth: 40 });
             } else {
-              resizableElementRef.current({ width: 450, minWidth: 450, maxWidth: 600 });
+              resizableElementRef.current({ width: 400, minWidth: 300, maxWidth: '30vw' });
             }
           }
           setShowInfo(!showInfo);

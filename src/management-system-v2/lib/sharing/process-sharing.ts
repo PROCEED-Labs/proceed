@@ -2,6 +2,7 @@
 
 import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
+import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
@@ -9,7 +10,7 @@ import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
 export interface TokenPayload {
   processId: string | string[];
   embeddedMode?: boolean;
-  timestamp?: number;
+  timestamp: number;
 }
 
 export interface ProcessGuestAccessRights {
@@ -32,29 +33,37 @@ export async function updateProcessGuestAccessRights(
   );
 }
 
-export async function generateProcessShareToken(
-  payload: TokenPayload,
-  spaceId: string,
-  oldTimestamp?: number,
-) {
+async function generateProcessShareToken(payload: TokenPayload) {
   const secretKey = process.env.JWT_SHARE_SECRET;
-
-  const timestamp = oldTimestamp ?? Date.now();
-
-  payload.timestamp = timestamp;
-
   const token = jwt.sign(payload, secretKey!);
+  return token;
+}
 
-  let newMeta: ProcessGuestAccessRights = {};
+export async function generateSharedViewerUrl(
+  payload: TokenPayload,
+  version?: string,
+  settings?: string[],
+) {
+  const token = await generateProcessShareToken(payload);
 
-  if (payload.embeddedMode) {
-    newMeta = { allowIframeTimestamp: timestamp };
-  } else {
-    newMeta = { shareTimestamp: timestamp };
+  const header = headers();
+  const host = header.get('host');
+  const scheme = header.get('referer')?.split('://')[0];
+
+  const baseUrl = `${scheme}://${host}`;
+  let url = `${baseUrl}/shared-viewer?token=${token}`;
+
+  if (version) {
+    url += `&version=${version}`;
   }
 
-  await updateProcessGuestAccessRights(payload.processId as string, newMeta, spaceId);
-  return { token };
+  if (settings?.length) {
+    settings.forEach((option) => {
+      url += `&settings=${option}`;
+    });
+  }
+
+  return url;
 }
 
 export async function getAllUserWorkspaces(userId: string) {

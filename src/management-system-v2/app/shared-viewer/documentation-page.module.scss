@@ -1,0 +1,68 @@
+.WorkspaceSelection {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+
+  .WorkspaceButton {
+    border: 1px solid black;
+    width: 150px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: ellipsis;
+    border-color: black;
+    box-shadow: 2px 2px 2px grey;
+
+    .WorkspaceButtonLabel {
+      margin: 5px;
+      text-align: center;
+    }
+  }
+}
+
+.DocumentationPageContent {
+  .MainContent {
+    display: flex;
+    height: 100%;
+    width: 100vw;
+
+    @media print {
+      overflow-y: visible;
+    }
+
+    .ProcessInfoCol {
+      height: 100%;
+      background-color: rgb(241, 241, 241);
+      width: 100%;
+      overflow: auto;
+
+      @media print {
+        overflow-y: visible;
+        height: fit-content;
+      }
+    }
+
+    .ContentTableCol {
+      height: 100%;
+      max-width: 320px;
+      padding: 0 10px 0 0;
+      overflow-y: hidden;
+
+      @media print {
+        display: none;
+      }
+    }
+  }
+}
+
+@page {
+  size: a4;
+  // margin: 80pt 40pt 60pt 40pt;
+  margin: 0pt 0pt 60pt 0pt;
+}

@@ -6,6 +6,12 @@ const nextConfig = {
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
   },
+  /**
+   *
+   * @param {import('webpack').Configuration} config
+   * @param {import('next/dist/server/config-shared').WebpackConfigContext} context
+   * @returns {import('webpack').Configuration}
+   */
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // This is due to needing to init our in-memory db before accessing the getters.
     // Can probably be removed once we switch to a real db.
@@ -14,12 +20,6 @@ const nextConfig = {
     return config;
   },
   env: {
-    JWT_SHARE_SECRET:
-      process.env.NODE_ENV === 'development'
-        ? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='
-        : process.env.JWT_SHARE_SECRET,
-    API_URL:
-      process.env.NODE_ENV === 'development' ? 'http://localhost:33080/api' : process.env.API_URL,
     NEXT_PUBLIC_USE_AUTH: 'true',
     // Provide default values for development if no .env file is present. In
     // production, the environment variables are set in the deployment
@@ -28,6 +28,8 @@ const nextConfig = {
       ? {
           NEXTAUTH_SECRET:
             process.env.NEXTAUTH_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
+          JWT_SHARE_SECRET:
+            process.env.JWT_SHARE_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
         }
       : {}),
   },
@@ -52,7 +54,10 @@ const nextConfig = {
       'iam',
       'profile',
       'projects',
+      'machine-config',
     ].map((folder) => ({
+      // TODO: when building techserver separately, this can be set to rewrite
+      // all unused paths to /404.
       source: `/${folder}/:path*`,
       destination: `/my/${folder}/:path*`,
     }));

@@ -33,8 +33,16 @@ const Layout: FC<
     userEnvironments: Environment[];
     layoutMenuItems: NonNullable<MenuProps['items']>;
     activeSpace: { spaceId: string; isOrganization: boolean };
+    hideSider?: boolean;
   }>
-> = ({ loggedIn, userEnvironments, layoutMenuItems: _layoutMenuItems, activeSpace, children }) => {
+> = ({
+  loggedIn,
+  userEnvironments,
+  layoutMenuItems: _layoutMenuItems,
+  activeSpace,
+  children,
+  hideSider,
+}) => {
   const session = useSession();
   const router = useRouter();
 
@@ -56,57 +64,58 @@ const Layout: FC<
     <SpaceContext.Provider value={activeSpace}>
       <AntLayout style={{ height: '100vh' }}>
         <AntLayout hasSider>
-          <AntLayout.Sider
-            style={{
-              backgroundColor: '#fff',
-              borderRight: '1px solid #eee',
-              display: modelerIsFullScreen ? 'none' : 'block',
-            }}
-            className={cn(styles.Sider)}
-            collapsible
-            collapsed={collapsed}
-            onCollapse={(collapsed) => setCollapsed(collapsed)}
-            collapsedWidth={breakpoint.xs ? '0' : '80'}
-            breakpoint="xl"
-            trigger={null}
-          >
-            <div className={styles.LogoContainer}>
-              <Link href={spaceURL(activeSpace, `/processes`)}>
-                <Image
-                  src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
-                  alt="PROCEED Logo"
-                  className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
-                    [styles.collapsed]: collapsed,
-                  })}
-                  width={breakpoint.xs ? 85 : 160}
-                  height={breakpoint.xs ? 35 : 63}
-                  priority
+          {!hideSider && (
+            <AntLayout.Sider
+              style={{
+                backgroundColor: '#fff',
+                borderRight: '1px solid #eee',
+                display: modelerIsFullScreen ? 'none' : 'block',
+              }}
+              className={cn(styles.Sider)}
+              collapsible
+              collapsed={collapsed}
+              onCollapse={(collapsed) => setCollapsed(collapsed)}
+              collapsedWidth={breakpoint.xs ? '0' : '80'}
+              breakpoint="xl"
+              trigger={null}
+            >
+              <div className={styles.LogoContainer}>
+                <Link href={spaceURL(activeSpace, `/processes`)}>
+                  <Image
+                    src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
+                    alt="PROCEED Logo"
+                    className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
+                      [styles.collapsed]: collapsed,
+                    })}
+                    width={breakpoint.xs ? 85 : 160}
+                    height={breakpoint.xs ? 35 : 63}
+                    priority
+                  />
+                </Link>
+              </div>
+              <div style={{ padding: '1rem' }}>
+                <Select
+                  options={userEnvironments.map((environment) => ({
+                    label: environment.organization ? environment.name : 'My Space',
+                    value: environment.id,
+                  }))}
+                  defaultValue={activeSpace.spaceId}
+                  onChange={(envId) => {
+                    const space = userEnvironments.find((env) => env.id === envId);
+                    router.push(
+                      spaceURL(
+                        { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                        `/processes`,
+                      ),
+                    );
+                  }}
+                  style={{ width: '100%' }}
                 />
-              </Link>
-            </div>
+              </div>
 
-            <div style={{ padding: '1rem' }}>
-              <Select
-                options={userEnvironments.map((environment) => ({
-                  label: environment.organization ? environment.name : 'My Space',
-                  value: environment.id,
-                }))}
-                defaultValue={activeSpace.spaceId}
-                onChange={(envId) => {
-                  const space = userEnvironments.find((env) => env.id === envId);
-                  router.push(
-                    spaceURL(
-                      { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
-                      `/processes`,
-                    ),
-                  );
-                }}
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            {loggedIn ? menu : null}
-          </AntLayout.Sider>
+              {loggedIn ? menu : null}
+            </AntLayout.Sider>
+          )}
 
           <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
         </AntLayout>

@@ -12,6 +12,7 @@ import Icon, {
   ArrowUpOutlined,
   ArrowDownOutlined,
   FullscreenOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -23,9 +24,10 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
-import { spaceURL } from '@/lib/utils';
 import ModelerShareModalButton from './modeler-share-modal';
-import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
+import { ProcessExportTypes } from '@/components/process-export';
+import { spaceURL } from '@/lib/utils';
+import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -51,19 +53,19 @@ const ModelerToolbar = ({
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
-    ProcessExportOptions['type'] | undefined
+    ProcessExportTypes | undefined
   >();
+
+  const query = useSearchParams();
+  const subprocessId = query.get('subprocess');
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-
   const selectedElement = useMemo(() => {
     if (modeler) {
-      return selectedElementId
-        ? modeler.getElement(selectedElementId)
-        : modeler.getProcessElement();
+      return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
-  }, [modeler, selectedElementId]);
+  }, [modeler, selectedElementId, subprocessId]);
 
   const createProcessVersion = async (values: {
     versionName: string;
@@ -110,15 +112,13 @@ const ModelerToolbar = ({
   };
 
   const handleProcessExportModalToggleMobile = async (
-    preselectedExportType: ProcessExportOptions['type'],
+    preselectedExportType: ProcessExportTypes,
   ) => {
     setPreselectedExportType(preselectedExportType);
     setShowProcessExportModal(!showProcessExportModal);
   };
 
-  const query = useSearchParams();
   const selectedVersionId = query.get('version');
-  const subprocessId = query.get('subprocess');
 
   const handleUndo = () => {
     modeler?.undo();
@@ -142,6 +142,17 @@ const ModelerToolbar = ({
       canvas.setRootElement(canvas.findRoot(selectedElement.id + '_plane') as Root);
       modeler.fitViewport();
     }
+  }
+
+  const handleOpenDocumentation = async () => {
+    // the timestamp does not matter here since it is overriden by the user being an owner of the process
+    const url = await generateSharedViewerUrl(
+      { processId, timestamp: 0 },
+      selectedVersionId || undefined,
+    );
+
+    // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+    window.open(url, `${processId}-${selectedVersionId}-tab`);
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>
@@ -245,6 +256,9 @@ const ModelerToolbar = ({
                 onExport={handleProcessExportModalToggle}
                 onExportMobile={handleProcessExportModalToggleMobile}
               />
+              <Tooltip title="Open Documentation">
+                <Button icon={<FilePdfOutlined />} onClick={handleOpenDocumentation} />
+              </Tooltip>
               {!showMobileView && (
                 <>
                   <Tooltip title="Show XML">

@@ -142,7 +142,7 @@ const ModelerToolbar = ({
       canvas.setRootElement(canvas.findRoot(selectedElement.id + '_plane') as Root);
       modeler.fitViewport();
     }
-  }
+  };
 
   const handleOpenDocumentation = async () => {
     // the timestamp does not matter here since it is overriden by the user being an owner of the process

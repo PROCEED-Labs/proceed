@@ -58,14 +58,7 @@ type ProcessListProps = PropsWithChildren<{
   dragInfo: DragInfo;
 }>;
 
-const ColumnHeader = [
-  'Process Name',
-  'Description',
-  'Last Edited',
-  'Created On',
-  'File Size',
-  'Owner',
-];
+const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
@@ -107,7 +100,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const processListColumnsMobile = [
     'Favorites',
-    'Process Name',
+    'Name',
     'Description',
     'Last Edited',
     'Meta Data Button',
@@ -145,7 +138,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {/*TODO: errors regarding query */}
 
-          <AuthCan delete Process={record}>
+          <AuthCan {...resource} delete>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
@@ -172,10 +165,10 @@ const ProcessList: FC<ProcessListProps> = ({
           e.stopPropagation();
           const { checked, value } = e.target;
           if (checked) {
-            addPreferences({ 'process-list-columns': [...selectedColumns, value] });
+            addPreferences({ 'process-list-columns-desktop': [...selectedColumns, value] });
           } else {
             addPreferences({
-              'process-list-columns': selectedColumns.filter((column) => column !== value),
+              'process-list-columns-desktop': selectedColumns.filter((column) => column !== value),
             });
           }
         }}
@@ -207,7 +200,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'Process Name',
+      key: 'Name',
       className: styles.Title,
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (

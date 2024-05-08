@@ -121,7 +121,9 @@ export const DraggableContext: FC<
       modifiers={[snapCenterToCursor]}
     >
       {children}
-      <DragOverlay dropAnimation={null}>{dragInfo.dragging ? dragOverlay : null}</DragOverlay>
+      <DragOverlay dropAnimation={null}>
+        {dragInfo.dragging ? dragOverlay(dragInfo.activeId) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

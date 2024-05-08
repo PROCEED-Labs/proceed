@@ -201,30 +201,27 @@ const Processes = ({
     const promises = [];
 
     const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
-    if (folderIds.length > 0) promises.push(deleteFolder(folderIds, space.spaceId));
+    const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
+    if (folderPromise) promises.push(folderPromise);
 
     const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
-    if (processIds.length > 0) promises.push(deleteProcesses(processIds, space.spaceId));
+    const processPromise = deleteProcesses(processIds, space.spaceId);
+    if (processPromise) promises.push(processPromise);
 
-    const [folderResult, processesResult] = await Promise.allSettled(promises);
+    await Promise.allSettled(promises);
 
-    if (
-      processesResult.status === 'fulfilled' &&
-      processesResult.value &&
-      !('error' in processesResult.value)
-    ) {
+    const processesResult = await processPromise;
+    const folderResult = await folderPromise;
+
+    if (processesResult && !('error' in processesResult)) {
       removeFromFavouriteProcesses(selectedRowKeys as string[]);
     }
 
     if (
-      (folderResult.status === 'fulfilled' &&
-        folderResult.value &&
-        'error' in folderResult.value) ||
-      (processesResult.status === 'fulfilled' &&
-        processesResult.value &&
-        'error' in processesResult.value)
+      (folderResult && 'error' in folderResult) ||
+      (processesResult && 'error' in processesResult)
     ) {
-      message.open({
+      return message.open({
         type: 'error',
         content: 'Something went wrong',
       });

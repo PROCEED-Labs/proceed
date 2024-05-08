@@ -14,7 +14,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  CloseOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   UnorderedListOutlined,
@@ -22,16 +21,12 @@ import {
 } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import { AuthenticatedUser, User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
-import HeaderActions, {
-  FloatButtonActions,
-} from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
+import { FloatButtonActions } from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import UserSiderContent from '@/app/(dashboard)/[environmentId]/iam/users/user-sider-content';
-import ScrollBar from './scrollbar';
-import TabCard from './tabcard-model-metadata';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>

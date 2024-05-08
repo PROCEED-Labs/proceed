@@ -1,90 +1,91 @@
 'use client';
 
-import { Dispatch, FC, Key, SetStateAction } from 'react';
-import styles from './process-icon-list.module.scss';
-import cn from 'classnames';
-
-import TabCard from './tabcard-model-metadata';
+import { Dispatch, FC, SetStateAction } from 'react';
+import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
+import Viewer from './bpmn-viewer';
 
 import ScrollBar from './scrollbar';
 import { ProcessListProcess } from './processes';
-import { Grid } from 'antd';
+import { Card, Grid } from 'antd';
+import ElementIconView, { ItemIconViewProps } from './item-icon-view';
+import { useRouter } from 'next/navigation';
+import { spaceURL } from '@/lib/utils';
+import { useEnvironment } from './auth-can';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
+
+const DraggableDiv = DraggableElementGenerator('div', 'itemId');
 
 type IconViewProps = {
   data: ProcessListProcess[];
-  selection: Key[];
-  selectedElements: ProcessListProcess[];
-  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
+  elementSelection: {
+    selectedElements: ProcessListProcess[];
+    setSelectionElements: (action: SetStateAction<ProcessListProcess[]>) => void;
+  };
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
-const IconView: FC<IconViewProps> = ({
-  data,
-  selection,
-  selectedElements,
-  setSelectionElements,
-  setShowMobileMetaData,
-}) => {
+const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMetaData }) => {
   const breakpoint = Grid.useBreakpoint();
-  const folders = data.filter((item) => item.type === 'folder') as Extract<
-    ProcessListProcess,
-    { type: 'folder' }
-  >[];
-  const processes = data.filter((item) => item.type !== 'folder') as Exclude<
-    ProcessListProcess,
-    { type: 'folder' }
-  >[];
+  const router = useRouter();
+  const space = useEnvironment();
+
+  const setContextMenuItems = contextMenuStore((store) => store.setSelected);
+
+  const folders = data.filter((item) => item.type === 'folder');
+  const processes = data.filter((item) => item.type !== 'folder');
+
+  const tabCardPropGenerator: ItemIconViewProps<ProcessListProcess>['tabCardPropsGenerator'] = (
+    item,
+  ) => {
+    let cardHeight;
+    if (item.type === 'folder') cardHeight = 'fit-content';
+    else cardHeight = '300px';
+
+    const cardTitle = (
+      <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
+        {item.type === 'folder' && <FolderOutlined style={{ marginRight: '.5rem' }} />}
+        {item?.name.highlighted}
+        <span style={{ flex: 1 }}></span>
+        {breakpoint.xl ? null : <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />}
+      </div>
+    );
+
+    return {
+      Wrapper: DraggableDiv,
+      cardProps: {
+        onDoubleClick: () => {
+          const url =
+            item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
+          router.push(spaceURL(space, url));
+        },
+        onContextMenu: () => {
+          if (elementSelection.selectedElements.some(({ id }) => id === item.id)) {
+            setContextMenuItems(elementSelection.selectedElements);
+          } else {
+            elementSelection.setSelectionElements([item]);
+            setContextMenuItems([item]);
+          }
+        },
+        children:
+          item.type === 'folder' ? (
+            <Card.Meta title={cardTitle} />
+          ) : (
+            <Viewer definitionId={item.id} reduceLogo={true} />
+          ),
+        title: item.type === 'process' && cardTitle,
+      },
+    };
+  };
 
   return (
     <ScrollBar width="12px">
-      {folders.length > 0 && (
-        <div
-          className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-            justifyContent: 'space-between',
-            gridGap: '20px',
-            marginBottom: '20px',
-          }}
-        >
-          {folders.map((item) => (
-            <TabCard
-              setShowMobileMetaData={setShowMobileMetaData}
-              item={item}
-              completeList={data!}
-              selection={selection}
-              selectedElements={selectedElements}
-              setSelectionElements={setSelectionElements}
-              tabcard={false}
-              key={item.id}
-            />
-          ))}
-        </div>
-      )}
-
-      <div
-        className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-          justifyContent: 'space-between',
-          gridGap: '20px',
-        }}
-      >
-        {processes.map((item) => (
-          <TabCard
-            setShowMobileMetaData={setShowMobileMetaData}
-            item={item}
-            completeList={data!}
-            selection={selection}
-            selectedElements={selectedElements}
-            setSelectionElements={setSelectionElements}
-            tabcard={false}
-            key={item.id}
-          />
-        ))}
-      </div>
+      <ElementIconView
+        data={data}
+        divisions={[folders, processes]}
+        tabCardPropsGenerator={tabCardPropGenerator}
+        elementSelection={elementSelection}
+      />
     </ScrollBar>
   );
 };

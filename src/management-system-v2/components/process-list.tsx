@@ -37,14 +37,7 @@ type ProcessListProps = PropsWithChildren<{
   processActions: ProcessActions;
 }>;
 
-const ColumnHeader = [
-  'Process Name',
-  'Description',
-  'Last Edited',
-  'Created On',
-  'File Size',
-  'Owner',
-];
+const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -74,7 +67,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const processListColumnsMobile = [
     'Favorites',
-    'Process Name',
+    'Name',
     'Description',
     'Last Edited',
     'Meta Data Button',

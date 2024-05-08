@@ -4,6 +4,7 @@ import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from '
 import type ModelerType from 'bpmn-js/lib/Modeler';
 import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Keyboard from 'diagram-js/lib/features/keyboard/Keyboard';
@@ -53,6 +54,8 @@ export type BPMNCanvasProps = {
   onUnload?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
   /** Called when the BPMN selection changes. */
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
+  /** Called when the zoom level changed */
+  onZoom?: (zoomLevel: number) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
@@ -71,8 +74,9 @@ export interface BPMNCanvasRef {
   undo: () => void;
   redo: () => void;
   getElement: (id: string) => Element | undefined;
-  getProcessElement: () => Element | undefined;
+  getCurrentRoot: () => Element | undefined;
   getCanvas: () => Canvas;
+  getZoomScroll: () => ZoomScroll;
   getSelection: () => Selection;
   getModeling: () => Modeling;
   getFactory: () => BpmnFactory;
@@ -89,6 +93,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onUnload,
       onRootChange,
       onSelectionChange,
+      onZoom,
       resizeWithContainer,
       className,
     },
@@ -122,14 +127,22 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       getElement: (id: string) => {
         return modeler.current!.get<ElementRegistry>('elementRegistry').get(id) as Element;
       },
-      getProcessElement: () => {
+      getCurrentRoot: () => {
+        if (!modeler.current!.get<Canvas>('canvas').getRootElement().businessObject) {
+          return;
+        }
+
         return modeler
           .current!.get<ElementRegistry>('elementRegistry')
-          .getAll()
-          .filter((el) => el.businessObject?.$type === 'bpmn:Process')[0] as Element;
+          .get(
+            modeler.current!.get<Canvas>('canvas').getRootElement().businessObject.id,
+          ) as Element;
       },
       getCanvas: () => {
         return modeler.current!.get<Canvas>('canvas');
+      },
+      getZoomScroll: () => {
+        return modeler.current!.get<ZoomScroll>('zoomScroll');
       },
       getSelection: () => {
         return modeler.current!.get<Selection>('selection');
@@ -200,6 +213,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       }) => {
         onSelectionChange?.(event.oldSelection, event.newSelection);
       };
+      const zoom = (zoomLevel: number) => onZoom?.(zoomLevel);
 
       if (type === 'modeler') {
         modeler.current!.on('commandStack.changed', commandStackChanged);
@@ -210,13 +224,18 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         'selection.changed',
         selectionChanged,
       );
+      modeler.current!.on<{
+        viewbox: { x: number; y: number; width: number; height: number; scale: number };
+      }>('canvas.viewbox.changed', ({ viewbox }) => {
+        zoom(viewbox.scale);
+      });
 
       return () => {
         modeler.current!.off('import.done', _onLoaded);
         modeler.current!.off('commandStack.changed', commandStackChanged);
         modeler.current!.off('selection.changed', selectionChanged);
       };
-    }, [type, onLoaded, onChange, onSelectionChange]);
+    }, [type, onLoaded, onChange, onSelectionChange, onZoom]);
 
     useEffect(() => {
       const m = modeler.current!;

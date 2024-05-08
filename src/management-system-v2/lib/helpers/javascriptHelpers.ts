@@ -1,6 +1,6 @@
 export async function asyncMap<Type, TReturn>(
   array: Array<Type>,
-  cb: (entry: Type, index: Number) => Promise<TReturn>,
+  cb: (entry: Type, index: number) => Promise<TReturn>,
 ) {
   const mappingCallbacks = array.map(async (entry, index) => await cb(entry, index));
 
@@ -11,7 +11,7 @@ export async function asyncMap<Type, TReturn>(
 
 export async function asyncForEach<Type>(
   array: Array<Type>,
-  cb: (entry: Type, index: Number) => Promise<void>,
+  cb: (entry: Type, index: number) => Promise<void>,
 ) {
   await asyncMap(array, cb);
 }

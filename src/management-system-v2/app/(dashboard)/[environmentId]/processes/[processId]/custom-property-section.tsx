@@ -60,7 +60,7 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '1rem',
-        flexGrow: 1,
+        flexWrap: 'nowrap',
       }}
     >
       <Space direction="vertical" size={0} style={{ flexGrow: 1 }}>

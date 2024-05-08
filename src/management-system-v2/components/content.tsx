@@ -8,6 +8,7 @@ import cn from 'classnames';
 import HeaderActions from './header-actions';
 import { useLayoutMobileDrawer } from '@/app/(dashboard)/[environmentId]/layout-client';
 import SpaceLink from './space-link';
+import useModelerStateStore from '@/app/(dashboard)/[environmentId]/processes/[processId]/use-modeler-state-store';
 
 type ContentProps = PropsWithChildren<{
   /** Top left title in the header (or custom node). */
@@ -40,11 +41,15 @@ const Content: FC<ContentProps> = ({
 }) => {
   const breakpoint = Grid.useBreakpoint();
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
+  const modelerIsFullScreen = useModelerStateStore((state) => state.isFullScreen);
 
   return (
     <AntLayout className={cn(styles.Main, wrapperClass)}>
       {noHeader ? null : (
-        <AntLayout.Header className={cn(styles.Header, headerClass)}>
+        <AntLayout.Header
+          style={{ display: modelerIsFullScreen ? 'none' : '' }}
+          className={cn(styles.Header, headerClass)}
+        >
           {/* Add icon into header for xs screens*/}
           {breakpoint.xs ? (
             <div className={styles.LogoContainer}>

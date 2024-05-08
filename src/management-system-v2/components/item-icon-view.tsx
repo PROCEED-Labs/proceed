@@ -72,7 +72,7 @@ const ItemIconViewProps = <T extends { id: string }>({
     elementSelection &&
     ((event, item) => {
       if (event.ctrlKey) {
-        if (elementSelection.selectedElements.some(({ id }) => id !== item.id)) {
+        if (!elementSelection.selectedElements.find(({ id }) => id === item.id)) {
           elementSelection.setSelectionElements((prev) => [...prev, item]);
         } else {
           elementSelection.setSelectionElements((prev) => prev.filter(({ id }) => id !== item.id));

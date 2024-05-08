@@ -3,18 +3,7 @@ import { ProcessActions, ProcessListProcess, canDeleteItems } from '.';
 import { FC, PropsWithChildren } from 'react';
 import { Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
-import {
-  ExportOutlined,
-  DeleteOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
-  PlusOutlined,
-  FolderOutlined,
-  FileOutlined,
-  CopyOutlined,
-  FolderAddOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, CopyOutlined, FolderAddOutlined, EditOutlined } from '@ant-design/icons';
 import { Folder } from '@/lib/data/folder-schema';
 
 export const contextMenuStore = create<{

@@ -17,7 +17,7 @@ import styles from './item-list-view.module.scss';
 import { generateDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import { ProcessListProcess } from './processes';
+import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
@@ -34,9 +34,7 @@ type ProcessListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteItem: (process: ProcessListProcess[]) => void;
-  onEditItem: (process: ProcessListProcess) => void;
-  onCopyItem: (process: ProcessListProcess) => void;
+  processActions: ProcessActions;
 }>;
 
 const ColumnHeader = [
@@ -55,9 +53,7 @@ const ProcessList: FC<ProcessListProps> = ({
   selectedElements,
   setSelectionElements,
   onExportProcess,
-  onDeleteItem,
-  onEditItem,
-  onCopyItem,
+  processActions: { deleteItems, editItem, copyItem },
   setShowMobileMetaData,
 }) => {
   const router = useRouter();
@@ -95,7 +91,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 <CopyOutlined
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCopyItem(record);
+                    copyItem([record]);
                   }}
                 />
               </Tooltip>
@@ -110,7 +106,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
           <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => onEditItem(record)} />
+              <EditOutlined onClick={() => editItem(record)} />
             </Tooltip>
           </AuthCan>
 
@@ -119,7 +115,7 @@ const ProcessList: FC<ProcessListProps> = ({
               <ConfirmationButton
                 title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteItem([record])}
+                onConfirm={() => deleteItems([record])}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -130,7 +126,7 @@ const ProcessList: FC<ProcessListProps> = ({
         </>
       );
     },
-    [onCopyItem, onDeleteItem, onEditItem, onExportProcess],
+    [copyItem, deleteItems, editItem, onExportProcess],
   );
 
   const columns: TableColumnsType<ProcessListProcess> = [

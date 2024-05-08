@@ -3,7 +3,6 @@
 import styles from './processes.module.scss';
 import { ComponentProps, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
-import cn from 'classnames';
 import {
   ExportOutlined,
   DeleteOutlined,
@@ -63,19 +62,13 @@ export function canDeleteItems(
 // TODO: improve ordering
 export type ProcessActions = {
   deleteItems: (items: ProcessListProcess[]) => void;
-  copyItem: (items: ProcessListProcess) => void;
+  copyItem: (items: ProcessListProcess[]) => void;
   editItem: (item: ProcessListProcess) => void;
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
-
-type ProcessesProps = {
-  processes: InputItem[];
-  favourites?: string[];
-  folder: Folder;
-};
 
 const Processes = ({
   processes,
@@ -241,9 +234,9 @@ const Processes = ({
     router.refresh();
   }
 
-  function copyItem(item: ProcessListProcess) {
+  function copyItem(items: ProcessListProcess[]) {
     setOpenCopyModal(true);
-    setCopySelection([item]);
+    setCopySelection(items);
   }
 
   function editItem(item: ProcessListProcess) {
@@ -273,7 +266,7 @@ const Processes = ({
     });
   };
 
-  const processACtions: ProcessActions = {
+  const processActions: ProcessActions = {
     deleteItems,
     copyItem,
     editItem,
@@ -286,7 +279,7 @@ const Processes = ({
   return (
     <>
       <ContextMenuArea
-        processActions={processACtions}
+        processActions={processActions}
         folder={folder}
         suffix={defaultDropdownItems}
       >
@@ -429,18 +422,14 @@ const Processes = ({
                   <ProcessList
                     data={filteredData}
                     folder={folder}
-                    setSelectionElements={setSelectedRowElements}
                     selection={selectedRowKeys}
+                    setSelectionElements={setSelectedRowElements}
                     selectedElements={selectedRowElements}
                     // TODO: Replace with server component loading state
                     //isLoading={isLoading}
-                    onExportProcess={(id) => {
-                      setOpenExportModal(true);
-                    }}
-                    onDeleteItem={deleteItems}
-                    onCopyItem={copyItem}
-                    onEditItem={editItem}
+                    onExportProcess={(id) => setOpenExportModal(true)}
                     setShowMobileMetaData={setShowMobileMetaData}
+                    processActions={processActions}
                   />
                 )}
               </Spin>

@@ -18,6 +18,7 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
+import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 
 const DashboardLayout = async ({
@@ -76,6 +77,12 @@ const DashboardLayout = async ({
       key: 'executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
+    });
+
+    children.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Tasklist</Link>,
+      icon: <FaList />,
     });
 
     layoutMenuItems.push({

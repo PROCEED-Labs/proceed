@@ -1,0 +1,63 @@
+.Tasklist {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+
+  @media (max-width: 1199px) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #eee;
+
+    @media (min-width: 601px) and (max-width: 1199px) {
+      position: relative;
+      flex-direction: row;
+      justify-content: center;
+    }
+
+    @media (max-width: 1199px) {
+      border-right: none;
+      border-bottom: 1px solid #eee;
+    }
+
+    .cardWrapper {
+      padding-right: 0.75rem;
+
+      @media (max-width: 600px) {
+        margin: auto;
+      }
+    }
+
+    .actionWrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+
+      @media (max-width: 600px) {
+        justify-content: end;
+      }
+
+      @media (min-width: 601px) and (max-width: 1199px) {
+        position: absolute;
+        right: 0;
+      }
+
+      .dropdownWrapper {
+        display: flex;
+        justify-content: center;
+        padding-right: 0.75rem;
+      }
+    }
+  }
+
+  .taskView {
+    flex-grow: 1;
+  }
+}

@@ -139,7 +139,7 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'Process Name',
+      key: 'Name',
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
         <div

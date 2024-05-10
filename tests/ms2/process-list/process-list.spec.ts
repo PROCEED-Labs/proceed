@@ -458,3 +458,23 @@ test('test that selected columns are persisted on reload', async ({ processListP
     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
   }
 });
+
+test('create a new folder and remove it with context menu', async ({ processListPage }) => {
+  const { page } = processListPage;
+  const folderId = crypto.randomUUID();
+
+  await page.getByText('No data').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  await page.getByLabel('Folder name').fill(folderId);
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  const folderLocator = page.getByText(folderId);
+  await expect(folderLocator).toBeVisible();
+
+  folderLocator.click({ button: 'right' });
+  const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
+  await menuLocator.click();
+  await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
+
+  await expect(folderLocator).not.toBeVisible();
+});

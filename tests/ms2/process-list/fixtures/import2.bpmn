@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="import2-process-id" name="Import 2" targetNamespace="https://docs.proceed-labs.org/import2-process-id" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:versionBasedOn="1713523424684" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <process id="Process_07mm21y" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <startEvent id="StartEvent_11c5e5n">
+      <outgoing>Flow_14wofxg</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_14wofxg" sourceRef="StartEvent_11c5e5n" targetRef="Activity_0car07j" />
+    <sequenceFlow id="Flow_1rm9mx3" sourceRef="Activity_0car07j" targetRef="Activity_013wagm" />
+    <userTask id="Activity_0car07j" name="X" implementation="https://html.spec.whatwg.org/">
+      <incoming>Flow_14wofxg</incoming>
+      <outgoing>Flow_1rm9mx3</outgoing>
+    </userTask>
+    <scriptTask id="Activity_013wagm" name="Y" proceed:manualInterruptionHandling="true">
+      <incoming>Flow_1rm9mx3</incoming>
+      <outgoing>Flow_1j401tl</outgoing>
+    </scriptTask>
+    <sequenceFlow id="Flow_1j401tl" sourceRef="Activity_013wagm" targetRef="Activity_1r1rpgl" />
+    <endEvent id="Event_0gy99s6">
+      <incoming>Flow_0s9fl5z</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0s9fl5z" sourceRef="Activity_1r1rpgl" targetRef="Event_0gy99s6" />
+    <serviceTask id="Activity_1r1rpgl" name="Z">
+      <incoming>Flow_1j401tl</incoming>
+      <outgoing>Flow_0s9fl5z</outgoing>
+    </serviceTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_07mm21y">
+      <bpmndi:BPMNShape id="StartEvent_11c5e5n_di" bpmnElement="StartEvent_11c5e5n">
+        <dc:Bounds x="350" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1guqcw8_di" bpmnElement="Activity_0car07j">
+        <dc:Bounds x="440" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1rfl3yd_di" bpmnElement="Activity_013wagm">
+        <dc:Bounds x="600" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0gy99s6_di" bpmnElement="Event_0gy99s6">
+        <dc:Bounds x="922" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dxep6z_di" bpmnElement="Activity_1r1rpgl">
+        <dc:Bounds x="760" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_14wofxg_di" bpmnElement="Flow_14wofxg">
+        <di:waypoint x="386" y="218" />
+        <di:waypoint x="440" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rm9mx3_di" bpmnElement="Flow_1rm9mx3">
+        <di:waypoint x="540" y="218" />
+        <di:waypoint x="600" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1j401tl_di" bpmnElement="Flow_1j401tl">
+        <di:waypoint x="700" y="218" />
+        <di:waypoint x="760" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0s9fl5z_di" bpmnElement="Flow_0s9fl5z">
+        <di:waypoint x="860" y="218" />
+        <di:waypoint x="922" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

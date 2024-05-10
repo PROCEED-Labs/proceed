@@ -377,19 +377,16 @@ test('share-modal-test', async ({ processListPage }) => {
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
-  // Add the shared process to the workspace
-  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
-  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
+  // check if the process on the page is the correct one
+  await expect(newPage.getByRole('heading', { name: 'Process 1' })).toBeVisible();
+  const infoSection = newPage.locator('css=[class^=process-document_TitleInfos]');
+  await expect(infoSection).toBeVisible();
+  await expect(infoSection.getByText('Version: Latest')).toBeVisible();
 
-  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
-  await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
-
-  await newPage.getByRole('button', { name: 'My Space' }).click();
-  await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
-
-  const newProcessId = newPage.url().split('/processes/').pop();
-
-  await newPage.getByRole('link', { name: 'process list' }).click();
-  await newPage.waitForURL(/processes/);
-  await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
+  // check if the shown bpmn is correct
+  await expect(newPage.locator('.djs-shape[data-element-id="StartEvent_1eclh91"]')).toBeVisible();
+  await expect(newPage.locator('.djs-connection[data-element-id="Flow_034bmxw"]')).toBeVisible();
+  await expect(newPage.locator('.djs-shape[data-element-id="Activity_1m5esxh"]')).toBeVisible();
+  await expect(newPage.locator('.djs-connection[data-element-id="Flow_0evtfpc"]')).toBeVisible();
+  await expect(newPage.locator('.djs-shape[data-element-id="Event_1oxwp3r"]')).toBeVisible();
 });

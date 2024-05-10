@@ -40,13 +40,20 @@ export class ProcessListPage {
    * @param definitionId will be used to identify the process in the MS (two imports with the same id will clash)
    * @returns meta data about the imported process (id and name)
    */
-  async importProcess(filename: string, definitionId = `_${v4()}`) {
+  async importProcess(
+    filename: string,
+    definitionId = `_${v4()}`,
+    transformBpmn?: (bpmn: string) => Promise<string>,
+  ) {
     const { page } = this;
 
     const importFilePath = path.join(__dirname, 'fixtures', filename);
     let bpmn = fs.readFileSync(importFilePath, 'utf-8');
     bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
     bpmn = (await setTargetNamespace(bpmn, definitionId)) as string;
+
+    if (transformBpmn) bpmn = await transformBpmn(bpmn);
+
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process

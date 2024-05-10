@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:proceed="https://docs.proceed-labs.org/BPMN" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:p26b176="https://docs.proceed-labs.org/import1-definition-id#insert-import1-version-here" xmlns:p3b8684="https://docs.proceed-labs.org/import2-definition-id#insert-import2-version-here" id="importer-process-id" name="Importer" targetNamespace="https://docs.proceed-labs.org/importer-process-id" expressionLanguage="https://ecma-international.org/ecma-262/8.0/" typeLanguage="https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf" exporter="PROCEED Management System" exporterVersion="1.0.0" proceed:creatorEnvironmentId="" proceed:creatorEnvironmentName="" xsi:schemaLocation="https://docs.proceed-labs.org/BPMN https://docs.proceed-labs.org/xsd/XSD-PROCEED.xsd http://www.omg.org/spec/BPMN/20100524/MODEL https://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+  <import importType="http://www.omg.org/spec/BPMN/20100524/MODEL" location="import1-definition-id" namespace="https://docs.proceed-labs.org/import1-definition-id#insert-import1-version-here" proceed:version="insert-import1-version-here" />
+  <import importType="http://www.omg.org/spec/BPMN/20100524/MODEL" location="import2-definition-id" namespace="https://docs.proceed-labs.org/import2-definition-id#insert-import2-version-here" proceed:version="insert-import2-version-here" />
+  <process id="Process_1xpl2t6" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <documentation>A process importing two other processes</documentation>
+    <startEvent id="StartEvent_060jvsw">
+      <outgoing>Flow_11v1suu</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_11v1suu" sourceRef="StartEvent_060jvsw" targetRef="Activity_0ehc3tb" />
+    <sequenceFlow id="Flow_11dnio8" sourceRef="Activity_0ehc3tb" targetRef="Activity_0ahspz3" />
+    <endEvent id="Event_05hheu3">
+      <incoming>Flow_0aa5vf1</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_0aa5vf1" sourceRef="Activity_0ahspz3" targetRef="Event_05hheu3" />
+    <callActivity id="Activity_0ehc3tb" name="Import 1" calledElement="p26b176:Process_09pzx8e">
+      <incoming>Flow_11v1suu</incoming>
+      <outgoing>Flow_11dnio8</outgoing>
+    </callActivity>
+    <callActivity id="Activity_0ahspz3" name="Import 2" calledElement="p3b8684:Process_07mm21y">
+      <incoming>Flow_11dnio8</incoming>
+      <outgoing>Flow_0aa5vf1</outgoing>
+    </callActivity>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1xpl2t6">
+      <bpmndi:BPMNShape id="StartEvent_060jvsw_di" bpmnElement="StartEvent_060jvsw">
+        <dc:Bounds x="350" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05hheu3_di" bpmnElement="Event_05hheu3">
+        <dc:Bounds x="762" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0t7hglf_di" bpmnElement="Activity_0ehc3tb">
+        <dc:Bounds x="440" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14h4c9n_di" bpmnElement="Activity_0ahspz3">
+        <dc:Bounds x="600" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_11v1suu_di" bpmnElement="Flow_11v1suu">
+        <di:waypoint x="386" y="218" />
+        <di:waypoint x="440" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11dnio8_di" bpmnElement="Flow_11dnio8">
+        <di:waypoint x="540" y="218" />
+        <di:waypoint x="600" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0aa5vf1_di" bpmnElement="Flow_0aa5vf1">
+        <di:waypoint x="700" y="218" />
+        <di:waypoint x="762" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

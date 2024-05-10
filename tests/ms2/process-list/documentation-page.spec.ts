@@ -11,7 +11,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   await processListPage.importProcess('import1.bpmn', import1Id);
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await page.getByRole('button', { name: 'plus' }).click();
+  await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
   await page.getByPlaceholder('Version Name').click();
   await page.getByPlaceholder('Version Name').fill('Version 1');
   await page.getByPlaceholder('Version Description').click();
@@ -28,7 +28,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   await processListPage.importProcess('import2.bpmn', import2Id);
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await page.getByRole('button', { name: 'plus' }).click();
+  await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
   await page.getByPlaceholder('Version Name').click();
   await page.getByPlaceholder('Version Name').fill('Version 2');
   await page.getByPlaceholder('Version Description').click();

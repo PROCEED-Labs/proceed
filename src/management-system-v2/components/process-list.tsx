@@ -1,46 +1,28 @@
 'use client';
 
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  Grid,
-  MenuProps,
-  Row,
-  Table,
-  TableColumnsType,
-  Tooltip,
-} from 'antd';
-import { useCallback, useState, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
+import { Button, Grid, Row, TableColumnsType, Tooltip } from 'antd';
+import { useCallback, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
 import {
   CopyOutlined,
   ExportOutlined,
   EditOutlined,
   DeleteOutlined,
   StarOutlined,
-  MoreOutlined,
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
-import cn from 'classnames';
 import { useRouter } from 'next/navigation';
-import styles from './process-list.module.scss';
-import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import { generateDateString, spaceURL } from '@/lib/utils';
-import { toCaslResource } from '@/lib/ability/caslAbility';
+import styles from './item-list-view.module.scss';
+import { generateDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
-import {
-  DragInfo,
-  DraggableElementGenerator,
-  ProcessListProcess,
-  contextMenuStore,
-} from './processes';
+import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
-import FavouriteStar from './favouriteStar';
-import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
+import ElementList from './item-list-view';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -52,23 +34,10 @@ type ProcessListProps = PropsWithChildren<{
   setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
   onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteItem: (process: ProcessListProcess[]) => void;
-  onEditItem: (process: ProcessListProcess) => void;
-  onCopyItem: (process: ProcessListProcess) => void;
-  dragInfo: DragInfo;
+  processActions: ProcessActions;
 }>;
 
-const ColumnHeader = [
-  'Process Name',
-  'Description',
-  'Last Edited',
-  'Created On',
-  'File Size',
-  'Owner',
-];
-
-const numberOfRows =
-  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
+const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -77,25 +46,16 @@ const ProcessList: FC<ProcessListProps> = ({
   selectedElements,
   setSelectionElements,
   onExportProcess,
-  onDeleteItem,
-  onEditItem,
-  onCopyItem,
+  processActions: { deleteItems, editItem, copyItem },
   setShowMobileMetaData,
-  dragInfo,
 }) => {
   const router = useRouter();
   const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
-  const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const lastProcessId = useLastClickedStore((state) => state.processId);
-  const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
   const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
-  const { favourites: favProcesses } = useFavouriteProcesses();
-  const environment = useEnvironment();
 
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
 
@@ -107,7 +67,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const processListColumnsMobile = [
     'Favorites',
-    'Process Name',
+    'Name',
     'Description',
     'Last Edited',
     'Meta Data Button',
@@ -124,7 +84,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 <CopyOutlined
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCopyItem(record);
+                    copyItem([record]);
                   }}
                 />
               </Tooltip>
@@ -139,18 +99,16 @@ const ProcessList: FC<ProcessListProps> = ({
 
           <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => onEditItem(record)} />
+              <EditOutlined onClick={() => editItem(record)} />
             </Tooltip>
           </AuthCan>
 
-          {/*TODO: errors regarding query */}
-
-          <AuthCan delete Process={record}>
+          <AuthCan delete {...resource}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteItem([record])}
+                onConfirm={() => deleteItems([record])}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -161,32 +119,8 @@ const ProcessList: FC<ProcessListProps> = ({
         </>
       );
     },
-    [onCopyItem, onDeleteItem, onEditItem, onExportProcess],
+    [copyItem, deleteItems, editItem, onExportProcess],
   );
-
-  const columnCheckBoxItems: MenuProps['items'] = ColumnHeader.map((title) => ({
-    label: (
-      <Checkbox
-        checked={selectedColumns.includes(title)}
-        onChange={(e) => {
-          e.stopPropagation();
-          const { checked, value } = e.target;
-          if (checked) {
-            addPreferences({ 'process-list-columns': [...selectedColumns, value] });
-          } else {
-            addPreferences({
-              'process-list-columns': selectedColumns.filter((column) => column !== value),
-            });
-          }
-        }}
-        onClick={(e) => e.stopPropagation()}
-        value={title}
-      >
-        {title}
-      </Checkbox>
-    ),
-    key: title,
-  }));
 
   const columns: TableColumnsType<ProcessListProcess> = [
     {
@@ -197,18 +131,15 @@ const ProcessList: FC<ProcessListProps> = ({
       render: (id, _, index) =>
         id !== folder.parentId && (
           <StarOutlined
-            style={{
-              color: favourites?.includes(index) ? '#FFD700' : undefined,
-              opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
-            }}
+            style={{ color: favourites?.includes(index) ? '#FFD700' : undefined }}
+            className={styles.HoverableTableCell}
           />
         ),
     },
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'Process Name',
-      className: styles.Title,
+      key: 'Name',
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
         <div
@@ -223,7 +154,7 @@ const ProcessList: FC<ProcessListProps> = ({
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
-            // TODO color
+            // TODO: color
             color: record.id === folder.parentId ? 'grey' : undefined,
             fontStyle: record.id === folder.parentId ? 'italic' : undefined,
           }}
@@ -285,40 +216,6 @@ const ProcessList: FC<ProcessListProps> = ({
       fixed: 'right',
       width: 160,
       dataIndex: 'id',
-      key: 'Selected Columns',
-      title: (
-        <div style={{ float: 'right' }}>
-          <Dropdown
-            open={dropdownOpen}
-            onOpenChange={(open) => setDropdownOpen(open)}
-            menu={{
-              items: columnCheckBoxItems,
-            }}
-            trigger={['click']}
-          >
-            <Button type="text">
-              <MoreOutlined />
-            </Button>
-          </Dropdown>
-        </div>
-      ),
-      render: (id, record) =>
-        id !== folder.parentId && (
-          <Row
-            justify="space-evenly"
-            style={{
-              opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
-            }}
-          >
-            {actionBarGenerator(record)}
-          </Row>
-        ),
-      responsive: ['xl'],
-    },
-    {
-      fixed: 'right',
-      width: 160,
-      dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
       render: (id) =>
@@ -336,95 +233,55 @@ const ProcessList: FC<ProcessListProps> = ({
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   return (
-    <Table
-      rowSelection={{
-        type: 'checkbox',
-        selectedRowKeys: selection,
-        onChange: (_, selectedRows) => setSelectionElements(selectedRows),
-        getCheckboxProps: (record: ProcessListProcess) => ({ name: record.id }),
-        onSelect: (_, __, selectedRows) => setSelectionElements(selectedRows),
-        onSelectNone: () => setSelectionElements([]),
-        onSelectAll: (_, selectedRows) => setSelectionElements(selectedRows),
-      }}
-      onRow={(record) => ({
-        onClick: (event) => {
-          /* CTRL */
-          if (event.ctrlKey) {
-            /* Not selected yet -> Add to selection */
-            if (!selection.includes(record?.id)) {
-              setSelectionElements((prev) => [record, ...prev]);
-              /* Already in selection -> deselect */
-            } else {
-              setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
-            }
-            /* SHIFT */
-          } else if (event.shiftKey) {
-            /* At least one element selected */
-            if (selection.length) {
-              const iLast = data.findIndex((process) => process.id === lastProcessId);
-              const iCurr = data.findIndex((process) => process.id === record?.id);
-              /* Identical to last clicked */
-              if (iLast === iCurr) {
-                setSelectionElements([record]);
-              } else if (iLast < iCurr) {
-                /* Clicked comes after last slected */
-                setSelectionElements(data!.slice(iLast, iCurr + 1));
-              } else if (iLast > iCurr) {
-                /* Clicked comes before last slected */
-                setSelectionElements(data!.slice(iCurr, iLast + 1));
-              }
-            } else {
-              /* Nothing selected */
-              setSelectionElements([record]);
-            }
-            /* Normal Click */
-          } else {
-            setSelectionElements([record]);
-          }
-
-          /* Always */
-          setLastProcessId(record?.id);
-        },
-        onDoubleClick: () =>
-          router.push(
-            record.type === 'folder'
-              ? `/${space.spaceId}/processes/folder/${record.id}`
-              : `/${space.spaceId}/processes/${record.id}`,
-          ),
-        onMouseEnter: (e) => {
-          if (dragInfo.dragging) {
-            e.preventDefault();
-            e.stopPropagation();
-          } else {
-            setHovered(record);
-          }
-        },
-        onMouseLeave: () => setHovered(undefined),
-        onContextMenu: () => {
-          if (selection.includes(record.id)) {
-            setContextMenuItem(selectedElements);
-          } else {
-            setSelectionElements([record]);
-            setContextMenuItem([record]);
-          }
-        },
-      })}
-      components={{
-        body: {
-          row: DraggableRow,
-        },
-      }}
-      /* ---- */
-      /* Breaks Side-Panel */
-      // sticky
-      // scroll={{ x: 1200, y: 500 }}
-      /* ---- */
-      pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
-      rowKey="id"
+    <ElementList
+      data={data}
       columns={columnsFiltered}
-      dataSource={data}
-      className={cn(breakpoint.xs ? styles.MobileTable : '')}
-      size={breakpoint.xs ? 'large' : 'middle'}
+      elementSelection={{
+        selectedElements,
+        setSelectionElements: setSelectionElements,
+      }}
+      selectableColumns={{
+        setColumnTitles: (cols) => {
+          if (typeof cols === 'function') cols = cols(selectedColumns as string[]);
+
+          addPreferences({ 'process-list-columns-desktop': cols });
+        },
+        selectedColumnTitles: selectedColumns as string[],
+        allColumnTitles: ColumnHeader,
+        columnProps: {
+          width: 'fit-content',
+          responsive: ['xl'],
+          render: (id, record) =>
+            id !== folder.parentId && (
+              <Row justify="space-evenly" className={styles.HoverableTableCell}>
+                {actionBarGenerator(record)}
+              </Row>
+            ),
+        },
+      }}
+      tableProps={{
+        onRow: (item) => ({
+          onDoubleClick: () =>
+            router.push(
+              item.type === 'folder'
+                ? `/${space.spaceId}/processes/folder/${item.id}`
+                : `/${space.spaceId}/processes/${item.id}`,
+            ),
+          onContextMenu: () => {
+            if (selection.includes(item.id)) {
+              setContextMenuItem(selectedElements);
+            } else {
+              setSelectionElements([item]);
+              setContextMenuItem([item]);
+            }
+          },
+        }),
+        components: {
+          body: {
+            row: DraggableRow,
+          },
+        },
+      }}
     />
   );
 };

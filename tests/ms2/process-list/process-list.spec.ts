@@ -478,3 +478,22 @@ test('create a new folder and remove it with context menu', async ({ processList
 
   await expect(folderLocator).not.toBeVisible();
 });
+
+test('create a new folder with new button and remove it', async ({ processListPage }) => {
+  const { page } = processListPage;
+  const folderId = crypto.randomUUID();
+
+  await page.getByRole('button', { name: 'plus New' }).click();
+  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  await page.getByLabel('Folder name').fill(folderId);
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  const folderLocator = page.getByText(folderId);
+  await expect(folderLocator).toBeVisible();
+
+  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
+  await folderRow.getByRole('button', { name: 'delete' }).click();
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  await expect(folderLocator).not.toBeVisible();
+});

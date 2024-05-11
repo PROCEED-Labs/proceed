@@ -1,10 +1,23 @@
 'use client';
 
 import { App, Button, Form, Select, Table } from 'antd';
-import { ApiData } from '@/lib/fetch-data';
 import { useRouter } from 'next/navigation';
 
-type Settings = ApiData<'/settings', 'get'>;
+type Settings = {
+  startEngineAtStartup?: boolean;
+  logLevel?: 'info' | 'error' | 'warn' | 'http' | 'verbose' | 'debug' | 'silly';
+  machinePollingInterval?: number;
+  deploymentsPollingInterval?: number;
+  activeUserTasksPollingInterval?: number;
+  instancePollingInterval?: number;
+  deploymentStorageTime?: number;
+  activeUserTaskStorageTime?: number;
+  instanceStorageTime?: number;
+  closeOpenEditorsInMs?: number;
+  processEngineUrl?: string;
+  domains?: string[];
+  trustedOrigins?: string[];
+};
 
 type SettingsFormProps = {
   settings: Settings;

@@ -10,6 +10,8 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
+  ArrowDownOutlined,
+  FullscreenOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
@@ -148,6 +150,14 @@ const ModelerToolbar = ({
     }
   };
 
+  const handleOpeningSubprocess = async () => {
+    if (modeler && selectedElement) {
+      const canvas = modeler.getCanvas();
+      canvas.setRootElement(canvas.findRoot(selectedElement.id + '_plane') as Root);
+      modeler.fitViewport();
+    }
+  };
+
   const handleOpenDocumentation = async () => {
     // the timestamp does not matter here since it is overriden by the user being an owner of the process
     const url = await generateSharedViewerUrl(
@@ -172,6 +182,7 @@ const ModelerToolbar = ({
     <>
       <Toolbar className={styles.Toolbar}>
         <Space
+          aria-label="general-modeler-toolbar"
           style={{
             width: '100%',
             justifyContent: 'space-between',
@@ -231,6 +242,18 @@ const ModelerToolbar = ({
                 </Tooltip>
               </>
             )}
+          </ToolbarGroup>
+
+          <ToolbarGroup>
+            {selectedElement &&
+              bpmnIs(selectedElement, 'bpmn:SubProcess') &&
+              selectedElement.collapsed && (
+                <Tooltip title="Open Subprocess">
+                  <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+                    Open Subprocess
+                  </Button>
+                </Tooltip>
+              )}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>

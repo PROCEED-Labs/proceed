@@ -29,7 +29,6 @@ import {
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn } from '../helpers/processHelpers';
 import { UserErrorType, userError } from '../user-error';
-import { ApiData } from '../fetch-data';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,

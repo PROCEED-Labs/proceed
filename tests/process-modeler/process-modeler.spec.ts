@@ -22,7 +22,9 @@ test('process modeler', async ({ processModelerPage }) => {
   await expect(propertiesPanel).not.toBeVisible();
 
   // Open/close version creation dialog
-  const openVersionCreationDialog = processModelerPage.page.getByRole('button', { name: 'plus' });
+  const openVersionCreationDialog = processModelerPage.page
+    .getByLabel('general-modeler-toolbar')
+    .getByRole('button', { name: 'plus' });
   await openVersionCreationDialog.click();
   const versionCreationDialog = processModelerPage.page.getByRole('dialog', {
     name: 'Create New Version',

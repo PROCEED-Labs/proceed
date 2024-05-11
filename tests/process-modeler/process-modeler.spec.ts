@@ -181,6 +181,9 @@ test.describe('Shortcuts in Modeler', () => {
     /* Open Share-Modal with Shift+Enter */
     await page.getByRole('main').press('Shift+Enter');
 
+    /* Ensure entry-animation is done */
+    await page.waitForTimeout(1_000);
+
     /* Check if Share-Modal is open */
     let modal = await page.getByRole('dialog');
     await expect(modal, 'Share-Modal should be openable via shortcuts').toBeVisible();
@@ -195,11 +198,10 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* --------------- */
 
-    /* Ensure entry-animation is done */
-    await page.waitForTimeout(1000);
-
     /* Close modal */
     await page.getByRole('main').press('Escape');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if modal closed */
     await expect(modal, 'Share-Modal should be closeable via shortcuts').not.toBeVisible();
@@ -211,6 +213,8 @@ test.describe('Shortcuts in Modeler', () => {
     /* Open XML with ctrl / meta + x */
     await page.locator('body').press('Control+x');
 
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
     /* Check if XML-Modal is open */
     let modal = await page.getByRole('dialog');
     await expect(modal, 'XML-Modal should be openable via shortcuts').toBeVisible();
@@ -219,17 +223,18 @@ test.describe('Shortcuts in Modeler', () => {
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
     await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/xml/i);
 
-    /* Ensure entry-animation is done */
-    await page.waitForTimeout(1000);
-
     /* Close Modal */
     await page.locator('body').press('Escape');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if modal closed */
     await expect(modal, 'XML-Modal should be closeable via shortcuts').not.toBeVisible();
 
     /* Open with meta */
     await page.locator('body').press('Meta+x');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if XML-Modal is open */
     modal = await page.getByRole('dialog');
@@ -244,6 +249,9 @@ test.describe('Shortcuts in Modeler', () => {
     // await page.getByRole('main').press('Control+E');
     await page.locator('body').press('Control+e');
 
+    /* Ensure entry-animation is done */
+    await page.waitForTimeout(1_000);
+
     /* Check if Export-Modal is open */
     let modal = await page.getByRole('dialog');
     await expect(modal, 'Export-Modal should be openable via shortcuts').toBeVisible();
@@ -254,21 +262,21 @@ test.describe('Shortcuts in Modeler', () => {
       /export/i,
     );
 
-    /* Ensure entry-animation is done */
-    await page.waitForTimeout(1000);
-
     /* Close Modal */
     // await page.locator('body').press('Escape');
     await page.getByRole('main').press('Escape');
 
+    /* Ensure exit-animation is done */
+    await page.waitForTimeout(1_000);
+
     /* Check if modal closed */
     await expect(modal, 'Export-Modal should be closeable via shortcuts').not.toBeVisible();
 
-    /* Ensure exit-animation is done */
-    await page.waitForTimeout(1000);
-
     /* Open with meta */
-    await page.getByRole('main').press('Meta+E');
+    await page.getByRole('main').press('Meta+e');
+
+    /* Ensure entry-animation is done */
+    await page.waitForTimeout(1_000);
 
     /* Check if Export-Modal is open */
     modal = await page.getByRole('dialog');

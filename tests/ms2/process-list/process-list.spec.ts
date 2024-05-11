@@ -299,9 +299,9 @@ test('export multiple processes', async ({ processListPage }) => {
 });
 
 /* Favourites */ //TODO:
-test('add and remove favourite processes', async ({ processListPage }) => {
-  const { page } = processListPage;
-});
+// test('add and remove favourite processes', async ({ processListPage }) => {
+//   const { page } = processListPage;
+// });
 
 test.describe('shortcuts in process-list', () => {
   /* Create Process - ctrl / meta + enter */
@@ -309,6 +309,8 @@ test.describe('shortcuts in process-list', () => {
     const { page } = processListPage;
     /* Open Modal with ctrl + enter */
     await page.getByRole('main').press('Control+Enter');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Modal is visible */
     let modal = await page.getByRole('dialog');
@@ -322,6 +324,8 @@ test.describe('shortcuts in process-list', () => {
 
     /* Close Modal with esc */
     await page.getByRole('main').press('Escape');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Modal closed */
     await expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
@@ -450,6 +454,14 @@ test.describe('shortcuts in process-list', () => {
     }
   });
 
+  // test('select all processes after search', async ({ processListPage }) => {});
+
+  // test('select all of a specific page', async ({ processListPage }) => {});
+
+  // test('Select multiple with ctrl / meta and click', async ({ processListPage }) => {});
+
+  // test('Drag select with shift + click', async ({ processListPage }) => {});
+
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
   test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {
     const { page } = processListPage;
@@ -464,6 +476,8 @@ test.describe('shortcuts in process-list', () => {
     await page.getByRole('main').press('Control+c');
     await page.getByRole('main').press('Control+v');
 
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
     /* Check if Modal is visible */
     const modal = await page.getByRole('dialog');
     await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
@@ -474,6 +488,8 @@ test.describe('shortcuts in process-list', () => {
 
     /* Submit copy */
     await page.getByRole('main').press('Control+Enter');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Process has been added */
     await expect(

@@ -454,8 +454,42 @@ test.describe('shortcuts in process-list', () => {
     }
   });
 
-  // test('select all processes after search', async ({ processListPage }) => {});
+  test('select all processes after search', async ({ processListPage }) => {
+    const { page } = processListPage;
 
+    /* Create 3 Processes */
+    const processIDs = [];
+    for (const name of ['AAAA1', 'AAAA2', 'XYZ']) {
+      processIDs.push(await processListPage.createProcess(name));
+    }
+
+    /* Search for XYZ */
+    const inputSearch = await page.locator('.ant-input-affix-wrapper');
+    await inputSearch.getByPlaceholder(/search/i).fill('XYZ');
+
+    /* Unfocus search */
+    await page.getByRole('main').click();
+
+    /* Select all */
+    await page.locator('body').press('Control+a');
+
+    /* Check if only XYZ is selected */
+    await expect(page.getByRole('note')).toContainText('1');
+
+    /*  Search for A */
+    await inputSearch.getByPlaceholder(/search/i).fill('A');
+
+    /* Unfocus search */
+    await page.getByRole('main').click();
+
+    /* Select all */
+    await page.locator('body').press('Meta+a');
+
+    /* Check if both AAA are selected */
+    await expect(page.getByRole('note')).toContainText('2');
+  });
+
+  /* TODO: */
   // test('select all of a specific page', async ({ processListPage }) => {});
 
   // test('Select multiple with ctrl / meta and click', async ({ processListPage }) => {});

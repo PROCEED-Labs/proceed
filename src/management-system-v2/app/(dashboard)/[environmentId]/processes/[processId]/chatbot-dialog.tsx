@@ -1,4 +1,5 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import { mermaid2BPMN } from '@/lib/mermaidParser';
 import { Button, Card, Form, Input, List, Space } from 'antd';
 import React, { useState } from 'react';
 
@@ -13,7 +14,7 @@ export type ChatbotRequest = {
 };
 
 type ChatbotDialogProps = {
-  sendPrompt: (request: ChatbotRequest) => Promise<string>;
+  handleXmlSave: (bpmn: string) => Promise<void>;
   hidden: boolean;
   modeler: BPMNCanvasRef | null;
 };
@@ -22,9 +23,27 @@ type FieldType = {
   prompt: string;
 };
 
-const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ sendPrompt, hidden, modeler }) => {
+const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ handleXmlSave, hidden, modeler }) => {
   const [lastPrompts, setLastPrompts] = useState<PromptAndAnswer[]>([]);
+
   const [waitForResponse, setWaitForResponse] = useState(false);
+
+  function sendPrompt(request: ChatbotRequest): Promise<string> {
+    const chatbotResponse = fetch('http://localhost:2000', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    }).then((res) => res.text());
+    const xml = modeler?.getXML();
+    return Promise.all([chatbotResponse, xml]).then(([res, xml]) => {
+      if (xml) {
+        handleXmlSave(mermaid2BPMN(res, xml));
+      }
+      return res;
+    });
+  }
 
   function onPrompt({ prompt }: FieldType) {
     setWaitForResponse(true);

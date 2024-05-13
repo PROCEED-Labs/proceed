@@ -41,8 +41,8 @@ type ModelerToolbarProps = {
   canUndo: boolean;
   canRedo: boolean;
   versions: { version: number; name: string; description: string }[];
-  sendPrompt: (request: ChatbotRequest) => Promise<string>;
   modeler: BPMNCanvasRef | null;
+  handleXmlSave: (bpmn: string) => Promise<void>;
 };
 const ModelerToolbar = ({
   processId,
@@ -50,7 +50,7 @@ const ModelerToolbar = ({
   canUndo,
   canRedo,
   versions,
-  sendPrompt,
+  handleXmlSave,
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
@@ -304,9 +304,9 @@ const ModelerToolbar = ({
 
             {enableBPMNChatbot && (
               <ChatbotDialog
-                sendPrompt={sendPrompt}
                 hidden={!showChatbotDialog}
                 modeler={modeler}
+                handleXmlSave={handleXmlSave}
               ></ChatbotDialog>
             )}
           </Space>

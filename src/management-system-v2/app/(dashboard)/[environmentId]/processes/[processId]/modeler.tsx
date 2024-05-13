@@ -16,8 +16,6 @@ import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { ChatbotRequest } from './chatbot-dialog';
-import { mermaid2BPMN } from '@/lib/mermaidParser';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -255,24 +253,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     setXmlEditorBpmn(undefined);
   };
 
-  function sendPrompt(request: ChatbotRequest): Promise<string> {
-    const chatbotResponse = fetch('http://localhost:2000', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    }).then((res) => res.text());
-    const xml = modeler.current?.getXML();
-    return Promise.all([chatbotResponse, xml]).then(([res, xml]) => {
-      if (xml) {
-        handleXmlEditorSave(mermaid2BPMN(res, xml));
-      }
-      return res;
-    });
-  }
-
-  const handleXmlEditorSave = async (bpmn: string) => {
+  const handleXmlSave = async (bpmn: string) => {
     if (modeler.current) {
       await modeler.current.loadBPMN(bpmn);
       // If the bpmn contains unexpected content (text content for an element
@@ -302,8 +283,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               versions={versions}
               canRedo={canRedo}
               canUndo={canUndo}
-              sendPrompt={sendPrompt}
               modeler={modeler.current}
+              handleXmlSave={handleXmlSave}
             />
           )}
           {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
@@ -313,7 +294,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               bpmn={xmlEditorBpmn}
               canSave={!selectedVersionId}
               onClose={handleCloseXmlEditor}
-              onSaveXml={handleXmlEditorSave}
+              onSaveXml={handleXmlSave}
               process={process}
               versionName={versionName}
             />

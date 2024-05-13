@@ -13,6 +13,7 @@ import Icon, {
   ArrowDownOutlined,
   FullscreenOutlined,
   FilePdfOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -28,6 +29,9 @@ import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import ChatbotDialog, { ChatbotRequest } from './chatbot-dialog';
+import { enableBPMNChatbot } from 'FeatureFlags';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -37,6 +41,8 @@ type ModelerToolbarProps = {
   canUndo: boolean;
   canRedo: boolean;
   versions: { version: number; name: string; description: string }[];
+  sendPrompt: (request: ChatbotRequest) => Promise<string>;
+  modeler: BPMNCanvasRef | null;
 };
 const ModelerToolbar = ({
   processId,
@@ -44,6 +50,7 @@ const ModelerToolbar = ({
   canUndo,
   canRedo,
   versions,
+  sendPrompt,
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
@@ -58,6 +65,7 @@ const ModelerToolbar = ({
 
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
+  const [showChatbotDialog, setShowChatbotDialog] = useState(false);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -275,6 +283,15 @@ const ModelerToolbar = ({
                   </Tooltip>
                 </>
               )}
+
+              {enableBPMNChatbot && (
+                <Tooltip title={showChatbotDialog ? 'Close Chatbot' : 'Open Chatbot'}>
+                  <Button
+                    icon={<RobotOutlined></RobotOutlined>}
+                    onClick={() => setShowChatbotDialog(!showChatbotDialog)}
+                  ></Button>
+                </Tooltip>
+              )}
             </ToolbarGroup>
 
             {showPropertiesPanel && selectedElement && (
@@ -283,6 +300,14 @@ const ModelerToolbar = ({
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
               />
+            )}
+
+            {enableBPMNChatbot && (
+              <ChatbotDialog
+                sendPrompt={sendPrompt}
+                hidden={!showChatbotDialog}
+                modeler={modeler}
+              ></ChatbotDialog>
             )}
           </Space>
         </Space>

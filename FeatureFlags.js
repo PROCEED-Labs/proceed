@@ -45,7 +45,10 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
-  // ------------------------------------------------------------------------------
+  // Chatbot for creating and modifying BPMN in modeler
+  enableBPMNChatbot: false,
+
+  // -----------------------------------------------------------------------------
   // Chopping Block
   //
   // Planned feature deprecations and breaking changes. Sorted roughly in order of

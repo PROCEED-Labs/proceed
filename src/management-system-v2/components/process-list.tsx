@@ -23,6 +23,8 @@ import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
+import Link from 'next/link';
+import { useColumnWidth } from '@/lib/useColumnWidth';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -53,7 +55,7 @@ const ProcessList: FC<ProcessListProps> = ({
   const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
 
-  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
+  const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
 
@@ -142,25 +144,37 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Name',
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
-        <div
-          className={
-            breakpoint.xs
-              ? styles.MobileTitleTruncation
-              : breakpoint.xl
-                ? styles.TitleTruncation
-                : styles.TabletTitleTruncation
+        <Link
+          href={
+            record.type === 'folder'
+              ? `/${space.spaceId}/processes/folder/${record.id}`
+              : `/${space.spaceId}/processes/${record.id}`
           }
           style={{
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-            // TODO: color
-            color: record.id === folder.parentId ? 'grey' : undefined,
-            fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
           }}
         >
-          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.value}
-        </div>
+          <div
+            className={
+              breakpoint.xs
+                ? styles.MobileTitleTruncation
+                : breakpoint.xl
+                  ? styles.TitleTruncation
+                  : styles.TabletTitleTruncation
+            }
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              // TODO: color
+              color: record.id === folder.parentId ? 'grey' : undefined,
+              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+            }}
+          >
+            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+          </div>
+        </Link>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -170,16 +184,28 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Description',
       // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
-        <div
+        <Link
+          href={
+            record.type === 'folder'
+              ? `/${space.spaceId}/processes/folder/${record.id}`
+              : `/${space.spaceId}/processes/${record.id}`
+          }
           style={{
-            maxWidth: '15vw',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
           }}
         >
-          {record.description.highlighted}
-        </div>
+          <div
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {record.description.value.length == 0 ? <>&emsp;</> : record.description.highlighted}
+            {/* Makes the link-cell clickable, when there is no description */}
+          </div>
+        </Link>
       ),
       responsive: ['sm'],
     },
@@ -228,9 +254,14 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  const columnsFiltered = breakpoint.xl
-    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+  let columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.map((col: any) => col.name).includes(c?.key as string))
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
+
+  /* Add functionality for changing width of columns */
+  columnsFiltered = useColumnWidth(columnsFiltered, 'columns-in-table-view-process-list', [
+    'Favorites',
+  ]);
 
   return (
     <ElementList
@@ -242,11 +273,21 @@ const ProcessList: FC<ProcessListProps> = ({
       }}
       selectableColumns={{
         setColumnTitles: (cols) => {
-          if (typeof cols === 'function') cols = cols(selectedColumns as string[]);
+          if (typeof cols === 'function')
+            cols = cols(
+              selectedColumns.map((col: any) => col.name) as string[],
+            ); /* TODO: When are cols a function -> cols need to be in preference format */
 
-          addPreferences({ 'process-list-columns-desktop': cols });
+          /* Add other properties and add to preferences */
+          const propcols = cols.map((col: string) => ({
+            name: col,
+            width:
+              (selectedColumns.find((c: any) => c.name === col)?.width as string) /* | number */ ||
+              'auto',
+          }));
+          addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
-        selectedColumnTitles: selectedColumns as string[],
+        selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
         allColumnTitles: ColumnHeader,
         columnProps: {
           width: 'fit-content',
@@ -261,12 +302,12 @@ const ProcessList: FC<ProcessListProps> = ({
       }}
       tableProps={{
         onRow: (item) => ({
-          onDoubleClick: () =>
-            router.push(
-              item.type === 'folder'
-                ? `/${space.spaceId}/processes/folder/${item.id}`
-                : `/${space.spaceId}/processes/${item.id}`,
-            ),
+          // onDoubleClick: () =>
+          //   router.push(
+          //     item.type === 'folder'
+          //       ? `/${space.spaceId}/processes/folder/${item.id}`
+          //       : `/${space.spaceId}/processes/${item.id}`,
+          //   ),
           onContextMenu: () => {
             if (selection.includes(item.id)) {
               setContextMenuItem(selectedElements);

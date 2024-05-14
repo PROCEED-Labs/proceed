@@ -25,10 +25,17 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
   logoUrl: z.string().url().optional(),
 });
 
-export const OrganizationEnvironmentSchema = UserOrganizationEnvironmentInputSchema.extend({
-  ownerId: z.string().readonly(),
-  organization: z.literal(true).readonly(),
-});
+export const OrganizationEnvironmentSchema = z.union([
+  UserOrganizationEnvironmentInputSchema.extend({
+    organization: z.literal(true),
+    active: z.literal(false),
+  }),
+  UserOrganizationEnvironmentInputSchema.extend({
+    organization: z.literal(true),
+    active: z.literal(true),
+    ownerId: z.string().readonly(),
+  }),
+]);
 
 export const PersonalEnvironmentSchema = z.object({
   ownerId: z.string().readonly(),

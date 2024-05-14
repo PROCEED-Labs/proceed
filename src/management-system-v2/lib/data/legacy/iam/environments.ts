@@ -82,7 +82,7 @@ export function addEnvironment(environmentInput: EnvironmentInput, ability?: Abi
     environmentId: id,
     name: '',
     parentId: null,
-    createdBy: newEnvironment.ownerId,
+    createdBy: null,
   });
 
   return newEnvironmentWithId;

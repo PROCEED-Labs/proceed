@@ -1,5 +1,5 @@
 import { SHARE_TYPE, sharedWitOrByhUser } from './shares';
-import { packRules } from '@casl/ability-v6/extra';
+import { packRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,

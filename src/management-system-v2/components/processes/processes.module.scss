@@ -35,33 +35,14 @@
 //   width: 160px
 // }
 
-.SelectedRow {
-  display: flex;
-  flex: 1;
-  background-color: #ececec;
-  border-radius: 4px;
-  margin: 0 4px;
-  margin-left: 10px;
-  align-items: center;
-  justify-content: center;
-  width: 160px;
-}
-
-.Icons {
-  //display: inline-flex;
-  width: 45%;
-  //justify-content: space-around;
-  //align-items: center;
-
-  .Icon:hover {
-    color: #3e93de;
-  }
-}
-
 .Icon {
   margin: 0 10px;
   cursor: pointer;
   transition: color 0.2s;
+}
+
+.Icon:hover {
+  color: #3e93de;
 }
 
 .Selectview {

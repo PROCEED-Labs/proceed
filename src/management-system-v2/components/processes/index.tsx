@@ -45,6 +45,7 @@ import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteP
 import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
+import SelectionActions from '../selection-actions';
 
 export function canDeleteItems(
   items: ProcessListProcess[],
@@ -308,37 +309,32 @@ const Processes = ({
                       </Space>
                     )}
 
-                    {selectedRowKeys.length ? (
-                      <span className={styles.SelectedRow}>
-                        {selectedRowKeys.length} selected:
-                        <span className={styles.Icons}>
-                          <Tooltip placement="top" title={'Export'}>
-                            <ExportOutlined
-                              className={styles.Icon}
-                              onClick={() => {
-                                setOpenExportModal(true);
-                              }}
-                            />
-                          </Tooltip>
+                    <SelectionActions count={selectedRowKeys.length}>
+                      <Tooltip placement="top" title={'Export'}>
+                        <ExportOutlined
+                          className={styles.Icon}
+                          onClick={() => {
+                            setOpenExportModal(true);
+                          }}
+                        />
+                      </Tooltip>
 
-                          {canDeleteSelected && (
-                            <Tooltip placement="top" title={'Delete'}>
-                              <ConfirmationButton
-                                title="Delete Processes"
-                                externalOpen={openDeleteModal}
-                                onExternalClose={() => setOpenDeleteModal(false)}
-                                description="Are you sure you want to delete the selected processes?"
-                                onConfirm={() => deleteItems(selectedRowElements)}
-                                buttonProps={{
-                                  icon: <DeleteOutlined />,
-                                  type: 'text',
-                                }}
-                              />
-                            </Tooltip>
-                          )}
-                        </span>
-                      </span>
-                    ) : undefined}
+                      {canDeleteSelected && (
+                        <Tooltip placement="top" title={'Delete'}>
+                          <ConfirmationButton
+                            title="Delete Processes"
+                            externalOpen={openDeleteModal}
+                            onExternalClose={() => setOpenDeleteModal(false)}
+                            description="Are you sure you want to delete the selected processes?"
+                            onConfirm={() => deleteItems(selectedRowElements)}
+                            buttonProps={{
+                              icon: <DeleteOutlined />,
+                              type: 'text',
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </SelectionActions>
                   </span>
 
                   <span>

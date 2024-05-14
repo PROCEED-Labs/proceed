@@ -1,0 +1,26 @@
+{
+  "name": "Confluence PROCEED",
+  "description": "PROCEED in Confluence",
+  "key": "confluence-proceed",
+  "baseUrl": "https://f732-84-156-10-190.ngrok-free.app",
+  "vendor": {
+    "name": "PROCEED",
+    "url": "https://f732-84-156-10-190.ngrok-free.app"
+  },
+  "authentication": {
+    "type": "none"
+  },
+  "scopes": ["read", "write"],
+  "modules": {
+    "generalPages": [
+      {
+        "url": "/confluence",
+        "key": "meine-seite-key",
+        "name": {
+          "value": "Meine Seite"
+        },
+        "location": "system.space.sidebar/main-links"
+      }
+    ]
+  }
+}

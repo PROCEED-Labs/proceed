@@ -12,7 +12,7 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
     });
 
     if (phone && phone.isValid()) {
-      return phone.number;
+      return phone.number.toString();
     }
 
     ctx.addIssue({

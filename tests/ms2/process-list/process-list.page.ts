@@ -192,7 +192,7 @@ export class ProcessListPage {
     /* Gves time for everything to load */
     const accountButton = await page.getByRole('link', { name: 'user' });
     await accountButton.hover();
-    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor();
+    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
     await page.getByRole('main').click();
   }
 }

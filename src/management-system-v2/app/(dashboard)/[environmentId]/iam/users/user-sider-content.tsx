@@ -10,7 +10,10 @@ const UserSiderContent: FC<{ user: ListUser | null }> = ({ user }) => {
       {user ? (
         <>
           <Avatar src={user.image} size={60} style={{ marginBottom: 20 }}>
-            {user.image ? null : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
+            {user.image
+              ? null
+              : (user.firstName.value?.slice(0, 1) ?? '') +
+                (user.lastName.value?.slice(0, 1) ?? '')}
           </Avatar>
 
           <Typography.Title>First Name</Typography.Title>

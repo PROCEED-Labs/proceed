@@ -7,8 +7,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   /*********************** Setup **************************/
 
   // import the first process imported by the importer process and create a version to reference
-  const import1Id = 'import1-definition-id';
-  await processListPage.importProcess('import1.bpmn', import1Id);
+  const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
@@ -24,8 +23,7 @@ test('documentation page functionality', async ({ processListPage }) => {
 
   await processListPage.goto();
   // import the second process imported by the importer process and create a version to reference
-  const import2Id = 'import2-definition-id';
-  await processListPage.importProcess('import2.bpmn', import2Id);
+  const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
   await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
@@ -42,6 +40,10 @@ test('documentation page functionality', async ({ processListPage }) => {
   // share this process so it is visible in the  documentation for other users
   await page.getByRole('button', { name: 'share-alt' }).click();
   await page.getByText('Share Process with Public Link').click();
+  await page
+    .locator('.ant-message')
+    .filter({ hasText: 'Process shared' })
+    .waitFor({ state: 'visible' });
 
   await processListPage.goto();
   // import the process that imports the other two and set the correct versions in its bpmn
@@ -50,7 +52,9 @@ test('documentation page functionality', async ({ processListPage }) => {
     undefined,
     async (bpmn) => {
       bpmn = bpmn.replace(/insert-import1-version-here/g, import1Version);
+      bpmn = bpmn.replace(/insert-import1-definitionId-here/g, import1Id);
       bpmn = bpmn.replace(/insert-import2-version-here/g, import2Version);
+      bpmn = bpmn.replace(/insert-import2-definitionId-here/g, import2Id);
       return bpmn;
     },
   );
@@ -403,18 +407,18 @@ test('documentation page functionality', async ({ processListPage }) => {
   await documentationPage.getByLabel('Exclude Empty Elements').uncheck();
   await documentationPage.getByRole('button', { name: 'OK' }).click();
 
-  elementSections = await documentationPage
-    .locator('css=[class^=process-document_ElementPage]')
-    .all();
+  const elementSection = await documentationPage.locator(
+    'css=[class^=process-document_ElementPage]',
+  );
 
-  expect(elementSections.length).toBe(5);
+  expect(elementSection).toHaveCount(5);
   // there should be sections for all the elements in the root process including the start and end event
   // but there should not be sections for sequence flows
-  expect(elementSections[0].getByText('Process Diagram')).toBeVisible();
-  expect(elementSections[1].getByText('<Event_05hheu3>')).toBeVisible();
-  expect(elementSections[2].getByText('<StartEvent_060jvsw>')).toBeVisible();
-  expect(elementSections[3].getByText('Call Activity: Import 1')).toBeVisible();
-  expect(elementSections[4].getByText('Call Activity: Import 2')).toBeVisible();
+  expect(elementSection.first().getByText('Process Diagram')).toBeVisible();
+  expect(elementSection.getByText('<Event_05hheu3>')).toBeVisible();
+  expect(elementSection.getByText('<StartEvent_060jvsw>')).toBeVisible();
+  expect(elementSection.getByText('Call Activity: Import 1')).toBeVisible();
+  expect(elementSection.getByText('Call Activity: Import 2')).toBeVisible();
 
   // check that the "Add to your workspace option is not shown to a user that already owns the process"
   await expect(

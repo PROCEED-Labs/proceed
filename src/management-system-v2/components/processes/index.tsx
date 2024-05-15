@@ -420,7 +420,10 @@ const Processes = ({
                     selectedElements={selectedRowElements}
                     // TODO: Replace with server component loading state
                     //isLoading={isLoading}
-                    onExportProcess={(id) => setOpenExportModal(true)}
+                    onExportProcess={(id) => {
+                      setSelectedRowElements([id]);
+                      setOpenExportModal(true);
+                    }}
                     setShowMobileMetaData={setShowMobileMetaData}
                     processActions={processActions}
                   />

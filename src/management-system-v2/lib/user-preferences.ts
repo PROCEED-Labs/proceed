@@ -12,7 +12,10 @@ type GetType<T> =
         }
     : ToPrimitive<T>;
 
-type PreferencesType = Record<string, any> & GetType<typeof defaultPreferences>;
+type PreferencesType = Record<string, any> & {
+  // other properties
+  'columns-in-table-view-process-list': { name: string; width: string | number }[];
+} & GetType<typeof defaultPreferences>;
 
 type PreferencesStoreType = {
   preferences: PreferencesType;
@@ -27,22 +30,29 @@ const defaultPreferences = {
   When adding a new field don't increase the version number
   (Increasing the version number will reset the user's settings to the default settings)
   */
-  version: 1,
+  version: 3 /* TODO: IMPORTANT: NOTE: Increase, whenever you change some default value */,
   'icon-view-in-process-list': false,
   'icon-view-in-user-list': false,
   'icon-view-in-role-list': false,
-  'process-list-columns-desktop': [
-    'Favorites',
-    'Process Name',
-    'Description',
-    'Last Edited',
-    'Selected Columns',
+  // 'process-list-columns-desktop': [
+  //   'Favorites',
+  //   'Name',
+  //   'Description',
+  //   'Last Edited',
+  //   'Selected Columns',
+  // ],
+  'columns-in-table-view-process-list': [
+    { name: 'Favorites', width: 40 },
+    { name: 'Name', width: 'auto' },
+    { name: 'Description', width: 'auto' },
+    { name: 'Last Edited', width: 'auto' },
+    { name: 'Selected Columns', width: 'auto' },
   ],
   'role-page-side-panel': { open: false, width: 300 },
   'user-page-side-panel': { open: false, width: 300 },
   'process-meta-data': { open: false, width: 300 },
   'environments-page-side-panel': { open: false, width: 300 },
-} as const;
+}; /* as const */ /* Does not work for strings */
 
 const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(

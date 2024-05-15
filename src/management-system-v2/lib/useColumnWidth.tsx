@@ -1,6 +1,7 @@
 import { TableColumnsType, TableProps, Tooltip } from 'antd';
 import { MouseEvent, ReactNode, use, useCallback, useEffect, useRef, useState } from 'react';
 import { useUserPreferences } from './user-preferences';
+import ReactDOMServer from 'react-dom/server';
 
 export const useColumnWidth = (
   columns: NonNullable<TableProps['columns']>,
@@ -150,16 +151,56 @@ export const useColumnWidth = (
       ellipsis: {
         showTitle: true,
       },
-      render: (text: any, record: any, index: number) => (
-        <>
-          {column.render && (
-            // @ts-ignore
-            <Tooltip title={column.render(text, record, index)}>
-              {column.render(text, record, index) as ReactNode}
-            </Tooltip>
-          )}
-        </>
-      ),
+      // render: (text: any, record: any, index: number) => (
+      //   <>
+      //     {column.render && (
+      //       <Tooltip title={column.render(text, record, index)}>
+      //         <div
+      //           style={{
+      //             width: '100%',
+      //             overflow: 'hidden',
+      //             whiteSpace: 'nowrap',
+      //             textOverflow: 'ellipsis',
+      //           }}
+      //         >
+      //           {column.render(text, record, index) as ReactNode}
+      //         </div>
+      //       </Tooltip>
+      //     )}
+      //   </>
+      // ),
+      render: (text: any, record: any, index: number) => {
+        const renderedContent = column.render ? column.render(text, record, index) : null;
+        return (
+          <>
+            {renderedContent && (
+              <div
+                style={{
+                  // width: '100%',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {hasTextContent(renderedContent) ? (
+                  <Tooltip title={renderedContent}>
+                    <div style={{ width: '100%' }}>{renderedContent}</div>
+                  </Tooltip>
+                ) : (
+                  renderedContent
+                )}
+              </div>
+            )}
+          </>
+        );
+      },
     };
   });
 };
+
+function hasTextContent(jsx: ReactNode): boolean {
+  // @ts-ignore
+  const renderedString = ReactDOMServer.renderToStaticMarkup(jsx);
+  const textContent = renderedString.replace(/<[^>]*>/g, '');
+  return /\S/.test(textContent);
+}

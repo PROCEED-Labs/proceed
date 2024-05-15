@@ -5,7 +5,6 @@ import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'r
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
-import { useColumnWidth } from '@/lib/useColumnWidth';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];

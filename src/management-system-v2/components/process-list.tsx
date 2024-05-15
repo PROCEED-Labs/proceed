@@ -164,9 +164,9 @@ const ProcessList: FC<ProcessListProps> = ({
                   : styles.TabletTitleTruncation
             }
             style={{
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
+              // overflow: 'hidden',
+              // whiteSpace: 'nowrap',
+              // textOverflow: 'ellipsis',
               // TODO: color
               color: record.id === folder.parentId ? 'grey' : undefined,
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
@@ -195,16 +195,16 @@ const ProcessList: FC<ProcessListProps> = ({
             textDecoration: 'none' /* removes underline */,
           }}
         >
-          <div
+          {/* <div
             style={{
               overflow: 'hidden',
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
             }}
-          >
-            {record.description.value.length == 0 ? <>&emsp;</> : record.description.highlighted}
-            {/* Makes the link-cell clickable, when there is no description */}
-          </div>
+          > */}
+          {record.description.value.length == 0 ? <>&emsp;</> : record.description.highlighted}
+          {/* Makes the link-cell clickable, when there is no description */}
+          {/* </div> */}
         </Link>
       ),
       responsive: ['sm'],

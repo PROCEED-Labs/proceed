@@ -420,7 +420,10 @@ const Processes = ({
                     selectedElements={selectedRowElements}
                     // TODO: Replace with server component loading state
                     //isLoading={isLoading}
-                    onExportProcess={(id) => setOpenExportModal(true)}
+                    onExportProcess={(id) => {
+                      setSelectedRowElements([id]);
+                      setOpenExportModal(true);
+                    }}
                     setShowMobileMetaData={setShowMobileMetaData}
                     processActions={processActions}
                   />
@@ -463,7 +466,7 @@ const Processes = ({
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
-            description: process.description.value,
+            description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
           }))}
@@ -485,8 +488,8 @@ const Processes = ({
           .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
             id: process.id,
-            name: process.name.value,
-            description: process.description.value,
+            name: process.name.value ?? '',
+            description: process.description.value ?? '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);

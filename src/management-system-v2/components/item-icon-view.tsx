@@ -71,7 +71,7 @@ const ItemIconViewProps = <T extends { id: string }>({
   const onClick: TabCardProps<T>['onClick'] =
     elementSelection &&
     ((event, item) => {
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         if (!elementSelection.selectedElements.find(({ id }) => id === item.id)) {
           elementSelection.setSelectionElements((prev) => [...prev, item]);
         } else {

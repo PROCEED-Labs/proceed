@@ -45,7 +45,7 @@ export class ProcessModelerPage {
     await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
     await page.getByLabel('Process Description').fill('Process Description');
     await page.getByRole('button', { name: 'Create' }).click();
-    await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
+    await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const pageURL = page.url();
     const processDefinitionID = pageURL.split('/processes/').pop();

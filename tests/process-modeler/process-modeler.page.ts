@@ -59,10 +59,12 @@ export class ProcessModelerPage {
 
   async waitForHydration() {
     const { page } = this;
-    /* Gves time for everything to load */
+    /* Gives time for everything to load */
     const accountButton = await page.getByRole('link', { name: 'user' });
     await accountButton.hover();
     await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
+    /* Ensure animation is done */
+    await page.waitForTimeout(1_000);
     await page.getByRole('main').click();
   }
 

@@ -18,6 +18,9 @@ type RootLayoutProps = PropsWithChildren;
 const RootLayout: FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en">
+      <head>
+        <script src="https://connect-cdn.atl-paas.net/all.js" async></script>
+      </head>
       <body className={inter.variable}>
         <App>{children}</App>
       </body>

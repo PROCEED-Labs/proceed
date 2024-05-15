@@ -2,10 +2,10 @@
   "name": "Confluence PROCEED",
   "description": "PROCEED in Confluence",
   "key": "confluence-proceed",
-  "baseUrl": "https://f732-84-156-10-190.ngrok-free.app",
+  "baseUrl": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app",
   "vendor": {
     "name": "PROCEED",
-    "url": "https://f732-84-156-10-190.ngrok-free.app"
+    "url": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app"
   },
   "authentication": {
     "type": "none"

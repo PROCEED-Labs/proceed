@@ -25,6 +25,7 @@ import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import Link from 'next/link';
 import { useColumnWidth } from '@/lib/useColumnWidth';
+import SpaceLink from './space-link';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -144,15 +145,14 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Name',
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
-        <Link
+        <SpaceLink
           href={
-            record.type === 'folder'
-              ? `/${space.spaceId}/processes/folder/${record.id}`
-              : `/${space.spaceId}/processes/${record.id}`
+            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
           }
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
+            display: 'block',
           }}
         >
           <div
@@ -174,7 +174,7 @@ const ProcessList: FC<ProcessListProps> = ({
           >
             {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
           </div>
-        </Link>
+        </SpaceLink>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -184,15 +184,14 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Description',
       // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
-        <Link
+        <SpaceLink
           href={
-            record.type === 'folder'
-              ? `/${space.spaceId}/processes/folder/${record.id}`
-              : `/${space.spaceId}/processes/${record.id}`
+            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
           }
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
+            display: 'block',
           }}
         >
           {/* <div
@@ -205,7 +204,7 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.description.value.length == 0 ? <>&emsp;</> : record.description.highlighted}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}
-        </Link>
+        </SpaceLink>
       ),
       responsive: ['sm'],
     },

@@ -14,7 +14,7 @@
   "modules": {
     "generalPages": [
       {
-        "url": "/confluence",
+        "url": "/",
         "key": "meine-seite-key",
         "name": {
           "value": "Meine Seite"

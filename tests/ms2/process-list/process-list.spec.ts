@@ -476,7 +476,9 @@ test('create a new folder and remove it with context menu', async ({ processList
   await menuLocator.click();
   await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
 
-  await expect(folderLocator).not.toBeVisible();
+  // NOTE: testing the folderLocator is flaky, because even after deletion the
+  // popover with folder title can hang around for a short while.
+  await expect(page.getByRole('cell', { name: 'folder ' + folderId })).not.toBeVisible();
 });
 
 test('create a new folder with new button and remove it', async ({ processListPage }) => {

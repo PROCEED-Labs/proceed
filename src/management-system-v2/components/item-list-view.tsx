@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Checkbox, Dropdown, Grid, Table, TableProps } from 'antd';
-import { PropsWithChildren, SetStateAction, useMemo, useRef } from 'react';
+import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'react';
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
@@ -90,6 +90,9 @@ const ElementList = <T extends { id: string }>({
   );
 
   columns = [...columns];
+  /* Add functionality for changing width of columns */
+  // columns = useColumnWidth(columns);
+
   if (selectableColumns) {
     columns.push({
       width: 50,
@@ -111,9 +114,18 @@ const ElementList = <T extends { id: string }>({
         elementSelection && {
           type: 'checkbox',
           selectedRowKeys: selectedElementsKeys,
-          onChange: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
+          // onChange: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
           getCheckboxProps: (record) => ({ name: record.id }),
-          onSelect: (_, __, selectedRows) => elementSelection.setSelectionElements(selectedRows),
+          onSelect: (record, __, selectedRows, nativeEvent) => {
+            console.log(nativeEvent);
+            // @ts-ignore
+            if (nativeEvent.shiftKey && elementSelection.selectedElements.length > 0) {
+              console.log('shift key pressed');
+            } else {
+              elementSelection.setSelectionElements(selectedRows);
+            }
+            lastItemClicked.current = record;
+          },
           onSelectNone: () => elementSelection.setSelectionElements([]),
           onSelectAll: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
         }
@@ -126,35 +138,35 @@ const ElementList = <T extends { id: string }>({
           return {
             ...propFunctions,
             onClick: (event) => {
-              if (event.ctrlKey) {
-                if (!selectedElementsKeys!.includes(item?.id)) {
-                  elementSelection.setSelectionElements((prev) => [...prev, item]);
-                } else {
-                  elementSelection.setSelectionElements((prev) =>
-                    prev.filter(({ id }) => id !== item.id),
-                  );
-                }
-              } else if (event.shiftKey && elementSelection.selectedElements.length > 0) {
-                const lastItemId = lastItemClicked.current!.id; // if elementselection is not undefined, then lastElementClicked.current will not be null
-                const lastIdx = data.findIndex(({ id }) => id === lastItemId);
-                const currIdx = data.findIndex(({ id }) => id === item.id);
+              // if (event.ctrlKey || event.metaKey) {
+              //   if (!selectedElementsKeys!.includes(item?.id)) {
+              //     elementSelection.setSelectionElements((prev) => [...prev, item]);
+              //   } else {
+              //     elementSelection.setSelectionElements((prev) =>
+              //       prev.filter(({ id }) => id !== item.id),
+              //     );
+              //   }
+              // } else if (event.shiftKey && elementSelection.selectedElements.length > 0) {
+              //   const lastItemId = lastItemClicked.current!.id; // if elementselection is not undefined, then lastElementClicked.current will not be null
+              //   const lastIdx = data.findIndex(({ id }) => id === lastItemId);
+              //   const currIdx = data.findIndex(({ id }) => id === item.id);
 
-                const rangeSelectedElements =
-                  lastIdx < currIdx
-                    ? data.slice(lastIdx, currIdx + 1)
-                    : data.slice(currIdx, lastIdx + 1);
+              //   const rangeSelectedElements =
+              //     lastIdx < currIdx
+              //       ? data.slice(lastIdx, currIdx + 1)
+              //       : data.slice(currIdx, lastIdx + 1);
 
-                elementSelection.setSelectionElements((prev) => [
-                  ...prev.filter(
-                    ({ id }) => !rangeSelectedElements.some(({ id: rangeId }) => id === rangeId),
-                  ),
-                  ...rangeSelectedElements,
-                ]);
-              } else {
-                elementSelection.setSelectionElements([item]);
-              }
+              //   elementSelection.setSelectionElements((prev) => [
+              //     ...prev.filter(
+              //       ({ id }) => !rangeSelectedElements.some(({ id: rangeId }) => id === rangeId),
+              //     ),
+              //     ...rangeSelectedElements,
+              //   ]);
+              // } else {
+              //   elementSelection.setSelectionElements([item]);
+              // }
 
-              lastItemClicked.current = item;
+              // lastItemClicked.current = item;
               if (propFunctions?.onClick) propFunctions.onClick(event);
             },
           };

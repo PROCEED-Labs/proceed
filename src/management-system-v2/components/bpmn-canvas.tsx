@@ -17,6 +17,7 @@ import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
+import ElementFactory from 'bpmn-js/lib/features/modeling/ElementFactory';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -81,6 +82,7 @@ export interface BPMNCanvasRef {
   getModeling: () => Modeling;
   getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
+  getElementFactory: () => ElementFactory;
 }
 
 const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
@@ -158,6 +160,9 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         // to the same process. Like a user modeling reguraly with the UI.
         await modeler.current!.importXML(bpmn);
         fitViewport(modeler.current!);
+      },
+      getElementFactory: () => {
+        return modeler.current!.get<ElementFactory>('elementFactory');
       },
     }));
 

@@ -10,8 +10,6 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
-  FullscreenOutlined,
   FilePdfOutlined,
   RobotOutlined,
 } from '@ant-design/icons';
@@ -29,7 +27,7 @@ import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
-import ChatbotDialog, { ChatbotRequest } from './chatbot-dialog';
+import ChatbotDialog from '@/components/bpmn-chatbot-dialog';
 import { enableBPMNChatbot } from 'FeatureFlags';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
@@ -42,7 +40,6 @@ type ModelerToolbarProps = {
   canRedo: boolean;
   versions: { version: number; name: string; description: string }[];
   modeler: BPMNCanvasRef | null;
-  handleXmlSave: (bpmn: string) => Promise<void>;
 };
 const ModelerToolbar = ({
   processId,
@@ -50,7 +47,6 @@ const ModelerToolbar = ({
   canUndo,
   canRedo,
   versions,
-  handleXmlSave,
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
@@ -303,11 +299,7 @@ const ModelerToolbar = ({
             )}
 
             {enableBPMNChatbot && (
-              <ChatbotDialog
-                hidden={!showChatbotDialog}
-                modeler={modeler}
-                handleXmlSave={handleXmlSave}
-              ></ChatbotDialog>
+              <ChatbotDialog show={showChatbotDialog} modeler={modeler}></ChatbotDialog>
             )}
           </Space>
         </Space>

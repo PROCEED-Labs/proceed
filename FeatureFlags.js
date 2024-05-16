@@ -46,7 +46,7 @@ module.exports = {
   enableChatbot: false,
 
   // Chatbot for creating and modifying BPMN in modeler
-  enableBPMNChatbot: false,
+  enableBPMNChatbot: true,
 
   // -----------------------------------------------------------------------------
   // Chopping Block

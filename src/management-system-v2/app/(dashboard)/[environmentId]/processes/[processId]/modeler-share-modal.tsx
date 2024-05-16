@@ -101,16 +101,23 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
   };
 
   const handleShareMobile = async (sharedAs: 'public' | 'protected') => {
-    let timestamp = shareTimestamp ? shareTimestamp : Date.now();
-    const link = await generateSharedViewerUrl({ processId, timestamp });
-    await updateProcessGuestAccessRights(
-      processId,
-      {
-        sharedAs: sharedAs,
-        shareTimestamp: timestamp,
-      },
-      environment.spaceId,
-    );
+    let link: string;
+    try {
+      let timestamp = shareTimestamp ? shareTimestamp : Date.now();
+
+      link = await generateSharedViewerUrl({ processId, timestamp });
+      await updateProcessGuestAccessRights(
+        processId,
+        {
+          sharedAs: sharedAs,
+          shareTimestamp: timestamp,
+        },
+        environment.spaceId,
+      );
+    } catch (err) {
+      message.error('Failed to generate the sharing url for the process.');
+      return;
+    }
 
     const shareObject = {
       title: `${processData?.name} | PROCEED`,

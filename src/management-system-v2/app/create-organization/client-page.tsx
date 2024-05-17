@@ -8,14 +8,13 @@ import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
 import { Select } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import {
-  UserOrganizationEnvironmentInput,
-  UserOrganizationEnvironmentInputSchema,
-} from '@/lib/data/environment-schema';
+import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
 import { CountryCode, getCountries, getCountryCallingCode } from 'libphonenumber-js';
 import { useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
+import { type createNotActiveEnvironment } from './page';
+import { Session } from 'next-auth';
 
 const getCountryOption = (country: CountryCode) => ({
   label: (
@@ -35,13 +34,13 @@ const getCountryOption = (country: CountryCode) => ({
 });
 
 type CreateOrganizationPageProps = {
-  signedIn: boolean;
+  needsToAuthenticate: boolean;
   providers?: ExtractedProvider[];
-  createNotActiveEnvironment: (data: UserOrganizationEnvironmentInput) => Promise<{ id: string }>;
+  createNotActiveEnvironment: typeof createNotActiveEnvironment;
 };
 
 const CreateOrganizationPage = ({
-  signedIn,
+  needsToAuthenticate,
   providers,
   createNotActiveEnvironment,
 }: CreateOrganizationPageProps) => {
@@ -83,18 +82,21 @@ const CreateOrganizationPage = ({
   ];
 
   async function createOrganization() {
-    // NOTE: the only way to get here is if the data is valid
-    const data = checkEnvironmentData()!;
+    const data = checkEnvironmentData();
 
     try {
-      if (signedIn) {
+      if (!needsToAuthenticate) {
+        if (!data) return;
         const response = await addOrganizationEnvironment(data);
         if ('error' in response) throw new Error();
 
         router.push(`/${response.id}/processes`);
       } else {
-        const { id } = await createNotActiveEnvironment(data!);
-        return `/api/activateenvironment?activationId=${id}`;
+        // NOTE: the only way to get here is if the data is valid
+        const response = await createNotActiveEnvironment(data!);
+        if ('error' in response) throw new Error();
+
+        return `/api/activateenvironment?activationId=${response.id}`;
       }
     } catch (e) {
       messageApi.open({
@@ -130,7 +132,7 @@ const CreateOrganizationPage = ({
           )
         }
       >
-        {!signedIn && (
+        {needsToAuthenticate && (
           <Steps
             items={steps}
             current={currentStep}
@@ -154,7 +156,7 @@ const CreateOrganizationPage = ({
               layout="vertical"
               style={{ width: '40ch' }}
               onFinish={() => {
-                if (signedIn) createOrganization();
+                if (!needsToAuthenticate) createOrganization();
                 else if (checkEnvironmentData()) setCurrentStep(1);
               }}
               form={form}
@@ -196,7 +198,7 @@ const CreateOrganizationPage = ({
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit">
-                  {signedIn ? 'Create organization' : 'Next step'}
+                  {needsToAuthenticate ? 'Create organization' : 'Next step'}
                 </Button>
               </Form.Item>
             </Form>
@@ -233,7 +235,7 @@ const CreateOrganizationPage = ({
             )}
           </div>
 
-          {!signedIn && (
+          {needsToAuthenticate && (
             <div
               style={{
                 display: currentStep === 1 ? 'block' : 'none',

@@ -3,9 +3,19 @@ import CreateOrganizationPage from './client-page';
 import { getProviders } from '../api/auth/[...nextauth]/auth-options';
 import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
 import { addEnvironment } from '@/lib/data/legacy/iam/environments';
+import { userError } from '@/lib/user-error';
+
+export async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
+  'use server';
+  const user = await getCurrentUser();
+  if (user.session?.user && !user.session?.user.guest)
+    return userError('This function is only for guest users and users that are not signed in');
+  return addEnvironment({ ...data, organization: true, active: false });
+}
 
 const Page = async () => {
   const { session } = await getCurrentUser();
+  const needsToAuthenticate = !session?.user || session?.user.guest;
   const isGuest = session?.user.guest;
 
   let providers = getProviders();
@@ -24,13 +34,6 @@ const Page = async () => {
 
     return 1;
   });
-  const signedIn = !!session;
-
-  async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
-    'use server';
-
-    return addEnvironment({ ...data, organization: true, active: false });
-  }
 
   return (
     <div
@@ -39,8 +42,8 @@ const Page = async () => {
       }}
     >
       <CreateOrganizationPage
-        signedIn={signedIn}
-        providers={signedIn ? undefined : providers}
+        needsToAuthenticate={needsToAuthenticate}
+        providers={!needsToAuthenticate ? undefined : providers}
         createNotActiveEnvironment={createNotActiveEnvironment}
       />
     </div>

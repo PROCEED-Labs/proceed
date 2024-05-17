@@ -18,6 +18,7 @@ export async function addOrganizationEnvironment(
 
     return addEnvironment({
       ownerId: userId,
+      active: true,
       organization: true,
       ...environmentData,
     });
@@ -39,7 +40,9 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       if (!environment.organization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
-      //TODO remove this once the ability is checked in deleteEnvironment
+      if (!environment.active) return userError(`Environment ${environmentId} is not active`);
+
+      //TODO: remove this once the ability is checked in deleteEnvironment
       if (environment.ownerId !== userId)
         return userError(
           `You are not the owner of ${environmentId}`,

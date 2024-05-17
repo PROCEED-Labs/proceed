@@ -78,7 +78,9 @@ export function deleteuser(userId: string) {
   if (!user) throw new Error("User doesn't exist");
 
   for (const environmentId of Object.keys(environmentsMetaObject)) {
-    if (environmentsMetaObject[environmentId].ownerId === userId) deleteEnvironment(environmentId);
+    const environment = environmentsMetaObject[environmentId];
+    if ((!environment.organization || environment.active) && environment.ownerId === userId)
+      deleteEnvironment(environmentId);
   }
 
   for (const account of Object.values(accountsMetaObject)) {

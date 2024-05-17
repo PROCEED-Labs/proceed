@@ -40,7 +40,7 @@ const EnvironmentSidePanel: FC<{ environment: FilteredEnvironment | undefined }>
       ref={resizableElementRef}
     >
       <CollapsibleCard
-        title={environment ? environment.name.value : ''}
+        title={environment?.name.value ?? ''}
         show={sidePanelOpen}
         collapsedWidth="30px"
         onCollapse={() => {

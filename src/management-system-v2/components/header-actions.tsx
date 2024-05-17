@@ -3,7 +3,7 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Space, Tooltip } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC, ReactNode } from 'react';
+import { FC } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
@@ -54,11 +54,14 @@ const HeaderActions: FC = () => {
       </Button>
     );
   } else
-    actionButton = (
+    actionButton = [
+      <Button type="primary" href="/create-organization">
+        Create Organization
+      </Button>,
       <Button type="text" onClick={() => signIn()}>
         <u>Sign In</u>
-      </Button>
-    );
+      </Button>,
+    ];
 
   return (
     <Space style={{ float: 'right', padding: '16px' }}>

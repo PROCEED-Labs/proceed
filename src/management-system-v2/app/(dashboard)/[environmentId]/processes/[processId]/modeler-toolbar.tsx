@@ -27,7 +27,7 @@ import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
-import ChatbotDialog from '@/components/bpmn-chatbot-dialog';
+import ChatbotDialog from '@/components/bpmn-chatbot';
 import { enableBPMNChatbot } from 'FeatureFlags';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 

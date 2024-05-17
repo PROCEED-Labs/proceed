@@ -1,12 +1,36 @@
-'use client';
+import { getCurrentUser } from '@/components/auth';
+import CreateOrganizationPage from './client-page';
+import { getProviders } from '../api/auth/[...nextauth]/auth-options';
+import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema';
+import { addEnvironment } from '@/lib/data/legacy/iam/environments';
 
-import Content from '@/components/content';
-import { Grid } from 'antd';
-import Image from 'next/image';
-import OrganizationDataForm from './organization-data-form';
+const Page = async () => {
+  const { session } = await getCurrentUser();
+  const isGuest = session?.user.guest;
 
-const CreateOrganizationPage = () => {
-  const breakpoint = Grid.useBreakpoint();
+  let providers = getProviders();
+
+  providers = providers.filter(
+    (provider) => !isGuest || !['guest-signin', 'development-users'].includes(provider.id),
+  );
+
+  providers = providers.sort((a, b) => {
+    if (a.type === 'email') {
+      return -2;
+    }
+    if (a.type === 'credentials') {
+      return -1;
+    }
+
+    return 1;
+  });
+  const signedIn = !!session;
+
+  async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
+    'use server';
+
+    return addEnvironment({ ...data, organization: true, active: false });
+  }
 
   return (
     <div
@@ -14,28 +38,12 @@ const CreateOrganizationPage = () => {
         height: '100vh',
       }}
     >
-      <Content
-        headerCenter={
-          breakpoint.xs ? undefined : (
-            <Image
-              src={'/proceed.svg'}
-              style={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                paddingBottom: '15px',
-              }}
-              alt="PROCEED Logo"
-              width={breakpoint.xs ? 85 : 160}
-              height={breakpoint.xs ? 35 : 63}
-              priority
-            />
-          )
-        }
-      >
-        <OrganizationDataForm onSubmit={console.log} />
-      </Content>
+      <CreateOrganizationPage
+        signedIn={signedIn}
+        providers={signedIn ? undefined : providers}
+        createNotActiveEnvironment={createNotActiveEnvironment}
+      />
     </div>
   );
 };
-export default CreateOrganizationPage;
+export default Page;

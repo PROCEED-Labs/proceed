@@ -285,7 +285,7 @@ const BPMNSharedViewer = ({
     if (session.status === 'authenticated') setIsModalOpen(true);
     else redirectToLoginPage();
   };
-  console.log(processHierarchy);
+
   return (
     <div className={styles.DocumentationPageContent}>
       <Content

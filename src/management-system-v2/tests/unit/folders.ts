@@ -357,7 +357,7 @@ function _printFolders(
 
 const ids = (folders: ReturnType<typeof getFolderChildren>) =>
   folders
-    .filter((item) => !('type' in item))
+    .filter((item) => item.type === 'folder')
     .map((folder) => folder.id)
     .sort();
 

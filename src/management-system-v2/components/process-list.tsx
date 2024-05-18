@@ -55,8 +55,6 @@ type ProcessListProps = PropsWithChildren<{
   processActions: ProcessActions;
 }>;
 
-const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
-
 const ProcessList: FC<ProcessListProps> = ({
   data,
   folder,
@@ -315,7 +313,7 @@ const ProcessList: FC<ProcessListProps> = ({
           addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-        allColumnTitles: ColumnHeader,
+        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'],
         columnProps: {
           width: 'fit-content',
           responsive: ['xl'],

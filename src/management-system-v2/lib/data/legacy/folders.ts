@@ -218,6 +218,11 @@ export function updateFolderMetaData(
     throw new Error('Permission denied');
 
   const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
+  if (
+    newMetaDataInput.environmentId &&
+    newMetaDataInput.environmentId != folderData.folder.environmentId
+  )
+    throw new Error('environmentId cannot be changed');
 
   const newFolder: Folder = {
     ...folderData.folder,

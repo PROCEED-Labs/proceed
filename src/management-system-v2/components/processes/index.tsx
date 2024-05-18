@@ -178,13 +178,13 @@ const Processes = ({
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
-    if (!folder) return;
+    if (!values) return;
 
     startUpdatingFolderTransition(async () => {
       try {
         const response = updateFolderServer(
           { name: values.name, description: values.description },
-          folder.id,
+          updateFolderModal!.id,
         );
 
         if (response && 'error' in response) throw new Error();

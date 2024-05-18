@@ -134,7 +134,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
 
-    parentFolderData.folder.updatedAt = new Date().toISOString();
+    parentFolderData.folder.lastEdited = new Date().toISOString();
     store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
@@ -144,8 +144,8 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
   // Store
   const newFolder = {
     ...folder,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdOn: new Date().toISOString(),
+    lastEdited: new Date().toISOString(),
   } as Folder;
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
@@ -173,7 +173,7 @@ export function deleteFolder(folderId: string, ability?: Ability) {
 
     parent.children.splice(folderIndex, 1);
 
-    parent.folder.updatedAt = new Date().toISOString();
+    parent.folder.lastEdited = new Date().toISOString();
     store.update('folders', parent.folder.id, parent.folder);
   }
 
@@ -219,7 +219,11 @@ export function updateFolderMetaData(
 
   const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
 
-  const newFolder = { ...folderData.folder, ...newMetaData, updatedAt: new Date().toISOString() };
+  const newFolder: Folder = {
+    ...folderData.folder,
+    ...newMetaData,
+    lastEdited: new Date().toISOString(),
+  };
 
   folderData.folder = newFolder;
   store.update('folders', folderId, newFolder);
@@ -277,12 +281,12 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
 
   // Store
   oldParentData.children.splice(folderIndex, 1);
-  oldParentData.folder.updatedAt = new Date().toISOString();
+  oldParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
   newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-  newParentData.folder.updatedAt = new Date().toISOString();
+  newParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', newParentData.folder.id, newParentData.folder);
 
   store.update('folders', folderId, folderData.folder);

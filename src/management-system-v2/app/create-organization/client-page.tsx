@@ -36,7 +36,7 @@ const getCountryOption = (country: CountryCode) => ({
 type CreateOrganizationPageProps = {
   needsToAuthenticate: boolean;
   providers?: ExtractedProvider[];
-  createNotActiveEnvironment: typeof createNotActiveEnvironment;
+  createNotActiveEnvironment: createNotActiveEnvironment;
 };
 
 const CreateOrganizationPage = ({

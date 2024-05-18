@@ -5,13 +5,15 @@ import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema'
 import { addEnvironment } from '@/lib/data/legacy/iam/environments';
 import { userError } from '@/lib/user-error';
 
-export async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
+async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
   const user = await getCurrentUser();
   if (user.session?.user && !user.session?.user.guest)
     return userError('This function is only for guest users and users that are not signed in');
   return addEnvironment({ ...data, organization: true, active: false });
 }
+
+export type createNotActiveEnvironment = typeof createNotActiveEnvironment;
 
 const Page = async () => {
   const { session } = await getCurrentUser();

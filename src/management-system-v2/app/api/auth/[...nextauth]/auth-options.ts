@@ -81,7 +81,7 @@ const nextAuthOptions: AuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'none',
@@ -90,7 +90,7 @@ const nextAuthOptions: AuthOptions = {
       },
     },
     callbackUrl: {
-      name: `__Secure-next-auth.callback-url`,
+      name: `next-auth.callback-url`,
       options: {
         sameSite: 'none',
         path: '/',
@@ -98,36 +98,7 @@ const nextAuthOptions: AuthOptions = {
       },
     },
     csrfToken: {
-      name: `__Host-next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-      },
-    },
-    pkceCodeVerifier: {
-      name: `__Host-next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        maxAge: 900,
-      },
-    },
-    state: {
-      name: `__Host-next-auth.state`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        maxAge: 900,
-      },
-    },
-    nonce: {
-      name: `__Host-next-auth.nonce`,
+      name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
         sameSite: 'none',

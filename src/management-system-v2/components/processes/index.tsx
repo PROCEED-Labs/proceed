@@ -166,7 +166,7 @@ const Processes = ({
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="create process" />,
+      label: <ProcessCreationButton wrapperElement="Create Process" />,
       icon: <FileOutlined />,
     });
 

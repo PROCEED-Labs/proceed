@@ -397,7 +397,7 @@ test('share-modal-test', async ({ processListPage }) => {
 test('toggle process list columns', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+  const ColumnHeader = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -423,7 +423,7 @@ test('test that selected columns are persisted on reload', async ({ processListP
   const { page } = processListPage;
 
   const VisibleColumns = ['Created On', 'File Size', 'Owner'];
-  const HiddenColumns = ['Name', 'Description', 'Last Edited'];
+  const HiddenColumns = ['Description', 'Last Edited'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();

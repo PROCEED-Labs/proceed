@@ -121,7 +121,8 @@ const ConextMenuArea: FC<
       });
 
     if (
-      selectedContextMenuItems.some(({ id }) => id === folder.parentId) &&
+      folder.parentId !== null &&
+      !selectedContextMenuItems.some(({ id }) => id === folder.parentId) &&
       canDeleteItems(selectedContextMenuItems, 'update', ability)
     )
       children.push({

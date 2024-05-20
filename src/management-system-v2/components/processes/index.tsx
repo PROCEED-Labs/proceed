@@ -162,11 +162,12 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
+  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="Create Process" />,
+      label: createProcessButton,
       icon: <FileOutlined />,
     });
 
@@ -293,16 +294,16 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && (
                       <Space>
-                        <Dropdown
-                          trigger={['click']}
+                        <Dropdown.Button
                           menu={{
-                            items: defaultDropdownItems,
+                            items: defaultDropdownItems.filter(
+                              (item) => item.key !== 'create-process',
+                            ),
                           }}
+                          type="primary"
                         >
-                          <Button type="primary" icon={<PlusOutlined />}>
-                            New
-                          </Button>
-                        </Dropdown>
+                          {createProcessButton}
+                        </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>

@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { ProcessActions, ProcessListProcess, canDeleteItems } from '.';
 import { FC, PropsWithChildren } from 'react';
-import { Dropdown, MenuProps } from 'antd';
+import { App, Dropdown, MenuProps } from 'antd';
 import { useAbilityStore } from '@/lib/abilityStore';
-import { DeleteOutlined, CopyOutlined, FolderAddOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, CopyOutlined, FolderAddOutlined, LinkOutlined } from '@ant-design/icons';
 import { Folder } from '@/lib/data/folder-schema';
+import SpaceLink from '../space-link';
+import { MdOpenWith } from 'react-icons/md';
+import { IoOpenOutline } from 'react-icons/io5';
+import { spaceURL } from '@/lib/utils';
+import { useEnvironment } from '../auth-can';
 
 export const contextMenuStore = create<{
   setSelected: (id: ProcessListProcess[]) => void;
@@ -31,6 +36,8 @@ const ConextMenuArea: FC<
   const setSelectedContextMenuItem = contextMenuStore((store) => store.setSelected);
   const selectedContextMenuItems = contextMenuStore((store) => store.selected);
   const ability = useAbilityStore((state) => state.ability);
+  const space = useEnvironment();
+  const { message } = App.useApp();
 
   const contextMenuItems: MenuProps['items'] = [];
   if (selectedContextMenuItems.length > 0) {
@@ -40,12 +47,39 @@ const ConextMenuArea: FC<
       selectedContextMenuItems.length === 1 &&
       canDeleteItems(selectedContextMenuItems, 'delete', ability)
     )
-      children.push({
-        key: 'edit-selected',
-        label: 'Edit',
-        icon: <EditOutlined />,
-        onClick: () => editItem(selectedContextMenuItems[0]),
-      });
+      children.push(
+        {
+          key: 'open-selected',
+          icon: <MdOpenWith />,
+          label: (
+            <SpaceLink
+              href={
+                selectedContextMenuItems[0].type === 'folder'
+                  ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                  : `/processes/${selectedContextMenuItems[0].id}`
+              }
+            >
+              Open
+            </SpaceLink>
+          ),
+        },
+        {
+          key: 'open-selected-new-tab',
+          icon: <IoOpenOutline />,
+          label: (
+            <SpaceLink
+              href={
+                selectedContextMenuItems[0].type === 'folder'
+                  ? `/processes/folder/${selectedContextMenuItems[0].id}`
+                  : `/processes/${selectedContextMenuItems[0].id}`
+              }
+              target="_blank"
+            >
+              Open in new tab
+            </SpaceLink>
+          ),
+        },
+      );
 
     if (canDeleteItems(selectedContextMenuItems, 'delete', ability))
       children.push({
@@ -53,6 +87,37 @@ const ConextMenuArea: FC<
         label: 'Delete',
         icon: <DeleteOutlined />,
         onClick: () => deleteItems(selectedContextMenuItems),
+      });
+
+    if (
+      selectedContextMenuItems.length === 1 &&
+      selectedContextMenuItems[0].type !== 'folder' &&
+      navigator.clipboard &&
+      'write' in navigator.clipboard
+    )
+      children.push({
+        key: 'copy-selected-id',
+        label: 'Copy Process Link',
+        icon: <LinkOutlined />,
+        onClick: async () => {
+          try {
+            const url = new URL(
+              spaceURL(space, `/processes/${selectedContextMenuItems[0].id}`),
+              window.location.origin,
+            );
+
+            await window.navigator.clipboard.writeText(url.toString());
+            message.open({
+              content: 'Link copied to clipboard',
+              type: 'success',
+            });
+          } catch (e) {
+            message.open({
+              content: 'Failed to copy link to clipboard',
+              type: 'error',
+            });
+          }
+        },
       });
 
     if (

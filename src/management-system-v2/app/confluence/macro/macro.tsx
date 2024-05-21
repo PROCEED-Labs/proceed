@@ -2,29 +2,17 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Head from 'next/head';
+import Viewer from '@/components/bpmn-viewer';
 
 const Macro = ({ processId }: { processId: string }) => {
   const router = useRouter();
   console.log('router query', router);
-  useEffect(() => {
-    if (processId) {
-      router.push(`/confluence/fullscreen?processId=${processId}`);
-    }
-  }, [processId]);
+  console.log('processId', processId);
 
+  const mockedProcessDefinitionId = '_39b08e20-1c28-4b0c-919b-e823e5b650ed';
   return (
     <>
-      <Head>
-        <title>Proceed Macro</title>
-        <script src="https://connect-cdn.atlassian.com/all.js"></script>
-      </Head>
-      <div>
-        <h2>Proceed Process Modeler</h2>
-        <p>Click the button below to edit the process in fullscreen mode.</p>
-        <button onClick={() => router.push(`/confluence/fullscreen?processId=${processId}`)}>
-          Edit Process
-        </button>
-      </div>
+      <Viewer definitionId={mockedProcessDefinitionId}></Viewer>
     </>
   );
 };

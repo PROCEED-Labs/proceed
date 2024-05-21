@@ -8,19 +8,19 @@ const MacroEditor = () => {
   const [processId, setProcessId] = useState('');
 
   useEffect(() => {
-    if (window.AP) {
+    if (window.AP && window.AP.confluence) {
       console.log('window AP', window.AP);
-      window.AP.dialog.getCustomData((data) => {
-        console.log('data', data);
+      window.AP.confluence.getMacroData((data: any) => {
+        console.log('confluence macroData', data);
         if (data) {
-          setProcessId(data.parameters?.processId || '');
+          setProcessId(data.processId || data.parameters?.processId || '');
         }
       });
     }
   }, []);
 
   const saveMacro = () => {
-    if (window.AP) {
+    if (window.AP && window.AP.confluence) {
       window.AP.confluence.saveMacro({ processId });
       window.AP.confluence.closeMacroEditor();
     }

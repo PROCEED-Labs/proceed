@@ -27,7 +27,7 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
         userEnvironments={userEnvironments}
         activeSpace={{ spaceId: userId || '', isOrganization: false }}
       >
-        <Macro processId={processId}></Macro>
+        <Macro></Macro>
       </Layout>
     </>
   );

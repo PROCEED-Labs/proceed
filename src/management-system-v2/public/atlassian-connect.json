@@ -21,6 +21,36 @@
         },
         "location": "system.space.sidebar/main-links"
       }
+    ],
+    "confluence:contentMacro": [
+      {
+        "key": "proceed-macro",
+        "name": {
+          "value": "Proceed Process Modeler"
+        },
+        "description": {
+          "value": "Open the process modeler in fullscreen."
+        },
+        "url": "/confluence/macro",
+        "editor": {
+          "url": "/confluence/macro-editor",
+          "width": "800px",
+          "height": "600px"
+        },
+        "parameters": [
+          {
+            "identifier": "processId",
+            "name": {
+              "value": "Process ID"
+            },
+            "description": {
+              "value": "The ID of the process to edit."
+            },
+            "type": "string",
+            "required": true
+          }
+        ]
+      }
     ]
   }
 }

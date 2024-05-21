@@ -21,7 +21,7 @@ const MacroEditor = () => {
 
   const saveMacro = () => {
     if (window.AP) {
-      window.AP.confluence.saveMacro({ processId }, <Macro processId={processId}></Macro>);
+      window.AP.confluence.saveMacro({ processId }, 'TEST');
       window.AP.confluence.closeMacroEditor();
     }
   };

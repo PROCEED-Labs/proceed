@@ -13,8 +13,24 @@ const MachineConfigPage = async ({ params }: { params: { environmentId: string }
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   const data = getMachineConfig(activeEnvironment.spaceId).concat([
-    { id: '1', name: 'Test', environmentId: activeEnvironment.spaceId },
-    { id: '2', name: 'ABC', environmentId: activeEnvironment.spaceId },
+    {
+      id: '1',
+      name: 'Test',
+      environmentId: activeEnvironment.spaceId,
+      /* createdBy: '1',
+      createdAt: '2021-01-01',
+      updatedAt: '2021-01-01',
+      parentId: null, */
+    },
+    {
+      id: '2',
+      name: 'ABC',
+      environmentId: activeEnvironment.spaceId,
+      /* createdBy: '1',
+      createdAt: '2021-01-01',
+      updatedAt: '2021-01-01',
+      parentId: null, */
+    },
   ]);
 
   return (

@@ -1,15 +1,55 @@
 'use client';
 
-import { Button, Dropdown, Grid } from 'antd';
+import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
+import {
+  ExportOutlined,
+  DeleteOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+  PlusOutlined,
+  FolderOutlined,
+  FileOutlined,
+} from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
-import { useState } from 'react';
+import { useState, Key } from 'react';
 import { MachineConfig } from '@/lib/data/machine-config-schema';
 import useFuzySearch from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
+import { useRouter } from 'next/navigation';
+import { useEnvironment } from '@/components/auth-can';
+import { Folder } from '@/lib/data/folder-schema';
+import FolderCreationButton from '@/components/folder-creation-button';
+import {
+  deleteFolder,
+  moveIntoFolder,
+  updateFolder as updateFolderServer,
+} from '@/lib/data/folders';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import FolderModal from '@/components/folder-modal';
+
+// adapted from src/management-system-v2/components/processes/index.tsx
+/*const defaultDropdownItems = [];
+  if (ability.can('create', 'MachineConfig'))
+    defaultDropdownItems.push({
+      key: 'create-machine-config',
+      label: <MachineConfigCreationButton wrapperElement="Create Machine Config" />,
+      icon: <FileOutlined />,
+    });
+
+  if (ability.can('create', 'Folder'))
+    defaultDropdownItems.push({
+      key: 'create-folder',
+      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      icon: <FolderOutlined />,
+    });*/
+
+// also see src/management-system-v2/components/process-creation-button.tsx
 
 const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
+  const router = useRouter();
+  const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
@@ -39,7 +79,7 @@ const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
                 <Dropdown
                   trigger={['click']}
                   menu={{
-                    items: [],
+                    items: [], //for processes, defaultDropdownItems is used here (see above)
                   }}
                 >
                   <Button type="primary" icon={<AiOutlinePlus />}>
@@ -49,7 +89,9 @@ const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
               )}
 
               <SelectionActions count={selectedRowKeys.length}>
-                <Button style={{ marginLeft: '4px' }}>Do Something</Button>
+                <Button style={{ marginLeft: '4px' }}>Create Folder with Selection</Button>
+                <Button style={{ marginLeft: '4px' }}>Delete Selected Items</Button>
+                <Button style={{ marginLeft: '4px' }}>Export Selected Items</Button>
               </SelectionActions>
             </span>
 
@@ -101,6 +143,25 @@ const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
                 </Row>
           },
         }}*/
+        tableProps={{
+          onRow: (item) => ({
+            onDoubleClick: () =>
+              router.push(
+                /* item.type === 'folder'
+                  ? `/${space.spaceId}/machine-config/folder/${item.id}`
+                  : `/${space.spaceId}/machine-config/${item.id}`, */
+                `/${space.spaceId}/machine-config/${item.id}`,
+              ),
+            /* onContextMenu: () => {
+              if (selection.includes(item.id)) {
+                setContextMenuItem(selectedElements);
+              } else {
+                setSelectionElements([item]);
+                setContextMenuItem([item]);
+              }
+            }, */
+          }),
+        }}
       />
     </>
   );

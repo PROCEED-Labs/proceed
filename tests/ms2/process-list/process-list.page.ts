@@ -124,6 +124,27 @@ export class ProcessListPage {
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
 
+  async createProcess(
+    options: {
+      processName?: string;
+      description?: string;
+    } = { processName: 'My Process', description: 'Process Description' },
+  ) {
+    const page = this.page;
+    const { processName, description } = options;
+
+    // TODO: reuse other page models for these set ups.
+    // Add a new process.
+    await page.getByRole('button', { name: 'plus New' }).click();
+    await page.getByRole('menuitem', { name: 'file Create Process' }).click();
+    await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName);
+    await page.getByLabel('Process Description').fill(description);
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
+
+    return page.url().split('processes/').pop();
+  }
+
   async removeAllProcesses() {
     const { page, processListPageURL } = this;
 

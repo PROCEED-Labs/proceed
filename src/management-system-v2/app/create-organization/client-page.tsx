@@ -14,7 +14,6 @@ import { useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createNotActiveEnvironment } from './page';
-import { Session } from 'next-auth';
 
 const getCountryOption = (country: CountryCode) => ({
   label: (

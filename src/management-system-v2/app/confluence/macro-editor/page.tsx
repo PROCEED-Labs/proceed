@@ -8,8 +8,10 @@ const MacroEditor = () => {
 
   useEffect(() => {
     if (window.AP) {
+      console.log('window AP', window.AP);
       window.AP.dialog.getCustomData((data) => {
-        setProcessId(data.parameters.processId || '');
+        console.log('data', data);
+        setProcessId(data.parameters?.processId || '');
       });
     }
   }, []);

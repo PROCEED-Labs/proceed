@@ -22,8 +22,10 @@
         "location": "system.space.sidebar/main-links"
       }
     ],
-    "confluence:contentMacro": [
+    "dynamicContentMacros": [
       {
+        "width": "200px",
+        "height": "200px",
         "key": "proceed-macro",
         "name": {
           "value": "Proceed Process Modeler"

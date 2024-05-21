@@ -1,16 +1,12 @@
-import { useRouter } from 'next/router';
+'use client';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 
-const Fullscreen = () => {
+const Fullscreen = ({ params }: { params: { processId: string } }) => {
+  console.log('FULLSCREEN PARAMS', params);
   const router = useRouter();
   const [processId, setProcessId] = useState('');
-
-  useEffect(() => {
-    const { processId } = router.query;
-    setProcessId(processId as string);
-    console.log('router query fullscreen', router.query);
-  }, [router.query]);
 
   return (
     <>

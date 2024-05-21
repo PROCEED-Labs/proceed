@@ -1,4 +1,5 @@
-import { useRouter } from 'next/router';
+'use client';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Head from 'next/head';
 
@@ -6,7 +7,7 @@ const Macro = ({ params }: { params: { processId: string } }) => {
   const processId = params.processId;
   console.log('params', params);
   const router = useRouter();
-  console.log('router query', router.query);
+  console.log('router query', router);
   useEffect(() => {
     if (processId) {
       router.push(`/confluence/fullscreen?processId=${processId}`);

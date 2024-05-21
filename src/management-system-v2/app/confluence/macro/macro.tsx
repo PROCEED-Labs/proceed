@@ -9,7 +9,7 @@ const Macro = () => {
   const router = useRouter();
   console.log('router query', router);
   console.log('processId', processId);
-
+  console.log('COMPONENT LOADED', window.AP);
   useEffect(() => {
     console.log('USEEFFECT', window.AP);
     if (window.AP && window.AP.confluence) {
@@ -30,6 +30,10 @@ const Macro = () => {
   const mockedProcessDefinitionId = '_39b08e20-1c28-4b0c-919b-e823e5b650ed';
   return (
     <>
+      <Head>
+        <title>Proceed Macro Editor</title>
+        <script src="https://connect-cdn.atlassian.com/all.js"></script>
+      </Head>
       <Viewer definitionId={mockedProcessDefinitionId}></Viewer>
     </>
   );

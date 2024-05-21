@@ -21,10 +21,6 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
 
   return (
     <>
-      <Head>
-        <title>Proceed Macro Editor</title>
-        <script src="https://connect-cdn.atlassian.com/all.js"></script>
-      </Head>
       <Layout
         hideSider={true}
         loggedIn={!!userId}

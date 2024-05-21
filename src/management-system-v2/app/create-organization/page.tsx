@@ -18,12 +18,11 @@ export type createNotActiveEnvironment = typeof createNotActiveEnvironment;
 const Page = async () => {
   const { session } = await getCurrentUser();
   const needsToAuthenticate = !session?.user || session?.user.guest;
-  const isGuest = session?.user.guest;
 
   let providers = getProviders();
 
   providers = providers.filter(
-    (provider) => !isGuest || !['guest-signin', 'development-users'].includes(provider.id),
+    (provider) => !['guest-signin', 'development-users'].includes(provider.id),
   );
 
   providers = providers.sort((a, b) => {

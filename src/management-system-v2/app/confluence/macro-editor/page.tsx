@@ -11,14 +11,17 @@ const MacroEditor = () => {
       console.log('window AP', window.AP);
       window.AP.dialog.getCustomData((data) => {
         console.log('data', data);
-        setProcessId(data.parameters?.processId || '');
+        if (data) {
+          setProcessId(data.parameters?.processId || '');
+        }
       });
     }
   }, []);
 
   const saveMacro = () => {
     if (window.AP) {
-      window.AP.dialog.close({ processId });
+      window.AP.confluence.saveMacro({ processId });
+      window.AP.confluence.closeMacroEditor();
     }
   };
 

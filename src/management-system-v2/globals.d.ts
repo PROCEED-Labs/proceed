@@ -1,4 +1,5 @@
 interface AtlassianConnectAPI {
+  confluence: any;
   dialog: {
     getCustomData(callback: (data: any) => void): void;
     close(data?: any): void;

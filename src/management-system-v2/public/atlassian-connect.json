@@ -29,6 +29,7 @@
         "height": "200px",
         "key": "proceed-macro",
         "bodyType": "none",
+        "outputType": "block",
         "name": {
           "value": "Proceed Process Modeler"
         },

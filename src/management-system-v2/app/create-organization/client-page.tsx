@@ -15,22 +15,21 @@ import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createNotActiveEnvironment } from './page';
 
-const getCountryOption = (country: CountryCode) => ({
-  label: (
-    <span>
-      <img
-        // NOTE: I don't know how safe it is to use an external API to get
-        // images
-        src={`https://flagsapi.com/${country}/flat/64.png`}
-        alt={`${country} flag`}
-        width={20}
-        height={20}
-      />{' '}
-      {`${country} +${getCountryCallingCode(country)}`}
-    </span>
-  ),
-  value: country,
-});
+const getCountryOption = (country: CountryCode) => {
+  const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
+    ? '_unknown'
+    : country;
+
+  return {
+    label: (
+      <span>
+        <Image src={`/flags-32/${imageUrl}.png`} alt={`${country} flag`} width={20} height={20} />{' '}
+        {`${country} +${getCountryCallingCode(country)}`}
+      </span>
+    ),
+    value: country,
+  };
+};
 
 type CreateOrganizationPageProps = {
   needsToAuthenticate: boolean;

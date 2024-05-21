@@ -2,6 +2,7 @@
 
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
+import Macro from '../macro/macro';
 
 const MacroEditor = () => {
   const [processId, setProcessId] = useState('');
@@ -20,7 +21,7 @@ const MacroEditor = () => {
 
   const saveMacro = () => {
     if (window.AP) {
-      window.AP.confluence.saveMacro({ processId });
+      window.AP.confluence.saveMacro({ processId }, <Macro processId={processId}></Macro>);
       window.AP.confluence.closeMacroEditor();
     }
   };

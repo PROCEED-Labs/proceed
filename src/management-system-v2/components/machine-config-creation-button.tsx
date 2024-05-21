@@ -1,60 +1,66 @@
-/* 'use client';
+'use client';
 
 import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
-import ProcessModal from './process-modal';
-import { createProcess } from '@/lib/helpers/processHelpers';
-import { addProcesses } from '@/lib/data/processes';
+import MachineConfigModal from './machine-config-modal'; //TODO
+import { createMachineConfig } from '@/lib/data/legacy/machine-config'; //TODO
 import { useParams, useRouter, useSelectedLayoutSegments } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 
-type ProcessCreationButtonProps = ButtonProps & {
+type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
-}; */
+};
 
 /**
  *
- * Button to create Processes including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
+ * Button to create MachineConfigs including a Modal for inserting needed values. Alternatively, a custom wrapper element can be used instead of a button.
  */
-/* const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
+const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = ({
   wrapperElement,
   customAction,
   ...props
 }) => {
-  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [isMachineConfigModalOpen, setIsMachineConfigModalOpen] = useState(false);
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
 
-  const createNewProcess = async (values: { name: string; description: string }[]) => {
+  const createNewMachineConfig = async (
+    values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
+  ) => {
     // Invoke the custom handler otherwise use the default server action.
-    const process = await (customAction?.(values[0]) ??
-      addProcesses(
-        values.map((value) => ({ ...value, folderId })),
-        environment.spaceId,
-      ).then((res) => (Array.isArray(res) ? res[0] : res)));
-    if (process && 'error' in process) {
-      return process;
+    /* const process = await (customAction?.(values[0]) ??
+        addProcesses(
+          values.map((value) => ({ ...value, folderId })),
+          environment.spaceId,
+        ).then((res) => (Array.isArray(res) ? res[0] : res)));
+      if (process && 'error' in process) {
+        return process;
+      } */
+    const machineConfig = await (customAction?.(values[0]) ??
+      createMachineConfig(values[0]).then((res) => (Array.isArray(res) ? res[0] : res))); //TODO - array stuff
+    if (machineConfig && 'error' in machineConfig) {
+      return machineConfig;
     }
-    setIsProcessModalOpen(false);
+    setIsMachineConfigModalOpen(false);
 
-    if (process && 'id' in process) {
-      router.push(spaceURL(environment, `/processes/${process.id}`));
+    if (machineConfig && 'id' in machineConfig) {
+      router.push(spaceURL(environment, `/machine-config/${machineConfig.id}`));
     } else {
       router.refresh();
     }
   };
 
   useAddControlCallback(
-    'process-list',
+    'machine-config-list',
     'controlenter',
     () => {
-      if (!isProcessModalOpen) {
-        setIsProcessModalOpen(true);
+      if (!isMachineConfigModalOpen) {
+        setIsMachineConfigModalOpen(true);
       }
     },
     {
@@ -68,7 +74,7 @@ type ProcessCreationButtonProps = ButtonProps & {
       {wrapperElement ? (
         <div
           onClick={() => {
-            setIsProcessModalOpen(true);
+            setIsMachineConfigModalOpen(true);
           }}
         >
           {wrapperElement}
@@ -77,20 +83,19 @@ type ProcessCreationButtonProps = ButtonProps & {
         <Button
           {...props}
           onClick={() => {
-            setIsProcessModalOpen(true);
+            setIsMachineConfigModalOpen(true);
           }}
         ></Button>
       )}
-      <ProcessModal
-        open={isProcessModalOpen}
-        title="Create Process"
+      <MachineConfigModal
+        open={isMachineConfigModalOpen}
+        title="Create MachineConfig"
         okText="Create"
-        onCancel={() => setIsProcessModalOpen(false)}
-        onSubmit={createNewProcess}
+        onCancel={() => setIsMachineConfigModalOpen(false)}
+        onSubmit={createNewMachineConfig}
       />
     </>
   );
 };
 
-export default ProcessCreationButton;
- */
+export default MachineConfigCreationButton;

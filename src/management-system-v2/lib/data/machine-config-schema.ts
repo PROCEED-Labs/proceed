@@ -4,11 +4,13 @@ export type MachineConfig = {
   id: string;
   environmentId: string;
   name: string;
+  description: string;
 };
 
 export const MachineConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  description: z.string().optional(),
   //folderId: z.string().optional(),
 });
 

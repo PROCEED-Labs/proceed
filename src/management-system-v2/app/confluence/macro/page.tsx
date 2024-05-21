@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/components/auth';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
 import { Environment } from '@/lib/data/environment-schema';
+import Head from 'next/head';
 
 const MacroPage = async ({ params }: { params: { processId: string } }) => {
   const processId = params.processId;
@@ -20,6 +21,10 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
 
   return (
     <>
+      <Head>
+        <title>Proceed Macro Editor</title>
+        <script src="https://connect-cdn.atlassian.com/all.js"></script>
+      </Head>
       <Layout
         hideSider={true}
         loggedIn={!!userId}

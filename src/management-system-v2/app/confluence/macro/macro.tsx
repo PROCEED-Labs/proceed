@@ -11,6 +11,7 @@ const Macro = () => {
   console.log('processId', processId);
 
   useEffect(() => {
+    console.log('USEEFFECT', window.AP);
     if (window.AP && window.AP.confluence) {
       console.log('window AP', window.AP);
       window.AP.confluence.getMacroData((data: any) => {
@@ -21,6 +22,10 @@ const Macro = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    console.log('window.AP useEffect', window.AP);
+  }, [window, window.AP]);
 
   const mockedProcessDefinitionId = '_39b08e20-1c28-4b0c-919b-e823e5b650ed';
   return (

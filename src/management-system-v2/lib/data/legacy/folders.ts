@@ -111,13 +111,18 @@ export function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder;
 }
 
-export function getFolderChildren(folderId: string, ability?: Ability) {
+export function getFolderChildren(folderId: string, ability?: Ability, filterTypes?: string[]) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
+  if (filterTypes && filterTypes.length > 0) {
+    folderData.children = folderData.children.filter(function (element) {
+      return filterTypes.includes(element.type);
+    });
+  }
   return folderData.children;
 }
 

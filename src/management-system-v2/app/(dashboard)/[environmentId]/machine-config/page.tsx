@@ -17,6 +17,8 @@ import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
 import { spaceURL } from '@/lib/utils';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
+import { MachineConfig } from '@/lib/data/machine-config-schema';
+
 export type ListItem = MachineConfigMetadata | (Folder & { type: 'folder' });
 
 const MachineConfigPage = async ({
@@ -33,16 +35,19 @@ const MachineConfigPage = async ({
   const folder = getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
-    if (item.type === 'folder') {
-      return {
-        ...getFolderById(item.id),
-        type: 'folder' as const,
-      };
-    } else {
-      return await getMachineConfigById(item.id);
-    }
-  })) satisfies ListItem[];
+  const folderContents = (await asyncMap(
+    getFolderChildren(folder.id, ability, ['machine-config', 'product-spec', 'folder']),
+    async (item) => {
+      if (item.type === 'folder') {
+        return {
+          ...getFolderById(item.id),
+          type: 'folder' as const,
+        };
+      } else {
+        return await getMachineConfigById(item.id);
+      }
+    },
+  )) satisfies ListItem[];
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;
   while (currentFolder.parentId) {

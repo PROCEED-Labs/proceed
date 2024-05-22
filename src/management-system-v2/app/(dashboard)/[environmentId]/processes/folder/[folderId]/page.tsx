@@ -35,16 +35,19 @@ const ProcessesPage = async ({
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
-    if (item.type === 'folder') {
-      return {
-        ...getFolderById(item.id),
-        type: 'folder' as const,
-      };
-    } else {
-      return await getProcess(item.id);
-    }
-  })) satisfies ListItem[];
+  const folderContents = (await asyncMap(
+    getFolderChildren(folder.id, ability, ['process', 'process-instance', 'folder']),
+    async (item) => {
+      if (item.type === 'folder') {
+        return {
+          ...getFolderById(item.id),
+          type: 'folder' as const,
+        };
+      } else {
+        return await getProcess(item.id);
+      }
+    },
+  )) satisfies ListItem[];
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;

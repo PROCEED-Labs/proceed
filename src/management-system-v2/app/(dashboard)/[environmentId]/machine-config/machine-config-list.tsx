@@ -3,65 +3,287 @@
 import { Button, Grid, Dropdown } from 'antd';
 import { FolderOutlined, FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
+import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { MachineConfig, MachineConfigMetadata } from '@/lib/data/machine-config-schema';
-import useFuzySearch from '@/lib/useFuzySearch';
+import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
-import { useEnvironment } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import FolderCreationButton from '@/components/folder-creation-button';
 import MachineConfigCreationButton from '@/components/machine-config-creation-button';
+import { ComponentProps, useTransition } from 'react';
+import { Space, Tooltip, App, Drawer, Card, Badge, Spin } from 'antd';
+import {
+  CopyOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import IconView from '@/components/process-icon-list';
+import ProcessList from '@/components/process-list';
+import MetaData from '@/components/process-info-card';
+import ProcessExportModal from '@/components/process-export';
+import ProcessCreationButton from '@/components/process-creation-button';
+import { useUserPreferences } from '@/lib/user-preferences';
+import { createMachineConfig } from '@/lib/data/legacy/machine-config';
+import ProcessModal from '@/components/process-modal';
+import ConfirmationButton from '@/components/confirmation-button';
+import ProcessImportButton from '@/components/process-import';
+import { ProcessMetadata } from '@/lib/data/process-schema';
+import MetaDataContent from '@/components/process-info-card-content';
 import { Folder } from '@/lib/data/folder-schema';
+import {
+  deleteFolder,
+  moveIntoFolder,
+  updateFolder as updateFolderServer,
+} from '@/lib/data/folders';
+
+import AddUserControls from '@/components/add-user-controls';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import FolderModal from '@/components/folder-modal';
+import { useAddControlCallback } from '@/lib/controls-store';
+import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
+import Ability from '@/lib/ability/abilityHelper';
 
 type InputItem = MachineConfigMetadata | (Folder & { type: 'folder' });
+export type MachineConfigListConfigs = ReplaceKeysWithHighlighted<
+  InputItem,
+  'name' | 'description'
+>;
 
 const MachineConfigList = ({
   data,
+  folder,
   params,
 }: {
   data: InputItem[];
+  folder: Folder;
   params: {
     environmentId: string;
-    canCreateFolder: boolean;
-    canCreateConfig: boolean;
     folderId?: string;
   };
 }) => {
+  const originalConfigs = data;
   const router = useRouter();
   const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
+
+  if (folder.parentId)
+    data = [
+      {
+        name: '< Parent Folder >',
+        parentId: null,
+        type: 'folder',
+        id: folder.parentId,
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        environmentId: '',
+      },
+      ...data,
+    ];
+
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
-    keys: ['name'],
+    keys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
-  const [selectedRowElements, setSelectedRowElements] = useState<MachineConfig[]>([]);
+  const { message } = App.useApp();
+
+  const [selectedRowElements, setSelectedRowElements] = useState<MachineConfigListConfigs[]>([]);
+  const [updatingFolder, startUpdatingFolderTransition] = useTransition();
+  const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
+  const [copySelection, setCopySelection] = useState<MachineConfigListConfigs[]>([]);
+  const [openCopyModal, setOpenCopyModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [movingItem, startMovingItemTransition] = useTransition();
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
 
+  const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
-  if (params.canCreateConfig)
+
+  async function deleteItems(items: MachineConfigListConfigs[]) {
+    const promises = [];
+
+    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
+    const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
+    if (folderPromise) promises.push(folderPromise);
+
+    const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
+    const processPromise = deleteMachineConfig(processIds, space.spaceId);
+    if (processPromise) promises.push(processPromise);
+
+    await Promise.allSettled(promises);
+
+    const processesResult = await processPromise;
+    const folderResult = await folderPromise;
+
+    if (
+      (folderResult && 'error' in folderResult) ||
+      (processesResult && 'error' in processesResult)
+    ) {
+      return message.open({
+        type: 'error',
+        content: 'Something went wrong',
+      });
+    }
+
+    setSelectedRowElements([]);
+    router.refresh();
+  }
+
+  function copyItem(items: MachineConfigListConfigs[]) {
+    setOpenCopyModal(true);
+    setCopySelection(items);
+  }
+
+  function editItem(item: MachineConfigListConfigs) {
+    if (item.type === 'folder') {
+      const folder = processes.find((process) => process.id === item.id) as Folder;
+      setUpdateFolderModal(folder);
+    } else {
+      setOpenEditModal(true);
+      setSelectedRowElements([item]);
+    }
+  }
+
+  const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
+    startMovingItemTransition(async () => {
+      try {
+        const response = await moveIntoFolder(items, folderId);
+
+        if (response && 'error' in response) throw new Error();
+
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong`,
+        });
+      }
+    });
+  };
+
+  const actionBarGenerator = useCallback(
+    (record: MachineConfigListConfigs) => {
+      const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
+      return (
+        <>
+          {record.type !== 'folder' && (
+            <AuthCan {...resource} create>
+              <Tooltip placement="top" title={'Copy'}>
+                <CopyOutlined
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyItem([record]);
+                  }}
+                />
+              </Tooltip>
+            </AuthCan>
+          )}
+
+          <AuthCan {...resource} update>
+            <Tooltip placement="top" title={'Edit'}>
+              <EditOutlined onClick={() => editItem(record)} />
+            </Tooltip>
+          </AuthCan>
+
+          <AuthCan delete {...resource}>
+            <Tooltip placement="top" title={'Delete'}>
+              <ConfirmationButton
+                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+                description="Are you sure you want to delete the selected process?"
+                onConfirm={() => deleteItems([record])}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
+            </Tooltip>
+          </AuthCan>
+        </>
+      );
+    },
+    [copyItem, deleteItems, editItem],
+  );
+
+  if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
       label: <MachineConfigCreationButton wrapperElement="Create Machine Config" />,
       icon: <FileOutlined />,
     });
 
-  if (params.canCreateFolder)
+  if (ability && ability.can('create', 'Folder'))
     defaultDropdownItems.push({
       key: 'create-folder',
       label: <FolderCreationButton wrapperElement="Create Folder" />,
       icon: <FolderOutlined />,
     });
 
+  const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
+    if (!folder) return;
+
+    startUpdatingFolderTransition(async () => {
+      try {
+        const response = updateFolderServer(
+          { name: values.name, description: values.description },
+          folder.id,
+        );
+
+        if (response && 'error' in response) throw new Error();
+
+        message.open({ type: 'success', content: 'Folder updated successfully' });
+        setUpdateFolderModal(undefined);
+        router.refresh();
+      } catch (e) {
+        message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
+      }
+    });
+  };
+
+  // Folders on top
+  filteredData.sort((a, b) => {
+    if (a.type === 'folder' && b.type == 'folder') return 0;
+    if (a.type === 'folder') return -1;
+    if (b.type === 'folder') return 1;
+
+    return 0;
+  });
+
+  useAddControlCallback(
+    'machineconfig-list',
+    'selectall',
+    (e) => {
+      e.preventDefault();
+      setSelectedRowElements(filteredData ?? []);
+    },
+    { dependencies: [originalConfigs] },
+  );
+  useAddControlCallback('machineconfig-list', 'esc', () => setSelectedRowElements([]));
+  useAddControlCallback('machineconfig-list', 'del', () => setOpenDeleteModal(true));
+  useAddControlCallback('machineconfig-list', 'copy', () => setCopySelection(selectedRowElements));
+  useAddControlCallback('machineconfig-list', 'paste', () => setOpenCopyModal(true));
+
   const columns = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
     },
   ];
 
@@ -158,6 +380,16 @@ const MachineConfigList = ({
             }, */
           }),
         }}
+      />
+      <AddUserControls name={'machineconfig-list'} />
+      <FolderModal
+        open={!!updateFolderModal}
+        close={() => setUpdateFolderModal(undefined)}
+        spaceId={space.spaceId}
+        parentId={folder.id}
+        onSubmit={updateFolder}
+        modalProps={{ title: 'Edit folder', okButtonProps: { loading: updatingFolder } }}
+        initialValues={updateFolderModal}
       />
     </>
   );

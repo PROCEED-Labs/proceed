@@ -80,9 +80,8 @@ const MachineConfigPage = async ({
           <MachineConfigList
             params={{
               environmentId: params.environmentId,
-              canCreateConfig: ability && ability.can('create', 'MachineConfig'),
-              canCreateFolder: ability && ability.can('create', 'Folder'),
             }}
+            folder={folder}
             data={folderContents}
           />
           {/* <Processes processes={folderContents} favourites={favs as string[]} folder={folder} /> */}

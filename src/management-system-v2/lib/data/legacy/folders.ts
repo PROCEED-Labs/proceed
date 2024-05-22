@@ -14,7 +14,10 @@ import { Process, ProcessMetadata } from '../process-schema';
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
-export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
+export type FolderChildren =
+  | { id: string; type: 'folder' }
+  | { id: string; type: Process['type'] }
+  | { id: string; type: MachineConfig['type'] };
 export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {
@@ -83,6 +86,7 @@ export function init() {
 }
 init();
 import { removeProcess } from './_process';
+import { MachineConfig } from '../machine-config-schema';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];

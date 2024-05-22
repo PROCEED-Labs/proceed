@@ -9,6 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
+import { getCurrentEnvironment } from './auth';
 
 type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -42,7 +43,9 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
         return process;
       } */
     const machineConfig = await (customAction?.(values[0]) ??
-      createMachineConfig(values[0]).then((res) => (Array.isArray(res) ? res[0] : res))); //TODO - array stuff
+      createMachineConfig(values[0], environment.spaceId).then((res) =>
+        Array.isArray(res) ? res[0] : res,
+      )); //TODO - array stuff
     if (machineConfig && 'error' in machineConfig) {
       return machineConfig;
     }

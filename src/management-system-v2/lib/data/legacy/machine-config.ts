@@ -7,9 +7,13 @@ import {
   MachineConfig,
   MachineConfigInput,
   MachineConfigInputSchema,
+  MachineConfigMetadata,
 } from '../machine-config-schema';
+import { foldersMetaObject, getRootFolder } from './folders';
 import { userError } from '@/lib/user-error';
 import { v4 } from 'uuid';
+import eventHandler from './eventHandler.js';
+// import { toCaslResource } from '@/lib/ability/caslAbility.js';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
@@ -61,42 +65,112 @@ export async function getMachineConfigById(machineConfigId: string, ability?: Ab
   return machineConfig;
 }
 
-export async function createMachineConfig(machineConfigInput: MachineConfigInput) {
+export async function createMachineConfig(
+  machineConfigInput: MachineConfigInput,
+  environmentId: string,
+) {
   try {
-    // const environment = useEnvironment();
-    const machineConfig = MachineConfigInputSchema.parse(machineConfigInput);
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environment.spaceId);
-    const { userId } = await getCurrentUser();
+    const machineConfigData = MachineConfigInputSchema.parse(machineConfigInput);
 
-    // if (!machineConfig.parentId)
-    //  machineConfig.parentId = getRootFolder(machineConfig.environmentId).id;
-
-    if (!machineConfig.id) machineConfig.id = v4();
-
-    // Checks
-    //if (ability && !ability.can('create', toCaslResource('MachineConfig', machineConfig)))
-    //  throw new Error('Permission denied');
-
-    // if (machineConfigsMetaObjects.machineConfigs[machineConfig.id]) throw new Error('MachineConfig already exists');
-
-    // Store
-    const newMachineConfig = {
-      ...machineConfig,
-      environmentId: activeEnvironment.spaceId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: userId,
-    } as MachineConfig;
-
-    machineConfigMetaObjects[machineConfig.id] = {
-      ...newMachineConfig,
+    // create meta info object
+    const date = new Date().toUTCString();
+    const metadata = {
+      ...({
+        id: v4(),
+        type: 'machine-config',
+        environmentId: environmentId,
+        name: 'Default Machine Config',
+        description: '',
+        owner: '',
+        variables: [],
+        departments: [],
+        inEditingBy: [],
+        createdOn: date,
+        lastEdited: date,
+        sharedAs: 'protected',
+        shareTimestamp: 0,
+        allowIframeTimestamp: 0,
+        versions: [],
+        folderId: '',
+      } as MachineConfig),
+      ...machineConfigData,
     };
+    if (!metadata.folderId) {
+      metadata.folderId = getRootFolder(metadata.environmentId).id;
+    }
 
-    store.add('machineConfig', newMachineConfig);
-    return newMachineConfig;
+    const folderData = foldersMetaObject.folders[metadata.folderId];
+    if (!folderData) throw new Error('Folder not found');
+    const { id: definitionId } = metadata;
+    if (machineConfigMetaObjects[definitionId]) {
+      throw new Error(`A machine configuration with the id ${definitionId} already exists!`);
+    }
+
+    machineConfigMetaObjects[definitionId] = metadata;
+    store.add('machineConfig', removeExcessiveInformation(metadata));
+
+    moveMachineConfig({
+      definitionId,
+      newFolderId: metadata.folderId,
+      dontUpdateOldFolder: true,
+    });
+
+    eventHandler.dispatch('processAdded', { process: metadata });
+
+    return metadata;
   } catch (e) {
+    console.log(e);
     return userError("Couldn't create Machine Config");
   }
+}
+
+export async function moveMachineConfig({
+  definitionId,
+  newFolderId,
+  ability,
+  dontUpdateOldFolder = false,
+}: {
+  definitionId: string;
+  newFolderId: string;
+  dontUpdateOldFolder?: boolean;
+  ability?: Ability;
+}) {
+  // Checks
+  const machineConfig = machineConfigMetaObjects[definitionId];
+  if (!machineConfig) throw new Error('Machine Config not found');
+
+  const folderData = foldersMetaObject.folders[newFolderId];
+  if (!folderData) throw new Error('Folder not found');
+
+  // if (
+  //   ability &&
+  //   !ability.can('update', toCaslResource('MachineConfig', machineConfig)) &&
+  //   !ability.can('update', toCaslResource('Folder', folderData.folder))
+  // )
+  //   throw new UnauthorizedError();
+
+  if (!dontUpdateOldFolder) {
+    const oldFolder = foldersMetaObject.folders[machineConfig.folderId];
+    if (!oldFolder) throw new Error("Consistensy Error: Machine Config' folder not found");
+    const machineConfigOldFolderIdx = oldFolder.children.findIndex(
+      (item) => 'type' in item && item.type === 'machine-config' && item.id === definitionId,
+    );
+    if (machineConfigOldFolderIdx === -1)
+      throw new Error('Consistensy Error: Machine Config not found in folder');
+
+    oldFolder.children.splice(machineConfigOldFolderIdx as number, 1);
+  }
+
+  folderData.children.push({ id: machineConfig.id, type: machineConfig.type });
+  machineConfig.folderId = newFolderId;
+
+  store.update('machineConfig', definitionId, removeExcessiveInformation(machineConfig));
+}
+
+function removeExcessiveInformation(machineConfigInfo: MachineConfigMetadata) {
+  const newInfo = { ...machineConfigInfo };
+  delete newInfo.inEditingBy;
+  return newInfo;
 }
 
 // delete, update, create ... etc.

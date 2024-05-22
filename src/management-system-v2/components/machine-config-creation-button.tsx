@@ -33,21 +33,17 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
   const createNewMachineConfig = async (
     values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
   ) => {
-    // Invoke the custom handler otherwise use the default server action.
-    /* const process = await (customAction?.(values[0]) ??
-        addProcesses(
-          values.map((value) => ({ ...value, folderId })),
-          environment.spaceId,
-        ).then((res) => (Array.isArray(res) ? res[0] : res)));
-      if (process && 'error' in process) {
-        return process;
-      } */
     const machineConfig = await (customAction?.(values[0]) ??
       createMachineConfig(values[0], environment.spaceId).then((res) =>
         Array.isArray(res) ? res[0] : res,
-      )); //TODO - array stuff
+      ));
     if (machineConfig && 'error' in machineConfig) {
       return machineConfig;
+    }
+    if (process && 'id' in process) {
+      router.push(spaceURL(environment, `/processes/${process.id}`));
+    } else {
+      router.refresh();
     }
     setIsMachineConfigModalOpen(false);
   };

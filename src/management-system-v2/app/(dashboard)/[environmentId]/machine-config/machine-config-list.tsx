@@ -6,19 +6,22 @@ import { AiOutlinePlus } from 'react-icons/ai';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useState } from 'react';
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { MachineConfig, MachineConfigMetadata } from '@/lib/data/machine-config-schema';
 import useFuzySearch from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import FolderCreationButton from '@/components/folder-creation-button';
 import MachineConfigCreationButton from '@/components/machine-config-creation-button';
+import { Folder } from '@/lib/data/folder-schema';
+
+type InputItem = MachineConfigMetadata | (Folder & { type: 'folder' });
 
 const MachineConfigList = ({
   data,
   params,
 }: {
-  data: MachineConfig[];
+  data: InputItem[];
   params: {
     environmentId: string;
     canCreateFolder: boolean;

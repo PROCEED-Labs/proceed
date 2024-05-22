@@ -83,7 +83,7 @@ const MachineConfigPage = async ({
               canCreateConfig: ability && ability.can('create', 'MachineConfig'),
               canCreateFolder: ability && ability.can('create', 'Folder'),
             }}
-            data={data}
+            data={folderContents}
           />
           {/* <Processes processes={folderContents} favourites={favs as string[]} folder={folder} /> */}
         </Space>

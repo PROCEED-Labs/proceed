@@ -25,6 +25,7 @@ export type MachineConfigMetadata = Prettify<
     variables: {
       name: string;
       type: string;
+      value: string;
     }[];
     departments: string[];
     inEditingBy?: {

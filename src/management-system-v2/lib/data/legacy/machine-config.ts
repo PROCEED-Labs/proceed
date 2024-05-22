@@ -119,7 +119,6 @@ export async function createMachineConfig(
 
     return metadata;
   } catch (e) {
-    console.log(e);
     return userError("Couldn't create Machine Config");
   }
 }

@@ -1,53 +1,31 @@
 'use client';
 
-import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
-import {
-  ExportOutlined,
-  DeleteOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
-  PlusOutlined,
-  FolderOutlined,
-  FileOutlined,
-} from '@ant-design/icons';
+import { Button, Grid, Dropdown } from 'antd';
+import { FolderOutlined, FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
-import { useState, Key } from 'react';
+import { useState } from 'react';
 import { MachineConfig } from '@/lib/data/machine-config-schema';
 import useFuzySearch from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
-import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from '@/components/folder-creation-button';
-import {
-  deleteFolder,
-  moveIntoFolder,
-  updateFolder as updateFolderServer,
-} from '@/lib/data/folders';
-import { toCaslResource } from '@/lib/ability/caslAbility';
-import FolderModal from '@/components/folder-modal';
+import MachineConfigCreationButton from '@/components/machine-config-creation-button';
 
-// adapted from src/management-system-v2/components/processes/index.tsx
-/*const defaultDropdownItems = [];
-  if (ability.can('create', 'MachineConfig'))
-    defaultDropdownItems.push({
-      key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Machine Config" />,
-      icon: <FileOutlined />,
-    });
-
-  if (ability.can('create', 'Folder'))
-    defaultDropdownItems.push({
-      key: 'create-folder',
-      label: <FolderCreationButton wrapperElement="Create Folder" />,
-      icon: <FolderOutlined />,
-    });*/
-
-// also see src/management-system-v2/components/process-creation-button.tsx
-
-const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
+const MachineConfigList = ({
+  data,
+  params,
+}: {
+  data: MachineConfig[];
+  params: {
+    environmentId: string;
+    canCreateFolder: boolean;
+    canCreateConfig: boolean;
+    folderId?: string;
+  };
+}) => {
   const router = useRouter();
   const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
@@ -59,6 +37,21 @@ const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
 
   const [selectedRowElements, setSelectedRowElements] = useState<MachineConfig[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
+
+  const defaultDropdownItems = [];
+  if (params.canCreateConfig)
+    defaultDropdownItems.push({
+      key: 'create-machine-config',
+      label: <MachineConfigCreationButton wrapperElement="Create Machine Config" />,
+      icon: <FileOutlined />,
+    });
+
+  if (params.canCreateFolder)
+    defaultDropdownItems.push({
+      key: 'create-folder',
+      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      icon: <FolderOutlined />,
+    });
 
   const columns = [
     {
@@ -79,7 +72,7 @@ const MachineConfigList = ({ data }: { data: MachineConfig[] }) => {
                 <Dropdown
                   trigger={['click']}
                   menu={{
-                    items: [], //for processes, defaultDropdownItems is used here (see above)
+                    items: defaultDropdownItems,
                   }}
                 >
                   <Button type="primary" icon={<AiOutlinePlus />}>

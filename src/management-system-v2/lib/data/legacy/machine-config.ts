@@ -1,27 +1,27 @@
+'use server';
+
 import store from './store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
   MachineConfig,
   MachineConfigInput,
   MachineConfigInputSchema,
 } from '../machine-config-schema';
-import { useEnvironment } from '@/components/auth-can';
 import { userError } from '@/lib/user-error';
 import { v4 } from 'uuid';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
 
-export let machineConfigMetaObjects: Record<string, MachineConfig> =
+let machineConfigMetaObjects: Record<string, MachineConfig> =
   // @ts-ignore
   global.machineConfigMetaObjects || (global.machineConfigMetaObjects = {});
 
 /**
  * initializes the machineConfig meta information objects
  */
-export function init() {
+export async function init() {
   if (!firstInit) return;
 
   // get machineConfig that were persistently stored
@@ -30,10 +30,10 @@ export function init() {
   // set machineConfig store cache for quick access
   storedMachineConfig.forEach((config) => (machineConfigMetaObjects[config.id] = config));
 }
-init();
+await init();
 
 /** Returns all machineConfigs in form of an array */
-export function getMachineConfig(environmentId: string, ability?: Ability) {
+export async function getMachineConfig(environmentId: string, ability?: Ability) {
   const machineConfig = Object.values(machineConfigMetaObjects).filter(
     (config) => config.environmentId === environmentId,
   );
@@ -48,7 +48,7 @@ export function getMachineConfig(environmentId: string, ability?: Ability) {
  *
  * @throws {UnauthorizedError}
  */
-export function getMachineConfigById(machineConfigId: string, ability?: Ability) {
+export async function getMachineConfigById(machineConfigId: string, ability?: Ability) {
   const machineConfig = machineConfigMetaObjects[machineConfigId];
   if (!ability) return machineConfig;
 
@@ -63,12 +63,12 @@ export function getMachineConfigById(machineConfigId: string, ability?: Ability)
 
 export async function createMachineConfig(machineConfigInput: MachineConfigInput) {
   try {
-    const environment = useEnvironment();
+    // const environment = useEnvironment();
     const machineConfig = MachineConfigInputSchema.parse(machineConfigInput);
     const { ability, activeEnvironment } = await getCurrentEnvironment(environment.spaceId);
     const { userId } = await getCurrentUser();
 
-    //if (!machineConfig.parentId)
+    // if (!machineConfig.parentId)
     //  machineConfig.parentId = getRootFolder(machineConfig.environmentId).id;
 
     if (!machineConfig.id) machineConfig.id = v4();
@@ -77,15 +77,15 @@ export async function createMachineConfig(machineConfigInput: MachineConfigInput
     //if (ability && !ability.can('create', toCaslResource('MachineConfig', machineConfig)))
     //  throw new Error('Permission denied');
 
-    //if (machineConfigsMetaObjects.machineConfigs[machineConfig.id]) throw new Error('MachineConfig already exists');
+    // if (machineConfigsMetaObjects.machineConfigs[machineConfig.id]) throw new Error('MachineConfig already exists');
 
     // Store
     const newMachineConfig = {
       ...machineConfig,
       environmentId: activeEnvironment.spaceId,
-      //createdAt: new Date().toISOString(),
-      //updatedAt: new Date().toISOString(),
-      //createdBy: userId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: userId,
     } as MachineConfig;
 
     machineConfigMetaObjects[machineConfig.id] = {
@@ -93,7 +93,6 @@ export async function createMachineConfig(machineConfigInput: MachineConfigInput
     };
 
     store.add('machineConfig', newMachineConfig);
-
     return newMachineConfig;
   } catch (e) {
     return userError("Couldn't create Machine Config");

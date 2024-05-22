@@ -5,7 +5,7 @@ import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import MachineConfigModal from './machine-config-modal'; //TODO
 import { createMachineConfig } from '@/lib/data/legacy/machine-config'; //TODO
-import { useParams, useRouter, useSelectedLayoutSegments } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
@@ -47,12 +47,6 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       return machineConfig;
     }
     setIsMachineConfigModalOpen(false);
-
-    if (machineConfig && 'id' in machineConfig) {
-      router.push(spaceURL(environment, `/machine-config/${machineConfig.id}`));
-    } else {
-      router.refresh();
-    }
   };
 
   useAddControlCallback(

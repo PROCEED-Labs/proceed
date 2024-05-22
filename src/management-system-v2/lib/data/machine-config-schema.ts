@@ -1,24 +1,23 @@
 import { z } from 'zod';
 
-export type MachineConfig = {
-  id: string;
-  environmentId: string;
-  name: string;
-  description: string;
-};
+// export type MachineConfig = {
+//   id: string;
+//   environmentId: string;
+//   name: string;
+//   description: string;
+// };
 
 export const MachineConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
-  //folderId: z.string().optional(),
+  folderId: z.string().optional(),
 });
 
 export type MachineConfigInput = z.infer<typeof MachineConfigInputSchema>;
 
 // Adapted from Process Schema:
-/*
-import { z } from 'zod';
+
 import { Prettify, WithRequired } from '../typescript-utils';
 
 export const MachineConfigServerInputSchema = MachineConfigInputSchema.extend({
@@ -53,4 +52,4 @@ export type MachineConfigMetadata = Prettify<
   }
 >;
 
-export type MachineConfig = Prettify<MachineConfigMetadata>;*/
+export type MachineConfig = Prettify<MachineConfigMetadata>;

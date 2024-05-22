@@ -38,7 +38,7 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
         userEnvironments={userEnvironments}
         activeSpace={{ spaceId: userId || '', isOrganization: false }}
       >
-        <Macro bpmn={BPMN} processId={processId}></Macro>
+        <Macro userId={userId} bpmn={BPMN} processId={processId}></Macro>
       </Layout>
     </>
   );

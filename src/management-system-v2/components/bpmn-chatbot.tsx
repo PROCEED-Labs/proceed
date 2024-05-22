@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { getNewShapePosition } from 'bpmn-js/lib/features/auto-place/BpmnAutoPlaceUtil';
 import { Shape } from 'bpmn-js/lib/model/Types';
 import { MessageOutlined } from '@ant-design/icons';
+import ChatbotResponseModal, { ChatbotInteraction } from './bpmn-chatbot-response';
 
 type ChatbotDialogProps = {
   show: boolean;
@@ -15,23 +16,28 @@ type FieldType = {
 };
 
 const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
-  const [lastPrompts, setLastPrompts] = useState<string[]>([]);
+  const [lastPrompts, setLastPrompts] = useState<ChatbotInteraction[]>([]);
   const [waitForResponse, setWaitForResponse] = useState(false);
   const elementFactory = modeler!.getElementFactory();
   const root = modeler!.getCurrentRoot();
   const modeling = modeler!.getModeling();
+  const [showChatbotResponseModal, setShowChatbotResponseModal] = useState(false);
+  const [chatbotInteraction, setChatbotInteraction] = useState<ChatbotInteraction>();
 
   function onPrompt({ prompt }: FieldType) {
     setWaitForResponse(true);
     getProcessXml()
       .then((process) => {
-        console.log(process);
-        return fetchClaude(prompt, process);
-      })
-      .then((res) => {
-        console.log(res);
-        processResponse(res.content);
-        setLastPrompts(lastPrompts.concat(prompt));
+        fetchClaude(prompt, process).then((res) => {
+          processResponse(res.content);
+          setLastPrompts(
+            lastPrompts.concat({
+              userPrompt: prompt,
+              bpmnProcess: process,
+              chatbotResponse: res.content,
+            }),
+          );
+        });
       })
       .finally(() => setWaitForResponse(false));
   }
@@ -104,42 +110,57 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   }
 
   return (
-    <Card title="Chatbot" size="small" style={{ width: 400 }} hidden={!show}>
-      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-        <List
-          size="small"
-          bordered
-          style={{ height: 300, overflow: 'auto' }}
-          dataSource={lastPrompts}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Tooltip title="Show Response Details">
-                  <Button icon={<MessageOutlined />}></Button>
-                </Tooltip>,
-              ]}
-            >
-              {item}
-            </List.Item>
-          )}
-        ></List>
-        <Form onFinish={onPrompt}>
-          <Form.Item<FieldType> name="prompt" rules={[{ required: true }]}>
-            <Input.TextArea rows={4} allowClear />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={waitForResponse}>
-                Prompt
-              </Button>
-              <Button type="default" onClick={() => setLastPrompts([])} loading={waitForResponse}>
-                Clear Chat
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Space>
-    </Card>
+    <>
+      <Card title="Chatbot" size="small" style={{ width: 400 }} hidden={!show}>
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <List
+            size="small"
+            bordered
+            style={{ maxHeight: 300, overflow: 'auto' }}
+            dataSource={lastPrompts}
+            renderItem={(item) => (
+              <List.Item
+                actions={[
+                  <Tooltip title="Show Response Details">
+                    <Button
+                      icon={<MessageOutlined />}
+                      onClick={() => {
+                        setChatbotInteraction(item);
+                        setShowChatbotResponseModal(true);
+                      }}
+                    ></Button>
+                  </Tooltip>,
+                ]}
+              >
+                <p style={{ maxHeight: 100, overflow: 'clip' }}>{item.userPrompt}</p>
+              </List.Item>
+            )}
+          ></List>
+          <Form onFinish={onPrompt}>
+            <Form.Item<FieldType> name="prompt" rules={[{ required: true }]}>
+              <Input.TextArea rows={4} allowClear />
+            </Form.Item>
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit" loading={waitForResponse}>
+                  Prompt
+                </Button>
+                <Button type="default" onClick={() => setLastPrompts([])} loading={waitForResponse}>
+                  Clear Chat
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Space>
+      </Card>
+      {chatbotInteraction && (
+        <ChatbotResponseModal
+          open={showChatbotResponseModal}
+          onClose={() => setShowChatbotResponseModal(false)}
+          chatbotInteraction={chatbotInteraction}
+        ></ChatbotResponseModal>
+      )}
+    </>
   );
 };
 

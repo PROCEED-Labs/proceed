@@ -284,7 +284,6 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               canRedo={canRedo}
               canUndo={canUndo}
               modeler={modeler.current}
-              handleXmlSave={handleXmlSave}
             />
           )}
           {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}

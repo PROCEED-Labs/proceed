@@ -77,7 +77,9 @@ const MachineConfigList = ({
   const router = useRouter();
   const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
-
+  data = data.filter(function (element) {
+    return element !== undefined;
+  });
   if (folder.parentId)
     data = [
       {
@@ -92,7 +94,6 @@ const MachineConfigList = ({
       },
       ...data,
     ];
-
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
     keys: ['name', 'description'],
@@ -114,110 +115,110 @@ const MachineConfigList = ({
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
 
-  async function deleteItems(items: MachineConfigListConfigs[]) {
-    const promises = [];
+  // async function deleteItems(items: MachineConfigListConfigs[]) {
+  //   const promises = [];
 
-    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
-    const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
-    if (folderPromise) promises.push(folderPromise);
+  //   const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
+  //   const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
+  //   if (folderPromise) promises.push(folderPromise);
 
-    const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
-    const processPromise = deleteMachineConfig(processIds, space.spaceId);
-    if (processPromise) promises.push(processPromise);
+  //   const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
+  //   const processPromise = deleteMachineConfig(processIds, space.spaceId);
+  //   if (processPromise) promises.push(processPromise);
 
-    await Promise.allSettled(promises);
+  //   await Promise.allSettled(promises);
 
-    const processesResult = await processPromise;
-    const folderResult = await folderPromise;
+  //   const processesResult = await processPromise;
+  //   const folderResult = await folderPromise;
 
-    if (
-      (folderResult && 'error' in folderResult) ||
-      (processesResult && 'error' in processesResult)
-    ) {
-      return message.open({
-        type: 'error',
-        content: 'Something went wrong',
-      });
-    }
+  //   if (
+  //     (folderResult && 'error' in folderResult) ||
+  //     (processesResult && 'error' in processesResult)
+  //   ) {
+  //     return message.open({
+  //       type: 'error',
+  //       content: 'Something went wrong',
+  //     });
+  //   }
 
-    setSelectedRowElements([]);
-    router.refresh();
-  }
+  //   setSelectedRowElements([]);
+  //   router.refresh();
+  // }
 
-  function copyItem(items: MachineConfigListConfigs[]) {
-    setOpenCopyModal(true);
-    setCopySelection(items);
-  }
+  // function copyItem(items: MachineConfigListConfigs[]) {
+  //   setOpenCopyModal(true);
+  //   setCopySelection(items);
+  // }
 
-  function editItem(item: MachineConfigListConfigs) {
-    if (item.type === 'folder') {
-      const folder = processes.find((process) => process.id === item.id) as Folder;
-      setUpdateFolderModal(folder);
-    } else {
-      setOpenEditModal(true);
-      setSelectedRowElements([item]);
-    }
-  }
+  // function editItem(item: MachineConfigListConfigs) {
+  //   if (item.type === 'folder') {
+  //     const folder = processes.find((process) => process.id === item.id) as Folder;
+  //     setUpdateFolderModal(folder);
+  //   } else {
+  //     setOpenEditModal(true);
+  //     setSelectedRowElements([item]);
+  //   }
+  // }
 
-  const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
-    startMovingItemTransition(async () => {
-      try {
-        const response = await moveIntoFolder(items, folderId);
+  // const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
+  //   startMovingItemTransition(async () => {
+  //     try {
+  //       const response = await moveIntoFolder(items, folderId);
 
-        if (response && 'error' in response) throw new Error();
+  //       if (response && 'error' in response) throw new Error();
 
-        router.refresh();
-      } catch (e) {
-        message.open({
-          type: 'error',
-          content: `Someting went wrong`,
-        });
-      }
-    });
-  };
+  //       router.refresh();
+  //     } catch (e) {
+  //       message.open({
+  //         type: 'error',
+  //         content: `Someting went wrong`,
+  //       });
+  //     }
+  //   });
+  // };
 
-  const actionBarGenerator = useCallback(
-    (record: MachineConfigListConfigs) => {
-      const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
-      return (
-        <>
-          {record.type !== 'folder' && (
-            <AuthCan {...resource} create>
-              <Tooltip placement="top" title={'Copy'}>
-                <CopyOutlined
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyItem([record]);
-                  }}
-                />
-              </Tooltip>
-            </AuthCan>
-          )}
+  // const actionBarGenerator = useCallback(
+  //   (record: MachineConfigListConfigs) => {
+  //     const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
+  //     return (
+  //       <>
+  //         {record.type !== 'folder' && (
+  //           <AuthCan {...resource} create>
+  //             <Tooltip placement="top" title={'Copy'}>
+  //               <CopyOutlined
+  //                 onClick={(e) => {
+  //                   e.stopPropagation();
+  //                   copyItem([record]);
+  //                 }}
+  //               />
+  //             </Tooltip>
+  //           </AuthCan>
+  //         )}
 
-          <AuthCan {...resource} update>
-            <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => editItem(record)} />
-            </Tooltip>
-          </AuthCan>
+  //         <AuthCan {...resource} update>
+  //           <Tooltip placement="top" title={'Edit'}>
+  //             <EditOutlined onClick={() => editItem(record)} />
+  //           </Tooltip>
+  //         </AuthCan>
 
-          <AuthCan delete {...resource}>
-            <Tooltip placement="top" title={'Delete'}>
-              <ConfirmationButton
-                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-                description="Are you sure you want to delete the selected process?"
-                onConfirm={() => deleteItems([record])}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
-            </Tooltip>
-          </AuthCan>
-        </>
-      );
-    },
-    [copyItem, deleteItems, editItem],
-  );
+  //         <AuthCan delete {...resource}>
+  //           <Tooltip placement="top" title={'Delete'}>
+  //             <ConfirmationButton
+  //               title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+  //               description="Are you sure you want to delete the selected process?"
+  //               onConfirm={() => deleteItems([record])}
+  //               buttonProps={{
+  //                 icon: <DeleteOutlined />,
+  //                 type: 'text',
+  //               }}
+  //             />
+  //           </Tooltip>
+  //         </AuthCan>
+  //       </>
+  //     );
+  //   },
+  //   [copyItem, deleteItems, editItem],
+  // );
 
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
@@ -401,7 +402,7 @@ const MachineConfigList = ({
         }}
       />
       <ElementList
-        data={filteredData as unknown as MachineConfig[]}
+        data={filteredData as unknown as MachineConfigListConfigs[]}
         columns={columns}
         elementSelection={{
           selectedElements: selectedRowElements,
@@ -424,25 +425,6 @@ const MachineConfigList = ({
                 </Row>
           },
         }}*/
-        tableProps={{
-          onRow: (item) => ({
-            onDoubleClick: () =>
-              router.push(
-                /* item.type === 'folder'
-                  ? `/${space.spaceId}/machine-config/folder/${item.id}`
-                  : `/${space.spaceId}/machine-config/${item.id}`, */
-                `/${space.spaceId}/machine-config/${item.id}`,
-              ),
-            /* onContextMenu: () => {
-              if (selection.includes(item.id)) {
-                setContextMenuItem(selectedElements);
-              } else {
-                setSelectionElements([item]);
-                setContextMenuItem([item]);
-              }
-            }, */
-          }),
-        }}
       />
       <AddUserControls name={'machineconfig-list'} />
       <FolderModal

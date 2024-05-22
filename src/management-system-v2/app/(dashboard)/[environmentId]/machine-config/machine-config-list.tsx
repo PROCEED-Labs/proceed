@@ -327,7 +327,9 @@ const MachineConfigList = ({
       render: (_, record) => (
         <SpaceLink
           href={
-            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+            record.type === 'folder'
+              ? `/machine-config/folder/${record.id}`
+              : `/machine-config/${record.id}`
           }
           style={{
             color: 'inherit' /* or any color you want */,

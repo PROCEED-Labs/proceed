@@ -18,7 +18,7 @@ const MacroEditor = () => {
         });
       }
     }
-  });
+  }, []);
 
   const saveMacro = () => {
     // if (window.AP && window.AP.confluence) {

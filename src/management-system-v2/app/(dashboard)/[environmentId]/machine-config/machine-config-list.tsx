@@ -1,6 +1,8 @@
 'use client';
 
-import { Button, Grid, Dropdown } from 'antd';
+import styles from '@/components/item-list-view.module.scss';
+
+import { Button, Grid, Dropdown, TableColumnsType } from 'antd';
 import { FolderOutlined, FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -16,10 +18,13 @@ import FolderCreationButton from '@/components/folder-creation-button';
 import MachineConfigCreationButton from '@/components/machine-config-creation-button';
 import { ComponentProps, useTransition } from 'react';
 import { Space, Tooltip, App, Drawer, Card, Badge, Spin } from 'antd';
+import SpaceLink from '@/components/space-link';
 import {
   CopyOutlined,
   EditOutlined,
   DeleteOutlined,
+  FolderOutlined as FolderFilled,
+  FileOutlined as FileFilled,
   UnorderedListOutlined,
   AppstoreOutlined,
   PlusOutlined,
@@ -272,18 +277,76 @@ const MachineConfigList = ({
   useAddControlCallback('machineconfig-list', 'copy', () => setCopySelection(selectedRowElements));
   useAddControlCallback('machineconfig-list', 'paste', () => setOpenCopyModal(true));
 
-  const columns = [
+  const columns: TableColumnsType<MachineConfigListConfigs> = [
     {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      render: (_, record) => (
+        <SpaceLink
+          href={
+            record.type === 'folder'
+              ? `/machine-config/folder/${record.id}`
+              : `/machine-config/${record.id}`
+          }
+          style={{
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
+            display: 'block',
+          }}
+        >
+          <div
+            className={
+              breakpoint.xs
+                ? styles.MobileTitleTruncation
+                : breakpoint.xl
+                  ? styles.TitleTruncation
+                  : styles.TabletTitleTruncation
+            }
+            style={{
+              // overflow: 'hidden',
+              // whiteSpace: 'nowrap',
+              // textOverflow: 'ellipsis',
+              // TODO: color
+              color: record.id === folder.parentId ? 'grey' : undefined,
+              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+            }}
+          >
+            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name}
+          </div>
+        </SpaceLink>
+      ),
+      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      render: (_, record) => (
+        <SpaceLink
+          href={
+            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+          }
+          style={{
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
+            display: 'block',
+          }}
+        >
+          {/* <div
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          > */}
+          {(record.description ?? '').length == 0 ? <>&emsp;</> : record.description}
+          {/* Makes the link-cell clickable, when there is no description */}
+          {/* </div> */}
+        </SpaceLink>
+      ),
+      responsive: ['sm'],
     },
   ];
 

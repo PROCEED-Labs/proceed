@@ -58,8 +58,6 @@ const MachineConfigPage = async ({
   });
   pathToFolder.reverse();
 
-  const data = await getMachineConfig(activeEnvironment.spaceId);
-
   return (
     <>
       <Content

@@ -21,12 +21,12 @@ const MacroEditor = () => {
   }, []);
 
   const saveMacro = () => {
-    // if (window.AP && window.AP.confluence) {
-    //   window.AP.confluence.saveMacro({ processId });
-    //   window.AP.confluence.closeMacroEditor();
-    // }
+    if (window.AP && window.AP.confluence) {
+      window.AP.confluence.saveMacro({ processId });
+      window.AP.confluence.closeMacroEditor();
+    }
     console.log('SAVE MACRO', processId);
-    window.AP.dialog.close({ processId });
+    // window.AP.dialog.close({ processId });
   };
 
   return (

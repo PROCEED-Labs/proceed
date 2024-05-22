@@ -36,7 +36,7 @@
         "description": {
           "value": "Open the process modeler in fullscreen."
         },
-        "url": "/confluence/macro",
+        "url": "/confluence/macro/{processId}",
         "editor": {
           "url": "/confluence/macro-editor",
           "width": "800px",

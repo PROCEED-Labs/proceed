@@ -6,6 +6,7 @@ const nextConfig = {
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
   },
+  reactStrictMode: false,
   /**
    *
    * @param {import('webpack').Configuration} config

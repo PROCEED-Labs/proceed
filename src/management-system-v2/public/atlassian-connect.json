@@ -15,10 +15,10 @@
   "modules": {
     "generalPages": [
       {
-        "url": "/",
-        "key": "meine-seite-key",
+        "url": "/confluence",
+        "key": "proceed-process-list",
         "name": {
-          "value": "Meine Seite"
+          "value": "PROCEED Process List"
         },
         "location": "system.space.sidebar/main-links"
       }

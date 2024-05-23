@@ -27,7 +27,7 @@
       {
         "width": "200px",
         "height": "200px",
-        "key": "proceed-macro",
+        "key": "proceed-create-macro",
         "bodyType": "none",
         "outputType": "block",
         "name": {
@@ -38,7 +38,39 @@
         },
         "url": "/confluence/macro/{processId}",
         "editor": {
-          "url": "/confluence/macro-editor",
+          "url": "/confluence/macro-editor/create",
+          "width": "800px",
+          "height": "600px"
+        },
+        "parameters": [
+          {
+            "identifier": "processId",
+            "name": {
+              "value": "Process ID"
+            },
+            "description": {
+              "value": "The ID of the process to edit."
+            },
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      {
+        "width": "200px",
+        "height": "200px",
+        "key": "proceed-embedd-macro",
+        "bodyType": "none",
+        "outputType": "block",
+        "name": {
+          "value": "Embedd PROCEED Process"
+        },
+        "description": {
+          "value": "Embedd PROCEED Processes into Confluence"
+        },
+        "url": "/confluence/macro/{processId}",
+        "editor": {
+          "url": "/confluence/macro-editor/embedd",
           "width": "800px",
           "height": "600px"
         },

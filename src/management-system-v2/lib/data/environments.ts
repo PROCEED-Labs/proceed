@@ -7,6 +7,7 @@ import {
 } from './environment-schema';
 import { UserErrorType, userError } from '../user-error';
 import { addEnvironment, deleteEnvironment, getEnvironmentById } from './legacy/iam/environments';
+import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
@@ -28,8 +29,6 @@ export async function addOrganizationEnvironment(
 }
 
 export async function deleteOrganizationEnvironments(environmentIds: string[]) {
-  const { userId } = await getCurrentUser();
-
   try {
     for (const environmentId of environmentIds) {
       const { ability } = await getCurrentEnvironment(environmentId);
@@ -39,16 +38,15 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       if (!environment.organization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
-      //TODO remove this once the ability is checked in deleteEnvironment
-      if (environment.ownerId !== userId)
-        return userError(
-          `You are not the owner of ${environmentId}`,
-          UserErrorType.PermissionError,
-        );
-
       deleteEnvironment(environmentId, ability);
     }
   } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError(
+        "You're not allowed to delete this environment",
+        UserErrorType.PermissionError,
+      );
+
     console.error(e);
     return userError('Error deleting environment');
   }

@@ -1,0 +1,80 @@
+[
+  {
+    "name": "create_element",
+    "description": "Create a BPMN element. Place it at an arbitrary position or append it to another element.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "source_element_id_or_name": {
+          "type": "string",
+          "description": "The id or name of the source element which to append to. Use the id if the element already exists in the process, otherwise the name. This creates automatically a connection between the new element and the provided source."
+        },
+        "new_element_name": {
+          "type": "string",
+          "description": "The name of the new element."
+        },
+        "bpmn_type": {
+          "type": "string",
+          "description": "The BPMN type of the element. Possible types are: 'Task','StartEvent','EndEvent','ExclusiveGateway','InclusiveGateway','ParallelGateway'."
+        },
+        "connection_label": {
+          "type": "string",
+          "description": "The label of the connection if the new element is appended to another one. This label is used when the source element is a gateway and the connection is taken conditionally. The label tells us what condition has to be met in order to take this connection."
+        },
+        "position": {
+          "type": "object",
+          "description": "The position where the new element should be placed. Only needed when the element is not appended to another element. Do not provide this parameter if source_element_id_or_name is provided. Use for the first start event the position x=350 and y=200.",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": ["x", "y"]
+        }
+      },
+      "required": ["bpmn_type"]
+    }
+  },
+  {
+    "name": "create_connection",
+    "description": "Create a connection between two elements. Only needed if the connection has not been created yet.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The label of the connection. Only needed if the connection comes from a gateway and is only taken, when a certain condition is met."
+        },
+        "source_element_id_or_name": {
+          "type": "string",
+          "description": "The id or name of the source element of the connection. User the id if the element already exists in the process, otherwise the name."
+        },
+        "target_element_id_or_name": {
+          "type": "string",
+          "description": "The id or name of the target element of the connection. User the id if the element already exists in the process, otherwise the name."
+        }
+      },
+      "required": ["source_element_id_or_name", "target_element_id_or_name"]
+    }
+  },
+  {
+    "name": "remove_elements",
+    "description": "Remove BPMN elements. Removing an element also removes all associated connections. Connections are also considered elements and can be seperately removed too by including their id here.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "element_ids": {
+          "type": "array",
+          "description": "The ids of the elements to be removed.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["element_ids"]
+    }
+  }
+]

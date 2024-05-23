@@ -156,7 +156,7 @@ export function deleteRoleMapping(
   userId: string,
   roleId: string,
   environmentId: string,
-  ability: Ability,
+  ability?: Ability,
 ) {
   const environmentMappings = roleMappingsMetaObjects[environmentId];
   if (!environmentMappings) throw new Error("Role mapping doesn't exist");
@@ -169,7 +169,7 @@ export function deleteRoleMapping(
 
   const roleMapping = userMappings[roleMappingIndex];
 
-  if (!ability.can('delete', toCaslResource('RoleMapping', roleMapping)))
+  if (ability && !ability.can('delete', toCaslResource('RoleMapping', roleMapping)))
     throw new UnauthorizedError();
 
   userMappings.splice(roleMappingIndex, 1);

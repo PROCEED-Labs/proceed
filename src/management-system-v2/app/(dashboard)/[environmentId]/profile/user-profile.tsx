@@ -1,7 +1,7 @@
 'use client';
 
-import { FC, useState } from 'react';
-import { Space, Card, Avatar, Typography, App, Table } from 'antd';
+import { FC, ReactNode, useState } from 'react';
+import { Space, Card, Typography, App, Table, Alert } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
@@ -10,20 +10,25 @@ import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 import UserAvatar from '@/components/user-avatar';
+import { CloseOutlined } from '@ant-design/icons';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
+  const [errorMessaage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
   const { message: messageApi } = App.useApp();
 
   async function deleteUser() {
     try {
-      await deleteUserServerAction();
+      const response = await deleteUserServerAction();
+      if (response && 'error' in response) throw response;
 
       messageApi.success({ content: 'Your account was deleted' });
       signOut();
-    } catch (e) {
-      messageApi.error({ content: 'An error ocurred' });
+    } catch (e: unknown) {
+      //@ts-ignore
+      if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
+      else messageApi.error({ content: 'An error ocurred' });
     }
   }
 
@@ -58,6 +63,19 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
       <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
+          {errorMessaage && (
+            <Alert
+              style={{ marginBottom: '1rem', paddingRight: '20px' }}
+              message={errorMessaage}
+              type="error"
+              closable={{
+                closeIcon: (
+                  <CloseOutlined style={{ position: 'absolute', top: '10px', right: '10px' }} />
+                ),
+              }}
+              afterClose={() => setErrorMessage(null)}
+            />
+          )}
           <Typography.Title level={3}>Account Information</Typography.Title>
 
           <UserAvatar

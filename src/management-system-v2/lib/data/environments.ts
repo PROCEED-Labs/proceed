@@ -43,7 +43,7 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError(
-        "You're not allowed to delete this environment",
+        "You're not allowed to delete this organization",
         UserErrorType.PermissionError,
       );
 

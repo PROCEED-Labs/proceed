@@ -5,6 +5,7 @@ import { environmentsMetaObject } from './environments';
 import { v4 } from 'uuid';
 import { usersMetaObject } from './users';
 import { Environment } from '../../environment-schema.js';
+import { deleteRoleMapping, getRoleMappingByUserId } from './role-mappings';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -116,6 +117,10 @@ export function removeMember(environmentId: string, userId: string, ability?: Ab
   if (ability) ability;
 
   if (!isMember(environmentId, userId)) throw new Error('User is not a member of this environment');
+
+  for (const role of getRoleMappingByUserId(userId, environmentId)) {
+    deleteRoleMapping(userId, role.roleId, environmentId);
+  }
 
   const members = membershipMetaObject[environmentId];
 

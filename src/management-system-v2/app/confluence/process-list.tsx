@@ -135,7 +135,7 @@ const ProcessList = ({
   return (
     <>
       <Row gutter={16} style={{ marginBottom: '1rem' }}>
-        <Col span={8}>
+        <Col span={16}>
           <TextField
             appearance="standard"
             placeholder="Search for Process"
@@ -143,7 +143,7 @@ const ProcessList = ({
             elemAfterInput={<SearchIcon label="Search" size="medium"></SearchIcon>}
           ></TextField>
         </Col>
-        <Col span={4}>
+        <Col span={8}>
           <CheckboxSelect
             isClearable={false}
             placeholder="Filter for Processes"

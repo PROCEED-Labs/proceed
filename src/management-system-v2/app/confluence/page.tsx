@@ -1,5 +1,3 @@
-import { Space } from 'antd';
-import ProcessList from './process-list';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcesses } from '@/lib/data/legacy/_process';
 import { Process } from '@/lib/data/process-schema';

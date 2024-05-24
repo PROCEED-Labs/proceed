@@ -7,6 +7,7 @@ import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+import ManagableProcessList from './managable-process-list';
 
 const ConfluencePage = async () => {
   const { session, userId } = await getCurrentUser();
@@ -30,7 +31,7 @@ const ConfluencePage = async () => {
       activeSpace={{ spaceId: userId || '', isOrganization: false }}
     >
       <div style={{ padding: '1rem', width: '100%' }}>
-        <ProcessList processes={ownedProcesses}></ProcessList>
+        <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>
       </div>
     </Layout>
   );

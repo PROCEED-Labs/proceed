@@ -1,47 +1,24 @@
-'use client';
+import MacroEditor from './macro-editor';
+import { getCurrentUser, getCurrentEnvironment } from '@/components/auth';
+import { getProcesses } from '@/lib/data/legacy/_process';
+import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
+import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+import { Process } from '@/lib/data/process-schema';
+import { Environment } from '@/lib/data/environment-schema';
 
-import { useState, useEffect } from 'react';
+const MacroEditorPage = async () => {
+  const { session, userId } = await getCurrentUser();
+  const { ability } = await getCurrentEnvironment(userId);
+  // get all the processes the user has access to
+  const ownedProcesses = (await getProcesses(ability)) as Process[];
 
-const MacroEditor = () => {
-  const [processId, setProcessId] = useState('');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log('window', window);
-      if (window.AP && window.AP.confluence) {
-        console.log('window AP', window.AP);
-        window.AP.confluence.getMacroData((data: any) => {
-          console.log('confluence macroData', data);
-          if (data) {
-            setProcessId(data.processId || data.parameters?.processId || '');
-          }
-        });
-      }
-    }
-  }, []);
-
-  const saveMacro = () => {
-    if (window.AP && window.AP.confluence) {
-      window.AP.confluence.saveMacro({ processId });
-      window.AP.confluence.closeMacroEditor();
-    }
-    console.log('SAVE MACRO', processId);
-    // window.AP.dialog.close({ processId });
-  };
-
-  return (
-    <>
-      <div>Macro Editor</div>
-      <label htmlFor="process-id">Process ID:</label>
-      <input
-        type="text"
-        id="process-id"
-        value={processId}
-        onChange={(e) => setProcessId(e.target.value)}
-      />
-      <button onClick={saveMacro}>Save</button>
-    </>
+  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+  userEnvironments.push(
+    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+      getEnvironmentById(environmentId),
+    ),
   );
+  return <MacroEditor processes={ownedProcesses} />;
 };
 
-export default MacroEditor;
+export default MacroEditorPage;

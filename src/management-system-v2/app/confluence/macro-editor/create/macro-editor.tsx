@@ -20,7 +20,8 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
         if (data && data.processId) {
           const process = processes.find((process) => process.id === data.processId);
           setProcess(process);
-          window.AP.resize(window.innerWidth, window.innerHeight);
+          console.log('RESIZE DIALOG');
+          window.AP.resize('1500px', '900px');
         } else {
           setProcess(undefined);
         }

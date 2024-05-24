@@ -31,10 +31,10 @@
         "bodyType": "none",
         "outputType": "block",
         "name": {
-          "value": "Proceed Process Modeler"
+          "value": "PROCEED Process Modeler"
         },
         "description": {
-          "value": "Open the process modeler in fullscreen."
+          "value": "Create a new PROCEED Process"
         },
         "url": "/confluence/macro/{processId}",
         "editor": {

@@ -33,24 +33,20 @@ const ActionButtons = ({ process }: { process: Process }) => {
   };
   return (
     <ButtonGroup>
-      <Button onClick={() => saveMacro()}>Embedd</Button>
+      <Button appearance="primary" onClick={() => saveMacro()}>
+        Embedd
+      </Button>
     </ButtonGroup>
-  );
-};
-
-const EmbeddProcessList = ({ processes }: { processes: Process[] }) => {
-  return (
-    <ProcessList
-      processes={processes}
-      ActionButtons={({ process }: { process: Process }) => <ActionButtons process={process} />}
-    />
   );
 };
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
     <div style={{ padding: '1rem', width: '100%' }}>
-      <EmbeddProcessList processes={processes}></EmbeddProcessList>
+      <ProcessList
+        processes={processes}
+        ActionButtons={({ process }: { process: Process }) => <ActionButtons process={process} />}
+      />
     </div>
   );
 };

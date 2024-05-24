@@ -1,4 +1,5 @@
 interface AtlassianConnectAPI {
+  resize(width: string | number, height: string | number): void;
   confluence: any;
   dialog: {
     getCustomData(callback: (data: any) => void): void;

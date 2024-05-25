@@ -7,6 +7,7 @@ export const useColumnWidth = (
   columns: NonNullable<TableProps['columns']>,
   preferenceKey: string,
   notResizeabel: string[] = [],
+  minWidth: number = 150,
 ) => {
   const columnsInPreferences = useUserPreferences.use[preferenceKey]();
   const addPreferences = useUserPreferences.use.addPreferences();
@@ -22,7 +23,7 @@ export const useColumnWidth = (
     }, {}),
   );
 
-  /* Once hydrated get the actual values saved in localstorage */
+  /* Once hydrated or if stored values change get the actual values saved in localstorage */
   useEffect(() => {
     if (!hydrated) return;
 
@@ -35,7 +36,23 @@ export const useColumnWidth = (
         };
       }, {}),
     );
-  }, [hydrated]);
+  }, [hydrated, columnsInPreferences]);
+
+  /* ---- */
+
+  /* Antdesign hides overflow for column-headers, if they are sortable */
+  /* This removes the overflow hidden, to enable resizing on sortable columns */
+  useEffect(() => {
+    if (!document) return;
+
+    const headerCells = document.querySelectorAll('.ant-table-column-title');
+    headerCells.forEach((cell) => {
+      // @ts-ignore
+      cell.style.overflow = 'visible';
+    });
+  });
+
+  /* ---- */
 
   const resizingColumn = useRef('');
   const columnRef = useRef<HTMLElement>();
@@ -60,9 +77,9 @@ export const useColumnWidth = (
       indicatorRef.current.style.width = '1px';
       indicatorRef.current.style.backgroundColor = 'grey';
       indicatorRef.current.style.left = `${event.clientX}px`;
-      document.body.appendChild(indicatorRef.current);
       indicatorRef.current.style.top = `${tableRef!.getBoundingClientRect().top}px`;
       indicatorRef.current.style.zIndex = '1000';
+      document.body.appendChild(indicatorRef.current);
     }
   }, []);
 
@@ -77,7 +94,7 @@ export const useColumnWidth = (
       if (resizingColumn.current) {
         /* Calculate new Width */
         const currentWidth = columnRef.current?.offsetWidth || 0;
-        const newWidth = currentWidth + event.clientX - startX.current;
+        const newWidth = Math.max(currentWidth + event.clientX - startX.current, minWidth);
 
         /* Update UI */
         setColumnWidths((old) => ({ ...old, [resizingColumn.current]: newWidth }));
@@ -123,7 +140,7 @@ export const useColumnWidth = (
     };
   }, [handleMouseUp, handleMouseDown]);
 
-  return columns.map((column: any) => {
+  const resizeableColumns = columns.map((column: any) => {
     if (notResizeabel.includes(column.key)) return column;
     return {
       ...column,
@@ -134,10 +151,11 @@ export const useColumnWidth = (
             style={{
               position: 'absolute',
               width: '5px',
-              //   backgroundColor: 'black',
-              right: -8,
+              // backgroundColor: 'black',
+              right: column.sorter ? -24 : -8,
               top: 0,
               cursor: 'ew-resize',
+              zIndex: 1_000,
             }}
             onMouseDown={(e) => handleMouseDown(e, column.key as string)}
           >
@@ -176,7 +194,7 @@ export const useColumnWidth = (
             {renderedContent && (
               <div
                 style={{
-                  // width: '100%',
+                  // minWidth: 'fit-content',
                   overflow: 'hidden',
                   whiteSpace: 'nowrap',
                   textOverflow: 'ellipsis',
@@ -196,6 +214,8 @@ export const useColumnWidth = (
       },
     };
   });
+
+  return resizeableColumns as TableColumnsType<any>;
 };
 
 function hasTextContent(jsx: ReactNode): boolean {

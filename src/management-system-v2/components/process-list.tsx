@@ -139,7 +139,7 @@ const ProcessList: FC<ProcessListProps> = ({
           ? 0
           : favProcesses?.includes(a.id)
             ? -1
-            : 1 /* Should be wrapped in folderAwareSort from #283 once it's merged */,
+            : 1 /* TODO: Should be wrapped in folderAwareSort from #283 once it's merged */,
     },
     {
       title: 'Name',

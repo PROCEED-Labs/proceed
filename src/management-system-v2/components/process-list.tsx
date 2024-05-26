@@ -26,6 +26,8 @@ import { DraggableElementGenerator } from './processes/draggable-element';
 import Link from 'next/link';
 import { useColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+import FavouriteStar from './favouriteStar';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -59,10 +61,9 @@ const ProcessList: FC<ProcessListProps> = ({
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
+  const { favourites: favProcesses } = useFavouriteProcesses();
 
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-
-  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -132,12 +133,13 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Favorites',
       width: '40px',
       render: (id, _, index) =>
-        id !== folder.parentId && (
-          <StarOutlined
-            style={{ color: favourites?.includes(index) ? '#FFD700' : undefined }}
-            className={styles.HoverableTableCell}
-          />
-        ),
+        id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
+      sorter: (a, b) =>
+        favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
+          ? 0
+          : favProcesses?.includes(a.id)
+            ? -1
+            : 1 /* Should be wrapped in folderAwareSort from #283 once it's merged */,
     },
     {
       title: 'Name',

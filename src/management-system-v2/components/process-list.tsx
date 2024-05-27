@@ -29,12 +29,11 @@ const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
-  const sorter: TableColumnType<ProcessListProcess>['sorter'] = (a, b, sortOrser) => {
-    const factor = sortOrser === 'ascend' ? 1 : -1;
+  const sorter: TableColumnType<ProcessListProcess>['sorter'] = (a, b, sortOrder) => {
+    const factor = sortOrder === 'ascend' ? 1 : -1;
     if (a.type === 'folder' && b.type !== 'folder') {
       return factor * -1;
     } else if (a.type !== 'folder' && b.type === 'folder') {
-      console.log('b is folder');
       return factor;
     } else {
       return sortFunction(a, b);

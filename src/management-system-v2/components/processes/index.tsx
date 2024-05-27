@@ -170,13 +170,12 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
+  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: (
-        <ProcessCreationButton wrapperElement="create process" />
-      ) /* This only gets rendered once the user opened it at least once */,
+      label: createProcessButton,
       icon: <FileOutlined />,
     });
 
@@ -283,8 +282,6 @@ const Processes = ({
 
   // Here all the loading states shoud be ORed together
   const loading = movingItem;
-  const [creationButtonRendered, setCreaButtonRendered] = useState(false);
-  const doNotRerender = useRef(false);
 
   return (
     <>
@@ -297,13 +294,6 @@ const Processes = ({
           className={breakpoint.xs ? styles.MobileView : ''}
           style={{ display: 'flex', justifyContent: 'space-between', height: '100%' }}
         >
-          {!creationButtonRendered && (
-            <div
-              style={{ position: 'absolute', top: 0, left: 0, zIndex: -1000, visibility: 'hidden' }}
-            >
-              <ProcessCreationButton />
-            </div>
-          )}
           {/* 73% for list / icon view, 27% for meta data panel (if active) */}
           <div style={{ flex: '1' }}>
             <Bar
@@ -312,23 +302,16 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && (
                       <Space>
-                        <Dropdown
-                          trigger={['click']}
+                        <Dropdown.Button
                           menu={{
-                            items: defaultDropdownItems,
+                            items: defaultDropdownItems.filter(
+                              (item) => item.key !== 'create-process',
+                            ),
                           }}
-                          onOpenChange={(open) => {
-                            /* Once this was opened for the first time, the creationButtonRendered state can be set to true */
-                            if (!doNotRerender.current) {
-                              doNotRerender.current = true;
-                              setCreaButtonRendered(true);
-                            }
-                          }}
+                          type="primary"
                         >
-                          <Button type="primary" icon={<PlusOutlined />}>
-                            New
-                          </Button>
-                        </Dropdown>
+                          {createProcessButton}
+                        </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>

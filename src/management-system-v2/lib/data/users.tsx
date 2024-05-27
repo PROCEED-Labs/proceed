@@ -35,8 +35,10 @@ export async function deleteUser() {
           </p>
           <p>The affected organizations are:</p>
           <ul>
-            {conflictingOrgsNames.map((name) => (
-              <li>{name}</li>
+            {conflictingOrgsNames.map((name, idx) => (
+              <li>
+                {name}: <Link href={`/${e.conflictingOrgs[idx]}/iam/roles`}>manage roles here</Link>
+              </li>
             ))}
           </ul>
           <p>

@@ -15,15 +15,15 @@ async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput
 
 export type createNotActiveEnvironment = typeof createNotActiveEnvironment;
 
+const unallowedProviders = ['guest-signin', 'development-users'];
+
 const Page = async () => {
   const { session } = await getCurrentUser();
   const needsToAuthenticate = !session?.user || session?.user.guest;
 
   let providers = getProviders();
 
-  providers = providers.filter(
-    (provider) => !['guest-signin', 'development-users'].includes(provider.id),
-  );
+  providers = providers.filter((provider) => !unallowedProviders.includes(provider.id));
 
   providers = providers.sort((a, b) => {
     if (a.type === 'email') {

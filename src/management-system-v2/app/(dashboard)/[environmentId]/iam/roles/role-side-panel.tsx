@@ -52,7 +52,7 @@ const RoleSidePanel: FC<RoleSidePanelProps> = ({
       ref={resizableElementRef}
     >
       <CollapsibleCard
-        title={role ? role.name.value : 'How to PROCEED?'}
+        title={role?.name.value ?? 'How to PROCEED?'}
         show={sidePanelOpen}
         collapsedWidth="30px"
         onCollapse={() => {

@@ -4,15 +4,10 @@ import { test, expect } from './process-list.fixtures';
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  await page.getByRole('button', { name: 'plus New' }).click();
-  await page.getByRole('menuitem', { name: 'file Create Process' }).click();
-  await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
-  await page.getByLabel('Process Description').click();
-  await page.getByLabel('Process Description').fill('Process Description');
-  await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
-
-  const processDefinitionID = page.url().split('processes/').pop();
+  const processDefinitionID = await processListPage.createProcess({
+    processName: 'Process Name',
+    description: 'Process Description',
+  });
 
   await processListPage.goto();
 
@@ -35,7 +30,7 @@ test('import a process', async ({ processListPage }) => {
 
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
-  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
+  await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
   // check if the process in the modeler is the one that we tried to import
   await expect(page.locator('svg[data-element-id="Process_05s7742"]')).toBeVisible();
@@ -457,4 +452,94 @@ test('test that selected columns are persisted on reload', async ({ processListP
   for (const column of HiddenColumns) {
     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
   }
+});
+
+test('create a new folder and remove it with context menu', async ({ processListPage }) => {
+  const { page } = processListPage;
+  const folderId = crypto.randomUUID();
+
+  await page.getByText('No data').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  await page.getByLabel('Folder name').fill(folderId);
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  const folderLocator = page.getByText(folderId);
+  await expect(folderLocator).toBeVisible();
+
+  folderLocator.click({ button: 'right' });
+  const menuLocator = page.getByRole('menuitem', { name: 'delete Delete' });
+  await menuLocator.click();
+  await expect(menuLocator).not.toBeVisible(); //wait for context menu to close
+
+  // NOTE: testing the folderLocator is flaky, because even after deletion the
+  // popover with folder title can hang around for a short while.
+  await expect(page.getByRole('cell', { name: 'folder ' + folderId })).not.toBeVisible();
+});
+
+test('create a new folder with new button and remove it', async ({ processListPage }) => {
+  const { page } = processListPage;
+  const folderId = crypto.randomUUID();
+
+  // NOTE: this could easily break
+  await page.getByRole('button', { name: 'ellipsis' }).hover();
+  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  await page.getByLabel('Folder name').fill(folderId);
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  const folderLocator = page.getByText(folderId);
+  await expect(folderLocator).toBeVisible();
+
+  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
+  await folderRow.getByRole('button', { name: 'delete' }).click();
+  await page.getByRole('button', { name: 'OK' }).click();
+
+  await expect(folderLocator).not.toBeVisible();
+});
+
+test('create a new folder and process, move process to folder and then delete both', async ({
+  processListPage,
+}) => {
+  const { page } = processListPage;
+
+  // create folder
+  const folderId = crypto.randomUUID();
+  await page.getByText('No data').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  await page.getByLabel('Folder name').fill(folderId);
+  await page.getByRole('button', { name: 'OK' }).click();
+  const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
+  await expect(folderRow).toBeVisible();
+
+  // create process
+  const processId = crypto.randomUUID();
+  const processDefinitionID = await processListPage.createProcess({ processName: processId });
+  await processListPage.goto();
+  const processLocator = page.locator(`tr[data-row-key="${processDefinitionID}"]`);
+  await expect(processLocator).toBeVisible();
+
+  // drag process to folder
+  await processLocator.dragTo(folderRow);
+  await processLocator.hover();
+  await page.mouse.down();
+  await page.mouse.move(100, 100, { steps: 10 }); // needed to "start dragging" the element
+  await folderRow.hover();
+  await page.mouse.up();
+
+  await expect(processLocator).not.toBeVisible();
+
+  // go to folder page
+  await folderRow.click({ clickCount: 2 });
+  await page.waitForURL(/\/processes\/folder\/([a-zA-Z0-9-_]+)/);
+
+  // check for process and delete it
+  await expect(processLocator).toBeVisible();
+  await processLocator.getByRole('button', { name: 'delete' }).click();
+  await page.getByRole('button', { name: 'OK' }).click();
+  await expect(processLocator).not.toBeVisible();
+
+  // go back and delete folder
+  await page.goBack();
+  await folderRow.getByRole('button', { name: 'delete' }).click();
+  await page.getByRole('button', { name: 'OK' }).click();
+  await expect(folderRow).not.toBeVisible();
 });

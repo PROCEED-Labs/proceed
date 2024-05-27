@@ -1,5 +1,12 @@
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
+
+const ignorePaths = [
+  '<rootDir>/.yarn-cache',
+  '<rootDir>/src/management-system',
+  '<rootDir>/src/management-system-v2/.next/',
+];
+
 let projects = [
   {
     name: 'engine-unit-integration',
@@ -8,7 +15,7 @@ let projects = [
       '<rootDir>/src/engine/**/*.(spec|test).(js|ts)',
       '<rootDir>/src/engine/**/__tests__/**/*.(js|ts)?(x)',
     ],
-    modulePathIgnorePatterns: ['<rootDir>/src/engine/e2e_tests'],
+    modulePathIgnorePatterns: ignorePaths.concat(['<rootDir>/src/engine/e2e_tests']),
     preset: 'ts-jest',
   },
   {
@@ -18,6 +25,7 @@ let projects = [
       '<rootDir>/src/capabilities/**/*.(spec|test).(js|ts)',
       '<rootDir>/src/capabilities/**/__tests__/**/*.(js|ts)?(x)',
     ],
+    modulePathIgnorePatterns: ignorePaths,
     preset: 'ts-jest',
   },
   {
@@ -27,6 +35,7 @@ let projects = [
       '<rootDir>/src/helper-modules/**/*.(spec|test).(js|ts)',
       '<rootDir>/src/helper-modules/**/__tests__/**/*.(js|ts)?(x)',
     ],
+    modulePathIgnorePatterns: ignorePaths,
     preset: 'ts-jest',
   },
 ];
@@ -121,7 +130,7 @@ module.exports = {
   // moduleNameMapper: {},
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
-  modulePathIgnorePatterns: ['<rootDir>/.yarn-cache', '<rootDir>/src/management-system'],
+  modulePathIgnorePatterns: ignorePaths,
 
   // Activates notifications for test results
   // notify: false,

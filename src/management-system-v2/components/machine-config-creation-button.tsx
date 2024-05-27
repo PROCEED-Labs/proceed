@@ -40,8 +40,8 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
     if (machineConfig && 'error' in machineConfig) {
       return machineConfig;
     }
-    if (process && 'id' in process) {
-      router.push(spaceURL(environment, `/processes/${process.id}`));
+    if (machineConfig && 'id' in machineConfig) {
+      router.push(spaceURL(environment, `/machine-config/${machineConfig.id}`)); //TODO
     } else {
       router.refresh();
     }
@@ -82,7 +82,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       )}
       <MachineConfigModal
         open={isMachineConfigModalOpen}
-        title="Create MachineConfig"
+        title="Create Machine Configuration"
         okText="Create"
         onCancel={() => setIsMachineConfigModalOpen(false)}
         onSubmit={createNewMachineConfig}

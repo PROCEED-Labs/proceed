@@ -90,7 +90,9 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     'controlenter',
     () => {
       if (open) onOk();
-      console.log(`trying to submit in process export. Modal is ${open ? 'open' : 'closed'}`);
+      console.log(
+        `trying to submit in machine configuration export. Modal is ${open ? 'open' : 'closed'}`,
+      );
     },
     { level: 2, blocking: open, dependencies: [open] },
   );
@@ -115,7 +117,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
       <Form
         form={form}
         layout="vertical"
-        name="process_form"
+        name="machine_config_form"
         initialValues={initialData}
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -141,16 +143,16 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
     <>
       <Form.Item
         name={[index, 'name']}
-        label="MachineConfig Name"
-        rules={[{ required: true, message: 'Please fill out the Machine Configuration name' }]}
+        label="Machine Configuration Name"
+        rules={[{ required: true, message: 'Please fill out the Machine Configuration Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="MachineConfig Description"
+        label="Machine Configuration Description"
         rules={[
-          { required: false, message: 'Please fill out the Machine Configuration description' },
+          { required: false, message: 'Please fill out the Machine Configuration Description' },
         ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />

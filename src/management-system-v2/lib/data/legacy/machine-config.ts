@@ -15,6 +15,8 @@ import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 // import { toCaslResource } from '@/lib/ability/caslAbility.js';
 
+//TODO: remove process specific functionality and "process" references from this file
+
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
 
@@ -115,7 +117,7 @@ export async function createMachineConfig(
       dontUpdateOldFolder: true,
     });
 
-    eventHandler.dispatch('processAdded', { process: metadata });
+    eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
 
     return metadata;
   } catch (e) {

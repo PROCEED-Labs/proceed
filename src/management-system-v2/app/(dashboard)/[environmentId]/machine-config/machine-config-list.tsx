@@ -223,7 +223,7 @@ const MachineConfigList = ({
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Machine Config" />,
+      label: <MachineConfigCreationButton wrapperElement="Create Machine Configuration" />,
       icon: <FileOutlined />,
     });
 
@@ -400,7 +400,7 @@ const MachineConfigList = ({
         searchProps={{
           onChange: (e) => setSearchTerm(e.target.value),
           onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
-          placeholder: 'Search Machine Configs ...',
+          placeholder: 'Search Machine Configurations ...',
         }}
       />
       <ElementList

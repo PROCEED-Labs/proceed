@@ -10,6 +10,8 @@ namespace NodeJS {
     AUTH0_clientCredentialScope?: string;
     AUTH0_ISSUER?: string;
     AUTH0_SCOPE?: string;
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
 
     ENABLE_MACHINE_CONFIG?: string;
   }

@@ -162,11 +162,12 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
+  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="create process" />,
+      label: createProcessButton,
       icon: <FileOutlined />,
     });
 
@@ -293,16 +294,16 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && (
                       <Space>
-                        <Dropdown
-                          trigger={['click']}
+                        <Dropdown.Button
                           menu={{
-                            items: defaultDropdownItems,
+                            items: defaultDropdownItems.filter(
+                              (item) => item.key !== 'create-process',
+                            ),
                           }}
+                          type="primary"
                         >
-                          <Button type="primary" icon={<PlusOutlined />}>
-                            New
-                          </Button>
-                        </Dropdown>
+                          {createProcessButton}
+                        </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>
@@ -420,7 +421,10 @@ const Processes = ({
                     selectedElements={selectedRowElements}
                     // TODO: Replace with server component loading state
                     //isLoading={isLoading}
-                    onExportProcess={(id) => setOpenExportModal(true)}
+                    onExportProcess={(id) => {
+                      setSelectedRowElements([id]);
+                      setOpenExportModal(true);
+                    }}
                     setShowMobileMetaData={setShowMobileMetaData}
                     processActions={processActions}
                   />
@@ -463,7 +467,7 @@ const Processes = ({
           .filter((item) => item.type !== 'folder')
           .map((process) => ({
             name: `${process.name.value} (Copy)`,
-            description: process.description.value,
+            description: process.description.value ?? '',
             originalId: process.id,
             folderId: folder.id,
           }))}
@@ -485,8 +489,8 @@ const Processes = ({
           .filter((process) => selectedRowKeys.includes(process.id))
           .map((process) => ({
             id: process.id,
-            name: process.name.value,
-            description: process.description.value,
+            name: process.name.value ?? '',
+            description: process.description.value ?? '',
           }))}
         onSubmit={async (values) => {
           const res = await updateProcesses(values, space.spaceId);

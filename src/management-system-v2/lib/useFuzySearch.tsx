@@ -13,10 +13,10 @@ function highlightText<TObj>(
   dataIndexElement: keyof TObj,
   color: string = '#3e93de',
 ) {
-  const value = fuseElement.item[dataIndexElement] as string;
+  const value = fuseElement.item[dataIndexElement] as string | undefined;
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 
-  if (!matches) return { highlighted: <span>{value}</span>, value };
+  if (!matches || !value) return { highlighted: <span>{value}</span>, value };
 
   const result: JSX.Element[] = [];
   let lastIndex = 0;

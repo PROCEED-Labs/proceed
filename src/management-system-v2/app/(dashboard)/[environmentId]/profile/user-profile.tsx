@@ -14,7 +14,7 @@ import { CloseOutlined } from '@ant-design/icons';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
-  const [errorMessaage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
   const { message: messageApi } = App.useApp();
 
@@ -63,10 +63,10 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
       <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
-          {errorMessaage && (
+          {errorMessage && (
             <Alert
               style={{ marginBottom: '1rem', paddingRight: '20px' }}
-              message={errorMessaage}
+              message={errorMessage}
               type="error"
               closable={{
                 closeIcon: (
@@ -91,9 +91,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
-                  !userData.guest ? userData.lastName : ''
-                }`,
+                value: `${!userData.guest ? userData.firstName : 'Guest'} ${!userData.guest ? userData.lastName : ''
+                  }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
@@ -119,8 +118,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
             onRow={(row) =>
               row.action
                 ? {
-                    onClick: row.action,
-                  }
+                  onClick: row.action,
+                }
                 : {}
             }
             showHeader={false}

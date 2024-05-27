@@ -57,7 +57,7 @@ function isOrganization(environment: Environment, opts: { throwIfNotFound?: bool
   return true;
 }
 
-export function getUserOrganizationEnviroments(userId: string) {
+export function getUserOrganizationEnvironments(userId: string) {
   return Object.keys(membershipMetaObject).filter((environmentId) =>
     isMember(environmentId, userId),
   );

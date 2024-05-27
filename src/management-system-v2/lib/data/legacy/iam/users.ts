@@ -10,7 +10,7 @@ import {
 } from '../../user-schema';
 import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
-import { getUserOrganizationEnviroments, removeMember } from './memberships';
+import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { getRoles } from './roles';
 
@@ -89,7 +89,7 @@ export function deleteUser(userId: string) {
 
   if (!user) throw new Error("User doesn't exist");
 
-  const userOrganizations = getUserOrganizationEnviroments(userId);
+  const userOrganizations = getUserOrganizationEnvironments(userId);
 
   const orgsWithNoNextAdmin: string[] = [];
   for (const environmentId of userOrganizations) {

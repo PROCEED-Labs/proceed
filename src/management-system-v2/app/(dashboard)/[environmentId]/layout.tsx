@@ -2,7 +2,7 @@ import { FC, PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnviroments, isMember } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/legacy/iam/memberships';
 import { redirect } from 'next/navigation';
 import { MenuProps } from 'antd';
 import {
@@ -31,7 +31,7 @@ const DashboardLayout = async ({
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );

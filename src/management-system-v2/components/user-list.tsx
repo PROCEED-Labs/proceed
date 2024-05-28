@@ -45,7 +45,6 @@ export type UserListProps = {
     | Column
     | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
-  error?: boolean;
   createUserNode?: ReactNode;
   loading?: boolean;
   sidePanel?: ReactNode;
@@ -60,7 +59,6 @@ const UserList: FC<UserListProps> = ({
   highlightKeys = true,
   columns,
   selectedRowActions,
-  error,
   createUserNode,
   loading,
   sidePanel,
@@ -157,13 +155,6 @@ const UserList: FC<UserListProps> = ({
       ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
     ];
   else if (columns) tableColumns = [...defaultColumns, ...columns];
-
-  if (error)
-    <Result
-      status="error"
-      title="Failed fetch to users"
-      subTitle="An error ocurred while fetching users"
-    />;
 
   return (
     <div

@@ -58,7 +58,7 @@ const MachineConfigPage = async ({
     currentFolder = getFolderById(currentFolder.parentId);
   }
   pathToFolder.push({
-    title: 'Machine Config',
+    title: 'Machine Configuration',
     href: spaceURL(activeEnvironment, `/machine-config/folder/${rootFolder.id}`),
   });
   pathToFolder.reverse();

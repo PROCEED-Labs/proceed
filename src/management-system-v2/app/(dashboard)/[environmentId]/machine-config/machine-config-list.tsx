@@ -9,7 +9,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useCallback, useState } from 'react';
-import { MachineConfig, MachineConfigMetadata } from '@/lib/data/machine-config-schema';
+import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ import { AuthCan, useEnvironment } from '@/components/auth-can';
 import FolderCreationButton from '@/components/folder-creation-button';
 import MachineConfigCreationButton from '@/components/machine-config-creation-button';
 import { ComponentProps, useTransition } from 'react';
-import { Space, Tooltip, App, Drawer, Card, Badge, Spin } from 'antd';
+import { Tooltip, App } from 'antd';
 import SpaceLink from '@/components/space-link';
 import {
   CopyOutlined,
@@ -25,22 +25,9 @@ import {
   DeleteOutlined,
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
-  UnorderedListOutlined,
-  AppstoreOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
-import IconView from '@/components/process-icon-list';
-import ProcessList from '@/components/process-list';
-import MetaData from '@/components/process-info-card';
-import ProcessExportModal from '@/components/process-export';
-import ProcessCreationButton from '@/components/process-creation-button';
-import { useUserPreferences } from '@/lib/user-preferences';
-import { createMachineConfig } from '@/lib/data/legacy/machine-config';
-import ProcessModal from '@/components/process-modal';
+import { deleteMachineConfigs } from '@/lib/data/legacy/machine-config';
 import ConfirmationButton from '@/components/confirmation-button';
-import ProcessImportButton from '@/components/process-import';
-import { ProcessMetadata } from '@/lib/data/process-schema';
-import MetaDataContent from '@/components/process-info-card-content';
 import { Folder } from '@/lib/data/folder-schema';
 import {
   deleteFolder,
@@ -49,11 +36,8 @@ import {
 } from '@/lib/data/folders';
 
 import AddUserControls from '@/components/add-user-controls';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import FolderModal from '@/components/folder-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
-import useFavouritesStore, { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
-import Ability from '@/lib/ability/abilityHelper';
 
 type InputItem = MachineConfigMetadata | (Folder & { type: 'folder' });
 export type MachineConfigListConfigs = ReplaceKeysWithHighlighted<
@@ -115,110 +99,67 @@ const MachineConfigList = ({
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
 
-  // async function deleteItems(items: MachineConfigListConfigs[]) {
-  //   const promises = [];
+  async function deleteItems(items: MachineConfigListConfigs[]) {
+    const promises = [];
 
-  //   const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
-  //   const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
-  //   if (folderPromise) promises.push(folderPromise);
+    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
+    const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
+    if (folderPromise) promises.push(folderPromise);
 
-  //   const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
-  //   const processPromise = deleteMachineConfig(processIds, space.spaceId);
-  //   if (processPromise) promises.push(processPromise);
+    const machineConfigIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
+    const machineConfigPromise = deleteMachineConfigs(machineConfigIds, space.spaceId);
+    if (machineConfigPromise) promises.push(machineConfigPromise);
 
-  //   await Promise.allSettled(promises);
+    await Promise.allSettled(promises);
 
-  //   const processesResult = await processPromise;
-  //   const folderResult = await folderPromise;
+    const machineConfigsResult = await machineConfigPromise;
+    const folderResult = await folderPromise;
 
-  //   if (
-  //     (folderResult && 'error' in folderResult) ||
-  //     (processesResult && 'error' in processesResult)
-  //   ) {
-  //     return message.open({
-  //       type: 'error',
-  //       content: 'Something went wrong',
-  //     });
-  //   }
+    if (
+      (folderResult && 'error' in folderResult) ||
+      (machineConfigsResult && 'error' in machineConfigsResult)
+    ) {
+      return message.open({
+        type: 'error',
+        content: 'Something went wrong',
+      });
+    }
 
-  //   setSelectedRowElements([]);
-  //   router.refresh();
-  // }
+    setSelectedRowElements([]);
+    router.refresh();
+  }
 
-  // function copyItem(items: MachineConfigListConfigs[]) {
-  //   setOpenCopyModal(true);
-  //   setCopySelection(items);
-  // }
+  function copyItem(items: MachineConfigListConfigs[]) {
+    setOpenCopyModal(true);
+    setCopySelection(items);
+  }
 
-  // function editItem(item: MachineConfigListConfigs) {
-  //   if (item.type === 'folder') {
-  //     const folder = processes.find((process) => process.id === item.id) as Folder;
-  //     setUpdateFolderModal(folder);
-  //   } else {
-  //     setOpenEditModal(true);
-  //     setSelectedRowElements([item]);
-  //   }
-  // }
+  function editItem(item: MachineConfigListConfigs) {
+    if (item.type === 'folder') {
+      const folder = data.find((machineConfig) => machineConfig.id === item.id) as Folder;
+      setUpdateFolderModal(folder);
+    } else {
+      setOpenEditModal(true);
+      setSelectedRowElements([item]);
+    }
+  }
 
-  // const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
-  //   startMovingItemTransition(async () => {
-  //     try {
-  //       const response = await moveIntoFolder(items, folderId);
+  const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
+    startMovingItemTransition(async () => {
+      try {
+        const response = await moveIntoFolder(items, folderId);
 
-  //       if (response && 'error' in response) throw new Error();
+        if (response && 'error' in response) throw new Error();
 
-  //       router.refresh();
-  //     } catch (e) {
-  //       message.open({
-  //         type: 'error',
-  //         content: `Someting went wrong`,
-  //       });
-  //     }
-  //   });
-  // };
-
-  // const actionBarGenerator = useCallback(
-  //   (record: MachineConfigListConfigs) => {
-  //     const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
-  //     return (
-  //       <>
-  //         {record.type !== 'folder' && (
-  //           <AuthCan {...resource} create>
-  //             <Tooltip placement="top" title={'Copy'}>
-  //               <CopyOutlined
-  //                 onClick={(e) => {
-  //                   e.stopPropagation();
-  //                   copyItem([record]);
-  //                 }}
-  //               />
-  //             </Tooltip>
-  //           </AuthCan>
-  //         )}
-
-  //         <AuthCan {...resource} update>
-  //           <Tooltip placement="top" title={'Edit'}>
-  //             <EditOutlined onClick={() => editItem(record)} />
-  //           </Tooltip>
-  //         </AuthCan>
-
-  //         <AuthCan delete {...resource}>
-  //           <Tooltip placement="top" title={'Delete'}>
-  //             <ConfirmationButton
-  //               title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-  //               description="Are you sure you want to delete the selected process?"
-  //               onConfirm={() => deleteItems([record])}
-  //               buttonProps={{
-  //                 icon: <DeleteOutlined />,
-  //                 type: 'text',
-  //               }}
-  //             />
-  //           </Tooltip>
-  //         </AuthCan>
-  //       </>
-  //     );
-  //   },
-  //   [copyItem, deleteItems, editItem],
-  // );
+        router.refresh();
+      } catch (e) {
+        message.open({
+          type: 'error',
+          content: `Someting went wrong`,
+        });
+      }
+    });
+  };
 
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
@@ -277,6 +218,10 @@ const MachineConfigList = ({
   useAddControlCallback('machineconfig-list', 'del', () => setOpenDeleteModal(true));
   useAddControlCallback('machineconfig-list', 'copy', () => setCopySelection(selectedRowElements));
   useAddControlCallback('machineconfig-list', 'paste', () => setOpenCopyModal(true));
+
+  function deleteHandle() {
+    deleteItems(selectedRowElements).then((res) => {});
+  }
 
   const columns: TableColumnsType<MachineConfigListConfigs> = [
     {
@@ -371,13 +316,13 @@ const MachineConfigList = ({
                   </Button>
                 </Dropdown>
               )}
-
-              <SelectionActions count={selectedRowKeys.length}>
-                <Button style={{ marginLeft: '4px' }}>Create Folder with Selection</Button>
-                <Button style={{ marginLeft: '4px' }}>Delete Selected Items</Button>
-                <Button style={{ marginLeft: '4px' }}>Export Selected Items</Button>
-              </SelectionActions>
             </span>
+            <SelectionActions count={selectedRowKeys.length}>
+              {/* <Button style={{ marginLeft: '4px' }}>Create Folder with Selection</Button> */}
+              <Button onClick={deleteHandle} style={{ marginLeft: '4px' }}>
+                Delete Selected Items
+              </Button>
+            </SelectionActions>
 
             {/*<span>
                 <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>

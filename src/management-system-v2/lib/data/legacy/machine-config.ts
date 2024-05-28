@@ -158,6 +158,24 @@ export async function createMachineConfig(
   }
 }
 
+export async function saveMachineConfig(id: string, machineConfigInput: MachineConfig) {
+  try {
+    let machineConfig = machineConfigMetaObjects[id];
+    if (!machineConfig) {
+      return;
+    }
+
+    machineConfigMetaObjects[id] = machineConfigInput;
+    store.update('machineConfig', id, removeExcessiveInformation(machineConfigInput));
+
+    eventHandler.dispatch('machineConfigSaved', { machineConfig: machineConfigInput });
+
+    return machineConfigInput;
+  } catch (e) {
+    return userError("Couldn't save Machine Config");
+  }
+}
+
 export async function moveMachineConfig({
   definitionId,
   newFolderId,

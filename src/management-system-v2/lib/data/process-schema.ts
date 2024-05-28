@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Prettify, WithRequired } from '../typescript-utils';
+import { VersionedObject } from './versioned-object-schema';
 
 export const ProcessInputSchema = z.object({
   id: z.string().optional(),
@@ -20,28 +21,7 @@ export type ProcessServerInput = z.infer<typeof ProcessServerInputSchema>;
 export type ProcessMetadata = Prettify<
   WithRequired<ProcessServerInput, 'id' | 'name' | 'description' | 'folderId'> & {
     type: 'process' | 'project' | 'process-instance';
-    processIds: string[];
-    variables: {
-      name: string;
-      type: string;
-    }[];
-    departments: string[];
-    inEditingBy?: {
-      id: string;
-      task?: string;
-    }[];
-    createdOn: string;
-    lastEdited: string;
-    sharedAs: 'public' | 'protected';
-    shareTimestamp: number;
-    allowIframeTimestamp: number;
-    versions: {
-      version: number;
-      name: string;
-      description: string;
-      versionBasedOn?: number;
-    }[];
-  }
+  } & VersionedObject
 >;
 
 export type Process = Prettify<ProcessMetadata & { bpmn: string }>;

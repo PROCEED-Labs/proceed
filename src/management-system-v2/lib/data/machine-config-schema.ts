@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { VersionedObject } from './versioned-object-schema';
 
 export const MachineConfigInputSchema = z.object({
   id: z.string().optional(),
@@ -20,30 +21,9 @@ export const MachineConfigServerInputSchema = MachineConfigInputSchema.extend({
 export type MachineConfigServerInput = z.infer<typeof MachineConfigServerInputSchema>;
 
 export type MachineConfigMetadata = Prettify<
-  WithRequired<MachineConfigServerInput, 'id' | 'name' | 'folderId'> & {
+  WithRequired<MachineConfigServerInput, 'description'> & {
     type: 'machine-config' | 'product-spec';
-    variables: {
-      name: string;
-      type: string;
-      value: string;
-    }[];
-    departments: string[];
-    inEditingBy?: {
-      id: string;
-      task?: string;
-    }[];
-    createdOn: string;
-    lastEdited: string;
-    sharedAs: 'public' | 'protected';
-    shareTimestamp: number;
-    allowIframeTimestamp: number;
-    versions: {
-      version: number;
-      name: string;
-      description: string;
-      versionBasedOn?: number;
-    }[];
-  }
+  } & VersionedObject
 >;
 
 export type MachineConfig = Prettify<MachineConfigMetadata>;

@@ -64,29 +64,36 @@ export function init() {
     parentData.children.push({ id: folder.id, type: 'folder' });
   }
 
-  for (let process of store.get('processes') as ProcessMetadata[]) {
-    if (!process.folderId) {
-      console.warn(
-        `Process ${process.id} has no parent folder, it was stored in it's environment's root folder`,
-      );
+  let populateTypes = ['processes', 'machineConfig'];
 
-      process = {
-        ...process,
-        folderId: foldersMetaObject.rootFolders[process.environmentId] as string,
-      };
+  for (let type_index = 0; type_index < populateTypes.length; ++type_index) {
+    let populateType = populateTypes[type_index];
+    let stored = store.get(populateType);
+    for (let populate of stored as VersionedObjectMetadata[]) {
+      if (!populate.folderId) {
+        console.warn(
+          `${populateType} ${populate.id} has no parent folder, it was stored in it's environment's root folder`,
+        );
 
-      store.update('processes', process.id, process);
+        populate = {
+          ...populate,
+          folderId: foldersMetaObject.rootFolders[populate.environmentId] as string,
+        };
+
+        store.update(populateType, populate.id, populate);
+      }
+
+      const folderData = foldersMetaObject.folders[populate.folderId];
+      if (!folderData) throw new Error(`${populateType} ${populate.id}'s folder wasn't found`);
+
+      folderData.children.push({ id: populate.id, type: populate.type });
     }
-
-    const folderData = foldersMetaObject.folders[process.folderId];
-    if (!folderData) throw new Error(`Process ${process.id}'s folder wasn't found`);
-
-    folderData.children.push({ id: process.id, type: process.type });
   }
 }
 init();
 import { removeProcess } from './_process';
 import { MachineConfig } from '../machine-config-schema';
+import { VersionedObjectMetadata } from '../versioned-object-schema';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -118,12 +125,15 @@ export function getFolderChildren(folderId: string, ability?: Ability, filterTyp
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
+  console.log('pasta 1:', folderData);
+  let result = folderData.children;
   if (filterTypes && filterTypes.length > 0) {
-    folderData.children = folderData.children.filter(function (element) {
+    result = folderData.children.filter(function (element) {
       return filterTypes.includes(element.type);
     });
   }
-  return folderData.children;
+  console.log('pasta 2:', folderData);
+  return result;
 }
 
 export function createFolder(folderInput: FolderInput, ability?: Ability) {

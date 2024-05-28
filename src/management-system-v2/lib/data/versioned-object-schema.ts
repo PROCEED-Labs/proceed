@@ -17,9 +17,9 @@ export const VersionedObjectInput = VersionedObjectInputSchema.extend({
 });
 export type VersionedObjectServerInput = z.infer<typeof VersionedObjectInput>;
 
-export type VersionedObjectMetadata = Prettify<
+export type VersionedObjectMetadata<T> = Prettify<
   WithRequired<VersionedObjectServerInput, 'id' | 'name' | 'folderId'> & {
-    type: 'process';
+    type: T;
     variables: {
       name: string;
       type: string;
@@ -44,4 +44,4 @@ export type VersionedObjectMetadata = Prettify<
   }
 >;
 
-export type VersionedObject = Prettify<VersionedObjectMetadata>;
+export type VersionedObject<T> = Prettify<VersionedObjectMetadata<T>>;

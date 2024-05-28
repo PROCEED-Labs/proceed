@@ -9,7 +9,7 @@ import {
 import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
-import { Process, ProcessMetadata } from '../process-schema';
+import { Process } from '../process-schema';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
@@ -69,7 +69,7 @@ export function init() {
   for (let type_index = 0; type_index < populateTypes.length; ++type_index) {
     let populateType = populateTypes[type_index];
     let stored = store.get(populateType);
-    for (let populate of stored as VersionedObjectMetadata[]) {
+    for (let populate of stored as VersionedObjectMetadata<FolderChildren['type']>[]) {
       if (!populate.folderId) {
         console.warn(
           `${populateType} ${populate.id} has no parent folder, it was stored in it's environment's root folder`,

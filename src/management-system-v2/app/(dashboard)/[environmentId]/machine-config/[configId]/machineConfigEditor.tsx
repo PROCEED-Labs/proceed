@@ -92,7 +92,7 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         <Breadcrumb
           items={[
             {
-              title: <h3>Machine configuration {machineConfig.name}</h3>,
+              title: <h3>Machine Configuration {machineConfig.name}</h3>,
             },
           ]}
         />

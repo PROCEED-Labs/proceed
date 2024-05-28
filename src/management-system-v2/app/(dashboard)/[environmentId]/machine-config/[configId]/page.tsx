@@ -26,7 +26,7 @@ export default async function MachineConfigView({
   let machineConfig = await getMachineConfigById(configId);
 
   return (
-    <Content title="Machine Config">
+    <Content title="Machine Configuration">
       <MachineConfigEditor
         originalMachineConfig={machineConfig}
         onChange={saveMachineConfig}

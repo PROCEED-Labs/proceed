@@ -77,26 +77,6 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     }
   };
 
-  useAddControlCallback(
-    'machine-config-list',
-    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
-    (e) => {
-      // e.preventDefault();
-    },
-    { level: 2, blocking: open },
-  );
-  useAddControlCallback(
-    'machine-config-list',
-    'controlenter',
-    () => {
-      if (open) onOk();
-      console.log(
-        `trying to submit in machine configuration export. Modal is ${open ? 'open' : 'closed'}`,
-      );
-    },
-    { level: 2, blocking: open, dependencies: [open] },
-  );
-
   return (
     <Modal
       title={title}

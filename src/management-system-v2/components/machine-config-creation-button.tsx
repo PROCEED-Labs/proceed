@@ -29,12 +29,13 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
+  const spaceId = useEnvironment().spaceId;
 
   const createNewMachineConfig = async (
     values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
   ) => {
     const machineConfig = await (customAction?.(values[0]) ??
-      createMachineConfig(values[0], environment.spaceId).then((res) =>
+      createMachineConfig({ ...values[0], folderId: folderId }, environment.spaceId).then((res) =>
         Array.isArray(res) ? res[0] : res,
       ));
     if (machineConfig && 'error' in machineConfig) {

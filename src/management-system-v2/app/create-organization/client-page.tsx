@@ -13,7 +13,7 @@ import { CountryCode, getCountries, getCountryCallingCode } from 'libphonenumber
 import { useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
-import { type createNotActiveEnvironment } from './page';
+import { type createInactiveEnvironment } from './page';
 
 const getCountryOption = (country: CountryCode) => {
   const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
@@ -34,13 +34,13 @@ const getCountryOption = (country: CountryCode) => {
 type CreateOrganizationPageProps = {
   needsToAuthenticate: boolean;
   providers?: ExtractedProvider[];
-  createNotActiveEnvironment: createNotActiveEnvironment;
+  createInactiveEnvironment: createInactiveEnvironment;
 };
 
 const CreateOrganizationPage = ({
   needsToAuthenticate,
   providers,
-  createNotActiveEnvironment,
+  createInactiveEnvironment,
 }: CreateOrganizationPageProps) => {
   const breakpoint = Grid.useBreakpoint();
   const [messageApi, contextHolder] = message.useMessage();
@@ -91,7 +91,7 @@ const CreateOrganizationPage = ({
         router.push(`/${response.id}/processes`);
       } else {
         // NOTE: the only way to get here is if the data is valid
-        const response = await createNotActiveEnvironment(data!);
+        const response = await createInactiveEnvironment(data!);
         if ('error' in response) throw new Error();
 
         return `/api/activateenvironment?activationId=${response.id}`;

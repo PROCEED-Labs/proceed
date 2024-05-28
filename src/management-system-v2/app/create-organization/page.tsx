@@ -5,7 +5,7 @@ import { UserOrganizationEnvironmentInput } from '@/lib/data/environment-schema'
 import { addEnvironment } from '@/lib/data/legacy/iam/environments';
 import { userError } from '@/lib/user-error';
 
-async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput) {
+async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
   const user = await getCurrentUser();
   if (user.session?.user && !user.session?.user.guest)
@@ -13,7 +13,7 @@ async function createNotActiveEnvironment(data: UserOrganizationEnvironmentInput
   return addEnvironment({ ...data, organization: true, active: false });
 }
 
-export type createNotActiveEnvironment = typeof createNotActiveEnvironment;
+export type createInactiveEnvironment = typeof createInactiveEnvironment;
 
 const unallowedProviders = ['guest-signin', 'development-users'];
 
@@ -45,7 +45,7 @@ const Page = async () => {
       <CreateOrganizationPage
         needsToAuthenticate={needsToAuthenticate}
         providers={!needsToAuthenticate ? undefined : providers}
-        createNotActiveEnvironment={createNotActiveEnvironment}
+        createNotActiveEnvironment={createInactiveEnvironment}
       />
     </div>
   );

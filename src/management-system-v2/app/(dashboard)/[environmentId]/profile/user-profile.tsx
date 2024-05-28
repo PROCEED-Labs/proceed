@@ -91,8 +91,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.guest ? userData.firstName : 'Guest'} ${!userData.guest ? userData.lastName : ''
-                  }`,
+                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
+                  !userData.guest ? userData.lastName : ''
+                }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
@@ -118,8 +119,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
             onRow={(row) =>
               row.action
                 ? {
-                  onClick: row.action,
-                }
+                    onClick: row.action,
+                  }
                 : {}
             }
             showHeader={false}

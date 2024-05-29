@@ -17,7 +17,9 @@ const ActionButtons = ({ process }: { process: Process }) => {
   const [isModelerOpen, setIsModelerOpen] = useState(false);
 
   const closeEditModal = (values?: { name: string; description: string }) => {
+    console.log('close edit modal');
     const sharedSecrets = getAllSharedSecrets();
+    console.log('sharedSecrets', sharedSecrets);
 
     Object.entries(sharedSecrets).forEach(([key, values]) => {
       console.log('clientKey', key);

@@ -8,10 +8,13 @@
     "url": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app"
   },
   "authentication": {
-    "type": "none"
+    "type": "jwt"
   },
   "apiVersion": 1,
   "scopes": ["read", "write"],
+  "lifecycle": {
+    "installed": "/api/confluence/installed"
+  },
   "modules": {
     "generalPages": [
       {

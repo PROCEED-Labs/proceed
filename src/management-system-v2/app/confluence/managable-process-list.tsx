@@ -31,20 +31,20 @@ const ActionButtons = ({ process }: { process: Process }) => {
       console.log('get Token', window.AP.context);
       window.AP.context.getToken((token) => {
         console.log('JWT Token', token);
-        getSpaces(token)
-          .then((res) => {
-            console.log('getSpaces result', res);
-            return res.json();
-          })
-          .catch((err) => {
-            console.log('err1', err);
-          })
-          .then((res) => {
-            console.log('json result', res);
-          })
-          .catch((err) => {
-            console.log('err2', err);
-          });
+        // getSpaces(token)
+        //   .then((res) => {
+        //     console.log('getSpaces result', res);
+        //     return res.json();
+        //   })
+        //   .catch((err) => {
+        //     console.log('err1', err);
+        //   })
+        //   .then((res) => {
+        //     console.log('json result', res);
+        //   })
+        //   .catch((err) => {
+        //     console.log('err2', err);
+        //   });
       });
     }
 

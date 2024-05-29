@@ -1,0 +1,156 @@
+import { Editor, Frame, EditorStore } from '@craftjs/core';
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+
+import SubmitButton from './SubmitButton';
+import Text from './Text';
+import Container from './Container';
+import Row from './Row';
+import Column from './Column';
+import Header from './Header';
+import Input from './Input';
+import Table from './Table';
+
+const styles = `
+body {
+  font-size: 16px;
+}
+
+.user-task-form-column {
+  flex: 1 0 0;
+  box-sizing: border-box;
+  height: fit-content;
+}
+
+@media only screen and (max-width: 600px) {
+  .user-task-form-column {
+    flex: 0 0 100%;
+  }
+}
+
+.user-task-form-row {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 5px;
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.user-task-form-container {      
+  height: 100%;
+}
+
+.user-task-form-input {
+  width: 100%;
+}
+
+.user-task-form-input > div {
+  max-width: 100%;
+  padding-bottom: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.user-task-form-input input {
+  box-sizing: border-box; 
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  padding: 4px 11px;
+  font-size: 0.875em;
+  line-height: 1.5714;
+  border-radius: 0.375rem;
+}
+
+.user-task-form-table {
+  text-align: left;
+  width: 100%;
+  border: 1px solid lightgrey;
+  border-collapse: collapse;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.user-task-form-table .user-task-form-table-cell {
+  padding: 0.75rem 0.5rem;
+  border: 1px solid lightgrey;
+  position: relative;
+}
+
+`;
+
+export function toHtml(json: string) {
+  const markup = ReactDOMServer.renderToStaticMarkup(
+    <Editor
+      enabled={false}
+      resolver={{ SubmitButton, Text, Container, Row, Header, Input, Column, Table }}
+    >
+      <Frame data={json} />
+    </Editor>,
+  );
+
+  return `
+  <!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      ${styles}
+    </style>
+  </head>
+  <body>
+    ${markup}
+  </body>
+</html>
+  `;
+}
+
+export const iframeDocument = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html, body, #mountHere, .frame-content {
+        height: 100%;
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      .frame-content > div {
+        box-sizing: border-box;
+        padding: 0 10px;
+      }
+
+      ${styles}
+    </style>
+  </head>
+  <body>
+    <div id="mountHere">
+    </div>
+  </body>
+</html>
+`;
+
+export const defaultForm = `
+{
+  "ROOT": {
+    "type": { "resolvedName": "Container" },
+    "isCanvas": true,
+    "props": {
+      "padding": 10,
+      "background": "#fff",
+      "borderThickness": 0,
+      "borderColor": "#d3d3d3"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {}
+  }
+}
+`;
+
+// export function getDropLocation

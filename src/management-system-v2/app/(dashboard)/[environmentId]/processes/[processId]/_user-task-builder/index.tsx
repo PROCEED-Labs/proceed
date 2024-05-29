@@ -1,0 +1,133 @@
+import React from 'react';
+
+import styles from './index.module.scss';
+
+import { Modal, Grid, Row as AntRow, Col } from 'antd';
+
+import {
+  Editor,
+  Frame,
+  Element,
+  DefaultEventHandlers,
+  NodeId,
+  CreateHandlerOptions,
+  useEditor,
+  Node,
+} from '@craftjs/core';
+
+import IFrame from 'react-frame-component';
+
+import SubmitButton from './SubmitButton';
+import Text from './Text';
+import Container from './Container';
+import Row from './Row';
+import Column from './Column';
+import { SettingsPanel, Toolbox } from './Sidebar';
+import Header from './Header';
+import Input from './Input';
+import Table from './Table';
+
+import { toHtml, iframeDocument, defaultForm } from './utils';
+
+import CustomEventhandlers from './CustomCommandhandlers';
+
+type BuilderProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
+  const breakpoint = Grid.useBreakpoint();
+  const { actions, query } = useEditor();
+
+  return (
+    <Modal
+      width={breakpoint.xs ? '100vw' : '90vw'}
+      centered
+      styles={{ body: { height: '85vh' } }}
+      open={open}
+      title="Edit User Task"
+      okText="Save"
+      onCancel={onClose}
+      onOk={() => {
+        const json = query.serialize();
+        console.log(json);
+        console.log(toHtml(json));
+      }}
+    >
+      <AntRow className={styles.BuilderUI}>
+        <Col span={4}>
+          <Toolbox />
+        </Col>
+        <Col className={styles.HtmlEditor} span={16}>
+          <IFrame
+            id="user-task-builder-iframe"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            initialContent={iframeDocument}
+            mountTarget="#mountHere"
+          >
+            {/* <Frame data={defaultForm}></Frame> */}
+            <Frame>
+              <Element is={Container} padding={5} background="#fff" canvas>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="1"></Text>
+                  </Column>
+                </Element>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="2"></Text>
+                  </Column>
+                </Element>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="3"></Text>
+                  </Column>
+                </Element>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="4"></Text>
+                  </Column>
+                </Element>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="5"></Text>
+                  </Column>
+                </Element>
+                <Element is={Row} canvas>
+                  <Column>
+                    <Text text="6"></Text>
+                  </Column>
+                </Element>
+              </Element>
+            </Frame>
+          </IFrame>
+        </Col>
+        <Col span={4}>
+          <SettingsPanel />
+        </Col>
+      </AntRow>
+    </Modal>
+  );
+};
+
+const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
+  return (
+    <Editor
+      resolver={{ Header, Text, SubmitButton, Container, Row, Column, Input, Table }}
+      handlers={(store) =>
+        new CustomEventhandlers({
+          store,
+          isMultiSelectEnabled: () => false,
+          removeHoverOnMouseleave: true,
+        })
+      }
+    >
+      <EditorModal open={open} onClose={onClose} />
+    </Editor>
+  );
+};
+
+export default UserTaskBuilder;

@@ -7,3 +7,7 @@ export const setSharedSecret = (clientKey: string, sharedSecret: any, baseUrl: a
 export const getSharedSecret = (clientKey: string) => {
   return sharedSecrets[clientKey];
 };
+
+export const getAllSharedSecrets = () => {
+  return sharedSecrets;
+};

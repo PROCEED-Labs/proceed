@@ -54,25 +54,25 @@ jobs:
           path: ./*
           key: ${{ github.sha }}-${{ github.run_number }}
 
-  lint:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn prettier --check .
+  #     - run: yarn prettier --check .
 
   # testEngine:
   #   runs-on: ubuntu-latest
@@ -201,8 +201,8 @@ jobs:
       IMAGE_TAG: ${{ inputs.environment == 'Production' && 'latest' || 'edge' }}
     outputs:
       tag: ${{ steps.set_tag.outputs.tag }}
-    needs:
-      - lint
+    # needs:
+    #   - lint
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2

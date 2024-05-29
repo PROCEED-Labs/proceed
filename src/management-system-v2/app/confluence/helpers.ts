@@ -2,7 +2,7 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import atlassianJwt from 'atlassian-jwt';
 
-import { getSharedSecret } from './sharedSecrets';
+import { getSharedSecret } from '../../lib/sharedSecrets';
 
 export const getSpaces = async (jwtToken: any) => {
   console.log('jwtToken', jwtToken);

@@ -1,4 +1,4 @@
-import { setSharedSecret } from '@/app/confluence/sharedSecrets';
+import { setSharedSecret } from '@/lib/sharedSecrets';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {

@@ -25,8 +25,14 @@ const ActionButtons = ({ process }: { process: Process }) => {
             console.log('getSpaces result', res);
             return res.json();
           })
+          .catch((err) => {
+            console.log('err1', err);
+          })
           .then((res) => {
             console.log('json result', res);
+          })
+          .catch((err) => {
+            console.log('err2', err);
           });
       });
     }

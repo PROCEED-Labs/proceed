@@ -9,6 +9,7 @@ interface AtlassianConnectAPI {
     go(view: string, options?: { customData?: any }): void;
   };
   context: {
+    getToken(callback: (token: any) => void): unknown;
     getContext(callback: (context: any) => void): void;
   };
 }

@@ -15,6 +15,21 @@ const ActionButtons = ({ process }: { process: Process }) => {
   const [isModelerOpen, setIsModelerOpen] = useState(false);
 
   const closeEditModal = (values?: { name: string; description: string }) => {
+    if (window && window.AP) {
+      console.log('get Token', window.AP.context);
+      window.AP.context.getToken((token) => {
+        console.log('JWT Token', token);
+        getSpaces(token)
+          .then((res) => {
+            console.log('getSpaces result', res);
+            return res.json();
+          })
+          .then((res) => {
+            console.log('json result', res);
+          });
+      });
+    }
+
     if (values) {
       if ('origin' in process) {
         console.log('changed confluence process');

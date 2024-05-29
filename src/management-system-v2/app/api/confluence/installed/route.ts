@@ -7,5 +7,5 @@ export async function POST(request: NextRequest) {
 
   setSharedSecret(clientKey, sharedSecret, baseUrl);
 
-  return new NextResponse(null, { status: 200, statusText: 'App installed successfully' });
+  return NextResponse.json({ clientKey, sharedSecret, baseUrl });
 }

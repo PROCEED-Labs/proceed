@@ -144,7 +144,7 @@ export async function getSharedSecret() {
 
     return sharedSecretData;
   }
-  return {};
+  return { error: 'Does not exist' };
 }
 
 /**

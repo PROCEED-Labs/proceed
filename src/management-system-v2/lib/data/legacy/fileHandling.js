@@ -138,9 +138,13 @@ export async function saveSharedSecret(clientKey, sharedSecret, baseUrl) {
 export async function getSharedSecret() {
   const sharedSecretDir = getSharedSecretFolder();
   const sharedSecretFilePath = path.join(sharedSecretDir, 'sharedSecret.json');
-  const sharedSecretData = JSON.parse(fse.readFileSync(sharedSecretFilePath, 'utf-8'));
 
-  return sharedSecretData;
+  if (fse.existsSync(sharedSecretFilePath)) {
+    const sharedSecretData = JSON.parse(fse.readFileSync(sharedSecretFilePath, 'utf-8'));
+
+    return sharedSecretData;
+  }
+  return {};
 }
 
 /**

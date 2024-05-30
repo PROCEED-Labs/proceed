@@ -1,8 +1,7 @@
 'use server';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import atlassianJwt from 'atlassian-jwt';
-
-import { getSharedSecret } from '../../lib/sharedSecrets';
+import { getSharedSecret } from '../api/confluence/sharedSecret/route';
 
 export const getSpaces = async (jwtToken: any) => {
   console.log('jwtToken', jwtToken);

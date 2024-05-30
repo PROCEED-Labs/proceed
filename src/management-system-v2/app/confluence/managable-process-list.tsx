@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ProcessModal from './process-modal';
 import { getSpaces } from './helpers';
-import { getAllSharedSecrets } from '../../lib/sharedSecrets';
+import { getAllSharedSecrets } from '../api/confluence/sharedSecret/route';
 
 const ActionButtons = ({ process }: { process: Process }) => {
   const { spaceId } = useEnvironment();

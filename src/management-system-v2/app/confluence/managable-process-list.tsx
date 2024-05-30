@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ProcessModal from './process-modal';
 import { getSpaces } from './helpers';
-import { getAllSharedSecrets } from '../api/confluence/sharedSecret/route';
 
 const ActionButtons = ({ process }: { process: Process }) => {
   const { spaceId } = useEnvironment();
@@ -16,12 +15,22 @@ const ActionButtons = ({ process }: { process: Process }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isModelerOpen, setIsModelerOpen] = useState(false);
 
-  const closeEditModal = (values?: { name: string; description: string }) => {
+  const closeEditModal = async (values?: { name: string; description: string }) => {
     console.log('close edit modal');
-    const sharedSecrets = getAllSharedSecrets();
+
+    const sharedSecrets = await fetch(
+      'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
+      {
+        method: 'GET',
+      },
+    ).then((res) => {
+      return res.json();
+    });
+
     console.log('sharedSecrets', sharedSecrets);
 
-    Object.entries(sharedSecrets).forEach(([key, values]) => {
+    Object.entries(sharedSecrets).forEach(([key, val]) => {
+      const values = val as { sharedSecret: string; baseUrl: string };
       console.log('clientKey', key);
       console.log('sharedSecret', values.sharedSecret);
       console.log('baseUrl', values.baseUrl);

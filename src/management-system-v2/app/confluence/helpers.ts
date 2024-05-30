@@ -1,7 +1,6 @@
 'use server';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import atlassianJwt from 'atlassian-jwt';
-import { getSharedSecret } from '../api/confluence/sharedSecret/route';
 
 export const getSpaces = async (jwtToken: any) => {
   console.log('jwtToken', jwtToken);
@@ -19,10 +18,18 @@ export const getSpaces = async (jwtToken: any) => {
   return res;
 };
 
-const verifyJwt = (jwtToken: any) => {
+const verifyJwt = async (jwtToken: any) => {
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  const sharedSecretInfo = getSharedSecret(clientKey!);
+
+  const res = await fetch(
+    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
+    {
+      method: 'GET',
+    },
+  );
+
+  const sharedSecretInfo = await res.json();
 
   const { sharedSecret } = sharedSecretInfo;
   const verified = atlassianJwt.decodeSymmetric(

@@ -14,15 +14,17 @@ export const getAllSharedSecrets = () => {
   return { ...sharedSecrets };
 };
 
-export async function GET(request: NextRequest) {
-  return NextResponse.json({ sharedSecrets });
-}
+export default async function handler(request: NextRequest) {
+  if (request.method === 'GET') {
+    return NextResponse.json({ sharedSecrets });
+  }
 
-export async function PUT(request: NextRequest) {
-  const bodyData = await request.json();
-  const { clientKey, sharedSecret, baseUrl } = bodyData;
+  if (request.method === 'PUT') {
+    const bodyData = await request.json();
+    const { clientKey, sharedSecret, baseUrl } = bodyData;
 
-  setSharedSecret(clientKey, sharedSecret, baseUrl);
+    setSharedSecret(clientKey, sharedSecret, baseUrl);
 
-  return NextResponse.json({ clientKey, sharedSecret, baseUrl });
+    return NextResponse.json({ clientKey, sharedSecret, baseUrl });
+  }
 }

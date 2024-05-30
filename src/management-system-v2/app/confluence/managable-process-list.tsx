@@ -19,7 +19,7 @@ const ActionButtons = ({ process }: { process: Process }) => {
     console.log('close edit modal');
 
     const sharedSecrets = await fetch(
-      'https://4ca3-84-156-10-190.ngrok-free.app/api/confluence/sharedSecret',
+      'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
       {
         method: 'GET',
       },

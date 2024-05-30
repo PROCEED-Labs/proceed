@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+import fs from 'fs';
+
+const secretsFilePath = path.join(process.cwd(), 'app/api/confluence/sharedSecret/secretFile.json');
+
+const setSharedSecret = (clientKey: any, sharedSecret: any, baseUrl: any) => {
+  const sharedSecrets = JSON.parse(fs.readFileSync(secretsFilePath, 'utf-8'));
+  sharedSecrets[`${clientKey}`] = { sharedSecret, baseUrl };
+  fs.writeFileSync(secretsFilePath, JSON.stringify(sharedSecrets, null, 2));
+};
 
 export async function POST(request: NextRequest) {
   const bodyData = await request.json();
   const { clientKey, sharedSecret, baseUrl } = bodyData;
 
-  const res = await fetch(
-    `https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret`,
-    {
-      method: 'PUT',
-      body: JSON.stringify({ clientKey, sharedSecret, baseUrl }),
-    },
+  setSharedSecret(
+    clientKey || 'DIDNOTWORK-KEY',
+    sharedSecret || 'DIDNOTWORK-SECRET',
+    baseUrl || 'DIDNOTWORK-BASEURL',
   );
-  console.log('res', res);
 
   return NextResponse.json({ clientKey, sharedSecret, baseUrl });
 }

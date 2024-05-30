@@ -50,6 +50,13 @@ export function getAppDataPath() {
  * Find the path to the folder where the info about all Processes is stored
  * @returns {String}
  */
+function getSharedSecretFolder() {
+  return path.join(getAppDataPath(), 'SharedSecret');
+}
+/**
+ * Find the path to the folder where the info about all Processes is stored
+ * @returns {String}
+ */
 function getProcessesFolder() {
   return path.join(getAppDataPath(), 'Processes');
 }
@@ -105,6 +112,35 @@ function getImagesDir(id) {
  */
 function getUserTaskDir(id) {
   return path.join(getFolder(id), 'user-tasks');
+}
+
+/**
+ * Saves sharedSecret
+ *
+ * @param {String} clientKey
+ * @param {String} sharedSecret
+ * @param {String} baseUrl
+ */
+export async function saveSharedSecret(clientKey, sharedSecret, baseUrl) {
+  const sharedSecretDir = getSharedSecretFolder();
+
+  fse.ensureDirSync(sharedSecretDir);
+
+  const sharedSecretData = JSON.stringify({ [clientKey]: { sharedSecret, baseUrl } });
+  fse.writeFileSync(path.join(sharedSecretDir, `sharedSecret.json`), sharedSecretData);
+}
+
+/**
+ * Get sharedSecret
+ *
+ * @param {String} clientKey
+ */
+export async function getSharedSecret() {
+  const sharedSecretDir = getSharedSecretFolder();
+  const sharedSecretFilePath = path.join(sharedSecretDir, 'sharedSecret.json');
+  const sharedSecretData = JSON.parse(fse.readFileSync(sharedSecretFilePath, 'utf-8'));
+
+  return sharedSecretData;
 }
 
 /**

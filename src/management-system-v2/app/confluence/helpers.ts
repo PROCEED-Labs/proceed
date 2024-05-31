@@ -4,9 +4,9 @@ import atlassianJwt from 'atlassian-jwt';
 
 export const getSpaces = async (jwtToken: any) => {
   console.log('jwtToken', jwtToken);
-  const tokenVerified = verifyJwt(jwtToken);
+  const tokenVerified = await verifyJwt(jwtToken);
   if (!tokenVerified) {
-    throw new Error('Token not verified');
+    console.log('Token not verified');
   }
   const res = await fetch('https://proceed-test.atlassian.net/wiki/api/v2/spaces', {
     method: 'GET',
@@ -38,8 +38,5 @@ const verifyJwt = async (jwtToken: any) => {
     atlassianJwt.SymmetricAlgorithm.HS256,
   );
 
-  if (!verified) {
-    throw new Error('Invalid Token');
-  }
-  return true;
+  return verified;
 };

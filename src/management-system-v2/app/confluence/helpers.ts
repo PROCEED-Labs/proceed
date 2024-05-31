@@ -29,9 +29,23 @@ const verifyJwt = async (jwtToken: any) => {
     },
   );
 
-  const sharedSecretInfo = await res.json();
+  const { sharedSecrets } = await fetch(
+    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
+    {
+      method: 'GET',
+    },
+  ).then((res) => {
+    return res.json();
+  });
 
-  const { sharedSecret } = sharedSecretInfo;
+  const sharedSecret = Object.entries(sharedSecrets).map(([key, val]) => {
+    const values = val as { sharedSecret: string; baseUrl: string };
+    console.log('clientKey', key);
+    console.log('sharedSecret', values.sharedSecret);
+    console.log('baseUrl', values.baseUrl);
+    return values.sharedSecret;
+  })[0];
+
   const verified = atlassianJwt.decodeSymmetric(
     jwtToken,
     sharedSecret,

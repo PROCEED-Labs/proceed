@@ -124,9 +124,13 @@ export class ProcessListPage {
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
 
-  async createProcess(options: { processName?: string; description?: string }) {
+  async createProcess(options: {
+    processName?: string;
+    description?: string;
+    returnToProcessList?: boolean;
+  }) {
     const page = this.page;
-    const { processName, description } = options;
+    const { processName, description, returnToProcessList } = options;
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
@@ -136,7 +140,19 @@ export class ProcessListPage {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
-    return page.url().split('processes/').pop();
+    const id = page.url().split('processes/').pop();
+
+    if (returnToProcessList) {
+      /* Go back to Process-List */
+      await this.goto();
+
+      /* Wait until on Process-List */
+      await page.waitForURL('**/processes');
+    }
+    /* Wait for Hydration */
+    await this.waitForHydration();
+
+    return id;
   }
 
   async removeAllProcesses() {
@@ -171,35 +187,6 @@ export class ProcessListPage {
     }, readAsText);
 
     return result;
-  }
-
-  async createProcess(name: string, desciption: string = '') {
-    const { page } = this;
-    /* Create Process */
-    await page.getByRole('main').press('Control+Enter');
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill(name);
-    await page.getByLabel('Process Description').click();
-    await page.getByLabel('Process Description').fill(desciption);
-    await page.getByRole('button', { name: 'Create' }).click();
-
-    /* Wait for modeler to open */
-    await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
-
-    /* Get Process ID */
-    const processDefinitionID = page
-      .url()
-      .split(this.getPageURL() + '/')
-      .pop();
-
-    /* Go back to Process-List */
-    await this.goto();
-
-    /* Wait until on Process-List */
-    await page.waitForURL('**/processes');
-
-    await this.waitForHydration();
-
-    return processDefinitionID;
   }
 
   async waitForHydration() {

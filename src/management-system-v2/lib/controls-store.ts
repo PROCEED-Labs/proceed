@@ -21,6 +21,16 @@ type RegisteredCallback = {
   [key: string]: Array<[boolean, (event: any) => void, UUID]>;
 };
 
+const getDefaultCallbacks = () => {
+  return {
+    '1': [],
+    '2': [],
+    '3': [],
+    '4': [],
+    '5': [],
+  };
+};
+
 type RegisteredCallbacks = Record<string, RegisteredCallback>;
 
 type StoreControlsInterface = Record<string, RegisteredCallbacks>;
@@ -57,26 +67,14 @@ export const useControlStore = create<ControlsStore>()(
           state.areas.push(area);
           state.controls[area] = {};
           actions.forEach((action) => {
-            state.controls[area][action] = {
-              '1': [],
-              '2': [],
-              '3': [],
-              '4': [],
-              '5': [],
-            };
+            state.controls[area][action] = getDefaultCallbacks();
           });
         } else {
           /* If already registered, only overwrite not existing actions with default*/
           let alreadrRegisteredActions = get().controls[area];
           actions.forEach((action) => {
             if (!alreadrRegisteredActions[action]) {
-              state.controls[area][action] = {
-                '1': [],
-                '2': [],
-                '3': [],
-                '4': [],
-                '5': [],
-              };
+              state.controls[area][action] = getDefaultCallbacks();
             }
           });
         }
@@ -85,10 +83,16 @@ export const useControlStore = create<ControlsStore>()(
     addCallback: ({ id, area, action, callback, priority = 1, blocking = false }) => {
       set((state) => {
         // console.log(`Adding callback to ${area} for ${action} with priority ${priority}`);
+
         // Check that the control-area is registered
         if (!state.areas.includes(area)) {
           console.error(`Control-area ${area} is not registered.`);
           return; /* While this should not be possible anymore, when using the provided hooks, it does not harm to leave this check */
+        }
+
+        /* Edge case: Other callbacks are registered, but the controlarea is not registered, yet */
+        if (!state.controls[area][action]) {
+          state.controls[area][action] = getDefaultCallbacks();
         }
 
         /* Check for duplicates */

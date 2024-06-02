@@ -144,12 +144,13 @@ const ProcessList: FC<ProcessListProps> = ({
       width: '40px',
       render: (id, _, index) =>
         id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
-      sorter: (a, b) =>
+      sorter: folderAwareSort((a, b) =>
         favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
           ? 0
           : favProcesses?.includes(a.id)
             ? -1
-            : 1 /* TODO: Should be wrapped in folderAwareSort from #283 once it's merged */,
+            : 1,
+      ),
     },
     {
       title: 'Name',

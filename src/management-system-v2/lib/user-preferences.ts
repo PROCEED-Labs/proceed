@@ -224,4 +224,52 @@ for (const preference of Object.keys(defaultPreferences)) {
     _useUserPreferences((store) => store.preferences[preference]);
 }
 
+/**
+ * Custom hook for managing device dependant user preferences in components.
+ * The default values for the preferences should be defined in the 'user-preferences.ts' file.
+ * The store is initialised with these defaults, and it persists changes in the local storage.
+ *
+ *
+ * @example
+ * // Accessing a specific preference value
+ * import { useUserPreferences } from './user-preferences';
+ *
+ * const MyComponent = () => {
+ *   const iconViewInProcessList = useUserPreferences.use['icon-view-in-process-list']();
+ *   return <div>{iconViewInProcessList ? 'Icon view is enabled' : 'Icon view is disabled'}</div>;
+ * };
+ *
+ * @example
+ * // Updating preferences
+ * import { useUserPreferences } from './user-preferences';
+ *
+ * const MyComponent = () => {
+ *   const addPreferences = useUserPreferences.use.addPreferences();
+ *   const handleClick = () => {
+ *     addPreferences({ 'icon-view-in-process-list': true });
+ *   };
+ *   return <button onClick={handleClick}>Enable Icon View</button>;
+ * };
+ *
+ * @example
+ * // Using preferences in a custom hook
+ * import { useUserPreferences } from './user-preferences';
+ * import ReactDOMServer from 'react-dom/server';
+ *
+ * export const useColumnWidth = (
+ *   preferenceKey: string,
+ *   someOtherProp: NonNullable<TableProps['columns']>,
+ * ) => {
+ *   const columnsInPreferences = useUserPreferences.use[preferenceKey]();
+ *   const addPreferences = useUserPreferences.use.addPreferences();
+ *   // ...
+ * };
+ *
+ * @example
+ * // Using the store directly
+ * import { useUserPreferences } from './user-preferences';
+ *
+ * const { preferences, addPreferences } = useUserPreferences();
+ * // ...
+ */
 export const useUserPreferences = _useUserPreferences as UseStore;

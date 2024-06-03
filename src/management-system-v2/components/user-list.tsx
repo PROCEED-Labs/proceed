@@ -1,18 +1,12 @@
 'use client';
 
-import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
-import { Space, Avatar, Button, Table, Grid, Breakpoint, FloatButton, Tooltip } from 'antd';
-import {
-  InfoCircleOutlined,
-  PlusOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
-} from '@ant-design/icons';
+import React, { ComponentProps, FC, ReactNode, useState } from 'react';
+import { Space, Avatar, Button, Table, Grid } from 'antd';
+import { UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
-import { FloatButtonActions } from '@/app/(dashboard)/[environmentId]/iam/users/header-actions';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
@@ -30,8 +24,8 @@ export type UserListProps = {
   users: _ListUser[];
   highlightKeys?: boolean;
   columns?:
-    | Column
-    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
+  | Column
+  | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   createUserNode?: ReactNode;
   loading?: boolean;
@@ -61,7 +55,7 @@ const UserList: FC<UserListProps> = ({
                 {user.image
                   ? null
                   : (user.firstName.value?.slice(0, 1) ?? '') +
-                    (user.lastName.value?.slice(0, 1) ?? '')}
+                  (user.lastName.value?.slice(0, 1) ?? '')}
               </Avatar>
               <span>
                 {highlightKeys ? (
@@ -128,10 +122,10 @@ const UserList: FC<UserListProps> = ({
                   {selectedRowKeys.length} selected:
                   {selectedRowActions
                     ? selectedRowActions(
-                        selectedRowKeys,
-                        () => setSelectedRowKeys([]),
-                        selectedRows,
-                      )
+                      selectedRowKeys,
+                      () => setSelectedRowKeys([]),
+                      selectedRows,
+                    )
                     : null}
                 </span>
               ) : undefined}
@@ -165,22 +159,6 @@ const UserList: FC<UserListProps> = ({
           placeholder: 'Search Users ...',
         }}
       />
-
-      {/* <!-- FloatButtonGroup needs a z-index of 101
-            since BPMN Logo of the viewer has an z-index of 100 --> */}
-      {breakpoint.xl ? undefined : (
-        <FloatButton.Group
-          className={styles.FloatButton}
-          trigger="click"
-          type="primary"
-          style={{ marginBottom: '60px', zIndex: '101' }}
-          icon={<PlusOutlined />}
-        >
-          <Tooltip trigger="hover" placement="left" title="Create an user">
-            <FloatButton icon={<FloatButtonActions />} />
-          </Tooltip>
-        </FloatButton.Group>
-      )}
 
       {iconView ? undefined : ( //IconView
         //TODO: add IconView for User List

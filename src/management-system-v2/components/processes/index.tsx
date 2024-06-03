@@ -88,9 +88,9 @@ const Processes = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdAt: '',
+        createdOn: '',
         createdBy: '',
-        updatedAt: '',
+        lastEdited: '',
         environmentId: '',
       },
       ...processes,
@@ -162,11 +162,12 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
+  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="create process" />,
+      label: createProcessButton,
       icon: <FileOutlined />,
     });
 
@@ -178,13 +179,13 @@ const Processes = ({
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
-    if (!folder) return;
+    if (!values) return;
 
     startUpdatingFolderTransition(async () => {
       try {
         const response = updateFolderServer(
           { name: values.name, description: values.description },
-          folder.id,
+          updateFolderModal!.id,
         );
 
         if (response && 'error' in response) throw new Error();
@@ -293,16 +294,16 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && (
                       <Space>
-                        <Dropdown
-                          trigger={['click']}
+                        <Dropdown.Button
                           menu={{
-                            items: defaultDropdownItems,
+                            items: defaultDropdownItems.filter(
+                              (item) => item.key !== 'create-process',
+                            ),
                           }}
+                          type="primary"
                         >
-                          <Button type="primary" icon={<PlusOutlined />}>
-                            New
-                          </Button>
-                        </Dropdown>
+                          {createProcessButton}
+                        </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>

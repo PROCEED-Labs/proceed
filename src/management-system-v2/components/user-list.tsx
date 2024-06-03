@@ -25,8 +25,8 @@ export type UserListProps = {
   users: _ListUser[];
   highlightKeys?: boolean;
   columns?:
-  | Column
-  | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
+    | Column
+    | ((clearSelected: () => void, hoveredId: string | null, selectedRowKeys: string[]) => Column);
   selectedRowActions?: (ids: string[], clearSelected: () => void, users: ListUser[]) => ReactNode;
   createUserNode?: ReactNode;
   loading?: boolean;
@@ -56,7 +56,7 @@ const UserList: FC<UserListProps> = ({
                 {user.image
                   ? null
                   : (user.firstName.value?.slice(0, 1) ?? '') +
-                  (user.lastName.value?.slice(0, 1) ?? '')}
+                    (user.lastName.value?.slice(0, 1) ?? '')}
               </Avatar>
               <span>
                 {highlightKeys ? (

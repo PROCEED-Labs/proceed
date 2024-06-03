@@ -9,6 +9,7 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import styles from './user-list.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
+import ElementList from './item-list-view';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
@@ -74,8 +75,8 @@ const UserList: FC<UserListProps> = ({
   });
 
   const breakpoint = Grid.useBreakpoint();
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<ListUser[]>([]);
+  const selectedRowKeys = selectedRows.map((row) => row.id);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const iconView = useUserPreferences.use['icon-view-in-user-list']();
 
@@ -105,7 +106,7 @@ const UserList: FC<UserListProps> = ({
   if (typeof columns === 'function')
     tableColumns = [
       ...defaultColumns,
-      ...columns(() => setSelectedRowKeys([]), hoveredRowId, selectedRowKeys),
+      ...columns(() => setSelectedRows([]), hoveredRowId, selectedRowKeys),
     ];
   else if (columns) tableColumns = [...defaultColumns, ...columns];
 
@@ -121,11 +122,7 @@ const UserList: FC<UserListProps> = ({
                 <span className={styles.SelectedRow}>
                   {selectedRowKeys.length} selected:
                   {selectedRowActions
-                    ? selectedRowActions(
-                      selectedRowKeys,
-                      () => setSelectedRowKeys([]),
-                      selectedRows,
-                    )
+                    ? selectedRowActions(selectedRowKeys, () => setSelectedRows([]), selectedRows)
                     : null}
                 </span>
               ) : undefined}
@@ -163,30 +160,27 @@ const UserList: FC<UserListProps> = ({
       {iconView ? undefined : ( //IconView
         //TODO: add IconView for User List
 
-        //ListView
-        <Table<ListUser>
+        <ElementList
+          data={filteredData}
           columns={tableColumns}
-          dataSource={filteredData}
-          onRow={(element) => ({
-            onMouseEnter: () => setHoveredRowId(element.id),
-            onMouseLeave: () => setHoveredRowId(null),
-            onClick: () => {
-              setSelectedRowKeys([element.id]);
-              setSelectedRows([element]);
-              if (onSelectedRows) onSelectedRows([element]);
-            },
-          })}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (selectedRowKeys: React.Key[], selectedObjects) => {
-              setSelectedRowKeys(selectedRowKeys as string[]);
-              setSelectedRows(selectedObjects);
-              if (onSelectedRows) onSelectedRows(selectedObjects);
-            },
+          elementSelection={{
+            selectedElements: selectedRows,
+            setSelectionElements: setSelectedRows,
           }}
-          pagination={{ position: ['bottomCenter'] }}
-          rowKey="id"
-          loading={loading}
+          tableProps={{
+            onRow: (element) => ({
+              onMouseEnter: () => setHoveredRowId(element.id),
+              onMouseLeave: () => setHoveredRowId(null),
+              onClick: () => {
+                setSelectedRows([element]);
+                if (onSelectedRows) onSelectedRows([element]);
+              },
+
+              pagination: { position: ['bottomCenter'] },
+              rowKey: 'id',
+              loading,
+            }),
+          }}
         />
       )}
     </div>

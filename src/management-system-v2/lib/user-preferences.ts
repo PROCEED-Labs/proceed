@@ -25,22 +25,10 @@ type PreferencesStoreType = {
 
 const defaultPreferences = {
   /* Default User-Settings: */
-  /* 
-  Increase version-number when default value changes
-  When adding a new field don't increase the version number
-  (Increasing the version number will reset the user's settings to the default settings)
-  */
-  version: 3 /* TODO: IMPORTANT: NOTE: Increase, whenever you change some default value */,
+  /* All elements in any array need to have the same type / shape */
   'icon-view-in-process-list': false,
   'icon-view-in-user-list': false,
   'icon-view-in-role-list': false,
-  // 'process-list-columns-desktop': [
-  //   'Favorites',
-  //   'Name',
-  //   'Description',
-  //   'Last Edited',
-  //   'Selected Columns',
-  // ],
   'columns-in-table-view-process-list': [
     { name: 'Favorites', width: 40 },
     { name: 'Name', width: 'auto' },
@@ -53,6 +41,119 @@ const defaultPreferences = {
   'process-meta-data': { open: false, width: 300 },
   'environments-page-side-panel': { open: false, width: 300 },
 }; /* as const */ /* Does not work for strings */
+
+const partialUpdate = (
+  defaultPreferences: PreferencesType,
+  currentPreferences: PreferencesType,
+): PreferencesType => {
+  const updateArray = (defaultArray: any[], currentArray: any[]): any[] => {
+    /* In case default array is empty */
+    if (defaultArray.length === 0) return currentArray;
+
+    /* Shape-Switch */
+    let shapeIsDifferent = false;
+
+    /* just take first element of array, since only the inner shape and not the values are interesting */
+    const defaultValueSample =
+      defaultArray[0]; /* NOTE: Assumes that every default array has at least one entry! (Check above) */
+
+    const updatedArray = currentArray.map((currentValue) => {
+      /* For speed up */
+      if (shapeIsDifferent) return currentValue;
+
+      /* Default elment is an array */
+      if (Array.isArray(defaultValueSample)) {
+        /* Currently saved is not an array */
+        if (!Array.isArray(currentValue)) {
+          shapeIsDifferent = true;
+          return defaultValueSample;
+          /* Currently saved is an array */
+        } else {
+          return updateArray(defaultValueSample, currentValue);
+        }
+        /* Default elment is an an object */
+      } else if (typeof defaultValueSample === 'object' && defaultValueSample !== null) {
+        /* Currently saved is not an object */
+        if (
+          typeof currentValue !== 'object' ||
+          currentValue === null ||
+          Array.isArray(currentValue)
+        ) {
+          shapeIsDifferent = true;
+          return defaultValueSample;
+          /* Currently saved is an object */
+        } else {
+          /* Shape is conform with default shape (first element) */
+          try {
+            const result = updateObject(defaultValueSample, currentValue);
+            return result;
+            /* Shape is not conform with default shape */
+          } catch (error) {
+            shapeIsDifferent = true;
+            return defaultValueSample;
+          }
+        }
+        /* Everything else */
+      } else {
+        return currentValue;
+      }
+    });
+
+    return shapeIsDifferent ? defaultArray : updatedArray;
+  };
+
+  const updateObject = (
+    defaultObject: Record<string, any>,
+    currentObject: Record<string, any>,
+    root: boolean = false,
+  ): Record<string, any> => {
+    let updatedObject: Record<string, any> = {};
+    /* Remove entries not present in default */
+    for (const key in defaultObject) {
+      updatedObject[key] = currentObject.hasOwnProperty(key)
+        ? currentObject[key]
+        : defaultObject[key];
+    }
+
+    for (const key in defaultObject) {
+      /* Not present yet */
+      if (!currentObject.hasOwnProperty(key)) {
+        /* For nested objects -> replace them with default as something has changed */
+        if (!root) throw new Error(`Mismatch in nested object in Preferences: ${key} is missing!`);
+        /* For the root object -> add them as a new user-preference was added */
+        updatedObject[key] = defaultObject[key];
+      } else {
+        const defaultValue = defaultObject[key];
+        const currentValue = currentObject[key];
+        /* Array */
+        if (Array.isArray(defaultValue)) {
+          /* Currently saved is not an array */
+          if (!Array.isArray(currentValue)) {
+            updatedObject[key] = defaultValue;
+            /* Currently saved is an array */
+          } else {
+            updatedObject[key] = updateArray(defaultValue, currentValue);
+          }
+        } else if (typeof defaultValue === 'object' && defaultValue !== null) {
+          /* Currently saved is not an object */
+          if (
+            typeof currentValue !== 'object' ||
+            currentValue === null ||
+            Array.isArray(currentValue)
+          ) {
+            updatedObject[key] = defaultValue;
+            /* Currently saved is an object */
+          } else {
+            updatedObject[key] = updateObject(defaultValue, currentValue);
+          }
+        }
+      }
+    }
+    return updatedObject;
+  };
+
+  return updateObject(defaultPreferences, currentPreferences, true) as PreferencesType;
+};
 
 const useUserPreferencesStore = create<PreferencesStoreType>()(
   persist(
@@ -100,11 +201,10 @@ const _useUserPreferences = (selector?: (state: PreferencesStoreType) => any) =>
   useEffect(() => {
     setHydrated(true);
     useUserPreferencesStore.setState((state) => {
-      if (!state.preferences.version || state.preferences.version < defaultPreferences.version)
-        return { defaultStore, _hydrated: true };
-
       return {
-        preferences: { ...defaultPreferences, ...state.preferences },
+        preferences: {
+          ...partialUpdate(defaultPreferences, state.preferences),
+        },
         _hydrated: true,
       };
     });

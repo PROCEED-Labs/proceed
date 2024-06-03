@@ -44,8 +44,8 @@ const Page = async () => {
     >
       <CreateOrganizationPage
         needsToAuthenticate={needsToAuthenticate}
-        providers={!needsToAuthenticate ? undefined : providers}
-        createNotActiveEnvironment={createInactiveEnvironment}
+        providers={needsToAuthenticate ? providers : undefined}
+        createInactiveEnvironment={createInactiveEnvironment}
       />
     </div>
   );

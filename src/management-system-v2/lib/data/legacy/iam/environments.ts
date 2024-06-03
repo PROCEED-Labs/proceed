@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import Ability from '@/lib/ability/abilityHelper';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { addRole, deleteRole, getRoleByName, roleMetaObjects } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
@@ -116,7 +116,7 @@ export function deleteEnvironment(environmentId: string, ability?: Ability) {
   const environment = environmentsMetaObject[environmentId];
   if (!environment) throw new Error('Environment not found');
 
-  // TODO check ability, maybe people other than the owner can delete the environment
+  if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
 
   const roles = Object.values(roleMetaObjects);
   for (const role of roles) {

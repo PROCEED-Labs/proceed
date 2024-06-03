@@ -3,12 +3,12 @@ import { FC } from 'react';
 import { StarOutlined } from '@ant-design/icons';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 
-type StartType = {
+type StarType = {
   id: string;
-  hovered?: boolean;
+  className?: string;
 };
 
-const FavouriteStar: FC<StartType> = ({ id, hovered }) => {
+const FavouriteStar: FC<StarType> = ({ id, className }) => {
   const { favourites: favs, updateFavouriteProcesses: updateFavs } = useFavouriteProcesses();
 
   return (
@@ -16,12 +16,14 @@ const FavouriteStar: FC<StartType> = ({ id, hovered }) => {
       <StarOutlined
         style={{
           color: favs?.includes(id) ? '#FFD700' : undefined,
-          opacity: hovered || favs?.includes(id) ? 1 : 0,
         }}
         onClick={(e) => {
           e.stopPropagation();
           updateFavs(id);
+          console.log(id);
+          console.log(favs);
         }}
+        className={favs?.includes(id) ? undefined : className}
       />
     </>
   );

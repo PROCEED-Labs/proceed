@@ -73,32 +73,32 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
               <Element is={Container} padding={5} background="#fff" canvas>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="1"></Text>
+                    <Text text="Hello World"></Text>
                   </Column>
                 </Element>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="2"></Text>
+                    <Text text="Hello Universe"></Text>
                   </Column>
                 </Element>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="3"></Text>
+                    <Text text="ABCDEFG"></Text>
                   </Column>
                 </Element>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="4"></Text>
+                    <Text text="Test123"></Text>
                   </Column>
                 </Element>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="5"></Text>
+                    <Text text="Lorem Ipsum"></Text>
                   </Column>
                 </Element>
                 <Element is={Row} canvas>
                   <Column>
-                    <Text text="6"></Text>
+                    <Text text="Dolor sit amet"></Text>
                   </Column>
                 </Element>
               </Element>

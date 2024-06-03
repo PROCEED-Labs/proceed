@@ -20,6 +20,7 @@ body {
   flex: 1 0 0;
   box-sizing: border-box;
   height: fit-content;
+  border: 2px solid lightgrey;
 }
 
 @media only screen and (max-width: 600px) {
@@ -37,7 +38,7 @@ body {
   flex-wrap: wrap;
 }
 
-.user-task-form-container {      
+.user-task-form-container {
   height: 100%;
 }
 
@@ -53,7 +54,7 @@ body {
 }
 
 .user-task-form-input input {
-  box-sizing: border-box; 
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid #d9d9d9;
   padding: 4px 11px;
@@ -121,6 +122,10 @@ export const iframeDocument = `
       .frame-content > div {
         box-sizing: border-box;
         padding: 0 10px;
+      }
+
+      .user-task-form-container svg {
+        height: 50px;
       }
 
       ${styles}

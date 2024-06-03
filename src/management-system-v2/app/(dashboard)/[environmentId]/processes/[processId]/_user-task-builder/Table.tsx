@@ -178,6 +178,7 @@ const Table: UserComponent<TableProps> = ({
 
             {/* add a new row (cannot add a row before the header row) */}
             {isHovered && colIndex === tD[0].length - 1 && (
+              // TODO: Seems not to work if the button is clicked outside of the borders of the table
               <Button
                 style={{
                   position: 'absolute',

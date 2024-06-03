@@ -13,7 +13,7 @@ function highlightText<TObj>(
   dataIndexElement: keyof TObj,
   color: string = '#3e93de',
 ) {
-  const value = fuseElement.item[dataIndexElement] as string | undefined;
+  const value = (fuseElement.item[dataIndexElement] as string) || '';
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 
   if (!matches || !value) return { highlighted: <span>{value}</span>, value };

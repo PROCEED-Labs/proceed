@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Grid, Row, TableColumnsType, Tooltip } from 'antd';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, Tooltip } from 'antd';
 import { useCallback, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
 import {
   CopyOutlined,
@@ -12,22 +12,36 @@ import {
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
-import { useRouter } from 'next/navigation';
 import styles from './item-list-view.module.scss';
 import { generateDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { AuthCan } from '@/components/auth-can';
 import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
-import Link from 'next/link';
 import { useColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
+
+/** respects sorting function, but always keeps folders at the beginning */
+function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
+  const sorter: TableColumnType<ProcessListProcess>['sorter'] = (a, b, sortOrder) => {
+    const factor = sortOrder === 'ascend' ? 1 : -1;
+    if (a.type === 'folder' && b.type !== 'folder') {
+      return factor * -1;
+    } else if (a.type !== 'folder' && b.type === 'folder') {
+      return factor;
+    } else {
+      return sortFunction(a, b);
+    }
+  };
+
+  return sorter;
+}
 
 type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
@@ -40,8 +54,6 @@ type ProcessListProps = PropsWithChildren<{
   processActions: ProcessActions;
 }>;
 
-const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
-
 const ProcessList: FC<ProcessListProps> = ({
   data,
   folder,
@@ -52,8 +64,6 @@ const ProcessList: FC<ProcessListProps> = ({
   processActions: { deleteItems, editItem, copyItem },
   setShowMobileMetaData,
 }) => {
-  const router = useRouter();
-  const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
 
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
@@ -143,7 +153,8 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Name',
       dataIndex: 'name',
       key: 'Name',
-      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      ellipsis: true,
+      sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
         <SpaceLink
           href={
@@ -153,6 +164,8 @@ const ProcessList: FC<ProcessListProps> = ({
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
             display: 'block',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
           }}
         >
           <div
@@ -182,7 +195,6 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
         <SpaceLink
           href={
@@ -216,8 +228,10 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
-      render: (date: Date) => generateDateString(date, true),
-      // sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      render: (date: string) => generateDateString(date, true),
+      sorter: folderAwareSort(
+        (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      ),
       responsive: ['md'],
     },
     {
@@ -225,20 +239,27 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      // sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      sorter: folderAwareSort(
+        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      ),
       responsive: ['md'],
     },
     {
       title: 'File Size',
       key: 'File Size',
-      sorter: (a, b) => (a < b ? -1 : 1),
+      sorter: folderAwareSort((a, b) => (a < b ? -1 : 1)),
       responsive: ['md'],
     },
     {
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      // sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
+      sorter: folderAwareSort((a, b) =>
+        (a.type === 'folder' ? a.createdBy : a.owner).localeCompare(
+          b.type === 'folder' ? b.createdBy : b.owner,
+        ),
+      ),
       responsive: ['md'],
     },
     {
@@ -291,7 +312,7 @@ const ProcessList: FC<ProcessListProps> = ({
           addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-        allColumnTitles: ColumnHeader,
+        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'],
         columnProps: {
           width: 'fit-content',
           responsive: ['xl'],

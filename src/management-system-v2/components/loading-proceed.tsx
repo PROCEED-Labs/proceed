@@ -7,9 +7,14 @@ import style from './loading-proceed.module.scss';
 type LoadingProps = {
   width?: number | string;
   height?: number | string;
+  innerShrink?: string;
 };
 
-const ProceedLoading: FC<LoadingProps> = ({ width = '250px', height /* = '155px' */ }) => {
+const ProceedLoading: FC<LoadingProps> = ({
+  width = '250px',
+  height /* = '155px' */,
+  innerShrink = '100%',
+}) => {
   height = height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
   return (
     <div
@@ -23,10 +28,22 @@ const ProceedLoading: FC<LoadingProps> = ({ width = '250px', height /* = '155px'
         alignItems: 'center',
       }}
     >
-      <div className={style['small-Chevron']} />
-      <div className={style['big-Chevron']} />
-      {/* <Image src="/proceed-icon.png" alt="Proceed Loading" layout="fill" objectFit="contain" /> */}
-      {/* For comparison */}
+      <div
+        style={{
+          width: innerShrink,
+          height: innerShrink,
+          // border: '1px solid black',
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <div className={style['small-Chevron']} />
+        <div className={style['big-Chevron']} />
+        {/* <Image src="/proceed-icon.png" alt="Proceed Loading" layout="fill" objectFit="contain" /> */}
+        {/* For comparison */}
+      </div>
     </div>
   );
 };

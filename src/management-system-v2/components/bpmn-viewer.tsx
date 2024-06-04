@@ -68,7 +68,7 @@ type LazyLoadingBPMNViewerProps = BPMNViewerProps & {
 };
 
 export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
-  fallback = <ProceedLoading />,
+  fallback = <ProceedLoading innerShrink="50%" />,
   ...props
 }) => {
   const ViewerContainerRef = useRef(null);

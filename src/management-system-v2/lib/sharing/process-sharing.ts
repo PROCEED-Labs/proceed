@@ -5,7 +5,7 @@ import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
-import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '../data/legacy/iam/memberships';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -69,7 +69,7 @@ export async function generateSharedViewerUrl(
 export async function getAllUserWorkspaces(userId: string) {
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );

@@ -45,16 +45,19 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
     startTransition(async () => {
       try {
         const result = await deleteOrganizationEnvironments(environmentIds);
-        if (result && 'error' in result) throw new Error();
+        if (result && 'error' in result) throw result.error;
 
         setSelectedRows([]);
         router.refresh();
         message.open({
-          content: `Environment${environmentIds.length > 1 && 's'} deleted`,
+          content: `Environment${environmentIds.length > 1 ? 's' : ''} deleted`,
           type: 'success',
         });
       } catch (e) {
-        message.open({ content: 'Something went wrong', type: 'error' });
+        console.log(e);
+        //@ts-ignore
+        const content = (e && e?.message) || 'Something went wrong';
+        message.open({ content, type: 'error' });
       }
     });
   }

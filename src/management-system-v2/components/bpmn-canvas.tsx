@@ -172,7 +172,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           proceed: schema,
         },
       });
-      console.log('modeler.current', modeler.current);
 
       if (type === 'modeler') {
         // Allow keyboard shortcuts like copy (ctrl+c) and paste (ctrl+v) etc.
@@ -252,8 +251,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           return;
         }
 
-        console.log('importing');
-
         // Import the new bpmn.
         await m.importXML(bpmn.bpmn);
         if (m !== modeler.current) {
@@ -276,7 +273,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         // We store the callback so we can await it before we load the next
         // BPMN. This gives the parent a chance to save before throwing away the
         // current BPMN.
-        console.log('unload');
 
         unloadPromise.current = onUnload?.(modeler.current!);
 

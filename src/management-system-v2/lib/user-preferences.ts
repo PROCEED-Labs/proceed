@@ -58,7 +58,7 @@ const partialUpdate = (
       defaultArray[0]; /* NOTE: Assumes that every default array has at least one entry! (Check above) */
 
     const updatedArray = currentArray.map((currentValue) => {
-      /* For speed up */
+      /* For speed up (cannot break map)*/
       if (shapeIsDifferent) return currentValue;
 
       /* Default elment is an array */
@@ -83,15 +83,7 @@ const partialUpdate = (
           return defaultValueSample;
           /* Currently saved is an object */
         } else {
-          /* Shape is conform with default shape (first element) */
-          try {
-            const result = updateObject(defaultValueSample, currentValue);
-            return result;
-            /* Shape is not conform with default shape */
-          } catch (error) {
-            shapeIsDifferent = true;
-            return defaultValueSample;
-          }
+          return updateObject(defaultValueSample, currentValue);
         }
         /* Everything else */
       } else {
@@ -108,18 +100,18 @@ const partialUpdate = (
     root: boolean = false,
   ): Record<string, any> => {
     let updatedObject: Record<string, any> = {};
-    /* Remove entries not present in default */
-    for (const key in defaultObject) {
-      updatedObject[key] = currentObject.hasOwnProperty(key)
-        ? currentObject[key]
-        : defaultObject[key];
-    }
+    /* Shape-Switch */
+    let shapeIsDifferent = false;
 
+    /* Add all entries from default (implicitly removes entries not present in default) */
     for (const key in defaultObject) {
       /* Not present yet */
       if (!currentObject.hasOwnProperty(key)) {
         /* For nested objects -> replace them with default as something has changed */
-        if (!root) throw new Error(`Mismatch in nested object in Preferences: ${key} is missing!`);
+        if (!root) {
+          shapeIsDifferent = true;
+          break;
+        }
         /* For the root object -> add them as a new user-preference was added */
         updatedObject[key] = defaultObject[key];
       } else {
@@ -134,6 +126,7 @@ const partialUpdate = (
           } else {
             updatedObject[key] = updateArray(defaultValue, currentValue);
           }
+          /* Object */
         } else if (typeof defaultValue === 'object' && defaultValue !== null) {
           /* Currently saved is not an object */
           if (
@@ -146,10 +139,14 @@ const partialUpdate = (
           } else {
             updatedObject[key] = updateObject(defaultValue, currentValue);
           }
+          /* Everything else */
+        } else {
+          updatedObject[key] = currentValue;
         }
       }
     }
-    return updatedObject;
+
+    return shapeIsDifferent ? defaultObject : updatedObject;
   };
 
   return updateObject(defaultPreferences, currentPreferences, true) as PreferencesType;
@@ -232,8 +229,6 @@ for (const preference of Object.keys(defaultPreferences)) {
  *
  * @example
  * // Accessing a specific preference value
- * import { useUserPreferences } from './user-preferences';
- *
  * const MyComponent = () => {
  *   const iconViewInProcessList = useUserPreferences.use['icon-view-in-process-list']();
  *   return <div>{iconViewInProcessList ? 'Icon view is enabled' : 'Icon view is disabled'}</div>;
@@ -241,8 +236,6 @@ for (const preference of Object.keys(defaultPreferences)) {
  *
  * @example
  * // Updating preferences
- * import { useUserPreferences } from './user-preferences';
- *
  * const MyComponent = () => {
  *   const addPreferences = useUserPreferences.use.addPreferences();
  *   const handleClick = () => {
@@ -253,9 +246,6 @@ for (const preference of Object.keys(defaultPreferences)) {
  *
  * @example
  * // Using preferences in a custom hook
- * import { useUserPreferences } from './user-preferences';
- * import ReactDOMServer from 'react-dom/server';
- *
  * export const useColumnWidth = (
  *   preferenceKey: string,
  *   someOtherProp: NonNullable<TableProps['columns']>,
@@ -267,8 +257,6 @@ for (const preference of Object.keys(defaultPreferences)) {
  *
  * @example
  * // Using the store directly
- * import { useUserPreferences } from './user-preferences';
- *
  * const { preferences, addPreferences } = useUserPreferences();
  * // ...
  */

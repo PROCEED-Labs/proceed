@@ -1,4 +1,4 @@
-import { test, expect } from './process-modeler.fixtures';
+import { test, testShortcuts, expect } from './process-modeler.fixtures';
 
 test('process modeler', async ({ processModelerPage }) => {
   // Open/close XML Viewer
@@ -129,24 +129,30 @@ test('process modeler', async ({ processModelerPage }) => {
   expect(newSubprocessDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
 });
 
-test.describe('Shortcuts in Modeler', () => {
-  test('close modeler / go to process list with shortcut', async ({ processModelerPage }) => {
-    const { page } = processModelerPage;
+testShortcuts.describe('Shortcuts in Modeler', () => {
+  testShortcuts(
+    'close modeler / go to process list with shortcut',
+    async ({ processModelerPage }) => {
+      const { page } = processModelerPage;
 
-    /* Close modeler */
-    await page.getByRole('main').press('Escape');
-    await page.getByRole('main').press('Escape');
+      /* Close modeler */
+      await page.getByRole('main').press('Escape');
+      await page.getByRole('main').press('Escape');
 
-    await processModelerPage.waitForHydration();
+      /* Wait for navigation change */
+      await page.waitForURL(/\/processes$/);
 
-    /* Check if back at Process-List */
-    await expect(page.url(), 'Could not close modeler with shortcut (2*esc)').toMatch(
-      /\/processes$/,
-    );
-  });
+      // await processModelerPage.waitForHydration();
+
+      /* Check if back at Process-List */
+      // await expect(page.url(), 'Could not close modeler with shortcut (2*esc)').toMatch(
+      //   /\/processes$/,
+      // );
+    },
+  );
 
   /* ctrl / meta + enter */
-  test('open Property-Panel with shortcut', async ({ processModelerPage }) => {
+  testShortcuts('open Property-Panel with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
     /* Open Modal */
@@ -177,7 +183,7 @@ test.describe('Shortcuts in Modeler', () => {
     ).toBeVisible();
   });
 
-  test('open Share-Modal with shortcut', async ({ processModelerPage }) => {
+  testShortcuts('open Share-Modal with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
     /* Open Share-Modal with Shift+Enter */
@@ -209,7 +215,7 @@ test.describe('Shortcuts in Modeler', () => {
     await expect(modal, 'Share-Modal should be closeable via shortcuts').not.toBeVisible();
   });
 
-  test('open XML with shortcut', async ({ processModelerPage }) => {
+  testShortcuts('open XML with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
     /* Open XML with ctrl / meta + x */
@@ -244,7 +250,7 @@ test.describe('Shortcuts in Modeler', () => {
   });
 
   /* ctrl / meta + e */
-  test('open Export-Modal with shortcut', async ({ processModelerPage }) => {
+  testShortcuts('open Export-Modal with shortcut', async ({ processModelerPage }) => {
     const { page } = processModelerPage;
 
     /* Open Export-Modal with ctrl / meta + e */

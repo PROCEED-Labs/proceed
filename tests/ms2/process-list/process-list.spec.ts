@@ -596,9 +596,9 @@ test.describe('shortcuts in process-list', () => {
     /* Fill in the form */
     await page.getByRole('dialog').press('Tab');
     await page.getByRole('dialog').press('Tab');
-    await page.getByLabel('Process Name').fill('Some Name');
-    await page.getByLabel('Process Name').press('Tab');
-    await page.getByLabel('Process Description').fill('Some Description');
+    await page.getByLabel(/name/i).fill('Some Name');
+    await page.getByLabel(/name/i).press('Tab');
+    await page.getByLabel(/description/i).fill('Some Description');
 
     /* Submit form with ctrl + enter */
     await page.getByRole('main').press('Control+Enter');
@@ -758,10 +758,11 @@ test.describe('shortcuts in process-list', () => {
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
   test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {
     const { page } = processListPage;
+    const processName = 'Copy me via shortcut';
 
     /* Create a process */
     const processID = await processListPage.createProcess({
-      processName: 'Copy me via shortcut',
+      processName: processName,
       returnToProcessList: true,
     });
 
@@ -792,10 +793,17 @@ test.describe('shortcuts in process-list', () => {
       page.locator('tbody>tr'),
       'Could not find copied process in Process-List',
     ).toHaveCount(2);
+    /* Check with name */
+    await expect(page.locator('tbody')).toContainText(processName + ' (Copy)');
 
     /* Copy & Paste - META */
     await page.getByRole('main').press('Meta+c');
     await page.getByRole('main').press('Meta+v');
+    /* Make name unique */
+    await page.getByRole('dialog').press('Tab');
+    await page.getByRole('dialog').press('Tab');
+    await page.getByLabel(/name/i).press('ArrowRight');
+    await page.getByLabel(/name/i).fill(processName + ' - Meta');
 
     /* Check if Modal is visible */
     const modal2 = await page.getByRole('dialog');
@@ -810,6 +818,8 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Process has been added */
     await expect(page.locator('tbody>tr')).toHaveCount(3);
+    /* Check with name */
+    await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
   });
 
   /* Open Export Modal - ctrl / meta + e */

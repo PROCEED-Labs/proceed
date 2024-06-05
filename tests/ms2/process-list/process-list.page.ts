@@ -163,6 +163,10 @@ export class ProcessListPage {
       await page.waitForURL('**/processes');
       // check if there are processes to remove
       if (!(await page.locator('tr[data-row-key]').all()).length) return;
+
+      await page.waitForTimeout(
+        100,
+      ); /* Checking 'select all' is flaky TODO: replace timeout with proper fix */
       // remove all processes
       await page.getByLabel('Select all').check();
       await page.getByRole('button', { name: 'delete' }).first().click();

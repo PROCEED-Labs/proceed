@@ -33,10 +33,11 @@ export class ProcessModelerPage {
     options: {
       processName?: string;
       description?: string;
-    } = { processName: 'My Process', description: 'Process Description' },
+      hydrate?: boolean;
+    } = { processName: 'My Process', description: 'Process Description', hydrate: false },
   ) {
     const page = this.page;
-    const { processName, description } = options;
+    const { processName, description, hydrate } = options;
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
@@ -53,7 +54,9 @@ export class ProcessModelerPage {
     this.processName = processName;
     this.processDescription = description;
 
-    await this.waitForHydration();
+    if (hydrate) {
+      await this.waitForHydration();
+    }
   }
 
   async waitForHydration() {

@@ -8,8 +8,6 @@ export default class CustomPositioner {
   store: EditorStore;
   dragShadow: HTMLElement | null = null;
 
-  lockedAxis: 'x' | 'y' | null = null;
-
   updateTimeout: ReturnType<typeof setTimeout> | null = null;
   offsetDuringTimeout = { x: 0, y: 0 };
   currentMousePos = { x: 0, y: 0 };
@@ -134,18 +132,8 @@ export default class CustomPositioner {
     e.stopPropagation();
     e.preventDefault();
 
-    if (e.ctrlKey) {
-      if (!this.lockedAxis) {
-        this.lockedAxis = e.movementX > e.movementY ? 'x' : 'y';
-      }
-
-      if (this.lockedAxis === 'x') this.offsetDuringTimeout.x += e.movementX;
-      else this.offsetDuringTimeout.y += e.movementY;
-    } else {
-      this.lockedAxis = null;
-      this.offsetDuringTimeout.x += e.movementX;
-      this.offsetDuringTimeout.y += e.movementY;
-    }
+    this.offsetDuringTimeout.x += e.movementX;
+    if (!e.ctrlKey) this.offsetDuringTimeout.y += e.movementY;
 
     this.currentMousePos = e;
 
@@ -261,7 +249,7 @@ export default class CustomPositioner {
       if (targetId === ROOT_NODE) {
         inContainer = sTop > top && sCenter > left && sCenter < right;
       } else {
-        inContainer = sTop > top && sCenter > left + 20 && sCenter < right - 20;
+        inContainer = sTop > top && sTop < bottom && sCenter > left + 20 && sCenter < right - 20;
       }
     } else return;
 
@@ -336,16 +324,32 @@ export default class CustomPositioner {
       } = this.dragShadow.getBoundingClientRect();
       posX = sLeft + sWidth / 2;
 
-      if (moveNode?.dom && moveNodeParent && moveNodeParent.data.nodes.length === 1) {
-        // instead of checking if only one child check if smaller when the child leaves
-        const { top: mTop, height: mHeight } = moveNode.dom.getBoundingClientRect();
+      if (moveNode?.dom && moveNodeParent?.dom) {
+        const { height: mHeight } = moveNode.dom.getBoundingClientRect();
+        const { top: pTop } = moveNodeParent.dom.getBoundingClientRect();
 
-        if (mTop < top) {
-          inRow = sTop > top - mHeight && sTop < bottom - mHeight;
+        if (pTop - 1 < top) {
+          let highestSiblingHeight = 0;
+
+          // TODO: handle flex-wrap somehow; this assumes that there is no wrap in the parent row
+          const siblings = moveNodeParent.data.nodes;
+          siblings.forEach((id) => {
+            if (id !== moveNode.id) {
+              const sibling = this.store.query.node(id).get();
+
+              if (sibling?.dom) {
+                const { height } = sibling.dom.getBoundingClientRect();
+                if (highestSiblingHeight < height) highestSiblingHeight = height;
+              }
+            }
+          });
+
+          const heightDiff = mHeight > highestSiblingHeight ? mHeight - highestSiblingHeight : 0;
+          console.log(heightDiff);
+          inRow = sTop > top - heightDiff && sTop < bottom - heightDiff;
         } else {
           inRow = sTop > top && sTop < bottom;
         }
-        if (moveNodeParent.id === node.id && inRow) return;
       } else {
         inRow = sTop > top && sTop < bottom;
       }

@@ -1,6 +1,6 @@
 import { DefaultEventHandlers, NodeId, Node, NodeTree } from '@craftjs/core';
 
-import CustomPositioner from './CustomPositioner2';
+import CustomPositioner from './CustomPositioner';
 import React from 'react';
 
 export default class CustomEventhandlers extends DefaultEventHandlers {

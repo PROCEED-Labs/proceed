@@ -86,9 +86,6 @@ yarn dev-engine-web
 ```
 // NextJS frontend
 yarn dev-ms
-
-// NextJS frontend without Authentication & Authorization
-yarn dev-ms-no-iam
 ```
 
 **Old Vue Management System:**
@@ -188,19 +185,21 @@ To stop a running Docker container, execute the following:
 yarn docker:stop
 ```
 
-To create a new Docker images from source, execute the following:
-
 **MS Server:**
 
-```
-yarn docker:run-server
-```
-
-And to stop the server again:
+> Note: To enable our monorepo setup and avoid lengthy install times, we reuse the MS build inside the MS docker image. This means you first have to build the MS with `yarn build-ms` and then run these commands:
 
 ```
-yarn docker:stop-server
+yarn docker:build-ms
 ```
+
+And to start the server:
+
+```
+yarn docker:run-ms
+```
+
+> That command will use the `.env.development` file inside the MS-v2 folder. You can change the script there to use different environment variables.
 
 For the exact docker commands look into the Dockerfiles for the Engine and the Server.
 There are multiple options and possibilities explained to start and configure the Docker container.

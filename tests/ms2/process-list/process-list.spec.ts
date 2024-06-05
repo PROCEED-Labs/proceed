@@ -4,15 +4,10 @@ import { test, expect } from './process-list.fixtures';
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  await page.getByRole('button', { name: 'plus New' }).click();
-  await page.getByRole('menuitem', { name: 'file Create Process' }).click();
-  await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
-  await page.getByLabel('Process Description').click();
-  await page.getByLabel('Process Description').fill('Process Description');
-  await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
-
-  const processDefinitionID = page.url().split('processes/').pop();
+  const processDefinitionID = await processListPage.createProcess({
+    processName: 'Process Name',
+    description: 'Process Description',
+  });
 
   await processListPage.goto();
 
@@ -394,7 +389,7 @@ test('share-modal-test', async ({ processListPage }) => {
 test('toggle process list columns', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+  const ColumnHeader = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -420,7 +415,7 @@ test('test that selected columns are persisted on reload', async ({ processListP
   const { page } = processListPage;
 
   const VisibleColumns = ['Created On', 'File Size', 'Owner'];
-  const HiddenColumns = ['Name', 'Description', 'Last Edited'];
+  const HiddenColumns = ['Description', 'Last Edited'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -482,7 +477,8 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const { page } = processListPage;
   const folderId = crypto.randomUUID();
 
-  await page.getByRole('button', { name: 'plus New' }).click();
+  // NOTE: this could easily break
+  await page.getByRole('button', { name: 'ellipsis' }).hover();
   await page.getByRole('menuitem', { name: 'Create Folder' }).click();
   await page.getByLabel('Folder name').fill(folderId);
   await page.getByRole('button', { name: 'OK' }).click();
@@ -504,7 +500,7 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // create folder
   const folderId = crypto.randomUUID();
-  await page.getByRole('button', { name: 'plus New' }).click();
+  await page.getByText('No data').click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'Create Folder' }).click();
   await page.getByLabel('Folder name').fill(folderId);
   await page.getByRole('button', { name: 'OK' }).click();
@@ -513,12 +509,7 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // create process
   const processId = crypto.randomUUID();
-  await page.getByRole('button', { name: 'plus New' }).click();
-  await page.getByRole('menuitem', { name: 'file Create Process' }).click();
-  await page.getByRole('textbox', { name: '* Process Name :' }).fill(processId);
-  await page.getByRole('button', { name: 'Create' }).click();
-  await page.waitForURL(/\/processes\/([a-zA-Z0-9-_]+)/);
-  const processDefinitionID = page.url().split('processes/').pop();
+  const processDefinitionID = await processListPage.createProcess({ processName: processId });
   await processListPage.goto();
   const processLocator = page.locator(`tr[data-row-key="${processDefinitionID}"]`);
   await expect(processLocator).toBeVisible();

@@ -14,7 +14,7 @@ import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
@@ -131,7 +131,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );

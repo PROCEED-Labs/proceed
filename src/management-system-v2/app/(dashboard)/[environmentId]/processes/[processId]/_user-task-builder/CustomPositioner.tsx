@@ -249,7 +249,7 @@ export default class CustomPositioner {
       if (targetId === ROOT_NODE) {
         inContainer = sTop > top && sCenter > left && sCenter < right;
       } else {
-        inContainer = sTop > top && sTop < bottom && sCenter > left + 20 && sCenter < right - 20;
+        inContainer = sTop > top && sCenter > left + 20 && sCenter < right - 20;
       }
     } else return;
 

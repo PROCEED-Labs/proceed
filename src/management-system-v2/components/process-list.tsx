@@ -259,8 +259,8 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Owner',
       render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
         ),
       ),
       responsive: ['md'],

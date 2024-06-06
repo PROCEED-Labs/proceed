@@ -56,7 +56,8 @@
     "nodemailer": "6.9.13",
     "@dnd-kit/core": "6.1.0",
     "@dnd-kit/modifiers": "7.0.0",
-    "@react-email/components": "^0.0.15"
+    "@react-email/components": "^0.0.15",
+    "libphonenumber-js": "^1.11.1"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "5.28.11",

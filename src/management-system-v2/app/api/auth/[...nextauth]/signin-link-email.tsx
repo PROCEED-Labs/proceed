@@ -24,7 +24,7 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
   return (
     <Html>
       <Head />
-      <Preview>AWS Email Verification</Preview>
+      <Preview>PROCEED magic link</Preview>
       <Body
         style={{
           backgroundColor: '#fff',

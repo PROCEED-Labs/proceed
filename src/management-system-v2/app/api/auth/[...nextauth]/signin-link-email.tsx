@@ -29,6 +29,7 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
         style={{
           backgroundColor: '#fff',
           color: '#212121',
+          textAlign: 'center',
         }}
       >
         <Container
@@ -38,7 +39,11 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
             backgroundColor: '#eee',
           }}
         >
-          <Section style={{ backgroundColor: '#fff' }}>
+          <Section
+            style={{
+              backgroundColor: '#fff',
+            }}
+          >
             <Section
               style={{
                 backgroundColor: '#252f3d',
@@ -67,54 +72,50 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
                 Hi, with this mail you can sign in to your PROCEED account. If you don&apos;t have
                 an account yet, a new one will be created for you. Just click on the following link:
               </Text>
-              <Section
+
+              <Text
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  ...text,
+                  margin: 0,
+                  marginTop: '20x',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                }}
+              >
+                Sign in Link
+              </Text>
+
+              <Link
+                href={signInLink}
+                target="_blank"
+                style={{
+                  ...link,
+                  fontWeight: 'bold',
+                  margin: '10px 0',
+                  width: '100%',
+                  textAlign: 'center',
                 }}
               >
                 <Text
                   style={{
-                    ...text,
-                    margin: 0,
+                    textAlign: 'center',
                     fontWeight: 'bold',
-                    textAlign: 'center' as const,
+                    fontSize: '16px',
                   }}
                 >
-                  Sign in Link
+                  Signin to PROCEED
                 </Text>
+              </Link>
 
-                <Link
-                  href={signInLink}
-                  target="_blank"
-                  style={{
-                    ...link,
-                    margin: '10px 0',
-                    width: '100%',
-                  }}
-                >
-                  <Text
-                    style={{
-                      textAlign: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '16px',
-                    }}
-                  >
-                    Signin to PROCEED
-                  </Text>
-                </Link>
-
-                <Text
-                  style={{
-                    ...text,
-                    margin: '0px',
-                    textAlign: 'center' as const,
-                  }}
-                >
-                  (This link is valid for {linkDuration} hours)
-                </Text>
-              </Section>
+              <Text
+                style={{
+                  ...text,
+                  margin: '0px',
+                  textAlign: 'center' as const,
+                }}
+              >
+                (This link is valid for {linkDuration} hours)
+              </Text>
             </Section>
             <Hr />
             <Section style={{ padding: '25px 35px' }}>

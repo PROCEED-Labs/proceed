@@ -405,6 +405,12 @@ test('documentation page functionality', async ({ processListPage }) => {
   // check that the option to show elements that have no meta data and contain no other elements works as well (here in combination with the previously deselected options)
   await documentationPage.getByRole('button', { name: 'setting' }).click();
   await documentationPage.getByLabel('Exclude Empty Elements').uncheck();
+
+  // prevent the tooltip of the unchecked checkbox from overlapping the confirmation button when we try to click it next
+  let tooltips = await documentationPage.getByRole('tooltip').all();
+  await documentationPage.mouse.move(0, 0);
+  await Promise.all(tooltips.map((tooltip) => tooltip.waitFor({ state: 'hidden' })));
+
   await documentationPage.getByRole('button', { name: 'OK' }).click();
 
   const elementSection = await documentationPage.locator(

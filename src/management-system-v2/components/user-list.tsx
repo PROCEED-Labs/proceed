@@ -82,7 +82,8 @@ const UserList: FC<UserListProps> = ({
               <Avatar src={user.image}>
                 {user.image
                   ? null
-                  : user.firstName.value.slice(0, 1) + user.lastName.value.slice(0, 1)}
+                  : (user.firstName.value?.slice(0, 1) ?? '') +
+                    (user.lastName.value?.slice(0, 1) ?? '')}
               </Avatar>
               <span>
                 {highlightKeys ? (

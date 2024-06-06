@@ -18,6 +18,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { SigninOptions } from '@/components/signin-options';
 
 const SignIn: FC<{
   providers: ExtractedProvider[];
@@ -61,83 +62,10 @@ const SignIn: FC<{
         Sign in
       </Typography.Title>
 
+      <SigninOptions providers={providers} callbackUrl={callbackUrl} />
+
       {authError && <Alert description={authError} type="error" style={{ marginBottom: '2rem' }} />}
 
-      {providers.map((provider, idx) => {
-        let loginMethod: ReactNode;
-        if (provider.type === 'credentials') {
-          loginMethod = (
-            <Form
-              onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
-              key={provider.id}
-              layout="vertical"
-            >
-              {Object.keys(provider.credentials).map((key) => (
-                <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
-                  <Input placeholder={provider.credentials[key].label} />
-                </Form.Item>
-              ))}
-              <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                {provider.name}
-              </Button>
-            </Form>
-          );
-        } else if (provider.type === 'oauth') {
-          loginMethod = (
-            <Button
-              key={idx}
-              style={{
-                backgroundColor: provider.style?.bg,
-                color: provider.style?.text,
-                width: '100%',
-                marginBottom: '.5rem',
-              }}
-              icon={
-                <AntDesignImage
-                  width={20}
-                  src={`https://authjs.dev/img/providers${provider.style?.logo}`}
-                  alt={provider.name}
-                />
-              }
-              onClick={() => signIn(provider.id, { callbackUrl })}
-            >
-              Continue with {provider.name}
-            </Button>
-          );
-        } else if (provider.type === 'email') {
-          loginMethod = (
-            <Form
-              onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
-              key={provider.id}
-              layout="vertical"
-            >
-              <Form.Item
-                name="email"
-                rules={[{ type: 'email', required: true }]}
-                style={{ marginBottom: '.5rem' }}
-              >
-                <Input placeholder="Email" />
-              </Form.Item>
-              <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                Continue with {provider.name}
-              </Button>
-            </Form>
-          );
-        }
-
-        return (
-          <Fragment key={provider.id}>
-            {loginMethod}
-            {idx < providers.length - 1 && provider.type !== 'oauth' && (
-              <Divider style={{ color: 'black' }}>
-                <Typography.Text style={{ display: 'block', textAlign: 'center', padding: '1rem' }}>
-                  OR
-                </Typography.Text>
-              </Divider>
-            )}
-          </Fragment>
-        );
-      })}
       <Typography.Text style={{ display: 'block', textAlign: 'center', padding: '1rem' }}>
         By signing in, you agree to our <Link href="/terms">Terms of Service</Link>
       </Typography.Text>

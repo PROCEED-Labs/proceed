@@ -68,7 +68,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
             if (React.isValidElement(result)) {
               tree = query.parseReactElement(result).toNodeTree();
             } else {
-              tree = result;
+              tree = result as NodeTree;
             }
           } else {
             tree = query.parseReactElement(userElement).toNodeTree();

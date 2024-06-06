@@ -22,7 +22,9 @@ const Container: UserComponent<ContainerProps> = ({
 
   return (
     <div
-      ref={(r) => connect(r)}
+      ref={(r) => {
+        r && connect(r);
+      }}
       className="user-task-form-container"
       style={{ padding, background, border: `${borderThickness}px solid ${borderColor}` }}
     >
@@ -58,7 +60,7 @@ export const ContainerSettings = () => {
           addonAfter="px"
           value={padding}
           onChange={(val) =>
-            setProp((props) => {
+            setProp((props: ContainerProps) => {
               props.padding = val;
             })
           }
@@ -71,7 +73,7 @@ export const ContainerSettings = () => {
         <ColorPicker
           value={background}
           onChange={(_, val) =>
-            setProp((props) => {
+            setProp((props: ContainerProps) => {
               props.background = val;
             })
           }
@@ -86,7 +88,7 @@ export const ContainerSettings = () => {
           addonAfter="px"
           value={borderThickness}
           onChange={(val) =>
-            setProp((props) => {
+            setProp((props: ContainerProps) => {
               props.borderThickness = val;
             })
           }
@@ -99,7 +101,7 @@ export const ContainerSettings = () => {
         <ColorPicker
           value={borderColor}
           onChange={(_, val) =>
-            setProp((props) => {
+            setProp((props: ContainerProps) => {
               props.borderColor = val;
             })
           }

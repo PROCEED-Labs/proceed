@@ -6,7 +6,12 @@ const Row: UserComponent<React.PropsWithChildren> = ({ children }) => {
   } = useNode();
 
   return (
-    <div ref={(r) => connect(r)} className="user-task-form-row">
+    <div
+      ref={(r) => {
+        r && connect(r);
+      }}
+      className="user-task-form-row"
+    >
       {children}
     </div>
   );

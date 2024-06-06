@@ -13,7 +13,13 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({ children }) => {
   } = useNode();
 
   return (
-    <button type="submit" className="user-task-form-button" ref={(r) => connect(r)}>
+    <button
+      type="submit"
+      className="user-task-form-button"
+      ref={(r) => {
+        r && connect(r);
+      }}
+    >
       {children}
     </button>
   );

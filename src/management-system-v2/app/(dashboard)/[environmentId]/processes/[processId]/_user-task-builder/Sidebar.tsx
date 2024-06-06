@@ -25,91 +25,96 @@ export const Toolbox = () => {
   return (
     <Row>
       <AntButton
-        ref={(r) =>
-          connectors.create(
-            r,
-            <Column>
-              <Header text="Double Click Me" />
-            </Column>,
-            {
-              onCreate: (nodeTree) => {
-                selectOnCreation(nodeTree, actions);
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <Header text="Double Click Me" />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
               },
-            },
-          )
-        }
+            );
+        }}
         style={{ width: '100%' }}
       >
         Header
       </AntButton>
       <AntButton
-        ref={(r) =>
-          connectors.create(
-            r,
-            <Column>
-              <Text text="Double Click Me" />
-            </Column>,
-            {
-              onCreate: (nodeTree) => {
-                selectOnCreation(nodeTree, actions);
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <Text text="Double Click Me" />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
               },
-            },
-          )
-        }
+            );
+        }}
         style={{ width: '100%' }}
       >
         Text
       </AntButton>
       <AntButton
-        ref={(r) =>
-          connectors.create(
-            r,
-            <Column>
-              <Input type="text" label="Double Click Me" />
-            </Column>,
-            {
-              onCreate: (nodeTree) => {
-                selectOnCreation(nodeTree, actions);
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <Input type="text" label="Double Click Me" />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
               },
-            },
-          )
-        }
+            );
+        }}
         style={{ width: '100%' }}
       >
         Input
       </AntButton>
       <AntButton
-        ref={(r) =>
-          connectors.create(
-            r,
-            <Column>
-              <Table />
-            </Column>,
-            {
-              onCreate: (nodeTree) => {
-                selectOnCreation(nodeTree, actions);
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <Table />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
               },
-            },
-          )
-        }
+            );
+        }}
         style={{ width: '100%' }}
       >
         Table
       </AntButton>
       <AntButton
-        ref={(r) =>
-          connectors.create(
-            r,
-            <Column>
-              <Element is={Container} padding={20} canvas />
-            </Column>,
-            {
-              onCreate: (nodeTree) => {
-                selectOnCreation(nodeTree, actions);
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <Element is={Container} padding={20} canvas />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
               },
-            },
-          )
-        }
+            );
+        }}
         style={{ width: '100%' }}
       >
         Container

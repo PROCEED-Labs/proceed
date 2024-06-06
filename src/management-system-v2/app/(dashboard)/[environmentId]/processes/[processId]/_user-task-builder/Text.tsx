@@ -1,4 +1,4 @@
-import { useNode } from '@craftjs/core';
+import { useNode, UserComponent } from '@craftjs/core';
 
 import { Slider, Row, Col, InputNumber, Input } from 'antd';
 
@@ -11,7 +11,7 @@ type TextProps = {
   fontSize?: string | number;
 };
 
-const Text: React.FC<TextProps> = ({ text, fontSize }) => {
+const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
   const {
     connectors: { connect, drag },
     actions: { setProp },
@@ -25,14 +25,18 @@ const Text: React.FC<TextProps> = ({ text, fontSize }) => {
   };
 
   const handleSave = () => {
-    setProp((props) => {
+    setProp((props: TextProps) => {
       props.text = current;
     });
     setEditable(false);
   };
 
   return (
-    <div ref={(r) => connect(r)}>
+    <div
+      ref={(r) => {
+        r && connect(r);
+      }}
+    >
       {editable ? (
         <TextArea
           autoFocus
@@ -61,7 +65,10 @@ export const TextSettings = () => {
   }));
 
   return (
-    <InputNumber value={fontSize} onChange={(val) => setProp((props) => (props.fontSize = val))} />
+    <InputNumber
+      value={fontSize}
+      onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
+    />
   );
 };
 

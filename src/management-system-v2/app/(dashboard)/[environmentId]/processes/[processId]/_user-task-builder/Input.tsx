@@ -24,7 +24,7 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
   };
 
   const handleSave = () => {
-    setProp((props) => {
+    setProp((props: InputProps) => {
       props.label = currentLabel;
     });
     setLabelEditable(false);
@@ -33,7 +33,12 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
   const inputId = v4();
 
   return (
-    <div ref={(r) => connect(r)} className="user-task-form-input">
+    <div
+      ref={(r) => {
+        r && connect(r);
+      }}
+      className="user-task-form-input"
+    >
       <div>
         {labelEditable ? (
           <AntInput
@@ -76,7 +81,7 @@ export const InputSettings = () => {
         ]}
         value={type}
         onChange={(val) =>
-          setProp((props) => {
+          setProp((props: InputProps) => {
             props.type = val;
           })
         }

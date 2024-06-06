@@ -29,7 +29,7 @@ const Table: UserComponent<TableProps> = ({
   const [cellEditing, setCellEditing] = useState({ row: -1, col: -1, value: '' });
 
   const addRow = (index: number) => {
-    setProp((props) => {
+    setProp((props: TableProps) => {
       props.tableData = [
         ...tableData.slice(0, index),
         Array.from({ length: tableData[0].length }, () => 'Double Click Me'),
@@ -38,13 +38,13 @@ const Table: UserComponent<TableProps> = ({
     });
   };
   const removeRow = (index: number) => {
-    setProp((props) => {
+    setProp((props: TableProps) => {
       props.tableData = [...tableData.slice(0, index), ...tableData.slice(index + 1, undefined)];
     });
   };
 
   const addColumn = (index: number) => {
-    setProp((props) => {
+    setProp((props: TableProps) => {
       props.tableData = tableData.map((row) => [
         ...row.slice(0, index),
         'Double Click Me',
@@ -53,7 +53,7 @@ const Table: UserComponent<TableProps> = ({
     });
   };
   const removeColumn = (index: number) => {
-    setProp((props) => {
+    setProp((props: TableProps) => {
       props.tableData = tableData.map((row) => [
         ...row.slice(0, index),
         ...row.slice(index + 1, undefined),
@@ -76,7 +76,7 @@ const Table: UserComponent<TableProps> = ({
       ...tableData.slice(row + 1, undefined),
     ];
 
-    setProp((props) => {
+    setProp((props: TableProps) => {
       props.tableData = newTableData;
     });
 
@@ -211,7 +211,12 @@ const Table: UserComponent<TableProps> = ({
   };
 
   return (
-    <table className="user-task-form-table" ref={(r) => connect(r)}>
+    <table
+      className="user-task-form-table"
+      ref={(r) => {
+        r && connect(r);
+      }}
+    >
       <thead>
         <TableRow rowIndex={0} tD={tableData} />
       </thead>
@@ -221,19 +226,6 @@ const Table: UserComponent<TableProps> = ({
         ))}
       </tbody>
     </table>
-  );
-};
-
-export const TableSettings = () => {
-  const {
-    actions: { setProp },
-    fontSize,
-  } = useNode((node) => ({
-    fontSize: node.data.props.fontSize,
-  }));
-
-  return (
-    <InputNumber value={fontSize} onChange={(val) => setProp((props) => (props.fontSize = val))} />
   );
 };
 

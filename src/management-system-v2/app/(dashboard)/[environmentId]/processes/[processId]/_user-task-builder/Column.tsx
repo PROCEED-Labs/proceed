@@ -17,7 +17,9 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
 
   return (
     <div
-      ref={(r) => connect(drag(r))}
+      ref={(r) => {
+        r && connect(drag(r));
+      }}
       className="user-task-form-column"
       style={{
         opacity: isDragged ? 0.25 : undefined,

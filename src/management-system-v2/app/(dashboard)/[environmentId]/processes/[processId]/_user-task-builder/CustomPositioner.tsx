@@ -199,13 +199,15 @@ export default class CustomPositioner {
 
       setTimeout(() => {
         // Update the dragShadow so it fits the element again
-        const shadow = this.dragShadow!;
-        const { width, height } = query
-          .node(this.dragTarget.nodes[0])
-          .get()
-          .dom!.getBoundingClientRect();
-        shadow.style.width = `${width}px`;
-        // shadow.style.height = `${height}px`;
+        if (this.dragTarget.type === 'existing') {
+          const shadow = this.dragShadow!;
+          const { width, height } = query
+            .node(this.dragTarget.nodes[0])
+            .get()
+            .dom!.getBoundingClientRect();
+          shadow.style.width = `${width}px`;
+          // shadow.style.height = `${height}px`;
+        }
       }, 20);
 
       // the element might leave an empty row which needs to be removed

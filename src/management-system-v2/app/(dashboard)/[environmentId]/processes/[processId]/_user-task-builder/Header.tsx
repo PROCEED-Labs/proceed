@@ -24,7 +24,7 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
   };
 
   const handleSave = () => {
-    setProp((props) => {
+    setProp((props: HeaderProps) => {
       props.text = current;
     });
     setEditable(false);
@@ -33,7 +33,11 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
   const h = <h1 />;
 
   return (
-    <div ref={(r) => connect(r)}>
+    <div
+      ref={(r) => {
+        r && connect(r);
+      }}
+    >
       {editable ? (
         <Input
           autoFocus
@@ -78,7 +82,7 @@ export const HeaderSettings = () => {
         ]}
         value={type}
         onChange={(val) =>
-          setProp((props) => {
+          setProp((props: HeaderProps) => {
             props.type = val;
           })
         }

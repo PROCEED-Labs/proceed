@@ -26,13 +26,13 @@ const HeaderActions: FC = () => {
 
   if (!loggedIn) {
     return (
-      <Space style={{ float: 'right' }}>
+      <Space style={{ float: 'right', padding: '16px' }}>
         <Button type="text" onClick={() => signIn()}>
           <u>Log in</u>
         </Button>
 
         <Tooltip title="Log in">
-          <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
+          <Avatar icon={<UserOutlined />} onClick={() => signIn()} />
         </Tooltip>
       </Space>
     );

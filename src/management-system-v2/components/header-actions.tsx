@@ -1,7 +1,7 @@
 'use client';
 
 import { UserOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Select, Space, Tooltip, Typography } from 'antd';
+import { Avatar, Button, Dropdown, MenuProps, Select, Space, Tooltip, Typography } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FC } from 'react';
 import Assistant from '@/components/assistant';

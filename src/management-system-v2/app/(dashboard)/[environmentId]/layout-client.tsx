@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Select, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
@@ -11,7 +11,6 @@ import { signIn, useSession } from 'next-auth/react';
 import { create } from 'zustand';
 import { useRouter } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
-import { useEnvironment } from '@/components/auth-can';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
@@ -22,6 +21,14 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
     set: (open: boolean) => set({ open }),
   }),
 );
+
+export const useUserSpaces = create<{
+  userSpaces: Environment[];
+  setUserSpaces: (userEnvironments: Environment[]) => void;
+}>((set) => ({
+  userSpaces: [],
+  setUserSpaces: (userEnvironments: Environment[]) => set({ userSpaces: userEnvironments }),
+}));
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
@@ -58,6 +65,11 @@ const Layout: FC<
     (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
   );
 
+  const setUserSpaces = useUserSpaces((state) => state.setUserSpaces);
+  useEffect(() => {
+    setUserSpaces(userEnvironments);
+  });
+
   const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
 
   return (
@@ -92,25 +104,6 @@ const Layout: FC<
                     priority
                   />
                 </Link>
-              </div>
-              <div style={{ padding: '1rem' }}>
-                <Select
-                  options={userEnvironments.map((environment) => ({
-                    label: environment.organization ? environment.name : 'My Space',
-                    value: environment.id,
-                  }))}
-                  defaultValue={activeSpace.spaceId}
-                  onChange={(envId) => {
-                    const space = userEnvironments.find((env) => env.id === envId);
-                    router.push(
-                      spaceURL(
-                        { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
-                        `/processes`,
-                      ),
-                    );
-                  }}
-                  style={{ width: '100%' }}
-                />
               </div>
 
               {loggedIn ? menu : null}

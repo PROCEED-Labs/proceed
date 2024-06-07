@@ -10,10 +10,10 @@ test('documentation page functionality', async ({ processListPage }) => {
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
-  await page.getByPlaceholder('Version Name').click();
+  await processListPage.openModal(() =>
+    page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
+  );
   await page.getByPlaceholder('Version Name').fill('Version 1');
-  await page.getByPlaceholder('Version Description').click();
   await page.getByPlaceholder('Version Description').fill('First Version');
   await page.getByRole('button', { name: 'Create Version' }).click();
   await page.getByText('Latest Version').click();
@@ -26,10 +26,10 @@ test('documentation page functionality', async ({ processListPage }) => {
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click();
-  await page.getByPlaceholder('Version Name').click();
+  await processListPage.openModal(() =>
+    page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
+  );
   await page.getByPlaceholder('Version Name').fill('Version 2');
-  await page.getByPlaceholder('Version Description').click();
   await page.getByPlaceholder('Version Description').fill('Second Version');
   await page.getByRole('button', { name: 'Create Version' }).click();
   await page.getByText('Latest Version').click();
@@ -38,7 +38,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   const import2Version = page.url().split('?version=').pop();
 
   // share this process so it is visible in the  documentation for other users
-  await page.getByRole('button', { name: 'share-alt' }).click();
+  await processListPage.openModal(() => page.getByRole('button', { name: 'share-alt' }).click());
   await page.getByText('Share Process with Public Link').click();
   await page
     .locator('.ant-message')
@@ -290,9 +290,14 @@ test('documentation page functionality', async ({ processListPage }) => {
 
   // check that the visualisation of a subprocess can be set to show the subprocess element instead of the nested subprocess
   // which also removes all contained elements from the page
-  await documentationPage.getByRole('button', { name: 'setting' }).click();
-  await documentationPage.getByLabel('Nested Subprocesses').uncheck();
-  await documentationPage.getByRole('button', { name: 'OK' }).click();
+  let settingsModal = await processListPage.openModal(
+    () => documentationPage.getByRole('button', { name: 'setting' }).click(),
+    documentationPage,
+  );
+  await settingsModal.getByLabel('Nested Subprocesses').uncheck();
+  await processListPage.closeModal(settingsModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -348,9 +353,14 @@ test('documentation page functionality', async ({ processListPage }) => {
 
   // check that the visualisation of a call activity can be set to show the call activity element instead of the imported process
   // which also removes all contained elements from the page
-  await documentationPage.getByRole('button', { name: 'setting' }).click();
-  await documentationPage.getByLabel('Imported Processes').uncheck();
-  await documentationPage.getByRole('button', { name: 'OK' }).click();
+  settingsModal = await processListPage.openModal(
+    () => documentationPage.getByRole('button', { name: 'setting' }).click(),
+    documentationPage,
+  );
+  await settingsModal.getByLabel('Imported Processes').uncheck();
+  await processListPage.closeModal(settingsModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   elementSections = await documentationPage
     .locator('css=[class^=process-document_ElementPage]')
@@ -403,15 +413,20 @@ test('documentation page functionality', async ({ processListPage }) => {
   ).resolves.not.toMatch(/display: none/);
 
   // check that the option to show elements that have no meta data and contain no other elements works as well (here in combination with the previously deselected options)
-  await documentationPage.getByRole('button', { name: 'setting' }).click();
-  await documentationPage.getByLabel('Exclude Empty Elements').uncheck();
+  settingsModal = await processListPage.openModal(
+    () => documentationPage.getByRole('button', { name: 'setting' }).click(),
+    documentationPage,
+  );
+  await settingsModal.getByLabel('Exclude Empty Elements').uncheck();
 
   // prevent the tooltip of the unchecked checkbox from overlapping the confirmation button when we try to click it next
   let tooltips = await documentationPage.getByRole('tooltip').all();
   await documentationPage.mouse.move(0, 0);
   await Promise.all(tooltips.map((tooltip) => tooltip.waitFor({ state: 'hidden' })));
 
-  await documentationPage.getByRole('button', { name: 'OK' }).click();
+  await processListPage.closeModal(settingsModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   const elementSection = await documentationPage.locator(
     'css=[class^=process-document_ElementPage]',
@@ -432,7 +447,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   ).toBeHidden();
 
   /************************* Testing as a guest user opening the share link ***************************/
-  await page.getByRole('button', { name: 'share-alt' }).click();
+  await processListPage.openModal(() => page.getByRole('button', { name: 'share-alt' }).click());
 
   // share process with link
   await page.getByRole('button', { name: 'Share Public Link' }).click();
@@ -491,9 +506,13 @@ test('documentation page functionality', async ({ processListPage }) => {
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user
-  await newPage
-    .locator(`tr[data-row-key="${newProcessId}"]`)
-    .getByRole('button', { name: 'delete' })
-    .click();
+  await processListPage.openModal(
+    () =>
+      newPage
+        .locator(`tr[data-row-key="${newProcessId}"]`)
+        .getByRole('button', { name: 'delete' })
+        .click(),
+    newPage,
+  );
   await newPage.getByRole('button', { name: 'OK' }).click();
 });

@@ -143,7 +143,22 @@ export class PropertiesPanelPage {
     const page = this.page;
     const descriptionSection = this.descriptionSection;
 
+    const initialDescription = await descriptionSection
+      .getByRole('textbox', {
+        name: 'description-viewer',
+      })
+      .textContent();
+
     await descriptionSection.getByLabel('edit').click(); // click edit description button
+
+    if (initialDescription) {
+      // wait for the editor to be fully loaded
+      await page
+        .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
+        .getByText(initialDescription)
+        .waitFor({ state: 'visible' });
+    }
+
     await page
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);

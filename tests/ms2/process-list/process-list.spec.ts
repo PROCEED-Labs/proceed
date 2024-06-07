@@ -13,12 +13,16 @@ test('create a new process and remove it again', async ({ processListPage }) => 
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
 
-  await page
-    .locator(`tr[data-row-key="${processDefinitionID}"]`)
-    .getByRole('button', { name: 'delete' })
-    .click();
+  const deleteModal = await processListPage.openModal(() =>
+    page
+      .locator(`tr[data-row-key="${processDefinitionID}"]`)
+      .getByRole('button', { name: 'delete' })
+      .click(),
+  );
 
-  await page.getByRole('button', { name: 'OK' }).click();
+  await processListPage.closeModal(deleteModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).not.toBeVisible();
 
@@ -50,131 +54,153 @@ test('export a single process', async ({ processListPage }) => {
 
   /*************************** BPMN Export ********************************/
 
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'bpmn' }).click();
-  const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'string',
+  let exportModal = await processListPage.openModal(() =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
-  expect(bpmnFilename).toMatch(/.bpmn$/);
-  // check if the exported data is the expected bpmn (the one that was initially imported)
-  expect(exportBpmn).toBe(importBpmn);
+  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
+  await exportModal.getByRole('radio', { name: 'bpmn' }).click();
+
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'string',
+    );
+    expect(bpmnFilename).toMatch(/.bpmn$/);
+    // check if the exported data is the expected bpmn (the one that was initially imported)
+    expect(exportBpmn).toBe(importBpmn);
+  });
 
   /*************************** SVG Export ********************************/
 
   // test the svg export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
-  const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'string',
+  exportModal = await processListPage.openModal(() =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
+  await exportModal.getByRole('radio', { name: 'svg' }).click();
 
-  // check that the exported svg matches the imported bpmn
-  expect(svgFilename).toMatch(/.svg$/);
-  expect(exportSvg).toMatch(/<svg/);
-  expect(exportSvg).toMatch(/data-element-id="StartEvent_1eclh91"/);
-  expect(exportSvg).toMatch(/data-element-id="Flow_034bmxw"/);
-  expect(exportSvg).toMatch(/data-element-id="Activity_1m5esxh"/);
-  expect(exportSvg).toMatch(/data-element-id="Flow_0evtfpc"/);
-  expect(exportSvg).toMatch(/data-element-id="Event_1oxwp3r"/);
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'string',
+    );
+    // check that the exported svg matches the imported bpmn
+    expect(svgFilename).toMatch(/.svg$/);
+    expect(exportSvg).toMatch(/<svg/);
+    expect(exportSvg).toMatch(/data-element-id="StartEvent_1eclh91"/);
+    expect(exportSvg).toMatch(/data-element-id="Flow_034bmxw"/);
+    expect(exportSvg).toMatch(/data-element-id="Activity_1m5esxh"/);
+    expect(exportSvg).toMatch(/data-element-id="Flow_0evtfpc"/);
+    expect(exportSvg).toMatch(/data-element-id="Event_1oxwp3r"/);
+  });
 
   // import a process containing collapsed subprocesses
   const { definitionId: subprocessDefinitionId, definitionName: subprocessDefinitionName } =
     await processListPage.importProcess('subprocess.bpmn');
   // test the svg export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
-  const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'zip',
+  exportModal = await processListPage.openModal(() =>
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
   );
-
-  // check that a zip has been exported
-  expect(multiSvgFilename).toMatch(/.zip$/);
+  await exportModal.getByRole('radio', { name: 'svg' }).click();
+  await exportModal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   function getFolderName(definitionName: string) {
     return definitionName.split(' ').join('_');
   }
-  function hasFolder(zipFile: typeof svgZip, folderName: string) {
+  function hasFolder(zipFile: any, folderName: string) {
     return Object.values(zipFile.files)
-      .filter((file) => file.dir)
-      .some((dir) => dir.name === folderName + '/');
+      .filter((file: any) => file.dir)
+      .some((dir: any) => dir.name === folderName + '/');
   }
 
-  // check that there is a folder for the process containing two svgs, one for the root layer and one for the subprocess layer
-  expect(hasFolder(svgZip, getFolderName(subprocessDefinitionName))).toBeTruthy();
-  expect(svgZip.file(getFolderName(subprocessDefinitionName) + '/' + 'latest.svg')).toBeTruthy();
-  expect(
-    svgZip.file(
-      getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.svg',
-    ),
-  ).toBeTruthy();
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'zip',
+    );
+    // check that a zip has been exported
+    expect(multiSvgFilename).toMatch(/.zip$/);
 
-  // check that the svg files contain the expected content
-  const rootSvg = await svgZip
-    .file(getFolderName(subprocessDefinitionName) + '/' + 'latest.svg')!
-    .async('string');
+    // check that there is a folder for the process containing two svgs, one for the root layer and one for the subprocess layer
+    expect(hasFolder(svgZip, getFolderName(subprocessDefinitionName))).toBeTruthy();
+    expect(svgZip.file(getFolderName(subprocessDefinitionName) + '/' + 'latest.svg')).toBeTruthy();
+    expect(
+      svgZip.file(
+        getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.svg',
+      ),
+    ).toBeTruthy();
 
-  expect(rootSvg).toMatch(/<svg/);
-  expect(rootSvg).toMatch(/data-element-id="StartEvent_1inc7tc"/);
-  expect(rootSvg).toMatch(/data-element-id="Flow_1nwk7gv"/);
-  expect(rootSvg).toMatch(/data-element-id="Activity_1iz0b2a"/);
-  expect(rootSvg).toMatch(/data-element-id="Flow_1q734k8"/);
-  expect(rootSvg).toMatch(/data-element-id="Event_1n7bc2z"/);
+    // check that the svg files contain the expected content
+    const rootSvg = await svgZip
+      .file(getFolderName(subprocessDefinitionName) + '/' + 'latest.svg')!
+      .async('string');
 
-  const subprocessSvg = await svgZip
-    .file(getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.svg')!
-    .async('string');
+    expect(rootSvg).toMatch(/<svg/);
+    expect(rootSvg).toMatch(/data-element-id="StartEvent_1inc7tc"/);
+    expect(rootSvg).toMatch(/data-element-id="Flow_1nwk7gv"/);
+    expect(rootSvg).toMatch(/data-element-id="Activity_1iz0b2a"/);
+    expect(rootSvg).toMatch(/data-element-id="Flow_1q734k8"/);
+    expect(rootSvg).toMatch(/data-element-id="Event_1n7bc2z"/);
 
-  expect(subprocessSvg).toMatch(/<svg/);
-  expect(subprocessSvg).toMatch(/data-element-id="Event_0ueb679"/);
-  expect(subprocessSvg).toMatch(/data-element-id="Flow_0gdubli"/);
-  expect(subprocessSvg).toMatch(/data-element-id="Activity_0hr3urx"/);
-  expect(subprocessSvg).toMatch(/data-element-id="Flow_09xvh9n"/);
-  expect(subprocessSvg).toMatch(/data-element-id="Event_0wq3coj"/);
+    const subprocessSvg = await svgZip
+      .file(
+        getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.svg',
+      )!
+      .async('string');
+
+    expect(subprocessSvg).toMatch(/<svg/);
+    expect(subprocessSvg).toMatch(/data-element-id="Event_0ueb679"/);
+    expect(subprocessSvg).toMatch(/data-element-id="Flow_0gdubli"/);
+    expect(subprocessSvg).toMatch(/data-element-id="Activity_0hr3urx"/);
+    expect(subprocessSvg).toMatch(/data-element-id="Flow_09xvh9n"/);
+    expect(subprocessSvg).toMatch(/data-element-id="Event_0wq3coj"/);
+  });
 
   /*************************** PNG Export ********************************/
 
   // test the png export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
-  const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'string',
+  exportModal = await processListPage.openModal(() =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
   );
+  await exportModal.getByRole('radio', { name: 'png' }).click();
 
-  // check that a png has been exported
-  expect(pngFilename).toMatch(/.png$/);
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'string',
+    );
+
+    // check that a png has been exported
+    expect(pngFilename).toMatch(/.png$/);
+  });
 
   // test the png export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
-  // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
-
-  const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'zip',
+  exportModal = await processListPage.openModal(() =>
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
   );
+  await exportModal.getByRole('radio', { name: 'png' }).click();
+  // the selection of the "with selected subprocesses" option should still be valid
+  await expect(
+    exportModal.getByRole('checkbox', { name: 'with collapsed subprocesses' }),
+  ).toBeChecked();
 
-  // check that a zip has been exported
-  expect(multiPngFilename).toMatch(/.zip$/);
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'zip',
+    );
 
-  // check that there is a folder for the process containing two pngs, one for the root layer and one for the subprocess layer
-  expect(hasFolder(pngZip, getFolderName(subprocessDefinitionName))).toBeTruthy();
-  expect(pngZip.file(getFolderName(subprocessDefinitionName) + '/' + 'latest.png')).toBeTruthy();
-  expect(
-    pngZip.file(
-      getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.png',
-    ),
-  ).toBeTruthy();
+    // check that a zip has been exported
+    expect(multiPngFilename).toMatch(/.zip$/);
+
+    // check that there is a folder for the process containing two pngs, one for the root layer and one for the subprocess layer
+    expect(hasFolder(pngZip, getFolderName(subprocessDefinitionName))).toBeTruthy();
+    expect(pngZip.file(getFolderName(subprocessDefinitionName) + '/' + 'latest.png')).toBeTruthy();
+    expect(
+      pngZip.file(
+        getFolderName(subprocessDefinitionName) + '/' + 'latest_subprocess_Activity_1iz0b2a.png',
+      ),
+    ).toBeTruthy();
+  });
 });
 
 test('export multiple processes', async ({ processListPage }) => {
@@ -198,101 +224,105 @@ test('export multiple processes', async ({ processListPage }) => {
   await page.locator(`tr[data-row-key="${process1Id}"]`).getByRole('checkbox').click();
   await page.locator(`tr[data-row-key="${process3Id}"]`).getByRole('checkbox').click();
 
-  await page.getByLabel('export').first().click();
-
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'bpmn' }).click();
-
-  const { filename, content: zip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'zip',
+  let exportModal = await processListPage.openModal(() =>
+    page.getByLabel('export').first().click(),
   );
 
-  expect(filename).toMatch(/.zip$/);
+  await exportModal.getByRole('radio', { name: 'bpmn' }).click();
 
   function getFolderName(definitionName: string) {
     return definitionName.split(' ').join('_');
   }
 
-  function hasFolder(zipFile: typeof zip, folderName: string) {
+  function hasFolder(zipFile: any, folderName: string) {
     return Object.values(zipFile.files)
-      .filter((file) => file.dir)
-      .some((dir) => dir.name === folderName + '/');
+      .filter((file: any) => file.dir)
+      .some((dir: any) => dir.name === folderName + '/');
   }
 
-  // check that there is a folder for each process that was selected for export and none for the one not selected
-  expect(hasFolder(zip, getFolderName(process1Name))).toBeTruthy();
-  expect(hasFolder(zip, getFolderName(process2Name))).toBeFalsy();
-  expect(hasFolder(zip, getFolderName(process3Name))).toBeTruthy();
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename, content: zip } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'zip',
+    );
 
-  // check that each folder contains the latest bpmn of the process
-  expect(zip.file(getFolderName(process1Name) + '/' + 'latest.bpmn')).toBeTruthy();
-  const process1FileContent = await zip
-    .file(getFolderName(process1Name) + '/' + 'latest.bpmn')!
-    .async('string');
-  expect(process1FileContent).toBe(process1Bpmn);
+    expect(filename).toMatch(/.zip$/);
 
-  expect(zip.file(getFolderName(process3Name) + '/' + 'latest.bpmn')).toBeTruthy();
-  const process3FileContent = await zip
-    .file(getFolderName(process3Name) + '/' + 'latest.bpmn')!
-    .async('string');
-  expect(process3FileContent).toBe(process3Bpmn);
+    // check that there is a folder for each process that was selected for export and none for the one not selected
+    expect(hasFolder(zip, getFolderName(process1Name))).toBeTruthy();
+    expect(hasFolder(zip, getFolderName(process2Name))).toBeFalsy();
+    expect(hasFolder(zip, getFolderName(process3Name))).toBeTruthy();
+
+    // check that each folder contains the latest bpmn of the process
+    expect(zip.file(getFolderName(process1Name) + '/' + 'latest.bpmn')).toBeTruthy();
+    const process1FileContent = await zip
+      .file(getFolderName(process1Name) + '/' + 'latest.bpmn')!
+      .async('string');
+    expect(process1FileContent).toBe(process1Bpmn);
+
+    expect(zip.file(getFolderName(process3Name) + '/' + 'latest.bpmn')).toBeTruthy();
+    const process3FileContent = await zip
+      .file(getFolderName(process3Name) + '/' + 'latest.bpmn')!
+      .async('string');
+    expect(process3FileContent).toBe(process3Bpmn);
+  });
 
   /*************************** SVG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  exportModal = await processListPage.openModal(() => page.getByLabel('export').first().click());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
+  await exportModal.getByRole('radio', { name: 'svg' }).click();
+  await exportModal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: svgZipFilename, content: svgZip } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'zip',
+    );
 
-  const { filename: svgZipFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'zip',
-  );
+    expect(svgZipFilename).toMatch(/.zip$/);
 
-  expect(svgZipFilename).toMatch(/.zip$/);
+    // check that there is a folder for each process that was selected for export and none for the one not selected
+    expect(hasFolder(svgZip, getFolderName(process1Name))).toBeTruthy();
+    expect(hasFolder(svgZip, getFolderName(process2Name))).toBeFalsy();
+    expect(hasFolder(svgZip, getFolderName(process3Name))).toBeTruthy();
 
-  // check that there is a folder for each process that was selected for export and none for the one not selected
-  expect(hasFolder(svgZip, getFolderName(process1Name))).toBeTruthy();
-  expect(hasFolder(svgZip, getFolderName(process2Name))).toBeFalsy();
-  expect(hasFolder(svgZip, getFolderName(process3Name))).toBeTruthy();
-
-  // check that each folder contains the latest svg of the process
-  expect(svgZip.file(getFolderName(process1Name) + '/' + 'latest.svg')).toBeTruthy();
-  expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest.svg')).toBeTruthy();
-  expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.svg')).toBeTruthy();
-  expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.svg')).toBeTruthy();
+    // check that each folder contains the latest svg of the process
+    expect(svgZip.file(getFolderName(process1Name) + '/' + 'latest.svg')).toBeTruthy();
+    expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest.svg')).toBeTruthy();
+    expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.svg')).toBeTruthy();
+    expect(svgZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.svg')).toBeTruthy();
+  });
 
   /*************************** PNG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  exportModal = await processListPage.openModal(() => page.getByLabel('export').first().click());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'png' }).click();
+  await exportModal.getByRole('radio', { name: 'png' }).click();
   // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await expect(
+    exportModal.getByRole('checkbox', { name: 'with collapsed subprocesses' }),
+  ).toBeChecked();
 
-  const { filename: pngZipFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
-    'zip',
-  );
+  await processListPage.closeModal(exportModal, async (m) => {
+    const { filename: pngZipFilename, content: pngZip } = await processListPage.handleDownload(
+      async () => await m.getByRole('button', { name: 'OK' }).click(),
+      'zip',
+    );
 
-  expect(pngZipFilename).toMatch(/.zip$/);
+    expect(pngZipFilename).toMatch(/.zip$/);
 
-  // check that there is a folder for each process that was selected for export and none for the one not selected
-  expect(hasFolder(pngZip, getFolderName(process1Name))).toBeTruthy();
-  expect(hasFolder(pngZip, getFolderName(process2Name))).toBeFalsy();
-  expect(hasFolder(pngZip, getFolderName(process3Name))).toBeTruthy();
+    // check that there is a folder for each process that was selected for export and none for the one not selected
+    expect(hasFolder(pngZip, getFolderName(process1Name))).toBeTruthy();
+    expect(hasFolder(pngZip, getFolderName(process2Name))).toBeFalsy();
+    expect(hasFolder(pngZip, getFolderName(process3Name))).toBeTruthy();
 
-  // check that each folder contains the latest svg of the process
-  expect(pngZip.file(getFolderName(process1Name) + '/' + 'latest.png')).toBeTruthy();
-  expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest.png')).toBeTruthy();
-  expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.png')).toBeTruthy();
-  expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
+    // check that each folder contains the latest svg of the process
+    expect(pngZip.file(getFolderName(process1Name) + '/' + 'latest.png')).toBeTruthy();
+    expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest.png')).toBeTruthy();
+    expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.png')).toBeTruthy();
+    expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
+  });
 });
 
 test('share-modal-test', async ({ processListPage }) => {
@@ -305,17 +335,19 @@ test('share-modal-test', async ({ processListPage }) => {
 
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  await page.getByRole('button', { name: 'share-alt' }).click();
+  const shareModal = await processListPage.openModal(() =>
+    page.getByRole('button', { name: 'share-alt' }).click(),
+  );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();
 
   /*************************** Embed in Website ********************************/
 
-  await page.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(page.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await page.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
-  await expect(page.locator('div[class="code"]')).toBeVisible();
-  await page.getByTitle('copy code', { exact: true }).click();
+  await shareModal.getByRole('button', { name: 'Embed in Website' }).click();
+  await expect(shareModal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
+  await shareModal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(shareModal.locator('div[class="code"]')).toBeVisible();
+  await shareModal.getByTitle('copy code', { exact: true }).click();
 
   clipboardData = await processListPage.readClipboard(true);
 
@@ -326,14 +358,14 @@ test('share-modal-test', async ({ processListPage }) => {
   /*************************** Copy Diagram As PNG ********************************/
   // skip this test for firebox
   if (page.context().browser().browserType() !== firefox) {
-    await page.getByTitle('Copy Diagram as PNG', { exact: true }).click();
+    await shareModal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
     await page.waitForTimeout(100);
     clipboardData = await processListPage.readClipboard(false);
     await expect(clipboardData).toMatch('image/png');
   } else {
     // download as fallback
     const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await page.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
+      async () => await shareModal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
       'string',
     );
 
@@ -342,7 +374,7 @@ test('share-modal-test', async ({ processListPage }) => {
 
   /*************************** Copy Diagram As XML ********************************/
 
-  await page.getByTitle('Copy Diagram as XML', { exact: true }).click();
+  await shareModal.getByTitle('Copy Diagram as XML', { exact: true }).click();
 
   clipboardData = await processListPage.readClipboard(true);
 
@@ -350,20 +382,23 @@ test('share-modal-test', async ({ processListPage }) => {
   await expect(clipboardData).toMatch(xmlRegex);
 
   /*************************** Export as File ********************************/
-  await page.getByTitle('Export as file', { exact: true }).click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'cancel' }).click();
+  const exportModal = await processListPage.openModal(() =>
+    shareModal.getByTitle('Export as file', { exact: true }).click(),
+  );
+  await processListPage.closeModal(exportModal, (m) =>
+    m.getByRole('button', { name: 'cancel' }).click(),
+  );
 
   /*************************** Share Process with link ********************************/
-  await page.getByRole('button', { name: 'Share Public Link' }).click();
-  await page.getByText('Share Process with Public Link').click();
+  await shareModal.getByRole('button', { name: 'Share Public Link' }).click();
+  await shareModal.getByText('Share Process with Public Link').click();
 
-  await expect(page.locator('input[name="generated share link"]')).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy link' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
+  await expect(shareModal.locator('input[name="generated share link"]')).toBeEnabled();
+  await expect(shareModal.getByRole('button', { name: 'Copy link' })).toBeEnabled();
+  await expect(shareModal.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
+  await expect(shareModal.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Copy link' }).click();
+  await shareModal.getByRole('button', { name: 'Copy link' }).click();
 
   clipboardData = await processListPage.readClipboard(true);
 
@@ -458,9 +493,13 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderId = crypto.randomUUID();
 
   await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  const createModal = await processListPage.openModal(() =>
+    page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+  );
+  await createModal.getByLabel('Folder name').fill(folderId);
+  await processListPage.closeModal(createModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
@@ -480,17 +519,25 @@ test('create a new folder with new button and remove it', async ({ processListPa
   const folderId = crypto.randomUUID();
 
   // NOTE: this could easily break
-  await page.getByRole('button', { name: 'ellipsis' }).hover();
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  const createModal = await processListPage.openModal(async () => {
+    await page.getByRole('button', { name: 'ellipsis' }).hover();
+    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  });
+  await createModal.getByLabel('Folder name').fill(folderId);
+  await processListPage.closeModal(createModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  const deleteModal = await processListPage.openModal(() =>
+    folderRow.getByRole('button', { name: 'delete' }).click(),
+  );
+  await processListPage.closeModal(deleteModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 
   await expect(folderLocator).not.toBeVisible();
 });
@@ -502,10 +549,14 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // create folder
   const folderId = crypto.randomUUID();
-  await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  const createModal = await processListPage.openModal(async () => {
+    await page.getByText('No data').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+  });
+  await createModal.getByLabel('Folder name').fill(folderId);
+  await processListPage.closeModal(createModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
   await expect(folderRow).toBeVisible();
 
@@ -532,14 +583,22 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
-  await processLocator.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  let deleteModal = await processListPage.openModal(async () =>
+    processLocator.getByRole('button', { name: 'delete' }).click(),
+  );
+  await processListPage.closeModal(deleteModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
   await expect(processLocator).not.toBeVisible();
   processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  deleteModal = await processListPage.openModal(async () =>
+    folderRow.getByRole('button', { name: 'delete' }).click(),
+  );
+  await processListPage.closeModal(deleteModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
   await expect(folderRow).not.toBeVisible();
 });

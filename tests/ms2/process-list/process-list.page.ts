@@ -27,8 +27,11 @@ export class ProcessListPage {
 
   async login() {
     const { page } = this;
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Continue as a Guest' }).click();
+
+    const loginModal = await this.openModal(async () => {
+      await page.goto('/');
+    });
+    await loginModal.getByRole('button', { name: 'Continue as a Guest' }).click();
     await page.waitForURL('**/processes');
     this.processListPageURL = page.url();
   }
@@ -57,16 +60,19 @@ export class ProcessListPage {
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Import Process' }).click();
-    const filechooser = await fileChooserPromise;
+    const importModal = await this.openModal(async () => {
+      const fileChooserPromise = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Import Process' }).click();
+      const filechooser = await fileChooserPromise;
 
-    await filechooser.setFiles({
-      name: filename,
-      mimeType: 'text/xml',
-      buffer: Buffer.from(bpmn, 'utf-8'),
+      await filechooser.setFiles({
+        name: filename,
+        mimeType: 'text/xml',
+        buffer: Buffer.from(bpmn, 'utf-8'),
+      });
     });
-    await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
+
+    await this.closeModal(importModal, (m) => m.getByRole('button', { name: 'Import' }).click());
 
     this.processDefinitionIds.push(definitionId);
 
@@ -123,12 +129,14 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    await page
-      .locator(`tr[data-row-key="${definitionId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click();
+    const deleteModal = await this.openModal(() =>
+      page
+        .locator(`tr[data-row-key="${definitionId}"]`)
+        .getByRole('button', { name: 'delete' })
+        .click(),
+    );
 
-    await page.getByRole('button', { name: 'OK' }).click();
+    await this.closeModal(deleteModal, (m) => m.getByRole('button', { name: 'OK' }).click());
 
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
@@ -139,10 +147,16 @@ export class ProcessListPage {
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
-    await page.getByRole('button', { name: 'Create Process' }).click();
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName ?? 'My Process');
-    await page.getByLabel('Process Description').fill(description ?? 'Process Description');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const createModal = await this.openModal(() =>
+      page.getByRole('button', { name: 'Create Process' }).click(),
+    );
+    await createModal
+      .getByRole('textbox', { name: '* Process Name :' })
+      .fill(processName ?? 'My Process');
+    await createModal.getByLabel('Process Description').fill(description ?? 'Process Description');
+    await this.closeModal(createModal, (m) =>
+      m.getByRole('button', { name: 'Create', exact: true }).click(),
+    );
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const definitionId = page.url().split('processes/').pop();
@@ -164,8 +178,10 @@ export class ProcessListPage {
       // remove all processes
       await page.getByLabel('Select all').check();
 
-      await page.getByRole('button', { name: 'delete' }).first().click();
-      await page.getByRole('button', { name: 'OK' }).click();
+      const deleteModal = await this.openModal(() =>
+        page.getByRole('button', { name: 'delete' }).first().click(),
+      );
+      await this.closeModal(deleteModal, (m) => m.getByRole('button', { name: 'OK' }).click());
 
       this.processDefinitionIds = [];
     }
@@ -183,5 +199,45 @@ export class ProcessListPage {
     }, readAsText);
 
     return result;
+  }
+
+  /**
+   * Will open a modal using the given trigger function and ensure that it is fully open before resolving
+   *
+   * @param trigger the function that triggers the modal opening
+   * @param page the page the modal should be opened on (defaults to the default page)
+   *
+   * @returns a locator that can be used to get the newly opened modal
+   */
+  async openModal(trigger: () => Promise<void>, page = this.page) {
+    // get the modals that might already be open
+    const numAlreadyOpenModals = (await page.locator(`div[aria-modal="true"]:visible`).all())
+      .length;
+
+    await trigger();
+
+    // wait for the previous amount of modals + 1 modals to be findable
+    await page.locator(`div[aria-modal="true"]:visible`).nth(numAlreadyOpenModals).waitFor();
+
+    // get the handle of the modal that was newly opened
+    const currentlyOpenModals = await page.locator(`div[aria-modal="true"]:visible`);
+
+    // TODO: the following is working for now but it might not work in every case if it is possible that the opened modal is not the last one in the locator list
+    // wait for the modal to be visible and finished with its animation
+    await (await currentlyOpenModals.last().elementHandle()).waitForElementState('stable');
+
+    return await currentlyOpenModals.last();
+  }
+
+  /**
+   * Will close a modal by clicking the given button and ensure it is fully closed before resolving
+   *
+   * @param closeButton locator of the button to click for closing the modal
+   * @param page the page on which the modal exists (defaults to the default page)
+   */
+  async closeModal(modalLocator: Locator, trigger: (modalLocator: Locator) => Promise<void>) {
+    const elementHandle = await modalLocator.elementHandle();
+    await trigger(modalLocator);
+    await elementHandle.waitForElementState('hidden');
   }
 }

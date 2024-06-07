@@ -236,6 +236,8 @@ export class ProcessListPage {
       await handle.getAttribute('class'),
     );
 
+    await page.waitForTimeout(300);
+
     return await currentlyOpenModals.last();
   }
 

@@ -1,18 +1,5 @@
 'use client';
-import {
-  Button,
-  Checkbox,
-  Col,
-  Divider,
-  Dropdown,
-  GetProp,
-  Grid,
-  MenuProps,
-  Row,
-  Select,
-  Slider,
-  Space,
-} from 'antd';
+import { Button, Checkbox, Dropdown, Grid, List, MenuProps, Select, Slider, Space } from 'antd';
 import UserTaskCard from './userTaskCard';
 import userTaskHTML from './user-task';
 import { useMemo, useState } from 'react';
@@ -90,7 +77,20 @@ const SliderRangeWithText = ({
   );
 };
 
-const Tasklist = () => {
+const Tasklist = ({
+  userTasks,
+}: {
+  userTasks: {
+    id: number;
+    name: string;
+    status: string;
+    owner: string;
+    startTime: number;
+    endTime: number;
+    priority: number;
+    progress: number;
+  }[];
+}) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<number | null>(null);
@@ -107,29 +107,6 @@ const Tasklist = () => {
   const [usersFilter, setUsersFilter] = useState<string[]>([]);
   const [groupsFilter, setGroupsFilter] = useState<string[]>([]);
   const [selectedSortItem, setSelectedSortItem] = useState({ ascending: true, value: 'startTime' });
-
-  const userTasks = [
-    {
-      id: 1,
-      name: 'Task A',
-      status: 'ACTIVE',
-      owner: 'Test User A',
-      startTime: 1714992069238,
-      endTime: 1714999969238,
-      priority: 2,
-      progress: 50,
-    },
-    {
-      id: 2,
-      name: 'Task B',
-      status: 'COMPLETED',
-      owner: 'Test User B',
-      startTime: 1714999069238,
-      endTime: 1714999869238,
-      priority: 7,
-      progress: 80,
-    },
-  ];
 
   const filteredAndSortedUserTasks = useMemo(() => {
     const showingUserTasks = userTasks.filter((uT) => {
@@ -187,12 +164,12 @@ const Tasklist = () => {
 
     return showingUserTasks;
   }, [
-    setStatusSelectionFilter,
-    setPriorityRangeFilter,
-    setPriorityRangeFilter,
-    setUsersFilter,
-    setGroupsFilter,
-    setSelectedSortItem,
+    statusSelectionFilter,
+    priorityRangeFilter,
+    progressRangeFilter,
+    usersFilter,
+    groupsFilter,
+    selectedSortItem,
     userTasks,
   ]);
 
@@ -355,7 +332,7 @@ const Tasklist = () => {
 
   return (
     <div className={styles.Tasklist}>
-      <div className={styles.list}>
+      <div className={selectedUserTaskID ? `${styles.list} selected` : styles.list}>
         <div className={styles.actionWrapper}>
           {selectedUserTaskID && !breakpoint.xl ? (
             <Button
@@ -380,9 +357,9 @@ const Tasklist = () => {
                 overlayStyle={{ width: '18rem' }}
               >
                 <Button>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <FaFilter style={{ marginRight: '0.25rem' }}> </FaFilter>
-                    {breakpoint.xl && <span>Filter Tasks</span>}
+                    {breakpoint.sm && <span>Filter Tasks</span>}
                   </div>
                 </Button>
               </Dropdown>
@@ -398,9 +375,9 @@ const Tasklist = () => {
                 menu={{ items: sortDropdownItems }}
               >
                 <Button>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <FaSort style={{ marginRight: '0.25rem' }}> </FaSort>
-                    {breakpoint.xl && <span>Sort Tasks</span>}
+                    {breakpoint.sm && <span>Sort Tasks</span>}
                   </div>
                 </Button>
               </Dropdown>
@@ -409,24 +386,75 @@ const Tasklist = () => {
         </div>
         <div className={styles.cardWrapper}>
           {selectedUserTaskID && !breakpoint.xl ? (
-            <UserTaskCard
-              userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID)!}
-            ></UserTaskCard>
-          ) : (
-            filteredAndSortedUserTasks.map((uT) => (
-              <UserTaskCard
-                key={uT.id}
-                userTaskData={uT}
-                selected={uT.id === selectedUserTaskID}
-                clickHandler={() => {
-                  if (selectedUserTaskID === uT.id) {
-                    setSelectedUserTaskID(null);
-                  } else {
-                    setSelectedUserTaskID(uT.id);
+            <div style={{ minWidth: '300px', maxWidth: '600px', margin: 'auto' }}>
+              <div style={{ marginInline: '1rem' }}>
+                <UserTaskCard
+                  userTaskData={
+                    filteredAndSortedUserTasks.find((uT) => uT.id === selectedUserTaskID)!
                   }
-                }}
-              />
-            ))
+                ></UserTaskCard>
+              </div>
+            </div>
+          ) : (
+            <List
+              grid={{
+                gutter: 16,
+                xs: 1,
+                sm: 2,
+                md: 2,
+                lg: 2,
+                xl: 1,
+                xxl: 1,
+              }}
+              split={false}
+              style={{ maxWidth: breakpoint.xl ? '300px' : undefined }}
+              bordered={false}
+              dataSource={filteredAndSortedUserTasks}
+              pagination={{
+                position: 'bottom',
+                align: 'center',
+                responsive: true,
+                pageSize: 20,
+                showSizeChanger: false,
+              }}
+              renderItem={(item) => {
+                return (
+                  <List.Item style={{ paddingBlock: '0.5rem' }}>
+                    <UserTaskCard
+                      key={item.id}
+                      userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
+                      selected={item.id === selectedUserTaskID}
+                      clickHandler={() => {
+                        if (selectedUserTaskID === item.id) {
+                          setSelectedUserTaskID(null);
+                        } else {
+                          setSelectedUserTaskID(item.id);
+                        }
+                      }}
+                    ></UserTaskCard>
+                  </List.Item>
+                );
+              }}
+            ></List>
+
+            // <div className={styles.cardList}>
+            //   {filteredAndSortedUserTasks.map((item) => {
+            //     return (
+            //       <UserTaskCard
+            //         key={item.id}
+            //         userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
+            //         selected={item.id === selectedUserTaskID}
+            //         clickHandler={() => {
+            //           if (selectedUserTaskID === item.id) {
+            //             setSelectedUserTaskID(null);
+            //           } else {
+            //             setSelectedUserTaskID(item.id);
+            //           }
+            //         }}
+            //       ></UserTaskCard>
+            //     );
+            //   })}
+            // </div>
           )}
         </div>
       </div>

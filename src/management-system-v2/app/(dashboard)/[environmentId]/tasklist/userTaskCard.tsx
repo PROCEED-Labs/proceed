@@ -44,14 +44,14 @@ const UserTaskCard = ({
   return (
     <Card
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{userTaskData.name}</span>
           <Progress type="circle" percent={userTaskData.progress} size={30} />
         </div>
       }
       bordered={false}
       style={{
-        marginBottom: '1rem',
+        width: '100%',
         cursor: 'pointer',
         backgroundColor: selected ? '#eae9e9' : '',
       }}
@@ -59,14 +59,12 @@ const UserTaskCard = ({
       styles={{
         body: {
           paddingInline: '0.75rem',
-          paddingBottom: '0.5rem',
-          paddingTop: '0.25rem',
+          paddingBlock: '0.5rem',
           whiteSpace: 'nowrap',
         },
         header: {
           paddingInline: '0.75rem',
-          paddingTop: '0.5rem',
-          paddingBottom: '0.25rem',
+          paddingBlock: '0.25rem',
           fontSize: '0.875rem',
           minHeight: '1rem',
         },

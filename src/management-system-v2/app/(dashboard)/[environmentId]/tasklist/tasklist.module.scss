@@ -15,44 +15,81 @@
     display: flex;
     flex-direction: column;
     border-right: 1px solid #eee;
+    padding-right: 0.5rem;
 
     @media (min-width: 601px) and (max-width: 1199px) {
       position: relative;
-      flex-direction: row;
-      justify-content: center;
     }
 
     @media (max-width: 1199px) {
+      padding-bottom: 0.5rem;
       border-right: none;
+      padding-right: 0;
       border-bottom: 1px solid #eee;
+      flex-grow: 1;
     }
 
     .cardWrapper {
-      padding-right: 0.75rem;
+      height: 100%;
 
-      @media (max-width: 600px) {
-        margin: auto;
+      .cardList {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+
+        @media (min-width: 601px) and (max-width: 1199px) {
+          grid-template-columns: repeat(auto-fill, minmax(40vw, 1fr));
+        }
+      }
+
+      :global(.ant-list) {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        :global(.ant-list-item) {
+          margin: 0 !important;
+        }
       }
     }
 
     .actionWrapper {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
 
-      @media (max-width: 600px) {
-        justify-content: end;
-      }
-
-      @media (min-width: 601px) and (max-width: 1199px) {
-        position: absolute;
-        right: 0;
+      @media (max-width: 1199px) {
+        display: flex;
+        justify-content: flex-end;
       }
 
       .dropdownWrapper {
         display: flex;
         justify-content: center;
-        padding-right: 0.75rem;
+
+        :global(.ant-btn) {
+          flex-grow: 1;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 1199px) {
+    .list:global(.selected) {
+      overflow-y: hidden;
+      flex-direction: row;
+      justify-content: center;
+      flex-grow: 0;
+
+      .cardWrapper {
+        flex-grow: 1;
+        overflow-y: hidden;
+        padding: 0;
+      }
+      .actionWrapper {
+        padding: 0;
+        order: 2;
       }
     }
   }

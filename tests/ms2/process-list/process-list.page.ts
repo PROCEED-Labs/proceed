@@ -217,14 +217,24 @@ export class ProcessListPage {
     await trigger();
 
     // wait for the previous amount of modals + 1 modals to be findable
-    await page.locator(`div[aria-modal="true"]:visible`).nth(numAlreadyOpenModals).waitFor();
+    await page
+      .locator(`div[aria-modal="true"]:visible`)
+      .and(page.locator(`div[aria-modal="true"]:not(.ant-zoom)`))
+      .nth(numAlreadyOpenModals)
+      .waitFor();
 
     // TODO: the following is working for now but it might not work in every case if it is possible that the opened modal is not the last one in the locator list
     // wait for the modal to be visible and finished with its animation
-    const currentlyOpenModals = await page.locator(`div[aria-modal="true"]:visible`);
+    const currentlyOpenModals = await page
+      .locator(`div[aria-modal="true"]:visible`)
+      .and(page.locator(`div[aria-modal="true"]:not(.ant-zoom)`));
     await (await currentlyOpenModals.last().elementHandle()).waitForElementState('stable');
     const handle = await currentlyOpenModals.last().elementHandle();
-    console.log(await handle.isVisible(), await handle.getAttribute('style'));
+    console.log(
+      await handle.isVisible(),
+      await handle.getAttribute('style'),
+      await handle.getAttribute('class'),
+    );
 
     return await currentlyOpenModals.last();
   }

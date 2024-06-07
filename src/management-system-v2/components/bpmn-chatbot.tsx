@@ -10,8 +10,6 @@ import ChatbotResponseModal, { ChatbotInteraction } from './bpmn-chatbot-respons
 Defines the modeler functionality through JSON Scheme (see: https://json-schema.org/).*/
 import tools from './bpmn-chatbot-tools.json';
 
-import { Point } from 'bpmn-js/lib/features/modeling/BpmnFactory';
-
 type ChatbotDialogProps = {
   show: boolean;
   modeler: BPMNCanvasRef | null;
@@ -24,9 +22,9 @@ type FieldType = {
 const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   const [lastPrompts, setLastPrompts] = useState<ChatbotInteraction[]>([]);
   const [waitForResponse, setWaitForResponse] = useState(false);
-  const elementFactory = modeler!.getElementFactory();
   const root = modeler!.getCurrentRoot();
   const modeling = modeler!.getModeling();
+  const elementFactory = modeler!.getElementFactory();
   const [showChatbotResponseModal, setShowChatbotResponseModal] = useState(false);
   const [chatbotInteraction, setChatbotInteraction] = useState<ChatbotInteraction>();
 
@@ -49,53 +47,48 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   }
 
   //see tools definitions
-  function create_element(
+  function append_shape(
     bpmn_type: string,
-    created: Shape[],
-    source_element_id_or_name?: string,
-    new_element_name?: string,
-    connection_label?: string,
-    position?: Point,
-  ): void {
-    const element = elementFactory.createShape({
-      type: 'bpmn:' + bpmn_type,
-    });
-    let shape: Shape;
-    if (source_element_id_or_name) {
-      //append element to existing one
-      let sourceShape = modeler?.getElement(source_element_id_or_name);
-      if (!sourceShape) {
-        sourceShape = created.find((e) => e.name == source_element_id_or_name)!;
-      }
-      const point = getNewShapePosition(sourceShape as Shape, element);
-      shape = modeling.appendShape(sourceShape, element, point, root!, {
-        connection: { name: connection_label, type: 'bpmn:SequenceFlow' },
-      });
-    } else {
-      shape = modeling.createShape(element, position!, root!);
+    new_element_name: string,
+    source_element_id_or_name: string,
+    created: { name: string; shape: Shape }[],
+    label: string,
+  ): Shape {
+    let source = modeler?.getElement(source_element_id_or_name) as Shape;
+    if (!source) {
+      console.log(created);
+      source = created.find((e) => e.name == source_element_id_or_name)!.shape;
     }
-    if (new_element_name) {
-      modeling.updateLabel(shape, new_element_name);
-    }
-    created.push(shape);
+    let shape = elementFactory.createShape({ type: 'bpmn:' + bpmn_type });
+    const position = getNewShapePosition(source, shape);
+    shape = modeling.createShape({ type: 'bpmn:' + bpmn_type }, position, root!);
+    const connection = modeling.createConnection(
+      source,
+      shape,
+      { type: 'bpmn:SequenceFlow' },
+      root!,
+    );
+    modeling.updateLabel(connection, label);
+    modeling.updateLabel(shape, new_element_name);
+    return shape;
   }
   function create_connection(
     source_element_id_or_name: string,
     target_element_id_or_name: string,
-    created: Shape[],
+    created: { name: string; shape: Shape }[],
     label?: string,
   ): void {
-    let sourceShape = modeler?.getElement(source_element_id_or_name);
-    if (!sourceShape) {
-      sourceShape = created.find((e) => e.name == source_element_id_or_name)!;
+    let source = modeler?.getElement(source_element_id_or_name) as Shape;
+    if (!source) {
+      source = created.find((e) => e.name == source_element_id_or_name)!.shape;
     }
-    let targetShape = modeler?.getElement(target_element_id_or_name);
-    if (!targetShape) {
-      targetShape = created.find((e) => e.name == target_element_id_or_name)!;
+    let target = modeler?.getElement(target_element_id_or_name) as Shape;
+    if (!target) {
+      target = created.find((e) => e.name == target_element_id_or_name)!.shape;
     }
     const connection = modeling.createConnection(
-      sourceShape,
-      targetShape,
+      source,
+      target,
       { type: 'bpmn:SequenceFlow' },
       root!,
     );
@@ -105,30 +98,22 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
   }
   function remove_elements(element_ids: string[]): void {
     const elements: Element[] = [];
-    element_ids.forEach((id) => {
-      let element = modeler?.getElement(id);
+    element_ids.forEach((e) => {
+      const element = modeler?.getElement(e);
       if (element) {
         elements.push(element);
       }
     });
+
     modeling.removeElements(elements);
   }
 
   //parsing tool uses listed in response
   function processResponse(response: any[]) {
-    const created: Shape[] = [];
+    const created: { name: string; shape: Shape }[] = [];
     response.forEach((res) => {
       if (res.type == 'tool_use') {
-        if (res.name == 'create_element') {
-          create_element(
-            res.input.bpmn_type,
-            created,
-            res.input.source_element_id_or_name,
-            res.input.new_element_name,
-            res.input.connection_label,
-            res.input.position,
-          );
-        } else if (res.name == 'create_connection') {
+        if (res.name == 'create_connection') {
           create_connection(
             res.input.source_element_id_or_name,
             res.input.target_element_id_or_name,
@@ -137,6 +122,15 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({ show, modeler }) => {
           );
         } else if (res.name == 'remove_elements') {
           remove_elements(res.input.element_ids);
+        } else if (res.name == 'append_element') {
+          const shape = append_shape(
+            res.input.bpmn_type,
+            res.input.name,
+            res.input.source_element_id_or_name,
+            created,
+            res.input.label,
+          );
+          created.push({ name: res.input.name, shape: shape });
         }
       }
     });

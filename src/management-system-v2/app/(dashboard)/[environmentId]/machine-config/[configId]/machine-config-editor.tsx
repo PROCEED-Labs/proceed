@@ -5,6 +5,7 @@ import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import { Breadcrumb, Input, Button, Form } from 'antd';
 import { Col, Divider, Row } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 type VariableType = {
@@ -16,48 +17,52 @@ type VariableType = {
 type VariablesEditorProps = {
   configId: string;
   originalMachineConfig: MachineConfig;
-  onChange: Function;
+  saveMachineConfig: Function;
 };
 
 export default function MachineConfigEditor(props: VariablesEditorProps) {
+  const router = useRouter();
   const [variables, setVariables] = useState<VariableType[]>([]);
   const firstRender = useRef(true);
-  const machineConfig = props.originalMachineConfig;
-  const saveMachineConfig = props.onChange;
+  const machineConfig = { ...props.originalMachineConfig };
+  const saveMachineConfig = props.saveMachineConfig;
   const configId = props.configId;
 
   function saveVariables() {
     machineConfig.variables = variables;
     saveMachineConfig(configId, machineConfig).then((res: MachineConfigInput) => {});
+    router.refresh();
   }
 
-  const changeName = (e) => {
+  const changeName = (e: any) => {
     let newName = e.target.value;
     machineConfig.name = newName;
     saveMachineConfig(configId, machineConfig).then(() => {});
+    router.refresh();
   };
 
-  const changeDescription = (e) => {
+  const changeDescription = (e: any) => {
     let newDescription = e.target.value;
     machineConfig.description = newDescription;
     saveMachineConfig(configId, machineConfig).then(() => {});
+    router.refresh();
   };
 
-  function changeVarName(e) {
+  function changeVarName(e: any) {
     let idx = e.target.getAttribute('data-key');
     variables[idx].name = e.target.value;
     setVariables(variables);
     saveVariables();
   }
 
-  function changeVarType(e) {
+  function changeVarType(e: any) {
     let idx = e.target.getAttribute('data-key');
     variables[idx].type = e.target.value;
     setVariables(variables);
     saveVariables();
   }
 
-  function changeVarValue(e) {
+  function changeVarValue(e: any) {
     let idx = e.target.getAttribute('data-key');
     variables[idx].value = e.target.value;
     setVariables(variables);
@@ -76,11 +81,10 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   const addNewVariable = () => {
     setVariables(variables.concat([{ name: '', type: '', value: '' }]));
   };
-  const removeVariable = (e) => {
+  const removeVariable = (e: any) => {
     var idx = e.currentTarget.getAttribute('data-key');
     setVariables(
       variables.filter((_, i) => {
-        console.log(i.toString() !== idx);
         return i.toString() !== idx;
       }),
     );

@@ -71,9 +71,9 @@ const MachineConfigList = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdAt: '',
+        createdOn: '',
         createdBy: '',
-        updatedAt: '',
+        lastEdited: '',
         environmentId: '',
       },
       ...data,
@@ -282,13 +282,6 @@ const MachineConfigList = ({
             display: 'block',
           }}
         >
-          {/* <div
-            style={{
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
-          > */}
           {(record.description ?? '').length == 0 ? <>&emsp;</> : record.description}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}

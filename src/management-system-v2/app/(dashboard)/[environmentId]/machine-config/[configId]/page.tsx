@@ -6,7 +6,7 @@ import { getMachineConfigById, saveMachineConfig } from '@/lib/data/legacy/machi
 //import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Breadcrumb, Input, Button, Form } from 'antd';
 import { Col, Divider, Row } from 'antd';
-import MachineConfigEditor from './machineConfigEditor';
+import MachineConfigEditor from './machine-config-editor';
 
 type MachineConfigProps = {
   params: { configId: string; environmentId: string };
@@ -29,7 +29,7 @@ export default async function MachineConfigView({
     <Content title="Machine Configuration">
       <MachineConfigEditor
         originalMachineConfig={machineConfig}
-        onChange={saveMachineConfig}
+        saveMachineConfig={saveMachineConfig}
         configId={configId}
       />
     </Content>

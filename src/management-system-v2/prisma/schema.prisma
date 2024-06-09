@@ -30,6 +30,7 @@ model User {
 
 model Process {
   id                   String       @id @default(uuid())
+  originalId           String
   name                 String
   description          String
   createdOn            DateTime
@@ -38,13 +39,13 @@ model Process {
   folder               Folder?      @relation(fields: [folderId], references: [id])
   folderId             String?
   sharedAs             String
-  shareTimestamp       DateTime
-  allowIframeTimestamp DateTime
+  shareTimestamp       Int
+  allowIframeTimestamp Int
   workspace            Workspace    @relation(fields: [workspaceId], references: [id])
   workspaceId          String
   versions             Version[]
-  //department          Department[]  
-  //variables           Variable[]    
+  departments          Department[]
+  variables            Variable[]
   bpmn                 ProcessBPMN?
   //images              ProcessImage[]
   owner                 User?        @relation(fields: [ownerId], references: [id])
@@ -91,24 +92,24 @@ model Version {
   id          String  @id @default(uuid())
   name        String
   description String
-  process     Process @relation(fields: [processId], references: [id])
+  process     Process? @relation(fields: [processId], references: [id])
   processId   String
 }
 
-// model Department {
-//   id              String       @id @default(uuid())
-//   name            String
-//   process         Process      @relation(fields: [processId], references: [id])
-//   processId       String
-// }
+model Department {
+  id              String       @id @default(uuid())
+  name            String
+  process         Process?      @relation(fields: [processId], references: [id])
+  processId       String
+}
 
-// model Variable {
-//   id              String       @id @default(uuid())
-//   name            String
-//   value           String
-//   process         Process      @relation(fields: [processId], references: [id])
-//   processId       String
-// }
+model Variable {
+  id              String       @id @default(uuid())
+  name            String
+  value           String
+  process         Process?      @relation(fields: [processId], references: [id])
+  processId       String
+}
 
 // model ProcessImage {
 //   id              String       @id @default(uuid())

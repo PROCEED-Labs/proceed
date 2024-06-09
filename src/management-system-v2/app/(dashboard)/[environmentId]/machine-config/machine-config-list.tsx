@@ -2,8 +2,8 @@
 
 import styles from '@/components/item-list-view.module.scss';
 
-import { Button, Grid, Dropdown, TableColumnsType } from 'antd';
-import { FolderOutlined, FileOutlined } from '@ant-design/icons';
+import { Button, Grid, Dropdown, TableColumnsType, Row } from 'antd';
+import { FolderOutlined, FileOutlined, ExportOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
@@ -38,6 +38,8 @@ import {
 import AddUserControls from '@/components/add-user-controls';
 import FolderModal from '@/components/folder-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { useUserPreferences } from '@/lib/user-preferences';
+import { generateDateString } from '@/lib/utils';
 
 type InputItem = MachineConfigMetadata | (Folder & { type: 'folder' });
 export type MachineConfigListConfigs = ReplaceKeysWithHighlighted<
@@ -154,6 +156,8 @@ const MachineConfigList = ({
     },
     [copyItem, deleteItems, editItem],
   );
+
+  const addPreferences = useUserPreferences.use.addPreferences();
   async function deleteItems(items: MachineConfigListConfigs[]) {
     const promises = [];
 
@@ -199,6 +203,7 @@ const MachineConfigList = ({
     }
   }
 
+  const ColumnHeader = ['Name', 'Description'];
   const moveItems = (...[items, folderId]: Parameters<typeof moveIntoFolder>) => {
     startMovingItemTransition(async () => {
       try {
@@ -278,6 +283,7 @@ const MachineConfigList = ({
     deleteItems(selectedRowElements).then((res) => {});
   }
 
+  const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
   const columns: TableColumnsType<MachineConfigListConfigs> = [
     {
       title: 'Name',
@@ -351,6 +357,14 @@ const MachineConfigList = ({
       ),
       responsive: ['sm'],
     },
+    {
+      title: 'Last Edited',
+      dataIndex: 'lastEdited',
+      key: 'Last Edited',
+      render: (date: Date) => generateDateString(date, true),
+      // sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      responsive: ['md'],
+    },
   ];
 
   return (
@@ -410,23 +424,25 @@ const MachineConfigList = ({
           selectedElements: selectedRowElements,
           setSelectionElements: setSelectedRowElements,
         }}
-        /*selectableColumns={{
+        selectableColumns={{
           setColumnTitles: (cols) => {
-            if (typeof cols === 'function') cols = cols(selectedColumns as string[]);
+            if (typeof cols === 'function')
+              cols = cols(selectedColumns.map((col: any) => col.name) as string[]);
 
             addPreferences({ 'process-list-columns-desktop': cols });
           },
-          selectedColumnTitles: selectedColumns as string[],
+          selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
           allColumnTitles: ColumnHeader,
           columnProps: {
             width: 'fit-content',
             responsive: ['xl'],
-            render: (id, record) =>
-                <Row justify="space-evenly" className={styles.HoverableTableCell}>
-                  {actionBarGenerator(record)}
-                </Row>
+            render: (id, record) => (
+              <Row justify="space-evenly" className={styles.HoverableTableCell}>
+                {actionBarGenerator(record)}
+              </Row>
+            ),
           },
-        }}*/
+        }}
       />
       <AddUserControls name={'machineconfig-list'} />
       <FolderModal

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_database_proceed
+    environment:
+      POSTGRES_DB: proceed_db
+      POSTGRES_USER: proceed
+      POSTGRES_PASSWORD: proceed
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

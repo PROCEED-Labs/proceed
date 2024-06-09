@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  firstName        String
+  lastName         String
+  username         String
+  email            String      @unique
+  guest            Boolean
+  emailVerified    Boolean
+  processes        Process[]
+  ownedWorkspaces  Workspace[] @relation("WorkspaceOwner")
+  memberWorkspaces Workspace[] @relation("WorkspaceMember")
+  folders          Folder[]
+  Role             Role[]
+}
+
+model Process {
+  id                   String       @id @default(uuid())
+  name                 String
+  description          String
+  createdOn            DateTime
+  lastEdited           DateTime
+  type                 String
+  folder               Folder?      @relation(fields: [folderId], references: [id])
+  folderId             String?
+  sharedAs             String
+  shareTimestamp       DateTime
+  allowIframeTimestamp DateTime
+  workspace            Workspace    @relation(fields: [workspaceId], references: [id])
+  workspaceId          String
+  versions             Version[]
+  //department          Department[]  
+  //variables           Variable[]    
+  bpmn                 ProcessBPMN?
+  //images              ProcessImage[]
+  owner                 User?        @relation(fields: [ownerId], references: [id])
+  ownerId               String?
+}
+
+model Workspace {
+  id           String    @id @default(uuid())
+  name         String
+  organisation Boolean
+  description  String
+  logo         Bytes
+  owner        User      @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  ownerId      String
+  members      User[]    @relation("WorkspaceMember")
+  folders      Folder[]
+  processes    Process[]
+  roles        Role[]
+}
+
+model Folder {
+  id             String    @id @default(uuid())
+  name           String
+  parentFolder   Folder?   @relation("ChildFolders", fields: [parentFolderId], references: [id])
+  parentFolderId String?
+  user           User      @relation(fields: [userId], references: [id])
+  userId         String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId    String
+  processes      Process[]
+  folder         Folder[]  @relation("ChildFolders")
+}
+
+model Role {
+  id          String    @id @default(uuid())
+  name        String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+}
+
+model Version {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  process     Process @relation(fields: [processId], references: [id])
+  processId   String
+}
+
+// model Department {
+//   id              String       @id @default(uuid())
+//   name            String
+//   process         Process      @relation(fields: [processId], references: [id])
+//   processId       String
+// }
+
+// model Variable {
+//   id              String       @id @default(uuid())
+//   name            String
+//   value           String
+//   process         Process      @relation(fields: [processId], references: [id])
+//   processId       String
+// }
+
+// model ProcessImage {
+//   id              String       @id @default(uuid())
+//   process         Process      @relation(fields: [processId], references: [id])
+//   processId       String
+//   imagePath       String
+// }
+
+model ProcessBPMN {
+  id        String  @id @default(uuid())
+  bpmn      String
+  process   Process @relation(fields: [processId], references: [id])
+  processId String  @unique
+}

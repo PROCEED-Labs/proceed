@@ -99,6 +99,61 @@ const MachineConfigList = ({
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
 
+  const actionBarGenerator = useCallback(
+    (record: any) => {
+      const resource = record.type === 'folder' ? { Folder: record } : { Process: record };
+      function onExportProcess(record: any): void {
+        throw new Error('Function not implemented.');
+      }
+
+      return (
+        <>
+          {record.type !== 'folder' && (
+            <AuthCan {...resource} create>
+              <Tooltip placement="top" title={'Copy'}>
+                <CopyOutlined
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyItem([record]);
+                  }}
+                />
+              </Tooltip>
+            </AuthCan>
+          )}
+
+          {/* {record.type !== 'folder' && 
+          <Tooltip placement="top" title={'Export'}>
+          </Tooltip>} */}
+          {record.type !== 'folder' && (
+            <Tooltip placement="top" title={'Export'}>
+              <ExportOutlined onClick={() => onExportProcess(record)} />
+            </Tooltip>
+          )}
+
+          <AuthCan {...resource} update>
+            <Tooltip placement="top" title={'Edit'}>
+              <EditOutlined onClick={() => editItem(record)} />
+            </Tooltip>
+          </AuthCan>
+
+          <AuthCan delete {...resource}>
+            <Tooltip placement="top" title={'Delete'}>
+              <ConfirmationButton
+                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+                description="Are you sure you want to delete the selected process?"
+                onConfirm={() => deleteItems([record])}
+                buttonProps={{
+                  icon: <DeleteOutlined />,
+                  type: 'text',
+                }}
+              />
+            </Tooltip>
+          </AuthCan>
+        </>
+      );
+    },
+    [copyItem, deleteItems, editItem],
+  );
   async function deleteItems(items: MachineConfigListConfigs[]) {
     const promises = [];
 

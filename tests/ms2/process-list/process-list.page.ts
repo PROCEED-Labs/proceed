@@ -62,6 +62,8 @@ export class ProcessListPage {
     });
     await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
 
+    this.processDefinitionIds.push(definitionId);
+
     return { definitionName: name as string, definitionId, bpmn };
   }
 
@@ -137,17 +139,23 @@ export class ProcessListPage {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
-    return page.url().split('processes/').pop();
+    const definitionId = page.url().split('processes/').pop();
+
+    this.processDefinitionIds.push(definitionId);
+
+    return definitionId;
   }
 
   async removeAllProcesses() {
     const { page, processListPageURL } = this;
 
-    if (processListPageURL) {
+    if (processListPageURL && this.processDefinitionIds.length) {
       await page.goto(processListPageURL);
       await page.waitForURL('**/processes');
-      // check if there are processes to remove
-      if (!(await page.locator('tr[data-row-key]').all()).length) return;
+
+      // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
+      await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
+
       // remove all processes
       await page.getByLabel('Select all').check();
       await page.getByRole('button', { name: 'delete' }).first().click();

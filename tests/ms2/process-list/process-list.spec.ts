@@ -21,6 +21,8 @@ test('create a new process and remove it again', async ({ processListPage }) => 
   await page.getByRole('button', { name: 'OK' }).click();
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).not.toBeVisible();
+
+  processListPage.getDefinitionIds().splice(0, 1);
 });
 
 test('import a process', async ({ processListPage }) => {
@@ -536,6 +538,7 @@ test('create a new folder and process, move process to folder and then delete bo
   await processLocator.getByRole('button', { name: 'delete' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(processLocator).not.toBeVisible();
+  processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();

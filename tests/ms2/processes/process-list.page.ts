@@ -1,5 +1,4 @@
 import { Page } from '@playwright/test';
-import { PlatformPath } from 'path';
 import * as path from 'path';
 import fs from 'fs';
 import JsZip from 'jszip';
@@ -9,29 +8,14 @@ import { expect } from './process-list.fixtures';
 
 export class ProcessListPage {
   readonly page: Page;
-  readonly path: PlatformPath;
-  processListPageURL?: string;
   processDefinitionIds: string[] = [];
 
   constructor(page: Page) {
     this.page = page;
-    this.path = path;
-  }
-
-  getPageURL() {
-    return this.processListPageURL;
   }
 
   async goto() {
-    if (this.processListPageURL) await this.page.goto(this.processListPageURL);
-  }
-
-  async login() {
-    const { page } = this;
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForURL('**/processes');
-    this.processListPageURL = page.url();
+    await this.page.goto('/processes');
   }
 
   /**
@@ -131,7 +115,6 @@ export class ProcessListPage {
     const page = this.page;
     const { processName, description } = options;
 
-    // TODO: reuse other page models for these set ups.
     // Add a new process.
     await page.getByRole('button', { name: 'Create Process' }).click();
     await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName ?? 'My Process');
@@ -147,10 +130,10 @@ export class ProcessListPage {
   }
 
   async removeAllProcesses() {
-    const { page, processListPageURL } = this;
+    const { page } = this;
 
-    if (processListPageURL && this.processDefinitionIds.length) {
-      await page.goto(processListPageURL);
+    if (this.processDefinitionIds.length) {
+      this.goto();
       await page.waitForURL('**/processes');
 
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected

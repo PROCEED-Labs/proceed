@@ -8,9 +8,6 @@ export class PropertiesPanelPage {
   readonly descriptionSection: Locator;
   readonly milestonesSection: Locator;
   readonly customPropertiesSection: Locator;
-  processName?: string;
-  processDescription?: string;
-  processDefinitionID?: string;
 
   constructor(page: Page) {
     this.page = page;
@@ -19,50 +16,6 @@ export class PropertiesPanelPage {
     this.descriptionSection = page.getByRole('group', { name: 'Description' });
     this.milestonesSection = page.getByRole('group', { name: 'Milestones' });
     this.customPropertiesSection = page.getByRole('group', { name: 'Custom Properties' });
-  }
-
-  async goto() {
-    if (this.processDefinitionID) {
-      await this.page.goto(`/processes/${this.processDefinitionID}`);
-    } else {
-      await this.page.goto('/processes');
-    }
-  }
-
-  async login() {
-    const page = this.page;
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForURL('**/processes');
-  }
-
-  /**
-   * Creating a process to test the properties panel in
-   * @param options options for the process to be created
-   */
-  async createProcess(
-    options: {
-      processName?: string;
-      description?: string;
-    } = { processName: 'My Process', description: 'Process Description' },
-  ) {
-    const page = this.page;
-    const { processName, description } = options;
-
-    // TODO: reuse other page models for these set ups.
-    // Add a new process.
-    await page.getByRole('button', { name: 'Create Process' }).click();
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill('Process Name');
-    await page.getByLabel('Process Description').click();
-    await page.getByLabel('Process Description').fill('Process Description');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
-    await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
-
-    const pageURL = page.url();
-    const match = pageURL.match(/processes\/([a-zA-Z0-9-_]+)/);
-    this.processDefinitionID = match ? match[1] : null;
-    this.processName = processName;
-    this.processDescription = description;
   }
 
   async addImage(imageFileName: string) {
@@ -159,22 +112,5 @@ export class PropertiesPanelPage {
     await customPropertiesSection.getByPlaceholder('Custom Value').fill(value);
     await customPropertiesSection.locator('form').getByRole('button', { name: 'plus' }).click();
     await page.waitForTimeout(500);
-  }
-
-  async removeAllProcesses() {
-    const page = this.page;
-
-    await page.goto('/processes');
-    await page.waitForTimeout(1000); // wait until route is loaded
-    await page.getByLabel('Select all').check();
-    await page.getByRole('button', { name: 'delete' }).first().click();
-    await page.getByRole('button', { name: 'OK' }).click();
-
-    // Note: If used in a test, there should be a check for the empty list to
-    // avoid double navigations next.
-
-    this.processDefinitionID = undefined;
-    this.processName = undefined;
-    this.processDescription = undefined;
   }
 }

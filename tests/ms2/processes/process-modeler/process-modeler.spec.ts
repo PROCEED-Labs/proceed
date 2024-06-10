@@ -1,6 +1,8 @@
 import { test, expect } from './process-modeler.fixtures';
 
-test('process modeler', async ({ processModelerPage }) => {
+test('process modeler', async ({ processModelerPage, processListPage }) => {
+  const definitionId = await processListPage.createProcess({ processName: 'Process Name' });
+
   // Open/close XML Viewer
   await processModelerPage.page.getByRole('button', { name: 'xml-sign' }).click();
   await expect(processModelerPage.page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
@@ -63,9 +65,7 @@ test('process modeler', async ({ processModelerPage }) => {
   ).toBeVisible();
   await expect(processModelerPage.page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await processModelerPage.page.getByRole('option', { name: 'Version 1' }).click();
-  const expectedURLWithVersion = new RegExp(
-    `\\/processes\\/${processModelerPage.processDefinitionID}\\?version=\\d+$`,
-  );
+  const expectedURLWithVersion = new RegExp(`\\/processes\\/${definitionId}\\?version=\\d+$`);
   await processModelerPage.page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(processModelerPage.page.url())).toBeTruthy();
 
@@ -106,14 +106,11 @@ test('process modeler', async ({ processModelerPage }) => {
     .click();
   const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
   await processModelerPage.page.waitForURL((url) => {
-    return (
-      url.pathname.match(expectedURLNewProcess) &&
-      !url.pathname.includes(processModelerPage.processDefinitionID)
-    );
+    return url.pathname.match(expectedURLNewProcess) && !url.pathname.includes(definitionId);
   });
   expect(expectedURLNewProcess.test(processModelerPage.page.url())).toBeTruthy();
   const newDefinitionID = processModelerPage.page.url().split('/processes/').pop();
-  expect(newDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
+  expect(newDefinitionID).not.toEqual(definitionId);
 
   // Create subprocess and navigate
   await processModelerPage.createSubprocess();
@@ -126,5 +123,5 @@ test('process modeler', async ({ processModelerPage }) => {
   await processModelerPage.page.waitForURL(expectedURLSubprocess);
   expect(expectedURLSubprocess.test(processModelerPage.page.url())).toBeTruthy();
   const newSubprocessDefinitionID = processModelerPage.page.url().split('/processes/').pop();
-  expect(newSubprocessDefinitionID).not.toEqual(processModelerPage.processDefinitionID);
+  expect(newSubprocessDefinitionID).not.toEqual(definitionId);
 });

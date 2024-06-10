@@ -302,7 +302,7 @@ test('documentation page functionality', async ({ processListPage }) => {
     () => documentationPage.getByRole('button', { name: 'setting' }).click(),
     documentationPage,
   );
-  await settingsModal.getByLabel('Nested Subprocesses').uncheck();
+  await settingsModal.getByLabel('Nested Subprocesses').uncheck({ timeout: 500 });
   await processListPage.closeModal(settingsModal, (m) =>
     m.getByRole('button', { name: 'OK' }).click(),
   );
@@ -365,7 +365,7 @@ test('documentation page functionality', async ({ processListPage }) => {
     () => documentationPage.getByRole('button', { name: 'setting' }).click(),
     documentationPage,
   );
-  await settingsModal.getByLabel('Imported Processes').uncheck();
+  await settingsModal.getByLabel('Imported Processes').uncheck({ timeout: 500 });
   await processListPage.closeModal(settingsModal, (m) =>
     m.getByRole('button', { name: 'OK' }).click(),
   );
@@ -425,7 +425,7 @@ test('documentation page functionality', async ({ processListPage }) => {
     () => documentationPage.getByRole('button', { name: 'setting' }).click(),
     documentationPage,
   );
-  await settingsModal.getByLabel('Exclude Empty Elements').uncheck();
+  await settingsModal.getByLabel('Exclude Empty Elements').uncheck({ timeout: 500 });
 
   // prevent the tooltip of the unchecked checkbox from overlapping the confirmation button when we try to click it next
   let tooltips = await documentationPage.getByRole('tooltip').all();

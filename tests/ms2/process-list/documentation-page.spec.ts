@@ -2,6 +2,8 @@ import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from './process-list.fixtures';
 
 test('documentation page functionality', async ({ processListPage }) => {
+  test.slow();
+
   const { page } = processListPage;
 
   /*********************** Setup **************************/
@@ -10,12 +12,14 @@ test('documentation page functionality', async ({ processListPage }) => {
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await processListPage.openModal(() =>
+  let versionModal = await processListPage.openModal(() =>
     page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
   );
-  await page.getByPlaceholder('Version Name').fill('Version 1');
-  await page.getByPlaceholder('Version Description').fill('First Version');
-  await page.getByRole('button', { name: 'Create Version' }).click();
+  await versionModal.getByPlaceholder('Version Name').fill('Version 1');
+  await versionModal.getByPlaceholder('Version Description').fill('First Version');
+  await processListPage.closeModal(versionModal, (m) =>
+    m.getByRole('button', { name: 'Create Version' }).click(),
+  );
   await page.getByText('Latest Version').click();
   await page.getByText('Version 1').click();
   await page.waitForURL(/\?version=/);
@@ -26,20 +30,24 @@ test('documentation page functionality', async ({ processListPage }) => {
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  await processListPage.openModal(() =>
+  versionModal = await processListPage.openModal(() =>
     page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
   );
-  await page.getByPlaceholder('Version Name').fill('Version 2');
-  await page.getByPlaceholder('Version Description').fill('Second Version');
-  await page.getByRole('button', { name: 'Create Version' }).click();
+  await versionModal.getByPlaceholder('Version Name').fill('Version 2');
+  await versionModal.getByPlaceholder('Version Description').fill('Second Version');
+  await processListPage.closeModal(versionModal, (m) =>
+    m.getByRole('button', { name: 'Create Version' }).click(),
+  );
   await page.getByText('Latest Version').click();
   await page.getByText('Version 2').click();
   await page.waitForURL(/\?version=/);
   const import2Version = page.url().split('?version=').pop();
 
   // share this process so it is visible in the  documentation for other users
-  await processListPage.openModal(() => page.getByRole('button', { name: 'share-alt' }).click());
-  await page.getByText('Share Process with Public Link').click();
+  const shareModal = await processListPage.openModal(() =>
+    page.getByRole('button', { name: 'share-alt' }).click(),
+  );
+  await shareModal.getByText('Share Process with Public Link').click();
   await page
     .locator('.ant-message')
     .filter({ hasText: 'Process shared' })
@@ -506,7 +514,7 @@ test('documentation page functionality', async ({ processListPage }) => {
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 
   // cleanup the process added by the guest user
-  await processListPage.openModal(
+  const deleteModal = await processListPage.openModal(
     () =>
       newPage
         .locator(`tr[data-row-key="${newProcessId}"]`)
@@ -514,5 +522,7 @@ test('documentation page functionality', async ({ processListPage }) => {
         .click(),
     newPage,
   );
-  await newPage.getByRole('button', { name: 'OK' }).click();
+  await processListPage.closeModal(deleteModal, (m) =>
+    m.getByRole('button', { name: 'OK' }).click(),
+  );
 });

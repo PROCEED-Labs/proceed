@@ -230,13 +230,6 @@ export class ProcessListPage {
       .and(page.locator(`div[aria-modal="true"]:not(.ant-zoom)`));
     await (await currentlyOpenModals.last().elementHandle()).waitForElementState('stable');
     const handle = await currentlyOpenModals.last().elementHandle();
-    console.log(
-      await handle.isVisible(),
-      await handle.getAttribute('style'),
-      await handle.getAttribute('class'),
-    );
-
-    await page.waitForTimeout(300);
 
     return await currentlyOpenModals.last();
   }

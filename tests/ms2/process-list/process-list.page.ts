@@ -5,6 +5,7 @@ import fs from 'fs';
 import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
+import { expect } from './process-list.fixtures';
 
 export class ProcessListPage {
   readonly page: Page;
@@ -243,5 +244,25 @@ export class ProcessListPage {
     const elementHandle = await modalLocator.elementHandle();
     await trigger(modalLocator);
     await elementHandle.waitForElementState('hidden');
+  }
+  async createFolder({
+    folderName,
+    folderDescription,
+  }: {
+    folderName: string;
+    folderDescription?: string;
+  }) {
+    const { page } = this;
+
+    // NOTE: selecting a table could break
+    const table = page.locator('table tbody');
+    await table.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+    await page.getByLabel('Folder name').fill(folderName);
+    if (folderDescription) await page.getByLabel('Description').fill(folderDescription);
+    await page.getByRole('button', { name: 'OK' }).click();
+    // NOTE: this could break if there is another folder with the same name
+    const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
+    await expect(folderRow).toBeVisible();
   }
 }

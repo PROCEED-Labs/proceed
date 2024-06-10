@@ -5,7 +5,7 @@ import { getUserById } from '@/lib/data/legacy/iam/users';
 import { User } from '@/lib/data/user-schema';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { SpacesTable } from './spaces-table';
+import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 
@@ -39,7 +39,7 @@ export default async function SysteAdminDashboard() {
     if (space.organization && !space.active)
       return {
         id: space.id,
-        name: <Link href={`/${space.id}/processes`}>{`${space.name}`}</Link>,
+        name: `${space.name}`,
         type: 'Organization',
         owner: 'None',
       };
@@ -51,14 +51,14 @@ export default async function SysteAdminDashboard() {
     if (space.organization)
       return {
         id: space.id,
-        name: <Link href={`/${space.id}/processes`}>{`${space.name}`}</Link>,
+        name: `${space.name}`,
         type: 'Organization',
         owner: userName,
       };
 
     return {
       id: space.id,
-      name: <Link href={`/${space.id}/processes`}>{`Personal space: ${userName}`}</Link>,
+      name: `Personal space: ${userName}`,
       type: 'Personal space',
       owner: userName,
     };

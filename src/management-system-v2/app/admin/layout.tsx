@@ -10,7 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       layoutMenuItems={[
         {
           key: 'spaces',
-          label: <Link href="/admin">Spaces</Link>,
+          label: <Link href="/admin/spaces">Spaces</Link>,
         },
       ]}
     >

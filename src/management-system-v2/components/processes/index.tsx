@@ -46,7 +46,6 @@ import Ability from '@/lib/ability/abilityHelper';
 import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
-import { MachineConfigListConfigs } from '@/app/(dashboard)/[environmentId]/machine-config/machine-config-list';
 
 export function canDeleteItems(
   items: ProcessListProcess[],
@@ -66,13 +65,6 @@ export type ProcessActions = {
   deleteItems: (items: ProcessListProcess[]) => void;
   copyItem: (items: ProcessListProcess[]) => void;
   editItem: (item: ProcessListProcess) => void;
-  moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
-};
-
-export type MachineConfigActions = {
-  deleteItems: (items: MachineConfigListConfigs[]) => void;
-  copyItem: (items: MachineConfigListConfigs[]) => void;
-  editItem: (item: MachineConfigListConfigs) => void;
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 

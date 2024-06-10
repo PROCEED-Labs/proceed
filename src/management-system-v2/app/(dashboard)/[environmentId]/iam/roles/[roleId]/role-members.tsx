@@ -48,11 +48,8 @@ const AddUserModal: FC<{
       <UserList
         /* ---- */
         /* TODO: unify role-members and users-page in terms of side panel
-        Pretty sure that many states and prop drilling are not needed that way 
+        Pretty sure that many states and prop drilling are not needed that way
       */
-        selectedUser={null}
-        setShowMobileUserSider={() => {}}
-        showMobileUserSider={false}
         /* ---- */
         users={usersNotInRole}
         loading={loading}
@@ -121,11 +118,8 @@ const RoleMembers: FC<{
       <UserList
         /* ---- */
         /* TODO: unify role-members and users-page in terms of side panel
-        Pretty sure that many states and prop drilling are not needed that way 
+        Pretty sure that many states and prop drilling are not needed that way
       */
-        selectedUser={null}
-        setShowMobileUserSider={() => {}}
-        showMobileUserSider={false}
         /* ---- */
         users={usersInRole}
         loading={loading}
@@ -165,10 +159,10 @@ const RoleMembers: FC<{
           </Tooltip>
         )}
         /*searchBarRightNode={
-          <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
-            Add Member
-          </Button>
-        }*/
+        <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
+          Add Member
+        </Button>
+      }*/
       />
     </>
   );

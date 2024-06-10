@@ -5,7 +5,7 @@ import { getUserById } from '@/lib/data/legacy/iam/users';
 import { User } from '@/lib/data/user-schema';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AdminPage } from './client-page';
+import { SpacesTable } from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 
@@ -64,5 +64,5 @@ export default async function SysteAdminDashboard() {
     };
   });
 
-  return <AdminPage spaces={spaces} deleteSpace={deleteSpace} />;
+  return <SpacesTable spaces={spaces} deleteSpace={deleteSpace} />;
 }

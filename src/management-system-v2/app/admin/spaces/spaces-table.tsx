@@ -13,7 +13,7 @@ type AdminPageProps = {
   spaces: (Record<'name' | 'type' | 'owner', React.ReactNode> & { id: string })[];
   deleteSpace: deleteSpace;
 };
-export function AdminPage({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps) {
+export function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps) {
   const router = useRouter();
   const { message } = App.useApp();
 

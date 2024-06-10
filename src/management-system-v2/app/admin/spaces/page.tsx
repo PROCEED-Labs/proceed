@@ -9,14 +9,13 @@ import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 
-async function deleteSpace(spaceId: string) {
+async function deleteSpace(spaceIds: string[]) {
   'use server';
   const { systemAdmin } = await getCurrentUser();
-  console.log('Deleting space', spaceId, systemAdmin);
   if (!systemAdmin) return userError('Not a system admin', UserErrorType.PermissionError);
 
   // TODO: decide what to do if space is a personal space
-  deleteEnvironment(spaceId);
+  for (const spaceId of spaceIds) deleteEnvironment(spaceId);
 }
 export type deleteSpace = typeof deleteSpace;
 

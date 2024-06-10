@@ -1,7 +1,7 @@
 'use client';
 
-import { App } from 'antd';
-import React, { ReactNode } from 'react';
+import { App, Tooltip } from 'antd';
+import React, { ReactNode, useState } from 'react';
 import { type deleteSpace } from './page';
 import ConfirmationButton from '@/components/confirmation-button';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -12,6 +12,7 @@ import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import SelectionActions from '@/components/selection-actions';
 
 type AdminPageProps = {
   spaces: Record<'name' | 'type' | 'owner' | 'id', string>[];
@@ -22,20 +23,6 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
   const router = useRouter();
   const { message } = App.useApp();
 
-  async function deleteSpace(id: string) {
-    try {
-      const response = await serverDeleteSpace(id);
-      if (response && 'error' in response) throw response.error.message;
-
-      router.refresh();
-      message.open({ type: 'success', content: 'Environment removed' });
-    } catch (error) {
-      let messageContent: ReactNode = 'Something went wrong';
-      if (React.isValidElement(error)) messageContent = error;
-
-      message.open({ type: 'error', content: messageContent });
-    }
-  }
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
     data: spaces,
     keys: ['name', 'type'],
@@ -44,9 +31,41 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
     transformData: (matches) => matches.map((match) => match.item),
   });
 
+  const [selectedSpaces, setSelectedSpaces] = useState<typeof filteredData>([]);
+
+  async function deleteSpace(ids: string[]) {
+    try {
+      const response = await serverDeleteSpace(ids);
+      if (response && 'error' in response) throw response.error.message;
+
+      setSelectedSpaces([]);
+      router.refresh();
+      message.open({ type: 'success', content: `Space${ids.length > 1 ? 's' : ''} removed` });
+    } catch (error) {
+      let messageContent: ReactNode = 'Something went wrong';
+      if (React.isValidElement(error)) messageContent = error;
+
+      message.open({ type: 'error', content: messageContent });
+    }
+  }
+
   return (
     <>
       <Bar
+        leftNode={
+          <SelectionActions count={selectedSpaces.length}>
+            <ConfirmationButton
+              title="Remove selected spaces"
+              description="Are you sure you want to remove these spaces?"
+              onConfirm={() => deleteSpace(selectedSpaces.map((space) => space.id))}
+              buttonProps={{
+                children: 'Remove Selected',
+                icon: <DeleteOutlined />,
+                type: 'text',
+              }}
+            />
+          </SelectionActions>
+        }
         searchProps={{
           value: searchQuery,
           onChange: (e) => setSearchQuery(e.target.value),
@@ -57,6 +76,10 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
 
       <ElementList
         data={filteredData}
+        elementSelection={{
+          selectedElements: selectedSpaces,
+          setSelectionElements: setSelectedSpaces,
+        }}
         columns={[
           {
             title: 'Name',
@@ -83,7 +106,7 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
               <ConfirmationButton
                 title="Remove Environment"
                 description="Are you sure you want to remove this environment?"
-                onConfirm={() => deleteSpace(id)}
+                onConfirm={() => deleteSpace([id])}
                 buttonProps={{
                   className: styles.HoverableTableCell,
                   children: 'Remove Environment',

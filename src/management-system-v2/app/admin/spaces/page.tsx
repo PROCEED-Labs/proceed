@@ -64,5 +64,9 @@ export default async function SysteAdminDashboard() {
     };
   });
 
-  return <SpacesTable spaces={spaces} deleteSpace={deleteSpace} />;
+  return (
+    <Content>
+      <SpacesTable spaces={spaces} deleteSpace={deleteSpace} />
+    </Content>
+  );
 }

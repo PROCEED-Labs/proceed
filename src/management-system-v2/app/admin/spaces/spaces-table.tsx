@@ -43,7 +43,7 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
       message.open({ type: 'success', content: `Space${ids.length > 1 ? 's' : ''} removed` });
     } catch (error) {
       let messageContent: ReactNode = 'Something went wrong';
-      if (React.isValidElement(error)) messageContent = error;
+      if (typeof error === 'string' || React.isValidElement(error)) messageContent = error;
 
       message.open({ type: 'error', content: messageContent });
     }

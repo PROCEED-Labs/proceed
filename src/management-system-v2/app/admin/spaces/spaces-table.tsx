@@ -19,7 +19,7 @@ type AdminPageProps = {
   deleteSpace: deleteSpace;
 };
 
-function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps) {
+export default function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps) {
   const router = useRouter();
   const { message } = App.useApp();
 
@@ -27,7 +27,6 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
     data: spaces,
     keys: ['name', 'type', 'owner'],
     highlightedKeys: ['name', 'type', 'owner'],
-    queryName: 'search',
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -122,10 +121,3 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
     </>
   );
 }
-
-// This is necessary, since the search query is stored in the useImperativeHandle(
-// so the highlighting of the fuzzy search will look different once the table is
-// rendered on the client, which whil cause a hydration error.
-export default dynamic(() => Promise.resolve(SpacesTable), {
-  ssr: false,
-});

@@ -105,6 +105,30 @@ export async function getMachineConfigById(machineConfigId: string, ability?: Ab
   return machineConfig;
 }
 
+export async function defaultMachineConfig() {
+  const date = new Date().toUTCString();
+  return {
+    id: v4(),
+    type: 'machine-config',
+    environmentId: '',
+    owner: '',
+    name: 'Default Machine Configuration',
+    description: '',
+    variables: [],
+    departments: [],
+    inEditingBy: [],
+    createdOn: date,
+    lastEdited: date,
+    sharedAs: 'protected',
+    shareTimestamp: 0,
+    allowIframeTimestamp: 0,
+    versions: [],
+    folderId: '',
+    targetConfigs: [],
+    machineConfigs: [],
+  } as MachineConfig;
+}
+
 export async function createMachineConfig(
   machineConfigInput: MachineConfigInput,
   environmentId: string,
@@ -114,24 +138,11 @@ export async function createMachineConfig(
 
     // create meta info object
     const date = new Date().toUTCString();
-    const metadata = {
+    const metadata: MachineConfig = {
+      ...defaultMachineConfig(),
       ...({
-        id: v4(),
-        type: 'machine-config',
         environmentId: environmentId,
-        name: 'Default Machine Configuration',
-        description: '',
-        owner: '',
-        variables: [],
-        departments: [],
-        inEditingBy: [],
-        createdOn: date,
-        lastEdited: date,
-        sharedAs: 'protected',
-        shareTimestamp: 0,
-        allowIframeTimestamp: 0,
-        versions: [],
-        folderId: '',
+        owner: environmentId,
       } as MachineConfig),
       ...machineConfigData,
     };

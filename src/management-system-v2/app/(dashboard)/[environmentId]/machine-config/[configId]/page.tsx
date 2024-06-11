@@ -1,16 +1,20 @@
 import Content from '@/components/content';
-import { getMachineConfigById, saveMachineConfig } from '@/lib/data/legacy/machine-config';
+import { Space } from 'antd';
+import { getCurrentEnvironment } from '@/components/auth';
+//import styles from './page.module.scss';
+import {
+  createMachineConfig,
+  getMachineConfigById,
+  saveMachineConfig,
+} from '@/lib/data/legacy/machine-config';
+//import { toCaslResource } from '@/lib/ability/caslAbility';
+import { Breadcrumb, Input, Button, Form } from 'antd';
+import { Col, Divider, Row } from 'antd';
 import MachineConfigEditor from './machine-config-editor';
 
 type MachineConfigProps = {
   params: { configId: string; environmentId: string };
   searchParams: { version?: string };
-};
-
-type VariableType = {
-  name: string;
-  type: string;
-  value: string;
 };
 
 export default async function MachineConfigView({
@@ -23,7 +27,8 @@ export default async function MachineConfigView({
     <Content title="Machine Configuration">
       <MachineConfigEditor
         originalMachineConfig={machineConfig}
-        saveMachineConfig={saveMachineConfig}
+        backendSaveMachineConfig={saveMachineConfig}
+        backendCreateMachineConfig={createMachineConfig}
         configId={configId}
       />
     </Content>

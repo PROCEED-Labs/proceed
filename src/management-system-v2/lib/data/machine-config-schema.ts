@@ -21,9 +21,10 @@ export const MachineConfigServerInputSchema = MachineConfigInputSchema.extend({
 export type MachineConfigServerInput = z.infer<typeof MachineConfigServerInputSchema>;
 
 export type MachineConfigMetadata = Prettify<
-  WithRequired<MachineConfigServerInput, 'id' | 'name' | 'folderId'> & {} & VersionedObject<
-      'machine-config' | 'product-spec'
-    >
+  WithRequired<MachineConfigServerInput, 'id' | 'name' | 'folderId'> & {
+    targetConfigs: MachineConfigMetadata[];
+    machineConfigs: MachineConfigMetadata[];
+  } & VersionedObject<'machine-config' | 'config' | 'target-config' | 'product-spec'>
 >;
 
 export type MachineConfig = Prettify<MachineConfigMetadata>;

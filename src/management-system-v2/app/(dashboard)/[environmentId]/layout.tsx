@@ -10,6 +10,7 @@ import {
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
@@ -41,6 +42,20 @@ const DashboardLayout = async ({
     : await getUserRules(userId, activeEnvironment.spaceId);
 
   const layoutMenuItems: MenuProps['items'] = [];
+
+  if (systemAdmin)
+    layoutMenuItems.push({
+      key: 'ms-admin',
+      label: 'System Admin',
+      type: 'group',
+      children: [
+        {
+          key: 'admin-dashboard',
+          label: <Link href="/admin">System dashboard</Link>,
+          icon: <ControlOutlined />,
+        },
+      ],
+    });
 
   if (can('view', 'Process') || can('view', 'Template')) {
     const children: MenuProps['items'] = [];

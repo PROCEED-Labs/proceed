@@ -81,6 +81,7 @@ const MachineConfigList = ({
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
     keys: ['name', 'description'],
+    highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -258,7 +259,7 @@ const MachineConfigList = ({
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
-            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name}
+            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
           </div>
         </SpaceLink>
       ),
@@ -282,7 +283,11 @@ const MachineConfigList = ({
             display: 'block',
           }}
         >
-          {(record.description ?? '').length == 0 ? <>&emsp;</> : record.description}
+          {(record.description.value ?? '').length == 0 ? (
+            <>&emsp;</>
+          ) : (
+            record.description.highlighted
+          )}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}
         </SpaceLink>

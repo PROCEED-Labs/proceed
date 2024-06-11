@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
+import { getSpaceReprensentation } from './space-representation';
 
 async function deleteSpace(spaceIds: string[]) {
   'use server';
@@ -19,14 +20,6 @@ async function deleteSpace(spaceIds: string[]) {
 }
 export type deleteSpace = typeof deleteSpace;
 
-function getUserName(user: User) {
-  if (user.guest) return 'Guest';
-  if (user.username) return user.username;
-  if (user.firstName || user.lastName)
-    return `${user.firstName ?? '<no first name>'} ${user.lastName ?? '<no last name>'}`;
-  return user.id;
-}
-
 export default async function SysteAdminDashboard() {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
@@ -34,34 +27,7 @@ export default async function SysteAdminDashboard() {
   const adminData = getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
-  const spaces = getEnvironments().map((space) => {
-    if (space.organization && !space.active)
-      return {
-        id: space.id,
-        name: `${space.name}`,
-        type: 'Organization',
-        owner: 'None',
-      };
-
-    const user = getUserById(space.organization ? space.ownerId : space.id);
-    if (!user) throw new Error('Space user not found');
-    const userName = getUserName(user);
-
-    if (space.organization)
-      return {
-        id: space.id,
-        name: `${space.name}`,
-        type: 'Organization',
-        owner: userName,
-      };
-
-    return {
-      id: space.id,
-      name: `Personal space: ${userName}`,
-      type: 'Personal space',
-      owner: userName,
-    };
-  });
+  const spaces = getSpaceReprensentation(getEnvironments());
 
   return (
     <Content>

@@ -80,7 +80,7 @@ export function updateSystemAdmin(adminId: string, adminUpdate: Partial<SystemAd
   return newAdminData;
 }
 
-export async function deleteSystemAdmin(adminId: string) {
+export function deleteSystemAdmin(adminId: string) {
   // TODO: decide if permissions should be checkded here
   const adminData = systemAdminsMetaObjects[adminId];
   if (!adminData) throw new Error('System admin not found');

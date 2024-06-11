@@ -13,6 +13,7 @@ import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { getRoles } from './roles';
+import { addSystemAdmin, getSystemAdmins } from './system-admins';
 
 // @ts-ignore
 let firstInit = !global.usersMetaObject || !global.accountsMetaObject;
@@ -71,6 +72,14 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   usersMetaObject[user.id as string] = user as User;
   store.add('users', user);
+
+  // TODO: change this to a more efficient query when the
+  // persistence layer is implemented
+  if (getSystemAdmins().length === 0)
+    addSystemAdmin({
+      role: 'admin',
+      userId: user.id,
+    });
 
   return user as User;
 }

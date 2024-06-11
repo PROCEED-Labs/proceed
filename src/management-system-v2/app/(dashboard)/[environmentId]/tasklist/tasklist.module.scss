@@ -14,8 +14,7 @@
   .list {
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #eee;
-    padding-right: 0.5rem;
+    overflow-y: hidden;
 
     @media (min-width: 601px) and (max-width: 1199px) {
       position: relative;
@@ -24,13 +23,14 @@
     @media (max-width: 1199px) {
       padding-bottom: 0.5rem;
       border-right: none;
-      padding-right: 0;
       border-bottom: 1px solid #eee;
       flex-grow: 1;
     }
 
     .cardWrapper {
       height: 100%;
+      overflow-y: auto;
+      padding-right: 0.25rem;
 
       .cardList {
         display: grid;
@@ -57,7 +57,8 @@
     }
 
     .actionWrapper {
-      margin-bottom: 0.5rem;
+      padding-right: 1.25rem;
+      padding-bottom: 0.5rem;
 
       @media (max-width: 1199px) {
         display: flex;
@@ -77,7 +78,6 @@
 
   @media (max-width: 1199px) {
     .list:global(.selected) {
-      overflow-y: hidden;
       flex-direction: row;
       justify-content: center;
       flex-grow: 0;

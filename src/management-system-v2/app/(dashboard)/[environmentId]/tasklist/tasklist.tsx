@@ -397,15 +397,6 @@ const Tasklist = ({
             </div>
           ) : (
             <List
-              grid={{
-                gutter: 16,
-                xs: 1,
-                sm: 2,
-                md: 2,
-                lg: 2,
-                xl: 1,
-                xxl: 1,
-              }}
               split={false}
               style={{ maxWidth: breakpoint.xl ? '300px' : undefined }}
               bordered={false}
@@ -417,9 +408,10 @@ const Tasklist = ({
                 pageSize: 20,
                 showSizeChanger: false,
               }}
-              renderItem={(item) => {
-                return (
-                  <List.Item style={{ paddingBlock: '0.5rem' }}>
+            >
+              <div className={styles.cardList}>
+                {filteredAndSortedUserTasks.map((item) => {
+                  return (
                     <UserTaskCard
                       key={item.id}
                       userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
@@ -432,29 +424,10 @@ const Tasklist = ({
                         }
                       }}
                     ></UserTaskCard>
-                  </List.Item>
-                );
-              }}
-            ></List>
-
-            // <div className={styles.cardList}>
-            //   {filteredAndSortedUserTasks.map((item) => {
-            //     return (
-            //       <UserTaskCard
-            //         key={item.id}
-            //         userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
-            //         selected={item.id === selectedUserTaskID}
-            //         clickHandler={() => {
-            //           if (selectedUserTaskID === item.id) {
-            //             setSelectedUserTaskID(null);
-            //           } else {
-            //             setSelectedUserTaskID(item.id);
-            //           }
-            //         }}
-            //       ></UserTaskCard>
-            //     );
-            //   })}
-            // </div>
+                  );
+                })}
+              </div>
+            </List>
           )}
         </div>
       </div>

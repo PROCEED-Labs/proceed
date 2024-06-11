@@ -26,6 +26,10 @@ export let accountsMetaObject: { [Id: string]: OauthAccount } =
   // @ts-ignore
   global.accountsMetaObject || (global.accountsMetaObject = {});
 
+export function getUsers() {
+  return Object.values(usersMetaObject);
+}
+
 export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
 

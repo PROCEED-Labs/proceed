@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { AreaChartOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { FaUsers } from 'react-icons/fa';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {
               key: 'users',
               label: <Link href="/admin/users">Users</Link>,
-              icon: <AppstoreOutlined />,
+              icon: <FaUsers />,
             },
           ],
         },

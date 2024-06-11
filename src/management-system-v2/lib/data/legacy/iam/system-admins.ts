@@ -30,7 +30,7 @@ export function init() {
 init();
 
 export function getSystemAdmins() {
-  return Object.values(systemAdminsMetaObjects);
+  return Object.values(systemAdminsMetaObjects) as SystemAdmin[];
 }
 
 export function getAdminById(id: string) {

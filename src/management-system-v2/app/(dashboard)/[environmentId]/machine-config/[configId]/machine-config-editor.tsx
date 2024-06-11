@@ -287,7 +287,6 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         resolve(treeNode);
         return;
       }
-      router.refresh();
     });
 
   const toggleEditingName = () => {

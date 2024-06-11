@@ -9,6 +9,7 @@ import React from 'react';
 import { App, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
 import { DeleteOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 export default function UserTable({
   users,
@@ -53,11 +54,13 @@ export default function UserTable({
         {
           title: 'Organizations',
           dataIndex: 'orgs',
-          render: (orgs: number) => (
+          render: (orgs: number, user) => (
             <Tooltip
               title={`This user is a member of ${orgs} organization${orgs === 1 ? '' : 's'}`}
             >
-              <GoOrganization /> {orgs}
+              <Link href={`/admin/spaces/${user.id}`}>
+                <GoOrganization /> {orgs}
+              </Link>
             </Tooltip>
           ),
         },

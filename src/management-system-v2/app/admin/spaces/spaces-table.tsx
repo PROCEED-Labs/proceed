@@ -1,6 +1,6 @@
 'use client';
 
-import { App, Tooltip } from 'antd';
+import { App } from 'antd';
 import React, { ReactNode, useState } from 'react';
 import { type deleteSpace } from './page';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -25,8 +25,8 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
 
   const { filteredData, searchQuery, setSearchQuery } = useFuzySearch({
     data: spaces,
-    keys: ['name', 'type'],
-    highlightedKeys: ['name', 'type'],
+    keys: ['name', 'type', 'owner'],
+    highlightedKeys: ['name', 'type', 'owner'],
     queryName: 'search',
     transformData: (matches) => matches.map((match) => match.item),
   });
@@ -98,6 +98,7 @@ function SpacesTable({ spaces, deleteSpace: serverDeleteSpace }: AdminPageProps)
           {
             title: 'Owner',
             dataIndex: 'owner',
+            render: (_, space) => space.owner.highlighted,
           },
           {
             dataIndex: 'id',

@@ -392,7 +392,7 @@ test('share-modal-test', async ({ processListPage }) => {
 test('toggle process list columns', async ({ processListPage }) => {
   const { page } = processListPage;
 
-  const ColumnHeader = ['Name', 'Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+  const ColumnHeader = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -418,7 +418,7 @@ test('test that selected columns are persisted on reload', async ({ processListP
   const { page } = processListPage;
 
   const VisibleColumns = ['Created On', 'File Size', 'Owner'];
-  const HiddenColumns = ['Name', 'Description', 'Last Edited'];
+  const HiddenColumns = ['Description', 'Last Edited'];
 
   const toggleMenu = () =>
     page.getByRole('columnheader', { name: 'more' }).getByRole('button', { name: 'more' }).click();
@@ -542,4 +542,102 @@ test('create a new folder and process, move process to folder and then delete bo
   await folderRow.getByRole('button', { name: 'delete' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(folderRow).not.toBeVisible();
+});
+
+test('sorting process list columns', async ({ processListPage }) => {
+  // NOTE: screen height is very important for this test, as with a small height
+  // and too many elements, the elements will use multiple pages
+
+  const names = ['a', 'b', 'c'];
+  const { page } = processListPage;
+
+  for (const folderName of names)
+    await processListPage.createFolder({ folderName: '0' + folderName }); // 0 prefix so that folders come first
+
+  const processIds: string[] = [];
+  for (const processName of names) {
+    // 1 prefix so that folders come first
+    processIds.push(await processListPage.createProcess({ processName: '1' + processName }));
+    await processListPage.goto();
+  }
+
+  // make hidden columns visible
+  await page
+    .getByRole('columnheader', { name: 'more' })
+    .getByRole('button', { name: 'more' })
+    .click();
+
+  for (const column of ['Created On', 'File Size', 'Owner']) {
+    const checkbox = page.getByRole('checkbox', { name: column });
+
+    expect(checkbox).toBeVisible();
+    if (!(await checkbox.isChecked())) await checkbox.check();
+    await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
+  }
+
+  async function getColumnValues(col: number) {
+    const tableRows = await page.locator('tbody tr').all();
+    const rowNames: { text: string; ariaLabel: string }[] = [];
+    for (const row of tableRows) {
+      const icon = row.locator('td').nth(2).locator('span').first();
+      const ariaLabel = await icon.evaluate((el) => el.getAttribute('aria-label'));
+
+      const text = await row.locator('td').nth(col).textContent();
+      rowNames.push({
+        text,
+        ariaLabel,
+      });
+    }
+    return rowNames;
+  }
+
+  function isSorted<T>(values: T[], aShouldBeBeforeB: (a: T, b: T) => boolean) {
+    for (let i = 0; i < values.length - 1; i++) {
+      if (!aShouldBeBeforeB(values[i], values[i + 1])) return false;
+    }
+    return true;
+  }
+
+  function textSort(a: any, b: any, descending: boolean) {
+    if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
+    if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
+    if (descending) return a.text.localeCompare(b.text) <= 0;
+    return a.text.localeCompare(b.text) >= 0;
+  }
+
+  function dateSort(a: any, b: any, descending: boolean) {
+    if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
+    if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
+
+    const aDate = new Date(a.text);
+    const bDate = new Date(b.text);
+
+    if (descending) return aDate >= bDate;
+    return aDate <= bDate;
+  }
+
+  const sortableColumns = [
+    { columnName: 'Name', sortFunction: textSort, offset: 2 },
+    { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
+    { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
+    { columnName: 'File Size', sortFunction: textSort, offset: 6 },
+    { columnName: 'Owner', sortFunction: textSort, offset: 7 },
+  ];
+
+  for (const column of sortableColumns) {
+    const columnHeader = page
+      .getByRole('columnheader', { name: column.columnName })
+      .locator('div')
+      .first();
+
+    // First click sets it to descending order
+    await columnHeader.click();
+    const descendingValues = await getColumnValues(column.offset);
+    expect(isSorted(descendingValues, (a, b) => column.sortFunction(a, b, true))).toBeTruthy();
+
+    // Second click sets it to ascending order
+    await columnHeader.click();
+    const ascendingValues = await getColumnValues(column.offset);
+    expect(isSorted(ascendingValues, (a, b) => column.sortFunction(a, b, false))).toBeTruthy();
+  }
 });

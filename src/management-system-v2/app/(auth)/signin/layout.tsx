@@ -64,9 +64,9 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
               id: '',
               name: '',
               parentId: null,
-              createdAt: '',
+              createdOn: '',
               createdBy: '',
-              updatedAt: '',
+              lastEdited: '',
               environmentId: '',
             }}
           />

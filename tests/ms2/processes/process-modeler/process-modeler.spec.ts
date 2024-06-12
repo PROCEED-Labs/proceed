@@ -1,14 +1,14 @@
 import { test, expect } from './process-modeler.fixtures';
+import { openModal, closeModal } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
   const definitionId = await processListPage.createProcess({ processName: 'Process Name' });
 
   // Open/close XML Viewer
-  await processModelerPage.page.getByRole('button', { name: 'xml-sign' }).click();
+  let modal = await openModal(processModelerPage.page.getByRole('button', { name: 'xml-sign' }));
   await expect(processModelerPage.page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
   //todo: check xml for startevent
-  await processModelerPage.page.waitForTimeout(2000); // wait for dialog to show before closing
-  await processModelerPage.page.getByRole('button', { name: 'Ok' }).click();
+  await closeModal(modal.getByRole('button', { name: 'Ok' }));
 
   // Open/collapse/close properties panel
   const propertiesPanel = processModelerPage.page.getByRole('region', { name: 'Properties' });
@@ -27,35 +27,35 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   const openVersionCreationDialog = processModelerPage.page
     .getByLabel('general-modeler-toolbar')
     .getByRole('button', { name: 'plus' });
-  await openVersionCreationDialog.click();
+  modal = await openModal(openVersionCreationDialog);
   const versionCreationDialog = processModelerPage.page.getByRole('dialog', {
     name: 'Create New Version',
   });
   await expect(versionCreationDialog).toBeVisible();
-  await processModelerPage.page.getByRole('button', { name: 'Cancel' }).click();
+  await closeModal(modal.getByRole('button', { name: 'Cancel' }));
   await expect(versionCreationDialog).not.toBeVisible();
-  await openVersionCreationDialog.click();
-  await processModelerPage.page.getByRole('button', { name: 'Close', exact: true }).click();
+  modal = await openModal(openVersionCreationDialog);
+  await closeModal(modal.getByRole('button', { name: 'Close', exact: true }));
   await expect(versionCreationDialog).not.toBeVisible();
 
   // Fill version creation dialog and create new version
-  const versionCreationSubmitButton = processModelerPage.page.getByRole('button', {
-    name: 'Create Version',
-  });
   const stringWith150Chars =
     'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volu';
-  await openVersionCreationDialog.click();
+  modal = await openModal(openVersionCreationDialog);
+  const versionCreationSubmitButton = modal.getByRole('button', {
+    name: 'Create Version',
+  });
   await expect(versionCreationSubmitButton).toBeDisabled();
-  await processModelerPage.page.getByPlaceholder('Version Name').fill('Version 1');
+  await modal.getByPlaceholder('Version Name').fill('Version 1');
   await expect(versionCreationSubmitButton).toBeDisabled();
-  await processModelerPage.page
+  await modal
     .getByPlaceholder('Version Description')
     .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
   await expect(processModelerPage.page.getByPlaceholder('Version Description')).toHaveText(
     stringWith150Chars,
   );
   await expect(versionCreationSubmitButton).toBeEnabled();
-  await versionCreationSubmitButton.click();
+  await closeModal(versionCreationSubmitButton);
 
   // Select newly created version to view its BPMN and check for URL change
   const versionSelectMenu = processModelerPage.page.getByText('Latest Version');
@@ -71,39 +71,37 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
 
   // Open/close process select menu and process creation dialog
   const processSelectMenu = processModelerPage.page.getByTitle('Process List');
+
+  await processSelectMenu.click();
+  await expect(processModelerPage.page.getByRole('option', { name: 'Process Name' })).toBeVisible();
+
   const openProcessCreationDialogButton = processModelerPage.page.getByRole('button', {
     name: 'Create new process',
   });
-  const processCreationDialog = processModelerPage.page.getByRole('dialog', {
-    name: 'Create Process',
-  });
-  await processSelectMenu.click();
-  await expect(processModelerPage.page.getByRole('option', { name: 'Process Name' })).toBeVisible();
-  await openProcessCreationDialogButton.click();
+  let processCreationDialog = await openModal(openProcessCreationDialogButton);
   await expect(processCreationDialog).toBeVisible();
-  await processModelerPage.page.getByRole('button', { name: 'Cancel' }).click();
+  await closeModal(processCreationDialog.getByRole('button', { name: 'Cancel' }));
   await expect(processCreationDialog).not.toBeVisible();
   await processSelectMenu.click();
-  await openProcessCreationDialogButton.click();
-  await processModelerPage.page.getByRole('button', { name: 'Close', exact: true }).click();
+  processCreationDialog = await openModal(openProcessCreationDialogButton);
+  await closeModal(processCreationDialog.getByRole('button', { name: 'Close' }));
   await expect(processCreationDialog).not.toBeVisible();
   await processSelectMenu.click();
-  await openProcessCreationDialogButton.click();
+  processCreationDialog = await openModal(openProcessCreationDialogButton);
 
   // Fill process creation dialog and create new process, check for url change
-  await processModelerPage.page.getByLabel('Process Name').fill('New Process');
-  await processModelerPage.page
+  await processCreationDialog.getByLabel('Process Name').fill('New Process');
+  await processCreationDialog
     .getByLabel('Process Description')
     .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
-  await expect(processModelerPage.page.getByLabel('Process Description')).toHaveText(
+  await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
     stringWith150Chars,
   );
-  await processModelerPage.page
-    .getByRole('button', {
+  await closeModal(
+    processCreationDialog.getByRole('button', {
       name: 'Create',
-      exact: true,
-    })
-    .click();
+    }),
+  );
   const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
   await processModelerPage.page.waitForURL((url) => {
     return url.pathname.match(expectedURLNewProcess) && !url.pathname.includes(definitionId);

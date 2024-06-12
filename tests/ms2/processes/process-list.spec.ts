@@ -1,5 +1,6 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from './process-list.fixtures';
+import { openModal, closeModal } from '../testUtils';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -13,12 +14,13 @@ test('create a new process and remove it again', async ({ processListPage }) => 
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
 
-  await page
-    .locator(`tr[data-row-key="${processDefinitionID}"]`)
-    .getByRole('button', { name: 'delete' })
-    .click();
+  const modal = await openModal(
+    page
+      .locator(`tr[data-row-key="${processDefinitionID}"]`)
+      .getByRole('button', { name: 'delete' }),
+  );
 
-  await page.getByRole('button', { name: 'OK' }).click();
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).not.toBeVisible();
 
@@ -50,11 +52,13 @@ test('export a single process', async ({ processListPage }) => {
 
   /*************************** BPMN Export ********************************/
 
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
+  let modal = await openModal(
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export'),
+  );
   await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'bpmn' }).click();
+  await modal.getByRole('radio', { name: 'bpmn' }).click();
   const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal.getByRole('button', { name: 'OK' })),
     'string',
   );
   expect(bpmnFilename).toMatch(/.bpmn$/);
@@ -64,11 +68,10 @@ test('export a single process', async ({ processListPage }) => {
   /*************************** SVG Export ********************************/
 
   // test the svg export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
+  modal = await openModal(page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export'));
+  await modal.getByRole('radio', { name: 'svg' }).click();
   const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal.getByRole('button', { name: 'OK' })),
     'string',
   );
 
@@ -85,12 +88,13 @@ test('export a single process', async ({ processListPage }) => {
   const { definitionId: subprocessDefinitionId, definitionName: subprocessDefinitionName } =
     await processListPage.importProcess('subprocess.bpmn');
   // test the svg export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
+  modal = await openModal(
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export'),
+  );
+  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
   const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'zip',
   );
 
@@ -141,11 +145,10 @@ test('export a single process', async ({ processListPage }) => {
   /*************************** PNG Export ********************************/
 
   // test the png export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
+  modal = await openModal(page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export'));
+  await modal.getByRole('radio', { name: 'png' }).click();
   const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'string',
   );
 
@@ -153,14 +156,15 @@ test('export a single process', async ({ processListPage }) => {
   expect(pngFilename).toMatch(/.png$/);
 
   // test the png export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
+  modal = await openModal(
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export'),
+  );
+  await modal.getByRole('radio', { name: 'png' }).click();
   // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
 
   const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'zip',
   );
 
@@ -198,14 +202,12 @@ test('export multiple processes', async ({ processListPage }) => {
   await page.locator(`tr[data-row-key="${process1Id}"]`).getByRole('checkbox').click();
   await page.locator(`tr[data-row-key="${process3Id}"]`).getByRole('checkbox').click();
 
-  await page.getByLabel('export').first().click();
+  let modal = await openModal(page.getByLabel('export').first());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'bpmn' }).click();
+  await modal.getByRole('radio', { name: 'bpmn' }).click();
 
   const { filename, content: zip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'zip',
   );
 
@@ -241,15 +243,13 @@ test('export multiple processes', async ({ processListPage }) => {
 
   /*************************** SVG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  modal = await openModal(page.getByLabel('export').first());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
+  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: svgZipFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'zip',
   );
 
@@ -268,16 +268,16 @@ test('export multiple processes', async ({ processListPage }) => {
 
   /*************************** PNG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  modal = await openModal(page.getByLabel('export').first());
 
   await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('radio', { name: 'png' }).click();
+  await modal.getByRole('radio', { name: 'png' }).click();
   // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
 
   const { filename: pngZipFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(page.getByRole('button', { name: 'OK' })),
     'zip',
   );
 
@@ -293,102 +293,6 @@ test('export multiple processes', async ({ processListPage }) => {
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest.png')).toBeTruthy();
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.png')).toBeTruthy();
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
-});
-
-test('share-modal-test', async ({ processListPage }) => {
-  const { page } = processListPage;
-
-  let clipboardData: string;
-
-  const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
-
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
-
-  await page.getByRole('button', { name: 'share-alt' }).click();
-
-  //await expect(page.getByText('Share', { exact: true })).toBeVisible();
-
-  /*************************** Embed in Website ********************************/
-
-  await page.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(page.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await page.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
-  await expect(page.locator('div[class="code"]')).toBeVisible();
-  await page.getByTitle('copy code', { exact: true }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
-  expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  // skip this test for firebox
-  if (page.context().browser().browserType() !== firefox) {
-    await page.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-    await page.waitForTimeout(100);
-    clipboardData = await processListPage.readClipboard(false);
-    await expect(clipboardData).toMatch('image/png');
-  } else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await page.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await page.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  await page.getByTitle('Export as file', { exact: true }).click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'cancel' }).click();
-
-  /*************************** Share Process with link ********************************/
-  await page.getByRole('button', { name: 'Share Public Link' }).click();
-  await page.getByText('Share Process with Public Link').click();
-
-  await expect(page.locator('input[name="generated share link"]')).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy link' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
-
-  await page.getByRole('button', { name: 'Copy link' }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  // Visit the shared link
-  const browser: Browser = await chromium.launch();
-  const newPage: Page = await browser.newPage();
-
-  await newPage.goto(`${clipboardData}`);
-  await newPage.waitForURL(`${clipboardData}`);
-
-  // Add the shared process to the workspace
-  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
-  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
-
-  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
-  await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
-
-  await newPage.getByRole('button', { name: 'My Space' }).click();
-  await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
-
-  const newProcessId = newPage.url().split('/processes/').pop();
-
-  await newPage.getByRole('link', { name: 'process list' }).click();
-  await newPage.waitForURL(/processes/);
-  await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });
 
 test('toggle process list columns', async ({ processListPage }) => {
@@ -461,9 +365,9 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderId = crypto.randomUUID();
 
   await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page.getByRole('menuitem', { name: 'Create Folder' }));
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
@@ -484,16 +388,16 @@ test('create a new folder with new button and remove it', async ({ processListPa
 
   // NOTE: this could easily break
   await page.getByRole('button', { name: 'ellipsis' }).hover();
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page.getByRole('menuitem', { name: 'Create Folder' }));
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(folderRow.getByRole('button', { name: 'delete' }));
+  await closeModal(page.getByRole('button', { name: 'OK' }));
 
   await expect(folderLocator).not.toBeVisible();
 });
@@ -506,9 +410,9 @@ test('create a new folder and process, move process to folder and then delete bo
   // create folder
   const folderId = crypto.randomUUID();
   await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page.getByRole('menuitem', { name: 'Create Folder' }));
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
   await expect(folderRow).toBeVisible();
 
@@ -535,15 +439,15 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
-  await processLocator.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(processLocator.getByRole('button', { name: 'delete' }));
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
   await expect(processLocator).not.toBeVisible();
   processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(folderRow.getByRole('button', { name: 'delete' }));
+  await closeModal(modal.getByRole('button', { name: 'OK' }));
   await expect(folderRow).not.toBeVisible();
 });
 
@@ -643,4 +547,100 @@ test('sorting process list columns', async ({ processListPage }) => {
     const ascendingValues = await getColumnValues(column.offset);
     expect(isSorted(ascendingValues, (a, b) => column.sortFunction(a, b, false))).toBeTruthy();
   }
+});
+
+test('share-modal', async ({ processListPage }) => {
+  const { page } = processListPage;
+
+  let clipboardData: string;
+
+  const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
+  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
+
+  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+
+  const modal = await openModal(page.getByRole('button', { name: 'share-alt' }));
+
+  //await expect(page.getByText('Share', { exact: true })).toBeVisible();
+
+  /*************************** Embed in Website ********************************/
+
+  await modal.getByRole('button', { name: 'Embed in Website' }).click();
+  await expect(modal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
+  await modal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(modal.locator('div[class="code"]')).toBeVisible();
+  await modal.getByTitle('copy code', { exact: true }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  const regex =
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+  expect(clipboardData).toMatch(regex);
+
+  /*************************** Copy Diagram As PNG ********************************/
+  // skip this test for firefox
+  if (page.context().browser().browserType() !== firefox) {
+    await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
+    await page.waitForTimeout(100);
+    clipboardData = await processListPage.readClipboard(false);
+    await expect(clipboardData).toMatch('image/png');
+  } else {
+    // download as fallback
+    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
+      async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
+      'string',
+    );
+
+    expect(pngFilename).toMatch(/.png$/);
+  }
+
+  /*************************** Copy Diagram As XML ********************************/
+
+  await modal.getByTitle('Copy Diagram as XML', { exact: true }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
+  await expect(clipboardData).toMatch(xmlRegex);
+
+  /*************************** Export as File ********************************/
+  const exportModal = await openModal(modal.getByTitle('Export as file', { exact: true }));
+  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
+  await closeModal(exportModal.getByRole('button', { name: 'cancel' }));
+
+  /*************************** Share Process with link ********************************/
+  await modal.getByRole('button', { name: 'Share Public Link' }).click();
+  await modal.getByText('Share Process with Public Link').click();
+
+  await expect(modal.locator('input[name="generated share link"]')).toBeEnabled();
+  await expect(modal.getByRole('button', { name: 'Copy link' })).toBeEnabled();
+  await expect(modal.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
+  await expect(modal.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
+
+  await modal.getByRole('button', { name: 'Copy link' }).click();
+
+  clipboardData = await processListPage.readClipboard(true);
+
+  // Visit the shared link
+  const browser: Browser = await chromium.launch();
+  const newPage: Page = await browser.newPage();
+
+  await newPage.goto(`${clipboardData}`);
+  await newPage.waitForURL(`${clipboardData}`);
+
+  // Add the shared process to the workspace
+  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
+
+  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
+  await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
+
+  await newPage.getByRole('button', { name: 'My Space' }).click();
+  await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
+
+  const newProcessId = newPage.url().split('/processes/').pop();
+
+  await newPage.getByRole('link', { name: 'process list' }).click();
+  await newPage.waitForURL(/processes/);
+  await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

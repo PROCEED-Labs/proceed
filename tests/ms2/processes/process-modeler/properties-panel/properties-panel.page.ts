@@ -1,5 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 import * as path from 'path';
+import { openModal, closeModal } from '../../../testUtils';
 
 export class PropertiesPanelPage {
   readonly page: Page;
@@ -27,8 +28,6 @@ export class PropertiesPanelPage {
     const fileChooser = await fileChooserPromise;
     const imagePath = path.join(__dirname, imageFileName);
     await fileChooser.setFiles(imagePath);
-
-    await page.waitForTimeout(1000); // wait until image is loaded
   }
 
   async editPlannedDuration(durationValues: {
@@ -40,45 +39,41 @@ export class PropertiesPanelPage {
     seconds?: number;
   }) {
     const { years, months, days, hours, minutes, seconds } = durationValues;
-    const page = this.page;
-    await page.getByTestId('plannedDurationInputEdit').click();
+    const modal = await openModal(this.page.getByTestId('plannedDurationInputEdit'));
 
     if (years) {
-      await page.locator('input[name="years"]').fill(`${years}`);
+      await modal.locator('input[name="years"]').fill(`${years}`);
     }
 
     if (months) {
-      await page.locator('input[name="months"]').fill(`${months}`);
+      await modal.locator('input[name="months"]').fill(`${months}`);
     }
 
     if (days) {
-      await page.locator('input[name="days"]').fill(`${days}`);
+      await modal.locator('input[name="days"]').fill(`${days}`);
     }
 
     if (hours) {
-      await page.locator('input[name="hours"]').fill(`${hours}`);
+      await modal.locator('input[name="hours"]').fill(`${hours}`);
     }
 
     if (minutes) {
-      await page.locator('input[name="minutes"]').fill(`${minutes}`);
+      await modal.locator('input[name="minutes"]').fill(`${minutes}`);
     }
 
     if (seconds) {
-      await page.locator('input[name="seconds"]').fill(`${seconds}`);
+      await modal.locator('input[name="seconds"]').fill(`${seconds}`);
     }
 
-    await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(500);
+    await closeModal(modal.getByRole('button', { name: 'Save' }));
   }
 
   async addMilestone(milestoneValues: { ID: string; name: string; description?: string }) {
     const { ID, name, description } = milestoneValues;
-    const page = this.page;
     const milestonesSection = this.milestonesSection;
 
-    await milestonesSection.getByLabel('plus').click();
-    await page.waitForTimeout(1000); // wait until modal loaded
-    const milestonesModal = page.getByLabel('Create new Milestone');
+    const milestonesModal = await openModal(milestonesSection.getByLabel('plus'));
+
     await milestonesModal.getByPlaceholder('Milestone ID').fill(ID);
     await milestonesModal.getByPlaceholder('Milestone Name').fill(name);
 
@@ -88,29 +83,25 @@ export class PropertiesPanelPage {
         .fill(description);
     }
 
-    await milestonesModal.getByRole('button', { name: 'Create Milestone' }).click();
-    await page.waitForTimeout(1000); // wait until milestone modal is closed
+    await closeModal(milestonesModal.getByRole('button', { name: 'Create Milestone' }));
   }
 
   async addDescription(descriptionText: string) {
-    const page = this.page;
     const descriptionSection = this.descriptionSection;
 
-    await descriptionSection.getByLabel('edit').click(); // click edit description button
-    await page
+    const modal = await openModal(descriptionSection.getByLabel('edit'));
+    await modal
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);
-    await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(1000); // wait until description dialog is closed
+
+    await closeModal(modal.getByRole('button', { name: 'Save' }));
   }
 
   async addCustomProperty(name: string, value: string) {
-    const page = this.page;
     const customPropertiesSection = this.customPropertiesSection;
 
     await customPropertiesSection.getByPlaceholder('Custom Name').fill(name);
     await customPropertiesSection.getByPlaceholder('Custom Value').fill(value);
     await customPropertiesSection.locator('form').getByRole('button', { name: 'plus' }).click();
-    await page.waitForTimeout(500);
   }
 }

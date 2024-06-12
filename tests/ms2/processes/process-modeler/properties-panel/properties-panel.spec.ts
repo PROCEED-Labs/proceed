@@ -30,7 +30,6 @@ test('open properties panel for process and fill property values', async ({
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
   ).toHaveAttribute('src', exampleImageURL);
   await propertiesPanelPage.imageSection.getByLabel('delete').click();
-  await propertiesPanelPage.page.waitForTimeout(500);
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
@@ -162,7 +161,6 @@ test('open properties panel for element and fill property values', async ({
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),
   ).toHaveAttribute('src', exampleImageURL);
   await propertiesPanelPage.imageSection.getByLabel('delete').click();
-  await propertiesPanelPage.page.waitForTimeout(500);
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   await expect(
     propertiesPanelPage.imageSection.getByRole('img', { name: 'Image' }),

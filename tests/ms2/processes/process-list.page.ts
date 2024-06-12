@@ -5,6 +5,7 @@ import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
 import { expect } from './process-list.fixtures';
+import { closeModal, openModal } from '../testUtils';
 
 export class ProcessListPage {
   readonly page: Page;
@@ -44,7 +45,7 @@ export class ProcessListPage {
       mimeType: 'text/xml',
       buffer: Buffer.from(bpmn, 'utf-8'),
     });
-    await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
+    await closeModal(page.getByRole('dialog').getByRole('button', { name: 'Import' }));
 
     this.processDefinitionIds.push(definitionId);
 
@@ -101,12 +102,11 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    await page
-      .locator(`tr[data-row-key="${definitionId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click();
+    const modal = await openModal(
+      page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('button', { name: 'delete' }),
+    );
 
-    await page.getByRole('button', { name: 'OK' }).click();
+    await closeModal(modal.getByRole('button', { name: 'OK' }));
 
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
@@ -116,10 +116,12 @@ export class ProcessListPage {
     const { processName, description } = options;
 
     // Add a new process.
-    await page.getByRole('button', { name: 'Create Process' }).click();
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName ?? 'My Process');
-    await page.getByLabel('Process Description').fill(description ?? 'Process Description');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const modal = await openModal(page.getByRole('button', { name: 'Create Process' }));
+    await modal
+      .getByRole('textbox', { name: '* Process Name :' })
+      .fill(processName ?? 'My Process');
+    await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
+    await closeModal(modal.getByRole('button', { name: 'Create', exact: true }));
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const definitionId = page.url().split('processes/').pop();
@@ -143,8 +145,8 @@ export class ProcessListPage {
 
       // remove all processes
       await page.getByLabel('Select all').check();
-      await page.getByRole('button', { name: 'delete' }).first().click();
-      await page.getByRole('button', { name: 'OK' }).click();
+      const modal = await openModal(page.getByRole('button', { name: 'delete' }).first());
+      await closeModal(modal.getByRole('button', { name: 'OK' }));
 
       // Note: If used in a test, there should be a check for the empty list to
       // avoid double navigations next.

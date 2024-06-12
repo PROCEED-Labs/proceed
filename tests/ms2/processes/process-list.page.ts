@@ -133,8 +133,10 @@ export class ProcessListPage {
     const { page } = this;
 
     if (this.processDefinitionIds.length) {
-      this.goto();
-      await page.waitForURL('**/processes');
+      if (!page.url().endsWith('processes')) {
+        await this.goto();
+        await page.waitForURL('**/processes');
+      }
 
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });

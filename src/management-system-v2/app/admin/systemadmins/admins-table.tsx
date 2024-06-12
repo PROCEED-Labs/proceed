@@ -75,6 +75,21 @@ export default function SystemAdminsTable({
             Add admin
           </Button>
         }
+        selectedRowActions={(selection, clearSelection) => (
+          <ConfirmationButton
+            title="Remove admins"
+            tooltip="Remove admins"
+            description="Are you sure you want to remove these admins' role?"
+            onConfirm={async () => {
+              clearSelection();
+              deleteAdmins(selection);
+            }}
+            buttonProps={{
+              type: 'text',
+              icon: <DeleteOutlined />,
+            }}
+          />
+        )}
         columns={(clearSelection) => [
           {
             title: 'Role',

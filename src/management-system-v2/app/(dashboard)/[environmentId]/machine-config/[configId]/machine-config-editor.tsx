@@ -12,6 +12,8 @@ import {
   EditOutlined,
   KeyOutlined,
   UserOutlined,
+  DeleteOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
@@ -45,6 +47,8 @@ import {
   Typography,
   SelectProps,
   TreeDataNode,
+  theme,
+  Card,
 } from 'antd';
 import { ToolbarGroup } from '@/components/toolbar';
 import VersionCreationButton from '@/components/version-creation-button';
@@ -113,6 +117,26 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   const createMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
+  const [nestedParameters, setNestedParameters] = useState([]); // State for nested parameters
+
+  //Added by Antoni
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken();
+  const addNestedParameter = () => {
+    setNestedParameters([...nestedParameters, { key: '', value: '', unit: '', language: '' }]);
+  };
+
+  const changeNestedParameter = (index, key, value) => {
+    const newNestedParameters = [...nestedParameters];
+    newNestedParameters[index][key] = value;
+    setNestedParameters(newNestedParameters);
+  };
+
+  const removeNestedParameter = (index) => {
+    setNestedParameters(nestedParameters.filter((_, i) => i !== index));
+  };
+  ////
 
   const selectedVersion =
     machineConfig.versions.find(
@@ -382,7 +406,16 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
             </Title>
           </Divider>
         </Header>
-        <Content style={{ margin: '24px 16px 0', padding: '16px', background: '#fff' }}>
+        <Content
+          style={{
+            margin: '24px 16px 0',
+            padding: '16px',
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+            minHeight: 'auto',
+            height: 'auto',
+          }}
+        >
           <Row gutter={16} style={{ marginTop: '16px' }}>
             <Col span={8}>
               <label>
@@ -441,18 +474,114 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
               ))}
             </Col>
           </Row>
-          <Row gutter={16} style={{ marginTop: '32px' }}>
-            <Col span={12}>
-              <Button onClick={createTarget} type="primary">
-                Create Target Configuration
-              </Button>
-              <Table columns={columns} dataSource={targetConfigList} pagination={false} />
-            </Col>
-            <Col span={12}>
-              <Button onClick={createMachine} type="primary">
-                Create Machine Configuration
-              </Button>
-              <Table columns={columns} dataSource={machineConfigList} pagination={false} />
+          <Row gutter={16} style={{ marginTop: '16px' }}>
+            <Col span={24}>
+              <Card title="Target Configuration" style={{ marginBottom: 16 }}>
+                <Input placeholder="Target Config Name" style={{ marginBottom: 16 }} />
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Input placeholder="ID" />
+                  </Col>
+                  <Col span={8}>
+                    <Select defaultValue="Version" style={{ width: '100%' }}>
+                      <Option value="version1">Version 1</Option>
+                      <Option value="version2">Version 2</Option>
+                    </Select>
+                  </Col>
+                  <Col span={8}>
+                    <Input placeholder="Owner" />
+                  </Col>
+                </Row>
+                <Divider />
+                <Title level={5}>Linked Machine Configurations</Title>
+                <Space wrap>
+                  <Tag color="green">ID ABC</Tag>
+                  <Tag color="purple">ID XYZ</Tag>
+                  <Tag color="magenta">ID LMN</Tag>
+                  <Button icon={<PlusOutlined />} type="dashed" />
+                </Space>
+              </Card>
+              <Card title="Target Parameters" bodyStyle={{ paddingBottom: 16 }}>
+                <Button
+                  icon={<PlusOutlined />}
+                  type="dashed"
+                  style={{ width: '100%', marginBottom: 16 }}
+                  onClick={addNestedParameter}
+                >
+                  Add Parameter
+                </Button>
+                {nestedParameters.map((param, i) => (
+                  <Card
+                    key={i}
+                    type="inner"
+                    title={`Nested Parameter ${i + 1}`}
+                    extra={
+                      <Button
+                        icon={<MinusOutlined />}
+                        type="dashed"
+                        onClick={() => removeNestedParameter(i)}
+                      />
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Row gutter={16} style={{ marginBottom: 16 }}>
+                      <Col span={6}>
+                        <Input
+                          placeholder="Key"
+                          //value={param.key}
+                          onChange={(e) => changeNestedParameter(i, 'key', e.target.value)}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Input
+                          placeholder="Value"
+                          //value={param.value}
+                          onChange={(e) => changeNestedParameter(i, 'value', e.target.value)}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Input
+                          placeholder="Unit"
+                          //value={param.unit}
+                          onChange={(e) => changeNestedParameter(i, 'unit', e.target.value)}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Input
+                          placeholder="Language"
+                          //value={param.language}
+                          onChange={(e) => changeNestedParameter(i, 'language', e.target.value)}
+                        />
+                      </Col>
+                    </Row>
+                    <Row gutter={16} style={{ marginBottom: 16 }}>
+                      <Col span={24}>
+                        <Space>
+                          <Tag color="purple">Key XY</Tag>
+                          <Tag color="blue">Key AB</Tag>
+                          <Button icon={<PlusOutlined />} type="dashed" />
+                        </Space>
+                      </Col>
+                    </Row>
+                    <Row gutter={16} justify="start">
+                      <Space>
+                        <Tooltip title="Copy">
+                          <Button icon={<CopyOutlined />} shape="circle" />
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <Button icon={<EditOutlined />} shape="circle" />
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <Button icon={<DeleteOutlined />} shape="circle" />
+                        </Tooltip>
+                      </Space>
+                      <Button type="link" icon={<PlusOutlined />}>
+                        Create Custom Parameter
+                      </Button>
+                    </Row>
+                  </Card>
+                ))}
+              </Card>
             </Col>
           </Row>
         </Content>

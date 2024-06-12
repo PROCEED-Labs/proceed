@@ -7,7 +7,7 @@ import {
   getSystemAdminByUserId,
   getSystemAdmins,
 } from '@/lib/data/legacy/iam/system-admins';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getUserById, getUsers } from '@/lib/data/legacy/iam/users';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { redirect } from 'next/navigation';
@@ -33,19 +33,42 @@ async function deleteAdmins(userIds: string[]) {
 }
 export type deleteAdmins = typeof deleteAdmins;
 
-async function addAdmin(data: SystemAdminCreationInput) {
+async function addAdmin(admins: SystemAdminCreationInput[]) {
   'use server';
   const { systemAdmin } = await getCurrentUser();
   if (!systemAdmin || systemAdmin.role !== 'admin')
     return userError('Not a system admin', UserErrorType.PermissionError);
 
+  console.log('gott', admins);
+
   try {
-    return addSystemAdmin(data);
+    for (const admin of admins) {
+      addSystemAdmin(admin);
+    }
   } catch (e) {
+    console.error(e);
     return userError('Something went wrong');
   }
 }
 export type addAdmin = typeof addAdmin;
+
+async function getNonAdminUsers() {
+  'use server';
+
+  const { systemAdmin } = await getCurrentUser();
+  if (!systemAdmin || systemAdmin.role !== 'admin')
+    return userError('Not a system admin', UserErrorType.PermissionError);
+
+  try {
+    const systemAdmins = getSystemAdmins();
+    return getUsers().filter(
+      (user) => !user.guest && !systemAdmins.some((admin) => admin.userId === user.id),
+    ) as AuthenticatedUser[];
+  } catch (e) {
+    return userError('Something went wrong');
+  }
+}
+export type getNonAdminUsers = typeof getNonAdminUsers;
 
 export default async function ManageAdminsPage() {
   const user = await getCurrentUser();
@@ -64,7 +87,12 @@ export default async function ManageAdminsPage() {
 
   return (
     <Content title="System admins">
-      <SystemAdminsTable admins={systemAdmins} deleteAdmins={deleteAdmins} addAdmin={addAdmin} />
+      <SystemAdminsTable
+        admins={systemAdmins}
+        deleteAdmins={deleteAdmins}
+        addAdmin={addAdmin}
+        getNonAdminUsers={getNonAdminUsers}
+      />
     </Content>
   );
 }

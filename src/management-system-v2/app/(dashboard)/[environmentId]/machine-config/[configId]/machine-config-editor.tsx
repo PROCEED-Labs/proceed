@@ -103,8 +103,10 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
 
   const [variables, setVariables] = useState<VariableType[]>([]);
   const firstRender = useRef(true);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [editingName, setEditingName] = useState(false);
+  const [machineConfigList, setMachineConfigList] = useState<MachineConfig[]>([]);
+  const [targetConfigList, setTargetConfigList] = useState<MachineConfig[]>([]);
 
   const machineConfig = { ...props.originalMachineConfig };
   const saveMachineConfig = props.backendSaveMachineConfig;
@@ -163,6 +165,8 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
+      setMachineConfigList(machineConfig.machineConfigs);
+      setTargetConfigList(machineConfig.targetConfigs);
       setVariables(machineConfig.variables);
       return;
     }
@@ -183,41 +187,12 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newVariableName, setNewVariableName] = useState('');
-  const [editingIndex, setEditingIndex] = useState(null);
   const showMobileView = useMobileModeler();
 
   const discardChanges = () => {
     setIsModalVisible(false);
   };
-  const setModalVisible = () => {
-    setIsModalVisible(true);
-  };
-  const saveVariable = () => {
-    /*
-    if (editingIndex !== null) {
-      const updatedVariables = variables.map((val, i) => i === editingIndex ? { name: newVariableName } : val);
-      setVariables(updatedVariables);
-    } else {
-      setVariables([...variables, { name: newVariableName }]);
-    }
-    setIsModalVisible(false);
-    */
-  };
 
-  const editVariable = (/*index*/) => {
-    /*
-    setNewVariableName(variables[index].name);
-    setEditingIndex(index);
-    setIsModalVisible(true);
-    */
-  };
-  interface DataType {
-    key: string;
-    name: string;
-    age: number;
-    address: string;
-    tags: string[];
-  }
   const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
 
   const machineConfigToTreeElement = (_machineConfig: MachineConfig) => {
@@ -229,25 +204,48 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
     };
   };
 
-  const mountTreeData = (_machineConfig: MachineConfig, level: number) => {
+  const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
     const list = [];
     for (let childrenConfig of _machineConfig.targetConfigs) {
       let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = mountTreeData(childrenConfig, level + 1);
+      childNode.children = searchTreeData(childrenConfig, level + 1);
       list.push(childNode);
     }
     for (let childrenConfig of _machineConfig.machineConfigs) {
       let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = mountTreeData(childrenConfig, level + 1);
+      childNode.children = searchTreeData(childrenConfig, level + 1);
       list.push(childNode);
     }
     return list;
   };
 
-  useEffect(() => {
+  const columns: TableProps<MachineConfig>['columns'] = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <a>{text}</a>,
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'createdOn',
+      key: 'createdOn',
+    },
+  ];
+
+  const mountTreeData = () => {
     let configArray: TreeDataNode[] = [machineConfigToTreeElement(machineConfig)];
-    configArray[0].children = mountTreeData(machineConfig, 0);
+    configArray[0].children = searchTreeData(machineConfig, 0);
     setTreeData(configArray);
+  };
+
+  useEffect(() => {
+    mountTreeData();
   }, []);
 
   const createConfigVersion = async (values: {
@@ -261,23 +259,28 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   const createTarget = () => {
     machineConfig.targetConfigs.push({
       ...defaultMachineConfig(),
-      name: machineConfig.name + '-child-target-' + machineConfig.targetConfigs.length,
+      name: machineConfig.name + '-target-' + machineConfig.targetConfigs.length,
       type: 'machine-config',
       owner: machineConfig.owner,
       environmentId: machineConfig.environmentId,
     });
+    setTargetConfigList(machineConfig.targetConfigs);
     saveMachineConfig(configId, machineConfig).then(() => {});
+    mountTreeData();
     router.refresh();
   };
+
   const createMachine = () => {
     machineConfig.machineConfigs.push({
       ...defaultMachineConfig(),
-      name: machineConfig.name + '-child-machine-' + machineConfig.machineConfigs.length,
+      name: machineConfig.name + '-machine-' + machineConfig.machineConfigs.length,
       type: 'machine-config',
       owner: machineConfig.owner,
       environmentId: machineConfig.environmentId,
     });
+    setMachineConfigList(machineConfig.machineConfigs);
     saveMachineConfig(configId, machineConfig).then(() => {});
+    mountTreeData();
     router.refresh();
   };
 
@@ -436,24 +439,6 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
                   </Row>
                 </div>
               ))}
-              <Modal
-                title="Enter Variable Details"
-                open={isModalVisible}
-                footer={[
-                  <Button key="back" onClick={discardChanges}>
-                    Discard
-                  </Button>,
-                  <Button key="submit" type="primary" onClick={saveVariable}>
-                    Save
-                  </Button>,
-                ]}
-              >
-                <Input
-                  placeholder="Variable Name"
-                  value={newVariableName}
-                  onChange={(e) => setNewVariableName(e.target.value)}
-                />
-              </Modal>
             </Col>
           </Row>
           <Row gutter={16} style={{ marginTop: '32px' }}>
@@ -461,11 +446,13 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
               <Button onClick={createTarget} type="primary">
                 Create Target Configuration
               </Button>
+              <Table columns={columns} dataSource={targetConfigList} pagination={false} />
             </Col>
             <Col span={12}>
               <Button onClick={createMachine} type="primary">
                 Create Machine Configuration
               </Button>
+              <Table columns={columns} dataSource={machineConfigList} pagination={false} />
             </Col>
           </Row>
         </Content>

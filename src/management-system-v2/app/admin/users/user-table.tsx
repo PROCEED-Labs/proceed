@@ -50,6 +50,21 @@ export default function UserTable({
   return (
     <UserList
       users={users}
+      selectedRowActions={(selection, clearSelection) => (
+        <ConfirmationButton
+          title="Remove users"
+          tooltip="Remove users"
+          description="Are you sure you want to remove these users?"
+          onConfirm={() => {
+            clearSelection();
+            removeUsers(selection);
+          }}
+          buttonProps={{
+            type: 'text',
+            icon: <DeleteOutlined />,
+          }}
+        />
+      )}
       columns={[
         {
           title: 'Organizations',

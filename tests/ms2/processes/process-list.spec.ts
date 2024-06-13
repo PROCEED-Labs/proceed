@@ -519,14 +519,17 @@ test('sorting process list columns', async ({ processListPage }) => {
     const aDate = new Date(a.text);
     const bDate = new Date(b.text);
 
+    console.log(a.text, aDate, b.text, bDate, descending, aDate > bDate);
+
     if (descending) return aDate >= bDate;
     return aDate <= bDate;
   }
 
   const sortableColumns = [
     { columnName: 'Name', sortFunction: textSort, offset: 2 },
-    { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
-    { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
+    // TODO: Checking the date order expects the format MM:DD:YY which is not guaranteed and can lead to the test failing when the browser shows the date as DD:MM:YY and it is for example the 13. of a month
+    // { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
+    // { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
     { columnName: 'File Size', sortFunction: textSort, offset: 6 },
     { columnName: 'Owner', sortFunction: textSort, offset: 7 },
   ];

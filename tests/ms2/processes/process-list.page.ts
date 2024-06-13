@@ -181,10 +181,10 @@ export class ProcessListPage {
     // NOTE: selecting a table could break
     const table = page.locator('table tbody');
     await table.click({ button: 'right' });
-    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-    await page.getByLabel('Folder name').fill(folderName);
-    if (folderDescription) await page.getByLabel('Description').fill(folderDescription);
-    await page.getByRole('button', { name: 'OK' }).click();
+    const modal = await openModal(page.getByRole('menuitem', { name: 'Create Folder' }));
+    await modal.getByLabel('Folder name').fill(folderName);
+    if (folderDescription) await modal.getByLabel('Description').fill(folderDescription);
+    await closeModal(page.getByRole('button', { name: 'OK' }));
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
     await expect(folderRow).toBeVisible();

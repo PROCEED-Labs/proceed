@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { openModal } from './testUtils';
 
 export class MS2Page {
   readonly page: Page;
@@ -8,8 +9,10 @@ export class MS2Page {
   }
 
   async login() {
-    await this.page.goto('/');
-    await this.page.getByRole('button', { name: 'Continue as a Guest' }).click();
+    const modal = await openModal(async () => {
+      this.page.goto('/');
+    }, this.page);
+    await modal.getByRole('button', { name: 'Continue as a Guest' }).click();
     await this.page.waitForURL('**/processes');
   }
 }

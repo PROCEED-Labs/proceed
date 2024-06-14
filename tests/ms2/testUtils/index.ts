@@ -48,48 +48,27 @@ export const mockClipboardAPI = async (page: Page) =>
   });
 
 /**
- * Can be used to wait for the animation of an element to end before proceeding
- *
- * BEWARE: this will deadlock when the animation has already finished before starting the function or when the element has no animation at all
- *
- * Builds upon this answer to an issue in the playwright library: https://github.com/microsoft/playwright/issues/15660#issuecomment-1185339343
- *
- * @param locator the locator that identifies the animated element
- */
-async function waitForAnimationEnd(locator: Locator) {
-  await locator.evaluate(async (e) => {
-    // if the animation is delayed wait for its start before proceeding
-    if (!e.getAnimations().length) {
-      await new Promise(async (res) => {
-        function onAnimationStart() {
-          res(undefined);
-          e.removeEventListener('animationstart', onAnimationStart);
-        }
-        e.addEventListener('animationstart', onAnimationStart);
-      });
-    }
-
-    let animations = e.getAnimations();
-
-    return Promise.all(animations.map((animation) => animation.finished));
-  });
-}
-
-/**
  * Will open a modal using the given trigger function and ensure that it is fully open before returning
  *
- * @param trigger the function that triggers the modal opening
- * @param page the page the modal should be opened on (defaults to the default page)
+ * @param openButtonOrPage the button to click to open the modal or the page the modal should automatically open on
  *
  * @returns a locator that can be used to get the newly opened modal
  */
-export async function openModal(openButton: Locator) {
-  const page = openButton.page();
+export async function openModal(triggerFunction: () => Promise<void>, page: Page) {
+  const alreadyOpenCount = await page
+    .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
+    .and(page.locator(`div[aria-modal="true"]:visible`))
+    .count();
 
-  await openButton.click();
+  await triggerFunction();
 
   // wait for the previous amount of modals + 1 modals to be findable and wait for the new modal to finish its animation
-  await waitForAnimationEnd(page.locator(`div[aria-modal="true"].ant-zoom`));
+  // const openModalPromise = waitForAnimationEnd(page.locator(`div[aria-modal="true"].ant-zoom`));
+  await page
+    .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
+    .and(page.locator(`div[aria-modal="true"]:visible`))
+    .nth(alreadyOpenCount)
+    .waitFor({ state: 'visible' });
 
   // TODO: this might not work as expected in case of more than one modal being visible
   return page.locator(`div[aria-modal="true"]:visible`).last();
@@ -103,7 +82,7 @@ export async function openModal(openButton: Locator) {
 export async function closeModal(closeButton: Locator) {
   const page = closeButton.page();
 
-  // workaround for the problem that doing page.locator(modalSelector, { has: modalLocator.locator(closeButtonSelector) }) does not work to select the modal since the locator for "has" cannot be outside the element we are looking for or the element itself
+  // workaround for the problem that doing page.locator(modalSelector, { has: modalLocator.locator(closeButtonSelector) }) does not work to select the modal since the locator for "has" cannot include the element itself
   const modalParent = page.locator(`*:has(> div[aria-modal="true"])`, { has: closeButton });
   const modal = modalParent.locator('div[aria-modal="true"]');
 

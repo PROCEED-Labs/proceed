@@ -39,7 +39,10 @@ export class PropertiesPanelPage {
     seconds?: number;
   }) {
     const { years, months, days, hours, minutes, seconds } = durationValues;
-    const modal = await openModal(this.page.getByTestId('plannedDurationInputEdit'));
+    const modal = await openModal(
+      () => this.page.getByTestId('plannedDurationInputEdit').click(),
+      this.page,
+    );
 
     if (years) {
       await modal.locator('input[name="years"]').fill(`${years}`);
@@ -72,7 +75,10 @@ export class PropertiesPanelPage {
     const { ID, name, description } = milestoneValues;
     const milestonesSection = this.milestonesSection;
 
-    const milestonesModal = await openModal(milestonesSection.getByLabel('plus'));
+    const milestonesModal = await openModal(
+      () => milestonesSection.getByLabel('plus').click(),
+      this.page,
+    );
 
     await milestonesModal.getByPlaceholder('Milestone ID').fill(ID);
     await milestonesModal.getByPlaceholder('Milestone Name').fill(name);
@@ -89,7 +95,7 @@ export class PropertiesPanelPage {
   async addDescription(descriptionText: string) {
     const descriptionSection = this.descriptionSection;
 
-    const modal = await openModal(descriptionSection.getByLabel('edit'));
+    const modal = await openModal(() => descriptionSection.getByLabel('edit').click(), this.page);
     await modal
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);

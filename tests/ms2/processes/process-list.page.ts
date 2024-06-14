@@ -103,7 +103,12 @@ export class ProcessListPage {
     const { page } = this;
 
     const modal = await openModal(
-      page.locator(`tr[data-row-key="${definitionId}"]`).getByRole('button', { name: 'delete' }),
+      () =>
+        page
+          .locator(`tr[data-row-key="${definitionId}"]`)
+          .getByRole('button', { name: 'delete' })
+          .click(),
+      this.page,
     );
 
     await closeModal(modal.getByRole('button', { name: 'OK' }));
@@ -116,7 +121,10 @@ export class ProcessListPage {
     const { processName, description } = options;
 
     // Add a new process.
-    const modal = await openModal(page.getByRole('button', { name: 'Create Process' }));
+    const modal = await openModal(
+      () => page.getByRole('button', { name: 'Create Process' }).click(),
+      this.page,
+    );
     await modal
       .getByRole('textbox', { name: '* Process Name :' })
       .fill(processName ?? 'My Process');
@@ -145,7 +153,10 @@ export class ProcessListPage {
 
       // remove all processes
       await page.getByLabel('Select all').check();
-      const modal = await openModal(page.getByRole('button', { name: 'delete' }).first());
+      const modal = await openModal(
+        () => page.getByRole('button', { name: 'delete' }).first().click(),
+        this.page,
+      );
       await closeModal(modal.getByRole('button', { name: 'OK' }));
 
       // Note: If used in a test, there should be a check for the empty list to
@@ -181,7 +192,10 @@ export class ProcessListPage {
     // NOTE: selecting a table could break
     const table = page.locator('table tbody');
     await table.click({ button: 'right' });
-    const modal = await openModal(page.getByRole('menuitem', { name: 'Create Folder' }));
+    const modal = await openModal(
+      () => page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+      this.page,
+    );
     await modal.getByLabel('Folder name').fill(folderName);
     if (folderDescription) await modal.getByLabel('Description').fill(folderDescription);
     await closeModal(page.getByRole('button', { name: 'OK' }));

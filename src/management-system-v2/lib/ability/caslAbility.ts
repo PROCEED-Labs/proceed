@@ -66,13 +66,15 @@ const conditions = {
       'and',
       false,
     ),
-  $propety_has_to_be_child_of: (valueInCondition: string, _, tree) => {
+  $property_has_to_be_child_of: (valueInCondition: string, _, tree) => {
     if (!tree)
       throw new Error(
         'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
       );
 
     return (resource: any) => {
+      if (!valueInCondition) return false;
+
       // Folder permissions are also applied to the folder itself
       if (
         (resource.__caslSubjectType__ as ResourceType) === 'Folder' &&
@@ -86,9 +88,36 @@ const conditions = {
       if (!resource.parentId) return false;
 
       let currentFolder = resource.parentId;
-
       while (currentFolder) {
         if (currentFolder === valueInCondition) {
+          return true;
+        }
+        currentFolder = tree[currentFolder];
+      }
+
+      return false;
+    };
+  },
+  $property_has_to_be_parent_of: (valueInCondition: string, _, tree) => {
+    if (!tree)
+      throw new Error(
+        'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
+      );
+
+    return (resource: any) => {
+      console.log('checkparent', valueInCondition);
+      if (!valueInCondition) return false;
+
+      // NOTE: maybe not throw an error but return false
+      if ((resource.__caslSubjectType__ as ResourceType) !== 'Folder')
+        throw new Error('This condition can only be used with folders');
+
+      if (!resource.id) throw new Error('Folder does not have an id');
+
+      let currentFolder = valueInCondition;
+      while (currentFolder) {
+        console.log(currentFolder);
+        if (currentFolder === resource.id) {
           return true;
         }
         currentFolder = tree[currentFolder];

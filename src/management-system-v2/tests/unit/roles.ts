@@ -56,11 +56,13 @@ const getAbility = ({
   action,
   subject,
   hasToBeChildOf,
+  hasToBeParentOf,
   tree = folderTree,
 }: {
   action: ResourceActionType[];
   subject: ResourceType[];
   hasToBeChildOf?: keyof typeof folderTree;
+  hasToBeParentOf?: keyof typeof folderTree;
   tree?: TreeMap;
 }) =>
   buildAbility(
@@ -70,8 +72,10 @@ const getAbility = ({
         subject,
         conditions: {
           conditions: {
-            id: { $propety_has_to_be_child_of: hasToBeChildOf },
+            $: { $property_has_to_be_child_of: hasToBeChildOf },
+            $1: { $property_has_to_be_parent_of: hasToBeParentOf },
           },
+          conditionsOperator: 'or', //this is ok because in the tests we only set one of the two conditions
         },
       },
     ],
@@ -97,7 +101,7 @@ describe('Scoped abilities', () => {
         subject: 'Folder',
         conditions: {
           conditions: {
-            hola: { $propety_has_to_be_child_of: '1-4' },
+            hola: { $property_has_to_be_child_of: '1-4' },
           },
         },
       },
@@ -118,7 +122,7 @@ describe('Scoped abilities', () => {
       hasToBeChildOf: '1-4',
     });
 
-    expect(ability.can('update', toCaslResource('Folder', { id: '1-4' }))).toBe(true);
+    // expect(ability.can('delete', toCaslResource('Folder', { id: '1-4' }))).toBe(true);
     expect(ability.can('update', toCaslResource('Folder', { id: '1-4' }))).toBe(true);
   });
 
@@ -155,5 +159,42 @@ describe('Scoped abilities', () => {
     expect(ability.can('create', toCaslResource('Folder', { parentId: '1-1' }))).toBe(false);
     expect(ability.can('create', toCaslResource('Folder', { parentId: '1-0' }))).toBe(false);
     expect(ability.can('create', toCaslResource('Folder', { parentId: '1-7' }))).toBe(false);
+  });
+
+  test('Parents', () => {
+    const ability = getAbility({
+      action: ['view'],
+      subject: ['Folder'],
+      hasToBeParentOf: '1-2',
+    });
+
+    // parent
+    expect(ability.can('view', toCaslResource('Folder', { id: '1-0' }))).toBe(true);
+
+    // children
+    expect(ability.can('view', toCaslResource('Folder', { id: '1-8' }))).toBe(false);
+    expect(ability.can('view', toCaslResource('Folder', { id: '1-9' }))).toBe(false);
+
+    // siblings
+    expect(ability.can('view', toCaslResource('Folder', { id: '1-3' }))).toBe(false);
+    expect(ability.can('view', toCaslResource('Folder', { id: '1-1' }))).toBe(false);
+
+    const ability2 = getAbility({
+      action: ['view'],
+      subject: ['Folder'],
+      hasToBeParentOf: '1-13',
+    });
+
+    // parent
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-3' }))).toBe(true);
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-0' }))).toBe(true);
+
+    // sibblings
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-11' }))).toBe(false);
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-12' }))).toBe(false);
+
+    // cousins
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-14' }))).toBe(false);
+    expect(ability2.can('view', toCaslResource('Folder', { id: '1-15' }))).toBe(false);
   });
 });

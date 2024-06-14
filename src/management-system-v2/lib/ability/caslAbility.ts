@@ -173,40 +173,19 @@ function conditionsMatcherFactory(tree?: TreeMap) {
 
     for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
       for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
-        console.log(
-          'conditionOperator',
-          conditionOperator,
-          conditions[conditionOperator as ConditionOperator],
+        conditionsForResource.push((resource) =>
+          testConidition(
+            conditionOperator.startsWith('$property_') ? ['$'] : path.split('.'),
+            resource,
+            conditions[conditionOperator as ConditionOperator](
+              valueInCondition as never,
+              resource,
+              tree,
+            ),
+            conditionsObject.wildcardOperator || 'and',
+            conditionsObject.pathNotFound || false,
+          ),
         );
-
-        if (conditionOperator.startsWith('$property_'))
-          conditionsForResource.push((resource) =>
-            testConidition(
-              ['$'],
-              resource,
-              conditions[conditionOperator as ConditionOperator](
-                valueInCondition as never,
-                resource,
-                tree,
-              ),
-              conditionsObject.wildcardOperator || 'and',
-              conditionsObject.pathNotFound || false,
-            ),
-          );
-        else
-          conditionsForResource.push((resource) =>
-            testConidition(
-              path.split('.'),
-              resource,
-              conditions[conditionOperator as ConditionOperator](
-                valueInCondition as never,
-                resource,
-                tree,
-              ),
-              conditionsObject.wildcardOperator || 'and',
-              conditionsObject.pathNotFound || false,
-            ),
-          );
       }
     }
 

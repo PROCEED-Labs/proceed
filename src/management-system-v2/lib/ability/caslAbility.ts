@@ -40,6 +40,13 @@ export type ResourceActionType = (typeof resourceAction)[number];
 
 export type PermissionNumber = number;
 
+export type TreeMap = {
+  [folderId: string]: string;
+};
+
+export const FolderScopedResources = ['Process', 'Project', 'Template', 'Folder'] as const;
+export type FolderScopedResource = (typeof FolderScopedResources)[number];
+
 const conditions = {
   $in: (valueInCondition: any[]) => (inputValue: any) => valueInCondition.includes(inputValue),
   $eq: (valueInCondition: any) => (inputValue: any) => valueInCondition === inputValue,
@@ -68,12 +75,16 @@ type ConditionsObject = {
       [C in ConditionOperator]?: Parameters<(typeof conditions)[C]>[0] | null;
     };
   };
+  /* Folder id: only matches if the resource instance is a child of this folder */
+  hasToBeChildOf?: string;
   wildcardOperator?: 'or' | 'and';
   conditionsOperator?: 'or' | 'and';
   pathNotFound?: boolean;
 };
 
 function combineFunctions(functions: ((resource: any) => boolean)[], operator: 'or' | 'and') {
+  if (functions.length === 0) return () => true;
+
   return (resource: any) => {
     for (const fn of functions) {
       if (operator === 'or' && fn(resource)) return true;
@@ -120,35 +131,84 @@ function testConidition(
   return condition(value);
 }
 
-function conditionsMatcher(conditionsObject: ConditionsObject) {
-  const conditionsForResource: ((resource: any) => boolean)[] = [];
+function conditionsMatcherFactory(tree?: TreeMap) {
+  return function conditionsMatcher(conditionsObject: ConditionsObject) {
+    const conditionsForResource: ((resource: any) => boolean)[] = [];
 
-  for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
-    for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
-      if (conditionOperator.startsWith('$property_'))
-        conditionsForResource.push((resource) =>
-          testConidition(
-            path.split('.'),
-            resource,
-            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
-            conditionsObject.wildcardOperator || 'and',
-            conditionsObject.pathNotFound || false,
-          ),
-        );
-      else
-        conditionsForResource.push((resource) =>
-          testConidition(
-            path.split('.'),
-            resource,
-            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
-            conditionsObject.wildcardOperator || 'and',
-            conditionsObject.pathNotFound || false,
-          ),
-        );
+    for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
+      for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
+        if (conditionOperator.startsWith('$property_'))
+          conditionsForResource.push((resource) =>
+            testConidition(
+              path.split('.'),
+              resource,
+              conditions[conditionOperator as ConditionOperator](
+                valueInCondition as never,
+                resource,
+              ),
+              conditionsObject.wildcardOperator || 'and',
+              conditionsObject.pathNotFound || false,
+            ),
+          );
+        else
+          conditionsForResource.push((resource) =>
+            testConidition(
+              path.split('.'),
+              resource,
+              conditions[conditionOperator as ConditionOperator](
+                valueInCondition as never,
+                resource,
+              ),
+              conditionsObject.wildcardOperator || 'and',
+              conditionsObject.pathNotFound || false,
+            ),
+          );
+      }
     }
-  }
 
-  return combineFunctions(conditionsForResource, conditionsObject.conditionsOperator || 'and');
+    const combinedFunctions = combineFunctions(
+      conditionsForResource,
+      conditionsObject.conditionsOperator || 'and',
+    );
+
+    if (conditionsObject.hasToBeChildOf) {
+      if (!tree)
+        throw new Error(
+          'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
+        );
+
+      return (resource: any) => {
+        // Folder permissions are also applied to the folder itself
+        if (
+          (resource.__caslSubjectType__ as ResourceType) === 'Folder' &&
+          resource.id === conditionsObject.hasToBeChildOf
+        )
+          return true;
+
+        // If the resource doesn't specify a perent we can't know where it should be in the tree.
+        // Although this would probably be an error, this should be caught by zod, so here
+        // we just return false implying that this rule doesn't apply.
+        if (!resource.parentId) return false;
+
+        let isChild = false;
+        let currentFolder = resource.parentId;
+
+        while (currentFolder) {
+          if (currentFolder === conditionsObject.hasToBeChildOf) {
+            isChild = true;
+            break;
+          }
+          currentFolder = tree[currentFolder];
+        }
+
+        if (!isChild) return false;
+
+        return combinedFunctions(resource);
+      };
+    }
+
+    return combinedFunctions;
+  };
 }
 
 export type CaslAbility = PureAbility<
@@ -167,14 +227,14 @@ const resolveAction = createAliasResolver(
   },
 );
 
-export function buildAbility(rules: AbilityRule[]) {
+export function buildAbility(rules: AbilityRule[], tree?: TreeMap) {
   const builder = new AbilityBuilder<CaslAbility>(PureAbility);
 
   const ability = builder.build({
     resolveAction,
     anyAction: 'admin',
     anySubjectType: 'All',
-    conditionsMatcher,
+    conditionsMatcher: conditionsMatcherFactory(tree),
     fieldMatcher: fieldPatternMatcher,
   });
 

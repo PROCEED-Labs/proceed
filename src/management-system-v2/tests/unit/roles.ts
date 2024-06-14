@@ -69,8 +69,9 @@ const getAbility = ({
         action,
         subject,
         conditions: {
-          conditions: {},
-          hasToBeChildOf,
+          conditions: {
+            id: { $propety_has_to_be_child_of: hasToBeChildOf },
+          },
         },
       },
     ],
@@ -95,8 +96,9 @@ describe('Scoped abilities', () => {
         action: 'update',
         subject: 'Folder',
         conditions: {
-          conditions: {},
-          hasToBeChildOf: '1-4',
+          conditions: {
+            hola: { $propety_has_to_be_child_of: '1-4' },
+          },
         },
       },
     ]);

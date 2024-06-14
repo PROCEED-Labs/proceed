@@ -66,7 +66,45 @@ const conditions = {
       'and',
       false,
     ),
-} as const;
+  $propety_has_to_be_child_of: (valueInCondition: string, _, tree) => {
+    if (!tree)
+      throw new Error(
+        'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
+      );
+
+    return (resource: any) => {
+      // Folder permissions are also applied to the folder itself
+      if (
+        (resource.__caslSubjectType__ as ResourceType) === 'Folder' &&
+        resource.id === valueInCondition
+      )
+        return true;
+
+      // If the resource doesn't specify a perent we can't know where it should be in the tree.
+      // Although this would probably be an error, this should be caught by zod, so here
+      // we just return false implying that this rule doesn't apply.
+      if (!resource.parentId) return false;
+
+      let currentFolder = resource.parentId;
+
+      while (currentFolder) {
+        if (currentFolder === valueInCondition) {
+          return true;
+        }
+        currentFolder = tree[currentFolder];
+      }
+
+      return false;
+    };
+  },
+} satisfies Record<
+  string,
+  (
+    valueInConditionsObject: any,
+    resource: any,
+    tree?: TreeMap,
+  ) => (inputValueFromResource: any) => boolean
+>;
 
 type ConditionOperator = keyof typeof conditions;
 type ConditionsObject = {
@@ -75,8 +113,6 @@ type ConditionsObject = {
       [C in ConditionOperator]?: Parameters<(typeof conditions)[C]>[0] | null;
     };
   };
-  /* Folder id: only matches if the resource instance is a child of this folder */
-  hasToBeChildOf?: string;
   wildcardOperator?: 'or' | 'and';
   conditionsOperator?: 'or' | 'and';
   pathNotFound?: boolean;
@@ -137,14 +173,21 @@ function conditionsMatcherFactory(tree?: TreeMap) {
 
     for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
       for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
+        console.log(
+          'conditionOperator',
+          conditionOperator,
+          conditions[conditionOperator as ConditionOperator],
+        );
+
         if (conditionOperator.startsWith('$property_'))
           conditionsForResource.push((resource) =>
             testConidition(
-              path.split('.'),
+              ['$'],
               resource,
               conditions[conditionOperator as ConditionOperator](
                 valueInCondition as never,
                 resource,
+                tree,
               ),
               conditionsObject.wildcardOperator || 'and',
               conditionsObject.pathNotFound || false,
@@ -158,6 +201,7 @@ function conditionsMatcherFactory(tree?: TreeMap) {
               conditions[conditionOperator as ConditionOperator](
                 valueInCondition as never,
                 resource,
+                tree,
               ),
               conditionsObject.wildcardOperator || 'and',
               conditionsObject.pathNotFound || false,
@@ -170,42 +214,6 @@ function conditionsMatcherFactory(tree?: TreeMap) {
       conditionsForResource,
       conditionsObject.conditionsOperator || 'and',
     );
-
-    if (conditionsObject.hasToBeChildOf) {
-      if (!tree)
-        throw new Error(
-          'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
-        );
-
-      return (resource: any) => {
-        // Folder permissions are also applied to the folder itself
-        if (
-          (resource.__caslSubjectType__ as ResourceType) === 'Folder' &&
-          resource.id === conditionsObject.hasToBeChildOf
-        )
-          return true;
-
-        // If the resource doesn't specify a perent we can't know where it should be in the tree.
-        // Although this would probably be an error, this should be caught by zod, so here
-        // we just return false implying that this rule doesn't apply.
-        if (!resource.parentId) return false;
-
-        let isChild = false;
-        let currentFolder = resource.parentId;
-
-        while (currentFolder) {
-          if (currentFolder === conditionsObject.hasToBeChildOf) {
-            isChild = true;
-            break;
-          }
-          currentFolder = tree[currentFolder];
-        }
-
-        if (!isChild) return false;
-
-        return combinedFunctions(resource);
-      };
-    }
 
     return combinedFunctions;
   };

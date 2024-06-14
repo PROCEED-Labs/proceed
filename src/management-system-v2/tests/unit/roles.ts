@@ -7,7 +7,6 @@ import {
   resourceAction,
   toCaslResource,
 } from '@/lib/ability/caslAbility';
-import { SubjectType } from '@casl/ability';
 
 /**
  * Mocked folders:
@@ -82,8 +81,8 @@ const getAbility = ({
     tree,
   );
 
-describe('Scoped abilities', () => {
-  test('Basic implementation details', () => {
+describe('Basic implementation details', () => {
+  test('Resource type should be true', () => {
     const ability = getAbility({
       action: ['create'],
       subject: ['Folder'],
@@ -93,7 +92,9 @@ describe('Scoped abilities', () => {
     // test resource type
     expect(ability.can('create', 'Folder')).toBe(true);
   });
+});
 
+describe('Condition: child of', () => {
   test('Throw error when no tree is passed but needed', () => {
     const ability = buildAbility([
       {
@@ -160,8 +161,10 @@ describe('Scoped abilities', () => {
     expect(ability.can('create', toCaslResource('Folder', { parentId: '1-0' }))).toBe(false);
     expect(ability.can('create', toCaslResource('Folder', { parentId: '1-7' }))).toBe(false);
   });
+});
 
-  test('Parents', () => {
+describe('Condition: parent of', () => {
+  test('Actions on parents', () => {
     const ability = getAbility({
       action: ['view'],
       subject: ['Folder'],

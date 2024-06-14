@@ -269,8 +269,7 @@ test('open properties panel for element and fill property values', async ({
 
   await propertiesPanelPage.page
     .getByRole('tooltip', { name: 'HEX # right Recommended right' })
-    .getByRole('textbox')
-    .nth(1)
+    .locator('input[value="000000"]:visible')
     .fill('#FF00AA');
 
   const strokeColor = await startEvent.evaluate((element) => {

@@ -95,7 +95,22 @@ export class PropertiesPanelPage {
   async addDescription(descriptionText: string) {
     const descriptionSection = this.descriptionSection;
 
+    const initialDescription = await descriptionSection
+      .getByRole('textbox', {
+        name: 'description-viewer',
+      })
+      .textContent();
+
     const modal = await openModal(() => descriptionSection.getByLabel('edit').click(), this.page);
+
+    if (initialDescription) {
+      // wait for the editor to be fully loaded
+      await modal
+        .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
+        .getByText(initialDescription)
+        .waitFor({ state: 'visible' });
+    }
+
     await modal
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);

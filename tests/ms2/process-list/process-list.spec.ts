@@ -756,7 +756,10 @@ test.describe('shortcuts in process-list', () => {
   // test('Drag select with shift + click', async ({ processListPage }) => {});
 
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
-  test('copy and paste processes with ctrl + c -> ctrl + v', async ({ processListPage }) => {
+  test('copy and paste processes with ctrl + c -> ctrl + v', async ({
+    processListPage,
+    browserName,
+  }) => {
     const { page } = processListPage;
     const processName = 'Copy me via shortcut';
 
@@ -814,7 +817,12 @@ test.describe('shortcuts in process-list', () => {
     await expect(modalTitle2, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
 
     /* Submit copy */
-    await page.getByRole('main').press('Meta+Enter');
+    if (browserName !== 'firefox') {
+      await page.getByRole('main').press('Meta+Enter');
+    } else {
+      await modal2.click();
+      await page.locator('body').press('Meta+Enter');
+    }
 
     /* Check if Process has been added */
     await expect(page.locator('tbody>tr')).toHaveCount(3);

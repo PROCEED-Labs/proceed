@@ -87,7 +87,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
       'cut',
       'export',
       'import',
-      'shift-enter',
+      'shift+enter',
       'new',
     ],
     (e) => {

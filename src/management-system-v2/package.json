@@ -76,6 +76,7 @@
     "prisma": "^5.15.0",
     "sass": "1.75.0",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "@types/nodemailer": "6.4.15"
   }
 }

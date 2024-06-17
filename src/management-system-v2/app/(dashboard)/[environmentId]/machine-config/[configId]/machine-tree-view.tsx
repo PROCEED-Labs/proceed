@@ -273,14 +273,6 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
 
   return (
     <>
-      <Button>
-        <PlusOutlined onClick={createMachine} />
-        Machine
-      </Button>
-      <Button>
-        <PlusOutlined onClick={createTarget} />
-        Target
-      </Button>
       <br />
       <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']}>
         <Tree

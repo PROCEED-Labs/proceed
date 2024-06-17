@@ -9,7 +9,6 @@ $highlight-colour: #dadee2;
   width: 39%;
   height: 39.5%;
   clip-path: polygon(71% 0%, 100% 50%, 71% 100%, 0% 100%, 28% 50%, 0% 0%);
-  background-size: 500% 500%;
 
   &.visible {
     animation:
@@ -23,6 +22,7 @@ $highlight-colour: #dadee2;
       $icon-colour 55%,
       $icon-colour 100%
     );
+    background-size: 500% 500%;
   }
 }
 .big-Chevron {
@@ -31,7 +31,6 @@ $highlight-colour: #dadee2;
   width: 73%;
   height: 74%;
   clip-path: polygon(71% 0%, 100% 50%, 71% 100%, 0% 100%, 28% 50%, 0% 0%);
-  background-size: 500% 500%;
 
   &.visible {
     animation:
@@ -45,6 +44,7 @@ $highlight-colour: #dadee2;
       $icon-colour 55%,
       $icon-colour 100%
     );
+    background-size: 500% 500%;
   }
 }
 

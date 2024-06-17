@@ -65,7 +65,7 @@ export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
   return (
     <>
       <div ref={ViewerContainerRef}>
-        {!visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
+        {visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
           <Suspense fallback={fallback}>
             {/* Prevent sequential rendering/ get from showing the Icon-list */}
             <BPMNViewer {...props} />

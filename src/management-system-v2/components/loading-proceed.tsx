@@ -20,8 +20,9 @@ const ProceedLoading: FC<LoadingProps> = ({
   const ratioedHeight =
     height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
 
+  /* To ensure there are only visible elements are animated (margin: +- 100% ) */
   const containerRef = useRef<HTMLDivElement>(null);
-  const visible = useLazyRendering(containerRef, '100%');
+  const visible = useLazyRendering(containerRef, '100%', false);
 
   return (
     <div
@@ -47,10 +48,10 @@ const ProceedLoading: FC<LoadingProps> = ({
           alignItems: 'center',
         }}
       >
-        <div className={cn(style['small-Chevron'], { [style['visible']]: visible })} />
-        <div className={cn(style['big-Chevron'], { [style['visible']]: visible })} />
-        {/* <Image src="/proceed-icon.png" alt="Proceed Loading" layout="fill" objectFit="contain" /> */}
+        <div className={cn(style['small-Chevron'], { [style.visible]: visible })} />
+        <div className={cn(style['big-Chevron'], { [style.visible]: visible })} />
         {/* For comparison */}
+        {/* <Image src="/proceed-icon.png" alt="Proceed Loading" layout="fill" objectFit="contain" /> */}
       </div>
     </div>
   );

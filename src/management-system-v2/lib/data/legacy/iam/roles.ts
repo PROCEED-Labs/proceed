@@ -6,7 +6,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
-import { getFolderById } from '../folders.js';
+import { getFolderById } from '../folders';
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
@@ -84,7 +84,6 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
-  // alllways
 
   // although the ability check would fail if the parentId doesn't exist
   // it is not always performed

@@ -230,12 +230,19 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
 
   const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
     const list = [];
-    for (let childrenConfig of _machineConfig.targetConfigs) {
+
+    const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
+      ? _machineConfig.targetConfigs
+      : [];
+    for (let childrenConfig of targetConfigs) {
       let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
       childNode.children = searchTreeData(childrenConfig, level + 1);
       list.push(childNode);
     }
-    for (let childrenConfig of _machineConfig.machineConfigs) {
+    const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
+      ? _machineConfig.machineConfigs
+      : [];
+    for (let childrenConfig of machineConfigs) {
       let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
       childNode.children = searchTreeData(childrenConfig, level + 1);
       list.push(childNode);

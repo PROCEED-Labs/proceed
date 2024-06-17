@@ -2,7 +2,8 @@
 
 import React, { forwardRef, use, useEffect, useImperativeHandle, useRef } from 'react';
 import type ModelerType from 'bpmn-js/lib/Modeler';
-import type ViewerType from 'bpmn-js/lib/NavigatedViewer';
+import type NavigatedViewerType from 'bpmn-js/lib/NavigatedViewer';
+import type ViewerType from 'bpmn-js/lib/Viewer';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
@@ -28,12 +29,17 @@ const BPMNModeler: Promise<typeof ModelerType> =
     ? import('bpmn-js/lib/Modeler').then((mod) => mod.default)
     : (null as any);
 
-const BPMNViewer: Promise<typeof ViewerType> =
+const NavigatedBPMNViewer: Promise<typeof NavigatedViewerType> =
   typeof window !== 'undefined'
     ? import('bpmn-js/lib/NavigatedViewer').then((mod) => mod.default)
     : (null as any);
 
-const BPMNJs = Promise.all([BPMNModeler, BPMNViewer]);
+const BPMNViewer: Promise<typeof ViewerType> =
+  typeof window !== 'undefined'
+    ? import('bpmn-js/lib/Viewer').then((mod) => mod.default)
+    : (null as any);
+
+const BPMNJs = Promise.all([BPMNModeler, NavigatedBPMNViewer, BPMNViewer]);
 
 export type BPMNCanvasProps = {
   /** The BPMN data to load.
@@ -43,7 +49,7 @@ export type BPMNCanvasProps = {
    */
   bpmn: { bpmn: string };
   /** Wether the modeler should have editing capabilities or just be a viewer. */
-  type: 'modeler' | 'viewer';
+  type: 'modeler' | 'navigatedviewer' | 'viewer';
   /** Called once the new BPMN has been fully loaded by the modeler. */
   onLoaded?: () => void;
   /** Called when a commandstack.change event is fired. */
@@ -51,7 +57,7 @@ export type BPMNCanvasProps = {
   /** Called when the root element changes. */
   onRootChange?: (root: Root) => void;
   /** Called before the BPMN unloads. */
-  onUnload?: (oldInstance: ModelerType | ViewerType) => Promise<void>;
+  onUnload?: (oldInstance: ModelerType | NavigatedViewerType) => Promise<void>;
   /** Called when the BPMN selection changes. */
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
   /** Called when the zoom level changed */
@@ -61,7 +67,7 @@ export type BPMNCanvasProps = {
   className?: string;
 };
 
-const fitViewport = (modeler: ModelerType | ViewerType) => {
+const fitViewport = (modeler: ModelerType | NavigatedViewerType) => {
   // The second argument is actually a boolean to center, but typed as a Point.
   modeler.get<Canvas>('canvas').zoom('fit-viewport', { x: 0, y: 0 });
 };
@@ -100,7 +106,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     ref,
   ) => {
     const canvas = useRef<HTMLDivElement>(null);
-    const modeler = useRef<ModelerType | ViewerType | null>(null);
+    const modeler = useRef<ModelerType | NavigatedViewerType | null>(null);
     const unloadPromise = useRef<Promise<void> | undefined>();
 
     // Expose explicit methods to the parent component.
@@ -161,10 +167,11 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       },
     }));
 
-    const [Modeler, Viewer] = use(BPMNJs);
+    const [Modeler, NavigatedViewer, Viewer] = use(BPMNJs);
 
     useEffect(() => {
-      const ModelerOrViewer = type === 'modeler' ? Modeler : Viewer;
+      const ModelerOrViewer =
+        type === 'modeler' ? Modeler : type === 'navigatedviewer' ? NavigatedViewer : Viewer;
 
       modeler.current = new ModelerOrViewer({
         container: canvas.current!,
@@ -178,16 +185,18 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current.get<Keyboard>('keyboard').bind(document);
       }
 
-      // Create a custom copy behaviour where the whole process or selected parts
-      // can be copied to the clipboard as an image.
-      modeler.current
-        .get<Keyboard>('keyboard')
-        .addListener(async ({ keyEvent }: { keyEvent: KeyboardEvent }) => {
-          // handle the copy shortcut
-          if ((keyEvent.ctrlKey || keyEvent.metaKey) && keyEvent.key === 'c') {
-            await copyProcessImage(modeler.current!);
-          }
-        }, 'keyboard.keyup');
+      if (type !== 'viewer') {
+        // Create a custom copy behaviour where the whole process or selected parts
+        // can be copied to the clipboard as an image.
+        modeler.current
+          .get<Keyboard>('keyboard')
+          .addListener(async ({ keyEvent }: { keyEvent: KeyboardEvent }) => {
+            // handle the copy shortcut
+            if ((keyEvent.ctrlKey || keyEvent.metaKey) && keyEvent.key === 'c') {
+              await copyProcessImage(modeler.current!);
+            }
+          }, 'keyboard.keyup');
+      }
 
       return () => {
         const m = modeler.current!;
@@ -200,7 +209,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           m.destroy();
         });
       };
-    }, [Modeler, Viewer, type]);
+    }, [Modeler, NavigatedViewer, type]);
 
     useEffect(() => {
       // Store handlers so we can remove them later.

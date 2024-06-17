@@ -1,6 +1,8 @@
-import React, { FC } from 'react';
+import React, { FC, useRef } from 'react';
 import Image from 'next/image';
 import style from './loading-proceed.module.scss';
+import { useLazyRendering } from './scrollbar';
+import cn from 'classnames';
 
 // '/proceed-icon.png'
 
@@ -15,12 +17,18 @@ const ProceedLoading: FC<LoadingProps> = ({
   height /* = '155px' */,
   innerShrink = '100%',
 }) => {
-  height = height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
+  const ratioedHeight =
+    height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const visible = useLazyRendering(containerRef, '100%');
+
   return (
     <div
+      ref={containerRef}
       style={{
         width: width,
-        height: height,
+        height: ratioedHeight,
         // border: '1px solid black',
         position: 'relative',
         display: 'flex',
@@ -39,8 +47,8 @@ const ProceedLoading: FC<LoadingProps> = ({
           alignItems: 'center',
         }}
       >
-        <div className={style['small-Chevron']} />
-        <div className={style['big-Chevron']} />
+        <div className={cn(style['small-Chevron'], { [style['visible']]: visible })} />
+        <div className={cn(style['big-Chevron'], { [style['visible']]: visible })} />
         {/* <Image src="/proceed-icon.png" alt="Proceed Loading" layout="fill" objectFit="contain" /> */}
         {/* For comparison */}
       </div>

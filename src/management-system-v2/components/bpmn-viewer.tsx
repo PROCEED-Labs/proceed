@@ -14,15 +14,9 @@ type BPMNViewerProps = {
   definitionId: string;
   reduceLogo?: boolean;
   fitOnResize?: boolean;
-  scrollable?: boolean;
 };
 
-const BPMNViewer: FC<BPMNViewerProps> = ({
-  definitionId,
-  reduceLogo,
-  fitOnResize,
-  scrollable = false,
-}) => {
+const BPMNViewer: FC<BPMNViewerProps> = ({ definitionId, reduceLogo, fitOnResize }) => {
   const viewer = useRef<BPMNCanvasRef | null>(null);
   const environment = useEnvironment();
 
@@ -47,19 +41,13 @@ const BPMNViewer: FC<BPMNViewerProps> = ({
   const bpmn = useMemo(() => ({ bpmn: data }), [data]);
 
   return (
-    <div
-      className={cn(style['bpmn-viewer-container'], {
-        [style['no-scroll']]: !scrollable,
-      })} /* Prevents the Viewer from beeing scrollable / zoomable */
-    >
-      <BPMNCanvas
-        ref={viewer}
-        bpmn={bpmn}
-        type="viewer"
-        className={cn({ reduceLogo: reduceLogo })}
-        resizeWithContainer={fitOnResize}
-      />
-    </div>
+    <BPMNCanvas
+      ref={viewer}
+      bpmn={bpmn}
+      type="viewer"
+      className={cn({ reduceLogo: reduceLogo })}
+      resizeWithContainer={fitOnResize}
+    />
   );
 };
 
@@ -77,10 +65,9 @@ export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
   return (
     <>
       <div ref={ViewerContainerRef}>
-        {visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
+        {!visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
           <Suspense fallback={fallback}>
-            {' '}
-            {/* Prevent sequential rendereing/ get from showing the Icon-list */}
+            {/* Prevent sequential rendering/ get from showing the Icon-list */}
             <BPMNViewer {...props} />
           </Suspense>
         ) : (

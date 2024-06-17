@@ -39,14 +39,11 @@ async function addAdmin(admins: SystemAdminCreationInput[]) {
   if (!systemAdmin || systemAdmin.role !== 'admin')
     return userError('Not a system admin', UserErrorType.PermissionError);
 
-  console.log('gott', admins);
-
   try {
     for (const admin of admins) {
       addSystemAdmin(admin);
     }
   } catch (e) {
-    console.error(e);
     return userError('Something went wrong');
   }
 }

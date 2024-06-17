@@ -105,7 +105,6 @@ const conditions = {
       );
 
     return (resource: any) => {
-      console.log('checkparent', valueInCondition);
       if (!valueInCondition) return false;
 
       // NOTE: maybe not throw an error but return false
@@ -116,7 +115,6 @@ const conditions = {
 
       let currentFolder = valueInCondition;
       while (currentFolder) {
-        console.log(currentFolder);
         if (currentFolder === resource.id) {
           return true;
         }

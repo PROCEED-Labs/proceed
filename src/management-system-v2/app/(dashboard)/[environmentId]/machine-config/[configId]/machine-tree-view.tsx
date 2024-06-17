@@ -1,3 +1,5 @@
+'use client';
+
 import { MachineConfig } from '@/lib/data/machine-config-schema';
 import { Button, Dropdown, MenuProps, Tag, Tree, TreeDataNode } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
@@ -10,9 +12,10 @@ type MachineTreeViewProps = {
   configId: string;
   originalMachineConfig: MachineConfig;
   backendSaveMachineConfig: Function;
+  onSelectConfig: Function;
 };
 
-function defaultMachineConfig() {
+export function defaultMachineConfig() {
   const date = new Date().toUTCString();
   return {
     id: v4(),
@@ -72,6 +75,14 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     },
   ) => {
     setSelectedOnTree(selectedKeys);
+    let foundMachine = { parent: machineConfig, selection: machineConfig };
+    // Check if it is not the parent config
+    if (selectedKeys.length !== 0 && selectedKeys.indexOf(machineConfig.id) === -1) {
+      //Then search the right one
+      let ref = findInTree(selectedKeys[0].toString(), machineConfig, machineConfig, 0);
+      if (ref !== undefined) foundMachine = ref;
+    }
+    props.onSelectConfig(foundMachine);
   };
   const onRightClickTreeNode = (info: {
     event: React.MouseEvent;
@@ -132,19 +143,19 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
       ? _machineConfig.targetConfigs
       : [];
     for (let childrenConfig of targetConfigs) {
-      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
       if (machineFound) {
         break;
       }
+      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
     }
     const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
       ? _machineConfig.machineConfigs
       : [];
     for (let childrenConfig of machineConfigs) {
-      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
       if (machineFound) {
         break;
       }
+      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
     }
     return machineFound;
   };

@@ -303,7 +303,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
             $: { $not_expired_value: role.expiration ?? null },
             ...(role.parentId
               ? {
-                  $1: { $propety_has_to_be_child_of: role.parentId },
+                  $1: { $property_has_to_be_child_of: role.parentId },
                 }
               : {}),
           },

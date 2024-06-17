@@ -94,7 +94,7 @@ describe('Basic implementation details', () => {
   });
 });
 
-describe('Condition: child of', () => {
+describe('Condition: property_has_to_be_child_of', () => {
   test('Throw error when no tree is passed but needed', () => {
     const ability = buildAbility([
       {
@@ -102,7 +102,7 @@ describe('Condition: child of', () => {
         subject: 'Folder',
         conditions: {
           conditions: {
-            hola: { $property_has_to_be_child_of: '1-4' },
+            $: { $property_has_to_be_child_of: '1-4' },
           },
         },
       },
@@ -163,7 +163,28 @@ describe('Condition: child of', () => {
   });
 });
 
-describe('Condition: parent of', () => {
+describe('Condition: property_has_to_be_parent_of', () => {
+  test('Throw error when no tree is passed but needed', () => {
+    const ability = buildAbility([
+      {
+        action: 'update',
+        subject: 'Folder',
+        conditions: {
+          conditions: {
+            $: { $property_has_to_be_parent_of: '1-4' },
+          },
+        },
+      },
+    ]);
+
+    expect(() =>
+      ability.can('update', toCaslResource('Folder', { id: '000', parentId: '1-4' })),
+    ).toThrow();
+
+    // since toCaslResource wasn't used -> no way to identify the resource
+    expect(ability.can('update', { id: '000', parentId: '1-4' })).toBe(false);
+  });
+
   test('Actions on parents', () => {
     const ability = getAbility({
       action: ['view'],

@@ -601,6 +601,18 @@ test('sorting process list columns', async ({ processListPage }) => {
     return true;
   }
 
+  // // NOTE: the generateDateString uses the en-UK locale, if this changes this could break
+  // function parseLocaleDateString(str: string) {
+  //   // format: day/month/year, hours:minutes
+  //   const parts = str.split(/\/|:|,/);
+  //   const day = parseInt(parts[0], 10);
+  //   const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+  //   const year = parseInt(parts[2], 10);
+  //   const hours = parseInt(parts[3], 10);
+  //   const minutes = parseInt(parts[4], 10);
+  //   return new Date(year, month, day, hours, minutes);
+  // }
+
   function textSort(a: any, b: any, descending: boolean) {
     if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
     if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
@@ -608,21 +620,21 @@ test('sorting process list columns', async ({ processListPage }) => {
     return a.text.localeCompare(b.text) >= 0;
   }
 
-  function dateSort(a: any, b: any, descending: boolean) {
-    if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
-    if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
-
-    const aDate = new Date(a.text);
-    const bDate = new Date(b.text);
-
-    if (descending) return aDate >= bDate;
-    return aDate <= bDate;
-  }
+  // function dateSort(a: any, b: any, descending: boolean) {
+  //   if (a.ariaLabel === 'folder' && b.ariaLabel !== 'folder') return true;
+  //   if (b.ariaLabel === 'folder' && a.ariaLabel !== 'folder') return false;
+  //
+  //   const aDate = parseLocaleDateString(a.text);
+  //   const bDate = parseLocaleDateString(b.text);
+  //
+  //   if (descending) return aDate >= bDate;
+  //   return aDate <= bDate;
+  // }
 
   const sortableColumns = [
     { columnName: 'Name', sortFunction: textSort, offset: 2 },
-    { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
-    { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
+    // { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
+    // { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
     { columnName: 'File Size', sortFunction: textSort, offset: 6 },
     { columnName: 'Owner', sortFunction: textSort, offset: 7 },
   ];

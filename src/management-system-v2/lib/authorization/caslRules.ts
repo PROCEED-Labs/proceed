@@ -3,6 +3,7 @@ import { packRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
+  FolderScopedResources,
   ResourceActionType,
   ResourceType,
   buildAbility,
@@ -301,10 +302,8 @@ export async function computeRulesForUser(userId: string, environmentId: string)
         conditions: {
           conditions: {
             $: { $not_expired_value: role.expiration ?? null },
-            ...(role.parentId
-              ? {
-                  $1: { $property_has_to_be_child_of: role.parentId },
-                }
+            ...(role.parentId && FolderScopedResources.includes(resource as any)
+              ? { $1: { $property_has_to_be_child_of: role.parentId } }
               : {}),
           },
         },

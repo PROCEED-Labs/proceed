@@ -117,7 +117,7 @@ export async function createMachineConfig(
     const metadata: MachineConfig = {
       ...({
         id: v4(),
-        type: 'machine-config',
+        type: 'config',
         name: 'Default Machine Configuration',
         description: '',
         variables: [],

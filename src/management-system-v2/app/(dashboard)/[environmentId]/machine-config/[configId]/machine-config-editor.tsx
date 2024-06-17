@@ -61,6 +61,7 @@ import { config } from 'process';
 import { v4 } from 'uuid';
 import { EventDataNode } from 'antd/es/tree';
 import { Key } from 'antd/es/table/interface';
+import MachineTreeView from './machine-tree-view';
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -78,30 +79,6 @@ type VariablesEditorProps = {
   backendCreateMachineConfig: Function;
 };
 
-function defaultMachineConfig() {
-  const date = new Date().toUTCString();
-  return {
-    id: v4(),
-    type: 'machine-config',
-    environmentId: '',
-    owner: '',
-    name: 'Default Machine Configuration',
-    description: '',
-    variables: [],
-    departments: [],
-    inEditingBy: [],
-    createdOn: date,
-    lastEdited: date,
-    sharedAs: 'protected',
-    shareTimestamp: 0,
-    allowIframeTimestamp: 0,
-    versions: [],
-    folderId: '',
-    targetConfigs: [],
-    machineConfigs: [],
-  } as MachineConfig;
-}
-
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 export default function MachineConfigEditor(props: VariablesEditorProps) {
@@ -113,9 +90,6 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   const firstRender = useRef(true);
   const [collapsed, setCollapsed] = useState(true);
   const [editingName, setEditingName] = useState(false);
-  const [machineConfigList, setMachineConfigList] = useState<MachineConfig[]>([]);
-  const [targetConfigList, setTargetConfigList] = useState<MachineConfig[]>([]);
-  const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
 
   const machineConfig = { ...props.originalMachineConfig };
   const saveMachineConfig = props.backendSaveMachineConfig;
@@ -149,6 +123,14 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
     ) ?? LATEST_VERSION;
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
+
+  const createConfigVersion = async (values: {
+    versionName: string;
+    versionDescription: string;
+  }) => {
+    console.log(values.versionName, values.versionDescription);
+    router.refresh();
+  };
 
   function saveVariables() {
     machineConfig.variables = variables;
@@ -194,8 +176,6 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
-      setMachineConfigList(machineConfig.machineConfigs);
-      setTargetConfigList(machineConfig.targetConfigs);
       setVariables(machineConfig.variables);
       return;
     }
@@ -221,208 +201,12 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
     setIsModalVisible(false);
   };
 
-  const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
-
-  const onSelectTreeNode = (
-    selectedKeys: Key[],
-    info: {
-      event: 'select';
-      selected: boolean;
-      node: EventDataNode<TreeDataNode>;
-      selectedNodes: TreeDataNode[];
-      nativeEvent: MouseEvent;
-    },
-  ) => {
-    setSelectedOnTree(selectedKeys);
-  };
-
-  const onRightClickTreeNode = (info: {
-    event: React.MouseEvent;
-    node: EventDataNode<TreeDataNode>;
-  }) => {
-    // Lets fix to only one selection for now
-    setSelectedOnTree([info.node.key]);
-  };
-
-  const machineConfigToTreeElement = (_machineConfig: MachineConfig) => {
-    return {
-      title: _machineConfig.name,
-      key: _machineConfig.id,
-      ref: _machineConfig,
-      children: [],
-    };
-  };
-
-  const findInTree = (
-    id: string,
-    _machineConfig: MachineConfig,
-    level: number,
-  ): MachineConfig | undefined => {
-    if (_machineConfig.id === id) {
-      return _machineConfig;
-    }
-    let machineFound = undefined;
-    const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
-      ? _machineConfig.targetConfigs
-      : [];
-    for (let childrenConfig of targetConfigs) {
-      machineFound = findInTree(id, childrenConfig, level + 1);
-      if (machineFound) {
-        break;
-      }
-    }
-    const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
-      ? _machineConfig.machineConfigs
-      : [];
-    for (let childrenConfig of machineConfigs) {
-      machineFound = findInTree(id, childrenConfig, level + 1);
-      if (machineFound) {
-        break;
-      }
-    }
-    return machineFound;
-  };
-
-  const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
-    const list = [];
-
-    const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
-      ? _machineConfig.targetConfigs
-      : [];
-    for (let childrenConfig of targetConfigs) {
-      let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = searchTreeData(childrenConfig, level + 1);
-      list.push(childNode);
-    }
-    const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
-      ? _machineConfig.machineConfigs
-      : [];
-    for (let childrenConfig of machineConfigs) {
-      let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = searchTreeData(childrenConfig, level + 1);
-      list.push(childNode);
-    }
-    return list;
-  };
-
-  const mountTreeData = () => {
-    let configArray: TreeDataNode[] = [machineConfigToTreeElement(machineConfig)];
-    configArray[0].children = searchTreeData(machineConfig, 0);
-    setTreeData(configArray);
-  };
-
-  useEffect(() => {
-    mountTreeData();
-  }, []);
-
-  const createConfigVersion = async (values: {
-    versionName: string;
-    versionDescription: string;
-  }) => {
-    console.log(values.versionName, values.versionDescription);
-    router.refresh();
-  };
-
-  const saveAndUpdateElements = () => {
-    saveMachineConfig(configId, machineConfig).then(() => {});
-    mountTreeData();
-    router.refresh();
-  };
-
-  const createTarget = () => {
-    // For target configs we always create on top level if there isn't one already
-    if (machineConfig.targetConfigs.length > 0) return;
-    let foundMachine = machineConfig;
-    // // Check if it is not the parent config
-    // if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) == -1) {
-    //   //Then search the right one
-    //   let ref = findInTree(selectedOnTree[0].toString(), machineConfig, 0);
-    //   if (ref !== undefined) foundMachine = ref;
-    // }
-    foundMachine.targetConfigs.push({
-      ...defaultMachineConfig(),
-      name: foundMachine.name + '-target-' + foundMachine.targetConfigs.length,
-      type: 'target-config',
-      owner: foundMachine.owner,
-      environmentId: foundMachine.environmentId,
-    });
-    setTargetConfigList(machineConfig.targetConfigs);
-    saveAndUpdateElements();
-  };
-
-  const createMachine = (menu: any) => {
-    let foundMachine = machineConfig;
-    // Check if it is not the parent config
-    if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) == -1) {
-      //Then search the right one
-      let ref = findInTree(selectedOnTree[0].toString(), machineConfig, 0);
-      if (ref !== undefined) foundMachine = ref;
-    }
-    foundMachine.machineConfigs.push({
-      ...defaultMachineConfig(),
-      name: foundMachine.name + '-machine-' + foundMachine.machineConfigs.length,
-      type: 'machine-config',
-      owner: foundMachine.owner,
-      environmentId: foundMachine.environmentId,
-    });
-    setMachineConfigList(machineConfig.machineConfigs);
-    saveAndUpdateElements();
-  };
-
-  const onLoadData = (treeNode: TreeDataNode) =>
-    new Promise((resolve) => {
-      if (treeNode.children) {
-        resolve(treeNode);
-        return;
-      }
-    });
-
   const toggleEditingName = () => {
     // if (editingName) {
     //   saveMachineConfig(configId, machineConfig).then(() => {});
     // }
     setEditingName(!editingName);
   };
-
-  const deleteItem = (menu: any) => {
-    if (selectedOnTree.length < 1) return;
-    let childrenMachineConfigList = Array.isArray(machineConfig.machineConfigs)
-      ? machineConfig.machineConfigs
-      : [];
-    let childrenTargetConfigList = Array.isArray(machineConfig.targetConfigs)
-      ? machineConfig.targetConfigs
-      : [];
-    childrenMachineConfigList = childrenMachineConfigList.filter((node, _) => {
-      return selectedOnTree.indexOf(node.id) === -1;
-    });
-    childrenTargetConfigList = childrenTargetConfigList.filter((node, _) => {
-      return selectedOnTree.indexOf(node.id) === -1;
-    });
-    machineConfig.machineConfigs = childrenMachineConfigList;
-    machineConfig.targetConfigs = childrenTargetConfigList;
-
-    setMachineConfigList(machineConfig.machineConfigs);
-    setTargetConfigList(machineConfig.targetConfigs);
-    saveAndUpdateElements();
-  };
-
-  const items: MenuProps['items'] = [
-    {
-      label: 'Create Machine Configuration',
-      key: 'create-machine',
-      onClick: createMachine,
-    },
-    {
-      label: 'Create Target Configuration',
-      key: 'create-target',
-      onClick: createTarget,
-    },
-    {
-      label: 'Delete',
-      key: 'delete',
-      onClick: deleteItem,
-    },
-  ];
 
   return (
     <Layout style={{ height: '100vh' }}>
@@ -432,30 +216,17 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         width={300}
         style={{ background: '#fff' }}
       >
-        <Dropdown menu={{ items }} trigger={['contextMenu']}>
-          <div style={{ width: '100%', padding: collapsed ? '0' : '16px' }}>
-            {!collapsed && (
-              <>
-                <Button>
-                  <PlusOutlined onClick={toggleEditingName} />
-                  Machine
-                </Button>
-                <Button>
-                  <PlusOutlined onClick={toggleEditingName} />
-                  Target
-                </Button>
-                <br />
-                <Tree
-                  selectedKeys={selectedOnTree}
-                  onRightClick={onRightClickTreeNode}
-                  onSelect={onSelectTreeNode}
-                  loadData={onLoadData}
-                  treeData={treeData}
-                />
-              </>
-            )}
-          </div>
-        </Dropdown>
+        <div style={{ width: '100%', padding: collapsed ? '0' : '16px' }}>
+          {!collapsed && (
+            <>
+              <MachineTreeView
+                backendSaveMachineConfig={saveMachineConfig}
+                configId={configId}
+                originalMachineConfig={machineConfig}
+              />
+            </>
+          )}
+        </div>
       </Sider>
       <Layout>
         <Header

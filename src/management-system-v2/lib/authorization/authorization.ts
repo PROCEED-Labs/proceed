@@ -1,6 +1,8 @@
 import { PackedRulesForUser, computeRulesForUser } from './caslRules';
 import Ability from '../ability/abilityHelper';
 import { LRUCache } from 'lru-cache';
+import { TreeMap } from '../ability/caslAbility';
+import { getFolders } from '../data/legacy/folders';
 
 type PackedRules = PackedRulesForUser['rules'];
 
@@ -43,10 +45,14 @@ export function cacheRulesForUser(
   }
 }
 
-function getCachedRulesForUser(userId: string, environmentId: string) {
-  const cacheId = `${userId}:${environmentId}` as const;
+export function getSpaceFolderTree(spaceId: string) {
+  const tree: TreeMap = {};
 
-  return rulesCache.get(cacheId);
+  for (const folder of getFolders(spaceId)) {
+    if (folder.parentId) tree[folder.id] = folder.parentId;
+  }
+
+  return tree;
 }
 
 /**
@@ -70,7 +76,8 @@ export async function getUserRules(userId: string, environmentId: string) {
 }
 
 export async function getAbilityForUser(userId: string, environmentId: string) {
+  const spaceFolderTree = getSpaceFolderTree(environmentId);
   const userRules = await getUserRules(userId, environmentId);
-  const userAbility = new Ability(userRules, environmentId);
-  return userAbility;
+
+  return new Ability(userRules, environmentId, spaceFolderTree);
 }

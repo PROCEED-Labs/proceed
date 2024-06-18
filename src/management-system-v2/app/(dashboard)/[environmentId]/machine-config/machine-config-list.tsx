@@ -47,14 +47,11 @@ export type MachineConfigListConfigs = ReplaceKeysWithHighlighted<
 
 const MachineConfigList = ({
   data,
-  folder,
   params,
 }: {
   data: InputItem[];
-  folder: Folder;
   params: {
     environmentId: string;
-    folderId?: string;
   };
 }) => {
   const originalConfigs = data;
@@ -64,20 +61,6 @@ const MachineConfigList = ({
   data = data.filter(function (element) {
     return element !== undefined;
   });
-  if (folder.parentId)
-    data = [
-      {
-        name: '< Parent Folder >',
-        parentId: null,
-        type: 'folder',
-        id: folder.parentId,
-        createdOn: '',
-        createdBy: '',
-        lastEdited: '',
-        environmentId: '',
-      },
-      ...data,
-    ];
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
     keys: ['name', 'description'],
@@ -169,43 +152,6 @@ const MachineConfigList = ({
       icon: <FileOutlined />,
     });
 
-  if (ability && ability.can('create', 'Folder'))
-    defaultDropdownItems.push({
-      key: 'create-folder',
-      label: <FolderCreationButton wrapperElement="Create Folder" />,
-      icon: <FolderOutlined />,
-    });
-
-  const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
-    if (!folder) return;
-
-    startUpdatingFolderTransition(async () => {
-      try {
-        const response = updateFolderServer(
-          { name: values.name, description: values.description },
-          folder.id,
-        );
-
-        if (response && 'error' in response) throw new Error();
-
-        message.open({ type: 'success', content: 'Folder updated successfully' });
-        setUpdateFolderModal(undefined);
-        router.refresh();
-      } catch (e) {
-        message.open({ type: 'error', content: 'Someting went wrong while updating the folder' });
-      }
-    });
-  };
-
-  // Folders on top
-  filteredData.sort((a, b) => {
-    if (a.type === 'folder' && b.type == 'folder') return 0;
-    if (a.type === 'folder') return -1;
-    if (b.type === 'folder') return 1;
-
-    return 0;
-  });
-
   useAddControlCallback(
     'machineconfig-list',
     'selectall',
@@ -255,8 +201,8 @@ const MachineConfigList = ({
               // whiteSpace: 'nowrap',
               // textOverflow: 'ellipsis',
               // TODO: color
-              color: record.id === folder.parentId ? 'grey' : undefined,
-              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+              color: undefined,
+              fontStyle: undefined,
             }}
           >
             {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
@@ -372,15 +318,6 @@ const MachineConfigList = ({
         }}*/
       />
       <AddUserControls name={'machineconfig-list'} />
-      <FolderModal
-        open={!!updateFolderModal}
-        close={() => setUpdateFolderModal(undefined)}
-        spaceId={space.spaceId}
-        parentId={folder.id}
-        onSubmit={updateFolder}
-        modalProps={{ title: 'Edit folder', okButtonProps: { loading: updatingFolder } }}
-        initialValues={updateFolderModal}
-      />
     </>
   );
 };

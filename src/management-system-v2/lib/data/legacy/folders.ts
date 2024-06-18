@@ -9,15 +9,12 @@ import {
 import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
-import { Process } from '../process-schema';
+import { Process, ProcessMetadata } from '../process-schema';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
 
-export type FolderChildren =
-  | { id: string; type: 'folder' }
-  | { id: string; type: Process['type'] }
-  | { id: string; type: MachineConfig['type'] };
+export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
 export let foldersMetaObject: {
   folders: Partial<{
     [Id: string]: {
@@ -64,36 +61,28 @@ export function init() {
     parentData.children.push({ id: folder.id, type: 'folder' });
   }
 
-  let populateTypes = ['processes', 'machineConfig'];
+  for (let process of store.get('processes') as ProcessMetadata[]) {
+    if (!process.folderId) {
+      console.warn(
+        `Process ${process.id} has no parent folder, it was stored in it's environment's root folder`,
+      );
 
-  for (let type_index = 0; type_index < populateTypes.length; ++type_index) {
-    let populateType = populateTypes[type_index];
-    let stored = store.get(populateType);
-    for (let populate of stored as VersionedObjectMetadata<FolderChildren['type']>[]) {
-      if (!populate.folderId) {
-        console.warn(
-          `${populateType} ${populate.id} has no parent folder, it was stored in it's environment's root folder`,
-        );
+      process = {
+        ...process,
+        folderId: foldersMetaObject.rootFolders[process.environmentId] as string,
+      };
 
-        populate = {
-          ...populate,
-          folderId: foldersMetaObject.rootFolders[populate.environmentId] as string,
-        };
-
-        store.update(populateType, populate.id, populate);
-      }
-
-      const folderData = foldersMetaObject.folders[populate.folderId];
-      if (!folderData) throw new Error(`${populateType} ${populate.id}'s folder wasn't found`);
-
-      folderData.children.push({ id: populate.id, type: populate.type });
+      store.update('processes', process.id, process);
     }
+
+    const folderData = foldersMetaObject.folders[process.folderId];
+    if (!folderData) throw new Error(`Process ${process.id}'s folder wasn't found`);
+
+    folderData.children.push({ id: process.id, type: process.type });
   }
 }
 init();
 import { removeProcess } from './_process';
-import { MachineConfig } from '../machine-config-schema';
-import { VersionedObjectMetadata } from '../versioned-object-schema';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -118,20 +107,14 @@ export function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder;
 }
 
-export function getFolderChildren(folderId: string, ability?: Ability, filterTypes?: string[]) {
+export function getFolderChildren(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
-  let result = folderData.children;
-  if (filterTypes && filterTypes.length > 0) {
-    result = folderData.children.filter(function (element) {
-      return filterTypes.includes(element.type);
-    });
-  }
-  return result;
+  return folderData.children;
 }
 
 export function createFolder(folderInput: FolderInput, ability?: Ability) {

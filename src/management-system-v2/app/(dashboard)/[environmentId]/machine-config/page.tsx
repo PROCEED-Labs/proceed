@@ -1,25 +1,12 @@
 import Content from '@/components/content';
-import { getFolderChildren, getRootFolder, getFolderById } from '@/lib/data/legacy/folders';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
-import { Button, Space } from 'antd';
+import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import {
-  getMachineConfig,
-  getMachineConfigById,
-  createMachineConfig,
-  getMachineConfigs,
-} from '@/lib/data/legacy/machine-config';
+import { getMachineConfigs } from '@/lib/data/legacy/machine-config';
 import MachineConfigList from './machine-config-list';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { Folder } from '@/lib/data/folder-schema';
 import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
-import { spaceURL } from '@/lib/utils';
-import Link from 'next/link';
-import { LeftOutlined } from '@ant-design/icons';
-import { MachineConfig } from '@/lib/data/machine-config-schema';
-
 export type ListItem = MachineConfigMetadata;
 
 const MachineConfigPage = async ({

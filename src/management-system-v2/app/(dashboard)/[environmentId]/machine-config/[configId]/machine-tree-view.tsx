@@ -116,13 +116,14 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
 
   const showCreateMachineModal = (e: any) => {
     let type = e.key.replace('create-', '');
-    type = type.charAt(0).toUpperCase() + type.slice(1);
     if (type === 'target') {
       setMachineType('target-config');
     } else {
       setMachineType('machine-config');
     }
     setCreateMachineOpen(true);
+    setName('');
+    setDescription('');
   };
 
   const handleCreateMachineOk = () => {
@@ -188,7 +189,12 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     node: EventDataNode<TreeDataNode>;
   }) => {
     // Lets fix to only one selection for now
-    setSelectedOnTree([info.node.key]);
+    const machineId = info.node.key;
+    setSelectedOnTree([machineId]);
+    let foundMachine = { parent: machineConfig, selection: machineConfig };
+    let ref = findInTree(machineId.toString(), machineConfig, machineConfig, 0);
+    if (ref !== undefined) foundMachine = ref;
+    setSelectedMachineConfig(foundMachine);
   };
 
   const machineConfigToTreeElement = (_machineConfig: MachineConfig) => {

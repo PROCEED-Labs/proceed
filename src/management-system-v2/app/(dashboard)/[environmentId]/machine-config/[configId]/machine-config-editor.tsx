@@ -41,9 +41,10 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         width={300}
-        style={{ background: '#fff' }}
+        trigger={null}
+        style={{ background: '#fff', display: collapsed ? 'none' : 'block' }}
       >
-        <div style={{ width: '100%', padding: collapsed ? '0' : '16px' }}>
+        <div style={{ width: '100%', padding: '0' }}>
           {!collapsed && (
             <>
               <MachineTreeView

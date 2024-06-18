@@ -1,12 +1,24 @@
 'use client';
 
 import { MachineConfig } from '@/lib/data/machine-config-schema';
-import { Button, Dropdown, MenuProps, Tag, Tree, TreeDataNode } from 'antd';
+import {
+  Button,
+  Dropdown,
+  Form,
+  Input,
+  MenuProps,
+  Modal,
+  Select,
+  Tag,
+  Tree,
+  TreeDataNode,
+} from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { v4 } from 'uuid';
+import TextArea from 'antd/es/input/TextArea';
 
 type MachineTreeViewProps = {
   configId: string;
@@ -78,13 +90,68 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
 
   const firstRender = useRef(true);
   const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
-
   const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [createMachineOpen, setCreateMachineOpen] = useState(false);
+  const [machineType, setMachineType] = useState<MachineConfig['type']>('target-config');
+  const [name, setName] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [selectedMachineConfig, setSelectedMachineConfig] = useState<
+    { parent: MachineConfig; selection: MachineConfig } | undefined
+  >(undefined);
+
+  const changeName = (e: any) => {
+    let newName = e.target.value;
+    setName(newName);
+  };
+
+  const changeDescription = (e: any) => {
+    let newDescription = e.target.value;
+    setDescription(newDescription);
+  };
+
+  const showDeleteConfirmModal = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const showCreateMachineModal = (e: any) => {
+    let type = e.key.replace('create-', '');
+    type = type.charAt(0).toUpperCase() + type.slice(1);
+    if (type === 'target') {
+      setMachineType('target-config');
+    } else {
+      setMachineType('machine-config');
+    }
+    setCreateMachineOpen(true);
+  };
+
+  const handleCreateMachineOk = () => {
+    if (machineType === 'machine-config') {
+      createMachine();
+    } else {
+      createTarget();
+    }
+    setCreateMachineOpen(false);
+  };
+
+  const handleCreateMachineCancel = () => {
+    setCreateMachineOpen(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteItem();
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+  };
 
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       mountTreeData();
+      setSelectedMachineConfig({ parent: machineConfig, selection: machineConfig });
       return;
     }
   }, []);
@@ -113,6 +180,7 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
       let ref = findInTree(selectedKeys[0].toString(), machineConfig, machineConfig, 0);
       if (ref !== undefined) foundMachine = ref;
     }
+    setSelectedMachineConfig(foundMachine);
     props.onSelectConfig(foundMachine);
   };
   const onRightClickTreeNode = (info: {
@@ -200,7 +268,8 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     // }
     foundMachine.targetConfigs.push({
       ...defaultMachineConfig(),
-      name: foundMachine.name + '-target-' + foundMachine.targetConfigs.length,
+      name: name,
+      description: description,
       type: 'target-config',
       owner: foundMachine.owner,
       environmentId: foundMachine.environmentId,
@@ -208,7 +277,7 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     saveAndUpdateElements();
   };
 
-  const createMachine = (menu: any) => {
+  const createMachine = () => {
     let foundMachine = { parent: machineConfig, selection: machineConfig };
     // Check if it is not the parent config
     if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) === -1) {
@@ -218,8 +287,8 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     }
     foundMachine.selection.machineConfigs.push({
       ...defaultMachineConfig(),
-      name:
-        foundMachine.selection.name + '-machine-' + foundMachine.selection.machineConfigs.length,
+      name: name,
+      description: description,
       type: 'machine-config',
       owner: foundMachine.selection.owner,
       environmentId: foundMachine.selection.environmentId,
@@ -235,7 +304,7 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
       }
     });
 
-  const deleteItem = (menu: any) => {
+  const deleteItem = () => {
     if (selectedOnTree.length < 1) return;
     let foundMachine = { parent: machineConfig, selection: machineConfig };
     // Check if it is not the parent config
@@ -271,12 +340,12 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     {
       label: 'Create Machine Configuration',
       key: 'create-machine',
-      onClick: createMachine,
+      onClick: showCreateMachineModal,
     },
     {
       label: 'Create Target Configuration',
       key: 'create-target',
-      onClick: createTarget,
+      onClick: showCreateMachineModal,
     },
     {
       label: 'Update',
@@ -286,7 +355,7 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     {
       label: 'Delete',
       key: 'delete',
-      onClick: deleteItem,
+      onClick: showDeleteConfirmModal,
     },
   ];
 
@@ -302,6 +371,28 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
           treeData={treeData}
         />
       </Dropdown>
+      <Modal
+        open={deleteConfirmOpen}
+        title={'Deleting ' + (selectedMachineConfig ? selectedMachineConfig.selection.name : '')}
+        onOk={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      >
+        <p>
+          Are you sure you want to delete the configuration {selectedMachineConfig?.selection.name}{' '}
+          with id {selectedMachineConfig?.selection.id}?
+        </p>
+      </Modal>
+      <Modal
+        open={createMachineOpen}
+        title="New configuration"
+        onOk={handleCreateMachineOk}
+        onCancel={handleCreateMachineCancel}
+      >
+        Name:
+        <Input value={name} onChange={changeName} />
+        Description:
+        <TextArea value={description} onChange={changeDescription} />
+      </Modal>
     </>
   );
 }

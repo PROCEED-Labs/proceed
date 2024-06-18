@@ -146,12 +146,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
     setDescription(editingMachineConfig.description);
   }, [props.selectedMachineConfig]);
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const showMobileView = useMobileModeler();
-
-  const discardChanges = () => {
-    setIsModalVisible(false);
-  };
 
   const toggleEditingName = () => {
     // if (editingName) {

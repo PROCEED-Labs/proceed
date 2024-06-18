@@ -7,60 +7,35 @@ export default class CustomPositioner {
   dragTarget: DragTarget;
   store: EditorStore;
   dragShadow: HTMLElement | null = null;
+  dragVersion: number;
 
-  updateTimeout: ReturnType<typeof setTimeout> | null = null;
-  offsetDuringTimeout = { x: 0, y: 0 };
-  currentMousePos = { x: 0, y: 0 };
-
-  constructor(doc: Document, store: EditorStore, target: DragTarget) {
+  constructor(
+    doc: Document,
+    store: EditorStore,
+    target: DragTarget,
+    e: MouseEvent,
+    dragVersion: number,
+  ) {
     this.document = doc;
     this.dragTarget = target;
     this.store = store;
+    this.dragVersion = dragVersion;
 
     this.document.body.focus();
 
     if (target.type === 'existing') {
-      this.initDragging();
+      this.initDragging(e);
     }
 
     this.document.body.addEventListener('mousemove', this.onMouseMove);
     this.document.addEventListener('mouseup', this.onMouseUp);
   }
 
-  async initDragging() {
-    const shadow = this.createDragShadow();
+  async initDragging({ x, y }: { x: number; y: number }) {
+    const shadow = this.createDragShadow({ x, y });
 
     if (shadow) {
       this.dragShadow = shadow;
-
-      const pointerLockPromise = new Promise((res, rej) => {
-        this.document.addEventListener('pointerlockchange', (e) => {
-          if (this.document.pointerLockElement) {
-            res(undefined);
-          }
-        });
-        this.document.addEventListener('pointerlockerror', (e) => {
-          rej();
-        });
-      });
-
-      try {
-        shadow.requestPointerLock();
-        await pointerLockPromise;
-
-        this.document.addEventListener('pointerlockchange', this.onPointerRelease);
-      } catch (err) {
-        console.error('Error on locking the pointer');
-        this.cleanup();
-      } finally {
-        // TODO: remove the promise listeners after the promise has resolved or rejected
-      }
-    }
-  }
-
-  cancel() {
-    if (this.document.pointerLockElement) {
-      this.document.exitPointerLock();
     } else {
       this.cleanup();
     }
@@ -72,7 +47,6 @@ export default class CustomPositioner {
       this.dragShadow = null;
     }
 
-    this.document.removeEventListener('pointerlockchange', this.onPointerRelease);
     this.document.body.removeEventListener('mousemove', this.onMouseMove);
     this.document.removeEventListener('mouseup', this.onMouseUp);
 
@@ -85,11 +59,11 @@ export default class CustomPositioner {
     }
   }
 
-  createDragShadow() {
+  createDragShadow({ x, y }: { x: number; y: number }) {
     const el = this.getDraggedElementDom();
 
     if (el) {
-      const { width, height, top, left } = el.getBoundingClientRect();
+      const { width, top, left } = el.getBoundingClientRect();
       const shadow = el.cloneNode(true) as HTMLElement;
       shadow.style.position = `absolute`;
       shadow.style.left = `${left}px`;
@@ -104,56 +78,36 @@ export default class CustomPositioner {
     }
   }
 
-  updateDragShadow({ x, y }: { x: number; y: number }) {
-    const el = this.getDraggedElementDom();
-
-    if (this.dragShadow && el) {
+  updateDragShadow(e: MouseEvent) {
+    if (this.dragShadow) {
       const shadow = this.dragShadow;
-      const { left, top } = shadow.getBoundingClientRect();
-      shadow.style.left = `${left + x}px`;
-      shadow.style.top = `${top + y}px`;
+
+      const newLeft = parseInt(shadow.style.left.split('px')[0]) + e.movementX;
+      const newTop = parseInt(shadow.style.top.split('px')[0]) + e.movementY;
+
+      shadow.style.left = `${newLeft}px`;
+      shadow.style.top = `${newTop}px`;
     }
   }
 
-  onPointerRelease = () => {
-    const { document } = this;
-
-    if (!document.pointerLockElement) {
-      this.cleanup();
-    }
-  };
-
   onMouseUp = (e: MouseEvent) => {
     e.stopPropagation();
-    this.cancel();
+    this.cleanup();
   };
 
   onMouseMove = (e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
 
-    this.offsetDuringTimeout.x += e.movementX;
-    if (!e.ctrlKey) this.offsetDuringTimeout.y += e.movementY;
-
-    this.currentMousePos = e;
-
-    if (!this.updateTimeout) {
-      this.updateTimeout = setTimeout(this.updatePosition.bind(this), 20);
-    }
+    this.updatePosition(e);
   };
 
-  updatePosition() {
-    this.updateTimeout = null;
-
-    this.updateDragShadow(this.offsetDuringTimeout);
-
-    this.offsetDuringTimeout = { x: 0, y: 0 };
-
-    const mousePos = this.document.pointerLockElement ? undefined : this.currentMousePos;
+  updatePosition(e: MouseEvent) {
+    this.updateDragShadow(e);
 
     const { query, actions } = this.store;
 
-    const result = this.getNewPositionInContainer('ROOT', mousePos);
+    const result = this.getNewPositionInContainer('ROOT', e);
 
     if (!result) return;
 
@@ -178,7 +132,6 @@ export default class CustomPositioner {
       const newElementId = nodeTree.rootNodeId;
 
       actions.addNodeTree(nodeTree, dropTargetId, index);
-      actions.setNodeEvent('dragged', newElementId);
 
       // if (options && typeof options.onCreate === 'function') options.onCreate();
 
@@ -187,7 +140,11 @@ export default class CustomPositioner {
         type: 'existing',
         nodes: [newElementId],
       };
-      this.initDragging();
+
+      setTimeout(() => {
+        this.initDragging(e);
+        actions.setNodeEvent('dragged', newElementId);
+      }, 20);
     } else {
       const node = query.node(this.dragTarget.nodes[0]).get();
 
@@ -205,7 +162,22 @@ export default class CustomPositioner {
             .node(this.dragTarget.nodes[0])
             .get()
             .dom!.getBoundingClientRect();
+
+          const {
+            width: sWidth,
+            height: sHeight,
+            left: sLeft,
+            top: sTop,
+          } = this.dragShadow!.getBoundingClientRect();
+
+          const { clientX, clientY } = e;
+
+          const widthPositionRelation = (clientX - sLeft) / sWidth;
+          const heightPositionRelation = (clientY - sTop) / sHeight;
+
           shadow.style.width = `${width}px`;
+          shadow.style.left = `${clientX - widthPositionRelation * width}px`;
+          shadow.style.top = `${clientY - heightPositionRelation * height}px`;
           // shadow.style.height = `${height}px`;
         }
       }, 20);
@@ -223,13 +195,11 @@ export default class CustomPositioner {
 
   getNewPositionInContainer(
     targetId: NodeId,
-    position?: { x: number; y: number },
+    position: { x: number; y: number },
   ): { dropTarget: Node; index: number } | undefined | null {
     const node = this.store.query.node(targetId).get();
 
     if (!node?.dom) return;
-
-    let inContainer = false;
 
     let moveNode;
     if (this.dragTarget.type === 'existing') {
@@ -237,23 +207,18 @@ export default class CustomPositioner {
       if (!moveNode) return;
     }
 
-    const { left, right, bottom, top } = node.dom.getBoundingClientRect();
+    const { left, right, top } = node.dom.getBoundingClientRect();
 
-    let posY;
-    if (position) {
-      posY = position.y;
-      inContainer =
-        position.x > left && position.x < right && position.y > top && position.y < bottom;
-    } else if (this.dragShadow) {
-      const { left: sLeft, top: sTop, width: sWidth } = this.dragShadow.getBoundingClientRect();
-      posY = sTop;
-      const sCenter = sLeft + sWidth / 2;
-      if (targetId === ROOT_NODE) {
-        inContainer = sTop > top && sCenter > left && sCenter < right;
-      } else {
-        inContainer = sTop > top && sCenter > left + 20 && sCenter < right - 20;
-      }
-    } else return;
+    let posY = position.y;
+
+    if (this.dragVersion && this.dragShadow) {
+      ({ top: posY } = this.dragShadow.getBoundingClientRect());
+    }
+
+    const leaveSpace = targetId === ROOT_NODE ? 0 : 20;
+
+    let inContainer =
+      posY > top && position.x > left + leaveSpace && position.x < right - leaveSpace;
 
     if (inContainer) {
       // prevent dragging a column into its child container
@@ -296,13 +261,11 @@ export default class CustomPositioner {
 
   getNewPositionInRow(
     targetId: NodeId,
-    position?: { x: number; y: number },
+    position: { x: number; y: number },
   ): { dropTarget: Node; index: number } | undefined | null {
     const node = this.store.query.node(targetId).get();
 
     if (!node?.dom) return;
-
-    let inRow = false;
 
     let moveNode;
     let moveNodeParent;
@@ -313,24 +276,24 @@ export default class CustomPositioner {
     }
 
     const { bottom, top } = node.dom.getBoundingClientRect();
-    let posX;
-    if (position) {
-      posX = position.x;
-      inRow = position.y > top && position.y < bottom;
-    } else if (this.dragShadow) {
-      const {
-        left: sLeft,
-        top: sTop,
-        width: sWidth,
-        height: sHeight,
-      } = this.dragShadow.getBoundingClientRect();
-      posX = sLeft + sWidth / 2;
 
+    let posX = position.x;
+
+    let posY = position.y;
+
+    if (this.dragVersion && this.dragShadow) {
+      ({ top: posY } = this.dragShadow.getBoundingClientRect());
+    }
+
+    let inRow = posY > top && posY < bottom;
+
+    // TODO: not possible to drag an element that is the biggest in its row upwards into the container containing the row
+    if (this.dragShadow) {
       if (moveNode?.dom && moveNodeParent?.dom) {
-        const { height: mHeight } = moveNode.dom.getBoundingClientRect();
+        const { height: mHeight, top: mTop } = moveNode.dom.getBoundingClientRect();
         const { top: pTop } = moveNodeParent.dom.getBoundingClientRect();
 
-        if (pTop - 1 < top) {
+        if (posY > mTop && pTop - 1 < top) {
           let highestSiblingHeight = 0;
 
           // TODO: handle flex-wrap somehow; this assumes that there is no wrap in the parent row
@@ -347,13 +310,8 @@ export default class CustomPositioner {
           });
 
           const heightDiff = mHeight > highestSiblingHeight ? mHeight - highestSiblingHeight : 0;
-          console.log(heightDiff);
-          inRow = sTop > top - heightDiff && sTop < bottom - heightDiff;
-        } else {
-          inRow = sTop > top && sTop < bottom;
+          inRow = posY > top - heightDiff && posY < bottom - heightDiff;
         }
-      } else {
-        inRow = sTop > top && sTop < bottom;
       }
     } else return;
 

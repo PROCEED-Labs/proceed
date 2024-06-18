@@ -5,6 +5,12 @@ import React from 'react';
 
 export default class CustomEventhandlers extends DefaultEventHandlers {
   customPositioner: CustomPositioner | null = null;
+  getDragVersion: () => number;
+
+  constructor(getDragVersion: () => number, ...args: any) {
+    super(...args);
+    this.getDragVersion = getDragVersion;
+  }
 
   handlers() {
     const defaultEventHandlers = super.handlers();
@@ -74,10 +80,16 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
             tree = query.parseReactElement(userElement).toNodeTree();
           }
 
-          this.customPositioner = new CustomPositioner(iframeDocument, this.options.store, {
-            type: 'new',
-            tree,
-          });
+          this.customPositioner = new CustomPositioner(
+            iframeDocument,
+            this.options.store,
+            {
+              type: 'new',
+              tree,
+            },
+            e,
+            this.getDragVersion(),
+          );
         });
 
         return () => {
@@ -94,6 +106,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
 
         const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
           e.craft.stopPropagation();
+          e.preventDefault();
 
           // start dragging after a short timeout, otherwise clicks aimed at elements inside a column are blocked by the pointer being locked
           initDragTimeout = setTimeout(() => {
@@ -106,10 +119,16 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
             actions.setNodeEvent('selected', [id]);
             actions.setNodeEvent('dragged', [id]);
 
-            this.customPositioner = new CustomPositioner(iframeDocument, this.options.store, {
-              type: 'existing',
-              nodes: [id],
-            });
+            this.customPositioner = new CustomPositioner(
+              iframeDocument,
+              this.options.store,
+              {
+                type: 'existing',
+                nodes: [id],
+              },
+              e,
+              this.getDragVersion(),
+            );
             initDragTimeout = null;
           }, 100);
         });
@@ -131,7 +150,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
 
   onMouseup = () => {
     if (this.customPositioner) {
-      this.customPositioner.cancel();
+      this.customPositioner.cleanup();
       this.customPositioner = null;
     }
     document.removeEventListener('mouseup', this.onMouseup);

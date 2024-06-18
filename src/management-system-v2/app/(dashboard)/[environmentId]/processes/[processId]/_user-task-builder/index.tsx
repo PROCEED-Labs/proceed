@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col } from 'antd';
+import { Modal, Grid, Row as AntRow, Col, Switch } from 'antd';
 
 import {
   Editor,
@@ -13,6 +13,7 @@ import {
   CreateHandlerOptions,
   useEditor,
   Node,
+  EditorStore,
 } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
@@ -36,7 +37,11 @@ type BuilderProps = {
   onClose: () => void;
 };
 
-const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
+const EditorModal: React.FC<BuilderProps & { onChangeDragVersion: (version: 0 | 1) => void }> = ({
+  open,
+  onClose,
+  onChangeDragVersion,
+}) => {
   const breakpoint = Grid.useBreakpoint();
   const { actions, query } = useEditor();
 
@@ -46,7 +51,13 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       centered
       styles={{ body: { height: '85vh' } }}
       open={open}
-      title="Edit User Task"
+      closeIcon={null}
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Edit User Task</span>
+          <Switch onChange={(checked) => onChangeDragVersion(checked ? 1 : 0)} />
+        </div>
+      }
       okText="Save"
       onCancel={onClose}
       onOk={() => {
@@ -114,18 +125,24 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 };
 
 const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
+  const dragVersionRef = useRef(0);
+
+  const setDragVersion = useCallback((dragVersion: number) => {
+    dragVersionRef.current = dragVersion;
+  }, []);
+
   return (
     <Editor
       resolver={{ Header, Text, SubmitButton, Container, Row, Column, Input, Table }}
-      handlers={(store) =>
-        new CustomEventhandlers({
+      handlers={(store: EditorStore) =>
+        new CustomEventhandlers(() => dragVersionRef.current, {
           store,
           isMultiSelectEnabled: () => false,
           removeHoverOnMouseleave: true,
         })
       }
     >
-      <EditorModal open={open} onClose={onClose} />
+      <EditorModal open={open} onClose={onClose} onChangeDragVersion={setDragVersion} />
     </Editor>
   );
 };

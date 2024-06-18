@@ -3,6 +3,9 @@ import Ability from '../ability/abilityHelper';
 import { LRUCache } from 'lru-cache';
 import { TreeMap } from '../ability/caslAbility';
 import { getFolders } from '../data/legacy/folders';
+import { getEnvironmentById } from '../data/legacy/iam/environments';
+import { getRoleMappingByUserId } from '../data/legacy/iam/role-mappings';
+import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 
 type PackedRules = PackedRulesForUser['rules'];
 
@@ -67,7 +70,11 @@ export async function getUserRules(userId: string, environmentId: string) {
   let userRules = undefined;
 
   if (userRules === undefined) {
-    const { rules, expiration } = await computeRulesForUser(userId, environmentId);
+    const space = getEnvironmentById(environmentId);
+    const roles =
+      space.organization && space.active ? getAppliedRolesForUser(userId, environmentId) : [];
+
+    const { rules, expiration } = computeRulesForUser({ userId, space, roles });
     cacheRulesForUser(userId, environmentId, rules, expiration);
     userRules = rules;
   }

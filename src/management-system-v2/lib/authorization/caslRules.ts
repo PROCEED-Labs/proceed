@@ -14,6 +14,8 @@ import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { globalOrganizationRules, globalUserRules } from './globalRules';
+import { Role } from '../data/role-schema';
+import { Environment } from '../data/environment-schema';
 
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
 
@@ -250,30 +252,32 @@ const disallowOutsideOfEnvRule = (environmentId: string) =>
     },
   }) as AbilityRule;
 
-type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
-export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
+export type PackedRulesForUser = ReturnType<typeof computeRulesForUser>;
 
 /** If possible don't use this function directly, use rulesForUser which caches the rules */
-export async function computeRulesForUser(userId: string, environmentId: string) {
-  if (!userId || !environmentId) return { rules: [] };
-
-  const environment = getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
-
-  if (!environment.organization) {
-    if (userId !== environmentId) throw new Error("Personal environment doesn't belong to user");
+export function computeRulesForUser({
+  userId,
+  space,
+  roles,
+}: {
+  userId: string;
+  space: Environment;
+  roles: Role[];
+}) {
+  if (!space.organization) {
+    if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
       {
         subject: 'All',
         action: 'admin',
       },
-      disallowOutsideOfEnvRule(userId),
+      disallowOutsideOfEnvRule(space.id),
     ] as AbilityRule[];
 
     return { rules: packRules(personalEnvironmentRules.concat(globalUserRules)) };
   }
 
-  const roles = getAppliedRolesForUser(userId, environmentId); // throws error if user isn't a member
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
@@ -334,7 +338,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
   translatedRules.push(...rulesForRoles(ability, userId));
 
   // Disallow every action on other environments
-  translatedRules.push(disallowOutsideOfEnvRule(environmentId));
+  translatedRules.push(disallowOutsideOfEnvRule(space.id));
 
   // casl uses the ordering of the rules to decide
   // this way inverted rules always decide over normal rules

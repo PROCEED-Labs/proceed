@@ -290,11 +290,15 @@ export async function computeRulesForUser(userId: string, environmentId: string)
     )
       firstExpiration = new Date(role.expiration);
 
+    let viewActionOnFolderScopedResource = false;
     for (const resource of resources) {
       if (!(resource in role.permissions)) continue;
 
       const actionsNumber = role.permissions[resource]!;
       const actions = permissionNumberToIdentifiers(actionsNumber);
+
+      if (!viewActionOnFolderScopedResource && FolderScopedResources.includes(resource as any))
+        viewActionOnFolderScopedResource = true;
 
       translatedRules.push({
         subject: resource,
@@ -305,6 +309,18 @@ export async function computeRulesForUser(userId: string, environmentId: string)
             ...(role.parentId && FolderScopedResources.includes(resource as any)
               ? { $1: { $property_has_to_be_child_of: role.parentId } }
               : {}),
+          },
+        },
+      });
+    }
+
+    if (viewActionOnFolderScopedResource) {
+      translatedRules.push({
+        subject: 'Folder',
+        action: 'view',
+        conditions: {
+          conditions: {
+            $: { $property_has_to_be_parent_of: role.parentId },
           },
         },
       });

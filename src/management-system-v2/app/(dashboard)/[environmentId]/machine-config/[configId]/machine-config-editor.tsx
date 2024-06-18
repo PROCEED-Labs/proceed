@@ -1,77 +1,14 @@
 'use client';
 
-import { MachineConfig, MachineConfigInput } from '@/lib/data/machine-config-schema';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { MachineConfig } from '@/lib/data/machine-config-schema';
 
-import {
-  PlusOutlined,
-  MinusOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  ArrowUpOutlined,
-  EditOutlined,
-  KeyOutlined,
-  UserOutlined,
-  DeleteOutlined,
-  CopyOutlined,
-} from '@ant-design/icons';
-import TextArea from 'antd/es/input/TextArea';
+import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Breadcrumb,
-  Button,
-  Cascader,
-  Checkbox,
-  ColorPicker,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Select,
-  Slider,
-  Switch,
-  TreeSelect,
-  Upload,
-  Modal,
-  Space,
-  Divider,
-  Col,
-  Row,
-  Table,
-  Tag,
-  TableProps,
-  Tooltip,
-  Layout,
-  Tree,
-  Typography,
-  SelectProps,
-  TreeDataNode,
-  theme,
-  Card,
-  MenuProps,
-  Dropdown,
-} from 'antd';
-import { ToolbarGroup } from '@/components/toolbar';
-import VersionCreationButton from '@/components/version-creation-button';
-import { spaceURL } from '@/lib/utils';
-import useMobileModeler from '@/lib/useMobileModeler';
-import { useEnvironment } from '@/components/auth-can';
-import { config } from 'process';
-import { v4 } from 'uuid';
-import { EventDataNode } from 'antd/es/tree';
-import { Key } from 'antd/es/table/interface';
+import { Button, Layout, Typography } from 'antd';
 import MachineTreeView from './machine-tree-view';
 import MachineDataEditor from './machine-metadata-editor';
 
-const { Header, Footer, Sider, Content } = Layout;
-const { Title } = Typography;
-
-type VariableType = {
-  name: string;
-  type: string;
-  value: string;
-};
+const { Sider } = Layout;
 
 type VariablesEditorProps = {
   configId: string;
@@ -82,18 +19,20 @@ type VariablesEditorProps = {
 
 export default function MachineConfigEditor(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState<MachineConfig | undefined>(undefined);
+  const [selectedConfig, setSelectedConfig] = useState<
+    { parent: MachineConfig; selection: MachineConfig } | undefined
+  >(undefined);
 
   const configId = props.configId;
   const saveMachineConfig = props.backendSaveMachineConfig;
   const machineConfig = { ...props.originalMachineConfig };
 
   useEffect(() => {
-    setSelectedConfig(machineConfig);
+    setSelectedConfig({ parent: machineConfig, selection: machineConfig });
   }, []);
 
   const onSelectConfig = (relation: { parent: MachineConfig; selection: MachineConfig }) => {
-    setSelectedConfig(relation.selection);
+    setSelectedConfig(relation);
   };
 
   return (
@@ -127,7 +66,7 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         backendSaveMachineConfig={saveMachineConfig}
         configId={configId}
         rootMachineConfig={machineConfig}
-        editingMachineConfig={selectedConfig}
+        selectedMachineConfig={selectedConfig}
       />
     </Layout>
   );

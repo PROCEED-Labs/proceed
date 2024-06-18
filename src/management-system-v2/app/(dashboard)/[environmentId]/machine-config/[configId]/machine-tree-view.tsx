@@ -39,6 +39,37 @@ export function defaultMachineConfig() {
   } as MachineConfig;
 }
 
+export function findInTree(
+  id: string,
+  _parent: MachineConfig,
+  _machineConfig: MachineConfig,
+  level: number,
+): { parent: MachineConfig; selection: MachineConfig } | undefined {
+  if (_machineConfig.id === id) {
+    return { selection: _machineConfig, parent: _parent };
+  }
+  let machineFound = undefined;
+  const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
+    ? _machineConfig.targetConfigs
+    : [];
+  for (let childrenConfig of targetConfigs) {
+    if (machineFound) {
+      break;
+    }
+    machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
+  }
+  const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
+    ? _machineConfig.machineConfigs
+    : [];
+  for (let childrenConfig of machineConfigs) {
+    if (machineFound) {
+      break;
+    }
+    machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
+  }
+  return machineFound;
+}
+
 export default function MachineTreeView(props: MachineTreeViewProps) {
   const router = useRouter();
   const machineConfig = { ...props.originalMachineConfig };
@@ -127,37 +158,6 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
       ref: _machineConfig,
       children: [],
     };
-  };
-
-  const findInTree = (
-    id: string,
-    _parent: MachineConfig,
-    _machineConfig: MachineConfig,
-    level: number,
-  ): { parent: MachineConfig; selection: MachineConfig } | undefined => {
-    if (_machineConfig.id === id) {
-      return { selection: _machineConfig, parent: _parent };
-    }
-    let machineFound = undefined;
-    const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
-      ? _machineConfig.targetConfigs
-      : [];
-    for (let childrenConfig of targetConfigs) {
-      if (machineFound) {
-        break;
-      }
-      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
-    }
-    const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
-      ? _machineConfig.machineConfigs
-      : [];
-    for (let childrenConfig of machineConfigs) {
-      if (machineFound) {
-        break;
-      }
-      machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
-    }
-    return machineFound;
   };
 
   const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
@@ -263,6 +263,9 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
 
     saveAndUpdateElements();
   };
+  const updateTree = () => {
+    mountTreeData();
+  };
 
   const contextMenuItems: MenuProps['items'] = [
     {
@@ -274,6 +277,11 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
       label: 'Create Target Configuration',
       key: 'create-target',
       onClick: createTarget,
+    },
+    {
+      label: 'Update',
+      key: 'update',
+      onClick: updateTree,
     },
     {
       label: 'Delete',

@@ -18,56 +18,32 @@ import {
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Breadcrumb,
   Button,
-  Cascader,
-  Checkbox,
-  ColorPicker,
-  DatePicker,
-  Form,
   Input,
-  InputNumber,
-  Radio,
   Select,
-  Slider,
-  Switch,
-  TreeSelect,
-  Upload,
-  Modal,
   Space,
   Divider,
   Col,
   Row,
-  Table,
   Tag,
-  TableProps,
   Tooltip,
   Layout,
-  Tree,
-  Typography,
   SelectProps,
-  TreeDataNode,
   theme,
   Card,
-  MenuProps,
-  Dropdown,
 } from 'antd';
 import { ToolbarGroup } from '@/components/toolbar';
 import VersionCreationButton from '@/components/version-creation-button';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { config } from 'process';
-import { v4 } from 'uuid';
-import { EventDataNode } from 'antd/es/tree';
-import { Key } from 'antd/es/table/interface';
-import MachineTreeView, { defaultMachineConfig } from './machine-tree-view';
+import { defaultMachineConfig, findInTree } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
 
 type MachineDataViewProps = {
   configId: string;
-  editingMachineConfig: MachineConfig | undefined;
+  selectedMachineConfig: { parent: MachineConfig; selection: MachineConfig } | undefined;
   rootMachineConfig: MachineConfig;
   backendSaveMachineConfig: Function;
 };
@@ -81,10 +57,15 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
 
   const firstRender = useRef(true);
   const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState<string | undefined>('');
+  const [description, setDescription] = useState<string | undefined>('');
 
   const rootMachineConfig = { ...props.rootMachineConfig };
-  const editingMachineConfig = props.editingMachineConfig
-    ? { ...props.editingMachineConfig }
+  const parentMachineConfig = props.selectedMachineConfig
+    ? { ...props.selectedMachineConfig.parent }
+    : defaultMachineConfig();
+  const editingMachineConfig = props.selectedMachineConfig
+    ? { ...props.selectedMachineConfig.selection }
     : defaultMachineConfig();
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
@@ -127,16 +108,33 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
 
   const changeName = (e: any) => {
     let newName = e.target.value;
-    editingMachineConfig.name = newName;
-    saveMachineConfig(configId, rootMachineConfig).then(() => {});
-    router.refresh();
+    setName(newName);
+  };
+
+  const saveName = (e: any) => {
+    if (editingName) {
+      let ref = findInTree(editingMachineConfig.id, rootMachineConfig, rootMachineConfig, 0);
+      if (ref) {
+        ref.selection.name = name ? name : '';
+        saveMachineConfig(configId, rootMachineConfig).then(() => {});
+        router.refresh();
+      }
+    }
   };
 
   const changeDescription = (e: any) => {
     let newDescription = e.target.value;
-    editingMachineConfig.description = newDescription;
-    saveMachineConfig(configId, rootMachineConfig).then(() => {});
-    router.refresh();
+    setDescription(newDescription);
+  };
+
+  const saveDescription = (e: any) => {
+    let ref = findInTree(editingMachineConfig.id, rootMachineConfig, rootMachineConfig, 0);
+    if (ref) {
+      ref.selection.description = description ? description : '';
+      console.log(ref);
+      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      router.refresh();
+    }
   };
 
   useEffect(() => {
@@ -144,7 +142,9 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
       firstRender.current = false;
       return;
     }
-  }, [props.editingMachineConfig]);
+    setName(editingMachineConfig.name);
+    setDescription(editingMachineConfig.description);
+  }, [props.selectedMachineConfig]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const showMobileView = useMobileModeler();
@@ -166,11 +166,18 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
       >
         <Divider orientation="left" style={{ margin: '0 16px' }}>
           <Title level={3} style={{ margin: 0 }}>
-            Configuration&nbsp;
+            {editingMachineConfig.type === 'machine-config' ? (
+              <Tag color="red">Machine</Tag>
+            ) : editingMachineConfig.type === 'target-config' ? (
+              <Tag color="purple">Target</Tag>
+            ) : (
+              ''
+            )}
+            &nbsp;Configuration&nbsp;
             {!editingName ? (
               <>{editingMachineConfig.name}</>
             ) : (
-              <Input defaultValue={editingMachineConfig.name} onChange={changeName} />
+              <Input value={name} onChange={changeName} onBlur={saveName} />
             )}
             &nbsp;
             <Button>
@@ -235,9 +242,17 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
           height: 'auto',
         }}
       >
-        <Row gutter={16} style={{ marginTop: '16px' }}>
-          <Col span={8}>
-            <label>
+        <Card title="Metadata" style={{ marginBottom: 16 }}>
+          <Row gutter={16}>
+            <Col span={8}>
+              {parentMachineConfig.id !== editingMachineConfig.id ? (
+                <>
+                  Parent:
+                  <Input value={parentMachineConfig.id} disabled prefix={<KeyOutlined />} />
+                </>
+              ) : (
+                ''
+              )}
               ID:
               <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
               Owner:
@@ -246,50 +261,28 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
                 disabled
                 prefix={<UserOutlined />}
               />
-            </label>
-          </Col>
-          <Col span={8}>
-            <label>
-              Description:
-              <TextArea
-                defaultValue={editingMachineConfig.description}
-                onChange={changeDescription}
-              />
-            </label>
-          </Col>
-        </Row>
+            </Col>
+            <Col span={8}>
+              <label>
+                Description:
+                <TextArea
+                  value={description}
+                  onChange={changeDescription}
+                  onBlur={saveDescription}
+                />
+              </label>
+            </Col>
+          </Row>
+          <Title level={5}>Linked Machine Configurations</Title>
+          <Space wrap>
+            <Tag color="green">ID ABC</Tag>
+            <Tag color="purple">ID XYZ</Tag>
+            <Tag color="magenta">ID LMN</Tag>
+            <Button icon={<PlusOutlined />} type="dashed" />
+          </Space>
+        </Card>
         <Row gutter={16} style={{ marginTop: '16px' }}>
           <Col span={24}>
-            Variables: <Button icon={<PlusOutlined />} type="primary" />
-          </Col>
-        </Row>
-        <Row gutter={16} style={{ marginTop: '16px' }}>
-          <Col span={24}>
-            <Card title="Target Configuration" style={{ marginBottom: 16 }}>
-              <Input placeholder="Target Config Name" style={{ marginBottom: 16 }} />
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Input placeholder="ID" />
-                </Col>
-                <Col span={8}>
-                  <Select defaultValue="Version" style={{ width: '100%' }}>
-                    <Option value="version1">Version 1</Option>
-                    <Option value="version2">Version 2</Option>
-                  </Select>
-                </Col>
-                <Col span={8}>
-                  <Input placeholder="Owner" />
-                </Col>
-              </Row>
-              <Divider />
-              <Title level={5}>Linked Machine Configurations</Title>
-              <Space wrap>
-                <Tag color="green">ID ABC</Tag>
-                <Tag color="purple">ID XYZ</Tag>
-                <Tag color="magenta">ID LMN</Tag>
-                <Button icon={<PlusOutlined />} type="dashed" />
-              </Space>
-            </Card>
             <Card title="Target Parameters" bodyStyle={{ paddingBottom: 16 }}>
               <Button
                 icon={<PlusOutlined />}

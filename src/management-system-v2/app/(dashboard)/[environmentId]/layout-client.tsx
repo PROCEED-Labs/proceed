@@ -22,13 +22,7 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
   }),
 );
 
-export const useUserSpaces = create<{
-  userSpaces: Environment[];
-  setUserSpaces: (userEnvironments: Environment[]) => void;
-}>((set) => ({
-  userSpaces: [],
-  setUserSpaces: (userEnvironments: Environment[]) => set({ userSpaces: userEnvironments }),
-}));
+export const UserSpacesContext = createContext<Environment[]>([]);
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
@@ -65,88 +59,85 @@ const Layout: FC<
     (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
   );
 
-  const setUserSpaces = useUserSpaces((state) => state.setUserSpaces);
-  useEffect(() => {
-    setUserSpaces(userEnvironments);
-  });
-
   const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
 
   return (
-    <SpaceContext.Provider value={activeSpace}>
-      <AntLayout style={{ height: '100vh' }}>
-        <AntLayout hasSider>
-          {!hideSider && (
-            <AntLayout.Sider
-              style={{
-                backgroundColor: '#fff',
-                borderRight: '1px solid #eee',
-                display: modelerIsFullScreen ? 'none' : 'block',
-              }}
-              className={cn(styles.Sider)}
-              collapsible
-              collapsed={collapsed}
-              onCollapse={(collapsed) => setCollapsed(collapsed)}
-              collapsedWidth={breakpoint.xs ? '0' : '80'}
-              breakpoint="xl"
-              trigger={null}
-            >
-              <div className={styles.LogoContainer}>
-                <Link href={spaceURL(activeSpace, `/processes`)}>
-                  <Image
-                    src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
-                    alt="PROCEED Logo"
-                    className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
-                      [styles.collapsed]: collapsed,
-                    })}
-                    width={breakpoint.xs ? 85 : 160}
-                    height={breakpoint.xs ? 35 : 63}
-                    priority
-                  />
-                </Link>
-              </div>
+    <UserSpacesContext.Provider value={userEnvironments}>
+      <SpaceContext.Provider value={activeSpace}>
+        <AntLayout style={{ height: '100vh' }}>
+          <AntLayout hasSider>
+            {!hideSider && (
+              <AntLayout.Sider
+                style={{
+                  backgroundColor: '#fff',
+                  borderRight: '1px solid #eee',
+                  display: modelerIsFullScreen ? 'none' : 'block',
+                }}
+                className={cn(styles.Sider)}
+                collapsible
+                collapsed={collapsed}
+                onCollapse={(collapsed) => setCollapsed(collapsed)}
+                collapsedWidth={breakpoint.xs ? '0' : '80'}
+                breakpoint="xl"
+                trigger={null}
+              >
+                <div className={styles.LogoContainer}>
+                  <Link href={spaceURL(activeSpace, `/processes`)}>
+                    <Image
+                      src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
+                      alt="PROCEED Logo"
+                      className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
+                        [styles.collapsed]: collapsed,
+                      })}
+                      width={breakpoint.xs ? 85 : 160}
+                      height={breakpoint.xs ? 35 : 63}
+                      priority
+                    />
+                  </Link>
+                </div>
 
-              {loggedIn ? menu : null}
-            </AntLayout.Sider>
-          )}
+                {loggedIn ? menu : null}
+              </AntLayout.Sider>
+            )}
 
-          <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
+            <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
+          </AntLayout>
+          <AntLayout.Footer
+            style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
+            className={cn(styles.Footer)}
+          >
+            © 2024 PROCEED Labs GmbH
+          </AntLayout.Footer>
         </AntLayout>
-        <AntLayout.Footer
-          style={{ display: modelerIsFullScreen ? 'none' : 'block' }}
-          className={cn(styles.Footer)}
+
+        <Drawer
+          title={
+            loggedIn ? (
+              <>
+                <Tooltip title="Account Settings">
+                  <UserAvatar user={session.data?.user} />
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Button type="text" onClick={() => signIn()}>
+                  <u>Log in</u>
+                </Button>
+
+                <Tooltip title="Log in">
+                  <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
+                </Tooltip>
+              </>
+            )
+          }
+          placement="right"
+          onClose={() => setMobileDrawerOpen(false)}
+          open={mobileDrawerOpen}
         >
-          © 2024 PROCEED Labs GmbH
-        </AntLayout.Footer>
-      </AntLayout>
-
-      <Drawer
-        title={
-          loggedIn ? (
-            <>
-              <Tooltip title="Account Settings">
-                <UserAvatar user={session.data?.user} />
-              </Tooltip>
-            </>
-          ) : (
-            <>
-              <Button type="text" onClick={() => signIn()}>
-                <u>Log in</u>
-              </Button>
-
-              <Tooltip title="Log in">
-                <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
-              </Tooltip>
-            </>
-          )
-        }
-        placement="right"
-        onClose={() => setMobileDrawerOpen(false)}
-        open={mobileDrawerOpen}
-      >
-        {menu}
-      </Drawer>
-    </SpaceContext.Provider>
+          {menu}
+        </Drawer>
+      </SpaceContext.Provider>
+    </UserSpacesContext.Provider>
   );
 };
 

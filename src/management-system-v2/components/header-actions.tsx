@@ -3,21 +3,21 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, MenuProps, Select, Space, Tooltip, Typography } from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC } from 'react';
+import { FC, useContext } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
 import { enableChatbot } from 'FeatureFlags';
-import { useUserSpaces } from '@/app/(dashboard)/[environmentId]/layout-client';
 import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
+import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 
 const HeaderActions: FC = () => {
   const session = useSession();
   const isGuest = session.data?.user.guest;
   const loggedIn = session.status === 'authenticated';
-  const userSpaces = useUserSpaces((state) => state.userSpaces);
+  const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
 
   if (!process.env.NEXT_PUBLIC_USE_AUTH) {

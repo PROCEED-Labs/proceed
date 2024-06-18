@@ -82,12 +82,12 @@ const conditions = {
       )
         return true;
 
-      // If the resource doesn't specify a perent we can't know where it should be in the tree.
+      // If the resource doesn't specify a parentId|folderId we can't know where it should be in the tree.
       // Although this would probably be an error, this should be caught by zod, so here
       // we just return false implying that this rule doesn't apply.
-      if (!resource.parentId) return false;
+      if (!resource.parentId && !resource.folderId) return false;
 
-      let currentFolder = resource.parentId;
+      let currentFolder = resource.parentId || resource.folderId;
       while (currentFolder) {
         if (currentFolder === valueInCondition) {
           return true;

@@ -22,6 +22,7 @@ export const resources = [
   'Share',
   'Environment',
   'Folder',
+  'MachineConfig',
   'All',
 ] as const;
 export type ResourceType = (typeof resources)[number];

@@ -36,16 +36,19 @@ export class ProcessListPage {
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Import Process' }).click();
-    const filechooser = await fileChooserPromise;
+    const modal = await openModal(async () => {
+      const fileChooserPromise = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Import Process' }).click();
+      const filechooser = await fileChooserPromise;
 
-    await filechooser.setFiles({
-      name: filename,
-      mimeType: 'text/xml',
-      buffer: Buffer.from(bpmn, 'utf-8'),
-    });
-    await closeModal(page.getByRole('dialog').getByRole('button', { name: 'Import' }));
+      await filechooser.setFiles({
+        name: filename,
+        mimeType: 'text/xml',
+        buffer: Buffer.from(bpmn, 'utf-8'),
+      });
+    }, this.page);
+
+    await closeModal(modal.getByRole('button', { name: 'Import' }));
 
     this.processDefinitionIds.push(definitionId);
 

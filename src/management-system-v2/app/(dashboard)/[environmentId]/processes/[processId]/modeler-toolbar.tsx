@@ -13,6 +13,7 @@ import Icon, {
   ArrowDownOutlined,
   FullscreenOutlined,
   FilePdfOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -28,6 +29,7 @@ import ModelerShareModalButton from './modeler-share-modal';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import UserTaskBuilder from './_user-task-builder';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -50,6 +52,7 @@ const ModelerToolbar = ({
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
+  const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -232,14 +235,18 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              bpmnIs(selectedElement, 'bpmn:SubProcess') &&
-              selectedElement.collapsed && (
-                <Tooltip title="Open Subprocess">
-                  <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
-                    Open Subprocess
-                  </Button>
+              ((bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                <Tooltip title="Edit User Task Form">
+                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                 </Tooltip>
-              )}
+              )) ||
+                (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
+                  <Tooltip title="Open Subprocess">
+                    <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+                      Open Subprocess
+                    </Button>
+                  </Tooltip>
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -306,6 +313,7 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
+      <UserTaskBuilder open={showUserTaskEditor} onClose={() => setShowUserTaskEditor(false)} />
     </>
   );
 };

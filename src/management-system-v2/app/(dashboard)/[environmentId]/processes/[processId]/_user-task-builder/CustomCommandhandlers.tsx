@@ -20,7 +20,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         const unbindMouseover = this.addCraftEventListener(el, 'mouseover', (e) => {
           e.craft.stopPropagation();
 
-          actions.setNodeEvent('hovered', id);
+          if (!query.getEvent('dragged').all().length) actions.setNodeEvent('hovered', id);
         });
 
         const unbindMouseleave = this.addCraftEventListener(el, 'mouseleave', (e) => {

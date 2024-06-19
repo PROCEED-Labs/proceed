@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -67,26 +67,46 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
     : defaultMachineConfig();
+  let refEditingMachineConfig = findInTree(
+    editingMachineConfig.id,
+    rootMachineConfig,
+    rootMachineConfig,
+    0,
+  );
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
-  const [nestedParameters, setNestedParameters] = useState([]); // State for nested parameters
+  const [nestedParameters, setNestedParameters] = useState<MachineConfigParameter[]>([]); // State for nested parameters
 
   //Added by Antoni
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const addNestedParameter = () => {
-    setNestedParameters([...nestedParameters, { key: '', value: '', unit: '', language: '' }]);
+    setNestedParameters([
+      ...nestedParameters,
+      { key: '', value: '', unit: '', language: '', children: [] },
+    ]);
   };
 
-  const changeNestedParameter = (index, key, value) => {
+  const changeNestedParameter = (index: number, key: string, value: string) => {
     const newNestedParameters = [...nestedParameters];
-    newNestedParameters[index][key] = value;
+    if (key === 'key') newNestedParameters[index].key = value;
+    else if (key === 'value') newNestedParameters[index].value = value;
+    else if (key === 'unit') newNestedParameters[index].unit = value;
+    else if (key === 'language') newNestedParameters[index].language = value;
     setNestedParameters(newNestedParameters);
   };
 
-  const removeNestedParameter = (index) => {
+  const saveParameters = () => {
+    if (refEditingMachineConfig) {
+      refEditingMachineConfig.selection.parameters = nestedParameters;
+      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      router.refresh();
+    }
+  };
+
+  const removeNestedParameter = (index: number) => {
     setNestedParameters(nestedParameters.filter((_, i) => i !== index));
   };
   ////
@@ -113,9 +133,8 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
 
   const saveName = (e: any) => {
     if (editingName) {
-      let ref = findInTree(editingMachineConfig.id, rootMachineConfig, rootMachineConfig, 0);
-      if (ref) {
-        ref.selection.name = name ? name : '';
+      if (refEditingMachineConfig) {
+        refEditingMachineConfig.selection.name = name ? name : '';
         saveMachineConfig(configId, rootMachineConfig).then(() => {});
         router.refresh();
       }
@@ -128,10 +147,8 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   };
 
   const saveDescription = (e: any) => {
-    let ref = findInTree(editingMachineConfig.id, rootMachineConfig, rootMachineConfig, 0);
-    if (ref) {
-      ref.selection.description = description ? description : '';
-      console.log(ref);
+    if (refEditingMachineConfig) {
+      refEditingMachineConfig.selection.description = description ? description : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -144,6 +161,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
     }
     setName(editingMachineConfig.name);
     setDescription(editingMachineConfig.description);
+    if (refEditingMachineConfig) setNestedParameters(refEditingMachineConfig.selection.parameters);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
@@ -278,7 +296,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
         </Card>
         <Row gutter={16} style={{ marginTop: '16px' }}>
           <Col span={24}>
-            <Card title="Target Parameters" bodyStyle={{ paddingBottom: 16 }}>
+            <Card title="Parameters" bodyStyle={{ paddingBottom: 16 }}>
               <Button
                 icon={<PlusOutlined />}
                 type="dashed"
@@ -305,29 +323,33 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
                     <Col span={6}>
                       <Input
                         placeholder="Key"
-                        //value={param.key}
+                        value={param.key}
                         onChange={(e) => changeNestedParameter(i, 'key', e.target.value)}
+                        onBlur={saveParameters}
                       />
                     </Col>
                     <Col span={6}>
                       <Input
                         placeholder="Value"
-                        //value={param.value}
+                        value={param.value}
                         onChange={(e) => changeNestedParameter(i, 'value', e.target.value)}
+                        onBlur={saveParameters}
                       />
                     </Col>
                     <Col span={6}>
                       <Input
                         placeholder="Unit"
-                        //value={param.unit}
+                        value={param.unit}
                         onChange={(e) => changeNestedParameter(i, 'unit', e.target.value)}
+                        onBlur={saveParameters}
                       />
                     </Col>
                     <Col span={6}>
                       <Input
                         placeholder="Language"
-                        //value={param.language}
+                        value={param.language}
                         onChange={(e) => changeNestedParameter(i, 'language', e.target.value)}
+                        onBlur={saveParameters}
                       />
                     </Col>
                   </Row>

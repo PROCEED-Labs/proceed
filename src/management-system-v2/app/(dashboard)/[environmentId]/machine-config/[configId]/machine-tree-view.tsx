@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
 import {
   Button,
   Dropdown,
@@ -37,6 +37,7 @@ export function defaultMachineConfig() {
     name: 'Default Machine Configuration',
     description: '',
     variables: [],
+    parameters: [],
     departments: [],
     inEditingBy: [],
     createdOn: date,
@@ -234,6 +235,22 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     };
   };
 
+  const machineConfigParameterToTreeElement = (_machineConfig: MachineConfigParameter) => {
+    let tagByType = (
+      <>
+        <Tag color="lime">P</Tag>
+        {_machineConfig.key}
+      </>
+    );
+
+    return {
+      title: tagByType,
+      key: _machineConfig.key,
+      ref: _machineConfig,
+      children: [],
+    };
+  };
+
   const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
     const list = [];
 
@@ -251,6 +268,14 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     for (let childrenConfig of machineConfigs) {
       let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
       childNode.children = searchTreeData(childrenConfig, level + 1);
+      list.push(childNode);
+    }
+    const machineConfigParameters = Array.isArray(_machineConfig.machineConfigs)
+      ? _machineConfig.parameters
+      : [];
+    for (let childrenParameter of machineConfigParameters) {
+      let childNode: TreeDataNode = machineConfigParameterToTreeElement(childrenParameter);
+      // childNode.children = searchTreeData(childrenConfig, level + 1);
       list.push(childNode);
     }
     return list;

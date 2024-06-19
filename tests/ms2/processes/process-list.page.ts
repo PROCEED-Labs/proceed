@@ -4,7 +4,7 @@ import fs from 'fs';
 import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
-import { expect } from './process-list.fixtures';
+import { expect } from './processes.fixtures';
 import { closeModal, openModal } from '../testUtils';
 
 export class ProcessListPage {
@@ -167,20 +167,6 @@ export class ProcessListPage {
 
       this.processDefinitionIds = [];
     }
-  }
-
-  async readClipboard(readAsText) {
-    const { page } = this;
-    const result = await page.evaluate(async (readAsText) => {
-      if (readAsText) {
-        return await navigator.clipboard.readText();
-      } else {
-        const clipboardItems = await navigator.clipboard.read();
-        return clipboardItems[0].types[0];
-      }
-    }, readAsText);
-
-    return result;
   }
 
   async createFolder({

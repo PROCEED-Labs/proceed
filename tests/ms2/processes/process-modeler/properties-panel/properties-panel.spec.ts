@@ -1,4 +1,4 @@
-import { test, expect } from './properties-panel.fixtures';
+import { test, expect } from '../../processes.fixtures';
 
 test('open properties panel for process and fill property values', async ({
   propertiesPanelPage,

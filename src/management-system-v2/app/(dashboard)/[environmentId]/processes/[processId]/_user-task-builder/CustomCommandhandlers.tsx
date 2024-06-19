@@ -5,12 +5,6 @@ import React from 'react';
 
 export default class CustomEventhandlers extends DefaultEventHandlers {
   customPositioner: CustomPositioner | null = null;
-  getDragVersion: () => number;
-
-  constructor(getDragVersion: () => number, ...args: any) {
-    super(...args);
-    this.getDragVersion = getDragVersion;
-  }
 
   handlers() {
     const defaultEventHandlers = super.handlers();
@@ -88,7 +82,6 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
               tree,
             },
             e,
-            this.getDragVersion(),
           );
         });
 
@@ -127,7 +120,6 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
                 nodes: [id],
               },
               e,
-              this.getDragVersion(),
             );
             initDragTimeout = null;
           }, 100);

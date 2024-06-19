@@ -1,20 +1,10 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col, Switch } from 'antd';
+import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
-import {
-  Editor,
-  Frame,
-  Element,
-  DefaultEventHandlers,
-  NodeId,
-  CreateHandlerOptions,
-  useEditor,
-  Node,
-  EditorStore,
-} from '@craftjs/core';
+import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
@@ -28,7 +18,7 @@ import Header from './Header';
 import Input from './Input';
 import Table from './Table';
 
-import { toHtml, iframeDocument, defaultForm } from './utils';
+import { toHtml, iframeDocument } from './utils';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 
@@ -37,11 +27,7 @@ type BuilderProps = {
   onClose: () => void;
 };
 
-const EditorModal: React.FC<BuilderProps & { onChangeDragVersion: (version: 0 | 1) => void }> = ({
-  open,
-  onClose,
-  onChangeDragVersion,
-}) => {
+const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
   const { actions, query } = useEditor();
 
@@ -52,12 +38,7 @@ const EditorModal: React.FC<BuilderProps & { onChangeDragVersion: (version: 0 | 
       styles={{ body: { height: '85vh' } }}
       open={open}
       closeIcon={null}
-      title={
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Edit User Task</span>
-          <Switch onChange={(checked) => onChangeDragVersion(checked ? 1 : 0)} />
-        </div>
-      }
+      title="Edit User Task"
       okText="Save"
       onCancel={onClose}
       onOk={() => {
@@ -125,24 +106,18 @@ const EditorModal: React.FC<BuilderProps & { onChangeDragVersion: (version: 0 | 
 };
 
 const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
-  const dragVersionRef = useRef(0);
-
-  const setDragVersion = useCallback((dragVersion: number) => {
-    dragVersionRef.current = dragVersion;
-  }, []);
-
   return (
     <Editor
       resolver={{ Header, Text, SubmitButton, Container, Row, Column, Input, Table }}
       handlers={(store: EditorStore) =>
-        new CustomEventhandlers(() => dragVersionRef.current, {
+        new CustomEventhandlers({
           store,
           isMultiSelectEnabled: () => false,
           removeHoverOnMouseleave: true,
         })
       }
     >
-      <EditorModal open={open} onClose={onClose} onChangeDragVersion={setDragVersion} />
+      <EditorModal open={open} onClose={onClose} />
     </Editor>
   );
 };

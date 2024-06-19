@@ -7,19 +7,11 @@ export default class CustomPositioner {
   dragTarget: DragTarget;
   store: EditorStore;
   dragShadow: HTMLElement | null = null;
-  dragVersion: number;
 
-  constructor(
-    doc: Document,
-    store: EditorStore,
-    target: DragTarget,
-    e: MouseEvent,
-    dragVersion: number,
-  ) {
+  constructor(doc: Document, store: EditorStore, target: DragTarget, e: MouseEvent) {
     this.document = doc;
     this.dragTarget = target;
     this.store = store;
-    this.dragVersion = dragVersion;
 
     this.document.body.focus();
 
@@ -211,7 +203,7 @@ export default class CustomPositioner {
 
     let posY = position.y;
 
-    if (this.dragVersion && this.dragShadow) {
+    if (this.dragShadow) {
       ({ top: posY } = this.dragShadow.getBoundingClientRect());
     }
 
@@ -281,7 +273,7 @@ export default class CustomPositioner {
 
     let posY = position.y;
 
-    if (this.dragVersion && this.dragShadow) {
+    if (this.dragShadow) {
       ({ top: posY } = this.dragShadow.getBoundingClientRect());
     }
 

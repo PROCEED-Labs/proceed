@@ -10,9 +10,9 @@ export class MS2Page {
 
   async login() {
     await mockClipboardAPI(this.page);
-    const modal = await openModal(async () => {
+    const modal = await openModal(this.page, async () => {
       this.page.goto('/');
-    }, this.page);
+    });
     await modal.getByRole('button', { name: 'Continue as a Guest' }).click();
     await this.page.waitForURL('**/processes');
   }

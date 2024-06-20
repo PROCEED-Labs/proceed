@@ -5,7 +5,7 @@ import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
 import { expect } from './processes.fixtures';
-import { closeModal, openModal } from '../testUtils';
+import { closeModal, openModal, waitForHydration } from '../testUtils';
 
 export class ProcessListPage {
   readonly page: Page;
@@ -17,6 +17,8 @@ export class ProcessListPage {
 
   async goto() {
     await this.page.goto('/processes');
+    await this.page.waitForURL('**/processes');
+    await waitForHydration(this.page);
   }
 
   /**
@@ -36,7 +38,7 @@ export class ProcessListPage {
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
-    const modal = await openModal(async () => {
+    const modal = await openModal(this.page, async () => {
       const fileChooserPromise = page.waitForEvent('filechooser');
       await page.getByRole('button', { name: 'Import Process' }).click();
       const filechooser = await fileChooserPromise;
@@ -46,9 +48,9 @@ export class ProcessListPage {
         mimeType: 'text/xml',
         buffer: Buffer.from(bpmn, 'utf-8'),
       });
-    }, this.page);
+    });
 
-    await closeModal(modal.getByRole('button', { name: 'Import' }));
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Import' }).click());
 
     this.processDefinitionIds.push(definitionId);
 
@@ -105,41 +107,55 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    const modal = await openModal(
-      () =>
-        page
-          .locator(`tr[data-row-key="${definitionId}"]`)
-          .getByRole('button', { name: 'delete' })
-          .click(),
-      this.page,
+    const modal = await openModal(page, () =>
+      page
+        .locator(`tr[data-row-key="${definitionId}"]`)
+        .getByRole('button', { name: 'delete' })
+        .click(),
     );
 
-    await closeModal(modal.getByRole('button', { name: 'OK' }));
+    await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
 
-  async createProcess(options: { processName?: string; description?: string }) {
+  async createProcess(
+    options: {
+      processName?: string;
+      description?: string;
+      returnToProcessList?: boolean;
+    } = {
+      processName: 'My Process',
+      description: 'Process Description',
+      returnToProcessList: false,
+    },
+  ) {
     const page = this.page;
-    const { processName, description } = options;
+    const { processName, description, returnToProcessList } = options;
 
     // Add a new process.
-    const modal = await openModal(
-      () => page.getByRole('button', { name: 'Create Process' }).click(),
-      this.page,
+    const modal = await openModal(this.page, () =>
+      page.getByRole('button', { name: 'Create Process' }).click(),
     );
     await modal
       .getByRole('textbox', { name: '* Process Name :' })
       .fill(processName ?? 'My Process');
     await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
-    await closeModal(modal.getByRole('button', { name: 'Create', exact: true }));
+    await closeModal(modal, () =>
+      modal.getByRole('button', { name: 'Create', exact: true }).click(),
+    );
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
-    const definitionId = page.url().split('processes/').pop();
+    const id = page.url().split('processes/').pop();
 
-    this.processDefinitionIds.push(definitionId);
+    if (returnToProcessList) {
+      /* Go back to Process-List */
+      await this.goto();
+    } else {
+      await waitForHydration(this.page);
+    }
 
-    return definitionId;
+    return id;
   }
 
   async removeAllProcesses() {
@@ -156,11 +172,10 @@ export class ProcessListPage {
 
       // remove all processes
       await page.getByLabel('Select all').check();
-      const modal = await openModal(
-        () => page.getByRole('button', { name: 'delete' }).first().click(),
-        this.page,
+      const modal = await openModal(this.page, () =>
+        page.getByRole('button', { name: 'delete' }).first().click(),
       );
-      await closeModal(modal.getByRole('button', { name: 'OK' }));
+      await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
       // Note: If used in a test, there should be a check for the empty list to
       // avoid double navigations next.
@@ -181,13 +196,12 @@ export class ProcessListPage {
     // NOTE: selecting a table could break
     const table = page.locator('table tbody');
     await table.click({ button: 'right' });
-    const modal = await openModal(
-      () => page.getByRole('menuitem', { name: 'Create Folder' }).click(),
-      this.page,
+    const modal = await openModal(this.page, () =>
+      page.getByRole('menuitem', { name: 'Create Folder' }).click(),
     );
     await modal.getByLabel('Folder name').fill(folderName);
     if (folderDescription) await modal.getByLabel('Description').fill(folderDescription);
-    await closeModal(page.getByRole('button', { name: 'OK' }));
+    await closeModal(modal, () => page.getByRole('button', { name: 'OK' }).click());
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
     await expect(folderRow).toBeVisible();

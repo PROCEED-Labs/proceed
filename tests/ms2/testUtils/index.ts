@@ -50,11 +50,12 @@ export const mockClipboardAPI = async (page: Page) =>
 /**
  * Will open a modal using the given trigger function and ensure that it is fully open before returning
  *
- * @param openButtonOrPage the button to click to open the modal or the page the modal should automatically open on
+ * @param page the page the modal will open on
+ * @param triggerFunction the function to run to open the modal
  *
  * @returns a locator that can be used to get the newly opened modal
  */
-export async function openModal(triggerFunction: () => Promise<void>, page: Page) {
+export async function openModal(page: Page, triggerFunction: () => Promise<void>) {
   const alreadyOpenCount = await page
     .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
     .and(page.locator(`div[aria-modal="true"]:visible`))
@@ -70,23 +71,32 @@ export async function openModal(triggerFunction: () => Promise<void>, page: Page
     .nth(alreadyOpenCount)
     .waitFor({ state: 'visible' });
 
-  // TODO: this might not work as expected in case of more than one modal being visible
-  return page.locator(`div[aria-modal="true"]:visible`).last();
+  return page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
 }
 
 /**
- * Will close a modal with the given button and wait for it to be closed before returning
+ * Will close a modal with the given function and wait for it to be closed before returning
  *
- * @param closeButton the button that triggers the modal to close
+ * @param modal a locator to the modal to be closed
+ * @param triggerFunction the funtion that triggers the modal to close
  */
-export async function closeModal(closeButton: Locator) {
-  const page = closeButton.page();
-
-  // workaround for the problem that doing page.locator(modalSelector, { has: modalLocator.locator(closeButtonSelector) }) does not work to select the modal since the locator for "has" cannot include the element itself
-  const modalParent = page.locator(`*:has(> div[aria-modal="true"])`, { has: closeButton });
-  const modal = modalParent.locator('div[aria-modal="true"]');
-
-  await closeButton.click();
-
+export async function closeModal(modal: Locator, triggerFunction: () => Promise<void>) {
+  await triggerFunction();
   await modal.waitFor({ state: 'hidden' });
+}
+
+/**
+ * Will wait for the page to be fully loaded and hydrated to ensure that the tested functionality can actually work
+ *
+ * @param page the page to be hydrated
+ */
+export async function waitForHydration(page: Page) {
+  // this button should be in the header on every page
+  const accountButton = await page.getByRole('link', { name: 'user' });
+  // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
+  await accountButton.hover();
+  await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
+  // move the mouse away from the button to close the menu and go into a "clean" state for further testing
+  await page.mouse.move(0, 0);
+  await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
 }

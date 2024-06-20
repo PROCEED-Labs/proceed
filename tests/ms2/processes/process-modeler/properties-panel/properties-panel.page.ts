@@ -39,9 +39,8 @@ export class PropertiesPanelPage {
     seconds?: number;
   }) {
     const { years, months, days, hours, minutes, seconds } = durationValues;
-    const modal = await openModal(
-      () => this.page.getByTestId('plannedDurationInputEdit').click(),
-      this.page,
+    const modal = await openModal(this.page, () =>
+      this.page.getByTestId('plannedDurationInputEdit').click(),
     );
 
     if (years) {
@@ -68,16 +67,15 @@ export class PropertiesPanelPage {
       await modal.locator('input[name="seconds"]').fill(`${seconds}`);
     }
 
-    await closeModal(modal.getByRole('button', { name: 'Save' }));
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Save' }).click());
   }
 
   async addMilestone(milestoneValues: { ID: string; name: string; description?: string }) {
     const { ID, name, description } = milestoneValues;
     const milestonesSection = this.milestonesSection;
 
-    const milestonesModal = await openModal(
-      () => milestonesSection.getByLabel('plus').click(),
-      this.page,
+    const milestonesModal = await openModal(this.page, () =>
+      milestonesSection.getByLabel('plus').click(),
     );
 
     await milestonesModal.getByPlaceholder('Milestone ID').fill(ID);
@@ -89,7 +87,9 @@ export class PropertiesPanelPage {
         .fill(description);
     }
 
-    await closeModal(milestonesModal.getByRole('button', { name: 'Create Milestone' }));
+    await closeModal(milestonesModal, () =>
+      milestonesModal.getByRole('button', { name: 'Create Milestone' }).click(),
+    );
   }
 
   async addDescription(descriptionText: string) {
@@ -101,7 +101,7 @@ export class PropertiesPanelPage {
       })
       .textContent();
 
-    const modal = await openModal(() => descriptionSection.getByLabel('edit').click(), this.page);
+    const modal = await openModal(this.page, () => descriptionSection.getByLabel('edit').click());
 
     if (initialDescription) {
       // wait for the editor to be fully loaded
@@ -115,7 +115,7 @@ export class PropertiesPanelPage {
       .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
       .fill(descriptionText);
 
-    await closeModal(modal.getByRole('button', { name: 'Save' }));
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Save' }).click());
   }
 
   async addCustomProperty(name: string, value: string) {

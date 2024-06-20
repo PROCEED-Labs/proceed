@@ -15,112 +15,163 @@ datasource db {
 
 model User {
   id               String      @id @default(uuid())
-  firstName        String
-  lastName         String
-  username         String
-  email            String      @unique
-  guest            Boolean
-  emailVerified    Boolean
-  processes        Process[]
-  ownedWorkspaces  Workspace[] @relation("WorkspaceOwner")
-  memberWorkspaces Workspace[] @relation("WorkspaceMember")
+  firstName        String?
+  lastName         String?
+  username         String?      @unique
+  email            String?      @unique
+  isGuest          Boolean
+  emailVerifiedOn  String?
+  image            String?
+  favourites       String[]
+  processes        Process[]   
+  ownedWorkspaces  Workspace[] @relation("workspaceOwner")
+  memberIn         Membership[]
   folders          Folder[]
-  Role             Role[]
+  oauthAccounts    OauthAccount[]
+  roleMembers      RoleMember[]
 }
+
+model OauthAccount {
+  id                String @id @default(uuid())
+  userId            String
+  provider          String
+  type              String
+  providerAccountId String
+
+  user User? @relation(fields: [userId], references: [id],onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], name: "provider_providerAccountId_unique")
+}
+
+
 
 model Process {
   id                   String       @id @default(uuid())
   originalId           String
   name                 String
   description          String
-  createdOn            DateTime
-  lastEdited           DateTime
+  createdOn            String
+  lastEditedOn           String
+  inEditingBy          Json?
+  processIds           String[]
   type                 String
-  folder               Folder?      @relation(fields: [folderId], references: [id])
+  folder               Folder?      @relation(fields: [folderId], references: [id],onDelete: Cascade)
   folderId             String?
   sharedAs             String
   shareTimestamp       Int
   allowIframeTimestamp Int
-  workspace            Workspace    @relation(fields: [workspaceId], references: [id])
-  workspaceId          String
+  workspace            Workspace    @relation(fields: [environmentId], references: [id],onDelete: Cascade)
+  environmentId        String
   versions             Version[]
-  departments          Department[]
-  variables            Variable[]
-  bpmn                 ProcessBPMN?
-  //images              ProcessImage[]
-  owner                 User?        @relation(fields: [ownerId], references: [id])
-  ownerId               String?
+  bpmn                 String       @db.Xml
+  //imagePath               String
+  owner                User?        @relation(fields: [ownerId], references: [id],onDelete: Cascade)
+  ownerId              String
+  departments          String[]    @default([])
+  variables            Json[]      @default([])
 }
 
 model Workspace {
-  id           String    @id @default(uuid())
-  name         String
-  organisation Boolean
-  description  String
-  logo         Bytes
-  owner        User      @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  ownerId      String
-  members      User[]    @relation("WorkspaceMember")
-  folders      Folder[]
-  processes    Process[]
-  roles        Role[]
+  id                 String      @id @default(uuid())
+  name               String?
+  organization       Boolean
+  isActive           Boolean?
+  description        String?
+  contactPhoneNumber String?
+  logo               String?
+  owner              User?       @relation("workspaceOwner", fields: [ownerId], references: [id],onDelete: Cascade)
+  ownerId            String
+  members            Membership[]
+  folders            Folder[]  
+  processes          Process[]
+  roles              Role[]
+}
+
+model Membership {
+  id          String    @id @default(uuid())
+  userId      String
+  environmentId String
+  createdOn   String  
+
+  user        User      @relation(fields: [userId], references: [id],onDelete: Cascade)
+  workspace   Workspace @relation(fields: [environmentId], references: [id])
+
+  @@unique([userId, environmentId], name: "unique_user_workspace_membership")
 }
 
 model Folder {
   id             String    @id @default(uuid())
   name           String
-  parentFolder   Folder?   @relation("ChildFolders", fields: [parentFolderId], references: [id])
-  parentFolderId String?
-  user           User      @relation(fields: [userId], references: [id])
-  userId         String
-  workspace      Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId    String
-  processes      Process[]
-  folder         Folder[]  @relation("ChildFolders")
-}
-
-model Role {
-  id          String    @id @default(uuid())
-  name        String
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String
+  parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id],onDelete: Cascade)
+  parentId       String?
+  type           String    @default("folder")
+  user           User?     @relation(fields: [createdBy], references: [id])
+  createdBy      String?
+  workspace      Workspace @relation(fields: [environmentId], references: [id])
+  environmentId  String
+  processes      Process[] 
+  childrenFolder Folder[]  @relation("folderChildren")
+  lastEditedOn     String
+  createdOn      String 
 }
 
 model Version {
-  id          String  @id @default(uuid())
-  name        String
-  description String
-  process     Process? @relation(fields: [processId], references: [id])
-  processId   String
+  id            String     @id @default(uuid())
+  name          String
+  version       Int  
+  description   String
+  process       Process    @relation(fields: [processId], references: [id], onDelete: Cascade)
+  processId     String
+  versionBasedOn Int?
+  createdOn      String
+  lastEditedOn   String
+  bpmn          VersionBPMN?
 }
 
-model Department {
-  id              String       @id @default(uuid())
-  name            String
-  process         Process?      @relation(fields: [processId], references: [id])
-  processId       String
+model VersionBPMN {
+  id        String   @id @default(uuid())
+  xml       String   @db.Xml
+  version   Version  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionId String   @unique
 }
 
-model Variable {
-  id              String       @id @default(uuid())
-  name            String
-  value           String
-  process         Process?      @relation(fields: [processId], references: [id])
-  processId       String
-}
 
 // model ProcessImage {
-//   id              String       @id @default(uuid())
-//   process         Process      @relation(fields: [processId], references: [id])
-//   processId       String
-//   imagePath       String
+//   id          String   @id @default(uuid())
+//   process     Process  @relation(fields: [processId], references: [id],onDelete: Cascade)
+//   processId   String
+//   imagePath   String
 // }
 
-model ProcessBPMN {
-  id        String  @id @default(uuid())
-  bpmn      String
-  process   Process @relation(fields: [processId], references: [id])
-  processId String  @unique
+// model ProcessBPMN {
+//   id        String  @id @default(uuid())
+//   xml       String  @db.Xml
+//   process   Process @relation(fields: [processId], references: [id],onDelete: Cascade)
+//   processId String  @unique
+  
+// }
+
+model Role {
+  id           String      @id @default(uuid())
+  workspace    Workspace   @relation(fields: [environmentId], references: [id])
+  environmentId  String
+  name         String
+  description  String?
+  note         String?
+  permissions  Json
+  expiration   String?
+  default      Boolean?
+  createdOn    String    
+  lastEdited   String    
+
+  members      RoleMember[]
+}
+
+model RoleMember {
+  id        String @id @default(uuid())
+  role      Role   @relation(fields: [roleId], references: [id])
+  roleId    String
+  user      User   @relation(fields: [userId], references: [id])
+  userId    String
+  createdOn String
 }

@@ -33,10 +33,11 @@ export class ProcessModelerPage {
     options: {
       processName?: string;
       description?: string;
-    } = { processName: 'My Process', description: 'Process Description' },
+      hydrate?: boolean;
+    } = { processName: 'My Process', description: 'Process Description', hydrate: false },
   ) {
     const page = this.page;
-    const { processName, description } = options;
+    const { processName, description, hydrate } = options;
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
@@ -48,9 +49,25 @@ export class ProcessModelerPage {
 
     const pageURL = page.url();
     const processDefinitionID = pageURL.split('/processes/').pop();
+
     this.processDefinitionID = processDefinitionID;
     this.processName = processName;
     this.processDescription = description;
+
+    if (hydrate) {
+      await this.waitForHydration();
+    }
+  }
+
+  async waitForHydration() {
+    const { page } = this;
+    /* Gives time for everything to load */
+    const accountButton = await page.getByRole('link', { name: 'user' });
+    await accountButton.hover();
+    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
+    /* Ensure animation is done */
+    await page.waitForTimeout(1_000);
+    await page.getByRole('main').click();
   }
 
   async createSubprocess() {

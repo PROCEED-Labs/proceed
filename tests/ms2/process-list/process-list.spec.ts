@@ -512,7 +512,10 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // create process
   const processId = crypto.randomUUID();
-  const processDefinitionID = await processListPage.createProcess({ processName: processId });
+  const processDefinitionID = await processListPage.createProcess({
+    processName: processId,
+    returnToProcessList: true,
+  });
   await processListPage.goto();
   const processLocator = page.locator(`tr[data-row-key="${processDefinitionID}"]`);
   await expect(processLocator).toBeVisible();
@@ -652,4 +655,315 @@ test('sorting process list columns', async ({ processListPage }) => {
     const ascendingValues = await getColumnValues(column.offset);
     expect(isSorted(ascendingValues, (a, b) => column.sortFunction(a, b, false))).toBeTruthy();
   }
+});
+
+/* Favourites */ //TODO:
+// test('add and remove favourite processes', async ({ processListPage }) => {
+//   const { page } = processListPage;
+// });
+
+test.describe('shortcuts in process-list', () => {
+  /* Create Process - ctrl / meta + enter */
+  test('create and submit a new process with shortcuts', async ({ processListPage }) => {
+    const { page } = processListPage;
+    /* Open Modal with ctrl + enter */
+    await page.getByRole('main').press('Control+Enter');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Modal is visible */
+    let modal = await page.getByRole('dialog');
+    await expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
+
+    /* Check if correct modal opened */
+    let modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /create/i,
+    );
+
+    /* Close Modal with esc */
+    await page.getByRole('main').press('Escape');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Modal closed */
+    await expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
+
+    /* Open Modal with meta + enter */
+    await page.getByRole('main').press('Meta+Enter');
+
+    modal = await page.getByRole('dialog');
+
+    /* Check if Modal opened */
+    await expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
+
+    /* Check if correct modal opened */
+    modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /create/i,
+    );
+
+    /* Fill in the form */
+    await page.getByRole('dialog').press('Tab');
+    await page.getByRole('dialog').press('Tab');
+    await page.getByLabel(/name/i).fill('Some Name');
+    await page.getByLabel(/name/i).press('Tab');
+    await page.getByLabel(/description/i).fill('Some Description');
+
+    /* Submit form with ctrl + enter */
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Wait for Modeler to open */
+    await page.waitForURL(
+      /\/processes\/([a-zA-Z0-9-_]+)/,
+    ); /* TODO: should this be an expect / is this part of the test? */
+    // await expect(page, 'New-Process-Modal should be submitable via ctrl/meta+enter').toHaveURL(
+    //   /\/processes\/([a-zA-Z0-9-_]+)/,
+    // );
+
+    /* Save Process-ID*/
+    const processID = page
+      .url()
+      .split(processListPage.getPageURL() + '/')
+      .pop();
+
+    await processListPage.waitForHydration();
+
+    /* Go back to process list by pressing esc twice */
+    await page.getByRole('main').press('Escape');
+    await page.getByRole('main').press('Escape');
+
+    /* The /processes page should be visibe again */
+    // await expect(page, 'Modeler should be closable via esc+esc').toHaveURL(/\/processes/);
+    await page.waitForURL('/processes');
+
+    /* New created Process should be in List */
+    await expect(
+      page.locator(`tr[data-row-key="${processID}"]`),
+      'Couldnot find newly added process in list',
+    ).toBeVisible();
+  });
+  /* Delete Process - del*/
+  test('delete a process with del', async ({ processListPage }) => {
+    const { page } = processListPage;
+    /* Create Process */
+    const processID = await processListPage.createProcess({
+      processName: 'Delete me via shortcut',
+      returnToProcessList: true,
+    });
+
+    /* Select Process */
+    const processRowCheckbox = await page
+      .locator(`tr[data-row-key="${processID}"]`)
+      .getByRole('checkbox');
+    await processRowCheckbox.check();
+
+    /* Delete Process with del */
+    await page.getByRole('main').press('Delete');
+
+    /* Confirm deletion */
+    await page.getByRole('main').press('Control+Enter');
+
+    /* Check if Process was removed */
+    await expect(
+      page.locator('tbody>tr[class="ant-table-placeholder"]'),
+      'Only the ant-design-placeholder row should be visible, if the list is empty',
+    ).toBeVisible();
+  });
+
+  /*  Select all Processes - ctrl / meta + a */
+  test('select and deselect all processes with ctrl / meta + a & esc', async ({
+    processListPage,
+  }) => {
+    const { page } = processListPage;
+    /* Create 3 Processes */
+    const processIDs = [];
+    for (let i = 0; i < 3; i++) {
+      processIDs.push(
+        await processListPage.createProcess({
+          processName: `Process ${i}`,
+          returnToProcessList: true,
+        }),
+      );
+    }
+
+    /* Select all Processes with ctrl + a */
+    await page.getByRole('main').press('Control+a');
+
+    /* Check if all Processes are selected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not select all Processes in List with shortcut',
+      ).toHaveClass(/ant-table-row-selected/);
+    }
+
+    /* Deselect all Processes with ctrl + a */
+    await page.getByRole('main').press('Escape');
+
+    /* Check if all Processes are deselected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not deselect in Process-List',
+      ).not.toHaveClass(/ant-table-row-selected/);
+    }
+
+    /* Select all Processes with meta + a */
+    await page.getByRole('main').press('Meta+a');
+
+    /* Check if all Processes are selected */
+    for (const processID of processIDs) {
+      await expect(
+        page.locator(`tr[data-row-key="${processID}"]`),
+        'Could not select all Processes in List via shortcut (meta)',
+      ).toHaveClass(/ant-table-row-selected/);
+    }
+  });
+
+  /* Selecting all, just selects search-scoped processes */
+  test('select all processes after search', async ({ processListPage }) => {
+    const { page } = processListPage;
+
+    /* Create 3 Processes */
+    const processIDs = [];
+    for (const name of ['AAAA1', 'AAAA2', 'XYZ']) {
+      processIDs.push(
+        await processListPage.createProcess({ processName: name, returnToProcessList: true }),
+      );
+    }
+
+    /* Search for XYZ */
+    const inputSearch = await page.locator('.ant-input-affix-wrapper');
+    await inputSearch.getByPlaceholder(/search/i).fill('XYZ');
+
+    /* Unfocus search */
+    await page.getByRole('main').click();
+
+    /* Select all */
+    await page.locator('body').press('Control+a');
+
+    /* Check if only XYZ is selected */
+    await expect(page.getByRole('note')).toContainText('1');
+
+    /*  Search for A */
+    await inputSearch.getByPlaceholder(/search/i).fill('A');
+
+    /* Unfocus search */
+    await page.getByRole('main').click();
+
+    /* Select all */
+    await page.locator('body').press('Meta+a');
+
+    /* Check if both AAA are selected */
+    await expect(page.getByRole('note')).toContainText('2');
+  });
+
+  /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
+  test('copy and paste processes with ctrl + c -> ctrl + v', async ({
+    processListPage,
+    browserName,
+  }) => {
+    const { page } = processListPage;
+    const processName = 'Copy me via shortcut';
+
+    /* Create a process */
+    const processID = await processListPage.createProcess({
+      processName: processName,
+      returnToProcessList: true,
+    });
+
+    /* Select process */
+    await page.locator(`input[name="${processID}"]`).click();
+
+    /* Copy & Paste*/
+    await page.getByRole('main').press('Control+c');
+    await page.getByRole('main').press('Control+v');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+
+    /* Submit copy */
+    await page.getByRole('main').press('Control+Enter');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Process has been added */
+    await expect(
+      page.locator('tbody>tr'),
+      'Could not find copied process in Process-List',
+    ).toHaveCount(2);
+    /* Check with name */
+    await expect(page.locator('tbody')).toContainText(processName + ' (Copy)');
+
+    /* Copy & Paste - META */
+    await page.getByRole('main').press('Meta+c');
+    await page.getByRole('main').press('Meta+v');
+    /* Make name unique */
+    await page.getByRole('dialog').press('Tab');
+    await page.getByRole('dialog').press('Tab');
+    await page.getByLabel(/name/i).press('ArrowRight');
+    await page.getByLabel(/name/i).fill(processName + ' - Meta');
+
+    /* Check if Modal is visible */
+    const modal2 = await page.getByRole('dialog');
+    await expect(modal, 'Could not open copy modal with shortcut (meta)').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle2 = await modal2.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle2, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+
+    /* Submit copy */
+    if (browserName !== 'firefox') {
+      await page.getByRole('main').press('Meta+Enter');
+    } else {
+      await modal2.click();
+      await page.locator('body').press('Meta+Enter');
+    }
+
+    /* Check if Process has been added */
+    await expect(page.locator('tbody>tr')).toHaveCount(3);
+    /* Check with name */
+    await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
+  });
+
+  /* Open Export Modal - ctrl / meta + e */
+  test('open export modal with ctrl / meta + e', async ({ processListPage }) => {
+    const { page } = processListPage;
+
+    /* Create a process */
+    const processID = await processListPage.createProcess({
+      processName: 'Export me via shortcut',
+      returnToProcessList: true,
+    });
+
+    /* Select process */
+    await page.locator(`input[name="${processID}"]`).click();
+
+    /* Open Export Modal with ctrl + e */
+    await page.getByRole('main').press('Control+e');
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    expect(modal, 'Could not open delete modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
+      /export/i,
+    );
+  });
+
+  /* TODO: */
+
+  // test('Select multiple with ctrl / meta and click', async ({ processListPage }) => {});
+
+  // test('Drag select with shift + click', async ({ processListPage }) => {});
 });

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { FC, Suspense, useMemo, useRef } from 'react';
 import cn from 'classnames';
 import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEnvironment } from './auth-can';
+import style from './bpmn-viewer.module.scss';
+import { useLazyRendering } from './scrollbar';
+import ProceedLoading from './loading-proceed';
 
 type BPMNViewerProps = {
   definitionId: string;
@@ -13,7 +16,7 @@ type BPMNViewerProps = {
   fitOnResize?: boolean;
 };
 
-const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) => {
+const BPMNViewer: FC<BPMNViewerProps> = ({ definitionId, reduceLogo, fitOnResize }) => {
   const viewer = useRef<BPMNCanvasRef | null>(null);
   const environment = useEnvironment();
 
@@ -37,11 +40,6 @@ const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) 
   // Allows for rerendering when the process changes but not the BPMN.
   const bpmn = useMemo(() => ({ bpmn: data }), [data]);
 
-  useEffect(() => {
-    console.log('viewer', viewer.current);
-    //viewer.current!.fitViewport();
-  }, []);
-
   return (
     <BPMNCanvas
       ref={viewer}
@@ -50,6 +48,33 @@ const BPMNViewer = ({ definitionId, reduceLogo, fitOnResize }: BPMNViewerProps) 
       className={cn({ reduceLogo: reduceLogo })}
       resizeWithContainer={fitOnResize}
     />
+  );
+};
+
+type LazyLoadingBPMNViewerProps = BPMNViewerProps & {
+  fallback?: React.ReactNode;
+};
+
+export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
+  fallback = <ProceedLoading innerShrink="50%" />,
+  ...props
+}) => {
+  const ViewerContainerRef = useRef(null);
+  const visible = useLazyRendering(ViewerContainerRef);
+
+  return (
+    <>
+      <div ref={ViewerContainerRef}>
+        {visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
+          <Suspense fallback={fallback}>
+            {/* Prevent sequential rendering/ get from showing the Icon-list */}
+            <BPMNViewer {...props} />
+          </Suspense>
+        ) : (
+          fallback
+        )}
+      </div>
+    </>
   );
 };
 

@@ -13,6 +13,29 @@ type ScrollBarType = {
 
 const [maxThumbHeight, minThumbHeight] = [15, 5]; /* In % */
 
+/**
+ * Scrollbar component, which can be used to scroll a container
+ * Can be used with lazy rendereing
+ *
+ * Should be wrapped with a container determining the size of the scrollable area
+ *
+ * @param children: JSX.Element
+ * @param width: string
+ * @param threshold: number
+ * @param reachedEndCallBack: () => void
+ * @param maxCallInterval: number
+ *
+ * @example
+ * import ScrollBar from './scrollbar';
+ *
+ * return (
+ *  <div style={{width: 100, height> 100</div>}}> /* Container * /
+ *    <ScrollBar>
+ *      <div>Content</div>
+ *    </ScrollBar>
+ *  </div>
+ * )
+ */
 const ScrollBar: FC<ScrollBarType> = ({
   children,
   width = '12px',
@@ -187,13 +210,27 @@ const findParentWithAttribute = (
 };
 
 /**
+ * Hook to determine whether an element is visible (i.e. including a margin) in the viewport
  * The next Scrollbar ancestor will be used as the viewport or, if there is none, the viewport of the client
  * @param watchElement ref to element to watch
  * @param margin top and bottom margin of viewport in px or %, defaults to 50%
  * @param once whether the returned value should remain true once it has been set to true, defaults to true
  * @returns boolean:  whether the element is visible or not
+ *
+ * @example
+ * import { useLazyRendering } from './scrollbar';
+ *
+ * const costlyElementContainerRef = useRef(null);
+ * const visible = useLazyRendering(costlyElementContainerRef);
+ *
+ * return (
+ * <ScrollBar> /* optional, if there is no scrollbar, the Viewport is used * /
+ *    <div ref={costlyElementContainerRef}>
+ *      {visible ? <CostlyComponent /> : <SomePlaceholder /> }
+ *    </div>
+ * </ScrollBar>)
  */
-export const useLazyLoading = (
+export const useLazyRendering = (
   watchElement: React.MutableRefObject<HTMLElement | null>,
   margin: string = '50%',
   once: boolean = true,

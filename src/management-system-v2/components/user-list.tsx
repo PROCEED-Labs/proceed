@@ -1,18 +1,7 @@
 'use client';
 
 import React, { ComponentProps, Dispatch, FC, ReactNode, SetStateAction, useState } from 'react';
-import {
-  Space,
-  Avatar,
-  Button,
-  Table,
-  Result,
-  Grid,
-  Drawer,
-  Breakpoint,
-  FloatButton,
-  Tooltip,
-} from 'antd';
+import { Space, Button, Table, Result, Grid, Drawer, Breakpoint, FloatButton, Tooltip } from 'antd';
 import {
   InfoCircleOutlined,
   PlusOutlined,
@@ -27,6 +16,7 @@ import { FloatButtonActions } from '@/app/(dashboard)/[environmentId]/iam/users/
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import UserSiderContent from '@/app/(dashboard)/[environmentId]/iam/users/user-sider-content';
+import UserAvatar from './user-avatar';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
@@ -79,12 +69,9 @@ const UserList: FC<UserListProps> = ({
           ...user,
           display: (
             <Space size={16}>
-              <Avatar src={user.image}>
-                {user.image
-                  ? null
-                  : (user.firstName.value?.slice(0, 1) ?? '') +
-                    (user.lastName.value?.slice(0, 1) ?? '')}
-              </Avatar>
+              <UserAvatar
+                user={{ ...user, firstName: user.firstName.value, lastName: user.lastName.value }}
+              />
               <span>
                 {highlightKeys ? (
                   <>
@@ -162,7 +149,7 @@ const UserList: FC<UserListProps> = ({
     <Result
       status="error"
       title="Failed fetch to users"
-      subTitle="An error ocurred while fetching users"
+      subTitle="An error occurred while fetching users"
     />;
 
   return (

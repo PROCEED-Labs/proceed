@@ -1,3 +1,5 @@
+//TODO
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -5,7 +7,7 @@ import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'an
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type ProcessModalProps<T extends { name: string; description: string }> = {
+type MachineConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -14,14 +16,14 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   initialData?: T[];
 };
 
-const ProcessModal = <T extends { name: string; description: string }>({
+const MachineConfigModal = <T extends { name: string; description: string }>({
   open,
   title,
   okText,
   onCancel,
   onSubmit,
   initialData,
-}: ProcessModalProps<T>) => {
+}: MachineConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
@@ -38,7 +40,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
           label: data.name,
-          children: <ProcessInputs index={index} />,
+          children: <MachineConfigInputs index={index} />,
         }))
       : undefined;
 
@@ -75,36 +77,6 @@ const ProcessModal = <T extends { name: string; description: string }>({
     }
   };
 
-  useAddControlCallback(
-    'process-list',
-    [
-      'selectall',
-      'esc',
-      'del',
-      'copy',
-      'paste',
-      'enter',
-      'cut',
-      'export',
-      'import',
-      'shift+enter',
-      'new',
-    ],
-    (e) => {
-      // e.preventDefault();
-    },
-    { level: 2, blocking: open },
-  );
-  useAddControlCallback(
-    'process-list',
-    'control+enter',
-    () => {
-      if (open) onOk();
-      console.log(`trying to submit in process export. Modal is ${open ? 'open' : 'closed'}`);
-    },
-    { level: 2, blocking: open, dependencies: [open] },
-  );
-
   return (
     <Modal
       title={title}
@@ -125,7 +97,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
       <Form
         form={form}
         layout="vertical"
-        name="process_form"
+        name="machine_config_form"
         initialValues={initialData}
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -133,7 +105,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <ProcessInputs index={0} />
+          <MachineConfigInputs index={0} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -142,24 +114,26 @@ const ProcessModal = <T extends { name: string; description: string }>({
   );
 };
 
-type ProcessInputsProps = {
+type MachineConfigInputsProps = {
   index: number;
 };
 
-const ProcessInputs = ({ index }: ProcessInputsProps) => {
+const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
   return (
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Process Name"
-        rules={[{ required: true, message: 'Please fill out the Process name' }]}
+        label="Machine Configuration Name"
+        rules={[{ required: true, message: 'Please fill out the Machine Configuration Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Process Description"
-        rules={[{ required: false, message: 'Please fill out the Process description' }]}
+        label="Machine Configuration Description"
+        rules={[
+          { required: false, message: 'Please fill out the Machine Configuration Description' },
+        ]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>
@@ -167,4 +141,4 @@ const ProcessInputs = ({ index }: ProcessInputsProps) => {
   );
 };
 
-export default ProcessModal;
+export default MachineConfigModal;

@@ -9,7 +9,7 @@ import cn from 'classnames';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { create } from 'zustand';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
 import { useEnvironment } from '@/components/auth-can';
 import UserAvatar from '@/components/user-avatar';
@@ -45,6 +45,7 @@ const Layout: FC<
 }) => {
   const session = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
@@ -58,7 +59,31 @@ const Layout: FC<
     (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
   );
 
-  const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
+  let activeKey: string | undefined;
+  for (const layoutItem of layoutMenuItems) {
+    if (
+      layoutItem === null ||
+      !('type' in layoutItem) ||
+      layoutItem.type !== 'group' ||
+      !layoutItem.children
+    )
+      continue;
+
+    activeKey = layoutItem?.children.find((item) => {
+      return item?.key && pathname.includes(item.key as string);
+    })?.key as string;
+
+    if (activeKey) break;
+  }
+
+  const menu = (
+    <Menu
+      theme="light"
+      mode="inline"
+      items={layoutMenuItems}
+      selectedKeys={activeKey ? [activeKey] : []}
+    />
+  );
 
   return (
     <SpaceContext.Provider value={activeSpace}>

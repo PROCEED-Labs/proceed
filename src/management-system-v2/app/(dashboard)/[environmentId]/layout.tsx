@@ -45,14 +45,14 @@ const DashboardLayout = async ({
 
     if (can('view', 'Process'))
       children.push({
-        key: 'processes',
+        key: '/processes',
         label: <Link href={spaceURL(activeEnvironment, `/processes`)}>Process List</Link>,
         icon: <FileOutlined />,
       });
 
     if (can('view', 'Template'))
       children.push({
-        key: 'templates',
+        key: '/templates',
         label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
         icon: <ProfileOutlined />,
       });
@@ -73,7 +73,7 @@ const DashboardLayout = async ({
     const children: MenuProps['items'] = [];
 
     children.push({
-      key: 'executions',
+      key: '/executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
     });
@@ -93,7 +93,7 @@ const DashboardLayout = async ({
 
   if (process.env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
-      key: 'machine-config',
+      key: '/machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
       icon: <LuTable2 />,
     });
@@ -113,14 +113,14 @@ const DashboardLayout = async ({
 
     if (can('manage', 'User'))
       children.push({
-        key: 'users',
+        key: '/users',
         label: <Link href={spaceURL(activeEnvironment, `/iam/users`)}>Users</Link>,
         icon: <UserOutlined />,
       });
 
     if (ability.can('manage', 'RoleMapping') || ability.can('manage', 'Role'))
       children.push({
-        key: 'roles',
+        key: '/roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
         icon: <UnlockOutlined />,
       });
@@ -145,7 +145,7 @@ const DashboardLayout = async ({
       type: 'group',
       children: [
         {
-          key: 'general-settings',
+          key: '/general-settings',
           label: (
             <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
           ),

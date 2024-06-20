@@ -1,0 +1,19 @@
+.SelectedRow {
+  display: flex;
+  flex: 1;
+  background-color: #ececec;
+  border-radius: 4px;
+  margin: 0 4px;
+  margin-left: 10px;
+  align-items: center;
+  justify-content: center;
+  text-wrap: nowrap;
+  padding: 0 0.5rem;
+}
+
+.Icons {
+  //display: inline-flex;
+  width: 45%;
+  //justify-content: space-around;
+  //align-items: center;
+}

@@ -1,0 +1,74 @@
+.Row {
+  margin-bottom: 10px;
+  cursor: pointer;
+
+  .Title {
+    font-weight: 600;
+  }
+
+  .ActionCell {
+    display: flex;
+    justify-content: center;
+
+    .Action {
+      background-color: #ececec;
+      border-radius: 100%;
+      padding: 4px;
+      font-size: 17px;
+      transition: background-color 0.2s;
+    }
+
+    .Action:hover {
+      background-color: #dcdcdc;
+    }
+  }
+}
+
+// .SelectedRow {
+//   display: flex;
+//   flex: 1;
+//   background-color: #ececec;
+//   border-radius: 4px;
+//   margin: 0 2px;
+//   align-items: center;
+//   justify-content: space-evenly;
+//   width: 160px
+// }
+
+.Icon {
+  margin: 0 10px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.Icon:hover {
+  color: #3e93de;
+}
+
+.Selectview {
+  justify-self: end;
+  justify-content: end;
+}
+
+.MobileView {
+  width: 100dvw;
+}
+
+// .FloatButton {
+//   border-radius: 50%;
+//   box-shadow: 0px 0px 10px 1px rgba(39, 39, 39, 0.5);
+// }
+
+.MobileToggleView {
+  margin-right: 22px;
+}
+
+.HoveredByFile > * {
+  transition: background-color ease 0.3s !important;
+  background-color: #f5f5f5 !important;
+}
+
+.RowBeingDragged > * {
+  transition: background-color ease 0.3s;
+  background-color: #bae0ff !important;
+}

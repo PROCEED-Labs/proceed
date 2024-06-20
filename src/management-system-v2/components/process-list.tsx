@@ -1,19 +1,8 @@
 'use client';
 
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  Grid,
-  MenuProps,
-  Row,
-  Table,
-  TableColumnsType,
-  Tooltip,
-} from 'antd';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, Tooltip } from 'antd';
 import {
   useCallback,
-  useState,
   FC,
   PropsWithChildren,
   Key,
@@ -28,53 +17,42 @@ import {
   EditOutlined,
   DeleteOutlined,
   StarOutlined,
-  MoreOutlined,
   InfoCircleOutlined,
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
-import cn from 'classnames';
-import { useRouter } from 'next/navigation';
-import styles from './process-list.module.scss';
-import useLastClickedStore from '@/lib/use-last-clicked-process-store';
+import styles from './item-list-view.module.scss';
 import { generateDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
-import {
-  DragInfo,
-  DraggableElementGenerator,
-  ProcessListProcess,
-  contextMenuStore,
-} from './processes';
+import { AuthCan } from '@/components/auth-can';
+import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
-import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
+import ElementList from './item-list-view';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
+import { useColumnWidth } from '@/lib/useColumnWidth';
+import SpaceLink from './space-link';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+import FavouriteStar from './favouriteStar';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
-type ProcessListProps = PropsWithChildren<{
-  data: ProcessListProcess[];
-  folder: Folder;
-  selection: Key[];
-  selectedElements: ProcessListProcess[];
-  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
-  isLoading?: boolean;
-  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
-  onExportProcess: (process: ProcessListProcess) => void;
-  onDeleteItem: (process: ProcessListProcess[]) => void;
-  onEditItem: (process: ProcessListProcess) => void;
-  onCopyItem: (process: ProcessListProcess) => void;
-  dragInfo: DragInfo;
-}>;
+/** respects sorting function, but always keeps folders at the beginning */
+function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
+  const sorter: TableColumnType<ProcessListProcess>['sorter'] = (a, b, sortOrder) => {
+    const factor = sortOrder === 'ascend' ? 1 : -1;
+    if (a.type === 'folder' && b.type !== 'folder') {
+      return factor * -1;
+    } else if (a.type !== 'folder' && b.type === 'folder') {
+      return factor;
+    } else {
+      return sortFunction(a, b);
+    }
+  };
 
-const ColumnHeader = [
-  'Process Name',
-  'Description',
-  'Last Edited',
-  'Created On',
-  'File Size',
-  'Owner',
-];
+  return sorter;
+}
 
 export function ProcessListItemName({
   item,
@@ -107,8 +85,16 @@ export function ProcessListItemName({
   );
 }
 
-const numberOfRows =
-  typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
+type ProcessListProps = PropsWithChildren<{
+  data: ProcessListProcess[];
+  folder: Folder;
+  selection: Key[];
+  selectedElements: ProcessListProcess[];
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+  onExportProcess: (process: ProcessListProcess) => void;
+  processActions: ProcessActions;
+}>;
 
 const ProcessList: FC<ProcessListProps> = ({
   data,
@@ -116,31 +102,18 @@ const ProcessList: FC<ProcessListProps> = ({
   selection,
   selectedElements,
   setSelectionElements,
-  isLoading,
   onExportProcess,
-  onDeleteItem,
-  onEditItem,
-  onCopyItem,
+  processActions: { deleteItems, editItem, copyItem },
   setShowMobileMetaData,
-  dragInfo,
 }) => {
-  const router = useRouter();
-  const space = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
-  const [hovered, setHovered] = useState<ProcessListProcess | undefined>(undefined);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const lastProcessId = useLastClickedStore((state) => state.processId);
-  const setLastProcessId = useLastClickedStore((state) => state.setProcessId);
-  const selectedColumns = useUserPreferences.use['process-list-columns-desktop']();
+  const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const { favourites: favProcesses } = useFavouriteProcesses();
-  const environment = useEnvironment();
 
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-
-  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -148,7 +121,7 @@ const ProcessList: FC<ProcessListProps> = ({
 
   const processListColumnsMobile = [
     'Favorites',
-    'Process Name',
+    'Name',
     'Description',
     'Last Edited',
     'Meta Data Button',
@@ -165,7 +138,7 @@ const ProcessList: FC<ProcessListProps> = ({
                 <CopyOutlined
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCopyItem(record);
+                    copyItem([record]);
                   }}
                 />
               </Tooltip>
@@ -180,18 +153,16 @@ const ProcessList: FC<ProcessListProps> = ({
 
           <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => onEditItem(record)} />
+              <EditOutlined onClick={() => editItem(record)} />
             </Tooltip>
           </AuthCan>
 
-          {/*TODO: errors regarding query */}
-
-          <AuthCan delete Process={record}>
+          <AuthCan delete {...resource}>
             <Tooltip placement="top" title={'Delete'}>
               <ConfirmationButton
                 title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
                 description="Are you sure you want to delete the selected process?"
-                onConfirm={() => onDeleteItem([record])}
+                onConfirm={() => deleteItems([record])}
                 buttonProps={{
                   icon: <DeleteOutlined />,
                   type: 'text',
@@ -202,32 +173,8 @@ const ProcessList: FC<ProcessListProps> = ({
         </>
       );
     },
-    [onCopyItem, onDeleteItem, onEditItem, onExportProcess],
+    [copyItem, deleteItems, editItem, onExportProcess],
   );
-
-  const columnCheckBoxItems: MenuProps['items'] = ColumnHeader.map((title) => ({
-    label: (
-      <Checkbox
-        checked={selectedColumns.includes(title)}
-        onChange={(e) => {
-          e.stopPropagation();
-          const { checked, value } = e.target;
-          if (checked) {
-            addPreferences({ 'process-list-columns': [...selectedColumns, value] });
-          } else {
-            addPreferences({
-              'process-list-columns': selectedColumns.filter((column) => column !== value),
-            });
-          }
-        }}
-        onClick={(e) => e.stopPropagation()}
-        value={title}
-      >
-        {title}
-      </Checkbox>
-    ),
-    key: title,
-  }));
 
   const columns: TableColumnsType<ProcessListProcess> = [
     {
@@ -236,34 +183,41 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Favorites',
       width: '40px',
       render: (id, _, index) =>
-        id !== folder.parentId && (
-          <StarOutlined
-            style={{
-              color: favourites?.includes(index) ? '#FFD700' : undefined,
-              opacity: hovered?.id === id || favourites?.includes(index) ? 1 : 0,
-            }}
-          />
-        ),
+        id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
+      sorter: folderAwareSort((a, b) =>
+        favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
+          ? 0
+          : favProcesses?.includes(a.id)
+            ? -1
+            : 1,
+      ),
     },
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'Process Name',
-      className: styles.Title,
-      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      key: 'Name',
+      ellipsis: true,
+      sorter: folderAwareSort((a, b) => a.name.value.localeCompare(b.name.value)),
       render: (_, record) => (
-        <ProcessListItemName
-          item={{
-            type: record.type,
-            name: record.name.highlighted,
+        <SpaceLink
+          href={
+            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+          }
+          style={{
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
           }}
-          divProps={{
-            style: {
-              color: record.id === folder.parentId ? 'grey' : undefined,
-              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-            },
-          }}
-        />
+        >
+          <ProcessListItemName
+            item={{ type: record.type, name: record.name.highlighted }}
+            divProps={{
+              style: {
+                color: record.id === folder.parentId ? 'grey' : undefined,
+                fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+              },
+            }}
+          />
+        </SpaceLink>
       ),
       responsive: ['xs', 'sm'],
     },
@@ -271,18 +225,32 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Description',
       dataIndex: 'description',
       key: 'Description',
-      // sorter: (a, b) => a.description.value.localeCompare(b.description.value),
       render: (_, record) => (
-        <div
+        <SpaceLink
+          href={
+            record.type === 'folder' ? `/processes/folder/${record.id}` : `/processes/${record.id}`
+          }
           style={{
-            maxWidth: '15vw',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
+            display: 'block',
           }}
         >
-          {record.description.highlighted}
-        </div>
+          {/* <div
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          > */}
+          {(record.description.value ?? '').length == 0 ? (
+            <>&emsp;</>
+          ) : (
+            record.description.highlighted
+          )}
+          {/* Makes the link-cell clickable, when there is no description */}
+          {/* </div> */}
+        </SpaceLink>
       ),
       responsive: ['sm'],
     },
@@ -290,8 +258,10 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Last Edited',
       dataIndex: 'lastEdited',
       key: 'Last Edited',
-      render: (date: Date) => generateDateString(date, true),
-      // sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      render: (date: string) => generateDateString(date, true),
+      sorter: folderAwareSort(
+        (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      ),
       responsive: ['md'],
     },
     {
@@ -299,55 +269,28 @@ const ProcessList: FC<ProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      // sorter: (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      sorter: folderAwareSort(
+        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      ),
       responsive: ['md'],
     },
     {
       title: 'File Size',
       key: 'File Size',
-      sorter: (a, b) => (a < b ? -1 : 1),
+      sorter: folderAwareSort((a, b) => (a < b ? -1 : 1)),
       responsive: ['md'],
     },
     {
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      // sorter: (a, b) => a.owner!.localeCompare(b.owner || ''),
-      responsive: ['md'],
-    },
-    {
-      fixed: 'right',
-      width: 160,
-      dataIndex: 'id',
-      key: 'Selected Columns',
-      title: (
-        <div style={{ float: 'right' }}>
-          <Dropdown
-            open={dropdownOpen}
-            onOpenChange={(open) => setDropdownOpen(open)}
-            menu={{
-              items: columnCheckBoxItems,
-            }}
-            trigger={['click']}
-          >
-            <Button type="text">
-              <MoreOutlined />
-            </Button>
-          </Dropdown>
-        </div>
-      ),
-      render: (id, record) =>
-        id !== folder.parentId && (
-          <Row
-            justify="space-evenly"
-            style={{
-              opacity: !dragInfo.dragging && hovered?.id === id ? 1 : 0,
-            }}
-          >
-            {actionBarGenerator(record)}
-          </Row>
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
+      sorter: folderAwareSort((a, b) =>
+        (a.type === 'folder' ? a.createdBy || '' : a.owner).localeCompare(
+          b.type === 'folder' ? b.createdBy || '' : b.owner,
         ),
-      responsive: ['xl'],
+      ),
+      responsive: ['md'],
     },
     {
       fixed: 'right',
@@ -365,101 +308,75 @@ const ProcessList: FC<ProcessListProps> = ({
     },
   ];
 
-  const columnsFiltered = breakpoint.xl
-    ? columns.filter((c) => selectedColumns.includes(c?.key as string))
+  let columnsFiltered = breakpoint.xl
+    ? columns.filter((c) => selectedColumns.map((col: any) => col.name).includes(c?.key as string))
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
-  return (
-    <Table
-      rowSelection={{
-        type: 'checkbox',
-        selectedRowKeys: selection,
-        onChange: (_, selectedRows) => setSelectionElements(selectedRows),
-        getCheckboxProps: (record: ProcessListProcess) => ({ name: record.id }),
-        onSelect: (_, __, selectedRows) => setSelectionElements(selectedRows),
-        onSelectNone: () => setSelectionElements([]),
-        onSelectAll: (_, selectedRows) => setSelectionElements(selectedRows),
-      }}
-      onRow={(record) => ({
-        onClick: (event) => {
-          /* CTRL */
-          if (event.ctrlKey) {
-            /* Not selected yet -> Add to selection */
-            if (!selection.includes(record?.id)) {
-              setSelectionElements((prev) => [record, ...prev]);
-              /* Already in selection -> deselect */
-            } else {
-              setSelectionElements((prev) => prev.filter(({ id }) => id !== record.id));
-            }
-            /* SHIFT */
-          } else if (event.shiftKey) {
-            /* At least one element selected */
-            if (selection.length) {
-              const iLast = data.findIndex((process) => process.id === lastProcessId);
-              const iCurr = data.findIndex((process) => process.id === record?.id);
-              /* Identical to last clicked */
-              if (iLast === iCurr) {
-                setSelectionElements([record]);
-              } else if (iLast < iCurr) {
-                /* Clicked comes after last slected */
-                setSelectionElements(data!.slice(iLast, iCurr + 1));
-              } else if (iLast > iCurr) {
-                /* Clicked comes before last slected */
-                setSelectionElements(data!.slice(iCurr, iLast + 1));
-              }
-            } else {
-              /* Nothing selected */
-              setSelectionElements([record]);
-            }
-            /* Normal Click */
-          } else {
-            setSelectionElements([record]);
-          }
+  /* Add functionality for changing width of columns */
+  columnsFiltered = useColumnWidth(columnsFiltered, 'columns-in-table-view-process-list', [
+    'Favorites',
+  ]);
 
-          /* Always */
-          setLastProcessId(record?.id);
+  return (
+    <ElementList
+      data={data}
+      columns={columnsFiltered}
+      elementSelection={{
+        selectedElements,
+        setSelectionElements: setSelectionElements,
+      }}
+      selectableColumns={{
+        setColumnTitles: (cols) => {
+          if (typeof cols === 'function')
+            cols = cols(
+              selectedColumns.map((col: any) => col.name) as string[],
+            ); /* TODO: When are cols a function -> cols need to be in preference format */
+
+          /* Add other properties and add to preferences */
+          const propcols = cols.map((col: string) => ({
+            name: col,
+            width:
+              (selectedColumns.find((c: any) => c.name === col)?.width as string) /* | number */ ||
+              'auto',
+          }));
+          addPreferences({ 'columns-in-table-view-process-list': propcols });
         },
-        onDoubleClick: () =>
-          router.push(
-            record.type === 'folder'
-              ? `/${space.spaceId}/processes/folder/${record.id}`
-              : `/${space.spaceId}/processes/${record.id}`,
-          ),
-        onMouseEnter: (e) => {
-          if (dragInfo.dragging) {
-            e.preventDefault();
-            e.stopPropagation();
-          } else {
-            setHovered(record);
-          }
-        },
-        onMouseLeave: () => setHovered(undefined),
-        onContextMenu: () => {
-          if (selection.includes(record.id)) {
-            setContextMenuItem(selectedElements);
-          } else {
-            setSelectionElements([record]);
-            setContextMenuItem([record]);
-          }
-        },
-      })}
-      components={{
-        body: {
-          row: DraggableRow,
+        selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
+        allColumnTitles: ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'],
+        columnProps: {
+          width: 'fit-content',
+          responsive: ['xl'],
+          render: (id, record) =>
+            id !== folder.parentId && (
+              <Row justify="space-evenly" className={styles.HoverableTableCell}>
+                {actionBarGenerator(record)}
+              </Row>
+            ),
         },
       }}
-      /* ---- */
-      /* Breaks Side-Panel */
-      // sticky
-      // scroll={{ x: 1200, y: 500 }}
-      /* ---- */
-      pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
-      rowKey="id"
-      columns={columnsFiltered}
-      dataSource={data}
-      loading={isLoading}
-      className={cn(breakpoint.xs ? styles.MobileTable : '')}
-      size={breakpoint.xs ? 'large' : 'middle'}
+      tableProps={{
+        onRow: (item) => ({
+          // onDoubleClick: () =>
+          //   router.push(
+          //     item.type === 'folder'
+          //       ? `/${space.spaceId}/processes/folder/${item.id}`
+          //       : `/${space.spaceId}/processes/${item.id}`,
+          //   ),
+          onContextMenu: () => {
+            if (selection.includes(item.id)) {
+              setContextMenuItem(selectedElements);
+            } else {
+              setSelectionElements([item]);
+              setContextMenuItem([item]);
+            }
+          },
+        }),
+        components: {
+          body: {
+            row: DraggableRow,
+          },
+        },
+      }}
     />
   );
 };

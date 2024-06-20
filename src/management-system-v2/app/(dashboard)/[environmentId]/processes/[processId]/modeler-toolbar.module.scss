@@ -1,5 +1,21 @@
-.Toolbar {
-  :global(.ant-btn-default:disabled) {
-    background-color: rgba($color: #eee, $alpha: 1);
+.Toolbar :global {
+  .ant-space-compact {
+    box-shadow:
+      0px 0px 0.9310142993927002px 0px rgba(0, 0, 0, 0.17),
+      0px 0px 3.1270833015441895px 0px rgba(0, 0, 0, 0.08),
+      0px 7px 14px 0px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+
+  .ant-select-selector {
+    border: none !important;
+  }
+
+  .ant-select-selection-item {
+    font-size: 0.875rem;
+  }
+
+  .ant-btn-compact-item {
+    border: none !important;
   }
 }

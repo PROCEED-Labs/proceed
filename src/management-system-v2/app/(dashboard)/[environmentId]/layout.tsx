@@ -2,7 +2,7 @@ import { FC, PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnviroments, isMember } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/legacy/iam/memberships';
 import { redirect } from 'next/navigation';
 import { MenuProps } from 'antd';
 import {
@@ -17,7 +17,7 @@ import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { enableNewMSExecution } from 'FeatureFlags';
-import { LuBoxes } from 'react-icons/lu';
+import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 
 const DashboardLayout = async ({
@@ -31,7 +31,7 @@ const DashboardLayout = async ({
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );
@@ -87,6 +87,19 @@ const DashboardLayout = async ({
 
     layoutMenuItems.push({
       key: 'divider-executions',
+      type: 'divider',
+    });
+  }
+
+  if (process.env.ENABLE_MACHINE_CONFIG) {
+    layoutMenuItems.push({
+      key: 'machine-config',
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      icon: <LuTable2 />,
+    });
+
+    layoutMenuItems.push({
+      key: 'divider-machine-config',
       type: 'divider',
     });
   }

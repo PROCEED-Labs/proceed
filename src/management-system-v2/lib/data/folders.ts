@@ -68,7 +68,10 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
 }
 
 /** This is only for updating a folder's metadata, to move a folder use moveIntoFolder */
-export async function updateFolder(folderInput: Partial<FolderUserInput>, folderId: string) {
+export async function updateFolder(
+  folderInput: Omit<Partial<FolderUserInput>, 'environmentId' | 'parentId'>,
+  folderId: string,
+) {
   try {
     const folder = getFolderById(folderId);
     if (!folder) return userError('Folder not found');

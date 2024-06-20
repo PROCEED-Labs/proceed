@@ -1,55 +1,95 @@
 'use client';
 
-import React, { Dispatch, FC, Key, SetStateAction } from 'react';
-import styles from './process-icon-list.module.scss';
-import cn from 'classnames';
-
-import TabCard from './tabcard-model-metadata';
+import { Dispatch, FC, SetStateAction, Suspense } from 'react';
+import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
+import { LazyBPMNViewer } from './bpmn-viewer';
 
 import ScrollBar from './scrollbar';
 import { ProcessListProcess } from './processes';
-import { Grid } from 'antd';
+import { Card, Grid } from 'antd';
+import ElementIconView, { ItemIconViewProps } from './item-icon-view';
+import { useRouter } from 'next/navigation';
+import { spaceURL } from '@/lib/utils';
+import { useEnvironment } from './auth-can';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
+
+const DraggableDiv = DraggableElementGenerator('div', 'itemId');
 
 type IconViewProps = {
-  data?: ProcessListProcess[];
-  selection: Key[];
-  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
+  data: ProcessListProcess[];
+  elementSelection: {
+    selectedElements: ProcessListProcess[];
+    setSelectionElements: (action: SetStateAction<ProcessListProcess[]>) => void;
+  };
   setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
 };
 
-const IconView: FC<IconViewProps> = ({
-  data,
-  selection,
-  setSelectionElements,
-  setShowMobileMetaData,
-}) => {
+const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMetaData }) => {
   const breakpoint = Grid.useBreakpoint();
+  const router = useRouter();
+  const space = useEnvironment();
+
+  const setContextMenuItems = contextMenuStore((store) => store.setSelected);
+
+  const folders = data.filter((item) => item.type === 'folder');
+  const processes = data.filter((item) => item.type !== 'folder');
+
+  const tabCardPropGenerator: ItemIconViewProps<ProcessListProcess>['tabCardPropsGenerator'] = (
+    item,
+  ) => {
+    let cardHeight;
+    if (item.type === 'folder') cardHeight = 'fit-content';
+    else cardHeight = '300px';
+
+    const cardTitle = (
+      <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
+        {item.type === 'folder' && <FolderOutlined style={{ marginRight: '.5rem' }} />}
+        {item?.name.highlighted}
+        <span style={{ flex: 1 }}></span>
+        {breakpoint.xl ? null : <InfoCircleOutlined onClick={() => setShowMobileMetaData(true)} />}
+      </div>
+    );
+
+    return {
+      Wrapper: DraggableDiv,
+      cardProps: {
+        onDoubleClick: () => {
+          const url =
+            item.type === 'folder' ? `/processes/folder/${item.id}` : `/processes/${item.id}`;
+          router.push(spaceURL(space, url));
+        },
+        onContextMenu: () => {
+          if (elementSelection.selectedElements.some(({ id }) => id === item.id)) {
+            setContextMenuItems(elementSelection.selectedElements);
+          } else {
+            elementSelection.setSelectionElements([item]);
+            setContextMenuItems([item]);
+          }
+        },
+        children:
+          item.type === 'folder' ? (
+            <Card.Meta title={cardTitle} />
+          ) : (
+            <LazyBPMNViewer definitionId={item.id} reduceLogo={true} />
+          ),
+        title: item.type === 'process' && cardTitle,
+      },
+    };
+  };
+
   return (
-    <>
-      <ScrollBar width="12px">
-        <div
-          className={cn(breakpoint.xs ? styles.MobileIconView : styles.IconView)}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-            justifyContent: 'space-between',
-            gridGap: '20px',
-          }}
-        >
-          {data?.map((item) => (
-            <TabCard
-              setShowMobileMetaData={setShowMobileMetaData}
-              key={item.id}
-              item={item}
-              completeList={data!}
-              selection={selection}
-              setSelectionElements={setSelectionElements}
-              tabcard={false}
-            />
-          ))}
-        </div>
+    <div style={{ height: 'calc(100vh - 64px - 10px - 72px - 10px - 5px - 22px - 5px)' }}>
+      {/* Header + Padding + Bar + Margin + MarginFooter + Footer + MarginFooter*/}
+      <ScrollBar>
+        <ElementIconView
+          data={data}
+          divisions={[folders, processes]}
+          tabCardPropsGenerator={tabCardPropGenerator}
+          elementSelection={elementSelection}
+        />
       </ScrollBar>
-    </>
+    </div>
   );
 };
 

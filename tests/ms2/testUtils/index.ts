@@ -95,7 +95,11 @@ export async function waitForHydration(page: Page) {
   const accountButton = await page.getByRole('link', { name: 'user' });
   // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
   await accountButton.hover();
-  await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
+  await page
+    .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
+    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
+    .getByRole('menuitem', { name: 'Account Settings' })
+    .waitFor({ state: 'visible' });
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
   await page.mouse.move(0, 0);
   await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });

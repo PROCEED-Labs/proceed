@@ -141,9 +141,7 @@ export class ProcessListPage {
       .getByRole('textbox', { name: '* Process Name :' })
       .fill(processName ?? 'My Process');
     await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
-    await closeModal(modal, () =>
-      modal.getByRole('button', { name: 'Create', exact: true }).click(),
-    );
+    await modal.getByRole('button', { name: 'Create' }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const id = page.url().split('processes/').pop();

@@ -249,6 +249,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   };
 
+  useAddControlCallback('modeler', 'cut', handleOpenXmlEditor);
+
   const handleCloseXmlEditor = () => {
     setXmlEditorBpmn(undefined);
   };

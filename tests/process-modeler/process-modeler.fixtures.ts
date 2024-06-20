@@ -26,4 +26,22 @@ export const test = base.extend<MyFixtures>({
   },
 });
 
+export const testShortcuts = base.extend<MyFixtures>({
+  processModelerPage: async ({ page }, use) => {
+    // Set up the fixture.
+    await page.goto('/');
+    const processModelerPage = new ProcessModelerPage(page);
+    await processModelerPage.login();
+    await processModelerPage.createProcess({ hydrate: true });
+    // await processModelerPage.goto();
+
+    // Use the fixture value in the test.
+    await use(processModelerPage);
+
+    // Clean up the fixture.
+    await processModelerPage.removeAllProcesses();
+    await page.waitForTimeout(1000);
+  },
+});
+
 export { expect } from '@playwright/test';

@@ -11,7 +11,17 @@ import {
   TableColumnsType,
   Tooltip,
 } from 'antd';
-import { useCallback, useState, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
+import {
+  useCallback,
+  useState,
+  FC,
+  PropsWithChildren,
+  Key,
+  Dispatch,
+  SetStateAction,
+  HTMLAttributes,
+  ReactNode,
+} from 'react';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -27,8 +37,7 @@ import cn from 'classnames';
 import { useRouter } from 'next/navigation';
 import styles from './process-list.module.scss';
 import useLastClickedStore from '@/lib/use-last-clicked-process-store';
-import { generateDateString, spaceURL } from '@/lib/utils';
-import { toCaslResource } from '@/lib/ability/caslAbility';
+import { generateDateString } from '@/lib/utils';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import {
@@ -38,7 +47,6 @@ import {
   contextMenuStore,
 } from './processes';
 import ConfirmationButton from './confirmation-button';
-import FavouriteStar from './favouriteStar';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import { Folder } from '@/lib/data/folder-schema';
 
@@ -67,6 +75,37 @@ const ColumnHeader = [
   'File Size',
   'Owner',
 ];
+
+export function ProcessListItemName({
+  item,
+  divProps = {},
+}: {
+  item: { type: string; name: ReactNode };
+  divProps?: HTMLAttributes<HTMLDivElement>;
+}) {
+  const breakpoint = Grid.useBreakpoint();
+
+  return (
+    <div
+      className={
+        breakpoint.xs
+          ? styles.MobileTitleTruncation
+          : breakpoint.xl
+            ? styles.TitleTruncation
+            : styles.TabletTitleTruncation
+      }
+      {...divProps}
+      style={{
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+        ...divProps.style,
+      }}
+    >
+      {item.type === 'folder' ? <FolderFilled /> : <FileFilled />} {item.name}
+    </div>
+  );
+}
 
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
@@ -213,25 +252,18 @@ const ProcessList: FC<ProcessListProps> = ({
       className: styles.Title,
       // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
       render: (_, record) => (
-        <div
-          className={
-            breakpoint.xs
-              ? styles.MobileTitleTruncation
-              : breakpoint.xl
-                ? styles.TitleTruncation
-                : styles.TabletTitleTruncation
-          }
-          style={{
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-            // TODO color
-            color: record.id === folder.parentId ? 'grey' : undefined,
-            fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+        <ProcessListItemName
+          item={{
+            type: record.type,
+            name: record.name.highlighted,
           }}
-        >
-          {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.value}
-        </div>
+          divProps={{
+            style: {
+              color: record.id === folder.parentId ? 'grey' : undefined,
+              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
+            },
+          }}
+        />
       ),
       responsive: ['xs', 'sm'],
     },

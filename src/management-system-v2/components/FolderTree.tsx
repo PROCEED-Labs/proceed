@@ -2,26 +2,17 @@
 
 import { getFolderChildren } from '@/lib/data/folders';
 import { Tree, TreeProps } from 'antd';
-import { FolderOutlined, FolderOpenOutlined, FileOutlined } from '@ant-design/icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
+import { ProcessListItemName } from './process-list';
 
 type FolderChildren = {
   id: string;
   name: string;
-  type?: string;
+  type: string;
 };
 
 type TreeNode = NonNullable<TreeProps['treeData']>[number] & { element: FolderChildren };
-
-const getIcon: TreeNode['icon'] = (element) => {
-  // @ts-ignore
-  if (element.element.type && element.element.type !== 'folder') return <FileOutlined />;
-
-  if (!element.expanded || element.isLeaf) return <FolderOutlined />;
-
-  return <FolderOpenOutlined />;
-};
 
 function generateNode(element: FolderChildren): TreeNode {
   let isLeaf = false;
@@ -29,9 +20,8 @@ function generateNode(element: FolderChildren): TreeNode {
   if (element.type && element.type !== 'folder') isLeaf = true;
 
   return {
-    icon: getIcon,
     key: element.id,
-    title: element.name,
+    title: <ProcessListItemName item={{ type: element.type, name: element.name }} />,
     isLeaf,
     element,
   };

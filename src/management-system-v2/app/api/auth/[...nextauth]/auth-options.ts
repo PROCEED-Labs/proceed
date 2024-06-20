@@ -23,7 +23,7 @@ const nextAuthOptions: AuthOptions = {
       id: 'guest-signin',
       credentials: {},
       async authorize() {
-        return addUser({ guest: true });
+        return addUser({ isGuest: true });
       },
     }),
     EmailProvider({
@@ -61,18 +61,18 @@ const nextAuthOptions: AuthOptions = {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
+      if (sessionUser?.isGuest && account?.provider !== 'guest-loguin') {
         const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = getUserById(sessionUser.id);
+        const guestUser = await getUserById(sessionUser.id);
 
-        if (guestUser.guest) {
+        if (guestUser?.isGuest) {
           updateUser(guestUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
             image: user.image ?? undefined,
             email: user.email ?? undefined,
-            guest: false,
+            isGuest: false,
           });
         }
       }
@@ -132,7 +132,7 @@ if (process.env.NODE_ENV === 'development') {
       lastName: 'Doe',
       email: 'johndoe@proceed-labs.org',
       id: 'development-id|johndoe',
-      guest: false,
+      isGuest: false,
       emailVerified: null,
       image: null,
     },
@@ -142,7 +142,7 @@ if (process.env.NODE_ENV === 'development') {
       lastName: 'Admin',
       email: 'admin@proceed-labs.org',
       id: 'development-id|admin',
-      guest: false,
+      isGuest: false,
       emailVerified: null,
       image: null,
     },
@@ -164,7 +164,7 @@ if (process.env.NODE_ENV === 'development') {
 
         let user = usersMetaObject[userTemplate.id];
 
-        if (!user) user = addUser(userTemplate);
+        if (!user) user = await addUser(userTemplate);
 
         return user;
       },

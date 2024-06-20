@@ -13,6 +13,8 @@ import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
 import { getRoles } from './roles';
+import { enableUseDB } from 'FeatureFlags';
+import db from '@/lib/data';
 
 // @ts-ignore
 let firstInit = !global.usersMetaObject || !global.accountsMetaObject;
@@ -25,52 +27,78 @@ export let accountsMetaObject: { [Id: string]: OauthAccount } =
   // @ts-ignore
   global.accountsMetaObject || (global.accountsMetaObject = {});
 
-export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = usersMetaObject[id];
-
+export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
+  let user;
+  if (enableUseDB) {
+    user = await db.user.findUnique({ where: { id: id } });
+  } else {
+    user = usersMetaObject[id];
+  }
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }
 
-export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = Object.values(usersMetaObject).find((user) => !user.guest && email === user.email);
+export async function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
+  let user;
+  if (enableUseDB) {
+    user = await db.user.findUnique({ where: { email: email } });
+  } else {
+    user = Object.values(usersMetaObject).find((user) => !user.isGuest && email === user.email);
+  }
 
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }
 
-export function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = Object.values(usersMetaObject).find(
-    (user) => !user.guest && user.username && user.username === username,
-  );
+export async function getUserByUsername(username: string, opts?: { throwIfNotFound?: boolean }) {
+  const user = enableUseDB
+    ? await db.user.findUnique({ where: { username } })
+    : Object.values(usersMetaObject).find((user) => !user.isGuest && user.username === username);
 
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
   return user;
 }
 
-export function addUser(inputUser: OptionalKeys<User, 'id'>) {
+export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
   if (
-    !user.guest &&
-    ((user.username && getUserByUsername(user.username)) || getUserByEmail(user.email))
+    !user.isGuest &&
+    ((user.username && (await getUserByUsername(user.username))) ||
+      (await getUserByEmail(user.email)))
   )
     throw new Error('User with this email or username already exists');
 
   if (!user.id) user.id = v4();
 
-  if (usersMetaObject[user.id]) throw new Error('User already exists');
+  if (enableUseDB) {
+    try {
+      const userExists = await db.user.findUnique({ where: { id: user.id } });
+      if (userExists) throw new Error('User already exists');
+      addEnvironment({ ownerId: user.id, organization: false });
+      await db.user.create({
+        data: {
+          ...user,
+          isGuest: user.isGuest,
+        },
+      });
+    } catch (error) {
+      console.error('Error adding new user: ', error);
+    }
+  } else {
+    if (usersMetaObject[user.id]) throw new Error('User already exists');
 
-  addEnvironment({
-    ownerId: user.id,
-    organization: false,
-  });
+    addEnvironment({
+      ownerId: user.id,
+      organization: false,
+    });
 
-  usersMetaObject[user.id as string] = user as User;
-  store.add('users', user);
+    usersMetaObject[user.id as string] = user as User;
+    store.add('users', user);
+  }
 
   return user as User;
 }
@@ -84,93 +112,170 @@ export class UserHasToDeleteOrganizationsError extends Error {
     this.conflictingOrgs = conflictingOrgs;
   }
 }
-export function deleteUser(userId: string) {
-  const user = usersMetaObject[userId];
+export async function deleteUser(userId: string) {
+  let user;
+  if (enableUseDB) {
+    user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User doesn't exist");
 
-  if (!user) throw new Error("User doesn't exist");
+    const userOrganizations = await getUserOrganizationEnvironments(userId);
+    const orgsWithNoNextAdmin: string[] = [];
+    for (const environmentId of userOrganizations) {
+      const userRoles = await getRoleMappingByUserId(userId, environmentId);
 
-  const userOrganizations = getUserOrganizationEnvironments(userId);
+      if (!userRoles.find((role) => role.roleName === '@admin')) continue;
 
-  const orgsWithNoNextAdmin: string[] = [];
-  for (const environmentId of userOrganizations) {
-    const userRoles = getRoleMappingByUserId(userId, environmentId);
-    if (!userRoles.find((role) => role.roleName === '@admin')) continue;
+      const adminRole = await db.role.findFirst({
+        where: { name: '@admin', environmentId: environmentId },
+        include: { members: true },
+      });
+      if (!adminRole)
+        throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 
-    const adminRole = getRoles(environmentId).find((role) => role.name === '@admin');
-    if (!adminRole)
-      throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
-
-    if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
-  }
-
-  if (orgsWithNoNextAdmin.length > 0)
-    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
-
-  for (const org of userOrganizations) {
-    removeMember(org, userId);
-  }
-
-  deleteEnvironment(userId);
-
-  delete usersMetaObject[userId];
-  store.remove('users', userId);
-
-  return user;
-}
-
-export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
-  const user = getUserById(userId, { throwIfNotFound: true });
-
-  const isGoingToBeGuest = inputUser.guest !== undefined ? inputUser.guest : user.guest;
-
-  let updatedUser: User;
-  if (isGoingToBeGuest) {
-    updatedUser = {
-      id: user.id,
-      guest: true,
-    };
-  } else {
-    const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
-
-    if (newUserData.email) {
-      const existingUser = getUserByEmail(newUserData.email);
-
-      if (existingUser && existingUser.id !== userId)
-        throw new Error('User with this email or username already exists');
+      if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
     }
 
-    updatedUser = { ...(user as AuthenticatedUser), ...newUserData };
-  }
+    if (orgsWithNoNextAdmin.length > 0)
+      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
-  usersMetaObject[user.id] = updatedUser;
-  store.update('users', userId, updatedUser);
+    await db.workspace.deleteMany({ where: { ownerId: userId } });
+    await db.user.delete({ where: { id: userId } });
+  } else {
+    user = usersMetaObject[userId];
+    if (!user) throw new Error("User doesn't exist");
+
+    const userOrganizations = await getUserOrganizationEnvironments(userId);
+    const orgsWithNoNextAdmin: string[] = [];
+    for (const environmentId of userOrganizations) {
+      const userRoles = await getRoleMappingByUserId(userId, environmentId);
+      if (!userRoles.find((role) => role.roleName === '@admin')) continue;
+
+      const adminRole = await getRoles(environmentId).find((role) => role.name === '@admin');
+      if (!adminRole)
+        throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
+
+      if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
+    }
+
+    if (orgsWithNoNextAdmin.length > 0)
+      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+
+    for (const org of userOrganizations) {
+      removeMember(org, userId);
+    }
+
+    deleteEnvironment(userId);
+    delete usersMetaObject[userId];
+    store.remove('users', userId);
+  }
 
   return user;
 }
 
-export function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
+export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+  const user = await getUserById(userId, { throwIfNotFound: true });
+  if (enableUseDB) {
+    const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
+
+    let updatedUser;
+    if (isGoingToBeGuest) {
+      updatedUser = { isGuest: true };
+    } else {
+      const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+
+      if (newUserData.email) {
+        const existingUser = await db.user.findUnique({ where: { email: newUserData.email } });
+
+        if (existingUser && existingUser.id !== userId)
+          throw new Error('User with this email or username already exists');
+      }
+
+      updatedUser = { ...user, ...newUserData };
+    }
+
+    await db.user.update({ where: { id: userId }, data: updatedUser });
+  } else {
+    const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user!.isGuest;
+
+    let updatedUser: User;
+    if (isGoingToBeGuest) {
+      updatedUser = {
+        id: user!.id,
+        isGuest: true,
+      };
+    } else {
+      const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);
+
+      if (newUserData.email) {
+        const existingUser = await getUserByEmail(newUserData.email);
+
+        if (existingUser && existingUser.id !== userId)
+          throw new Error('User with this email or username already exists');
+      }
+
+      updatedUser = { ...(user as AuthenticatedUser), ...newUserData };
+    }
+
+    usersMetaObject[user!.id] = updatedUser;
+    store.update('users', userId, updatedUser);
+  }
+
+  return user;
+}
+
+export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
   const newAccount = OauthAccountSchema.parse(accountInput);
 
-  const user = getUserById(newAccount.userId);
+  const user = await getUserById(newAccount.userId);
   if (!user) throw new Error('User not found');
-  if (user.guest) throw new Error('Guest users cannot have oauth accounts');
+  if (user.isGuest) throw new Error('Guest users cannot have oauth accounts');
 
   const id = v4();
-  if (accountsMetaObject[id]) throw new Error('Account already exists');
 
   const account = { ...newAccount, id };
-  store.add('accounts', account);
-  accountsMetaObject[id] = account;
+
+  if (enableUseDB) {
+    await db.oauthAccount.create({ data: account });
+  } else {
+    store.add('accounts', account);
+    accountsMetaObject[id] = account;
+  }
 }
 
-export function deleteOauthAccount(id: string) {
-  if (!accountsMetaObject[id]) throw new Error('Account not found');
+export async function deleteOauthAccount(id: string) {
+  if (enableUseDB) {
+    const account = await db.oauthAccount.findUnique({
+      where: {
+        id: id,
+      },
+    });
 
-  store.remove('accounts', id);
-  delete accountsMetaObject[id];
+    if (!account) throw new Error('Account not found');
+
+    await db.oauthAccount.delete({
+      where: {
+        id: id,
+      },
+    });
+  } else {
+    if (!accountsMetaObject[id]) throw new Error('Account not found');
+
+    store.remove('accounts', id);
+    delete accountsMetaObject[id];
+  }
 }
 
-export function getOauthAccountByProviderId(provider: string, providerAccountId: string) {
+export async function getOauthAccountByProviderId(provider: string, providerAccountId: string) {
+  if (enableUseDB) {
+    return await db.oauthAccount.findUnique({
+      where: {
+        provider_providerAccountId_unique: {
+          provider,
+          providerAccountId,
+        },
+      },
+    });
+  }
   for (const account of Object.values(accountsMetaObject)) {
     if (account.provider === provider && account.providerAccountId === providerAccountId)
       return account;

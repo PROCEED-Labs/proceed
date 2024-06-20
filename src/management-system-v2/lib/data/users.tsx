@@ -69,7 +69,7 @@ export async function getUsersFavourites(): Promise<String[]> {
 
   const user = usersMetaObject[userId];
 
-  if (user.guest) {
+  if (user.isGuest) {
     return []; // Guest users have no favourites
   }
   return user.favourites ?? [];

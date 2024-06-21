@@ -28,11 +28,11 @@ export const UserOrganizationEnvironmentInputSchema = z.object({
 export const OrganizationEnvironmentSchema = z.union([
   UserOrganizationEnvironmentInputSchema.extend({
     organization: z.literal(true),
-    active: z.literal(false),
+    isActive: z.literal(false),
   }),
   UserOrganizationEnvironmentInputSchema.extend({
     organization: z.literal(true),
-    active: z.literal(true),
+    isActive: z.literal(true),
     ownerId: z.string().readonly(),
   }),
 ]);

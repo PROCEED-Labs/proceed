@@ -301,7 +301,11 @@ export function computeRulesForUser({
       const actionsNumber = role.permissions[resource]!;
       const actions = permissionNumberToIdentifiers(actionsNumber);
 
-      if (!viewActionOnFolderScopedResource && FolderScopedResources.includes(resource as any))
+      if (
+        !viewActionOnFolderScopedResource &&
+        FolderScopedResources.includes(resource as any) &&
+        actions.includes('view')
+      )
         viewActionOnFolderScopedResource = true;
 
       translatedRules.push({

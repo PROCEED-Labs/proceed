@@ -184,6 +184,25 @@ describe('Scoped roles', () => {
     }
   });
 
+  test("View permission don't propagates up for the wrong permissions", () => {
+    for (const resource of FolderScopedResources) {
+      const ability = buildAbility([
+        {
+          parentId: '1-9',
+          permissions: {
+            [resource]:
+              ResourceActionsMapping.update +
+              ResourceActionsMapping.create +
+              ResourceActionsMapping.delete,
+          },
+        },
+      ]);
+
+      for (const folder of folderIds)
+        expect(ability.can('view', toCaslResource('Folder', folders[folder]))).toBe(false);
+    }
+  });
+
   test('One role', async () => {
     const ability = buildAbility([
       {

@@ -4,15 +4,12 @@ import {
   AbilityRule,
   CaslAbility,
   FolderScopedResources,
-  ResourceActionType,
   ResourceType,
   buildAbility,
   resourceAction,
   resources,
 } from '@/lib/ability/caslAbility';
-import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
-import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { globalOrganizationRules, globalUserRules } from './globalRules';
 import { Role } from '../data/role-schema';
 import { Environment } from '../data/environment-schema';
@@ -301,12 +298,11 @@ export function computeRulesForUser({
       const actionsNumber = role.permissions[resource]!;
       const actions = permissionNumberToIdentifiers(actionsNumber);
 
-      if (
-        !viewActionOnFolderScopedResource &&
-        FolderScopedResources.includes(resource as any) &&
-        actions.includes('view')
-      )
-        viewActionOnFolderScopedResource = true;
+      if (!viewActionOnFolderScopedResource && FolderScopedResources.includes(resource as any)) {
+        const actionSet = new Set(actions);
+        if (['view', 'manage', 'admin'].some((action) => actionSet.has(action as any)))
+          viewActionOnFolderScopedResource = true;
+      }
 
       translatedRules.push({
         subject: resource,

@@ -7,6 +7,7 @@ export default class CustomPositioner {
   dragTarget: DragTarget;
   store: EditorStore;
   dragShadow: HTMLElement | null = null;
+  isInitialAction = true;
 
   constructor(doc: Document, store: EditorStore, target: DragTarget, e: MouseEvent) {
     this.document = doc;
@@ -94,6 +95,17 @@ export default class CustomPositioner {
     this.updatePosition(e);
   };
 
+  getActionHandler() {
+    if (this.isInitialAction) {
+      // if this is the first action (element creation/initial position change) create a new entry on the history stack
+      this.isInitialAction = false;
+      return this.store.actions;
+    }
+
+    // ensure that all (position) changes done in a single drag are handled as one by undo and redo
+    return this.store.actions.history.merge();
+  }
+
   updatePosition(e: MouseEvent) {
     this.updateDragShadow(e);
 
@@ -108,7 +120,7 @@ export default class CustomPositioner {
     let dropTargetId = dropTarget.id;
     if (dropTarget.data.name !== 'Row') {
       // if the element is dropped outside of a row we automatically create a row that wraps around it
-      actions.addNodeTree(
+      this.getActionHandler().addNodeTree(
         query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
         dropTargetId,
         index,
@@ -123,7 +135,7 @@ export default class CustomPositioner {
       let nodeTree = this.dragTarget.tree;
       const newElementId = nodeTree.rootNodeId;
 
-      actions.addNodeTree(nodeTree, dropTargetId, index);
+      this.getActionHandler().addNodeTree(nodeTree, dropTargetId, index);
 
       // if (options && typeof options.onCreate === 'function') options.onCreate();
 
@@ -144,7 +156,7 @@ export default class CustomPositioner {
 
       const oldParentId = node.data.parent ? query.node(node.data.parent).get().id : undefined;
 
-      actions.move(node, dropTargetId, index);
+      this.getActionHandler().move(node, dropTargetId, index);
 
       setTimeout(() => {
         // Update the dragShadow so it fits the element again
@@ -179,7 +191,7 @@ export default class CustomPositioner {
       const oldParent = query.node(oldParentId).get();
 
       if (oldParent?.data.name === 'Row' && !oldParent.data.nodes.length) {
-        actions.delete(oldParent.id);
+        this.getActionHandler().delete(oldParent.id);
       }
     }
   }

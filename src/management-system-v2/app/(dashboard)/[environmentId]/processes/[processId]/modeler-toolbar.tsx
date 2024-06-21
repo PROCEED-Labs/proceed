@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -69,6 +69,15 @@ const ModelerToolbar = ({
       return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
   }, [modeler, selectedElementId, subprocessId]);
+
+  useEffect(() => {
+    if (modeler && (showProcessExportModal || showUserTaskEditor)) {
+      // TODO: maybe  do this without an effect
+      modeler.deactivateKeyboard();
+    } else if (modeler) {
+      modeler.activateKeyboard();
+    }
+  }, [modeler, showProcessExportModal, showUserTaskEditor]);
 
   const createProcessVersion = async (values: {
     versionName: string;

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import styles from './index.module.scss';
 
 import { Modal, Grid, Row as AntRow, Col, Button as AntButton } from 'antd';
-import { DesktopOutlined, MobileOutlined } from '@ant-design/icons';
+import { DesktopOutlined, MobileOutlined, UndoOutlined, RedoOutlined } from '@ant-design/icons';
 
 import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
 
@@ -21,6 +21,9 @@ import Table from './Table';
 
 import { toHtml, iframeDocument } from './utils';
 
+import AddUserControls from '@/components/add-user-controls';
+import { useAddControlCallback } from '@/lib/controls-store';
+
 import CustomEventhandlers from './CustomCommandhandlers';
 
 type BuilderProps = {
@@ -30,7 +33,9 @@ type BuilderProps = {
 
 const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
-  const { query } = useEditor();
+  const { query, actions, canUndo, canRedo } = useEditor((_, query) => {
+    return { canUndo: query.history.canUndo(), canRedo: query.history.canRedo() };
+  });
 
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +64,13 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
     }
   }, [open]);
 
+  useAddControlCallback('user-task-editor', 'undo', () => {
+    if (query.history.canUndo()) actions.history.undo();
+  });
+  useAddControlCallback('user-task-editor', 'redo', () => {
+    if (query.history.canRedo()) actions.history.redo();
+  });
+
   return (
     <Modal
       width={breakpoint.xs ? '100vw' : '90vw'}
@@ -76,23 +88,38 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
     >
       <div className={styles.BuilderUI}>
         <AntRow className={styles.EditorHeader}>
-          <AntButton
-            type="text"
-            icon={
-              <DesktopOutlined
-                style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }}
-              />
-            }
-            disabled={iframeMaxWidth < 601}
-            onClick={() => setIframeLayout('computer')}
-          />
-          <AntButton
-            type="text"
-            icon={
-              <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
-            }
-            onClick={() => setIframeLayout('mobile')}
-          />
+          <div>
+            <AntButton
+              type="text"
+              icon={
+                <DesktopOutlined
+                  style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }}
+                />
+              }
+              disabled={iframeMaxWidth < 601}
+              onClick={() => setIframeLayout('computer')}
+            />
+            <AntButton
+              type="text"
+              icon={
+                <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
+              }
+              onClick={() => setIframeLayout('mobile')}
+            />
+          </div>
+          <div>
+            <AntButton
+              type="text"
+              icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
+              disabled={iframeMaxWidth < 601}
+              onClick={() => actions.history.undo()}
+            />
+            <AntButton
+              type="text"
+              icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
+              onClick={() => actions.history.redo()}
+            />
+          </div>
         </AntRow>
         <AntRow className={styles.EditorBody}>
           <Col span={4}>
@@ -164,6 +191,13 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
         })
       }
     >
+      <AddUserControls
+        name="user-task-editor"
+        checker={{
+          undo: (e) => e.ctrlKey && e.key === 'z',
+          redo: (e) => e.ctrlKey && e.shiftKey && e.key === 'Z',
+        }}
+      />
       <EditorModal open={open} onClose={onClose} />
     </Editor>
   );

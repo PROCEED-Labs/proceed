@@ -73,6 +73,13 @@ const SignIn: FC<{
               key={provider.id}
               layout="vertical"
             >
+              {provider.id === 'guest-signin' && (
+                <Alert
+                  message="Beware: Your processes and data will be deleted after a few days. Sign in to avoid this."
+                  type="warning"
+                  style={{ marginBottom: '1rem' }}
+                />
+              )}
               {Object.keys(provider.credentials).map((key) => (
                 <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
                   <Input placeholder={provider.credentials[key].label} />

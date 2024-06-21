@@ -19,7 +19,7 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Continue as a Guest',
+      name: 'Sign in as Guest',
       id: 'guest-signin',
       credentials: {},
       async authorize() {

@@ -53,7 +53,7 @@ export async function getEnvironmentById(
 export async function activateEnvrionment(environmentId: string, userId: string) {
   const environment = await getEnvironmentById(environmentId);
   if (!environment) throw new Error("Environment doesn't exist");
-  if (!environment.organization) throw new Error('Environment is a personal environment');
+  if (!environment.isOrganization) throw new Error('Environment is a personal environment');
   if (environment.isActive) throw new Error('Environment is already active');
 
   const adminRole = await getRoleByName(environmentId, '@admin');
@@ -73,7 +73,7 @@ export async function activateEnvrionment(environmentId: string, userId: string)
 export async function addEnvironment(environmentInput: EnvironmentInput, ability?: Ability) {
   const newEnvironment = environmentSchema.parse(environmentInput);
 
-  const id = newEnvironment.organization ? v4() : newEnvironment.ownerId;
+  const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
@@ -84,7 +84,7 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
     store.add('environments', newEnvironmentWithId);
   }
 
-  if (newEnvironment.organization) {
+  if (newEnvironment.isOrganization) {
     const adminRole = await addRole({
       environmentId: id,
       name: '@admin',
@@ -152,7 +152,7 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
       }
     }
 
-    if (environment.organization) {
+    if (environment.isOrganization) {
       const environmentMemberships = membershipMetaObject[environmentId];
       if (environmentMemberships) {
         for (const { userId } of environmentMemberships) {

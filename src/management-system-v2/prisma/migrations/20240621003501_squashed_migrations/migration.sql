@@ -52,7 +52,7 @@ CREATE TABLE "Process" (
 CREATE TABLE "Workspace" (
     "id" TEXT NOT NULL,
     "name" TEXT,
-    "organization" BOOLEAN NOT NULL,
+    "isOrganization" BOOLEAN NOT NULL,
     "isActive" BOOLEAN,
     "description" TEXT,
     "contactPhoneNumber" TEXT,

@@ -78,7 +78,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
     try {
       const userExists = await db.user.findUnique({ where: { id: user.id } });
       if (userExists) throw new Error('User already exists');
-      addEnvironment({ ownerId: user.id, organization: false });
+      addEnvironment({ ownerId: user.id, isOrganization: false });
       await db.user.create({
         data: {
           ...user,
@@ -93,7 +93,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
     addEnvironment({
       ownerId: user.id,
-      organization: false,
+      isOrganization: false,
     });
 
     usersMetaObject[user.id as string] = user as User;

@@ -74,7 +74,7 @@ model Process {
 model Workspace {
   id                 String      @id @default(uuid())
   name               String?
-  organization       Boolean
+  isOrganization     Boolean
   isActive           Boolean?
   description        String?
   contactPhoneNumber String?

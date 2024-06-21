@@ -1,5 +1,5 @@
 import Ability from '@/lib/ability/abilityHelper';
-import { toCaslResource } from '@/lib/ability/caslAbility';
+import { FolderScopedResources, toCaslResource } from '@/lib/ability/caslAbility';
 import { computeRulesForUser } from '@/lib/authorization/caslRules';
 import { ResourceActionsMapping } from '@/lib/authorization/permissionHelpers';
 import { type Folder } from '@/lib/data/folder-schema';
@@ -163,6 +163,27 @@ function buildAbility(roles: Pick<Role, 'permissions' | 'parentId'>[]) {
  */
 
 describe('Scoped roles', () => {
+  test('View permission propagates up for FolderScopedResources', () => {
+    const foldersFromProcessToRoot = ['1-0', '1-2', '1-9'] as const;
+    for (const resource of FolderScopedResources) {
+      const ability = buildAbility([
+        {
+          parentId: '1-9',
+          permissions: {
+            [resource]: ResourceActionsMapping.view,
+          },
+        },
+      ]);
+
+      for (const folder of foldersFromProcessToRoot)
+        expect(ability.can('view', toCaslResource('Folder', folders[folder]))).toBe(true);
+
+      for (const folder of folderIds)
+        if (!foldersFromProcessToRoot.includes(folder as any))
+          expect(ability.can('view', toCaslResource('Folder', folders[folder]))).toBe(false);
+    }
+  });
+
   test('One role', async () => {
     const ability = buildAbility([
       {

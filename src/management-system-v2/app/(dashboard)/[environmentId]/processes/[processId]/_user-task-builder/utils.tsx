@@ -39,7 +39,7 @@ body {
 }
 
 .user-task-form-container {
-  height: 100%;
+  min-height: 100%;
 }
 
 .user-task-form-input {
@@ -122,6 +122,7 @@ export const iframeDocument = `
       .frame-content > div {
         box-sizing: border-box;
         padding: 0 10px;
+        border: 2px solid #d3d3d3 !important;
       }
 
       .user-task-form-container svg {

@@ -170,7 +170,6 @@ export default class CustomPositioner {
           shadow.style.width = `${width}px`;
           shadow.style.left = `${clientX - widthPositionRelation * width}px`;
           shadow.style.top = `${clientY - heightPositionRelation * height}px`;
-          // shadow.style.height = `${height}px`;
         }
       }, 20);
 

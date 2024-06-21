@@ -60,9 +60,8 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
             initialContent={iframeDocument}
             mountTarget="#mountHere"
           >
-            {/* <Frame data={defaultForm}></Frame> */}
             <Frame>
-              <Element is={Container} padding={5} background="#fff" canvas>
+              <Element is={Container} padding={5} background="#fff" borderThickness={0} canvas>
                 <Element is={Row} canvas>
                   <Column>
                     <Text text="Hello World"></Text>

@@ -1,27 +1,17 @@
 .BuilderUI {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 
-  .HtmlEditor {
-    & > :first-child {
-      height: 100%;
-    }
+  .EditorHeader {
+    padding: 5px;
   }
+  .EditorBody {
+    flex-grow: 1;
 
-  .EditorSidebar {
-    border-left: 1px solid grey;
-    display: flex;
-    // flex-wrap: wrap;
-    flex: 1 1 auto;
-
-    .FormElement {
-      max-width: 100px;
-      max-height: 100px;
-      text-align: center;
-
-      svg {
-        height: 70%;
-        width: 70%;
-      }
+    .HtmlEditor {
+      display: flex;
+      justify-content: center;
     }
   }
 }

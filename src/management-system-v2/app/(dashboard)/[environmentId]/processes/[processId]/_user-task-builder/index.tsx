@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col } from 'antd';
+import { Modal, Grid, Row as AntRow, Col, Button as AntButton } from 'antd';
+import { DesktopOutlined, MobileOutlined } from '@ant-design/icons';
 
 import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
 
@@ -29,7 +30,34 @@ type BuilderProps = {
 
 const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
-  const { actions, query } = useEditor();
+  const { query } = useEditor();
+
+  const iframeContainerRef = useRef<HTMLDivElement>(null);
+
+  const [iframeLayout, setIframeLayout] = useState<'computer' | 'mobile'>('computer');
+  const [iframeMaxWidth, setIframeMaxWidth] = useState(Infinity);
+
+  useEffect(() => {
+    if (open && iframeContainerRef.current) {
+      const handleWidth = (width: number) => {
+        setIframeMaxWidth(width);
+        if (width < 601) setIframeLayout('mobile');
+        else setIframeLayout('computer');
+      };
+
+      const { width } = iframeContainerRef.current.getBoundingClientRect();
+      handleWidth(width);
+
+      const observer = new ResizeObserver((entries) => {
+        const { width } = entries[0].contentRect;
+        handleWidth(width);
+      });
+
+      observer.observe(iframeContainerRef.current);
+
+      () => observer.disconnect();
+    }
+  }, [open]);
 
   return (
     <Modal
@@ -37,7 +65,6 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       centered
       styles={{ body: { height: '85vh' } }}
       open={open}
-      closeIcon={null}
       title="Edit User Task"
       okText="Save"
       onCancel={onClose}
@@ -47,59 +74,80 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
         console.log(toHtml(json));
       }}
     >
-      <AntRow className={styles.BuilderUI}>
-        <Col span={4}>
-          <Toolbox />
-        </Col>
-        <Col className={styles.HtmlEditor} span={16}>
-          <IFrame
-            id="user-task-builder-iframe"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            initialContent={iframeDocument}
-            mountTarget="#mountHere"
-          >
-            <Frame>
-              <Element is={Container} padding={5} background="#fff" borderThickness={0} canvas>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="Hello World"></Text>
-                  </Column>
+      <div className={styles.BuilderUI}>
+        <AntRow className={styles.EditorHeader}>
+          <AntButton
+            type="text"
+            icon={
+              <DesktopOutlined
+                style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }}
+              />
+            }
+            disabled={iframeMaxWidth < 601}
+            onClick={() => setIframeLayout('computer')}
+          />
+          <AntButton
+            type="text"
+            icon={
+              <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
+            }
+            onClick={() => setIframeLayout('mobile')}
+          />
+        </AntRow>
+        <AntRow className={styles.EditorBody}>
+          <Col span={4}>
+            <Toolbox />
+          </Col>
+          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={16}>
+            <IFrame
+              id="user-task-builder-iframe"
+              width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
+              height="100%"
+              style={{ border: 0, margin: 'auto' }}
+              initialContent={iframeDocument}
+              mountTarget="#mountHere"
+            >
+              <Frame>
+                <Element is={Container} padding={5} background="#fff" borderThickness={0} canvas>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="Hello World"></Text>
+                    </Column>
+                  </Element>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="Hello Universe"></Text>
+                    </Column>
+                  </Element>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="ABCDEFG"></Text>
+                    </Column>
+                  </Element>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="Test123"></Text>
+                    </Column>
+                  </Element>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="Lorem Ipsum"></Text>
+                    </Column>
+                  </Element>
+                  <Element is={Row} canvas>
+                    <Column>
+                      <Text text="Dolor sit amet"></Text>
+                    </Column>
+                  </Element>
                 </Element>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="Hello Universe"></Text>
-                  </Column>
-                </Element>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="ABCDEFG"></Text>
-                  </Column>
-                </Element>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="Test123"></Text>
-                  </Column>
-                </Element>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="Lorem Ipsum"></Text>
-                  </Column>
-                </Element>
-                <Element is={Row} canvas>
-                  <Column>
-                    <Text text="Dolor sit amet"></Text>
-                  </Column>
-                </Element>
-              </Element>
-            </Frame>
-          </IFrame>
-        </Col>
-        <Col span={4}>
-          <SettingsPanel />
-        </Col>
-      </AntRow>
+              </Frame>
+            </IFrame>
+          </Col>
+          <Col span={4}>
+            <SettingsPanel />
+          </Col>
+        </AntRow>
+      </div>
     </Modal>
   );
 };

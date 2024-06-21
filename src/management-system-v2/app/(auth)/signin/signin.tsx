@@ -51,6 +51,7 @@ const SignIn: FC<{
       style={{
         maxWidth: '400px',
         width: '90%',
+        top: 0,
       }}
       styles={{
         mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },

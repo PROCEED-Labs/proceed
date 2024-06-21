@@ -432,7 +432,7 @@ test('create a new folder and process, move process to folder and then delete bo
     processName: processId,
     returnToProcessList: true,
   });
-  await processListPage.goto();
+
   const processLocator = page.locator(`tr[data-row-key="${processDefinitionID}"]`);
   await expect(processLocator).toBeVisible();
 

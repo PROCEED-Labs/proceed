@@ -6,7 +6,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 // require('dotenv').config();
 
-const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
+const baseURL =
+  process.env.PLAYWRIGHT_TEST_BASE_URL ||
+  'https://pr-301---ms-server-staging-c4f6qdpj7q-ew.a.run.app';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -40,7 +42,8 @@ export default defineConfig({
     baseURL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    // trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
 
   /* Configure projects for major browsers */

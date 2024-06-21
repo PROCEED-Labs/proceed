@@ -61,11 +61,11 @@ const HeaderActions: FC = () => {
             label: (
               <Link
                 href={spaceURL(
-                  { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                  { spaceId: space?.id ?? '', isOrganization: space?.isOrganization ?? false },
                   `/processes`,
                 )}
               >
-                <Typography.Text>{space.organization ? space.name : 'My Space'}</Typography.Text>
+                <Typography.Text>{space.isOrganization ? space.name : 'My Space'}</Typography.Text>
               </Link>
             ),
             value: space.id,

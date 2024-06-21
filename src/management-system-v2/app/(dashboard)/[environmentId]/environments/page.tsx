@@ -10,8 +10,8 @@ import UnauthorizedFallback from '@/components/unauthorized-fallback';
 const Page = async () => {
   const { userId } = await getCurrentUser();
 
-  const user = getUserById(userId);
-  if (user.guest) return <UnauthorizedFallback />;
+  const user = await getUserById(userId);
+  if (user?.isGuest) return <UnauthorizedFallback />;
 
   const organizationEnvironments = getUserOrganizationEnvironments(userId).map((environmentId) =>
     getEnvironmentById(environmentId),

@@ -15,7 +15,7 @@ import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-clie
 
 const HeaderActions: FC = () => {
   const session = useSession();
-  const isGuest = session.data?.user.guest;
+  const isGuest = session.data?.user.isGuest;
   const loggedIn = session.status === 'authenticated';
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();

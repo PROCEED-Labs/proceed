@@ -44,11 +44,7 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
     <div>
       <ModalTransition>
-        <Modal
-          isBlanketHidden={true}
-          width="50vw"
-          onClose={() => window.AP.confluence.closeMacroEditor()}
-        >
+        <Modal isBlanketHidden width="50vw" onClose={() => window.AP.confluence.closeMacroEditor()}>
           <ModalHeader>
             <ModalTitle>Embed Process</ModalTitle>
           </ModalHeader>

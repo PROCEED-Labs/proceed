@@ -46,7 +46,7 @@ const ProcessModal = ({
   return (
     <ModalTransition>
       {open && (
-        <Modal onClose={() => close()}>
+        <Modal isBlanketHidden onClose={() => close()}>
           <ModalHeader>
             <ModalTitle>{title}</ModalTitle>
           </ModalHeader>

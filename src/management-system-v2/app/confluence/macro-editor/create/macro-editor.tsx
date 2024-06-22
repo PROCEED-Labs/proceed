@@ -30,7 +30,12 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
     <div>
       {process ? (
-        <Modal width="100vw" height="100vh" onClose={() => window.AP.confluence.closeMacroEditor()}>
+        <Modal
+          isBlanketHidden
+          width="100vw"
+          height="100vh"
+          onClose={() => window.AP.confluence.closeMacroEditor()}
+        >
           <ModalHeader>
             <ModalTitle>Process Editor</ModalTitle>
           </ModalHeader>

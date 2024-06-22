@@ -120,7 +120,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
 
     const user = usersMetaObject[userId];
     if (!user) throw new Error('User not found');
-    if (user.guest) throw new Error('Guests cannot have role mappings');
+    if (user.guest || 'confluence' in user) throw new Error('Guests cannot have role mappings');
 
     const id = v4();
     const createdOn = new Date().toUTCString();

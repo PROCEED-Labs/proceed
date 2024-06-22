@@ -91,21 +91,21 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
-                  !userData.guest ? userData.lastName : ''
+                value: `${!userData.guest && !('confluence' in userData) ? userData.firstName : 'Guest'} ${
+                  !userData.guest && !('confluence' in userData) ? userData.lastName : ''
                 }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 key: 'username',
                 title: 'Username',
-                value: !userData.guest ? userData.username : 'Guest',
+                value: !userData.guest && !('confluence' in userData) ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 key: 'email',
                 title: 'Email',
-                value: !userData.guest ? userData.email : 'Guest',
+                value: !userData.guest && !('confluence' in userData) ? userData.email : 'Guest',
               },
             ]}
             columns={[

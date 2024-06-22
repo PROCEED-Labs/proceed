@@ -8,7 +8,7 @@ type UserAvatarProps = { user?: User; avatarProps?: ComponentProps<typeof Avatar
 const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps }, ref) => {
   if (!user) return <Avatar />;
 
-  if (user.guest) return <Avatar icon={<UserOutlined />} />;
+  if (user.guest || 'confluence' in user) return <Avatar icon={<UserOutlined />} />;
 
   return (
     <Avatar src={user.image && <img src={user.image} alt="avatar" />} {...avatarProps} ref={ref}>

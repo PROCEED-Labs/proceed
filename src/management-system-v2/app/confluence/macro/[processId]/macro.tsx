@@ -38,7 +38,9 @@ const Macro = ({
   return (
     <>
       {/* <Viewer definitionId={processId}></Viewer> */}
-      <BPMNCanvas type="viewer" bpmn={{ bpmn: BPMN }}></BPMNCanvas>
+      <div style={{ height: '100vh' }}>
+        <BPMNCanvas type="viewer" bpmn={{ bpmn: BPMN }}></BPMNCanvas>
+      </div>
     </>
   );
 };

@@ -4,6 +4,13 @@ import { Process } from '@/lib/data/process-schema';
 import { useState, useEffect } from 'react';
 import ProcessList from '../../process-list';
 import Button, { ButtonGroup } from '@atlaskit/button';
+import Modal, {
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+  ModalTransition,
+} from '@atlaskit/modal-dialog';
 
 const ActionButtons = ({ process }: { process: Process }) => {
   const [processId, setProcessId] = useState('');
@@ -35,11 +42,31 @@ const ActionButtons = ({ process }: { process: Process }) => {
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
-    <div style={{ padding: '1rem', width: '100%' }}>
-      <ProcessList
-        processes={processes}
-        ActionButtons={({ process }: { process: Process }) => <ActionButtons process={process} />}
-      />
+    <div>
+      <ModalTransition>
+        <Modal
+          isBlanketHidden={true}
+          width="50vw"
+          onClose={() => window.AP.confluence.closeMacroEditor()}
+        >
+          <ModalHeader>
+            <ModalTitle>Embed Process</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <div style={{ padding: '1rem', width: '100%' }}>
+              <ProcessList
+                processes={processes}
+                ActionButtons={({ process }: { process: Process }) => (
+                  <ActionButtons process={process} />
+                )}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={() => window.AP.confluence.closeMacroEditor()}>Cancel</Button>
+          </ModalFooter>
+        </Modal>
+      </ModalTransition>
     </div>
   );
 };

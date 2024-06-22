@@ -48,8 +48,14 @@
         "url": "/confluence/macro/{processId}",
         "editor": {
           "url": "/confluence/macro-editor/create",
-          "width": "800px",
-          "height": "600px"
+          "editTitle": {
+            "value": "Edit Process"
+          },
+          "insertTitle": {
+            "value": "Create Process"
+          },
+          "width": "100%",
+          "height": "100%"
         },
         "parameters": [
           {
@@ -80,8 +86,14 @@
         "url": "/confluence/macro/{processId}",
         "editor": {
           "url": "/confluence/macro-editor/embed",
-          "width": "800px",
-          "height": "600px"
+          "editTitle": {
+            "value": "Edit Process"
+          },
+          "insertTitle": {
+            "value": "Embed Process"
+          },
+          "width": "100%",
+          "height": "100%"
         },
         "parameters": [
           {

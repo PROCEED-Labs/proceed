@@ -1,6 +1,7 @@
 import Button from '@atlaskit/button';
 import Form, {
   Field,
+  FormHeader,
   FormFooter,
   FormSection,
   RequiredAsterisk,
@@ -89,6 +90,7 @@ const ProcessForm = ({
     <Form onSubmit={submit}>
       {({ formProps, getState }) => (
         <form id="form-with-id" {...formProps}>
+          <FormHeader title="Create Process"></FormHeader>
           <FormSection>
             <ProcessFormBody processData={processData}></ProcessFormBody>
           </FormSection>

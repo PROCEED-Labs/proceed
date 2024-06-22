@@ -7,6 +7,7 @@ import cn from 'classnames';
 import { Environment } from '@/lib/data/environment-schema';
 import { signIn } from 'next-auth/react';
 import { SpaceContext } from '../(dashboard)/[environmentId]/layout-client';
+import './globals.css';
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
@@ -43,7 +44,7 @@ const Layout: FC<
 
   return (
     <SpaceContext.Provider value={activeSpace}>
-      <AntLayout style={{ height: '100vh' }}>
+      <AntLayout>
         <AntLayout style={{ background: 'white' }}>
           <div className={cn(styles.Main, { [styles.collapsed]: false })}>{children}</div>
         </AntLayout>

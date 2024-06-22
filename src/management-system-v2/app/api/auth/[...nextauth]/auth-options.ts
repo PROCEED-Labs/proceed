@@ -10,6 +10,7 @@ import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
+import { verifyJwt } from '@/app/confluence/helpers';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -24,6 +25,35 @@ const nextAuthOptions: AuthOptions = {
       credentials: {},
       async authorize() {
         return addUser({ guest: true });
+      },
+    }),
+    CredentialsProvider({
+      name: 'Atlassian Connect JWT',
+      id: 'confluence-signin',
+      credentials: {
+        token: { label: 'JWT Token', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (credentials) {
+          try {
+            const decodedToken = await verifyJwt(credentials.token);
+
+            const existingUser = getUserById(decodedToken.sub as string);
+
+            if (!existingUser) {
+              return addUser({
+                id: decodedToken.sub as string,
+                username: `Confluence_User_${decodedToken.sub}`,
+                confluence: true,
+                guest: false,
+              });
+            }
+            return existingUser;
+          } catch (err) {
+            console.log('error in authorize', err);
+          }
+        }
+        return null;
       },
     }),
     EmailProvider({

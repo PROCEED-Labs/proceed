@@ -9,17 +9,12 @@ const ActionButtons = ({ process }: { process: Process }) => {
   const [processId, setProcessId] = useState('');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log('window', window);
-      if (window.AP && window.AP.confluence) {
-        console.log('window AP', window.AP);
-        window.AP.confluence.getMacroData((data: any) => {
-          console.log('confluence macroData', data);
-          if (data) {
-            setProcessId(data.processId || data.parameters?.processId || '');
-          }
-        });
-      }
+    if (typeof window !== 'undefined' && window.AP && window.AP.confluence) {
+      window.AP.confluence.getMacroData((data: any) => {
+        if (data) {
+          setProcessId(data.processId || data.parameters?.processId || '');
+        }
+      });
     }
   }, []);
 
@@ -28,13 +23,11 @@ const ActionButtons = ({ process }: { process: Process }) => {
       window.AP.confluence.saveMacro({ processId: process.id });
       window.AP.confluence.closeMacroEditor();
     }
-    console.log('SAVE MACRO', processId);
-    // window.AP.dialog.close({ processId });
   };
   return (
     <ButtonGroup>
       <Button appearance="primary" onClick={() => saveMacro()}>
-        Embedd
+        Embed
       </Button>
     </ButtonGroup>
   );

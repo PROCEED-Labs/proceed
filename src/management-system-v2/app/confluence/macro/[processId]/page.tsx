@@ -1,8 +1,8 @@
-import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
+import Layout from '../../layout-client';
 import Macro from './macro';
 import { getCurrentUser } from '@/components/auth';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import { Environment } from '@/lib/data/environment-schema';
 import { getProcessBPMN } from '@/lib/data/processes';
 
@@ -10,12 +10,11 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
   const processId = params.processId;
   console.log('params', params);
 
-  const { session, userId } = await getCurrentUser();
-  console.log('userId', userId);
+  const { userId } = await getCurrentUser();
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );
@@ -27,12 +26,10 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
     return res;
   });
 
-  console.log('BPMN', BPMN);
-
   return (
     <>
       <Layout
-        hideSider={true}
+        hideFooter={true}
         loggedIn={!!userId}
         layoutMenuItems={[]}
         userEnvironments={userEnvironments}

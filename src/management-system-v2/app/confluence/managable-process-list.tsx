@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ProcessModal from './process-modal';
-import { getSpaces } from './helpers';
 
 const ActionButtons = ({ process }: { process: Process }) => {
   const { spaceId } = useEnvironment();
@@ -17,45 +16,6 @@ const ActionButtons = ({ process }: { process: Process }) => {
 
   const closeEditModal = async (values?: { name: string; description: string }) => {
     console.log('close edit modal');
-
-    const { sharedSecrets } = await fetch(
-      'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
-      {
-        method: 'GET',
-      },
-    ).then((res) => {
-      return res.json();
-    });
-
-    console.log('sharedSecrets', sharedSecrets);
-
-    Object.entries(sharedSecrets).forEach(([key, val]) => {
-      const values = val as { sharedSecret: string; baseUrl: string };
-      console.log('clientKey', key);
-      console.log('sharedSecret', values.sharedSecret);
-      console.log('baseUrl', values.baseUrl);
-    });
-
-    if (window && window.AP) {
-      console.log('get Token', window.AP.context);
-      window.AP.context.getToken((token) => {
-        console.log('JWT Token', token);
-        getSpaces(token)
-          .then((res) => {
-            console.log('getSpaces result', res);
-            return res.json();
-          })
-          .catch((err) => {
-            console.log('err1', err);
-          })
-          .then((res) => {
-            console.log('json result', res);
-          })
-          .catch((err) => {
-            console.log('err2', err);
-          });
-      });
-    }
 
     if (values) {
       if ('origin' in process) {

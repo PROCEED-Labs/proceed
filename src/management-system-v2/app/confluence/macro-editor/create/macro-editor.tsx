@@ -1,6 +1,6 @@
 'use client';
 
-import { addProcesses, getProcess } from '@/lib/data/processes';
+import { addProcesses } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import ProcessForm from '../../process-form';
 import { useState, useEffect } from 'react';
@@ -10,29 +10,21 @@ import { Process } from '@/lib/data/process-schema';
 import Modeler from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler';
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
-  const { spaceId } = useEnvironment();
+  const environment = useEnvironment();
+  const { spaceId } = environment;
   const [process, setProcess] = useState<Process | undefined>(undefined);
 
   useEffect(() => {
-    if (window && window.AP && window.AP.confluence) {
+    if (typeof window !== 'undefined' && window.AP && window.AP.confluence) {
       window.AP.confluence.getMacroData((data: any) => {
-        console.log('macro data', data);
         if (data && data.processId) {
           const process = processes.find((process) => process.id === data.processId);
           setProcess(process);
-          console.log('RESIZE DIALOG');
-          window.AP.resize('1500px', '900px');
         } else {
           setProcess(undefined);
         }
       });
     }
-    // else {
-    //   const mockProcessId = '_f9fd6cf7-20dc-459e-9bc9-e9f2c4c74a9a';
-    //   const process = processes.find((process) => process.id === mockProcessId);
-    //   console.log('process', process);
-    //   setProcess(process);
-    // }
   }, []);
 
   return process ? (
@@ -46,12 +38,10 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
       <ProcessForm
         submit={(values) => {
           addProcesses([{ ...values }], spaceId).then((res) => {
-            console.log('added process', res);
             if ('error' in res) {
               console.log('something went wrong', res.error);
             } else {
               const process = res[0];
-              console.log('try to close editor and save', process);
               if (window.AP && window.AP.confluence) {
                 window.AP.confluence.saveMacro({ processId: process.id });
                 window.AP.confluence.closeMacroEditor();
@@ -63,7 +53,6 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
           if (window.AP && window.AP.confluence) {
             window.AP.confluence.closeMacroEditor();
           }
-          console.log('CLOSE MACRO');
         }}
       ></ProcessForm>
     </div>

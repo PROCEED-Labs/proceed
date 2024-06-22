@@ -10,12 +10,18 @@
   "authentication": {
     "type": "jwt"
   },
-  "apiVersion": 1,
-  "scopes": ["read", "write"],
+  "scopes": ["READ", "WRITE", "ACT_AS_USER", "ADMIN"],
   "lifecycle": {
     "installed": "/api/confluence/installed"
   },
   "modules": {
+    "configurePage": {
+      "url": "/confluence/config",
+      "name": {
+        "value": "PROCEED Configuration"
+      },
+      "key": "my-config-page"
+    },
     "generalPages": [
       {
         "url": "/confluence",
@@ -62,18 +68,18 @@
       {
         "width": "200px",
         "height": "200px",
-        "key": "proceed-embedd-macro",
+        "key": "proceed-embed-macro",
         "bodyType": "none",
         "outputType": "block",
         "name": {
-          "value": "Embedd PROCEED Process"
+          "value": "Embed PROCEED Process"
         },
         "description": {
-          "value": "Embedd PROCEED Processes into Confluence"
+          "value": "Embed PROCEED Processes into Confluence"
         },
         "url": "/confluence/macro/{processId}",
         "editor": {
-          "url": "/confluence/macro-editor/embedd",
+          "url": "/confluence/macro-editor/embed",
           "width": "800px",
           "height": "600px"
         },

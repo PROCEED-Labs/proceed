@@ -39,7 +39,15 @@ export const GuestUserSchema = z.object({
 });
 export type GuestUser = z.infer<typeof GuestUserSchema> & { id: string };
 
-export const UserSchema = z.union([AuthenticatedUserSchema, GuestUserSchema]);
+export const ConfluenceUserSchema = z.object({
+  guest: z.literal(false),
+  confluence: z.literal(true),
+  id: z.string().optional(),
+  username: z.string(),
+});
+export type ConfluenceUser = z.infer<typeof ConfluenceUserSchema> & { id: string };
+
+export const UserSchema = z.union([AuthenticatedUserSchema, GuestUserSchema, ConfluenceUserSchema]);
 export type User = z.infer<typeof UserSchema> & { id: string };
 
 /**

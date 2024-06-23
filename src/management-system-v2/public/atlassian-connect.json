@@ -77,11 +77,6 @@
         ]
       },
       {
-        "renderModes": {
-          "pdf": {
-            "url": "/confluence/macro/{processId}"
-          }
-        },
         "width": "400px",
         "height": "400px",
         "key": "proceed-embed-macro",

@@ -43,20 +43,18 @@ model OauthAccount {
   @@unique([provider, providerAccountId], name: "provider_providerAccountId_unique")
 }
 
-
-
 model Process {
   id                   String       @id @default(uuid())
   originalId           String
   name                 String
   description          String
   createdOn            String
-  lastEditedOn           String
+  lastEditedOn         String
   inEditingBy          Json?
   processIds           String[]
   type                 String
-  folder               Folder      @relation(fields: [folderId], references: [id],onDelete: Cascade)
-  folderId             String
+  folder               Folder?      @relation(fields: [folderId], references: [id],onDelete: Cascade)
+  folderId             String?
   sharedAs             String
   shareTimestamp       Int
   allowIframeTimestamp Int
@@ -105,7 +103,7 @@ model Folder {
   parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id],onDelete: Cascade)
   parentId       String?
   type           String    @default("folder")
-  user           User?     @relation(fields: [createdBy], references: [id])
+  owner           User?     @relation(fields: [createdBy], references: [id])
   createdBy      String?
   workspace      Workspace @relation(fields: [environmentId], references: [id], onDelete:Cascade)
   environmentId  String
@@ -162,7 +160,7 @@ model Role {
   expiration   String?
   default      Boolean?
   createdOn    String    
-  lastEdited   String    
+  lastEditedOn   String    
 
   members      RoleMember[]
 }

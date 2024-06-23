@@ -28,7 +28,7 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
     )
   ).filter((process) => !!('bpmn' in process)) as Process[];
 
-  const process: Process = ownedProcesses.find((p) => p.id === processId)!;
+  const process = ownedProcesses.find((p) => p.id === processId);
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
@@ -46,7 +46,7 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
         userEnvironments={userEnvironments}
         activeSpace={{ spaceId: userId || '', isOrganization: false }}
       >
-        <Macro process={process}></Macro>
+        {process ? <Macro process={process}></Macro> : <span>Process not found for {userId}</span>}
       </Layout>
     </>
   );

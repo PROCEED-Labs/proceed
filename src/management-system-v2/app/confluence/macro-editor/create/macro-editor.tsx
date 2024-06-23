@@ -7,7 +7,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { useState, useEffect, CSSProperties } from 'react';
 
 import { Process } from '@/lib/data/process-schema';
-import Modeler from '@/app/(dashboard)/[environmentId]/processes/[processId]/modeler';
+import Modeler from './confluence-modeler';
 import ProcessModal from '../../process-modal';
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
@@ -30,28 +30,48 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
     <div>
       {process ? (
-        <Modal
-          isBlanketHidden
-          width="100vw"
-          height="100vh"
-          onClose={() => window.AP.confluence.closeMacroEditor()}
-        >
-          <ModalHeader>
-            <ModalTitle>Process Editor</ModalTitle>
-          </ModalHeader>
-          <ModalBody>
-            <Modeler
-              style={{ width: '100%', height: '100%' }}
-              process={{ name: process.name, id: process.id, bpmn: process.bpmn }}
-              versions={process.versions}
-            />
-          </ModalBody>
-          <ModalFooter>
+        // <Modal
+        //   isBlanketHidden
+        //   width="100vw"
+        //   height="100vh"
+        //   onClose={() => window.AP.confluence.closeMacroEditor()}
+        // >
+        //   <ModalHeader>
+        //     <ModalTitle>Process Editor</ModalTitle>
+        //   </ModalHeader>
+        //   <ModalBody>
+        //     <Modeler
+        //       style={{ width: '100%', height: '100%' }}
+        //       process={{ name: process.name, id: process.id, bpmn: process.bpmn }}
+        //       versions={process.versions}
+        //     />
+        //   </ModalBody>
+        //   <ModalFooter>
+        //     <Button appearance="primary" onClick={() => window.AP.confluence.closeMacroEditor()}>
+        //       Close
+        //     </Button>
+        //   </ModalFooter>
+        // </Modal>
+        <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px',
+              alignItems: 'center',
+              borderBottom: '1px solid lightgrey',
+            }}
+          >
+            <span>{process.name}</span>
             <Button appearance="primary" onClick={() => window.AP.confluence.closeMacroEditor()}>
               Close
             </Button>
-          </ModalFooter>
-        </Modal>
+          </div>
+          <Modeler
+            style={{ flexGrow: 1 }}
+            process={{ name: process.name, id: process.id, bpmn: process.bpmn }}
+          />
+        </div>
       ) : (
         <ProcessModal
           title="Create Process"

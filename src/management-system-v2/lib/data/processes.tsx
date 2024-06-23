@@ -12,6 +12,7 @@ import {
   addProcess as _addProcess,
   getProcessBpmn as _getProcessBpmn,
   updateProcess as _updateProcess,
+  getProcess as _getProcess,
   getProcessVersionBpmn,
   addProcessVersion,
   getProcessUserTaskHtml as _getProcessUserTaskHtml,
@@ -41,6 +42,7 @@ import {
 import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
+import { enableUseDB } from 'FeatureFlags';
 
 const checkValidity = async (
   definitionId: string,
@@ -50,7 +52,7 @@ const checkValidity = async (
   const { ability } = await getCurrentEnvironment(spaceId);
 
   const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[definitionId];
+  const process = enableUseDB ? await _getProcess(definitionId) : processMetaObjects[definitionId];
 
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
@@ -76,7 +78,9 @@ const checkValidity = async (
 };
 
 const getBpmnVersion = async (definitionId: string, versionId?: number) => {
-  const process = getProcessMetaObjects()[definitionId];
+  const process = enableUseDB
+    ? await _getProcess(definitionId)
+    : getProcessMetaObjects()[definitionId];
 
   if (versionId) {
     if (!process.versions.some((version) => version.version === versionId)) {
@@ -119,7 +123,7 @@ export const getProcess = async (definitionId: string, spaceId: string) => {
 
   if (error) return error;
 
-  return getProcessMetaObjects()[definitionId];
+  return enableUseDB ? await _getProcess(definitionId) : getProcessMetaObjects()[definitionId];
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {
@@ -158,7 +162,7 @@ export const addProcesses = async (
 
     const newProcess = {
       bpmn,
-      owner: userId,
+      ownerId: userId,
       environmentId: activeEnvironment.spaceId,
     };
 
@@ -212,10 +216,10 @@ export const updateProcess = async (
   // Either replace or update the old BPMN.
   let newBpmn = bpmn ?? (await _getProcessBpmn(definitionsId));
   if (description !== undefined) {
-    newBpmn = (await addDocumentation(newBpmn, description)) as string;
+    newBpmn = (await addDocumentation(newBpmn!, description)) as string;
   }
   if (name !== undefined) {
-    newBpmn = (await setDefinitionsName(newBpmn, name)) as string;
+    newBpmn = (await setDefinitionsName(newBpmn!, name)) as string;
   }
 
   // This invalidates the client-side router cache. Since we don't call
@@ -278,11 +282,11 @@ export const copyProcesses = async (
       : await _getProcessBpmn(copyProcess.originalId);
 
     // TODO: Does createProcess() do the same as this function?
-    const newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn });
+    const newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
 
     // TODO: include variables in copy?
     const newProcess = {
-      owner: userId,
+      ownerId: userId,
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,
@@ -314,7 +318,7 @@ export const createVersion = async (
   if (error) return error;
 
   const bpmn = await _getProcessBpmn(processId);
-  const bpmnObj = await toBpmnObject(bpmn);
+  const bpmnObj = await toBpmnObject(bpmn!);
 
   const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 

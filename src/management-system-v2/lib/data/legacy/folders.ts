@@ -263,7 +263,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
 
-    parentFolderData.folder.lastEdited = new Date().toISOString();
+    parentFolderData.folder.lastEditedOn = new Date().toISOString();
     store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
@@ -274,7 +274,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
   const newFolder = {
     ...folder,
     createdOn: new Date().toISOString(),
-    lastEdited: new Date().toISOString(),
+    lastEditedOn: new Date().toISOString(),
   } as Folder;
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
@@ -321,7 +321,7 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
 
     parent.children.splice(folderIndex, 1);
 
-    parent.folder.lastEdited = new Date().toISOString();
+    parent.folder.lastEditedOn = new Date().toISOString();
     store.update('folders', parent.folder.id, parent.folder);
   }
 
@@ -399,7 +399,7 @@ export async function updateFolderMetaData(
   const newFolder: Folder = {
     ...folderData.folder,
     ...newMetaData,
-    lastEdited: new Date().toISOString(),
+    lastEditedOn: new Date().toISOString(),
   };
 
   folderData.folder = newFolder;
@@ -527,51 +527,52 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
         lastEditedOn: new Date().toISOString(),
       },
     });
+  } else {
+    const folderData = foldersMetaObject.folders[folderId];
+    if (!folderData) throw new Error('Folder not found');
+
+    // Checks
+    if (!folderData.folder.parentId) throw new Error('Root folders cannot be moved');
+    if (folderData.folder.parentId === newParentId) return;
+
+    const newParentData = foldersMetaObject.folders[newParentId];
+    if (!newParentData) throw new Error('New parent folder not found');
+
+    if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+      throw new Error('Cannot move folder to a different environment');
+
+    const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
+    if (!oldParentData)
+      throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
+
+    const folderIndex = oldParentData.children.findIndex(
+      (f) => f.type === 'folder' && f.id === folderId,
+    );
+    if (folderIndex === -1)
+      throw new Error("Consistency error: folder not found in parent's children");
+
+    if (
+      ability &&
+      !ability.can('update', toCaslResource('Folder', folderData.folder)) &&
+      !ability.can('update', toCaslResource('Folder', newParentData.folder)) &&
+      !ability.can('update', toCaslResource('Folder', oldParentData.folder))
+    )
+      throw new Error('Permission denied');
+
+    // Folder cannot be movet to it's sub tree
+    if (await isInSubtree(folderId, newParentId))
+      throw new Error('Folder cannot be moved to its children');
+
+    // Store
+    oldParentData.children.splice(folderIndex, 1);
+    oldParentData.folder.lastEditedOn = new Date().toISOString();
+    store.update('folders', oldParentData.folder.id, oldParentData.folder);
+
+    folderData.folder.parentId = newParentId;
+    newParentData.children.push({ type: 'folder', id: folderData.folder.id });
+    newParentData.folder.lastEditedOn = new Date().toISOString();
+    store.update('folders', newParentData.folder.id, newParentData.folder);
+
+    store.update('folders', folderId, folderData.folder);
   }
-  const folderData = foldersMetaObject.folders[folderId];
-  if (!folderData) throw new Error('Folder not found');
-
-  // Checks
-  if (!folderData.folder.parentId) throw new Error('Root folders cannot be moved');
-  if (folderData.folder.parentId === newParentId) return;
-
-  const newParentData = foldersMetaObject.folders[newParentId];
-  if (!newParentData) throw new Error('New parent folder not found');
-
-  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
-    throw new Error('Cannot move folder to a different environment');
-
-  const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
-  if (!oldParentData)
-    throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
-
-  const folderIndex = oldParentData.children.findIndex(
-    (f) => f.type === 'folder' && f.id === folderId,
-  );
-  if (folderIndex === -1)
-    throw new Error("Consistency error: folder not found in parent's children");
-
-  if (
-    ability &&
-    !ability.can('update', toCaslResource('Folder', folderData.folder)) &&
-    !ability.can('update', toCaslResource('Folder', newParentData.folder)) &&
-    !ability.can('update', toCaslResource('Folder', oldParentData.folder))
-  )
-    throw new Error('Permission denied');
-
-  // Folder cannot be movet to it's sub tree
-  if (await isInSubtree(folderId, newParentId))
-    throw new Error('Folder cannot be moved to its children');
-
-  // Store
-  oldParentData.children.splice(folderIndex, 1);
-  oldParentData.folder.lastEdited = new Date().toISOString();
-  store.update('folders', oldParentData.folder.id, oldParentData.folder);
-
-  folderData.folder.parentId = newParentId;
-  newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-  newParentData.folder.lastEdited = new Date().toISOString();
-  store.update('folders', newParentData.folder.id, newParentData.folder);
-
-  store.update('folders', folderId, folderData.folder);
 }

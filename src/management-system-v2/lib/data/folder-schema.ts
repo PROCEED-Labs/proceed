@@ -19,6 +19,6 @@ export type Folder = Prettify<
   z.infer<typeof FolderSchema> & {
     id: string;
     createdOn: string;
-    lastEdited: string;
+    lastEditedOn: string;
   }
 >;

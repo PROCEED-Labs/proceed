@@ -29,7 +29,7 @@ export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
   isGuest: z.literal(false),
   id: z.string().optional(),
   email: z.string(), //Note maybe this should be moved to user data as the user could change their email
-  emailVerified: z.date().nullable(),
+  emailVerifiedOn: z.string().nullable(),
 });
 export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema> & { id: string };
 

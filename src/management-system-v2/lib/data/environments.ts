@@ -17,10 +17,10 @@ export async function addOrganizationEnvironment(
   try {
     const environmentData = UserOrganizationEnvironmentInputSchema.parse(environmentInput);
 
-    return addEnvironment({
+    return await addEnvironment({
       ownerId: userId,
-      active: true,
-      organization: true,
+      isActive: true,
+      isOrganization: true,
       ...environmentData,
     });
   } catch (e) {
@@ -34,9 +34,9 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
     for (const environmentId of environmentIds) {
       const { ability } = await getCurrentEnvironment(environmentId);
 
-      const environment = getEnvironmentById(environmentId);
+      const environment = await getEnvironmentById(environmentId);
 
-      if (!environment.organization)
+      if (!environment?.isOrganization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
       deleteEnvironment(environmentId, ability);

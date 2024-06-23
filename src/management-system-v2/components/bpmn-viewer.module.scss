@@ -1,0 +1,14 @@
+.bpmn-viewer-container.no-scroll {
+  overflow: hidden;
+}
+
+.bpmn-viewer-container.no-scroll * {
+  /* Suppress events for nested elements */
+  pointer-events: none;
+}
+
+.placeholder {
+  height: 150px;
+  width: 100%;
+  background-color: red; /* Uncomment to see lazy rendering */
+}

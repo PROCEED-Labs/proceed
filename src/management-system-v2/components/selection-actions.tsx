@@ -7,7 +7,7 @@ type SelectionActionsProps = {
 
 const SelectionActions = ({ count, children }: SelectionActionsProps) => {
   return count ? (
-    <span className={styles.SelectedRow}>
+    <span className={styles.SelectedRow} role="note">
       {count} selected:
       <span className={styles.Icons}>{children}</span>
     </span>

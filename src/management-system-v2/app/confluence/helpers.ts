@@ -28,7 +28,7 @@ export const getSpaces = async (jwtToken: any) => {
   };
 
   const { sharedSecrets } = await fetch(
-    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app//api/confluence/sharedSecret',
+    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
     {
       method: 'GET',
     },
@@ -70,7 +70,7 @@ export const verifyJwt = async (jwtToken: any) => {
   const { iss: clientKey } = decoded!.payload as JwtPayload;
 
   const { sharedSecrets } = await fetch(
-    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app//api/confluence/sharedSecret',
+    'https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app/api/confluence/sharedSecret',
     {
       method: 'GET',
     },

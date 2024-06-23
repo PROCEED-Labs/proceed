@@ -71,6 +71,11 @@ const checkValidity = async (
   }
 };
 
+export async function getMachineConfigs() {
+  const machineConfigs = Object.values(machineConfigMetaObjects);
+  return machineConfigs;
+}
+
 /** Returns all machineConfigs in form of an array */
 export async function getMachineConfig(environmentId: string, ability?: Ability) {
   const machineConfig = Object.values(machineConfigMetaObjects).filter(
@@ -144,12 +149,6 @@ export async function createMachineConfig(
     machineConfigMetaObjects[definitionId] = metadata;
     store.add('machineConfig', removeExcessiveInformation(metadata));
 
-    moveMachineConfig({
-      definitionId,
-      newFolderId: metadata.folderId,
-      dontUpdateOldFolder: true,
-    });
-
     eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
 
     return metadata;
@@ -174,49 +173,6 @@ export async function saveMachineConfig(id: string, machineConfigInput: MachineC
   } catch (e) {
     return userError("Couldn't save Machine Config");
   }
-}
-
-export async function moveMachineConfig({
-  definitionId,
-  newFolderId,
-  ability,
-  dontUpdateOldFolder = false,
-}: {
-  definitionId: string;
-  newFolderId: string;
-  dontUpdateOldFolder?: boolean;
-  ability?: Ability;
-}) {
-  // Checks
-  const machineConfig = machineConfigMetaObjects[definitionId];
-  if (!machineConfig) throw new Error('Machine Config not found');
-
-  const folderData = foldersMetaObject.folders[newFolderId];
-  if (!folderData) throw new Error('Folder not found');
-
-  if (
-    ability &&
-    !ability.can('update', toCaslResource('MachineConfig', machineConfig)) &&
-    !ability.can('update', toCaslResource('Folder', folderData.folder))
-  )
-    throw new UnauthorizedError();
-
-  if (!dontUpdateOldFolder) {
-    const oldFolder = foldersMetaObject.folders[machineConfig.folderId];
-    if (!oldFolder) throw new Error("Consistensy Error: Machine Config' folder not found");
-    const machineConfigOldFolderIdx = oldFolder.children.findIndex(
-      (item) => 'type' in item && item.type === 'machine-config' && item.id === definitionId,
-    );
-    if (machineConfigOldFolderIdx === -1)
-      throw new Error('Consistensy Error: Machine Config not found in folder');
-
-    oldFolder.children.splice(machineConfigOldFolderIdx as number, 1);
-  }
-
-  folderData.children.push({ id: machineConfig.id, type: machineConfig.type });
-  machineConfig.folderId = newFolderId;
-
-  store.update('machineConfig', definitionId, removeExcessiveInformation(machineConfig));
 }
 
 function removeExcessiveInformation(machineConfigInfo: MachineConfigMetadata) {

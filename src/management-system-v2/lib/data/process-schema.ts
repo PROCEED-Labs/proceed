@@ -19,10 +19,9 @@ export const ProcessServerInputSchema = ProcessInputSchema.extend({
 export type ProcessServerInput = z.infer<typeof ProcessServerInputSchema>;
 
 export type ProcessMetadata = Prettify<
-  WithRequired<
-    ProcessServerInput,
-    'id' | 'name' | 'description' | 'folderId'
-  > & {} & VersionedObject<'process' | 'project' | 'process-instance'>
+  WithRequired<ProcessServerInput, 'id' | 'name' | 'description' | 'folderId'> & {
+    processIds: string[];
+  } & VersionedObject<'process' | 'project' | 'process-instance'>
 >;
 
 export type Process = Prettify<ProcessMetadata & { bpmn: string }>;

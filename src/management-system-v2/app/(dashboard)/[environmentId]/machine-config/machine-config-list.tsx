@@ -83,6 +83,7 @@ const MachineConfigList = ({
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
     keys: ['name', 'description'],
+    highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -343,14 +344,11 @@ const MachineConfigList = ({
             display: 'block',
           }}
         >
-          {/* <div
-            style={{
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
-          > */}
-          {(record.description ?? '').length == 0 ? <>&emsp;</> : record.description}
+          {(record.description.value ?? '').length == 0 ? (
+            <>&emsp;</>
+          ) : (
+            record.description.highlighted
+          )}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}
         </SpaceLink>

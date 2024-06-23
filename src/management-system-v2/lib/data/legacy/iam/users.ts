@@ -150,7 +150,7 @@ export async function deleteUser(userId: string) {
       const userRoles = await getRoleMappingByUserId(userId, environmentId);
       if (!userRoles.find((role) => role.roleName === '@admin')) continue;
 
-      const adminRole = await getRoles(environmentId).find((role) => role.name === '@admin');
+      const adminRole = (await getRoles(environmentId)).find((role) => role.name === '@admin');
       if (!adminRole)
         throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 

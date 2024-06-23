@@ -6,7 +6,8 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
-
+import { enableUseDB } from 'FeatureFlags';
+import db from '@/lib/data';
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
@@ -32,7 +33,31 @@ export function init() {
 init();
 
 /** Returns all roles in form of an array */
-export function getRoles(environmentId?: string, ability?: Ability) {
+export async function getRoles(environmentId?: string, ability?: Ability) {
+  if (enableUseDB) {
+    const roles = await db.role.findMany({
+      where: environmentId ? { id: environmentId } : undefined,
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const filteredRoles = ability ? ability.filter('view', 'Process', roles) : roles;
+
+    return filteredRoles;
+  }
   const roles = environmentId
     ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
     : Object.values(roleMetaObjects);
@@ -45,7 +70,24 @@ export function getRoles(environmentId?: string, ability?: Ability) {
  *
  * @throws {UnauthorizedError}
  */
-export function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+export async function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+  if (enableUseDB) {
+    const role = await db.role.findFirst({
+      where: {
+        environmentId: environmentId,
+        name: name,
+      },
+    });
+
+    if (!role) return undefined;
+
+    if (ability && !ability.can('view', toCaslResource('Role', role))) {
+      throw new UnauthorizedError();
+    }
+
+    return role;
+  }
+
   for (const role of Object.values(roleMetaObjects)) {
     if (role.name === name && role.environmentId === environmentId) {
       if (ability && !ability.can('view', toCaslResource('Role', role)))
@@ -63,8 +105,14 @@ export function getRoleByName(environmentId: string, name: string, ability?: Abi
  *
  * @throws {UnauthorizedError}
  */
-export function getRoleById(roleId: string, ability?: Ability) {
-  const role = roleMetaObjects[roleId];
+export async function getRoleById(roleId: string, ability?: Ability) {
+  const role = enableUseDB
+    ? await db.role.findUnique({
+        where: {
+          id: roleId,
+        },
+      })
+    : roleMetaObjects[roleId];
   if (!ability) return role;
 
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
@@ -78,7 +126,49 @@ export function getRoleById(roleId: string, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
+export async function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
+  if (enableUseDB) {
+    const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
+
+    if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation))) {
+      throw new UnauthorizedError();
+    }
+
+    const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
+
+    // Check if role already exists in the database
+    const existingRole = await db.role.findFirst({
+      where: {
+        name: name,
+        environmentId: environmentId,
+      },
+    });
+
+    if (existingRole) {
+      throw new Error('Role already exists');
+    }
+
+    const createdOn = new Date().toISOString();
+    const lastEditedOn = createdOn;
+    const id = v4();
+
+    const createdRole = await db.role.create({
+      data: {
+        name,
+        environmentId,
+        description: description || null,
+        note: note || null,
+        permissions: permissions || {},
+        expiration: expiration || null,
+        id,
+        default: roleRepresentation.default || false,
+        createdOn,
+        lastEditedOn,
+      },
+    });
+
+    return createdRole;
+  }
   const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
@@ -92,7 +182,7 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
   if (index > -1) throw new Error('Role already exists');
 
   const createdOn = new Date().toUTCString();
-  const lastEdited = createdOn;
+  const lastEditedOn = createdOn;
   const id = v4();
 
   const role = {
@@ -106,7 +196,7 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
     id,
     default: roleRepresentation.default,
     createdOn,
-    lastEdited,
+    lastEditedOn,
   };
 
   // check if there is an id collision
@@ -129,11 +219,46 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
  * @throws {UnauthorizedError}
  * @throws {Error}
  */
-export function updateRole(
+export async function updateRole(
   roleId: string,
   roleRepresentationInput: Partial<RoleInput>,
   ability: Ability,
 ) {
+  if (enableUseDB) {
+    const targetRole = await getRoleById(roleId);
+    if (!targetRole) throw new Error('Role not found');
+
+    const roleRepresentation = RoleInputSchema.partial().parse(roleRepresentationInput);
+
+    // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
+    if (
+      !(
+        ability.checkInputFields(
+          toCaslResource('Role', targetRole),
+          'update',
+          roleRepresentation,
+        ) &&
+        ability.can('create', toCaslResource('Role', roleRepresentation), {
+          environmentId: targetRole.environmentId,
+        })
+      )
+    )
+      throw new UnauthorizedError();
+
+    const updatedRole = await db.role.update({
+      where: {
+        id: roleId,
+      },
+      data: {
+        ...roleRepresentationInput,
+        lastEditedOn: new Date().toISOString(),
+      },
+    });
+    rulesCacheDeleteAll();
+
+    return updatedRole;
+  }
+
   const targetRole = roleMetaObjects[roleId];
   if (!targetRole) throw new Error('Role not found');
 
@@ -153,7 +278,7 @@ export function updateRole(
   // merge and save at local cache
   // @ts-ignore
   mergeIntoObject(roleMetaObjects[roleId], roleRepresentation, true);
-  roleMetaObjects[roleId].lastEdited = new Date().toUTCString();
+  roleMetaObjects[roleId].lastEditedOn = new Date().toUTCString();
 
   Object.keys(roleMetaObjects[roleId].permissions).forEach((key) => {
     if (roleMetaObjects[roleId].permissions[key as ResourceType] === 0)
@@ -175,6 +300,33 @@ export function updateRole(
  * @throws {Error}
  */
 export async function deleteRole(roleId: string, ability?: Ability) {
+  if (enableUseDB) {
+    const role = await db.role.findUnique({
+      where: {
+        id: roleId,
+      },
+    });
+
+    // Throw error if role not found
+    if (!role) {
+      throw new Error('Role not found');
+    }
+
+    // Check if user has permission to delete the role
+    if (ability && !ability.can('delete', toCaslResource('Role', role))) {
+      throw new UnauthorizedError();
+    }
+
+    // Delete role from database
+    await db.role.delete({
+      where: {
+        id: roleId,
+      },
+    });
+
+    return true;
+  }
+
   const role = roleMetaObjects[roleId];
   if (!role) throw new Error('Role not found');
 

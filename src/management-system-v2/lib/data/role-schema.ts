@@ -29,5 +29,5 @@ export type Role = RoleInput & {
     email: string;
   }[];
   createdOn: string;
-  lastEdited: string;
+  lastEditedOn: string;
 };

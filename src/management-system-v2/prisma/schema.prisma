@@ -53,8 +53,8 @@ model Process {
   inEditingBy          Json?
   processIds           String[]
   type                 String
-  folder               Folder?      @relation(fields: [folderId], references: [id],onDelete: Cascade)
-  folderId             String?
+  folder               Folder      @relation(fields: [folderId], references: [id],onDelete: Cascade)
+  folderId             String       
   sharedAs             String
   shareTimestamp       Int
   allowIframeTimestamp Int

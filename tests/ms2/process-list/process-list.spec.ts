@@ -860,7 +860,7 @@ test.describe('shortcuts in process-list', () => {
   });
 
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
-  test('copy and paste processes with ctrl + c -> ctrl + v', async ({
+  test('copy and paste process with ctrl + c -> ctrl + v', async ({
     processListPage,
     browserName,
   }) => {
@@ -932,6 +932,67 @@ test.describe('shortcuts in process-list', () => {
     await expect(page.locator('tbody>tr')).toHaveCount(3);
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
+  });
+
+  test('copy and paste multiple processes with ctrl + c -> ctrl + v', async ({
+    processListPage,
+    browserName,
+  }) => {
+    const { page } = processListPage;
+
+    /* Create a process */
+    const names = ['A', 'B'];
+    const processIDs = [];
+    for (const name of names) {
+      processIDs.push(
+        await processListPage.createProcess({
+          processName: name,
+          returnToProcessList: true,
+        }),
+      );
+    }
+
+    /* Select all processes */
+    await page.getByRole('main').press('Control+a');
+
+    /* Copy & Paste*/
+    await page.getByRole('main').press('Control+c');
+    await page.getByRole('main').press('Control+v');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    /* Title has copy in it */
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+    /* Multiple processes */
+    const tablistNumberOfEntries = await modal.getByRole('tablist').locator('>div').count();
+    await expect(
+      tablistNumberOfEntries,
+      'Could not ensure that multiple processes are copied',
+    ).toBe(2);
+
+    /* Submit copy */
+    if (browserName !== 'firefox') {
+      await page.getByRole('main').press('Control+Enter');
+    } else {
+      await modal.click();
+      await page.locator('body').press('Control+Enter');
+    }
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Processes have been added */
+    await expect(page.locator('tbody>tr')).toHaveCount(4);
+
+    /* Check with names */
+    for (const name of names) {
+      await expect(page.locator('tbody')).toContainText(name + ' (Copy)');
+    }
   });
 
   /* Open Export Modal - ctrl / meta + e */

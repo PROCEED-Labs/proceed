@@ -114,7 +114,7 @@ const HeaderActions: FC = () => {
 
       <AuthCan create Role>
         <Button type="primary" onClick={() => setCreateRoleModalOpen(true)}>
-          <PlusOutlined /> Create Role
+          <PlusOutlined /> New Role
         </Button>
       </AuthCan>
     </>

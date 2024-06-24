@@ -59,21 +59,26 @@ const HeaderActions: FC = () => {
       actionButton = (
         <div style={{ padding: '1rem' }}>
           <Select
-            options={userSpaces.map((space) => ({
-              label: (
-                <Link
-                  href={spaceURL(
-                    { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
-                    `/processes`,
-                  )}
-                >
-                  <Typography.Text>{space.organization ? space.name : 'My Space'}</Typography.Text>
-                </Link>
-              ),
-              value: space.id,
-            }))}
+            options={userSpaces.map((space) => {
+              const name = space.organization ? space.name : 'My Space';
+              return {
+                label: (
+                  <Tooltip title={name} placement="left">
+                    <Link
+                      href={spaceURL(
+                        { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                        `/processes`,
+                      )}
+                    >
+                      <Typography.Text>{name}</Typography.Text>
+                    </Link>
+                  </Tooltip>
+                ),
+                value: space.id,
+              };
+            })}
             defaultValue={activeSpace.spaceId}
-            style={{ width: '100%' }}
+            style={{ width: '23ch' }}
           />
         </div>
       );

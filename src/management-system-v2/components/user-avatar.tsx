@@ -1,19 +1,58 @@
-import { Avatar } from 'antd';
+import { Avatar as AntDesignAvatar, Typography } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { ComponentProps, forwardRef } from 'react';
-import { User } from '@/lib/data/user-schema';
+import Avatar from 'boring-avatars';
 
-type UserAvatarProps = { user?: User; avatarProps?: ComponentProps<typeof Avatar> };
+type UserAvatarProps = {
+  user?: {
+    id: string;
+    image?: string | null;
+    guest?: boolean | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  };
+  avatarProps?: ComponentProps<typeof AntDesignAvatar>;
+};
 
 const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps }, ref) => {
-  if (!user) return <Avatar />;
+  if (!user) return <AntDesignAvatar />;
 
-  if (user.guest || 'confluence' in user) return <Avatar icon={<UserOutlined />} />;
+  if (user.guest || 'confluence' in user) return <AntDesignAvatar icon={<UserOutlined />} />;
+
+  const icon = user.image ? (
+    <img src={user.image} alt="avatar" />
+  ) : (
+    <Avatar
+      size={64}
+      name={user.id}
+      variant="marble"
+      colors={['#a1ff0a', '#ffd300', '#580aff', '#0aefff']}
+    />
+  );
 
   return (
-    <Avatar src={user.image && <img src={user.image} alt="avatar" />} {...avatarProps} ref={ref}>
-      {!user.image ? (user.firstName || '').slice(0, 1) + (user.lastName || '').slice(0, 1) : null}
-    </Avatar>
+    <AntDesignAvatar
+      style={{ position: 'relative' }}
+      src={
+        <>
+          {icon}
+          <Typography.Text
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            {!user.image
+              ? (user.firstName || '').slice(0, 1) + (user.lastName || '').slice(0, 1)
+              : null}
+          </Typography.Text>
+        </>
+      }
+      {...avatarProps}
+      ref={ref}
+    ></AntDesignAvatar>
   );
 });
 

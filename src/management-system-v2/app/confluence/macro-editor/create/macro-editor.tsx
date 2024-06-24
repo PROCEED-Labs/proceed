@@ -9,6 +9,7 @@ import { useState, useEffect, CSSProperties } from 'react';
 import { Process } from '@/lib/data/process-schema';
 import Modeler from './confluence-modeler';
 import ProcessModal from '../../process-modal';
+import { updateProcessGuestAccessRights } from '@/lib/sharing/process-sharing';
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
   const { spaceId } = useEnvironment();
@@ -83,10 +84,21 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
                   console.log('something went wrong', res.error);
                 } else {
                   const process = res[0];
-                  if (window.AP && window.AP.confluence) {
-                    window.AP.confluence.saveMacro({ processId: process.id });
-                    window.AP.confluence.closeMacroEditor();
-                  }
+
+                  const timestamp = Date.now();
+                  updateProcessGuestAccessRights(
+                    process.id,
+                    {
+                      sharedAs: 'public',
+                      shareTimestamp: 100,
+                    },
+                    spaceId,
+                  ).then((res) => {
+                    if (window.AP && window.AP.confluence) {
+                      window.AP.confluence.saveMacro({ processId: process.id });
+                      window.AP.confluence.closeMacroEditor();
+                    }
+                  });
                 }
               });
             } else {

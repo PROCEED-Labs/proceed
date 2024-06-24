@@ -4,6 +4,7 @@ import style from './loading-proceed.module.scss';
 import { useLazyRendering } from './scrollbar';
 import cn from 'classnames';
 import { v4 as uid } from 'uuid';
+import { ignore } from 'antd/es/theme/useToken';
 
 // '/proceed-icon.png'
 
@@ -12,6 +13,12 @@ type LoadingProps = {
   height?: number | string;
   small?: boolean;
   scale?: string;
+  position?: SVGPosition;
+};
+
+type SVGPosition = {
+  x?: number;
+  y?: number;
 };
 
 const ProceedLoading: FC<LoadingProps> = ({
@@ -19,7 +26,9 @@ const ProceedLoading: FC<LoadingProps> = ({
   height /* = '155px' */,
   scale = '100%',
   small = false,
+  position = { x: 0, y: 0 },
 }) => {
+  const { x, y } = position;
   const ratioedHeight =
     height || `${Number.parseInt(`${width}`) * 0.62}px`; /* Ratio of Proceed-Icon */
 
@@ -35,7 +44,8 @@ const ProceedLoading: FC<LoadingProps> = ({
       shrink = shrink > 1 ? (100 - shrink) / 100 : 1 - shrink;
 
       const size = `scale(${1.75 - 1.75 * shrink}, ${1.75 - 1.75 * shrink})`;
-      const positioning = `translate(${-40},${-3})`;
+      // @ts-ignore
+      const positioning = `translate(${-40 + x},${-3 + y})`;
 
       return (
         <>
@@ -107,7 +117,7 @@ const ProceedLoading: FC<LoadingProps> = ({
         </>
       );
     },
-    [scale],
+    [scale, position],
   );
 
   return (

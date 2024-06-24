@@ -68,10 +68,11 @@ const conditions = {
       false,
     ),
   $property_has_to_be_child_of: (valueInCondition: string, _, tree) => {
-    if (!tree)
+    if (!tree) {
       throw new Error(
         'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
       );
+    }
 
     return (resource: any) => {
       if (!valueInCondition) return false;
@@ -103,10 +104,11 @@ const conditions = {
     };
   },
   $property_has_to_be_parent_of: (valueInCondition: string, _, tree) => {
-    if (!tree)
+    if (!tree) {
       throw new Error(
         'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
       );
+    }
 
     return (resource: any) => {
       if (!valueInCondition) return false;

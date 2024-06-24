@@ -158,11 +158,11 @@ const RoleMembers: FC<{
             />
           </Tooltip>
         )}
-        /*searchBarRightNode={
-        <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
-          Add Member
-        </Button>
-      }*/
+        createUserNode={
+          <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
+            Add Member
+          </Button>
+        }
       />
     </>
   );

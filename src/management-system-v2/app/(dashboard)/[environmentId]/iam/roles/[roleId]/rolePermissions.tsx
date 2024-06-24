@@ -1,20 +1,9 @@
 'use client';
 
-import {
-  Divider,
-  Form,
-  Row,
-  Space,
-  Switch,
-  Typography,
-  FloatButton,
-  Tooltip,
-  Spin,
-  App,
-} from 'antd';
+import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
 import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
-import { FC, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
@@ -256,12 +245,14 @@ const basePermissionOptions: PermissionCategory[] = [
 ];
 
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
-  const [permissions, setPermissions] = useState(role.permissions);
-  const [loading, setLoading] = useState(false);
   const ability = useAbilityStore((store) => store.ability);
+  const environment = useEnvironment();
+
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const environment = useEnvironment();
+
+  const [permissions, setPermissions] = useState(role.permissions);
+  const [loading, setLoading] = useState(false);
 
   async function updateRole() {
     setLoading(true);
@@ -290,8 +281,8 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
             {permissionCategory.title}
           </Typography.Title>
           {permissionCategory.permissions.map((permission, idx) => (
-            <>
-              <Row key={permissionCategory.key} align="top" justify="space-between" wrap={false}>
+            <Fragment key={permissionCategory.key}>
+              <Row align="top" justify="space-between" wrap={false}>
                 <Space direction="vertical" size={0}>
                   <Typography.Text strong>{permission.title}</Typography.Text>
                   <Typography.Text type="secondary">{permission.description}</Typography.Text>
@@ -324,25 +315,24 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
               {idx < permissionCategory.permissions.length - 1 && (
                 <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
               )}
-            </>
+            </Fragment>
           ))}
           <br />
         </>
       ))}
 
-      <Tooltip title="Save changes">
-        <FloatButton
-          type="primary"
-          icon={
-            loading ? (
-              <Spin indicator={<LoadingOutlined style={{ color: '#fff' }} />} />
-            ) : (
-              <SaveOutlined />
-            )
-          }
-          onClick={() => !loading && form.submit()}
-        />
-      </Tooltip>
+      <Button
+        type="primary"
+        htmlType="submit"
+        loading={loading}
+        icon={<SaveOutlined />}
+        style={{
+          position: 'sticky',
+          bottom: 0,
+        }}
+      >
+        Save
+      </Button>
     </Form>
   );
 };

@@ -64,7 +64,13 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
             }}
           >
             <span>{process.name}</span>
-            <Button appearance="primary" onClick={() => window.AP.confluence.closeMacroEditor()}>
+            <Button
+              appearance="primary"
+              onClick={() => {
+                window.AP.confluence.saveMacro({ processId: process.id });
+                window.AP.confluence.closeMacroEditor();
+              }}
+            >
               Close
             </Button>
           </div>

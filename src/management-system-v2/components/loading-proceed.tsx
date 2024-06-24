@@ -10,8 +10,8 @@ import { v4 as uid } from 'uuid';
 type LoadingProps = {
   width?: number | string;
   height?: number | string;
-  scale?: string;
   small?: boolean;
+  scale?: string;
 };
 
 const ProceedLoading: FC<LoadingProps> = ({
@@ -51,6 +51,7 @@ const ProceedLoading: FC<LoadingProps> = ({
               style={{
                 mask: `url(#${maskID}) center/100% no-repeat`,
                 WebkitMask: `url(#${maskID}) center/100% no-repeat`,
+                // maskSize: 'contain', /* This seems not to work with grouped svgs */
               }}
             >
               <div className={cn(style.loadingIndicatorSVG, { [style.visible]: visible })}></div>
@@ -64,7 +65,15 @@ const ProceedLoading: FC<LoadingProps> = ({
               className={style.svgMask}
             >
               <defs>
-                <mask id={maskID} x="0" y="0" width="200%" height="100%">
+                <mask
+                  id={maskID}
+                  x="0"
+                  y="0"
+                  width="200%"
+                  height="100%"
+                  // maskUnits="objectBoundingBox" /* This seems not to work with grouped svgs */
+                >
+                  {/* This is scaling the svg accordingly since masksize = cover seems not to work with grouped svgs */}
                   <g transform={size}>
                     <g transform={positioning}>
                       <g transform="scale(0.9141768,1.0938803)">

@@ -54,27 +54,30 @@ const HeaderActions: FC = () => {
       </Button>
     );
   } else {
-    actionButton = (
-      <div style={{ padding: '1rem' }}>
-        <Select
-          options={userSpaces.map((space) => ({
-            label: (
-              <Link
-                href={spaceURL(
-                  { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
-                  `/processes`,
-                )}
-              >
-                <Typography.Text>{space.organization ? space.name : 'My Space'}</Typography.Text>
-              </Link>
-            ),
-            value: space.id,
-          }))}
-          defaultValue={activeSpace.spaceId}
-          style={{ width: '100%' }}
-        />
-      </div>
-    );
+    // userSpaces is null when the component is outside of the UserSpaces provider
+    if (userSpaces) {
+      actionButton = (
+        <div style={{ padding: '1rem' }}>
+          <Select
+            options={userSpaces.map((space) => ({
+              label: (
+                <Link
+                  href={spaceURL(
+                    { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                    `/processes`,
+                  )}
+                >
+                  <Typography.Text>{space.organization ? space.name : 'My Space'}</Typography.Text>
+                </Link>
+              ),
+              value: space.id,
+            }))}
+            defaultValue={activeSpace.spaceId}
+            style={{ width: '100%' }}
+          />
+        </div>
+      );
+    }
 
     avatarDropdownItems.push(
       {

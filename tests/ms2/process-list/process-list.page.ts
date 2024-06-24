@@ -162,6 +162,10 @@ export class ProcessListPage {
     if (processListPageURL) {
       await page.goto(processListPageURL);
       await page.waitForURL('**/processes');
+
+      /* Ensure it is the list view */
+      await page.getByRole('button', { name: 'unordered-list' }).click();
+
       // check if there are processes to remove
       if (!(await page.locator('tr[data-row-key]').all()).length) return;
 
@@ -222,5 +226,15 @@ export class ProcessListPage {
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
     await expect(folderRow).toBeVisible();
+
+    return folderRow.getAttribute('data-row-key');
+  }
+
+  async selectRow(id: string) {
+    const { page } = this;
+    const row = await page.locator(`tr[data-row-key="${id}"]`);
+    row.check();
+
+    await row.check();
   }
 }

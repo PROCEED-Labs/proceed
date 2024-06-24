@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ComponentProps, FC, ReactNode, useState } from 'react';
-import { Space, Avatar, Button, Table, Grid } from 'antd';
+import { Space, Button, Table, Grid } from 'antd';
 import { UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
@@ -10,6 +10,7 @@ import styles from './user-list.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 import ElementList from './item-list-view';
+import UserAvatar from './user-avatar';
 
 type _ListUser = Partial<
   Omit<AuthenticatedUser, 'id' | 'firstName' | 'lastName' | 'username' | 'email'>
@@ -52,12 +53,9 @@ const UserList: FC<UserListProps> = ({
           ...user,
           display: (
             <Space size={16}>
-              <Avatar src={user.image}>
-                {user.image
-                  ? null
-                  : (user.firstName.value?.slice(0, 1) ?? '') +
-                    (user.lastName.value?.slice(0, 1) ?? '')}
-              </Avatar>
+              <UserAvatar
+                user={{ ...user, firstName: user.firstName.value, lastName: user.lastName.value }}
+              />
               <span>
                 {highlightKeys ? (
                   <>

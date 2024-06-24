@@ -1,12 +1,11 @@
 import Content from '@/components/content';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!enableNewMSExecution) {
+  if (!process.env.ENABLE_EXECUTION) {
     return notFound();
   }
 

@@ -16,7 +16,6 @@ import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
@@ -70,7 +69,7 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (enableNewMSExecution) {
+  if (process.env.ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({

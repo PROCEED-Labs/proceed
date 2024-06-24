@@ -40,7 +40,7 @@ module.exports = {
   enable5thIndustryIntegration: false,
 
   // Execution view in the new MS web app
-  enableNewMSExecution: true,
+  enableNewMSExecution: false,
 
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,

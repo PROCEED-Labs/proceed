@@ -89,10 +89,13 @@ const conditions = {
       if (!resource.parentId) return false;
 
       let currentFolder = resource.parentId;
+      const seen = new Set<string>();
       while (currentFolder) {
-        if (currentFolder === valueInCondition) {
-          return true;
-        }
+        if (currentFolder === valueInCondition) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
         currentFolder = tree[currentFolder];
       }
 
@@ -115,10 +118,13 @@ const conditions = {
       if (!resource.id) throw new Error('Folder does not have an id');
 
       let currentFolder = valueInCondition;
+      const seen = new Set<string>();
       while (currentFolder) {
-        if (currentFolder === resource.id) {
-          return true;
-        }
+        if (currentFolder === resource.id) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
         currentFolder = tree[currentFolder];
       }
 

@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
 
+const unallowedProviders = ['guest-signin', 'development-users'];
+
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
   const { session } = await getCurrentUser();
@@ -15,9 +17,7 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
 
   let providers = getProviders();
 
-  providers = providers.filter(
-    (provider) => !isGuest || !['guest-signin', 'development-users'].includes(provider.id),
-  );
+  providers = providers.filter((provider) => !isGuest || !unallowedProviders.includes(provider.id));
 
   providers = providers.sort((a, b) => {
     if (a.type === 'email') {

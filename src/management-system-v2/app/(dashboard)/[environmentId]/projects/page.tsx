@@ -19,9 +19,9 @@ const Projects = async ({ params }: { params: { environmentId: string } }) => {
             id: '',
             name: '',
             parentId: '',
-            createdAt: '',
+            createdOn: '',
             createdBy: '',
-            updatedAt: '',
+            lastEdited: '',
             environmentId: '',
           }}
         />

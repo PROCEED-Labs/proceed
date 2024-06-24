@@ -5,6 +5,7 @@ import fs from 'fs';
 import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
+import { expect } from './process-list.fixtures';
 
 export class ProcessListPage {
   readonly page: Page;
@@ -124,9 +125,13 @@ export class ProcessListPage {
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
 
-  async createProcess(options: { processName?: string; description?: string }) {
+  async createProcess(options: {
+    processName?: string;
+    description?: string;
+    returnToProcessList?: boolean;
+  }) {
     const page = this.page;
-    const { processName, description } = options;
+    const { processName, description, returnToProcessList } = options;
 
     // TODO: reuse other page models for these set ups.
     // Add a new process.
@@ -136,7 +141,19 @@ export class ProcessListPage {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
-    return page.url().split('processes/').pop();
+    const id = page.url().split('processes/').pop();
+
+    if (returnToProcessList) {
+      /* Go back to Process-List */
+      await this.goto();
+
+      /* Wait until on Process-List */
+      await page.waitForURL('**/processes');
+    }
+    /* Wait for Hydration */
+    await this.waitForHydration();
+
+    return id;
   }
 
   async removeAllProcesses() {
@@ -147,6 +164,10 @@ export class ProcessListPage {
       await page.waitForURL('**/processes');
       // check if there are processes to remove
       if (!(await page.locator('tr[data-row-key]').all()).length) return;
+
+      await page.waitForTimeout(
+        100,
+      ); /* Checking 'select all' is flaky TODO: replace timeout with proper fix */
       // remove all processes
       await page.getByLabel('Select all').check();
       await page.getByRole('button', { name: 'delete' }).first().click();
@@ -171,5 +192,35 @@ export class ProcessListPage {
     }, readAsText);
 
     return result;
+  }
+
+  async waitForHydration() {
+    const { page } = this;
+    /* Gves time for everything to load */
+    const accountButton = await page.getByRole('link', { name: 'user' });
+    await accountButton.hover();
+    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
+    await page.getByRole('main').click();
+  }
+
+  async createFolder({
+    folderName,
+    folderDescription,
+  }: {
+    folderName: string;
+    folderDescription?: string;
+  }) {
+    const { page } = this;
+
+    // NOTE: selecting a table could break
+    const table = page.locator('table tbody');
+    await table.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
+    await page.getByLabel('Folder name').fill(folderName);
+    if (folderDescription) await page.getByLabel('Description').fill(folderDescription);
+    await page.getByRole('button', { name: 'OK' }).click();
+    // NOTE: this could break if there is another folder with the same name
+    const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
+    await expect(folderRow).toBeVisible();
   }
 }

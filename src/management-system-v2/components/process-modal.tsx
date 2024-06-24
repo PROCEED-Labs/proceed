@@ -77,7 +77,19 @@ const ProcessModal = <T extends { name: string; description: string }>({
 
   useAddControlCallback(
     'process-list',
-    ['selectall', 'esc', 'del', 'copy', 'paste', 'enter', 'cut', 'export', 'import', 'shiftenter'],
+    [
+      'selectall',
+      'esc',
+      'del',
+      'copy',
+      'paste',
+      'enter',
+      'cut',
+      'export',
+      'import',
+      'shift+enter',
+      'new',
+    ],
     (e) => {
       // e.preventDefault();
     },
@@ -85,7 +97,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
   );
   useAddControlCallback(
     'process-list',
-    'controlenter',
+    'control+enter',
     () => {
       if (open) onOk();
       console.log(`trying to submit in process export. Modal is ${open ? 'open' : 'closed'}`);

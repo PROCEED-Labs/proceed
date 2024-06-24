@@ -41,6 +41,24 @@ export function getRoles(environmentId?: string, ability?: Ability) {
 }
 
 /**
+ * Returns all roles in form of an array
+ *
+ * @throws {UnauthorizedError}
+ */
+export function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+  for (const role of Object.values(roleMetaObjects)) {
+    if (role.name === name && role.environmentId === environmentId) {
+      if (ability && !ability.can('view', toCaslResource('Role', role)))
+        throw new UnauthorizedError();
+
+      return role;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Returns a role based on role id
  *
  * @throws {UnauthorizedError}

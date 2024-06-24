@@ -15,6 +15,7 @@ import {
   DeleteOutlined,
   CopyOutlined,
   CaretRightOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +34,7 @@ import {
   Collapse,
   theme,
   Card,
+  Dropdown,
 } from 'antd';
 import { ToolbarGroup } from '@/components/toolbar';
 import VersionCreationButton from '@/components/version-creation-button';
@@ -42,6 +44,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { defaultMachineConfig, findInTree } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
+import Parameters from './parameter';
 
 type MachineDataViewProps = {
   configId: string;
@@ -80,7 +83,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const selectedVersionId = query.get('version');
   const [nestedParameters, setNestedParameters] = useState<MachineConfigParameter[]>([]); // State for nested parameters
 
-  //Added by Antoni
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -175,15 +177,51 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     setEditingName(!editingName);
   };
 
-  const metaDataContent = (
+  const items = [
+    {
+      key: '1',
+      label: 'Custom Field',
+    },
+    {
+      key: '2',
+      label: 'Attachment',
+    },
+    {
+      key: '3',
+      label: 'Machine',
+    },
+    {
+      key: '4',
+      label: 'Picture',
+    },
+    {
+      key: '5',
+      label: 'ID',
+    },
+    {
+      key: '6',
+      label: 'Owner',
+    },
+    {
+      key: '7',
+      label: 'Description',
+    },
+  ];
+
+  const childConfigContent = (
     <div>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           ID{' '}
         </Col>
-        <Col span={22} className="gutter-row">
+        <Col span={21} className="gutter-row">
           <Input disabled prefix={<KeyOutlined />} />
+        </Col>
+        <Col span={1} className="gutter-row">
+          <Tooltip title="Delete">
+            <Button icon={<DeleteOutlined />} type="text" />
+          </Tooltip>
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -191,8 +229,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           {' '}
           Owner{' '}
         </Col>
-        <Col span={22} className="gutter-row">
+        <Col span={21} className="gutter-row">
           <Input disabled prefix={<UserOutlined />} />
+        </Col>
+        <Col span={1} className="gutter-row">
+          <Tooltip title="Delete">
+            <Button icon={<DeleteOutlined />} type="text" />
+          </Tooltip>
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -200,112 +243,30 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           {' '}
           Description{' '}
         </Col>
-        <Col span={22} className="gutter-row">
+        <Col span={21} className="gutter-row">
           <TextArea />
         </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row"></Col>
-        <Col span={3} className="gutter-row">
-          <Button icon={<PlusOutlined />}>Add Field</Button>
+        <Col span={1} className="gutter-row">
+          <Tooltip title="Delete">
+            <Button icon={<DeleteOutlined />} type="text" />
+          </Tooltip>
         </Col>
       </Row>
-    </div>
-  );
-
-  const parameterContent = (
-    <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
         <Col span={2} className="gutter-row">
-          {' '}
-          Parameters{' '}
-        </Col>
-        <Col span={22} className="gutter-row">
-          <Card>
-            <Button
-              icon={<PlusOutlined />}
-              type="dashed"
-              style={{ width: '100%', marginBottom: 16 }}
-              onClick={addNestedParameter}
-            >
-              Add Parameter
+          <Dropdown menu={{ items }}>
+            <Button>
+              <Space>
+                Add
+                <DownOutlined />
+              </Space>
             </Button>
-            {nestedParameters.map((param, i) => (
-              <Card
-                key={i}
-                type="inner"
-                title={`Nested Parameter ${i + 1}`}
-                extra={
-                  <Button
-                    icon={<MinusOutlined />}
-                    type="dashed"
-                    onClick={() => removeNestedParameter(i)}
-                  />
-                }
-                style={{ marginBottom: 16 }}
-              >
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col span={6}>
-                    <Input
-                      placeholder="Key"
-                      value={param.key}
-                      onChange={(e) => changeNestedParameter(i, 'key', e.target.value)}
-                      onBlur={saveParameters}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Input
-                      placeholder="Value"
-                      value={param.value}
-                      onChange={(e) => changeNestedParameter(i, 'value', e.target.value)}
-                      onBlur={saveParameters}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Input
-                      placeholder="Unit"
-                      value={param.unit}
-                      onChange={(e) => changeNestedParameter(i, 'unit', e.target.value)}
-                      onBlur={saveParameters}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Input
-                      placeholder="Language"
-                      value={param.language}
-                      onChange={(e) => changeNestedParameter(i, 'language', e.target.value)}
-                      onBlur={saveParameters}
-                    />
-                  </Col>
-                </Row>
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col span={24}>
-                    <Space>
-                      <Tag color="purple">Key XY</Tag>
-                      <Tag color="blue">Key AB</Tag>
-                      <Button icon={<PlusOutlined />} type="dashed" />
-                    </Space>
-                  </Col>
-                </Row>
-                <Row gutter={16} justify="start">
-                  <Space>
-                    <Tooltip title="Copy">
-                      <Button icon={<CopyOutlined />} shape="circle" />
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                      <Button icon={<EditOutlined />} shape="circle" />
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <Button icon={<DeleteOutlined />} shape="circle" />
-                    </Tooltip>
-                  </Space>
-                  <Button type="link" icon={<PlusOutlined />}>
-                    Create Custom Parameter
-                  </Button>
-                </Row>
-              </Card>
-            ))}
-          </Card>
+          </Dropdown>
+        </Col>
+      </Row>
+      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+        <Col span={23} className="gutter-row">
+          <Parameters />
         </Col>
       </Row>
     </div>
@@ -322,7 +283,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     {
       key: '1',
       label: 'Target Configuration Name',
-      children: [metaDataContent, parameterContent],
+      children: [childConfigContent],
       style: panelStyle,
     },
   ];
@@ -331,13 +292,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     {
       key: '1',
       label: 'Machine Configuration Name',
-      children: [metaDataContent, parameterContent],
+      children: [childConfigContent],
       style: panelStyle,
     },
     {
       key: '2',
       label: 'Machine Configuration Name',
-      children: [metaDataContent, parameterContent],
+      children: [childConfigContent],
       style: panelStyle,
     },
   ];
@@ -358,8 +319,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               {' '}
               ID{' '}
             </Col>
-            <Col span={22} className="gutter-row">
+            <Col span={21} className="gutter-row">
               <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
             </Col>
           </Row>
           <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -367,12 +333,17 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               {' '}
               Owner{' '}
             </Col>
-            <Col span={22} className="gutter-row">
+            <Col span={21} className="gutter-row">
               <Input
                 value={editingMachineConfig.owner.split('|').pop()}
                 disabled
                 prefix={<UserOutlined />}
               />
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
             </Col>
           </Row>
           <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -380,14 +351,25 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               {' '}
               Description{' '}
             </Col>
-            <Col span={22} className="gutter-row">
+            <Col span={21} className="gutter-row">
               <TextArea value={description} onChange={changeDescription} onBlur={saveDescription} />
             </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
           </Row>
-          <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-            <Col span={2} className="gutter-row"></Col>
-            <Col span={3} className="gutter-row">
-              <Button icon={<PlusOutlined />}>Add Field</Button>
+          <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
+            <Col span={2} className="gutter-row">
+              <Dropdown menu={{ items }}>
+                <Button>
+                  <Space>
+                    Add
+                    <DownOutlined />
+                  </Space>
+                </Button>
+              </Dropdown>
             </Col>
           </Row>
         </div>

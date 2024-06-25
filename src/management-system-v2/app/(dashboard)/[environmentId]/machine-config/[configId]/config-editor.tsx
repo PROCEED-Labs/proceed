@@ -12,6 +12,7 @@ import {
   DeleteOutlined,
   CopyOutlined,
   CaretRightOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
@@ -60,7 +61,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState<string | undefined>('');
   const [description, setDescription] = useState<string | undefined>('');
 
@@ -100,18 +100,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     router.refresh();
   };
 
-  const changeName = (e: any) => {
-    let newName = e.target.value;
-    setName(newName);
-  };
-
-  const saveName = (e: any) => {
-    if (editingName) {
-      if (refEditingMachineConfig) {
-        refEditingMachineConfig.selection.name = name ? name : '';
-        saveMachineConfig(configId, rootMachineConfig).then(() => {});
-        router.refresh();
-      }
+  const saveName = () => {
+    if (refEditingMachineConfig) {
+      refEditingMachineConfig.selection.name = name ? name : '';
+      console.log(name);
+      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      router.refresh();
+      console.log('saved name');
     }
   };
 
@@ -125,13 +120,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
-
-  const toggleEditingName = () => {
-    // if (editingName) {
-    //   saveMachineConfig(configId, rootMachineConfig).then(() => {});
-    // }
-    setEditingName(!editingName);
-  };
 
   const machConfigsHeader = (
     <Space.Compact block size="small">
@@ -209,20 +197,25 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           alignItems: 'center',
         }}
       >
-        <Title level={4} style={{ margin: '0 16px' }}>
-          {!editingName ? (
-            <>{editingMachineConfig.name}</>
-          ) : (
-            <Input value={name} onChange={changeName} onBlur={saveName} />
-          )}
+        <Title
+          editable={{
+            icon: (
+              <EditOutlined
+                style={{
+                  margin: '0 10px',
+                }}
+              />
+            ),
+            tooltip: 'Edit',
+            onChange: setName,
+            onEnd: saveName,
+            enterIcon: <CheckOutlined />,
+          }}
+          level={5}
+          style={{ margin: '0 16px' }}
+        >
+          {name}
         </Title>
-        <Tooltip title="Edit Name">
-          <Button
-            type="text"
-            icon={<EditOutlined onClick={toggleEditingName} />}
-            style={{ margin: '0 16px 0 0' }}
-          />
-        </Tooltip>
         <ToolbarGroup>
           <Select
             popupMatchSelectWidth={false}

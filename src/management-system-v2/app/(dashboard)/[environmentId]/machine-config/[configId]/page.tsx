@@ -11,6 +11,7 @@ import {
 import { Breadcrumb, Input, Button, Form } from 'antd';
 import { Col, Divider, Row } from 'antd';
 import MachineConfigEditor from './machine-config-editor';
+import ConfigContent from './config-content';
 
 type MachineConfigProps = {
   params: { configId: string; environmentId: string };
@@ -23,9 +24,10 @@ export default async function MachineConfigView({
 }: MachineConfigProps) {
   let machineConfig = await getMachineConfigById(configId);
 
+  //replace ConfigContent <-> MachineConfigEditor as needed
   return (
     <Content title="Machine Configuration">
-      <MachineConfigEditor
+      <ConfigContent
         originalMachineConfig={machineConfig}
         backendSaveMachineConfig={saveMachineConfig}
         backendCreateMachineConfig={createMachineConfig}

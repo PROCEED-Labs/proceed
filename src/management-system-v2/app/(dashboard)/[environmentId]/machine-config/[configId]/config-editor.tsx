@@ -5,9 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   PlusOutlined,
-  MinusOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
   ArrowUpOutlined,
   EditOutlined,
   KeyOutlined,
@@ -15,7 +12,6 @@ import {
   DeleteOutlined,
   CopyOutlined,
   CaretRightOutlined,
-  DownOutlined,
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
@@ -44,7 +40,10 @@ import { useEnvironment } from '@/components/auth-can';
 import { defaultMachineConfig, findInTree } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
-import Parameters from './parameter';
+import MetaData from './metadata';
+import MachineConfigurations from './mach-config';
+import TargetConfiguration from './target-config';
+import Text from 'antd/es/typography/Text';
 
 type MachineDataViewProps = {
   configId: string;
@@ -81,39 +80,10 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
-  const [nestedParameters, setNestedParameters] = useState<MachineConfigParameter[]>([]); // State for nested parameters
 
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-  const addNestedParameter = () => {
-    setNestedParameters([
-      ...nestedParameters,
-      { key: '', value: '', unit: '', language: '', children: [] },
-    ]);
-  };
-
-  const changeNestedParameter = (index: number, key: string, value: string) => {
-    const newNestedParameters = [...nestedParameters];
-    if (key === 'key') newNestedParameters[index].key = value;
-    else if (key === 'value') newNestedParameters[index].value = value;
-    else if (key === 'unit') newNestedParameters[index].unit = value;
-    else if (key === 'language') newNestedParameters[index].language = value;
-    setNestedParameters(newNestedParameters);
-  };
-
-  const saveParameters = () => {
-    if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.parameters = nestedParameters;
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
-      router.refresh();
-    }
-  };
-
-  const removeNestedParameter = (index: number) => {
-    setNestedParameters(nestedParameters.filter((_, i) => i !== index));
-  };
-  ////
 
   const selectedVersion =
     editingMachineConfig.versions.find(
@@ -145,19 +115,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
   };
 
-  const changeDescription = (e: any) => {
-    let newDescription = e.target.value;
-    setDescription(newDescription);
-  };
-
-  const saveDescription = (e: any) => {
-    if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.description = description ? description : '';
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
-      router.refresh();
-    }
-  };
-
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -165,7 +122,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
     setName(editingMachineConfig.name);
     setDescription(editingMachineConfig.description);
-    if (refEditingMachineConfig) setNestedParameters(refEditingMachineConfig.selection.parameters);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
@@ -177,99 +133,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     setEditingName(!editingName);
   };
 
-  const items = [
-    {
-      key: '1',
-      label: 'Custom Field',
-    },
-    {
-      key: '2',
-      label: 'Attachment',
-    },
-    {
-      key: '3',
-      label: 'Machine',
-    },
-    {
-      key: '4',
-      label: 'Picture',
-    },
-    {
-      key: '5',
-      label: 'ID',
-    },
-    {
-      key: '6',
-      label: 'Owner',
-    },
-    {
-      key: '7',
-      label: 'Description',
-    },
-  ];
-
-  const childConfigContent = (
-    <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          ID{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input disabled prefix={<KeyOutlined />} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          Owner{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input disabled prefix={<UserOutlined />} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          Description{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <TextArea />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
-        <Col span={2} className="gutter-row">
-          <Dropdown menu={{ items }}>
-            <Button>
-              <Space>
-                Add
-                <DownOutlined />
-              </Space>
-            </Button>
-          </Dropdown>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={23} className="gutter-row">
-          <Parameters />
-        </Col>
-      </Row>
-    </div>
+  const machConfigsHeader = (
+    <Space.Compact block size="small">
+      <Text>Machine Configurations</Text>
+      <Tooltip title="Add Machine Configuration">
+        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
+      </Tooltip>
+    </Space.Compact>
   );
 
   const { token } = theme.useToken();
@@ -279,29 +149,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     borderRadius: token.borderRadiusLG,
     border: 'none',
   };
-  const targetConfigItem = [
-    {
-      key: '1',
-      label: 'Target Configuration Name',
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-  ];
-
-  const machineConfigItems = [
-    {
-      key: '1',
-      label: 'Machine Configuration Name',
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-    {
-      key: '2',
-      label: 'Machine Configuration Name',
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-  ];
 
   const getItems = (panelStyle: {
     marginBottom: number;
@@ -313,66 +160,12 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       key: '1',
       label: 'Meta Data',
       children: (
-        <div>
-          <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-            <Col span={2} className="gutter-row">
-              {' '}
-              ID{' '}
-            </Col>
-            <Col span={21} className="gutter-row">
-              <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
-            </Col>
-            <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Tooltip>
-            </Col>
-          </Row>
-          <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-            <Col span={2} className="gutter-row">
-              {' '}
-              Owner{' '}
-            </Col>
-            <Col span={21} className="gutter-row">
-              <Input
-                value={editingMachineConfig.owner.split('|').pop()}
-                disabled
-                prefix={<UserOutlined />}
-              />
-            </Col>
-            <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Tooltip>
-            </Col>
-          </Row>
-          <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-            <Col span={2} className="gutter-row">
-              {' '}
-              Description{' '}
-            </Col>
-            <Col span={21} className="gutter-row">
-              <TextArea value={description} onChange={changeDescription} onBlur={saveDescription} />
-            </Col>
-            <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button icon={<DeleteOutlined />} type="text" />
-              </Tooltip>
-            </Col>
-          </Row>
-          <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
-            <Col span={2} className="gutter-row">
-              <Dropdown menu={{ items }}>
-                <Button>
-                  <Space>
-                    Add
-                    <DownOutlined />
-                  </Space>
-                </Button>
-              </Dropdown>
-            </Col>
-          </Row>
-        </div>
+        <MetaData
+          backendSaveMachineConfig={saveMachineConfig}
+          configId={configId}
+          rootMachineConfig={rootMachineConfig}
+          selectedMachineConfig={props.selectedMachineConfig}
+        />
       ),
       style: panelStyle,
     },
@@ -380,28 +173,24 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       key: '2',
       label: 'Target Configuration',
       children: (
-        <Collapse
-          bordered={false}
-          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-          style={{
-            background: 'none',
-          }}
-          items={targetConfigItem}
+        <TargetConfiguration
+          backendSaveMachineConfig={saveMachineConfig}
+          configId={configId}
+          rootMachineConfig={rootMachineConfig}
+          selectedMachineConfig={props.selectedMachineConfig}
         />
       ),
       style: panelStyle,
     },
     {
       key: '3',
-      label: 'Machine Configurations',
+      label: machConfigsHeader,
       children: (
-        <Collapse
-          bordered={false}
-          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-          style={{
-            background: 'none',
-          }}
-          items={machineConfigItems}
+        <MachineConfigurations
+          backendSaveMachineConfig={saveMachineConfig}
+          configId={configId}
+          rootMachineConfig={rootMachineConfig}
+          selectedMachineConfig={props.selectedMachineConfig}
         />
       ),
       style: panelStyle,

@@ -4,7 +4,6 @@ import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import { App, Button, Space, Table, Typography } from 'antd';
 import { FC, useState, useTransition } from 'react';
-import CreateEnvironmentButton from './create-environment-button';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import EnvironmentSidePanel from './environments-side-panel';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -69,7 +68,9 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
         <Bar
           leftNode={
             <Space>
-              <CreateEnvironmentButton />
+              <Button type="primary" href="/create-organization">
+                New Organization
+              </Button>
               <SelectionActions count={selectedRowKeys.length}>
                 <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
                 <ConfirmationButton

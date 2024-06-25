@@ -191,7 +191,7 @@ export type ExtractedProvider =
       credentials: Record<string, CredentialInput>;
     };
 
-// Unfortunatly, next-auth's getProviders() function does not return enough information to render the signin page.
+// Unfortunately, next-auth's getProviders() function does not return enough information to render the signin page.
 // So we need to manually map the providers
 // NOTE be careful not to leak any sensitive information
 export const getProviders = () =>

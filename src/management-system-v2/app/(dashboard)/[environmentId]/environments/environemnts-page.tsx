@@ -69,6 +69,7 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
         <Bar
           leftNode={
             <Space>
+              <CreateEnvironmentButton />
               <SelectionActions count={selectedRowKeys.length}>
                 <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
                 <ConfirmationButton
@@ -98,7 +99,6 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
             onChange: (e) => setSearchQuery(e.target.value),
             placeholder: 'Search Environments',
           }}
-          rightNode={<CreateEnvironmentButton />}
         />
         <Table<(typeof filteredData)[number]>
           columns={[

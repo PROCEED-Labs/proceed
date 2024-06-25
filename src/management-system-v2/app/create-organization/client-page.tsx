@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
+import Link from 'next/link';
 
 const getCountryOption = (country: CountryCode) => {
   const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
@@ -115,19 +116,23 @@ const CreateOrganizationPage = ({
       <Content
         headerCenter={
           breakpoint.xs ? undefined : (
-            <Image
-              src={'/proceed.svg'}
+            <Link
               style={{
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 paddingBottom: '15px',
               }}
-              alt="PROCEED Logo"
-              width={breakpoint.xs ? 85 : 160}
-              height={breakpoint.xs ? 35 : 63}
-              priority
-            />
+              href={'/'}
+            >
+              <Image
+                src={'/proceed.svg'}
+                alt="PROCEED Logo"
+                width={breakpoint.xs ? 85 : 160}
+                height={breakpoint.xs ? 35 : 63}
+                priority
+              />
+            </Link>
           )
         }
       >

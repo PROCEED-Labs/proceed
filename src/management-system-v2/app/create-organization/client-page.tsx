@@ -107,7 +107,8 @@ const CreateOrganizationPage = ({
   return (
     <div
       style={{
-        height: '100vh',
+        minHeight: '100svh',
+        height: '1px', // hack to make children inherit correct height
       }}
     >
       {contextHolder}

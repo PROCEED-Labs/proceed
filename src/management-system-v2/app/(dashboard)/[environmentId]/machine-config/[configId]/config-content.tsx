@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
@@ -12,7 +12,7 @@ const { Sider } = Layout;
 
 type VariablesEditorProps = {
   configId: string;
-  originalMachineConfig: MachineConfig;
+  originalMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
   backendCreateMachineConfig: Function;
 };
@@ -20,7 +20,7 @@ type VariablesEditorProps = {
 export default function ConfigContent(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<
-    { parent: MachineConfig; selection: MachineConfig } | undefined
+    { parent: ParentConfig; selection: ParentConfig } | undefined
   >(undefined);
 
   const configId = props.configId;
@@ -31,7 +31,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
     setSelectedConfig({ parent: machineConfig, selection: machineConfig });
   }, []);
 
-  const onSelectConfig = (relation: { parent: MachineConfig; selection: MachineConfig }) => {
+  const onSelectConfig = (relation: { parent: ParentConfig; selection: ParentConfig }) => {
     setSelectedConfig(relation);
   };
 
@@ -49,9 +49,9 @@ export default function ConfigContent(props: VariablesEditorProps) {
             <>
               <MachineTreeView
                 onSelectConfig={onSelectConfig}
-                backendSaveMachineConfig={saveMachineConfig}
+                backendSaveParentConfig={saveMachineConfig}
                 configId={configId}
-                originalMachineConfig={machineConfig}
+                parentConfig={machineConfig}
               />
             </>
           )}

@@ -1,6 +1,11 @@
 'use client';
 
-import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import {
+  ParentConfig,
+  AbstractConfig,
+  ConfigParameter,
+  TargetConfig,
+} from '@/lib/data/machine-config-schema';
 import {
   Button,
   Dropdown,
@@ -20,23 +25,27 @@ import { PlusOutlined } from '@ant-design/icons';
 import { v4 } from 'uuid';
 import TextArea from 'antd/es/input/TextArea';
 
-type MachineTreeViewProps = {
+type ConfigurationTreeViewProps = {
   configId: string;
-  originalMachineConfig: MachineConfig;
-  backendSaveMachineConfig: Function;
+  parentConfig: ParentConfig;
+  backendSaveParentConfig: Function;
   onSelectConfig: Function;
 };
 
-export function defaultMachineConfig() {
+export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig } | undefined;
+
+export function defaultConfiguration(): AbstractConfig {
   const date = new Date().toUTCString();
   return {
     id: v4(),
-    type: 'machine-config',
+    type: 'config',
     environmentId: '',
-    owner: '',
+    owner: { label: 'owner', value: '' },
+    picture: { label: 'picture', value: '' },
     name: 'Default Machine Configuration',
-    description: '',
+    description: { label: 'description', value: '' },
     variables: [],
+    customFields: [],
     parameters: [],
     departments: [],
     inEditingBy: [],
@@ -47,46 +56,31 @@ export function defaultMachineConfig() {
     allowIframeTimestamp: 0,
     versions: [],
     folderId: '',
-    targetConfigs: [],
-    machineConfigs: [],
-  } as MachineConfig;
+    createdBy: '',
+    lastEditedBy: '',
+    lastEditedOn: '',
+  } as AbstractConfig;
 }
 
-export function findInTree(
-  id: string,
-  _parent: MachineConfig,
-  _machineConfig: MachineConfig,
-  level: number,
-): { parent: MachineConfig; selection: MachineConfig } | undefined {
-  if (_machineConfig.id === id) {
-    return { selection: _machineConfig, parent: _parent };
+export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct | undefined {
+  if (id === _parent.id) {
+    return { selection: _parent, parent: _parent };
   }
-  let machineFound = undefined;
-  const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
-    ? _machineConfig.targetConfigs
-    : [];
-  for (let childrenConfig of targetConfigs) {
-    if (machineFound) {
-      break;
+  if (_parent.targetConfig && id === _parent.targetConfig.id) {
+    return { selection: _parent.targetConfig, parent: _parent };
+  }
+  for (let machineConfig of _parent.machineConfigs) {
+    if (machineConfig.id === id) {
+      return { selection: machineConfig, parent: _parent };
     }
-    machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
   }
-  const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
-    ? _machineConfig.machineConfigs
-    : [];
-  for (let childrenConfig of machineConfigs) {
-    if (machineFound) {
-      break;
-    }
-    machineFound = findInTree(id, _machineConfig, childrenConfig, level + 1);
-  }
-  return machineFound;
+  return undefined;
 }
 
-export default function MachineTreeView(props: MachineTreeViewProps) {
+export default function ConfigurationTreeView(props: ConfigurationTreeViewProps) {
   const router = useRouter();
-  const machineConfig = { ...props.originalMachineConfig };
-  const saveMachineConfig = props.backendSaveMachineConfig;
+  const machineConfig = { ...props.parentConfig };
+  const saveMachineConfig = props.backendSaveParentConfig;
   const configId = props.configId;
 
   const firstRender = useRef(true);
@@ -94,12 +88,10 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
   const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [createMachineOpen, setCreateMachineOpen] = useState(false);
-  const [machineType, setMachineType] = useState<MachineConfig['type']>('target-config');
+  const [machineType, setMachineType] = useState<AbstractConfig['type']>('target-config');
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [selectedMachineConfig, setSelectedMachineConfig] = useState<
-    { parent: MachineConfig; selection: MachineConfig } | undefined
-  >(undefined);
+  const [selectedMachineConfig, setSelectedMachineConfig] = useState<TreeFindStruct>(undefined);
 
   const changeName = (e: any) => {
     let newName = e.target.value;
@@ -175,11 +167,11 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     },
   ) => {
     setSelectedOnTree(selectedKeys);
-    let foundMachine = { parent: machineConfig, selection: machineConfig };
+    let foundMachine: TreeFindStruct = { parent: machineConfig, selection: machineConfig };
     // Check if it is not the parent config
     if (selectedKeys.length !== 0 && selectedKeys.indexOf(machineConfig.id) === -1) {
       //Then search the right one
-      let ref = findInTree(selectedKeys[0].toString(), machineConfig, machineConfig, 0);
+      let ref = findConfig(selectedKeys[0].toString(), machineConfig);
       if (ref !== undefined) foundMachine = ref;
     }
     setSelectedMachineConfig(foundMachine);
@@ -192,13 +184,13 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     // Lets fix to only one selection for now
     const machineId = info.node.key;
     setSelectedOnTree([machineId]);
-    let foundMachine = { parent: machineConfig, selection: machineConfig };
-    let ref = findInTree(machineId.toString(), machineConfig, machineConfig, 0);
+    let foundMachine: TreeFindStruct = { parent: machineConfig, selection: machineConfig };
+    let ref = findConfig(machineId.toString(), machineConfig);
     if (ref !== undefined) foundMachine = ref;
     setSelectedMachineConfig(foundMachine);
   };
 
-  const machineConfigToTreeElement = (_machineConfig: MachineConfig) => {
+  const configToTreeElement = (_machineConfig: AbstractConfig) => {
     let tagByType = (
       <>
         <Tag color="purple">T</Tag>
@@ -235,7 +227,9 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     };
   };
 
-  const machineConfigParameterToTreeElement = (_machineConfig: MachineConfigParameter) => {
+  const configParameterToTreeElement = (
+    _machineConfig: ConfigParameter,
+  ): TreeDataNode & { ref: ConfigParameter } => {
     let tagByType = (
       <>
         <Tag color="lime">P</Tag>
@@ -251,78 +245,60 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
     };
   };
 
-  const searchTreeData = (_machineConfig: MachineConfig, level: number) => {
-    const list = [];
+  const parameterSearch = (_parentParameter: ConfigParameter): [] => {
+    return [];
+  };
 
-    const targetConfigs = Array.isArray(_machineConfig.targetConfigs)
-      ? _machineConfig.targetConfigs
-      : [];
-    for (let childrenConfig of targetConfigs) {
-      let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = searchTreeData(childrenConfig, level + 1);
+  const loopTreeData = (_machineConfig: ParentConfig) => {
+    const list: TreeDataNode[] = [configToTreeElement(_machineConfig)];
+    const parentConfig = _machineConfig as ParentConfig;
+    if (parentConfig.targetConfig) {
+      let childNode: TreeDataNode = configToTreeElement(parentConfig.targetConfig);
+      for (let parameter of parentConfig.targetConfig.parameters)
+        childNode.children = parameterSearch(parameter);
       list.push(childNode);
     }
     const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
       ? _machineConfig.machineConfigs
       : [];
     for (let childrenConfig of machineConfigs) {
-      let childNode: TreeDataNode = machineConfigToTreeElement(childrenConfig);
-      childNode.children = searchTreeData(childrenConfig, level + 1);
-      list.push(childNode);
-    }
-    const machineConfigParameters = Array.isArray(_machineConfig.machineConfigs)
-      ? _machineConfig.parameters
-      : [];
-    for (let childrenParameter of machineConfigParameters) {
-      let childNode: TreeDataNode = machineConfigParameterToTreeElement(childrenParameter);
-      // childNode.children = searchTreeData(childrenConfig, level + 1);
+      let childNode: TreeDataNode = configToTreeElement(childrenConfig);
+      for (let parameter of childrenConfig.parameters)
+        childNode.children = parameterSearch(parameter);
       list.push(childNode);
     }
     return list;
   };
 
   const mountTreeData = () => {
-    let configArray: TreeDataNode[] = [machineConfigToTreeElement(machineConfig)];
-    configArray[0].children = searchTreeData(machineConfig, 0);
+    let configArray: TreeDataNode[] = loopTreeData(machineConfig);
     setTreeData(configArray);
   };
 
   const createTarget = () => {
-    // For target configs we always create on top level if there isn't one already
-    if (machineConfig.targetConfigs.length > 0) return;
+    // We can only have one target configuration
+    if (machineConfig.targetConfig) return;
     let foundMachine = machineConfig;
-    // // Check if it is not the parent config
-    // if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) == -1) {
-    //   //Then search the right one
-    //   let ref = findInTree(selectedOnTree[0].toString(), machineConfig, 0);
-    //   if (ref !== undefined) foundMachine = ref;
-    // }
-    foundMachine.targetConfigs.push({
-      ...defaultMachineConfig(),
+    foundMachine.targetConfig = {
+      ...defaultConfiguration(),
       name: name,
-      description: description,
+      description: { label: 'description', value: description },
       type: 'target-config',
       owner: foundMachine.owner,
       environmentId: foundMachine.environmentId,
-    });
+    };
     saveAndUpdateElements();
   };
 
   const createMachine = () => {
-    let foundMachine = { parent: machineConfig, selection: machineConfig };
-    // Check if it is not the parent config
-    if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) === -1) {
-      //Then search the right one
-      let ref = findInTree(selectedOnTree[0].toString(), machineConfig, machineConfig, 0);
-      if (ref !== undefined) foundMachine = ref;
-    }
-    foundMachine.selection.machineConfigs.push({
-      ...defaultMachineConfig(),
+    machineConfig.machineConfigs.push({
+      ...defaultConfiguration(),
       name: name,
-      description: description,
+      description: { label: 'description', value: description },
+      machine: { label: 'machine', value: '' },
       type: 'machine-config',
-      owner: foundMachine.selection.owner,
-      environmentId: foundMachine.selection.environmentId,
+      owner: machineConfig.owner,
+      environmentId: machineConfig.environmentId,
     });
     saveAndUpdateElements();
   };
@@ -337,29 +313,19 @@ export default function MachineTreeView(props: MachineTreeViewProps) {
 
   const deleteItem = () => {
     if (selectedOnTree.length < 1) return;
-    let foundMachine = { parent: machineConfig, selection: machineConfig };
-    // Check if it is not the parent config
-    if (selectedOnTree.length !== 0 && selectedOnTree.indexOf(machineConfig.id) === -1) {
-      //Then search the right one
-      let ref = findInTree(selectedOnTree[0].toString(), machineConfig, machineConfig, 0);
-      if (ref !== undefined) foundMachine = ref;
-    }
-
-    let childrenMachineConfigList = Array.isArray(foundMachine.parent.machineConfigs)
-      ? foundMachine.parent.machineConfigs
-      : [];
-    let childrenTargetConfigList = Array.isArray(foundMachine.parent.targetConfigs)
-      ? foundMachine.parent.targetConfigs
+    let childrenMachineConfigList = Array.isArray(machineConfig.machineConfigs)
+      ? machineConfig.machineConfigs
       : [];
     childrenMachineConfigList = childrenMachineConfigList.filter((node, _) => {
       return selectedOnTree.indexOf(node.id) === -1;
     });
-    childrenTargetConfigList = childrenTargetConfigList.filter((node, _) => {
-      return selectedOnTree.indexOf(node.id) === -1;
-    });
-
-    foundMachine.parent.machineConfigs = childrenMachineConfigList;
-    foundMachine.parent.targetConfigs = childrenTargetConfigList;
+    if (
+      machineConfig.targetConfig &&
+      selectedOnTree.indexOf(machineConfig.targetConfig.id) !== -1
+    ) {
+      machineConfig.targetConfig = undefined;
+    }
+    machineConfig.machineConfigs = childrenMachineConfigList;
 
     saveAndUpdateElements();
   };

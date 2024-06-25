@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { KeyOutlined, UserOutlined, DeleteOutlined, CaretDownOutlined } from '@ant-design/icons';
@@ -10,12 +10,12 @@ import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown } from 'antd';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
+import { defaultConfiguration, findConfig } from './machine-tree-view';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: MachineConfig; selection: MachineConfig } | undefined;
-  rootMachineConfig: MachineConfig;
+  selectedMachineConfig: { parent: ParentConfig; selection: ParentConfig } | undefined;
+  rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };
 
@@ -33,13 +33,8 @@ export default function MetaData(props: MachineDataViewProps) {
   const rootMachineConfig = { ...props.rootMachineConfig };
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
-    : defaultMachineConfig();
-  let refEditingMachineConfig = findInTree(
-    editingMachineConfig.id,
-    rootMachineConfig,
-    rootMachineConfig,
-    0,
-  );
+    : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
 
@@ -50,7 +45,8 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const saveDescription = (e: any) => {
     if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.description = description ? description : '';
+      if (refEditingMachineConfig.selection.description)
+        refEditingMachineConfig.selection.description.value = description ? description : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -62,7 +58,7 @@ export default function MetaData(props: MachineDataViewProps) {
       return;
     }
     setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description);
+    setDescription(editingMachineConfig.description?.value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
@@ -117,7 +113,7 @@ export default function MetaData(props: MachineDataViewProps) {
         </Col>
         <Col span={21} className="gutter-row">
           <Input
-            value={editingMachineConfig.owner.split('|').pop()}
+            value={editingMachineConfig.owner?.value?.split('|').pop()}
             disabled
             prefix={<UserOutlined />}
           />

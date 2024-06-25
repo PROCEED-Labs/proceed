@@ -9,7 +9,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useState } from 'react';
-import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
+import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -18,19 +18,15 @@ import MachineConfigCreationButton from '@/components/machine-config-creation-bu
 import { App } from 'antd';
 import SpaceLink from '@/components/space-link';
 import { FolderOutlined as FolderFilled, FileOutlined as FileFilled } from '@ant-design/icons';
-import { deleteMachineConfigs } from '@/lib/data/legacy/machine-config';
-import { Folder } from '@/lib/data/folder-schema';
+import { deleteParentConfigurations } from '@/lib/data/legacy/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
 import { useAddControlCallback } from '@/lib/controls-store';
 
-type InputItem = MachineConfigMetadata;
-export type MachineConfigListConfigs = ReplaceKeysWithHighlighted<
-  InputItem,
-  'name' | 'description'
->;
+type InputItem = ParentConfigMetadata;
+export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
-const MachineConfigList = ({
+const ParentConfigList = ({
   data,
   params,
 }: {
@@ -55,24 +51,24 @@ const MachineConfigList = ({
 
   const { message } = App.useApp();
 
-  const [selectedRowElements, setSelectedRowElements] = useState<MachineConfigListConfigs[]>([]);
+  const [selectedRowElements, setSelectedRowElements] = useState<ParentConfigListConfigs[]>([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
 
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
 
-  async function deleteItems(items: MachineConfigListConfigs[]) {
+  async function deleteItems(items: ParentConfigListConfigs[]) {
     const promises = [];
-    const machineConfigIds = items.map((item) => item.id);
-    const machineConfigPromise = deleteMachineConfigs(machineConfigIds, space.spaceId);
-    if (machineConfigPromise) promises.push(machineConfigPromise);
+    const parentConfigIds = items.map((item) => item.id);
+    const parentConfigPromise = deleteParentConfigurations(parentConfigIds, space.spaceId);
+    if (parentConfigPromise) promises.push(parentConfigPromise);
 
     await Promise.allSettled(promises);
 
-    const machineConfigsResult = await machineConfigPromise;
+    const parentConfigsResult = await parentConfigPromise;
 
-    if (machineConfigsResult && 'error' in machineConfigsResult) {
+    if (parentConfigsResult && 'error' in parentConfigsResult) {
       return message.open({
         type: 'error',
         content: 'Something went wrong',
@@ -106,7 +102,7 @@ const MachineConfigList = ({
     deleteItems(selectedRowElements).then((res) => {});
   }
 
-  const columns: TableColumnsType<MachineConfigListConfigs> = [
+  const columns: TableColumnsType<ParentConfigListConfigs> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -217,11 +213,11 @@ const MachineConfigList = ({
         searchProps={{
           onChange: (e) => setSearchTerm(e.target.value),
           onPressEnter: (e) => setSearchTerm(e.currentTarget.value),
-          placeholder: 'Search Machine Configurations ...',
+          placeholder: 'Search Configurations ...',
         }}
       />
       <ElementList
-        data={filteredData as unknown as MachineConfigListConfigs[]}
+        data={filteredData as unknown as ParentConfigListConfigs[]}
         columns={columns}
         elementSelection={{
           selectedElements: selectedRowElements,
@@ -250,4 +246,4 @@ const MachineConfigList = ({
   );
 };
 
-export default MachineConfigList;
+export default ParentConfigList;

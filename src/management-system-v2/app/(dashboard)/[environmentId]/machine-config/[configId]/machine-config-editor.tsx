@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
@@ -12,26 +12,26 @@ const { Sider } = Layout;
 
 type VariablesEditorProps = {
   configId: string;
-  originalMachineConfig: MachineConfig;
-  backendSaveMachineConfig: Function;
-  backendCreateMachineConfig: Function;
+  originalParentConfig: ParentConfig;
+  backendSaveParentConfig: Function;
+  backendCreateParentConfig: Function;
 };
 
-export default function MachineConfigEditor(props: VariablesEditorProps) {
+export default function ParentConfigEditor(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<
-    { parent: MachineConfig; selection: MachineConfig } | undefined
+    { parent: ParentConfig; selection: ParentConfig } | undefined
   >(undefined);
 
   const configId = props.configId;
-  const saveMachineConfig = props.backendSaveMachineConfig;
-  const machineConfig = { ...props.originalMachineConfig };
+  const saveParentConfig = props.backendSaveParentConfig;
+  const machineConfig = { ...props.originalParentConfig };
 
   useEffect(() => {
     setSelectedConfig({ parent: machineConfig, selection: machineConfig });
   }, []);
 
-  const onSelectConfig = (relation: { parent: MachineConfig; selection: MachineConfig }) => {
+  const onSelectConfig = (relation: { parent: ParentConfig; selection: ParentConfig }) => {
     setSelectedConfig(relation);
   };
 
@@ -49,9 +49,9 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
             <>
               <MachineTreeView
                 onSelectConfig={onSelectConfig}
-                backendSaveMachineConfig={saveMachineConfig}
+                backendSaveParentConfig={saveParentConfig}
                 configId={configId}
-                originalMachineConfig={machineConfig}
+                parentConfig={machineConfig}
               />
             </>
           )}
@@ -64,10 +64,10 @@ export default function MachineConfigEditor(props: VariablesEditorProps) {
         style={{ fontSize: '24px' }}
       />
       <MachineDataEditor
-        backendSaveMachineConfig={saveMachineConfig}
+        backendSaveConfig={saveParentConfig}
         configId={configId}
-        rootMachineConfig={machineConfig}
-        selectedMachineConfig={selectedConfig}
+        parentConfig={machineConfig}
+        selectedConfig={selectedConfig}
       />
     </Layout>
   );

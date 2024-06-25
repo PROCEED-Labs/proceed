@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -38,7 +38,7 @@ import VersionCreationButton from '@/components/version-creation-button';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
+import { defaultConfiguration, findConfig } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
 import MetaData from './metadata';
@@ -48,8 +48,8 @@ import Text from 'antd/es/typography/Text';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: MachineConfig; selection: MachineConfig } | undefined;
-  rootMachineConfig: MachineConfig;
+  selectedMachineConfig: { parent: ParentConfig; selection: ParentConfig } | undefined;
+  rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };
 
@@ -67,16 +67,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const rootMachineConfig = { ...props.rootMachineConfig };
   const parentMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.parent }
-    : defaultMachineConfig();
+    : defaultConfiguration();
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
-    : defaultMachineConfig();
-  let refEditingMachineConfig = findInTree(
-    editingMachineConfig.id,
-    rootMachineConfig,
-    rootMachineConfig,
-    0,
-  );
+    : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
@@ -116,7 +111,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       return;
     }
     setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description);
+    setDescription(editingMachineConfig.description?.value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();

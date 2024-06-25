@@ -3,9 +3,9 @@ import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 //import styles from './page.module.scss';
 import {
-  createMachineConfig,
-  getMachineConfigById,
-  saveMachineConfig,
+  createParentConfig,
+  getConfigurationById,
+  saveParentConfig,
 } from '@/lib/data/legacy/machine-config';
 //import { toCaslResource } from '@/lib/ability/caslAbility';
 import { Breadcrumb, Input, Button, Form } from 'antd';
@@ -22,15 +22,15 @@ export default async function MachineConfigView({
   params: { configId, environmentId },
   searchParams,
 }: MachineConfigProps) {
-  let machineConfig = await getMachineConfigById(configId);
+  let machineConfig = await getConfigurationById(configId);
 
   //replace ConfigContent <-> MachineConfigEditor as needed
   return (
     <Content title="Machine Configuration">
       <ConfigContent
         originalMachineConfig={machineConfig}
-        backendSaveMachineConfig={saveMachineConfig}
-        backendCreateMachineConfig={createMachineConfig}
+        backendSaveMachineConfig={saveParentConfig}
+        backendCreateMachineConfig={createParentConfig}
         configId={configId}
       />
     </Content>

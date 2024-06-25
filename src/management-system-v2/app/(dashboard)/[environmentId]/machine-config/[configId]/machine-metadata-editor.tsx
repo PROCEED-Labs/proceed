@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ConfigParameter, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -37,15 +37,17 @@ import VersionCreationButton from '@/components/version-creation-button';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
+import { isIPv4 } from 'net';
+import { v4 } from 'uuid';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: MachineConfig; selection: MachineConfig } | undefined;
-  rootMachineConfig: MachineConfig;
-  backendSaveMachineConfig: Function;
+  selectedConfig: TreeFindStruct;
+  parentConfig: ParentConfig;
+  backendSaveConfig: Function;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -60,23 +62,16 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   const [name, setName] = useState<string | undefined>('');
   const [description, setDescription] = useState<string | undefined>('');
 
-  const rootMachineConfig = { ...props.rootMachineConfig };
-  const parentMachineConfig = props.selectedMachineConfig
-    ? { ...props.selectedMachineConfig.parent }
-    : defaultMachineConfig();
-  const editingMachineConfig = props.selectedMachineConfig
-    ? { ...props.selectedMachineConfig.selection }
-    : defaultMachineConfig();
-  let refEditingMachineConfig = findInTree(
-    editingMachineConfig.id,
-    rootMachineConfig,
-    rootMachineConfig,
-    0,
-  );
-  const saveMachineConfig = props.backendSaveMachineConfig;
+  const parentConfig = { ...props.parentConfig };
+  const date = new Date().toUTCString();
+  const editingConfig = props.selectedConfig
+    ? { ...props.selectedConfig.selection }
+    : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingConfig.id, parentConfig);
+  const saveConfig = props.backendSaveConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
-  const [nestedParameters, setNestedParameters] = useState<MachineConfigParameter[]>([]); // State for nested parameters
+  const [nestedParameters, setNestedParameters] = useState<ConfigParameter[]>([]); // State for nested parameters
 
   //Added by Antoni
   const {
@@ -85,7 +80,19 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   const addNestedParameter = () => {
     setNestedParameters([
       ...nestedParameters,
-      { key: '', value: '', unit: '', language: '', children: [] },
+      {
+        id: v4(),
+        key: '',
+        value: '',
+        unit: '',
+        language: '',
+        linkedParameters: [],
+        nestedParameters: [],
+        createdBy: environment.spaceId,
+        createdOn: date,
+        lastEditedBy: environment.spaceId,
+        lastEditedOn: date,
+      },
     ]);
   };
 
@@ -101,7 +108,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   const saveParameters = () => {
     if (refEditingMachineConfig) {
       refEditingMachineConfig.selection.parameters = nestedParameters;
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      saveConfig(configId, parentConfig).then(() => {});
       router.refresh();
     }
   };
@@ -112,7 +119,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   ////
 
   const selectedVersion =
-    editingMachineConfig.versions.find(
+    editingConfig.versions.find(
       (version) => version.version === parseInt(selectedVersionId ?? '-1'),
     ) ?? LATEST_VERSION;
   const filterOption: SelectProps['filterOption'] = (input, option) =>
@@ -135,7 +142,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
     if (editingName) {
       if (refEditingMachineConfig) {
         refEditingMachineConfig.selection.name = name ? name : '';
-        saveMachineConfig(configId, rootMachineConfig).then(() => {});
+        saveConfig(configId, parentConfig).then(() => {});
         router.refresh();
       }
     }
@@ -147,9 +154,9 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
   };
 
   const saveDescription = (e: any) => {
-    if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.description = description ? description : '';
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+    if (refEditingMachineConfig && refEditingMachineConfig.selection.description) {
+      refEditingMachineConfig.selection.description.value = description ? description : '';
+      saveConfig(configId, parentConfig).then(() => {});
       router.refresh();
     }
   };
@@ -159,10 +166,10 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
       firstRender.current = false;
       return;
     }
-    setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description);
+    setName(editingConfig.name);
+    setDescription(editingConfig.description?.value);
     if (refEditingMachineConfig) setNestedParameters(refEditingMachineConfig.selection.parameters);
-  }, [props.selectedMachineConfig]);
+  }, [props.selectedConfig]);
 
   const showMobileView = useMobileModeler();
 
@@ -179,16 +186,16 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
       >
         <Divider orientation="left" style={{ margin: '0 16px' }}>
           <Title level={3} style={{ margin: 0 }}>
-            {editingMachineConfig.type === 'machine-config' ? (
+            {editingConfig.type === 'machine-config' ? (
               <Tag color="red">Machine</Tag>
-            ) : editingMachineConfig.type === 'target-config' ? (
+            ) : editingConfig.type === 'target-config' ? (
               <Tag color="purple">Target</Tag>
             ) : (
               ''
             )}
             &nbsp;Configuration&nbsp;
             {!editingName ? (
-              <>{editingMachineConfig.name}</>
+              <>{editingConfig.name}</>
             ) : (
               <Input value={name} onChange={changeName} onBlur={saveName} />
             )}
@@ -222,7 +229,7 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
                   );
                 }}
                 options={[LATEST_VERSION]
-                  .concat(editingMachineConfig.versions ?? [])
+                  .concat(editingConfig.versions ?? [])
                   .map(({ version, name }) => ({
                     value: version,
                     label: name,
@@ -258,19 +265,19 @@ export default function MachineDataEditor(props: MachineDataViewProps) {
         <Card title="Metadata" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={8}>
-              {parentMachineConfig.id !== editingMachineConfig.id ? (
+              {parentConfig.id !== editingConfig.id ? (
                 <>
                   Parent:
-                  <Input value={parentMachineConfig.id} disabled prefix={<KeyOutlined />} />
+                  <Input value={parentConfig.id} disabled prefix={<KeyOutlined />} />
                 </>
               ) : (
                 ''
               )}
               ID:
-              <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
+              <Input value={editingConfig.id} disabled prefix={<KeyOutlined />} />
               Owner:
               <Input
-                value={editingMachineConfig.owner.split('|').pop()}
+                value={editingConfig.owner?.value?.split('|').pop()}
                 disabled
                 prefix={<UserOutlined />}
               />

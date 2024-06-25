@@ -1,39 +1,94 @@
 import { z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 
-export const MachineConfigInputSchema = z.object({
+export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
+  description: z
+    .object({
+      label: z.string().optional(),
+      value: z.string().optional(),
+    })
+    .optional(),
+  owner: z
+    .object({
+      label: z.string().optional(),
+      value: z.string().optional(),
+    })
+    .optional(),
+  userId: z
+    .object({
+      label: z.string().optional(),
+      value: z.string().optional(),
+    })
+    .optional(),
   folderId: z.string().optional(),
 });
 
-export type MachineConfigInput = z.infer<typeof MachineConfigInputSchema>;
-
-// Adapted from Process Schema:
+export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
 
 import { Prettify, WithRequired } from '../typescript-utils';
 
-export const MachineConfigServerInputSchema = MachineConfigInputSchema.extend({
+export const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
   environmentId: z.string(),
-  owner: z.string(),
 });
-export type MachineConfigServerInput = z.infer<typeof MachineConfigServerInputSchema>;
 
-export type MachineConfigParameter = {
+export type AbstractConfigServerInput = z.infer<typeof AbstractConfigServerInputSchema>;
+
+export type Metadata = {
+  createdOn: string;
+  createdBy: string;
+  lastEditedBy: string;
+  lastEditedOn: string;
+};
+
+export type ConfigParameter = Metadata & {
+  id: string;
   key: string;
   value: string;
   unit: string;
   language: string;
-  children: MachineConfigParameter[];
+  linkedParameters: string[];
+  nestedParameters: ConfigParameter[];
 };
 
-export type MachineConfigMetadata = Prettify<
-  WithRequired<MachineConfigServerInput, 'id' | 'name' | 'folderId'> & {
-    targetConfigs: MachineConfigMetadata[];
-    machineConfigs: MachineConfigMetadata[];
-    parameters: MachineConfigParameter[];
-  } & VersionedObject<'machine-config' | 'config' | 'target-config' | 'product-spec'>
+export type MachineConfigField = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type AbstractConfigMetadata = Prettify<
+  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
+    Metadata & {
+      picture: { label: string; value: string };
+      parameters: ConfigParameter[];
+      customFields: MachineConfigField[];
+    } & VersionedObject<'config' | 'target-config' | 'machine-config'>
 >;
 
+export type MachineConfigMetadata = Prettify<
+  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
+    AbstractConfigMetadata & {
+      machine: { label: string; value: string };
+    } & VersionedObject<'machine-config'>
+>;
+
+export type TargetConfigMetadata = Prettify<
+  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
+    AbstractConfigMetadata &
+    VersionedObject<'target-config'>
+>;
+
+export type ParentConfigMetadata = Prettify<
+  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
+    AbstractConfigMetadata & {
+      targetConfig: TargetConfigMetadata | undefined;
+      machineConfigs: MachineConfigMetadata[];
+    } & VersionedObject<'config'>
+>;
+
+export type ParentConfig = Prettify<ParentConfigMetadata>;
+export type AbstractConfig = Prettify<AbstractConfigMetadata>;
+export type TargetConfig = Prettify<TargetConfigMetadata>;
 export type MachineConfig = Prettify<MachineConfigMetadata>;

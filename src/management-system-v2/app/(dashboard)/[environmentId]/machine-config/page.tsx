@@ -4,10 +4,10 @@ import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import { getMachineConfigs } from '@/lib/data/legacy/machine-config';
-import MachineConfigList from './machine-config-list';
-import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
-export type ListItem = MachineConfigMetadata;
+import { getConfigurations } from '@/lib/data/legacy/machine-config';
+import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import ParentConfigList from './parent-config-list';
+export type ListItem = ParentConfigMetadata;
 
 const MachineConfigPage = async ({
   params,
@@ -19,20 +19,22 @@ const MachineConfigPage = async ({
   }
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const folderContents = (await getMachineConfigs()) satisfies ListItem[];
+  const folderContents = (await getConfigurations(
+    activeEnvironment.spaceId,
+    ability,
+  )) satisfies ListItem[];
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
 
   return (
     <>
       <Content title={<Space></Space>}>
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-          <MachineConfigList
+          <ParentConfigList
             params={{
               environmentId: params.environmentId,
             }}
             data={folderContents}
           />
-          {/* <Processes processes={folderContents} favourites={favs as string[]} folder={folder} /> */}
         </Space>
       </Content>
     </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { MachineConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ParentConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -38,8 +38,8 @@ import Text from 'antd/es/typography/Text';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: MachineConfig; selection: MachineConfig } | undefined;
-  rootMachineConfig: MachineConfig;
+  selectedMachineConfig: { parent: ParentConfig; selection: ParentConfig } | undefined;
+  rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };
 

@@ -2,6 +2,7 @@ import { AuthOptions, getServerSession } from 'next-auth';
 import Auth0Provider from 'next-auth/providers/auth0';
 import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
+import DiscordProvider from 'next-auth/providers/discord';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
@@ -120,6 +121,10 @@ if (process.env.USE_AUTH0) {
           image: profile.picture,
         };
       },
+    }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
     }),
   );
 }

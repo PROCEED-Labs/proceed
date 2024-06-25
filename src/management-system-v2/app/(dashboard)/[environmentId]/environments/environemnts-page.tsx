@@ -2,7 +2,7 @@
 
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import { App, Button, Space, Table, Typography } from 'antd';
+import { App, Button, Space, Typography } from 'antd';
 import { FC, useState, useTransition } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import EnvironmentSidePanel from './environments-side-panel';
@@ -41,26 +41,23 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
   const session = useSession();
   const userId = session.data?.user?.id || '';
 
-  const [isDeletingEnvironments, startTransition] = useTransition();
-  function deleteEnvironments(environmentIds: string[]) {
-    startTransition(async () => {
-      try {
-        const result = await deleteOrganizationEnvironments(environmentIds);
-        if (result && 'error' in result) throw result.error;
+  async function deleteEnvironments(environmentIds: string[]) {
+    try {
+      const result = await deleteOrganizationEnvironments(environmentIds);
+      if (result && 'error' in result) throw result.error;
 
-        setSelectedRows([]);
-        router.refresh();
-        message.open({
-          content: `Environment${environmentIds.length > 1 ? 's' : ''} deleted`,
-          type: 'success',
-        });
-      } catch (e) {
-        console.log(e);
-        //@ts-ignore
-        const content = (e && e?.message) || 'Something went wrong';
-        message.open({ content, type: 'error' });
-      }
-    });
+      setSelectedRows([]);
+      router.refresh();
+      message.open({
+        content: `Environment${environmentIds.length > 1 ? 's' : ''} deleted`,
+        type: 'success',
+      });
+    } catch (e) {
+      console.log(e);
+      //@ts-ignore
+      const content = (e && e?.message) || 'Something went wrong';
+      message.open({ content, type: 'error' });
+    }
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import Content from '@/components/content';
-import { App, Button, Form, Grid, Input, Steps, StepsProps, Typography, message } from 'antd';
+import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
 import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
@@ -10,7 +10,7 @@ import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
 import { CountryCode, getCountries, getCountryCallingCode } from 'libphonenumber-js';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
@@ -50,6 +50,7 @@ const CreateOrganizationPage = ({
 
   const [form] = Form.useForm();
   const [formErrors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
+  const phoneNumberRef = useRef<InputRef>(null);
   const [country, setCountry] = useState<CountryCode>('DE');
   const [isDataValid, setIsDataValid] = useState(false);
   function checkEnvironmentData(dataInput?: any) {
@@ -194,9 +195,13 @@ const CreateOrganizationPage = ({
                       options={getCountries().map(getCountryOption)}
                       style={{ minWidth: '8rem' }}
                       value={country}
-                      onChange={setCountry}
+                      onChange={(value) => {
+                        setCountry(value);
+                        phoneNumberRef.current?.focus();
+                      }}
                     />
                   }
+                  ref={phoneNumberRef}
                 />
               </Form.Item>
               <Form.Item>

@@ -1,7 +1,7 @@
 'use client';
 
 import Content from '@/components/content';
-import { Button, Form, Grid, Input, Steps, StepsProps, Typography, message } from 'antd';
+import { App, Button, Form, Grid, Input, Steps, StepsProps, Typography, message } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
 import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
@@ -44,7 +44,7 @@ const CreateOrganizationPage = ({
   createInactiveEnvironment,
 }: CreateOrganizationPageProps) => {
   const breakpoint = Grid.useBreakpoint();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi } = App.useApp();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -112,7 +112,6 @@ const CreateOrganizationPage = ({
         height: '1px', // hack to make children inherit correct height
       }}
     >
-      {contextHolder}
       <Content
         headerCenter={
           breakpoint.xs ? undefined : (

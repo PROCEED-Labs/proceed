@@ -12,6 +12,8 @@ import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
 import SelectionActions from '@/components/selection-actions';
+import ElementList from '@/components/item-list-view';
+import styles from '@/components/item-list-view.module.scss';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -33,7 +35,6 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
   });
 
   const [selectedRows, setSelectedRows] = useState<typeof filteredData>([]);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const selectedRowKeys = selectedRows.map((row) => row.id);
   const selectedRow = selectedRows.at(-1);
 
@@ -101,7 +102,7 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
             placeholder: 'Search Environments',
           }}
         />
-        <Table<(typeof filteredData)[number]>
+        <ElementList<(typeof filteredData)[number]>
           columns={[
             { title: 'Name', render: (_, environment) => environment.name.highlighted },
             {
@@ -130,8 +131,8 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                   canCloseWhileLoading={true}
                   buttonProps={{
                     disabled: environment.id === userId,
+                    className: styles.HoverableTableCell,
                     style: {
-                      opacity: id === hoveredRow ? 1 : 0,
                       // Otherwise the button stretches the row
                       position: 'absolute',
                       margin: 'auto',
@@ -145,17 +146,17 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
               ),
             },
           ]}
-          dataSource={filteredData}
-          rowKey="id"
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (_, rows) => setSelectedRows(rows),
+          data={filteredData}
+          elementSelection={{
+            selectedElements: selectedRows,
+            setSelectionElements: (orgs) => setSelectedRows(orgs),
           }}
-          onRow={(row) => ({
-            onMouseEnter: () => setHoveredRow(row.id),
-            onMouseLeave: () => setHoveredRow(null),
-            onClick: () => setSelectedRows([row]),
-          })}
+          tableProps={{
+            rowKey: 'id',
+            onRow: (row) => ({
+              onClick: () => setSelectedRows([row]),
+            }),
+          }}
         />
       </div>
 

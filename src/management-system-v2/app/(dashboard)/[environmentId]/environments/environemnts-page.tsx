@@ -12,6 +12,7 @@ import { useSession } from 'next-auth/react';
 import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
+import SelectionActions from '@/components/selection-actions';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -67,10 +68,9 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
       <div style={{ flexGrow: 1 }}>
         <Bar
           leftNode={
-            selectedRowKeys.length > 0 ? (
-              <Space size={20}>
+            <Space>
+              <SelectionActions count={selectedRowKeys.length}>
                 <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
-                <span>{selectedRowKeys.length} selected:</span>
                 <ConfirmationButton
                   title="Delete Organizations"
                   description={
@@ -90,8 +90,8 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                     type: 'text',
                   }}
                 />
-              </Space>
-            ) : null
+              </SelectionActions>
+            </Space>
           }
           searchProps={{
             value: searchQuery,

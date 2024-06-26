@@ -346,11 +346,11 @@ const ProcessList: FC<ProcessListProps> = ({
             }
           },
         }),
-        components: {
-          body: {
-            row: DraggableRow,
-          },
-        },
+        // components: {
+        //   body: {
+        //     row: DraggableRow,
+        //   },
+        // },
       }}
     />
   );

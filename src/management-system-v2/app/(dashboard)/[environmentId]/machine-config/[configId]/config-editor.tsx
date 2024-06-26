@@ -9,15 +9,28 @@ import {
   EditOutlined,
   CaretRightOutlined,
   CheckOutlined,
+  ExportOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Select, Space, Tooltip, Layout, SelectProps, Collapse, theme } from 'antd';
+import {
+  Button,
+  Select,
+  Space,
+  Tooltip,
+  Layout,
+  SelectProps,
+  Collapse,
+  theme,
+  Radio,
+  Flex,
+} from 'antd';
 import { ToolbarGroup } from '@/components/toolbar';
 import VersionCreationButton from '@/components/version-creation-button';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
 import MetaData from './metadata';
@@ -111,6 +124,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     </Space.Compact>
   );
 
+  const [position, setPosition] = useState('start');
+  const onModeChange = (e: any) => {
+    setPosition(e.target.value);
+  };
+
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 24,
@@ -178,74 +196,106 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           alignItems: 'center',
         }}
       >
-        <div onBlur={saveName}>
-          <Title
-            editable={{
-              icon: (
-                <EditOutlined
+        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+          <Space>
+            <div onBlur={saveName}>
+              <Title
+                editable={{
+                  icon: (
+                    <EditOutlined
+                      style={{
+                        margin: '0 10px',
+                      }}
+                    />
+                  ),
+                  tooltip: 'Edit',
+                  onStart: pushName,
+                  onCancel: restoreName,
+                  onChange: setName,
+                  onEnd: saveName,
+                  enterIcon: <CheckOutlined />,
+                }}
+                level={5}
+                style={{ margin: '0' }}
+              >
+                {name}
+              </Title>
+            </div>
+            <ToolbarGroup>
+              <Select
+                popupMatchSelectWidth={false}
+                placeholder="Select Version"
+                showSearch
+                filterOption={filterOption}
+                value={{
+                  value: selectedVersion.version,
+                  label: selectedVersion.name,
+                }}
+                onSelect={(_, option) => {
+                  // change the version info in the query but keep other info
+                  const searchParams = new URLSearchParams(query);
+                  if (!option.value || option.value === -1) searchParams.delete('version');
+                  else searchParams.set(`version`, `${option.value}`);
+                  router.push(
+                    spaceURL(
+                      environment,
+                      `/machine-config/${configId as string}${
+                        searchParams.size ? '?' + searchParams.toString() : ''
+                      }`,
+                    ),
+                  );
+                }}
+                options={[LATEST_VERSION]
+                  .concat(editingMachineConfig.versions ?? [])
+                  .map(({ version, name }) => ({
+                    value: version,
+                    label: name,
+                  }))}
+              />
+              {!showMobileView && (
+                <>
+                  <Tooltip title="Create New Version">
+                    <VersionCreationButton
+                      icon={<PlusOutlined />}
+                      createVersion={createConfigVersion}
+                    ></VersionCreationButton>
+                  </Tooltip>
+                  <Tooltip title="Back to Parent">
+                    <Button icon={<ArrowUpOutlined />} disabled={true} />
+                  </Tooltip>
+                </>
+              )}
+            </ToolbarGroup>
+          </Space>
+          <Space>
+            <Radio.Group value={position} onChange={onModeChange}>
+              <Radio.Button value="start">
+                View{' '}
+                <EyeOutlined
                   style={{
-                    margin: '0 10px',
+                    margin: '0 0 0 6px',
                   }}
                 />
-              ),
-              tooltip: 'Edit',
-              onStart: pushName,
-              onCancel: restoreName,
-              onChange: setName,
-              onEnd: saveName,
-              enterIcon: <CheckOutlined />,
-            }}
-            level={5}
-            style={{ margin: '0 16px' }}
-          >
-            {name}
-          </Title>
-        </div>
-        <ToolbarGroup>
-          <Select
-            popupMatchSelectWidth={false}
-            placeholder="Select Version"
-            showSearch
-            filterOption={filterOption}
-            value={{
-              value: selectedVersion.version,
-              label: selectedVersion.name,
-            }}
-            onSelect={(_, option) => {
-              // change the version info in the query but keep other info
-              const searchParams = new URLSearchParams(query);
-              if (!option.value || option.value === -1) searchParams.delete('version');
-              else searchParams.set(`version`, `${option.value}`);
-              router.push(
-                spaceURL(
-                  environment,
-                  `/machine-config/${configId as string}${
-                    searchParams.size ? '?' + searchParams.toString() : ''
-                  }`,
-                ),
-              );
-            }}
-            options={[LATEST_VERSION]
-              .concat(editingMachineConfig.versions ?? [])
-              .map(({ version, name }) => ({
-                value: version,
-                label: name,
-              }))}
-          />
-          {!showMobileView && (
-            <>
-              <Tooltip title="Create New Version">
-                <VersionCreationButton
-                  icon={<PlusOutlined />}
-                  createVersion={createConfigVersion}
-                ></VersionCreationButton>
-              </Tooltip>
-              <Tooltip title="Back to Parent">
-                <Button icon={<ArrowUpOutlined />} disabled={true} />
-              </Tooltip>
-            </>
-          )}
-        </ToolbarGroup>
+              </Radio.Button>
+              <Radio.Button value="end">
+                Edit{' '}
+                <EditOutlined
+                  style={{
+                    margin: '0 0 0 6px',
+                  }}
+                />
+              </Radio.Button>
+            </Radio.Group>
+            <Button>
+              Export{' '}
+              <ExportOutlined
+                style={{
+                  margin: '0 0 0 16px',
+                }}
+              />
+            </Button>
+          </Space>
+        </Flex>
       </Header>
       <Content
         style={{

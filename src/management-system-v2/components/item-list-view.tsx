@@ -5,6 +5,7 @@ import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'r
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
+import { ResizableTitle } from '@/lib/useColumnWidth';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
@@ -107,7 +108,7 @@ const ElementList = <T extends { id: string }>({
 
   return (
     <Table
-      size={breakpoint.xs ? 'large' : 'middle'}
+      // size={breakpoint.xs ? 'large' : 'middle'}
       pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
       {...tableProps}
       rowSelection={
@@ -176,6 +177,7 @@ const ElementList = <T extends { id: string }>({
       columns={columns}
       dataSource={data}
       className={cn(breakpoint.xs ? styles.MobileTable : '')}
+      components={{ header: { cell: ResizableTitle } }}
     />
   );
 };

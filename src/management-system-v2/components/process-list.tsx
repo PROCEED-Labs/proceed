@@ -22,7 +22,7 @@ import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
-import { useColumnWidth } from '@/lib/useColumnWidth';
+import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
@@ -286,9 +286,11 @@ const ProcessList: FC<ProcessListProps> = ({
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   /* Add functionality for changing width of columns */
-  columnsFiltered = useColumnWidth(columnsFiltered, 'columns-in-table-view-process-list', [
-    'Favorites',
-  ]);
+  columnsFiltered = useResizeableColumnWidth(
+    columnsFiltered,
+    'columns-in-table-view-process-list',
+    ['Favorites'],
+  );
 
   return (
     <ElementList

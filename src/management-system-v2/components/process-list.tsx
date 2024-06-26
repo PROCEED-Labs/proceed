@@ -24,6 +24,8 @@ import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
 import { useColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
+import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+import FavouriteStar from './favouriteStar';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -69,10 +71,9 @@ const ProcessList: FC<ProcessListProps> = ({
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
 
   const addPreferences = useUserPreferences.use.addPreferences();
+  const { favourites: favProcesses } = useFavouriteProcesses();
 
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-
-  const favourites = [0];
 
   const showMobileMetaData = () => {
     setShowMobileMetaData(true);
@@ -142,12 +143,14 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Favorites',
       width: '40px',
       render: (id, _, index) =>
-        id !== folder.parentId && (
-          <StarOutlined
-            style={{ color: favourites?.includes(index) ? '#FFD700' : undefined }}
-            className={styles.HoverableTableCell}
-          />
-        ),
+        id !== folder.parentId && <FavouriteStar id={id} className={styles.HoverableTableCell} />,
+      sorter: folderAwareSort((a, b) =>
+        favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
+          ? 0
+          : favProcesses?.includes(a.id)
+            ? -1
+            : 1,
+      ),
     },
     {
       title: 'Name',
@@ -256,8 +259,8 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Owner',
       render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
         ),
       ),
       responsive: ['md'],

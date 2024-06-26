@@ -249,6 +249,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   };
 
+  useAddControlCallback('modeler', 'cut', handleOpenXmlEditor);
+
   const handleCloseXmlEditor = () => {
     setXmlEditorBpmn(undefined);
   };
@@ -301,7 +303,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
       )}
       <BPMNCanvas
         ref={modeler}
-        type={canEdit ? 'modeler' : 'viewer'}
+        type={canEdit ? 'modeler' : 'navigatedviewer'}
         bpmn={bpmn}
         className={divProps.className}
         onLoaded={onLoaded}

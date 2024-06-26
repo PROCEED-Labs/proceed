@@ -11,7 +11,7 @@ export type FolderUserInput = z.infer<typeof FolderUserInputSchema>;
 
 export const FolderSchema = FolderUserInputSchema.extend({
   id: z.string().optional(),
-  createdBy: z.string(),
+  createdBy: z.string().nullable(),
 });
 export type FolderInput = z.infer<typeof FolderSchema>;
 

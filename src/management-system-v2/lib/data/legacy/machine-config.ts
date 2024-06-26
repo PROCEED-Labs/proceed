@@ -193,7 +193,7 @@ export async function removeParentConfiguration(parentConfigDefinitionsId: strin
   ]!.children.filter((folder) => folder.id !== parentConfigDefinitionsId);
 
   // remove from store
-  store.remove('configurations', parentConfigDefinitionsId);
+  store.remove('machineConfig', parentConfigDefinitionsId);
   delete parentConfigMetaObjects[parentConfigDefinitionsId];
   eventHandler.dispatch('configurationRemoved', { parentConfigDefinitionsId });
 }

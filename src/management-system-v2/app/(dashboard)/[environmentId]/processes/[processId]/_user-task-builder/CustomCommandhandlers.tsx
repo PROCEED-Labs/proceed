@@ -56,7 +56,6 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         userElement: React.ReactElement | (() => NodeTree | React.ReactElement),
       ) => {
         const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
-          console.log('A');
           const iframeDocument = (
             document.getElementById('user-task-builder-iframe') as HTMLIFrameElement
           ).contentDocument;

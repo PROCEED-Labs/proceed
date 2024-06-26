@@ -67,6 +67,7 @@ export const TextSettings = () => {
   return (
     <InputNumber
       value={fontSize}
+      addonAfter="pt"
       onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
     />
   );

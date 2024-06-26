@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col, Button as AntButton } from 'antd';
-import { DesktopOutlined, MobileOutlined, UndoOutlined, RedoOutlined } from '@ant-design/icons';
+import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
 import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
 
@@ -15,6 +14,7 @@ import Container from './Container';
 import Row from './Row';
 import Column from './Column';
 import { SettingsPanel, Toolbox } from './Sidebar';
+import { Toolbar, EditorLayout } from './Toolbar';
 import Header from './Header';
 import Input from './Input';
 import CheckboxOrRadio from './CheckboxOrRadio';
@@ -23,7 +23,6 @@ import Table from './Table';
 import { toHtml, iframeDocument } from './utils';
 
 import AddUserControls from '@/components/add-user-controls';
-import { useAddControlCallback } from '@/lib/controls-store';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 
@@ -34,13 +33,11 @@ type BuilderProps = {
 
 const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
-  const { query, actions, canUndo, canRedo } = useEditor((_, query) => {
-    return { canUndo: query.history.canUndo(), canRedo: query.history.canRedo() };
-  });
+  const { query } = useEditor();
 
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
-  const [iframeLayout, setIframeLayout] = useState<'computer' | 'mobile'>('computer');
+  const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
   const [iframeMaxWidth, setIframeMaxWidth] = useState(Infinity);
 
   useEffect(() => {
@@ -54,9 +51,13 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       const { width } = iframeContainerRef.current.getBoundingClientRect();
       handleWidth(width);
 
+      let currentWidth = width;
       const observer = new ResizeObserver((entries) => {
-        const { width } = entries[0].contentRect;
-        handleWidth(width);
+        const { width: newWidth } = entries[0].contentRect;
+        if (newWidth !== currentWidth) {
+          handleWidth(newWidth);
+          currentWidth = newWidth;
+        }
       });
 
       observer.observe(iframeContainerRef.current);
@@ -64,13 +65,6 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       () => observer.disconnect();
     }
   }, [open]);
-
-  useAddControlCallback('user-task-editor', 'undo', () => {
-    if (query.history.canUndo()) actions.history.undo();
-  });
-  useAddControlCallback('user-task-editor', 'redo', () => {
-    if (query.history.canRedo()) actions.history.redo();
-  });
 
   return (
     <Modal
@@ -88,40 +82,11 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       }}
     >
       <div className={styles.BuilderUI}>
-        <AntRow className={styles.EditorHeader}>
-          <div>
-            <AntButton
-              type="text"
-              icon={
-                <DesktopOutlined
-                  style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }}
-                />
-              }
-              disabled={iframeMaxWidth < 601}
-              onClick={() => setIframeLayout('computer')}
-            />
-            <AntButton
-              type="text"
-              icon={
-                <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
-              }
-              onClick={() => setIframeLayout('mobile')}
-            />
-          </div>
-          <div>
-            <AntButton
-              type="text"
-              icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
-              disabled={iframeMaxWidth < 601}
-              onClick={() => actions.history.undo()}
-            />
-            <AntButton
-              type="text"
-              icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
-              onClick={() => actions.history.redo()}
-            />
-          </div>
-        </AntRow>
+        <Toolbar
+          iframeMaxWidth={iframeMaxWidth}
+          iframeLayout={iframeLayout}
+          onLayoutChange={setIframeLayout}
+        />
         <AntRow className={styles.EditorBody}>
           <Col span={4}>
             <Toolbox />

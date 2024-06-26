@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ParentConfig, ConfigParameter } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -13,6 +13,7 @@ import {
   CopyOutlined,
   CaretRightOutlined,
   DownOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -28,12 +29,12 @@ import {
   Collapse,
   theme,
   Card,
+  Flex,
 } from 'antd';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
-import Title from 'antd/es/typography/Title';
+import { defaultConfiguration, findConfig } from './machine-tree-view';
 import Text from 'antd/es/typography/Text';
 
 type MachineDataViewProps = {
@@ -215,26 +216,54 @@ export default function Parameters(/*props: MachineDataViewProps*/) {
     </Space.Compact>
   );
 
+  //change to make it reusable instead
+  const linkedParametersHeader = (
+    <Space.Compact block size="small">
+      <Text>Linked Parameters</Text>
+      <Tooltip title="Add Parameter">
+        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
+      </Tooltip>
+    </Space.Compact>
+  );
+
+  //change to make it reusable instead
+  const nestedParametersHeader = (
+    <Space.Compact block size="small">
+      <Text>Nested Parameters</Text>
+      <Tooltip title="Add Parameter">
+        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
+      </Tooltip>
+    </Space.Compact>
+  );
+
   const parameterItemHeader = (
     <Space.Compact block size="small">
-      <Input style={{ margin: '0 16px' }} placeholder="Key" />
-      <Space align="center">
-        <Tooltip title="Copy">
-          <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 16px' }} />
-        </Tooltip>
-        <Tooltip title="Edit">
-          <Button icon={<EditOutlined />} type="text" style={{ margin: '0 16px' }} />
-        </Tooltip>
-        <Tooltip title="Delete">
-          <Button icon={<DeleteOutlined />} type="text" style={{ margin: '0 16px' }} />
-        </Tooltip>
-      </Space>
+      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+        <Text>Parameter Key</Text>
+        <Space align="center">
+          <Tooltip title="Copy">
+            <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 16px' }} />
+          </Tooltip>
+          <Tooltip title="Edit">
+            <Button icon={<EditOutlined />} type="text" style={{ margin: '0 16px' }} />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button icon={<DeleteOutlined />} type="text" style={{ margin: '0 16px' }} />
+          </Tooltip>
+        </Space>
+      </Flex>
     </Space.Compact>
   );
 
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 24,
+    background: token.colorFillAlter,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
+  const nestedPanelStyle = {
+    margin: '0 0 16px 0',
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'none',
@@ -255,8 +284,45 @@ export default function Parameters(/*props: MachineDataViewProps*/) {
     },
   ];
 
+  const linkedParameters = [
+    {
+      key: '1',
+      label: linkedParametersHeader,
+      children: [
+        <div>
+          <Row gutter={16} style={{ margin: 16 }}>
+            <Col span={24}>
+              <Space>
+                <Tag color="purple">Key XY</Tag>
+                <Tag color="blue">Key AB</Tag>
+              </Space>
+            </Col>
+          </Row>{' '}
+        </div>,
+      ],
+      style: nestedPanelStyle,
+    },
+  ];
+  const nestedParameters = [
+    {
+      key: '1',
+      label: nestedParametersHeader,
+      children: [],
+      style: nestedPanelStyle,
+    },
+  ];
+
   const parameterContent = (
     <div>
+      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+        <Col span={2} className="gutter-row">
+          {' '}
+          Key{' '}
+        </Col>
+        <Col span={21} className="gutter-row">
+          <Input />
+        </Col>
+      </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
@@ -300,12 +366,15 @@ export default function Parameters(/*props: MachineDataViewProps*/) {
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          Linked Parameters{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input />
+        <Col span={23} className="gutter-row">
+          <Collapse
+            bordered={false}
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            style={{
+              background: 'none',
+            }}
+            items={linkedParameters}
+          />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -314,12 +383,15 @@ export default function Parameters(/*props: MachineDataViewProps*/) {
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          Nested Parameters{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input />
+        <Col span={23} className="gutter-row">
+          <Collapse
+            bordered={false}
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            style={{
+              background: 'none',
+            }}
+            items={nestedParameters}
+          />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">

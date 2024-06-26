@@ -9,7 +9,7 @@ import {
   DeleteOutlined,
   CopyOutlined,
   CaretRightOutlined,
-  CaretDownOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
@@ -149,7 +149,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
             <Button>
               <Space>
                 Add
-                <CaretDownOutlined />
+                <PlusOutlined />
               </Space>
             </Button>
           </Dropdown>

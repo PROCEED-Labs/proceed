@@ -156,7 +156,7 @@ const ParentConfigList = ({
           {(record.description.value ?? '').length == 0 ? (
             <>&emsp;</>
           ) : (
-            record.description.highlighted
+            record.description.highlighted.value
           )}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}

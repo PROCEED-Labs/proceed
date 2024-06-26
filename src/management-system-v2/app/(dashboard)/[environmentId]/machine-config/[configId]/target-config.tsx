@@ -40,8 +40,8 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   const parentMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.parent }
     : defaultConfiguration();
-  const editingMachineConfig = props.selectedMachineConfig
-    ? { ...props.selectedMachineConfig.selection }
+  const editingMachineConfig = props.rootMachineConfig.targetConfig
+    ? { ...props.rootMachineConfig.targetConfig }
     : defaultConfiguration();
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
@@ -107,7 +107,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           ID{' '}
         </Col>
         <Col span={21} className="gutter-row">
-          <Input disabled prefix={<KeyOutlined />} />
+          <Input disabled value={editingMachineConfig.id} prefix={<KeyOutlined />} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -121,7 +121,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           Owner{' '}
         </Col>
         <Col span={21} className="gutter-row">
-          <Input disabled prefix={<UserOutlined />} />
+          <Input disabled value={editingMachineConfig.owner?.value} prefix={<UserOutlined />} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -179,7 +179,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   }) => [
     {
       key: '1',
-      label: 'Target Configuration Name',
+      label: editingMachineConfig.name,
       children: [childConfigContent],
       style: panelStyle,
     },

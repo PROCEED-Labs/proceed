@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { string, z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 
 export const AbstractConfigInputSchema = z.object({
@@ -52,11 +52,14 @@ export type ConfigParameter = Metadata & {
   nestedParameters: ConfigParameter[];
 };
 
-export type MachineConfigField = {
-  id: string;
+export type Field = {
   label: string;
   value: string;
 };
+
+export type MachineConfigField = {
+  id: string;
+} & Field;
 
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &

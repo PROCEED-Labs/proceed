@@ -2,6 +2,7 @@ import Fuse, { FuseResult } from 'fuse.js';
 import { useMemo, useState, JSX } from 'react';
 import { Prettify, UnionAwareOmit } from './typescript-utils';
 import { useSearchParamState } from './use-search-param-state';
+import { Field } from './data/machine-config-schema';
 
 export type ReplaceKeysWithHighlighted<
   TData extends Record<string, any>,

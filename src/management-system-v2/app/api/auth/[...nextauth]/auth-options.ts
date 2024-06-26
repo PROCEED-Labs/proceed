@@ -87,7 +87,7 @@ const nextAuthOptions: AuthOptions = {
   },
 };
 
-if (process.env.USE_AUTH0) {
+if (process.env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     Auth0Provider({
       clientId: process.env.AUTH0_CLIENT_ID as string,

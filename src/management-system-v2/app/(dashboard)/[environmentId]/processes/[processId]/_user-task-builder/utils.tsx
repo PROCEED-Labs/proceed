@@ -9,6 +9,7 @@ import Row from './Row';
 import Column from './Column';
 import Header from './Header';
 import Input from './Input';
+import CheckboxOrRadio from './CheckboxOrRadio';
 import Table from './Table';
 
 const styles = `
@@ -77,13 +78,49 @@ body {
   position: relative;
 }
 
+.user-task-form-input-group {
+  position: relative;
+  width: fit-content;
+}
+
+.user-task-form-input-group label, .user-task-form-input-group input {
+  cursor: pointer;
+}
+
+.user-task-form-input-group > span {
+  display: flex;
+  align-items: center;
+}
+
+.user-task-form-input-group input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 3px;
+}
+
+.user-task-form-input-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 3px;
+}
+
 `;
 
 export function toHtml(json: string) {
   const markup = ReactDOMServer.renderToStaticMarkup(
     <Editor
       enabled={false}
-      resolver={{ SubmitButton, Text, Container, Row, Header, Input, Column, Table }}
+      resolver={{
+        SubmitButton,
+        Text,
+        Container,
+        Row,
+        Header,
+        Input,
+        CheckboxOrRadio,
+        Column,
+        Table,
+      }}
     >
       <Frame data={json} />
     </Editor>,

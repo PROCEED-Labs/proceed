@@ -17,6 +17,7 @@ import Column from './Column';
 import { SettingsPanel, Toolbox } from './Sidebar';
 import Header from './Header';
 import Input from './Input';
+import CheckboxOrRadio from './CheckboxOrRadio';
 import Table from './Table';
 
 import { toHtml, iframeDocument } from './utils';
@@ -182,7 +183,17 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
   return (
     <Editor
-      resolver={{ Header, Text, SubmitButton, Container, Row, Column, Input, Table }}
+      resolver={{
+        Header,
+        Text,
+        SubmitButton,
+        Container,
+        Row,
+        Column,
+        Input,
+        CheckboxOrRadio,
+        Table,
+      }}
       handlers={(store: EditorStore) =>
         new CustomEventhandlers({
           store,

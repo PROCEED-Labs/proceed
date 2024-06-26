@@ -7,6 +7,7 @@ import { Element, useEditor, NodeTree, WithoutPrivateActions } from '@craftjs/co
 import Text from './Text';
 import Container from './Container';
 import Input from './Input';
+import CheckboxOrRadio from './CheckboxOrRadio';
 import Header from './Header';
 import Column from './Column';
 import Table from './Table';
@@ -80,6 +81,44 @@ export const Toolbox = () => {
         style={{ width: '100%' }}
       >
         Input
+      </AntButton>
+      <AntButton
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <CheckboxOrRadio type="radio" />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
+              },
+            );
+        }}
+        style={{ width: '100%' }}
+      >
+        Radio
+      </AntButton>
+      <AntButton
+        ref={(r) => {
+          r &&
+            connectors.create(
+              r,
+              <Column>
+                <CheckboxOrRadio type="checkbox" />
+              </Column>,
+              {
+                onCreate: (nodeTree) => {
+                  selectOnCreation(nodeTree, actions);
+                },
+              },
+            );
+        }}
+        style={{ width: '100%' }}
+      >
+        Checkbox
       </AntButton>
       <AntButton
         ref={(r) => {

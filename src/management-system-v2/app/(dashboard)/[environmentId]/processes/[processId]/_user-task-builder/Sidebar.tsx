@@ -20,144 +20,54 @@ function selectOnCreation(nodeTree: NodeTree, actions: WithoutPrivateActions<nul
   }
 }
 
-export const Toolbox = () => {
-  const { connectors, query, actions } = useEditor();
+type CreationButtonProps = React.PropsWithChildren<{
+  title: string;
+}>;
+
+const CreationButton: React.FC<CreationButtonProps> = ({ children, title }) => {
+  const { connectors, actions } = useEditor();
 
   return (
+    <AntButton
+      ref={(r) => {
+        r &&
+          connectors.create(r, <Column>{children}</Column>, {
+            onCreate: (nodeTree) => {
+              selectOnCreation(nodeTree, actions);
+            },
+          });
+      }}
+      style={{ width: '100%' }}
+    >
+      {title}
+    </AntButton>
+  );
+};
+
+export const Toolbox = () => {
+  return (
     <Row>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <Header text="Double Click Me" />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Header
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <Text text="Double Click Me" />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Text
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <Input type="text" label="Double Click Me" />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Input
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <CheckboxOrRadio type="radio" />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Radio
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <CheckboxOrRadio type="checkbox" />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Checkbox
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <Table />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Table
-      </AntButton>
-      <AntButton
-        ref={(r) => {
-          r &&
-            connectors.create(
-              r,
-              <Column>
-                <Element is={Container} padding={20} canvas />
-              </Column>,
-              {
-                onCreate: (nodeTree) => {
-                  selectOnCreation(nodeTree, actions);
-                },
-              },
-            );
-        }}
-        style={{ width: '100%' }}
-      >
-        Container
-      </AntButton>
+      <CreationButton title="Header">
+        <Header text="Double Click Me" />
+      </CreationButton>
+      <CreationButton title="Text">
+        <Text text="Double Click Me" />
+      </CreationButton>
+      <CreationButton title="Input">
+        <Input type="text" label="Double Click Me" />
+      </CreationButton>
+      <CreationButton title="Radio">
+        <CheckboxOrRadio type="radio" />
+      </CreationButton>
+      <CreationButton title="Checkbox">
+        <CheckboxOrRadio type="checkbox" />
+      </CreationButton>
+      <CreationButton title="Table">
+        <Table />
+      </CreationButton>
+      <CreationButton title="Container">
+        <Element is={Container} padding={20} canvas />
+      </CreationButton>
     </Row>
   );
 };

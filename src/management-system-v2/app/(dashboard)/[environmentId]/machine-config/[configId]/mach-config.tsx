@@ -1,19 +1,12 @@
 'use client';
 
-import { ParentConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
-  PlusOutlined,
-  MinusOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  ArrowUpOutlined,
-  EditOutlined,
   KeyOutlined,
   UserOutlined,
   DeleteOutlined,
-  CopyOutlined,
   CaretRightOutlined,
   CaretDownOutlined,
 } from '@ant-design/icons';
@@ -22,9 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Input,
-  Select,
   Space,
-  Divider,
   Col,
   Row,
   Tag,
@@ -36,10 +27,9 @@ import {
   Card,
   Dropdown,
 } from 'antd';
-import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
+import { defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
 
 type MachineDataViewProps = {
@@ -64,16 +54,11 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const rootMachineConfig = { ...props.rootMachineConfig };
   const parentMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.parent }
-    : defaultMachineConfig();
+    : defaultConfiguration();
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
-    : defaultMachineConfig();
-  let refEditingMachineConfig = findInTree(
-    editingMachineConfig.id,
-    rootMachineConfig,
-    rootMachineConfig,
-    0,
-  );
+    : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
@@ -84,8 +69,8 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   };
 
   const saveDescription = (e: any) => {
-    if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.description = description ? description : '';
+    if (refEditingMachineConfig && refEditingMachineConfig.selection.description) {
+      refEditingMachineConfig.selection.description.value = description ? description : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -97,7 +82,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       return;
     }
     setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description);
+    setDescription(editingMachineConfig.description?.value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();

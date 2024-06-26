@@ -7,32 +7,11 @@ import {
   PlusOutlined,
   ArrowUpOutlined,
   EditOutlined,
-  KeyOutlined,
-  UserOutlined,
-  DeleteOutlined,
-  CopyOutlined,
   CaretRightOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
-import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Button,
-  Input,
-  Select,
-  Space,
-  Divider,
-  Col,
-  Row,
-  Tag,
-  Tooltip,
-  Layout,
-  SelectProps,
-  Collapse,
-  theme,
-  Card,
-  Dropdown,
-} from 'antd';
+import { Button, Select, Space, Tooltip, Layout, SelectProps, Collapse, theme } from 'antd';
 import { ToolbarGroup } from '@/components/toolbar';
 import VersionCreationButton from '@/components/version-creation-button';
 import { spaceURL } from '@/lib/utils';
@@ -62,6 +41,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
 
   const firstRender = useRef(true);
   const [name, setName] = useState<string | undefined>('');
+  const [oldName, setOldName] = useState<string | undefined>('');
   const [description, setDescription] = useState<string | undefined>('');
 
   const rootMachineConfig = { ...props.rootMachineConfig };
@@ -95,13 +75,19 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     router.refresh();
   };
 
+  const pushName = () => {
+    setOldName(name);
+  };
+
+  const restoreName = () => {
+    setName(oldName);
+  };
+
   const saveName = () => {
     if (refEditingMachineConfig) {
       refEditingMachineConfig.selection.name = name ? name : '';
-      console.log(name);
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
-      console.log('saved name');
     }
   };
 
@@ -192,25 +178,29 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           alignItems: 'center',
         }}
       >
-        <Title
-          editable={{
-            icon: (
-              <EditOutlined
-                style={{
-                  margin: '0 10px',
-                }}
-              />
-            ),
-            tooltip: 'Edit',
-            onChange: setName,
-            onEnd: saveName,
-            enterIcon: <CheckOutlined />,
-          }}
-          level={5}
-          style={{ margin: '0 16px' }}
-        >
-          {name}
-        </Title>
+        <div onBlur={saveName}>
+          <Title
+            editable={{
+              icon: (
+                <EditOutlined
+                  style={{
+                    margin: '0 10px',
+                  }}
+                />
+              ),
+              tooltip: 'Edit',
+              onStart: pushName,
+              onCancel: restoreName,
+              onChange: setName,
+              onEnd: saveName,
+              enterIcon: <CheckOutlined />,
+            }}
+            level={5}
+            style={{ margin: '0 16px' }}
+          >
+            {name}
+          </Title>
+        </div>
         <ToolbarGroup>
           <Select
             popupMatchSelectWidth={false}

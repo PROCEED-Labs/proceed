@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig, MachineConfigParameter } from '@/lib/data/machine-config-schema';
+import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -13,25 +13,10 @@ import {
 } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Button,
-  Input,
-  Select,
-  Space,
-  Divider,
-  Col,
-  Row,
-  Tag,
-  Tooltip,
-  Collapse,
-  theme,
-  Card,
-  Dropdown,
-} from 'antd';
-import { spaceURL } from '@/lib/utils';
+import { Button, Input, Space, Col, Row, Tooltip, Collapse, theme, Dropdown } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultMachineConfig, findInTree } from './machine-tree-view';
+import { defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
 
 type MachineDataViewProps = {
@@ -40,8 +25,6 @@ type MachineDataViewProps = {
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };
-
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 export default function TargetConfiguration(props: MachineDataViewProps) {
   const router = useRouter();
@@ -56,16 +39,11 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   const rootMachineConfig = { ...props.rootMachineConfig };
   const parentMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.parent }
-    : defaultMachineConfig();
+    : defaultConfiguration();
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
-    : defaultMachineConfig();
-  let refEditingMachineConfig = findInTree(
-    editingMachineConfig.id,
-    rootMachineConfig,
-    rootMachineConfig,
-    0,
-  );
+    : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
@@ -76,8 +54,8 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   };
 
   const saveDescription = (e: any) => {
-    if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.description = description ? description : '';
+    if (refEditingMachineConfig && refEditingMachineConfig.selection.description) {
+      refEditingMachineConfig.selection.description.value = description ? description : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -89,7 +67,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
       return;
     }
     setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description);
+    setDescription(editingMachineConfig.description?.value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();

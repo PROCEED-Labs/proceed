@@ -1,4 +1,4 @@
-import { DefaultEventHandlers, NodeId, Node, NodeTree } from '@craftjs/core';
+import { DefaultEventHandlers, NodeId, Node, NodeTree, ROOT_NODE } from '@craftjs/core';
 
 import CustomPositioner from './CustomPositioner';
 import React from 'react';
@@ -34,13 +34,17 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         };
       },
       select: (el: HTMLElement, id: NodeId) => {
-        if (query.node(id)?.get()?.data.name !== 'Column') return () => {};
+        const node = query.node(id)?.get();
+        if (node?.data.name !== 'Column' && node?.id !== ROOT_NODE) return () => {};
 
         const unbindClick = this.addCraftEventListener(el, 'click', (e) => {
           e.craft.stopPropagation();
 
           const currentNode = query.node(id)?.get();
-          if (currentNode) actions.setNodeEvent('selected', [id]);
+          if (currentNode) {
+            if (currentNode.id === ROOT_NODE) actions.setNodeEvent('selected', []);
+            else actions.setNodeEvent('selected', [id]);
+          }
         });
 
         return () => {

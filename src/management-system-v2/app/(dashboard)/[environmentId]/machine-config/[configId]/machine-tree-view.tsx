@@ -6,24 +6,13 @@ import {
   ConfigParameter,
   TargetConfig,
 } from '@/lib/data/machine-config-schema';
-import {
-  Button,
-  Dropdown,
-  Form,
-  Input,
-  MenuProps,
-  Modal,
-  Select,
-  Tag,
-  Tree,
-  TreeDataNode,
-} from 'antd';
+import { Dropdown, Input, MenuProps, Modal, Tag, Tree, TreeDataNode } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
-import { v4 } from 'uuid';
+import { v3, v4 } from 'uuid';
 import TextArea from 'antd/es/input/TextArea';
+import { useEnvironment } from '@/components/auth-can';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -33,11 +22,18 @@ type ConfigurationTreeViewProps = {
 };
 
 export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig } | undefined;
+export type TreeFindParameterStruct =
+  | {
+      selection: ConfigParameter;
+      parent: AbstractConfig | ConfigParameter;
+      type: AbstractConfig['type'] | 'parameter';
+    }
+  | undefined;
 
 export function defaultConfiguration(): AbstractConfig {
   const date = new Date().toUTCString();
   return {
-    id: 'default',
+    id: v4(),
     type: 'config',
     environmentId: '',
     owner: { label: 'owner', value: '' },
@@ -62,7 +58,7 @@ export function defaultConfiguration(): AbstractConfig {
   } as AbstractConfig;
 }
 
-export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct | undefined {
+export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
   if (id === _parent.id) {
     return { selection: _parent, parent: _parent };
   }
@@ -77,8 +73,61 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct | 
   return undefined;
 }
 
+export function findParameter(
+  id: string,
+  _parent: AbstractConfig | ConfigParameter,
+  type: AbstractConfig['type'] | 'parameter',
+): TreeFindParameterStruct {
+  let found = undefined;
+  if (type === 'config') {
+    let parent = _parent as ParentConfig;
+    for (let parameter of parent.parameters) {
+      if (parameter.id === id) {
+        return { selection: parameter, parent: _parent, type: type };
+      }
+      found = findParameter(id, parameter, 'parameter');
+      if (found) return found;
+    }
+    if (found) return found;
+    // search in targetConfig
+    if (parent.targetConfig) {
+      for (let parameter of parent.targetConfig.parameters) {
+        if (parameter.id === id) {
+          return { selection: parameter, parent: parent.targetConfig, type: type };
+        }
+        found = findParameter(id, parameter, 'parameter');
+        if (found) return found;
+      }
+    }
+    // search in all machine configs
+    if (found) return found;
+    for (let machineConfig of parent.machineConfigs) {
+      for (let parameter of machineConfig.parameters) {
+        if (parameter.id === id) {
+          return { selection: parameter, parent: machineConfig, type: type };
+        }
+        found = findParameter(id, parameter, 'parameter');
+        if (found) return found;
+      }
+      if (found) return found;
+    }
+    if (found) return found;
+  } else {
+    let parent = _parent as ConfigParameter;
+    for (let parameter of parent.nestedParameters) {
+      if (parameter.id === id) {
+        return { selection: parameter, parent: _parent, type: type };
+      }
+      found = findParameter(id, parameter, 'parameter');
+      if (found) return found;
+    }
+  }
+  return found;
+}
+
 export default function ConfigurationTreeView(props: ConfigurationTreeViewProps) {
   const router = useRouter();
+  const environment = useEnvironment();
   const parentConfig = { ...props.parentConfig };
   const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
@@ -88,8 +137,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [createMachineOpen, setCreateMachineOpen] = useState(false);
+  const [createParameterOpen, setCreateParameterOpen] = useState(false);
   const [machineType, setMachineType] = useState<AbstractConfig['type']>('target-config');
   const [name, setName] = useState<string>('');
+  const [parameterKey, setParameterKey] = useState<string>('');
+  const [parameterValue, setParameterValue] = useState<string>('');
+  const [parameterUnit, setParameterUnit] = useState<string>('');
+  const [parameterLanguage, setParameterLanguage] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [selectedMachineConfig, setSelectedMachineConfig] = useState<TreeFindStruct>(undefined);
 
@@ -101,6 +155,26 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const changeDescription = (e: any) => {
     let newDescription = e.target.value;
     setDescription(newDescription);
+  };
+
+  const changeParameterKey = (e: any) => {
+    let newKey = e.target.value;
+    setParameterKey(newKey);
+  };
+
+  const changeParameterValue = (e: any) => {
+    let newValue = e.target.value;
+    setParameterValue(newValue);
+  };
+
+  const changeParameterLanguage = (e: any) => {
+    let newLanguage = e.target.value;
+    setParameterLanguage(newLanguage);
+  };
+
+  const changeParameterUnit = (e: any) => {
+    let newUnit = e.target.value;
+    setParameterUnit(newUnit);
   };
 
   const showDeleteConfirmModal = () => {
@@ -119,6 +193,20 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setDescription('');
   };
 
+  const showCreateParameterModal = (e: any) => {
+    // let type = e.key.replace('create-', '');
+    // if (type === 'target') {
+    //   setMachineType('target-config');
+    // } else {
+    //   setMachineType('machine-config');
+    // }
+    setCreateParameterOpen(true);
+    setParameterKey('');
+    setParameterLanguage('');
+    setParameterUnit('');
+    setParameterValue('');
+  };
+
   const handleCreateMachineOk = () => {
     if (machineType === 'machine-config') {
       createMachine();
@@ -130,6 +218,15 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   const handleCreateMachineCancel = () => {
     setCreateMachineOpen(false);
+  };
+
+  const handleCreateParameterOk = () => {
+    addParameter();
+    setCreateParameterOpen(false);
+  };
+
+  const handleCreateParameterCancel = () => {
+    setCreateParameterOpen(false);
   };
 
   const handleDeleteConfirm = () => {
@@ -245,9 +342,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     };
   };
 
-  const parameterSearch = (_parentParameter: ConfigParameter): [] => {
-    const list: TreeDataNode[] = [configToTreeElement(parentConfig)];
-    return [];
+  const parameterSearch = (_parentParameter: ConfigParameter): TreeDataNode => {
+    let node: TreeDataNode = configParameterToTreeElement(_parentParameter);
+    node.children = [];
+    for (let nestedParameter of _parentParameter.nestedParameters) {
+      node.children.push(parameterSearch(nestedParameter));
+    }
+    return node;
   };
 
   const loopTreeData = (_machineConfig: ParentConfig) => {
@@ -255,8 +356,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     const parentConfig = _machineConfig as ParentConfig;
     if (parentConfig.targetConfig) {
       let childNode: TreeDataNode = configToTreeElement(parentConfig.targetConfig);
+      childNode.children = [];
       for (let parameter of parentConfig.targetConfig.parameters)
-        childNode.children = parameterSearch(parameter);
+        childNode.children.push(parameterSearch(parameter));
       list.push(childNode);
     }
     const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
@@ -264,8 +366,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       : [];
     for (let childrenConfig of machineConfigs) {
       let childNode: TreeDataNode = configToTreeElement(childrenConfig);
+      childNode.children = [];
       for (let parameter of childrenConfig.parameters)
-        childNode.children = parameterSearch(parameter);
+        childNode.children.push(parameterSearch(parameter));
       list.push(childNode);
     }
     return list;
@@ -339,6 +442,30 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   const addParameter = () => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
+    const date = new Date().toUTCString();
+    const defaultParameter = {
+      id: v4(),
+      createdBy: environment.spaceId,
+      createdOn: date,
+      language: parameterLanguage,
+      lastEditedBy: environment.spaceId,
+      lastEditedOn: date,
+      linkedParameters: [],
+      nestedParameters: [],
+      unit: parameterUnit,
+      value: parameterValue,
+      key: parameterKey,
+    };
+    if (_configType === 'parameter') {
+      let ref = findParameter(_configId.toString(), parentConfig, 'config');
+      if (ref === undefined) return;
+      ref.selection.nestedParameters.push(defaultParameter);
+    } else {
+      let ref = findConfig(_configId.toString(), parentConfig);
+      if (ref === undefined) return;
+      ref.selection.parameters.push(defaultParameter);
+    }
+    saveAndUpdateElements();
   };
 
   const mountContextMenu = (): MenuProps['items'] => {
@@ -366,12 +493,16 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     if (selectedOnTree.length <= 0) return parentConfigContextMenu;
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
     // if the selected item is the target configuration
-    if (_configType === 'target-config' || _configType === 'machine-config') {
+    if (
+      _configType === 'target-config' ||
+      _configType === 'machine-config' ||
+      _configType === 'parameter'
+    ) {
       return [
         {
-          label: 'Add parameter',
+          label: 'Create parameter',
           key: 'add_parameter',
-          onClick: addParameter,
+          onClick: showCreateParameterModal,
         },
         {
           label: 'Update',
@@ -435,6 +566,21 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         <Input value={name} onChange={changeName} />
         Description:
         <TextArea value={description} onChange={changeDescription} />
+      </Modal>
+      <Modal
+        open={createParameterOpen}
+        title={'New parameter'}
+        onOk={handleCreateParameterOk}
+        onCancel={handleCreateParameterCancel}
+      >
+        Key:
+        <Input value={parameterKey} onChange={changeParameterKey} />
+        Value:
+        <Input value={parameterValue} onChange={changeParameterValue} />
+        Unit:
+        <Input value={parameterUnit} onChange={changeParameterUnit} />
+        Language:
+        <Input value={parameterLanguage} onChange={changeParameterLanguage} />
       </Modal>
     </>
   );

@@ -1,16 +1,10 @@
 import Content from '@/components/content';
-import { Space } from 'antd';
-import { getCurrentEnvironment } from '@/components/auth';
 //import styles from './page.module.scss';
 import {
   createParentConfig,
   getConfigurationById,
   saveParentConfig,
 } from '@/lib/data/legacy/machine-config';
-//import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Breadcrumb, Input, Button, Form } from 'antd';
-import { Col, Divider, Row } from 'antd';
-import MachineConfigEditor from './machine-config-editor';
 import ConfigContent from './config-content';
 
 type MachineConfigProps = {
@@ -28,9 +22,8 @@ export default async function MachineConfigView({
   return (
     <Content title="Machine Configuration">
       <ConfigContent
-        originalMachineConfig={machineConfig}
-        backendSaveMachineConfig={saveParentConfig}
-        backendCreateMachineConfig={createParentConfig}
+        originalParentConfig={machineConfig}
+        backendSaveParentConfig={saveParentConfig}
         configId={configId}
       />
     </Content>

@@ -16,12 +16,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tooltip, Collapse, theme, Dropdown } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: ParentConfig; selection: ParentConfig } | undefined;
+  selectedMachineConfig: TreeFindStruct;
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };
@@ -99,7 +99,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
     },
   ];
 
-  const childConfigContent = (
+  return (
     <div>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
@@ -161,38 +161,5 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         </Col>
       </Row>
     </div>
-  );
-
-  const { token } = theme.useToken();
-  const panelStyle = {
-    marginBottom: 24,
-    background: token.colorFillAlter,
-    borderRadius: token.borderRadiusLG,
-    border: 'none',
-  };
-
-  const getItems = (panelStyle: {
-    marginBottom: number;
-    background: string;
-    borderRadius: number;
-    border: string;
-  }) => [
-    {
-      key: '1',
-      label: editingMachineConfig.name,
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-  ];
-
-  return (
-    <Collapse
-      bordered={false}
-      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-      style={{
-        background: 'none',
-      }}
-      items={getItems(panelStyle)}
-    />
   );
 }

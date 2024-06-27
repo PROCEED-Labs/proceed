@@ -10,11 +10,11 @@ import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown } from 'antd';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: { parent: ParentConfig; selection: ParentConfig } | undefined;
+  selectedMachineConfig: TreeFindStruct;
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
 };

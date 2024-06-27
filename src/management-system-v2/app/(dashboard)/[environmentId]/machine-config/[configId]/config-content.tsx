@@ -6,32 +6,29 @@ import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Button, Layout } from 'antd';
 import ConfigEditor from './config-editor';
-import ConfigurationTreeView from './machine-tree-view';
+import ConfigurationTreeView, { TreeFindStruct } from './machine-tree-view';
 
 const { Sider } = Layout;
 
 type VariablesEditorProps = {
   configId: string;
-  originalMachineConfig: ParentConfig;
-  backendSaveMachineConfig: Function;
-  backendCreateMachineConfig: Function;
+  originalParentConfig: ParentConfig;
+  backendSaveParentConfig: Function;
 };
 
 export default function ConfigContent(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState<
-    { parent: ParentConfig; selection: ParentConfig } | undefined
-  >(undefined);
+  const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct>(undefined);
 
   const configId = props.configId;
-  const saveMachineConfig = props.backendSaveMachineConfig;
-  const machineConfig = { ...props.originalMachineConfig };
+  const saveConfig = props.backendSaveParentConfig;
+  const machineConfig = { ...props.originalParentConfig };
 
   useEffect(() => {
     setSelectedConfig({ parent: machineConfig, selection: machineConfig });
   }, []);
 
-  const onSelectConfig = (relation: { parent: ParentConfig; selection: ParentConfig }) => {
+  const onSelectConfig = (relation: TreeFindStruct) => {
     setSelectedConfig(relation);
   };
 
@@ -49,7 +46,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
             <>
               <ConfigurationTreeView
                 onSelectConfig={onSelectConfig}
-                backendSaveParentConfig={saveMachineConfig}
+                backendSaveParentConfig={saveConfig}
                 configId={configId}
                 parentConfig={machineConfig}
               />
@@ -64,10 +61,10 @@ export default function ConfigContent(props: VariablesEditorProps) {
         style={{ fontSize: '24px' }}
       />
       <ConfigEditor
-        backendSaveMachineConfig={saveMachineConfig}
+        backendSaveParentConfig={saveConfig}
         configId={configId}
-        rootMachineConfig={machineConfig}
-        selectedMachineConfig={selectedConfig}
+        parentConfig={machineConfig}
+        selectedConfig={selectedConfig}
       />
     </Layout>
   );

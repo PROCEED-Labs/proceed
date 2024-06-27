@@ -267,8 +267,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     let foundMachine: TreeFindStruct = { parent: parentConfig, selection: parentConfig };
     // Check if it is not the parent config
     if (selectedKeys.length !== 0 && selectedKeys.indexOf(parentConfig.id) === -1) {
+      const [_configId, _configType] = selectedKeys[0].toString().split('|', 2);
       //Then search the right one
-      let ref = findConfig(selectedKeys[0].toString(), parentConfig);
+      let ref = findConfig(_configId, parentConfig);
       if (ref !== undefined) foundMachine = ref;
     }
     setSelectedMachineConfig(foundMachine);

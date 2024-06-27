@@ -105,7 +105,7 @@ const ElementList = <T extends { id: string }>({
   }
 
   const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
-
+  const { components } = tableProps || {};
   return (
     <Table
       // size={breakpoint.xs ? 'large' : 'middle'}
@@ -177,7 +177,13 @@ const ElementList = <T extends { id: string }>({
       columns={columns}
       dataSource={data}
       className={cn(breakpoint.xs ? styles.MobileTable : '')}
-      components={{ header: { cell: ResizableTitle } }}
+      components={{
+        ...components,
+        header: {
+          ...components?.header,
+          cell: ResizableTitle,
+        },
+      }}
     />
   );
 };

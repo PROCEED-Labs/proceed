@@ -27,7 +27,10 @@ export const useResizeableColumnWidth = (
   useEffect(() => {
     if (!hydrated) return;
 
-    if (onlySelectedColumnsCauseRerender.current && columns.length === columnsInPreferences.length)
+    if (
+      onlySelectedColumnsCauseRerender.current &&
+      resizeableColumns.length === columnsInPreferences.length
+    )
       return;
 
     let newColumns = columns.map((column: any) => {

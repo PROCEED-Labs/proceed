@@ -22,7 +22,7 @@ import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
 import { contextMenuStore } from './processes/context-menu';
 import { DraggableElementGenerator } from './processes/draggable-element';
-import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
+import { useResizableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';

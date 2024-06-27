@@ -167,8 +167,8 @@ const ProcessList: FC<ProcessListProps> = ({
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
             display: 'block',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
+            // whiteSpace: 'nowrap',
+            // textOverflow: 'ellipsis',
           }}
         >
           <div

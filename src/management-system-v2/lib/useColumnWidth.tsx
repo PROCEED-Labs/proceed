@@ -1,5 +1,5 @@
-import { TableColumnsType, TableProps } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { TableColumnsType, TableProps, Tooltip } from 'antd';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
@@ -112,7 +112,7 @@ export const useResizeableColumnWidth = (
     [minWidth, columnsInPreferences, addPreferences, preferenceKey, columns],
   );
 
-  return resizeableColumns.map((column: any, index: number) => {
+  const columsWithResize = resizeableColumns.map((column: any, index: number) => {
     if (notResizeabel.includes(column.key)) return column;
 
     return {
@@ -123,6 +123,9 @@ export const useResizeableColumnWidth = (
       }),
     };
   }) as TableColumnsType<any>;
+
+  return useTruncateColumnText(columsWithResize);
+  // return columsWithResize;
 };
 
 export const ResizableTitle = (props: any) => {
@@ -155,6 +158,98 @@ export const ResizableTitle = (props: any) => {
     </Resizable>
   );
 };
-function userRef(arg0: boolean) {
-  throw new Error('Function not implemented.');
+
+export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']>) => {
+  const truncatedColumns = useMemo(() => {
+    return columns.map((column: any) => {
+      return {
+        ...column,
+        render: (text: any, record: any, rowIndex: number) => {
+          const fallBackText = text.highlighted
+            ? text.highlighted
+            : text; /* In case fuzzy-search is used */
+          const newRender = column.render
+            ? () => column.render(text, record, rowIndex)
+            : () => fallBackText;
+          return (
+            <>
+              <TruncatedCell width={column.width} innerRender={newRender}></TruncatedCell>
+            </>
+          );
+        },
+      };
+    });
+  }, [columns]);
+
+  return truncatedColumns;
+};
+
+type TruncateType = {
+  width: number | string;
+  innerRender: () => JSX.Element | string;
+};
+
+const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
+  const [overFlowing, setOverFlowing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof width !== 'number') return;
+
+    const widths = getWidthsOfInnerElements(containerRef.current);
+
+    if (widths.some((w) => w > width)) {
+      setOverFlowing(true);
+    } else {
+      setOverFlowing(false);
+    }
+  }, [width, innerRender]);
+
+  return (
+    <>
+      <div ref={containerRef}>
+        {overFlowing ? (
+          <Tooltip title={innerRender()} overlayStyle={{ maxWidth: width }} autoAdjustOverflow>
+            <div
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%',
+              }}
+            >
+              {innerRender()}
+            </div>
+          </Tooltip>
+        ) : (
+          <div
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '100%',
+            }}
+          >
+            {innerRender()}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+function getWidthsOfInnerElements(element: HTMLElement | Element) {
+  const widths: number[] = [];
+  /*  Get width of direct children */
+  const children = Array.from(element.children);
+  children.forEach((child) => {
+    widths.push(child.getBoundingClientRect().width);
+  });
+
+  /* Append nested children recursivly */
+  children.forEach((child) => {
+    widths.push(...getWidthsOfInnerElements(child));
+  });
+
+  return widths;
 }

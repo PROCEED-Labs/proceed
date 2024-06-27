@@ -28,7 +28,7 @@ export type AuthenticatedUserData = z.infer<typeof AuthenticatedUserDataSchema>;
 export const AuthenticatedUserSchema = AuthenticatedUserDataSchema.extend({
   guest: z.literal(false),
   id: z.string().optional(),
-  //NOTE: maybe email this should be moved to user data as the user could change their email
+  //NOTE: maybe email should be moved to user data as the user could change their email
   // email is optional because some oauth providers don't provide email
   email: z.string().optional(),
   emailVerified: z.date().nullable(),

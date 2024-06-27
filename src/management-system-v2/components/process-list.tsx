@@ -286,11 +286,9 @@ const ProcessList: FC<ProcessListProps> = ({
     : columns.filter((c) => processListColumnsMobile.includes(c?.key as string));
 
   /* Add functionality for changing width of columns */
-  columnsFiltered = useResizeableColumnWidth(
-    columnsFiltered,
-    'columns-in-table-view-process-list',
-    ['Favorites'],
-  );
+  columnsFiltered = useResizableColumnWidth(columnsFiltered, 'columns-in-table-view-process-list', [
+    'Favorites',
+  ]);
 
   return (
     <ElementList

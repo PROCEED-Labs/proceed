@@ -37,7 +37,7 @@ export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig }
 export function defaultConfiguration(): AbstractConfig {
   const date = new Date().toUTCString();
   return {
-    id: v4(),
+    id: 'default',
     type: 'config',
     environmentId: '',
     owner: { label: 'owner', value: '' },
@@ -80,7 +80,7 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct | 
 export default function ConfigurationTreeView(props: ConfigurationTreeViewProps) {
   const router = useRouter();
   const parentConfig = { ...props.parentConfig };
-  const saveMachineConfig = props.backendSaveParentConfig;
+  const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
 
   const firstRender = useRef(true);
@@ -151,7 +151,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   }, []);
 
   const saveAndUpdateElements = () => {
-    saveMachineConfig(configId, parentConfig).then(() => {});
+    saveParentConfig(configId, parentConfig).then(() => {});
     mountTreeData();
     router.refresh();
   };
@@ -221,7 +221,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     }
     return {
       title: tagByType,
-      key: _config.id,
+      key: _config.id + '|' + _config.type,
       ref: _config,
       children: [],
     };
@@ -239,7 +239,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
     return {
       title: tagByType,
-      key: _parameter.key,
+      key: _parameter.id + '|parameter',
       ref: _parameter,
       children: [],
     };
@@ -319,9 +319,14 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       ? parentConfig.machineConfigs
       : [];
     childrenMachineConfigList = childrenMachineConfigList.filter((node, _) => {
-      return selectedOnTree.indexOf(node.id) === -1;
+      return selectedOnTree.indexOf(node.id + '|' + node.type) === -1;
     });
-    if (parentConfig.targetConfig && selectedOnTree.indexOf(parentConfig.targetConfig.id) !== -1) {
+    if (
+      parentConfig.targetConfig &&
+      selectedOnTree.indexOf(
+        parentConfig.targetConfig.id + '|' + parentConfig.targetConfig.type,
+      ) !== -1
+    ) {
       parentConfig.targetConfig = undefined;
     }
     parentConfig.machineConfigs = childrenMachineConfigList;
@@ -332,33 +337,75 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     mountTreeData();
   };
 
-  const contextMenuItems: MenuProps['items'] = [
-    {
-      label: 'Create Machine Configuration',
-      key: 'create-machine',
-      onClick: showCreateMachineModal,
-    },
-    {
-      label: 'Create Target Configuration',
-      key: 'create-target',
-      onClick: showCreateMachineModal,
-    },
-    {
-      label: 'Update',
-      key: 'update',
-      onClick: updateTree,
-    },
-    {
-      label: 'Delete',
-      key: 'delete',
-      onClick: showDeleteConfirmModal,
-    },
-  ];
+  const addParameter = () => {
+    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
+  };
+
+  const mountContextMenu = (): MenuProps['items'] => {
+    let append = [];
+    if (parentConfig.targetConfig === undefined) {
+      append.push({
+        label: 'Create Target Configuration',
+        key: 'create-target',
+        onClick: showCreateMachineModal,
+      });
+    }
+    const parentConfigContextMenu = [
+      ...append,
+      {
+        label: 'Create Machine Configuration',
+        key: 'create-machine',
+        onClick: showCreateMachineModal,
+      },
+      {
+        label: 'Update',
+        key: 'update',
+        onClick: updateTree,
+      },
+    ];
+    if (selectedOnTree.length <= 0) return parentConfigContextMenu;
+    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
+    // if the selected item is the target configuration
+    if (_configType === 'target-config' || _configType === 'machine-config') {
+      return [
+        {
+          label: 'Add parameter',
+          key: 'add_parameter',
+          onClick: addParameter,
+        },
+        {
+          label: 'Update',
+          key: 'update',
+          onClick: updateTree,
+        },
+        {
+          label: 'Delete',
+          key: 'delete',
+          onClick: showDeleteConfirmModal,
+        },
+      ];
+    } else if (_configType === 'config') {
+      return parentConfigContextMenu;
+    } else {
+      return [
+        {
+          label: 'Update',
+          key: 'update',
+          onClick: updateTree,
+        },
+        {
+          label: 'Delete',
+          key: 'delete',
+          onClick: showDeleteConfirmModal,
+        },
+      ];
+    }
+  };
 
   return (
     <>
       <br />
-      <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']}>
+      <Dropdown menu={{ items: mountContextMenu() }} trigger={['contextMenu']}>
         <Tree
           selectedKeys={selectedOnTree}
           onRightClick={onRightClickTreeNode}
@@ -380,7 +427,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       </Modal>
       <Modal
         open={createMachineOpen}
-        title="New configuration"
+        title={'New ' + (machineType === 'target-config' ? 'target' : 'machine') + ' configuration'}
         onOk={handleCreateMachineOk}
         onCancel={handleCreateMachineCancel}
       >

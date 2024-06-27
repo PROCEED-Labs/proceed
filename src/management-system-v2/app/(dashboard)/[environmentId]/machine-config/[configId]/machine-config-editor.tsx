@@ -5,7 +5,7 @@ import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Layout, Typography } from 'antd';
-import MachineTreeView from './machine-tree-view';
+import ConfigurationTreeView from './machine-tree-view';
 import MachineDataEditor from './machine-metadata-editor';
 
 const { Sider } = Layout;
@@ -47,7 +47,7 @@ export default function ParentConfigEditor(props: VariablesEditorProps) {
         <div style={{ width: '100%', padding: '0' }}>
           {!collapsed && (
             <>
-              <MachineTreeView
+              <ConfigurationTreeView
                 onSelectConfig={onSelectConfig}
                 backendSaveParentConfig={saveParentConfig}
                 configId={configId}

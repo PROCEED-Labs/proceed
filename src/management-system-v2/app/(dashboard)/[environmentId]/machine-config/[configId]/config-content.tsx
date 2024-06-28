@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Button, Layout } from 'antd';
 import ConfigEditor from './config-editor';
 import ConfigurationTreeView, { TreeFindStruct } from './machine-tree-view';
+import { useRouter } from 'next/navigation';
 
 const { Sider } = Layout;
 
@@ -18,18 +19,27 @@ type VariablesEditorProps = {
 
 export default function ConfigContent(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string>('');
+  const router = useRouter();
   const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct>(undefined);
 
   const configId = props.configId;
   const saveConfig = props.backendSaveParentConfig;
-  const machineConfig = { ...props.originalParentConfig };
+  const [parentConfig, setParentConfig] = useState<ParentConfig>(props.originalParentConfig);
 
   useEffect(() => {
-    setSelectedConfig({ parent: machineConfig, selection: machineConfig });
+    setSelectedConfig({ parent: parentConfig, selection: parentConfig });
   }, []);
 
   const onSelectConfig = (relation: TreeFindStruct) => {
     setSelectedConfig(relation);
+  };
+
+  const treeOnUpdate = (editedConfig: ParentConfig) => {
+    const date = new Date().toUTCString();
+    router.refresh();
+    setLastUpdate(date);
+    setParentConfig(editedConfig);
   };
 
   return (
@@ -45,10 +55,11 @@ export default function ConfigContent(props: VariablesEditorProps) {
           {!collapsed && (
             <>
               <ConfigurationTreeView
+                onUpdate={treeOnUpdate}
                 onSelectConfig={onSelectConfig}
                 backendSaveParentConfig={saveConfig}
                 configId={configId}
-                parentConfig={machineConfig}
+                parentConfig={parentConfig}
               />
             </>
           )}
@@ -63,7 +74,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
       <ConfigEditor
         backendSaveParentConfig={saveConfig}
         configId={configId}
-        parentConfig={machineConfig}
+        parentConfig={parentConfig}
         selectedConfig={selectedConfig}
       />
     </Layout>

@@ -54,6 +54,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
+  const [collapseItems, setCollapseItems] = useState<any[]>([]);
   const [name, setName] = useState<string | undefined>('');
   const [oldName, setOldName] = useState<string | undefined>('');
   const [description, setDescription] = useState<string | undefined>('');
@@ -109,7 +110,8 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
     setName(editingConfig.name);
     setDescription(editingConfig.description?.value);
-  }, [props.selectedConfig]);
+    updateItems(panelStyle);
+  }, [props.selectedConfig, props.parentConfig]);
 
   const showMobileView = useMobileModeler();
 
@@ -135,12 +137,12 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     border: 'none',
   };
 
-  const getItems = (panelStyle: {
+  const updateItems = (panelStyle: {
     marginBottom: number;
     background: string;
     borderRadius: number;
     border: string;
-  }): any => {
+  }) => {
     let panels = [];
     panels.push({
       key: '1',
@@ -160,13 +162,13 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       if (currentConfig.targetConfig) {
         panels.push({
           key: '2',
-          label: currentConfig.targetConfig.name,
+          label: 'Target Configuration: ' + currentConfig.targetConfig.name,
           children: (
             <TargetConfiguration
-              backendSaveMachineConfig={saveParentConfig}
+              backendSaveParentConfig={saveParentConfig}
               configId={configId}
-              rootMachineConfig={parentConfig}
-              selectedMachineConfig={props.selectedConfig}
+              parentConfig={parentConfig}
+              selectedConfig={props.selectedConfig}
             />
           ),
           style: panelStyle,
@@ -178,17 +180,17 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           label: machConfigsHeader,
           children: (
             <MachineConfigurations
-              backendSaveMachineConfig={saveParentConfig}
+              backendSaveParentConfig={saveParentConfig}
               configId={configId}
-              rootMachineConfig={parentConfig}
-              selectedMachineConfig={props.selectedConfig}
+              parentConfig={parentConfig}
+              selectedCofig={props.selectedConfig}
             />
           ),
           style: panelStyle,
         });
       }
     }
-    return panels;
+    setCollapseItems(panels);
   };
 
   return (
@@ -321,7 +323,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           style={{
             background: token.colorBgContainer,
           }}
-          items={getItems(panelStyle)}
+          items={collapseItems}
         />
       </Content>
     </Layout>

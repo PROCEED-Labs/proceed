@@ -87,7 +87,10 @@ export async function getConfigurations(environmentId: string, ability?: Ability
  *
  * @throws {UnauthorizedError}
  */
-export async function getConfigurationById(machineConfigId: string, ability?: Ability) {
+export async function getConfigurationById(
+  machineConfigId: string,
+  ability?: Ability,
+): Promise<ParentConfig> {
   const parentConfig = parentConfigMetaObjects[machineConfigId];
   if (!ability) return parentConfig;
 
@@ -106,8 +109,6 @@ export async function createParentConfig(
 ) {
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
-
-    // create meta info object
     const date = new Date().toUTCString();
     const metadata: ParentConfig = {
       ...({
@@ -117,6 +118,12 @@ export async function createParentConfig(
         description: { label: 'description', value: '' },
         variables: [],
         parameters: [],
+        createdBy: environmentId,
+        lastEditedBy: environmentId,
+        lastEditedOn: date,
+        userId: { label: 'User ID', value: environmentId },
+        customFields: [],
+        picture: { label: 'Picture', value: '' },
         departments: [],
         inEditingBy: [],
         createdOn: date,

@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig } from '@/lib/data/machine-config-schema';
+import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -34,9 +34,9 @@ import Parameters from './parameter';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedMachineConfig: TreeFindStruct;
-  rootMachineConfig: ParentConfig;
-  backendSaveMachineConfig: Function;
+  selectedConfig: TreeFindStruct;
+  parentConfig: ParentConfig;
+  backendSaveParentConfig: Function;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -47,43 +47,18 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const [editingName, setEditingName] = useState(false);
-  const [name, setName] = useState<string | undefined>('');
-  const [description, setDescription] = useState<string | undefined>('');
+  const parentConfig = { ...props.parentConfig };
 
-  const rootMachineConfig = { ...props.rootMachineConfig };
-  const parentMachineConfig = props.selectedMachineConfig
-    ? { ...props.selectedMachineConfig.parent }
+  const editingConfig = props.selectedConfig
+    ? { ...props.selectedConfig.selection }
     : defaultConfiguration();
-  const editingMachineConfig = props.selectedMachineConfig
-    ? { ...props.selectedMachineConfig.selection }
-    : defaultConfiguration();
-  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
-  const saveMachineConfig = props.backendSaveMachineConfig;
-  const configId = props.configId;
-  const selectedVersionId = query.get('version');
-
-  const changeDescription = (e: any) => {
-    let newDescription = e.target.value;
-    setDescription(newDescription);
-  };
-
-  const saveDescription = (e: any) => {
-    if (refEditingMachineConfig && refEditingMachineConfig.selection.description) {
-      refEditingMachineConfig.selection.description.value = description ? description : '';
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
-      router.refresh();
-    }
-  };
 
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description?.value);
-  }, [props.selectedMachineConfig]);
+  }, [props.selectedConfig]);
 
   const showMobileView = useMobileModeler();
 
@@ -118,7 +93,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     },
   ];
 
-  const childConfigContent = (
+  const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
@@ -126,7 +101,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           ID{' '}
         </Col>
         <Col span={21} className="gutter-row">
-          <Input disabled prefix={<KeyOutlined />} />
+          <Input disabled value={machineConfigData.id} prefix={<KeyOutlined />} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -136,11 +111,10 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
-          {' '}
-          Owner{' '}
+          {machineConfigData.owner?.label}
         </Col>
         <Col span={21} className="gutter-row">
-          <Input disabled prefix={<UserOutlined />} />
+          <Input disabled value={machineConfigData.owner?.value} prefix={<UserOutlined />} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -150,11 +124,10 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
-          {' '}
-          Description{' '}
+          {machineConfigData.description?.label}
         </Col>
         <Col span={21} className="gutter-row">
-          <TextArea />
+          <TextArea value={machineConfigData.description?.value} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -176,7 +149,12 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={23} className="gutter-row">
-          <Parameters />
+          <Parameters
+            backendSaveParentConfig={props.backendSaveParentConfig}
+            configId={props.configId}
+            parentConfig={parentConfig}
+            selectedConfig={{ parent: parentConfig, selection: machineConfigData }}
+          />
         </Col>
       </Row>
     </div>
@@ -195,20 +173,18 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     background: string;
     borderRadius: number;
     border: string;
-  }) => [
-    {
-      key: '1',
-      label: 'Machine Configuration Name',
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-    {
-      key: '2',
-      label: 'Machine Configuration Name',
-      children: [childConfigContent],
-      style: panelStyle,
-    },
-  ];
+  }): any => {
+    let list = [];
+    for (let machineConfig of parentConfig.machineConfigs) {
+      list.push({
+        key: machineConfig.id,
+        label: machineConfig.name,
+        children: [childConfigContent(machineConfig)],
+        style: panelStyle,
+      });
+    }
+    return list;
+  };
 
   return (
     <Collapse

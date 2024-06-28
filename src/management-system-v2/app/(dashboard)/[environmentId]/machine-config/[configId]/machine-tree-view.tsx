@@ -19,6 +19,7 @@ type ConfigurationTreeViewProps = {
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
   onSelectConfig: Function;
+  onUpdate: Function;
 };
 
 export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig } | undefined;
@@ -251,6 +252,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     saveParentConfig(configId, parentConfig).then(() => {});
     mountTreeData();
     router.refresh();
+    props.onUpdate(parentConfig);
   };
 
   const onSelectTreeNode = (
@@ -564,7 +566,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         onCancel={handleCreateMachineCancel}
       >
         Name:
-        <Input value={name} onChange={changeName} />
+        <Input required value={name} onChange={changeName} />
         Description:
         <TextArea value={description} onChange={changeDescription} />
       </Modal>
@@ -575,9 +577,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         onCancel={handleCreateParameterCancel}
       >
         Key:
-        <Input value={parameterKey} onChange={changeParameterKey} />
+        <Input required value={parameterKey} onChange={changeParameterKey} />
         Value:
-        <Input value={parameterValue} onChange={changeParameterValue} />
+        <Input required value={parameterValue} onChange={changeParameterValue} />
         Unit:
         <Input value={parameterUnit} onChange={changeParameterUnit} />
         Language:

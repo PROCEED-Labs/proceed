@@ -1,6 +1,11 @@
-import { Editor, Frame, EditorStore } from '@craftjs/core';
-import React from 'react';
+import { Editor, Frame, EditorStore, useNode, UserComponent } from '@craftjs/core';
+import React, { useRef, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
+
+import { Button, Dropdown, Flex } from 'antd';
+import { EllipsisOutlined } from '@ant-design/icons';
+
+import Overflow, { OverFlowSpaceItem } from '@/components/Overflow';
 
 import SubmitButton from './SubmitButton';
 import Text from './Text';
@@ -196,4 +201,36 @@ export const defaultForm = `
 }
 `;
 
-// export function getDropLocation
+export type ComponentSettingsProps = {
+  controls: OverFlowSpaceItem[];
+};
+
+export const ComponentSettings: React.FC<ComponentSettingsProps> = ({ controls }) => {
+  const ref = useRef<HTMLElement>(null);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+
+  return (
+    <Flex gap="middle" ref={ref} style={{ flexGrow: 1, overflow: 'hidden' }} align="center">
+      <Overflow
+        renderHidden={(items) => {
+          return (
+            <Dropdown
+              open={overflowOpen}
+              menu={{
+                items,
+              }}
+            >
+              <Button
+                type="text"
+                icon={<EllipsisOutlined />}
+                onClick={() => setOverflowOpen(!overflowOpen)}
+              />
+            </Dropdown>
+          );
+        }}
+        items={controls}
+        containerRef={ref}
+      />
+    </Flex>
+  );
+};

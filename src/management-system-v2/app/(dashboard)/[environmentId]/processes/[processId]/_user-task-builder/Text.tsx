@@ -1,10 +1,11 @@
 import { useNode, UserComponent } from '@craftjs/core';
 
-import { Slider, Row, Col, InputNumber, Input } from 'antd';
+import { Slider, Row, Col, InputNumber, Input, Space } from 'antd';
 
 const { TextArea } = Input;
 
 import { useState } from 'react';
+import { ComponentSettings } from './utils';
 
 type TextProps = {
   text: string;
@@ -64,13 +65,22 @@ export const TextSettings = () => {
     fontSize: node.data.props.fontSize,
   }));
 
-  return (
-    <InputNumber
-      value={fontSize}
-      addonAfter="pt"
-      onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
-    />
-  );
+  const items = [
+    {
+      key: 'type',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <InputNumber
+            value={fontSize}
+            addonAfter="pt"
+            onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  return <ComponentSettings controls={items} />;
 };
 
 Text.craft = {

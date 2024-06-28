@@ -70,36 +70,60 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <Row className={styles.EditorHeader}>
-      <div>
-        <Button
-          type="text"
-          icon={
-            <DesktopOutlined style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }} />
-          }
-          disabled={iframeMaxWidth < 601}
-          onClick={() => onLayoutChange('computer')}
-        />
-        <Button
-          type="text"
-          icon={
-            <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
-          }
-          onClick={() => onLayoutChange('mobile')}
-        />
-      </div>
-      <div>
-        <Button
-          type="text"
-          icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
-          disabled={iframeMaxWidth < 601}
-          onClick={() => actions.history.undo()}
-        />
-        <Button
-          type="text"
-          icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
-          onClick={() => actions.history.redo()}
-        />
-      </div>
+      <Flex align="center" style={{ width: '100%' }}>
+        <Flex align="center">
+          <Button
+            type="text"
+            icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
+            disabled={iframeMaxWidth < 601}
+            onClick={() => actions.history.undo()}
+          />
+          <Button
+            type="text"
+            icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
+            onClick={() => actions.history.redo()}
+          />
+        </Flex>
+        <Divider type="vertical" />
+        <Flex align="center">
+          <Button
+            type="text"
+            icon={
+              <DesktopOutlined
+                style={{ color: iframeLayout === 'computer' ? 'blue' : undefined }}
+              />
+            }
+            disabled={iframeMaxWidth < 601}
+            onClick={() => onLayoutChange('computer')}
+          />
+          <Button
+            type="text"
+            icon={
+              <MobileOutlined style={{ color: iframeLayout === 'mobile' ? 'blue' : undefined }} />
+            }
+            onClick={() => onLayoutChange('mobile')}
+          />
+        </Flex>
+
+        {selected && (
+          <>
+            <Divider type="vertical" />
+
+            {selected.settings ? React.createElement(selected.settings) : 'No settings available'}
+          </>
+        )}
+        {deleteId && (
+          <>
+            <Divider type="vertical" />
+            <Button
+              danger
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={() => actions.delete(deleteId)}
+            />
+          </>
+        )}
+      </Flex>
     </Row>
   );
 };

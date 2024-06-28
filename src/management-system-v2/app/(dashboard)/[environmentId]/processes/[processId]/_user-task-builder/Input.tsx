@@ -1,9 +1,10 @@
-import { Input as AntInput, Typography, Row, Select } from 'antd';
+import { Input as AntInput, Typography, Row, Select, Space } from 'antd';
 
 import { UserComponent, useNode } from '@craftjs/core';
 import { useState } from 'react';
 
 import { v4 } from 'uuid';
+import { ComponentSettings } from './utils';
 
 type InputProps = {
   label: string;
@@ -68,26 +69,33 @@ export const InputSettings = () => {
     type: node.data.props.type,
   }));
 
-  return (
-    <Row>
-      <Typography.Title style={{ marginRight: 10 }} level={5}>
-        Type:
-      </Typography.Title>
-      <Select
-        options={[
-          { value: 'text', label: 'Text' },
-          { value: 'number', label: 'Number' },
-          { value: 'email', label: 'E-Mail' },
-        ]}
-        value={type}
-        onChange={(val) =>
-          setProp((props: InputProps) => {
-            props.type = val;
-          })
-        }
-      />
-    </Row>
-  );
+  const items = [
+    {
+      key: 'type',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title style={{ marginBottom: 0 }} level={5}>
+            Type:
+          </Typography.Title>
+          <Select
+            options={[
+              { value: 'text', label: 'Text' },
+              { value: 'number', label: 'Number' },
+              { value: 'email', label: 'E-Mail' },
+            ]}
+            value={type}
+            onChange={(val) =>
+              setProp((props: InputProps) => {
+                props.type = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  return <ComponentSettings controls={items} />;
 };
 
 Input.craft = {

@@ -13,7 +13,7 @@ import Text from './Text';
 import Container from './Container';
 import Row from './Row';
 import Column from './Column';
-import { SettingsPanel, Toolbox } from './Sidebar';
+import { Toolbox } from './Sidebar';
 import { Toolbar, EditorLayout } from './Toolbar';
 import Header from './Header';
 import Input from './Input';
@@ -25,6 +25,7 @@ import { toHtml, iframeDocument } from './utils';
 import AddUserControls from '@/components/add-user-controls';
 
 import CustomEventhandlers from './CustomCommandhandlers';
+import useBoundingClientRect from '@/lib/useBoundingClientRect';
 
 type BuilderProps = {
   open: boolean;
@@ -38,33 +39,13 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
-  const [iframeMaxWidth, setIframeMaxWidth] = useState(Infinity);
+
+  const { width: iframeMaxWidth } = useBoundingClientRect(iframeContainerRef, ['width']);
 
   useEffect(() => {
-    if (open && iframeContainerRef.current) {
-      const handleWidth = (width: number) => {
-        setIframeMaxWidth(width);
-        if (width < 601) setIframeLayout('mobile');
-        else setIframeLayout('computer');
-      };
-
-      const { width } = iframeContainerRef.current.getBoundingClientRect();
-      handleWidth(width);
-
-      let currentWidth = width;
-      const observer = new ResizeObserver((entries) => {
-        const { width: newWidth } = entries[0].contentRect;
-        if (newWidth !== currentWidth) {
-          handleWidth(newWidth);
-          currentWidth = newWidth;
-        }
-      });
-
-      observer.observe(iframeContainerRef.current);
-
-      () => observer.disconnect();
-    }
-  }, [open]);
+    if (iframeMaxWidth < 601) setIframeLayout('mobile');
+    else setIframeLayout('computer');
+  }, [iframeMaxWidth]);
 
   return (
     <Modal
@@ -91,7 +72,7 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
           <Col span={4}>
             <Toolbox />
           </Col>
-          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={16}>
+          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={20}>
             <IFrame
               id="user-task-builder-iframe"
               width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
@@ -135,9 +116,6 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
                 </Element>
               </Frame>
             </IFrame>
-          </Col>
-          <Col span={4}>
-            <SettingsPanel />
           </Col>
         </AntRow>
       </div>

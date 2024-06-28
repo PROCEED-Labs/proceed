@@ -6,7 +6,13 @@
   .EditorHeader {
     padding: 5px;
     display: flex;
-    justify-content: space-between;
+    align-items: baseline;
+
+    :global(.ant-input-number-group) {
+      :global(.ant-input-number) {
+        width: 5.625rem;
+      }
+    }
   }
   .EditorBody {
     flex-grow: 1;

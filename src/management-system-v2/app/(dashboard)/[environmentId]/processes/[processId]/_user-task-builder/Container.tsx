@@ -1,6 +1,9 @@
-import { Row, Typography, InputNumber, ColorPicker, Empty } from 'antd';
+import React from 'react';
+
+import { Typography, InputNumber, ColorPicker, Empty, Space } from 'antd';
 
 import { UserComponent, useNode } from '@craftjs/core';
+import { ComponentSettings } from './utils';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;
@@ -49,66 +52,86 @@ export const ContainerSettings = () => {
     borderColor: node.data.props.borderColor,
   }));
 
-  return (
-    <>
-      <Row>
-        <Typography.Title style={{ marginRight: 10 }} level={5}>
-          Padding:
-        </Typography.Title>
-        <InputNumber
-          min={0}
-          addonAfter="px"
-          value={padding}
-          onChange={(val) =>
-            setProp((props: ContainerProps) => {
-              props.padding = val;
-            })
-          }
-        />
-      </Row>
-      <Row>
-        <Typography.Title style={{ marginRight: 10 }} level={5}>
-          Background Color:
-        </Typography.Title>
-        <ColorPicker
-          value={background}
-          onChange={(_, val) =>
-            setProp((props: ContainerProps) => {
-              props.background = val;
-            })
-          }
-        />
-      </Row>
-      <Row>
-        <Typography.Title style={{ marginRight: 10 }} level={5}>
-          Border Thickness:
-        </Typography.Title>
-        <InputNumber
-          min={0}
-          addonAfter="px"
-          value={borderThickness}
-          onChange={(val) =>
-            setProp((props: ContainerProps) => {
-              props.borderThickness = val;
-            })
-          }
-        />
-      </Row>
-      <Row>
-        <Typography.Title style={{ marginRight: 10 }} level={5}>
-          Border Color:
-        </Typography.Title>
-        <ColorPicker
-          value={borderColor}
-          onChange={(_, val) =>
-            setProp((props: ContainerProps) => {
-              props.borderColor = val;
-            })
-          }
-        />
-      </Row>
-    </>
-  );
+  const items = [
+    {
+      key: 'padding',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title level={5} style={{ marginBottom: 0 }}>
+            Padding:
+          </Typography.Title>
+          <InputNumber
+            min={0}
+            addonAfter="px"
+            value={padding}
+            onChange={(val) =>
+              setProp((props: ContainerProps) => {
+                props.padding = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+    {
+      key: 'bg-color',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title level={5} style={{ marginBottom: 0 }}>
+            Background Color:
+          </Typography.Title>
+          <ColorPicker
+            value={background}
+            onChange={(_, val) =>
+              setProp((props: ContainerProps) => {
+                props.background = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+    {
+      key: 'border-thickness',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title level={5} style={{ marginBottom: 0 }}>
+            Border Thickness:
+          </Typography.Title>
+          <InputNumber
+            min={0}
+            addonAfter="px"
+            value={borderThickness}
+            onChange={(val) =>
+              setProp((props: ContainerProps) => {
+                props.borderThickness = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+    {
+      key: 'border-color',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title level={5} style={{ marginBottom: 0 }}>
+            Border Color:
+          </Typography.Title>
+          <ColorPicker
+            value={borderColor}
+            onChange={(_, val) =>
+              setProp((props: ContainerProps) => {
+                props.borderColor = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  return <ComponentSettings controls={items} />;
 };
 
 Container.craft = {

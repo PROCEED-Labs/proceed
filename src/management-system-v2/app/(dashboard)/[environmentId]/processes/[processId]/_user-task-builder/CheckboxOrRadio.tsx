@@ -1,9 +1,10 @@
-import { Input as AntInput, Typography, Select, Button } from 'antd';
+import { Input as AntInput, Typography, Select, Button, Space } from 'antd';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 import { useMemo, useState } from 'react';
 
 import { v4 } from 'uuid';
+import { ComponentSettings } from './utils';
 
 type CheckboxOrRadioProps = {
   type: 'checkbox' | 'radio';
@@ -151,26 +152,33 @@ export const CheckboxOrRadioSettings = () => {
     variable: node.data.props.variable,
   }));
 
-  return (
-    <>
-      <Typography.Title style={{ marginRight: 10 }} level={5}>
-        Variable:
-      </Typography.Title>
-      <Select
-        options={[
-          { value: 'var1', label: 'Var1' },
-          { value: 'var2', label: 'Var2' },
-          { value: 'var3', label: 'Var3' },
-        ]}
-        value={variable}
-        onChange={(val) =>
-          setProp((props: CheckboxOrRadioProps) => {
-            props.variable = val;
-          })
-        }
-      />
-    </>
-  );
+  const items = [
+    {
+      key: 'type',
+      label: (
+        <Space style={{ minWidth: 'max-content' }} align="center">
+          <Typography.Title style={{ marginBottom: 0 }} level={5}>
+            Variable:
+          </Typography.Title>
+          <Select
+            options={[
+              { value: 'var1', label: 'Var1' },
+              { value: 'var2', label: 'Var2' },
+              { value: 'var3', label: 'Var3' },
+            ]}
+            value={variable}
+            onChange={(val) =>
+              setProp((props: CheckboxOrRadioProps) => {
+                props.variable = val;
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  return <ComponentSettings controls={items} />;
 };
 
 CheckboxOrRadio.craft = {

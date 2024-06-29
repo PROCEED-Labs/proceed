@@ -1,7 +1,19 @@
 'use client';
 
 import { FC, useEffect, useState } from 'react';
-import { Typography, Alert, Form, Input, Button, Divider, Modal, Space, Tooltip } from 'antd';
+import {
+  Typography,
+  Alert,
+  Form,
+  Input,
+  Button as AntDesignButton,
+  Divider,
+  Modal,
+  Space,
+  Tooltip,
+  ButtonProps,
+  ConfigProvider,
+} from 'antd';
 
 import styles from './login.module.scss';
 import { useSearchParams } from 'next/navigation';
@@ -10,9 +22,43 @@ import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
 
+const verticalGap = '1rem';
+
+const divider = (
+  <Divider style={{ color: 'black' }}>
+    <Typography.Text style={{ display: 'block', textAlign: 'center' }}>OR</Typography.Text>
+  </Divider>
+);
+
+const Button = (props: ButtonProps) => (
+  <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <AntDesignButton
+      type="primary"
+      {...props}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem',
+        width: '25ch',
+        maxWidth: '80%',
+        textWrap: 'wrap',
+        ...(props.style ?? {}),
+      }}
+    />
+  </div>
+);
+
+const signInTitle = (
+  <Typography.Title level={4} style={{ textAlign: 'center' }}>
+    SIGN IN
+  </Typography.Title>
+);
+
 const SignIn: FC<{
   providers: ExtractedProvider[];
-}> = ({ providers }) => {
+  userType: 'guest' | 'user' | 'none';
+}> = ({ providers, userType }) => {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? '/';
   const authError = searchParams.get('error');
@@ -31,86 +77,126 @@ const SignIn: FC<{
   }, [setOpen]);
 
   return (
-    <Modal
-      title={
-        <Image
-          src="/proceed.svg"
-          alt="PROCEED Logo"
-          width={160}
-          height={63}
-          priority
-          style={{ marginBottom: '1rem', display: 'block', margin: 'auto' }}
-        />
-      }
-      open={open}
-      closeIcon={null}
-      footer={null}
-      style={{
-        maxWidth: '400px',
-        width: '90%',
-        top: 0,
+    <ConfigProvider
+      theme={{
+        components: {
+          Alert: {
+            colorText: '#434343',
+          },
+        },
       }}
-      styles={{
-        mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
-      }}
-      className={styles.Card}
     >
-      <Typography.Title level={4} style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        Sign in
-      </Typography.Title>
+      <Modal
+        title={
+          <Image
+            src="/proceed.svg"
+            alt="PROCEED Logo"
+            width={160}
+            height={63}
+            priority
+            style={{ marginBottom: '1rem', display: 'block', margin: 'auto' }}
+          />
+        }
+        open={open}
+        closeIcon={null}
+        footer={null}
+        style={{
+          maxWidth: '60ch',
+          width: '90%',
+          top: 0,
+        }}
+        styles={{
+          mask: { backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
+          header: { paddingBottom: verticalGap },
+        }}
+        className={styles.Card}
+      >
+        {authError && (
+          <Alert description={authError} type="error" style={{ marginBottom: verticalGap }} />
+        )}
 
-      {authError && <Alert description={authError} type="error" style={{ marginBottom: '2rem' }} />}
+        {userType === 'none' ? (
+          <Typography.Title level={4} style={{ textAlign: 'center' }}>
+            TRY PROCEED
+          </Typography.Title>
+        ) : (
+          signInTitle
+        )}
 
-      <Space direction="vertical" style={{ gap: '1.5rem', width: '100%' }}>
-        {credentials.map((provider) => {
-          if (provider.type === 'credentials') {
-            return (
-              <Form
-                onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
-                key={provider.id}
-                layout="vertical"
-              >
-                {Object.keys(provider.credentials).map((key) => (
-                  <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
-                    <Input placeholder={provider.credentials[key].label} />
-                  </Form.Item>
-                ))}
-                <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                  {provider.name}
-                </Button>
-              </Form>
-            );
-          } else if (provider.type === 'email') {
-            return (
-              <Form
-                onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
-                key={provider.id}
-                layout="vertical"
-              >
-                <Form.Item
-                  name="email"
-                  rules={[{ type: 'email', required: true }]}
-                  style={{ marginBottom: '.5rem' }}
+        {userType === 'none' && guestProvider && (
+          <>
+            <Form
+              onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
+              key={guestProvider.id}
+              layout="vertical"
+            >
+              <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
+                Create a Process
+              </Button>
+            </Form>
+            {divider}
+          </>
+        )}
+
+        {userType === 'none' && signInTitle}
+
+        <Space direction="vertical" style={{ gap: verticalGap }}>
+          {credentials.map((provider) => {
+            if (provider.type === 'credentials') {
+              return (
+                <Form
+                  onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
+                  key={provider.id}
+                  layout="vertical"
                 >
-                  <Input placeholder="Email" />
-                </Form.Item>
-                <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                  Continue with {provider.name}
-                </Button>
-              </Form>
-            );
-          }
-        })}
+                  {Object.keys(provider.credentials).map((key) => (
+                    <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
+                      <Input placeholder={provider.credentials[key].label} />
+                    </Form.Item>
+                  ))}
+                  <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
+                    {provider.name}
+                  </Button>
+                </Form>
+              );
+            } else if (provider.type === 'email') {
+              return (
+                <>
+                  <Form
+                    onFinish={(values) => signIn(provider.id, { ...values, callbackUrl })}
+                    key={provider.id}
+                    layout="vertical"
+                  >
+                    <Form.Item
+                      name="email"
+                      rules={[{ type: 'email', required: true }]}
+                      style={{ marginBottom: '.5rem' }}
+                    >
+                      <Input placeholder="E-Mail" />
+                    </Form.Item>
+                    <Button htmlType="submit">Continue with E-Mail</Button>
+                  </Form>
 
-        <Space wrap>
+                  <Alert
+                    message="Note: Simply sign in with your e-mail address and we will send you an access link."
+                    type="info"
+                  />
+                </>
+              );
+            }
+          })}
+        </Space>
+
+        {divider}
+
+        <Space wrap style={{ justifyContent: 'center', width: '100%' }}>
           {oauthProviders.map((provider, idx) => {
             if (provider.type !== 'oauth') return null;
             return (
               <Tooltip title={`Sign in with ${provider.name}`}>
-                <Button
+                <AntDesignButton
                   key={idx}
                   style={{
-                    marginBottom: '.5rem',
                     padding: '1.6rem',
                   }}
                   icon={
@@ -126,41 +212,43 @@ const SignIn: FC<{
             );
           })}
         </Space>
-      </Space>
 
-      {guestProvider && (
-        <>
-          <Divider style={{ color: 'black' }}>
-            <Typography.Text style={{ display: 'block', textAlign: 'center', padding: '1rem' }}>
-              OR
-            </Typography.Text>
-          </Divider>
-          <Form
-            onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
-            key={guestProvider.id}
-            layout="vertical"
-          >
-            <Button
-              type="primary"
-              htmlType="submit"
-              style={{ width: '100%', marginBottom: '1rem' }}
+        {userType === 'guest' && guestProvider && (
+          <>
+            {divider}
+            <Form
+              onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
+              key={guestProvider.id}
+              layout="vertical"
             >
-              {guestProvider.name}
-            </Button>
+              <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
+                Continue as Guest
+              </Button>
 
-            <Alert
-              message="Beware: If you continue as a guest, the processes your create will not be accessible on other devicces and all your data will be automatically deleted after a few days. To save your data you have to sign in"
-              type="warning"
-              style={{ marginBottom: '1rem' }}
-            />
-          </Form>
-        </>
-      )}
+              <Alert
+                message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+                type="info"
+              />
+            </Form>
+          </>
+        )}
 
-      <Typography.Text style={{ display: 'block', textAlign: 'center', padding: '1rem' }}>
-        By signing in, you agree to our <Link href="/terms">Terms of Service</Link>
-      </Typography.Text>
-    </Modal>
+        <Typography.Paragraph
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            padding: '1rem',
+            marginTop: verticalGap,
+            fontSize: '.8rem',
+            color: '#434343',
+          }}
+        >
+          By using the PROCEED Platform, you agree to the{' '}
+          <Link href="/terms">Terms of Service</Link> and the storage of functionally essential
+          cookies on your device.
+        </Typography.Paragraph>
+      </Modal>
+    </ConfigProvider>
   );
 };
 

@@ -1,9 +1,8 @@
-import { FC, PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnvironments, isMember } from '@/lib/data/legacy/iam/memberships';
-import { redirect } from 'next/navigation';
+import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
@@ -16,8 +15,8 @@ import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
+import { MdOutlineComputer } from 'react-icons/md';
 import { spaceURL } from '@/lib/utils';
 
 const DashboardLayout = async ({
@@ -69,13 +68,19 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (enableNewMSExecution) {
+  if (process.env.ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
       key: 'executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
+    });
+
+    children.push({
+      key: 'engines',
+      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Engines</Link>,
+      icon: <MdOutlineComputer />,
     });
 
     layoutMenuItems.push({

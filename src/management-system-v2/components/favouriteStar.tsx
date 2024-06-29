@@ -6,9 +6,10 @@ import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 type StarType = {
   id: string;
   className?: string;
+  viewOnly?: boolean;
 };
 
-const FavouriteStar: FC<StarType> = ({ id, className }) => {
+const FavouriteStar: FC<StarType> = ({ id, className, viewOnly = false }) => {
   const { favourites: favs, updateFavouriteProcesses: updateFavs } = useFavouriteProcesses();
 
   return (
@@ -17,12 +18,14 @@ const FavouriteStar: FC<StarType> = ({ id, className }) => {
         style={{
           color: favs?.includes(id) ? '#FFD700' : undefined,
         }}
-        onClick={(e) => {
-          e.stopPropagation();
-          updateFavs(id);
-          console.log(id);
-          console.log(favs);
-        }}
+        onClick={
+          viewOnly
+            ? undefined
+            : (e) => {
+                e.stopPropagation();
+                updateFavs(id);
+              }
+        }
         className={favs?.includes(id) ? undefined : className}
       />
     </>

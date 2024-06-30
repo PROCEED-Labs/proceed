@@ -4,11 +4,11 @@ import { Role } from '../data/role-schema';
 import { isMember } from '../data/legacy/iam/memberships';
 
 /** Returns all roles that are applied to a user in a given organization environment */
-export function getAppliedRolesForUser(userId: string, environmentId: string): Role[] {
+export async function getAppliedRolesForUser(userId: string, environmentId: string): Role[] {
   // enforces environment to be an organization
   if (!isMember(environmentId, userId)) throw new Error('User is not a member of this environment');
 
-  const environmentRoles = getRoles(environmentId);
+  const environmentRoles = await getRoles(environmentId);
 
   const userRoles: Role[] = [];
 
@@ -21,12 +21,9 @@ export function getAppliedRolesForUser(userId: string, environmentId: string): R
     (role: any) => role.default && role.name === '@everyone',
   ) as Role;
   userRoles.push(everyoneRole);
+  const roleMappings = await getRoleMappingByUserId(userId, environmentId);
+  const mappedRoles = await Promise.all(roleMappings.map((mapping) => getRoleById(mapping.roleId)));
+  userRoles.push(...mappedRoles);
 
-  userRoles.push(
-    ...getRoleMappingByUserId(userId, environmentId).map((roleMapping) =>
-      getRoleById(roleMapping.roleId),
-    ),
-  );
-
-  return userRoles;
+  return userRoles.filter((e) => e !== undefined);
 }

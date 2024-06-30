@@ -93,7 +93,7 @@ export async function getRoleMappings(ability?: Ability, environmentId?: string)
 }
 
 /** Returns a role mapping by user id */
-export function getRoleMappingByUserId(
+export async function getRoleMappingByUserId(
   userId: string,
   environmentId: string,
   ability?: Ability,

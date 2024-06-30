@@ -259,7 +259,7 @@ const Processes = ({
       } catch (e) {
         message.open({
           type: 'error',
-          content: `Someting went wrong`,
+          content: `Something went wrong`,
         });
       }
     });
@@ -272,7 +272,7 @@ const Processes = ({
     moveItems,
   };
 
-  // Here all the loading states shoud be ORed together
+  // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (

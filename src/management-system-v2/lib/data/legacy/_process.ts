@@ -132,8 +132,30 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
     if (!process) {
       throw new Error(`Process with id ${processDefinitionsId} could not be found!`);
     }
+    // Convert BigInt fields in versions to number
+    const convertedVersions = process.versions.map((version) => ({
+      ...version,
+      version: typeof version.version === 'bigint' ? Number(version.version) : version.version,
+      versionBasedOn:
+        typeof version.versionBasedOn === 'bigint'
+          ? Number(version.versionBasedOn)
+          : version.versionBasedOn,
+    }));
 
-    return { ...process };
+    const convertedProcess = {
+      ...process,
+      versions: convertedVersions,
+      shareTimestamp:
+        typeof process.shareTimestamp === 'bigint'
+          ? Number(process.shareTimestamp)
+          : process.shareTimestamp,
+      allowIframeTimestamp:
+        typeof process.allowIframeTimestamp === 'bigint'
+          ? Number(process.allowIframeTimestamp)
+          : process.allowIframeTimestamp,
+    };
+
+    return convertedProcess;
   }
   const process = processMetaObjects[processDefinitionsId];
   if (!process) {
@@ -326,7 +348,6 @@ export async function updateProcess(
           where: { id: processDefinitionsId },
           data: { bpmn: newBpmn, lastEditedOn: new Date().toISOString() },
         });
-        console.log('Process updated');
       } catch (error) {
         console.error('Error updating bpmn: ', error);
       }
@@ -588,7 +609,6 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
   // get the version from the given bpmn
   if (enableUseDB) {
     let versionInformation = await getDefinitionsVersionInformation(bpmn);
-
     if (!versionInformation) {
       throw new Error('The given bpmn does not contain a version.');
     }
@@ -623,15 +643,9 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
           description: versionInformation.description ?? '',
           versionBasedOn: versionInformation.versionBasedOn,
           process: { connect: { id: processDefinitionsId } },
-          createdOn: new Date().toISOString(),
-          lastEditedOn: new Date().toISOString(),
-        },
-      });
-
-      await db.versionBPMN.create({
-        data: {
-          version: { connect: { id } },
-          xml: bpmn,
+          bpmn: bpmn,
+          createdOn: new Date(),
+          lastEditedOn: new Date(),
         },
       });
     } catch (error) {
@@ -645,46 +659,46 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
     //@ts-ignore
     newVersions.push(versionInformation);
     newVersions.sort((a, b) => (b.version > a.version ? 1 : -1));
+  } else {
+    let versionInformation = await getDefinitionsVersionInformation(bpmn);
+
+    if (!versionInformation) {
+      throw new Error('The given bpmn does not contain a version.');
+    }
+
+    const existingProcess = processMetaObjects[processDefinitionsId];
+    if (!existingProcess) {
+      // TODO: create the process and use the given version as the "HEAD"
+      throw new Error('The process for which you try to create a version does not exist');
+    }
+
+    if (
+      existingProcess.type !== 'project' &&
+      (!versionInformation.name || !versionInformation.description)
+    ) {
+      throw new Error(
+        'A bpmn that should be stored as a version of a process has to contain both a version name and a version description!',
+      );
+    }
+
+    // don't add a version a second time
+    if (existingProcess.versions.some(({ version }) => version == versionInformation.version)) {
+      return;
+    }
+
+    // save the new version in the directory of the process
+
+    await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
+
+    // add information about the new version to the meta information and inform others about its existance
+    const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
+
+    //@ts-ignore
+    newVersions.push(versionInformation);
+    newVersions.sort((a, b) => b.version - a.version);
+
+    await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
   }
-
-  let versionInformation = await getDefinitionsVersionInformation(bpmn);
-
-  if (!versionInformation) {
-    throw new Error('The given bpmn does not contain a version.');
-  }
-
-  const existingProcess = processMetaObjects[processDefinitionsId];
-  if (!existingProcess) {
-    // TODO: create the process and use the given version as the "HEAD"
-    throw new Error('The process for which you try to create a version does not exist');
-  }
-
-  if (
-    existingProcess.type !== 'project' &&
-    (!versionInformation.name || !versionInformation.description)
-  ) {
-    throw new Error(
-      'A bpmn that should be stored as a version of a process has to contain both a version name and a version description!',
-    );
-  }
-
-  // don't add a version a second time
-  if (existingProcess.versions.some(({ version }) => version == versionInformation.version)) {
-    return;
-  }
-
-  // save the new version in the directory of the process
-
-  await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
-
-  // add information about the new version to the meta information and inform others about its existance
-  const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
-
-  //@ts-ignore
-  newVersions.push(versionInformation);
-  newVersions.sort((a, b) => b.version - a.version);
-
-  await updateProcessMetaData(processDefinitionsId, { versions: newVersions });
 }
 
 /** Returns the bpmn of a specific process version */
@@ -704,11 +718,10 @@ export async function getProcessVersionBpmn(processDefinitionsId: string, versio
       throw new Error('The version you are trying to get does not exist');
     }
 
-    const versn = await db.version.findFirst({
+    const versn = await db.version.findUnique({
       where: { version: version },
-      include: { bpmn: true },
     });
-    return versn?.bpmn?.xml;
+    return versn?.bpmn;
   }
 
   let existingProcess = processMetaObjects[processDefinitionsId];

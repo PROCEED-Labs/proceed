@@ -59,7 +59,14 @@ const Layout: FC<
     (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
   );
 
-  const menu = <Menu theme="light" mode="inline" items={layoutMenuItems} />;
+  const menu = (
+    <Menu
+      theme="light"
+      style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
+      mode="inline"
+      items={layoutMenuItems}
+    />
+  );
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
@@ -77,7 +84,7 @@ const Layout: FC<
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(collapsed) => setCollapsed(collapsed)}
-                collapsedWidth={breakpoint.xs ? '0' : '80'}
+                collapsedWidth={breakpoint.xs ? '0' : '100'}
                 breakpoint="xl"
                 trigger={null}
               >

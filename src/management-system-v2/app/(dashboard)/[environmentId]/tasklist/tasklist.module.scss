@@ -1,0 +1,100 @@
+.Tasklist {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+
+  @media (max-width: 1199px) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+
+    @media (min-width: 601px) and (max-width: 1199px) {
+      position: relative;
+    }
+
+    @media (max-width: 1199px) {
+      padding-bottom: 0.5rem;
+      border-right: none;
+      border-bottom: 1px solid #eee;
+      flex-grow: 1;
+    }
+
+    .cardWrapper {
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+
+      .cardList {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+
+        @media (min-width: 601px) and (max-width: 1199px) {
+          grid-template-columns: repeat(auto-fill, minmax(40vw, 1fr));
+        }
+      }
+
+      :global(.ant-list) {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        :global(.ant-list-item) {
+          margin: 0 !important;
+        }
+      }
+    }
+
+    .actionWrapper {
+      padding-right: 1.25rem;
+      padding-bottom: 0.5rem;
+
+      @media (max-width: 1199px) {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .dropdownWrapper {
+        display: flex;
+        justify-content: center;
+
+        :global(.ant-btn) {
+          flex-grow: 1;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 1199px) {
+    .list:global(.selected) {
+      flex-direction: row;
+      justify-content: center;
+      flex-grow: 0;
+
+      .cardWrapper {
+        flex-grow: 1;
+        overflow-y: hidden;
+        padding: 0;
+      }
+      .actionWrapper {
+        padding: 0;
+        order: 2;
+      }
+    }
+  }
+
+  .taskView {
+    flex-grow: 1;
+  }
+}

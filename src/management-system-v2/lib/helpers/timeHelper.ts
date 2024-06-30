@@ -32,3 +32,37 @@ export function calculateTimeFormalExpression(durationValues: DurationValues) {
 
   return formalExpression;
 }
+
+export function transformMilisecondsToDurationValues(
+  timeInMs: number,
+  excludeAfterDays: boolean = false,
+) {
+  let miliseconds = timeInMs;
+  const durationValues: DurationValues = {
+    years: null,
+    months: null,
+    days: null,
+    hours: null,
+    minutes: null,
+    seconds: null,
+  };
+  if (miliseconds > 0) {
+    if (!excludeAfterDays) {
+      durationValues.years = Math.floor(miliseconds / (365 * 60 * 60 * 1000 * 24));
+      miliseconds -= durationValues.years * (365 * 60 * 60 * 1000 * 24);
+      durationValues.months = Math.floor(miliseconds / (30 * 60 * 60 * 1000 * 24));
+      miliseconds -= durationValues.months * (30 * 60 * 60 * 1000 * 24);
+    }
+    durationValues.days = Math.floor(miliseconds / (60 * 60 * 1000 * 24));
+    miliseconds -= durationValues.days * (60 * 60 * 1000 * 24);
+    durationValues.hours = Math.floor(miliseconds / (60 * 60 * 1000));
+    miliseconds -= durationValues.hours * (60 * 60 * 1000);
+    // Minutes part from the difference
+    durationValues.minutes = Math.floor(miliseconds / (60 * 1000));
+    miliseconds -= durationValues.minutes * (60 * 1000);
+    //Seconds part from the difference
+    durationValues.seconds = Math.floor(miliseconds / 1000);
+    miliseconds -= durationValues.seconds * 1000;
+  }
+  return durationValues;
+}

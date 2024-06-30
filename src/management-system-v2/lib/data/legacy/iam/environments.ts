@@ -32,7 +32,7 @@ export async function getEnvironmentById(
 ) {
   // TODO: check ability
   if (enableUseDB) {
-    const environment = await db.workspace.findUnique({
+    const environment = await db.space.findUnique({
       where: {
         id: id,
       },
@@ -72,14 +72,14 @@ export async function activateEnvrionment(environmentId: string, userId: string)
 
 export async function addEnvironment(environmentInput: EnvironmentInput, ability?: Ability) {
   const newEnvironment = environmentSchema.parse(environmentInput);
-
   const id = newEnvironment.isOrganization ? v4() : newEnvironment.ownerId;
 
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
   const newEnvironmentWithId = { ...newEnvironment, id };
-  if (enableUseDB) await db.workspace.create({ data: { ...newEnvironmentWithId } });
-  else {
+  if (enableUseDB) {
+    await db.space.create({ data: { ...newEnvironmentWithId } });
+  } else {
     environmentsMetaObject[id] = newEnvironmentWithId;
     store.add('environments', newEnvironmentWithId);
   }
@@ -105,9 +105,9 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
     });
 
     if (newEnvironment.isActive) {
-      addMember(id, newEnvironment.ownerId);
+      await addMember(id, newEnvironment.ownerId);
 
-      addRoleMappings([
+      await addRoleMappings([
         {
           environmentId: id,
           roleId: adminRole.id,
@@ -118,7 +118,7 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
   }
 
   // add root folder
-  createFolder({
+  await createFolder({
     environmentId: id,
     name: '',
     parentId: null,
@@ -134,7 +134,7 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
   if (enableUseDB) {
-    await db.workspace.delete({
+    await db.space.delete({
       where: { id: environmentId },
     });
   } else {

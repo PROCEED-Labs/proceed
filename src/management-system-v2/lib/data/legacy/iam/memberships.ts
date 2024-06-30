@@ -62,12 +62,13 @@ function isOrganization(environment: Environment, opts: { throwIfNotFound?: bool
 export async function getUserOrganizationEnvironments(userId: string) {
   if (enableUseDB) {
     return (
-      await db.workspace.findMany({
+      await db.space.findMany({
         where: {
           isOrganization: true,
+          //ownerId: userId,
           members: {
             some: {
-              id: userId,
+              userId: userId,
             },
           },
         },
@@ -77,8 +78,8 @@ export async function getUserOrganizationEnvironments(userId: string) {
       })
     ).map((workspace) => workspace.id);
   }
-  return Object.keys(membershipMetaObject).filter((environmentId) =>
-    isMember(environmentId, userId),
+  return await Promise.all(
+    Object.keys(membershipMetaObject).filter((environmentId) => isMember(environmentId, userId)),
   );
 }
 
@@ -87,7 +88,7 @@ export async function getMemebers(environmentId: string, ability?: Ability) {
   if (ability) ability;
 
   if (enableUseDB) {
-    const workspace = await db.workspace.findUnique({
+    const workspace = await db.space.findUnique({
       where: {
         id: environmentId,
         isOrganization: true,
@@ -111,6 +112,13 @@ export async function isMember(environmentId: string, userId: string) {
     if (!environment?.isOrganization) {
       return userId === environmentId;
     }
+    const membership = await db.membership.findFirst({
+      where: {
+        environmentId: environmentId,
+        userId: userId,
+      },
+    });
+    return membership ? true : false;
   }
   const environment = environmentsMetaObject[environmentId];
 
@@ -123,7 +131,7 @@ export async function isMember(environmentId: string, userId: string) {
 
 export async function addMember(environmentId: string, userId: string, ability?: Ability) {
   if (enableUseDB) {
-    const environment = await db.workspace.findUnique({
+    const environment = await db.space.findUnique({
       where: { id: environmentId },
       select: { isOrganization: true },
     });
@@ -179,7 +187,7 @@ export async function addMember(environmentId: string, userId: string, ability?:
 
 export async function removeMember(environmentId: string, userId: string, ability?: Ability) {
   if (enableUseDB) {
-    const environment = await db.workspace.findUnique({
+    const environment = await db.space.findUnique({
       where: { id: environmentId },
       select: { isOrganization: true },
     });
@@ -212,7 +220,7 @@ export async function removeMember(environmentId: string, userId: string, abilit
     if (!isMember(environmentId, userId))
       throw new Error('User is not a member of this environment');
 
-    for (const role of getRoleMappingByUserId(userId, environmentId)) {
+    for (const role of await getRoleMappingByUserId(userId, environmentId)) {
       deleteRoleMapping(userId, role.roleId, environmentId);
     }
 

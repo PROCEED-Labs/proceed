@@ -49,16 +49,17 @@ const nextAuthOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user: _user, trigger }) {
+      let user = _user as User | undefined;
+
+      if (trigger === 'update') user = getUserById(token.user.id);
+
       if (trigger === 'signIn') token.csrfToken = randomUUID();
 
-      const user = _user as User;
-
-      if (_user) token.user = user;
+      if (user) token.user = user;
 
       return token;
     },
-    session(args) {
-      const { session, token } = args;
+    session({ session, token, trigger }) {
       if (token.user) session.user = token.user;
       if (token.csrfToken) session.csrfToken = token.csrfToken;
 
@@ -210,7 +211,7 @@ export type ExtractedProvider =
       credentials: Record<string, CredentialInput>;
     };
 
-// Unfortunatly, next-auth's getProviders() function does not return enough information to render the signin page.
+// Unfortunately, next-auth's getProviders() function does not return enough information to render the signin page.
 // So we need to manually map the providers
 // NOTE be careful not to leak any sensitive information
 export const getProviders = () =>

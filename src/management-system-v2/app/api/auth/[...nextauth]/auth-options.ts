@@ -3,13 +3,20 @@ import Auth0Provider from 'next-auth/providers/auth0';
 import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  getUserById,
+  getUserByUsername,
+  updateUser,
+  usersMetaObject,
+} from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
+import { enableUseDB } from 'FeatureFlags';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -133,7 +140,7 @@ if (process.env.NODE_ENV === 'development') {
       email: 'johndoe@proceed-labs.org',
       id: 'development-id|johndoe',
       isGuest: false,
-      emailVerified: null,
+      emailVerifiedOn: null,
       image: null,
     },
     {
@@ -143,7 +150,7 @@ if (process.env.NODE_ENV === 'development') {
       email: 'admin@proceed-labs.org',
       id: 'development-id|admin',
       isGuest: false,
-      emailVerified: null,
+      emailVerifiedOn: null,
       image: null,
     },
   ] satisfies User[];
@@ -156,6 +163,18 @@ if (process.env.NODE_ENV === 'development') {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },
       async authorize(credentials) {
+        if (enableUseDB) {
+          const userTemplate = developmentUsers.find(
+            (user) => user.username === credentials?.username,
+          );
+
+          if (!userTemplate) return null;
+
+          let user = await getUserByUsername(userTemplate.username);
+          if (!user) user = await addUser(userTemplate);
+
+          return user;
+        }
         const userTemplate = developmentUsers.find(
           (user) => user.username === credentials?.username,
         );

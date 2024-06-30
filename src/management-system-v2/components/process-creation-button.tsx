@@ -14,6 +14,7 @@ import { spaceURL } from '@/lib/utils';
 type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
+  defaultOpen?: boolean;
 };
 
 /**
@@ -23,9 +24,10 @@ type ProcessCreationButtonProps = ButtonProps & {
 const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   wrapperElement,
   customAction,
+  defaultOpen = false,
   ...props
 }) => {
-  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [isProcessModalOpen, setIsProcessModalOpen] = useState(defaultOpen);
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';

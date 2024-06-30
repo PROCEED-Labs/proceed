@@ -126,7 +126,9 @@ const SignIn: FC<{
         {userType === 'none' && guestProvider && (
           <>
             <Form
-              onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
+              onFinish={(values) =>
+                signIn(guestProvider.id, { ...values, callbackUrl: '/processes?createprocess' })
+              }
               key={guestProvider.id}
               layout="vertical"
             >

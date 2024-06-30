@@ -148,8 +148,8 @@ const ProcessList: FC<ProcessListProps> = ({
         favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
           ? 0
           : favProcesses?.includes(a.id)
-          ? -1
-          : 1,
+            ? -1
+            : 1,
       ),
     },
     {
@@ -176,8 +176,8 @@ const ProcessList: FC<ProcessListProps> = ({
               breakpoint.xs
                 ? styles.MobileTitleTruncation
                 : breakpoint.xl
-                ? styles.TitleTruncation
-                : styles.TabletTitleTruncation
+                  ? styles.TitleTruncation
+                  : styles.TabletTitleTruncation
             }
             style={{
               // overflow: 'hidden',

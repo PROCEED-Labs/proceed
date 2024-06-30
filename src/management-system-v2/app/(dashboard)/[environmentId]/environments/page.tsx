@@ -13,9 +13,12 @@ const Page = async () => {
   const user = await getUserById(userId);
   if (user?.isGuest) return <UnauthorizedFallback />;
 
-  const organizationEnvironments = getUserOrganizationEnvironments(userId).map((environmentId) =>
-    getEnvironmentById(environmentId),
-  ) as OrganizationEnvironment[];
+  const environmentIds = await getUserOrganizationEnvironments(userId);
+  console.log(environmentIds);
+
+  const organizationEnvironments = (await Promise.all(
+    environmentIds.map((environmentId: string) => getEnvironmentById(environmentId)),
+  )) as OrganizationEnvironment[];
 
   return (
     <Content title="My Environments">

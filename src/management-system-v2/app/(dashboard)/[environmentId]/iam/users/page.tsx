@@ -11,8 +11,8 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
 
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
-  const memberships = getMemebers(activeEnvironment.spaceId, ability);
-  const users = memberships.map((user) => getUserById(user.userId)) as AuthenticatedUser[];
+  const memberships = await getMemebers(activeEnvironment.spaceId, ability);
+  const users = await Promise.all(memberships.map(user => getUserById(user.userId))) as AuthenticatedUser[];
 
   return (
     <Content title="Identity and Access Management">

@@ -97,7 +97,9 @@ const getBpmnVersion = async (definitionId: string, versionId?: number) => {
 };
 
 export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
-  const processMetaObj = getProcessMetaObjects()[definitionId];
+  const processMetaObj = enableUseDB
+    ? await _getProcess(definitionId)
+    : getProcessMetaObjects()[definitionId];
 
   if (!processMetaObj) {
     return userError(`Process does not exist `);
@@ -332,7 +334,7 @@ export const createVersion = async (
   });
 
   const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = enableUseDB ? await _getProcess(processId, true) : processMetaObjects[processId];
 
   await versionUserTasks(process, epochTime, bpmnObj);
 

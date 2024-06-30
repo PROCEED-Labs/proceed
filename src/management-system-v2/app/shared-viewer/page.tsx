@@ -43,7 +43,7 @@ const getProcessInfo = async (
   isImport: boolean,
   versionId?: number,
 ) => {
-  const { session } = await getCurrentUser();
+  const { session, userId } = await getCurrentUser();
 
   let spaceId;
   let isOwner = false;
@@ -54,7 +54,7 @@ const getProcessInfo = async (
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(ability);
+    const ownedProcesses = await getProcesses(userId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
   }
@@ -113,10 +113,10 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
         const { bpmn: importBpmn } = processInfo.processData;
 
         if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
-        knownInfos[definitionId][version] = importBpmn;
+        knownInfos[definitionId][version] = importBpmn as string;
 
         // recursively get the imports of the imports
-        await getImportInfos(importBpmn, knownInfos);
+        await getImportInfos(importBpmn as string, knownInfos);
       }
     }
   }
@@ -129,12 +129,15 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  const userEnvironments: any[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
+    return await getEnvironmentById(environmentId);
+  });
+
+  const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+
+  userEnvironments.push(...orgEnvironments);
 
   let isOwner = false;
 

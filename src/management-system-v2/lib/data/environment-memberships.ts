@@ -27,7 +27,7 @@ export async function inviteUsersToEnvironment(
       );
 
     for (const invitedEmail of invitedEmails) {
-      const invitedUser = getUserByEmail(invitedEmail);
+      const invitedUser = await getUserByEmail(invitedEmail);
 
       // TODO: don't directly add users to the environment, send them an email with a link to join
 

@@ -6,6 +6,7 @@ import {
   updateUser as _updateUser,
   usersMetaObject,
   UserHasToDeleteOrganizationsError,
+  getUserById,
 } from './legacy/iam/users';
 import { userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
@@ -13,6 +14,7 @@ import { ReactNode } from 'react';
 import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
+import { enableUseDB } from 'FeatureFlags';
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -24,7 +26,7 @@ export async function deleteUser() {
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
-        (orgId) => (getEnvironmentById(orgId) as OrganizationEnvironment).name,
+        async (orgId) => ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
       );
 
       message = (
@@ -67,10 +69,10 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 export async function getUsersFavourites(): Promise<String[]> {
   const { userId } = await getCurrentUser();
 
-  const user = usersMetaObject[userId];
+  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
 
-  if (user.isGuest) {
+  if (user?.isGuest) {
     return []; // Guest users have no favourites
   }
-  return user.favourites ?? [];
+  return user?.favourites ?? [];
 }

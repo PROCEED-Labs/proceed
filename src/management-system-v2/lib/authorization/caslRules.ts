@@ -256,9 +256,9 @@ export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
 export async function computeRulesForUser(userId: string, environmentId: string) {
   if (!userId || !environmentId) return { rules: [] };
 
-  const environment = getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
+  const environment = await getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
 
-  if (!environment.organization) {
+  if (!environment?.isOrganization) {
     if (userId !== environmentId) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
@@ -272,7 +272,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
     return { rules: packRules(personalEnvironmentRules.concat(globalUserRules)) };
   }
 
-  const roles = getAppliedRolesForUser(userId, environmentId); // throws error if user isn't a member
+  const roles = await getAppliedRolesForUser(userId, environmentId); // throws error if user isn't a member
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];

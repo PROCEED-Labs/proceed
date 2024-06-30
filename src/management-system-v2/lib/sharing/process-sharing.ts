@@ -67,11 +67,14 @@ export async function generateSharedViewerUrl(
 }
 
 export async function getAllUserWorkspaces(userId: string) {
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  const userEnvironments: any[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
+    return await getEnvironmentById(environmentId);
+  });
+
+  const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+
+  userEnvironments.push(...orgEnvironments);
   return userEnvironments;
 }

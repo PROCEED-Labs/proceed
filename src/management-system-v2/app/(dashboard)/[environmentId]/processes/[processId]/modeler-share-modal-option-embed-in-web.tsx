@@ -33,16 +33,20 @@ const ModelerShareModalOptionEmdedInWeb = ({
   useEffect(() => {
     const initialize = async () => {
       if (allowIframeTimestamp > 0) {
-        // generate an url with a token that contains the currently active embedding timestamp
-        const url = await generateSharedViewerUrl(
-          {
-            processId,
-            embeddedMode: true,
-            timestamp: allowIframeTimestamp,
-          },
-          selectedVersionId || undefined,
-        );
-        setEmbeddingUrl(url);
+        try {
+          // generate an url with a token that contains the currently active embedding timestamp
+          const url = await generateSharedViewerUrl(
+            {
+              processId,
+              embeddedMode: true,
+              timestamp: allowIframeTimestamp,
+            },
+            selectedVersionId || undefined,
+          );
+          setEmbeddingUrl(url);
+        } catch (error) {
+          console.error('Error while generating the url for embedding:', error);
+        }
       }
     };
     initialize();
@@ -53,34 +57,42 @@ const ModelerShareModalOptionEmdedInWeb = ({
   }) => {
     const isChecked = e.target.checked;
     if (isChecked) {
-      const timestamp = Date.now();
-      // generate an url containing a token with the newly generated timestamp
-      const url = await generateSharedViewerUrl(
-        {
+      try {
+        const timestamp = Date.now();
+        // generate an url containing a token with the newly generated timestamp
+        const url = await generateSharedViewerUrl(
+          {
+            processId,
+            embeddedMode: true,
+            timestamp,
+          },
+          selectedVersionId || undefined,
+        );
+        setEmbeddingUrl(url);
+        // activate embedding for that specific timestamp
+        await updateProcessGuestAccessRights(
           processId,
-          embeddedMode: true,
-          timestamp,
-        },
-        selectedVersionId || undefined,
-      );
-      setEmbeddingUrl(url);
-      // activate embedding for that specific timestamp
-      await updateProcessGuestAccessRights(
-        processId,
-        {
-          sharedAs: 'public',
-          allowIframeTimestamp: timestamp,
-        },
-        environment.spaceId,
-      );
+          {
+            sharedAs: 'public',
+            allowIframeTimestamp: timestamp,
+          },
+          environment.spaceId,
+        );
+      } catch (err) {
+        message.error('An error occured while enabling embedding.');
+      }
     } else {
       // deactivate embedding
-      await updateProcessGuestAccessRights(
-        processId,
-        { allowIframeTimestamp: 0 },
-        environment.spaceId,
-      );
-      setEmbeddingUrl('');
+      try {
+        await updateProcessGuestAccessRights(
+          processId,
+          { allowIframeTimestamp: 0 },
+          environment.spaceId,
+        );
+        setEmbeddingUrl('');
+      } catch (err) {
+        message.error('An error occured while disabling embedding.');
+      }
     }
     refresh();
   };

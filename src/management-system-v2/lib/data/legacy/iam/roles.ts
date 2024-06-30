@@ -6,6 +6,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
+import { getFolderById } from '../folders';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data';
 // @ts-ignore
@@ -176,6 +177,11 @@ export async function addRole(roleRepresentationInput: RoleInput, ability?: Abil
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
+
+  // although the ability check would fail if the parentId doesn't exist
+  // it is not always performed
+  if (roleRepresentation.parentId && !getFolderById(roleRepresentation.parentId))
+    throw new Error('Parent folder does not exist');
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
 

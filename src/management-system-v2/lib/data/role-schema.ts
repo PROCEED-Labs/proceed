@@ -14,6 +14,7 @@ export const RoleInputSchema = z.object({
   permissions: z.object(perms as Permissions).partial(),
   expiration: z.string().nullish().optional(),
   default: z.boolean().optional(),
+  parentId: z.string().optional(),
 });
 
 export type RoleInput = z.infer<typeof RoleInputSchema>;

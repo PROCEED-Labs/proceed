@@ -1351,7 +1351,6 @@
     preact "^10.11.2"
 
 "@casl/ability-v6@npm:@casl/ability@^6.5.0", "@casl/ability@6.7.1":
-  name "@casl/ability-v6"
   version "6.7.1"
   resolved "https://registry.yarnpkg.com/@casl/ability/-/ability-6.7.1.tgz#89691083aafd1cfc4ae9519ffbcb0e7cb77ac201"
   integrity sha512-e+Vgrehd1/lzOSwSqKHtmJ6kmIuZbGBlM2LBS5IuYGGKmVHuhUuyh3XgTn1VIw9+TO4gqU+uptvxfIRBUEdJuw==

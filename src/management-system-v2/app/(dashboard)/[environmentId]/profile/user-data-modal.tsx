@@ -6,6 +6,7 @@ import { updateUser } from '@/lib/data/users';
 import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
 import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
+import { useSession } from 'next-auth/react';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;
@@ -26,6 +27,7 @@ const AuthenticatedUserDataModal: FC<{
   modalOpen: boolean;
   close: () => void;
 }> = ({ structure, modalOpen, close: propClose, userData }) => {
+  const session = useSession();
   const [form] = Form.useForm();
   const [loading, startTransition] = useTransition();
   const { message } = App.useApp();
@@ -49,6 +51,7 @@ const AuthenticatedUserDataModal: FC<{
 
         const result = await updateUser(values as AuthenticatedUserData);
         if (result && 'error' in result) throw new Error();
+        session.update();
 
         message.success({ content: 'Profile updated' });
         router.refresh();

@@ -13,7 +13,7 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
       <Layout
         activeSpace={{ spaceId: '', isOrganization: false }}
         loggedIn={true}
-        userEnvironments={[{ organization: false, ownerId: '', id: '' }]}
+        userEnvironments={[{ isOrganization: false, ownerId: '', id: '' }]}
         layoutMenuItems={[
           {
             key: 'processes-group',
@@ -45,12 +45,12 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
                 id: '',
                 folderId: '',
                 environmentId: '',
-                owner: '',
+                ownerId: '',
                 name: 'How to PROCEED',
                 type: 'process',
                 versions: [],
-                createdOn: '',
-                lastEdited: '',
+                createdOn: new Date(),
+                lastEditedOn: new Date(),
                 variables: [],
                 departments: [],
                 processIds: [],
@@ -64,9 +64,9 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
               id: '',
               name: '',
               parentId: null,
-              createdOn: '',
+              createdOn: new Date(),
               createdBy: '',
-              lastEdited: '',
+              lastEditedOn: new Date(),
               environmentId: '',
             }}
           />

@@ -29,23 +29,25 @@ const ProcessesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  const rootFolder = getRootFolder(activeEnvironment.spaceId, ability);
+  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = getFolderById(
+  const folder = await getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
-    if (item.type === 'folder') {
-      return {
-        ...getFolderById(item.id),
-        type: 'folder' as const,
-      };
-    } else {
-      return await getProcess(item.id);
-    }
-  })) satisfies ListItem[];
-
+  const folderContents = (await asyncMap(
+    await getFolderChildren(folder.id, ability),
+    async (item) => {
+      if (item.type === 'folder') {
+        return {
+          ...(await getFolderById(item.id)),
+          type: 'folder' as const,
+        };
+      } else {
+        return await getProcess(item.id);
+      }
+    },
+  )) satisfies ListItem[];
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;
   while (currentFolder.parentId) {
@@ -53,7 +55,7 @@ const ProcessesPage = async ({
       title: currentFolder.name,
       href: spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`),
     });
-    currentFolder = getFolderById(currentFolder.parentId);
+    currentFolder = await getFolderById(currentFolder.parentId);
   }
   pathToFolder.push({
     title: 'Processes',

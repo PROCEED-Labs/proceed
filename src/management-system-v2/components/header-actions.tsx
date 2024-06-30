@@ -15,7 +15,7 @@ import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-clie
 
 const HeaderActions: FC = () => {
   const session = useSession();
-  const isGuest = session.data?.user.guest;
+  const isGuest = session.data?.user.isGuest;
   const loggedIn = session.status === 'authenticated';
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
@@ -61,11 +61,11 @@ const HeaderActions: FC = () => {
             label: (
               <Link
                 href={spaceURL(
-                  { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                  { spaceId: space?.id ?? '', isOrganization: space?.isOrganization ?? false },
                   `/processes`,
                 )}
               >
-                <Typography.Text>{space.organization ? space.name : 'My Space'}</Typography.Text>
+                <Typography.Text>{space.isOrganization ? space.name : 'My Space'}</Typography.Text>
               </Link>
             ),
             value: space.id,

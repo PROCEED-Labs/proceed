@@ -89,7 +89,7 @@ const Processes = ({
         id: folder.parentId,
         createdOn: '',
         createdBy: '',
-        lastEdited: '',
+        lastEditedOn: '',
         environmentId: '',
       },
       ...processes,

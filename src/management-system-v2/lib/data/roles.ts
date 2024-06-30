@@ -29,7 +29,7 @@ export async function addRole(environmentId: string, role: Parameters<typeof _ad
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const newRole = _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
+    const newRole = await _addRole({ ...role, environmentId: activeEnvironment.spaceId }, ability);
     newRoleId = newRole.id;
   } catch (e) {
     if (e instanceof UnauthorizedError)

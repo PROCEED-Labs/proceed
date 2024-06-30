@@ -80,7 +80,9 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
     const imageURL =
       image &&
-      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${processData.id}/images/${image}?shareToken=${shareToken}`;
+      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
+        processData.id
+      }/images/${image}?shareToken=${shareToken}`;
 
     pages.push(
       <div
@@ -236,7 +238,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
-                  <div>Owner: {processData.owner.split('|').pop()}</div>
+                  <div>Owner: {processData.ownerId.split('|').pop()}</div>
                   {version.id ? (
                     <>
                       <div>Version: {version.name || version.id}</div>
@@ -250,7 +252,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                   {version.id ? (
                     <div>Creation Time: {new Date(version.id).toUTCString()}</div>
                   ) : (
-                    <div>Last Edit: {processData.lastEdited}</div>
+                    <div>Last Edit: {processData.lastEditedOn.toUTCString()}</div>
                   )}
                 </div>
               </div>

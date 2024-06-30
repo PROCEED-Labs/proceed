@@ -28,6 +28,6 @@ export type Role = RoleInput & {
     lastName: string;
     email: string;
   }[];
-  createdOn: string;
-  lastEditedOn: string;
+  createdOn: Date;
+  lastEditedOn: Date;
 };

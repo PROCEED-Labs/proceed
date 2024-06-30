@@ -148,8 +148,8 @@ const ProcessList: FC<ProcessListProps> = ({
         favProcesses?.includes(a.id) && favProcesses?.includes(b.id)
           ? 0
           : favProcesses?.includes(a.id)
-            ? -1
-            : 1,
+          ? -1
+          : 1,
       ),
     },
     {
@@ -176,8 +176,8 @@ const ProcessList: FC<ProcessListProps> = ({
               breakpoint.xs
                 ? styles.MobileTitleTruncation
                 : breakpoint.xl
-                  ? styles.TitleTruncation
-                  : styles.TabletTitleTruncation
+                ? styles.TitleTruncation
+                : styles.TabletTitleTruncation
             }
             style={{
               // overflow: 'hidden',
@@ -229,11 +229,11 @@ const ProcessList: FC<ProcessListProps> = ({
     },
     {
       title: 'Last Edited',
-      dataIndex: 'lastEdited',
+      dataIndex: 'lastEditedOn',
       key: 'Last Edited',
       render: (date: string) => generateDateString(date, true),
       sorter: folderAwareSort(
-        (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+        (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
       ),
       responsive: ['md'],
     },
@@ -257,10 +257,10 @@ const ProcessList: FC<ProcessListProps> = ({
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.ownerId),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.ownerId).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.ownerId,
         ),
       ),
       responsive: ['md'],

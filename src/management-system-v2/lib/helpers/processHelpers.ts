@@ -32,7 +32,7 @@ interface ProcessInfo {
  *
  */
 export function getDefaultProcessMetaInfo() {
-  const date = new Date().toUTCString();
+  const date = new Date();
   return {
     id: '',
     environmentId: '',

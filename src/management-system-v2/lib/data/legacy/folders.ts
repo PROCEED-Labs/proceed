@@ -217,7 +217,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
           id: folder.parentId,
         },
         data: {
-          lastEditedOn: new Date().toISOString(),
+          lastEditedOn: new Date(),
         },
       });
     } else {
@@ -237,11 +237,12 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
       data: {
         id: folder.id,
         name: folder.name,
+        description: folder.description ?? '',
         parentId: folder.parentId,
         createdBy: folder.createdBy!,
         environmentId: folder.environmentId,
-        lastEditedOn: new Date().toISOString(),
-        createdOn: new Date().toISOString(),
+        lastEditedOn: new Date(),
+        createdOn: new Date(),
       },
     });
 
@@ -263,7 +264,7 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
 
-    parentFolderData.folder.lastEditedOn = new Date().toISOString();
+    parentFolderData.folder.lastEditedOn = new Date();
     store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
@@ -273,8 +274,8 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
   // Store
   const newFolder = {
     ...folder,
-    createdOn: new Date().toISOString(),
-    lastEditedOn: new Date().toISOString(),
+    createdOn: new Date(),
+    lastEditedOn: new Date(),
   } as Folder;
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
@@ -321,7 +322,7 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
 
     parent.children.splice(folderIndex, 1);
 
-    parent.folder.lastEditedOn = new Date().toISOString();
+    parent.folder.lastEditedOn = new Date();
     store.update('folders', parent.folder.id, parent.folder);
   }
 
@@ -378,7 +379,7 @@ export async function updateFolderMetaData(
 
     const updatedFolder = await db.folder.update({
       where: { id: folderId },
-      data: { ...newMetaDataInput, lastEditedOn: new Date().toISOString() },
+      data: { ...newMetaDataInput, lastEditedOn: new Date() },
     });
 
     return updatedFolder;
@@ -399,7 +400,7 @@ export async function updateFolderMetaData(
   const newFolder: Folder = {
     ...folderData.folder,
     ...newMetaData,
-    lastEditedOn: new Date().toISOString(),
+    lastEditedOn: new Date(),
   };
 
   folderData.folder = newFolder;
@@ -502,7 +503,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
         childrenFolder: {
           disconnect: [{ id: folderId }],
         },
-        lastEditedOn: new Date().toISOString(),
+        lastEditedOn: new Date(),
       },
     });
 
@@ -513,7 +514,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
         parentFolder: {
           connect: { id: newParentId },
         },
-        lastEditedOn: new Date().toISOString(),
+        lastEditedOn: new Date(),
       },
     });
 
@@ -524,7 +525,7 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
         childrenFolder: {
           connect: [{ id: folderId }],
         },
-        lastEditedOn: new Date().toISOString(),
+        lastEditedOn: new Date(),
       },
     });
   } else {
@@ -565,12 +566,12 @@ export async function moveFolder(folderId: string, newParentId: string, ability?
 
     // Store
     oldParentData.children.splice(folderIndex, 1);
-    oldParentData.folder.lastEditedOn = new Date().toISOString();
+    oldParentData.folder.lastEditedOn = new Date();
     store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
     folderData.folder.parentId = newParentId;
     newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-    newParentData.folder.lastEditedOn = new Date().toISOString();
+    newParentData.folder.lastEditedOn = new Date();
     store.update('folders', newParentData.folder.id, newParentData.folder);
 
     store.update('folders', folderId, folderData.folder);

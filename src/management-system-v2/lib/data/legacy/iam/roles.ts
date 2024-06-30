@@ -36,7 +36,7 @@ init();
 export async function getRoles(environmentId?: string, ability?: Ability) {
   if (enableUseDB) {
     const roles = await db.role.findMany({
-      where: environmentId ? { id: environmentId } : undefined,
+      where: environmentId ? { environmentId: environmentId } : undefined,
       include: {
         members: {
           include: {
@@ -111,6 +111,9 @@ export async function getRoleById(roleId: string, ability?: Ability) {
         where: {
           id: roleId,
         },
+        include: {
+          members: true,
+        },
       })
     : roleMetaObjects[roleId];
   if (!ability) return role;
@@ -181,7 +184,7 @@ export async function addRole(roleRepresentationInput: RoleInput, ability?: Abil
   );
   if (index > -1) throw new Error('Role already exists');
 
-  const createdOn = new Date().toUTCString();
+  const createdOn = new Date();
   const lastEditedOn = createdOn;
   const id = v4();
 
@@ -225,6 +228,7 @@ export async function updateRole(
   ability: Ability,
 ) {
   if (enableUseDB) {
+    console.log(roleId);
     const targetRole = await getRoleById(roleId);
     if (!targetRole) throw new Error('Role not found');
 
@@ -244,7 +248,6 @@ export async function updateRole(
       )
     )
       throw new UnauthorizedError();
-
     const updatedRole = await db.role.update({
       where: {
         id: roleId,
@@ -278,7 +281,7 @@ export async function updateRole(
   // merge and save at local cache
   // @ts-ignore
   mergeIntoObject(roleMetaObjects[roleId], roleRepresentation, true);
-  roleMetaObjects[roleId].lastEditedOn = new Date().toUTCString();
+  roleMetaObjects[roleId].lastEditedOn = new Date();
 
   Object.keys(roleMetaObjects[roleId].permissions).forEach((key) => {
     if (roleMetaObjects[roleId].permissions[key as ResourceType] === 0)

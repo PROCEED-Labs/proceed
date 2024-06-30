@@ -30,8 +30,8 @@ export type VersionedObjectMetadata<T> = Prettify<
       id: string;
       task?: string;
     }[];
-    createdOn: string;
-    lastEditedOn: string;
+    createdOn: Date;
+    lastEditedOn: Date;
     sharedAs: 'public' | 'protected';
     shareTimestamp: number;
     allowIframeTimestamp: number;

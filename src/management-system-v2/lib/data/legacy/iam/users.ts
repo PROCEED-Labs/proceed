@@ -78,13 +78,13 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
     try {
       const userExists = await db.user.findUnique({ where: { id: user.id } });
       if (userExists) throw new Error('User already exists');
-      addEnvironment({ ownerId: user.id, isOrganization: false });
       await db.user.create({
         data: {
           ...user,
           isGuest: user.isGuest,
         },
       });
+      await addEnvironment({ ownerId: user.id, isOrganization: false });
     } catch (error) {
       console.error('Error adding new user: ', error);
     }
@@ -138,7 +138,7 @@ export async function deleteUser(userId: string) {
     if (orgsWithNoNextAdmin.length > 0)
       throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
 
-    await db.workspace.deleteMany({ where: { ownerId: userId } });
+    await db.space.deleteMany({ where: { ownerId: userId } });
     await db.user.delete({ where: { id: userId } });
   } else {
     user = usersMetaObject[userId];
@@ -269,10 +269,8 @@ export async function getOauthAccountByProviderId(provider: string, providerAcco
   if (enableUseDB) {
     return await db.oauthAccount.findUnique({
       where: {
-        provider_providerAccountId_unique: {
-          provider,
-          providerAccountId,
-        },
+        provider: provider,
+        providerAccountId: providerAccountId,
       },
     });
   }

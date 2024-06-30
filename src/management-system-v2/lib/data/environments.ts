@@ -19,6 +19,7 @@ export async function addOrganizationEnvironment(
 
     return addEnvironment({
       ownerId: userId,
+      active: true,
       organization: true,
       ...environmentData,
     });

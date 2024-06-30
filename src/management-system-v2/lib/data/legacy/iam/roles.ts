@@ -6,6 +6,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
+import { getFolderById } from '../folders';
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
@@ -41,6 +42,24 @@ export function getRoles(environmentId?: string, ability?: Ability) {
 }
 
 /**
+ * Returns all roles in form of an array
+ *
+ * @throws {UnauthorizedError}
+ */
+export function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+  for (const role of Object.values(roleMetaObjects)) {
+    if (role.name === name && role.environmentId === environmentId) {
+      if (ability && !ability.can('view', toCaslResource('Role', role)))
+        throw new UnauthorizedError();
+
+      return role;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Returns a role based on role id
  *
  * @throws {UnauthorizedError}
@@ -65,6 +84,11 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
+
+  // although the ability check would fail if the parentId doesn't exist
+  // it is not always performed
+  if (roleRepresentation.parentId && !getFolderById(roleRepresentation.parentId))
+    throw new Error('Parent folder does not exist');
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
 

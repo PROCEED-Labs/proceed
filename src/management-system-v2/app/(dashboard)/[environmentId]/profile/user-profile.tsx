@@ -32,6 +32,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
+  const firstName = userData.guest ? 'Guest' : userData.firstName || '';
+  const lastName = userData.guest ? '' : userData.lastName || '';
+
   return (
     <>
       <UserDataModal
@@ -91,9 +94,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
-                  !userData.guest ? userData.lastName : ''
-                }`,
+                value: `${firstName} ${lastName}`,
                 action: () => setChangeNameModalOpen(true),
               },
               {

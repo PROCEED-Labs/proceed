@@ -53,7 +53,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
 
   useAddControlCallback(
     'process-list',
-    'controlenter',
+    ['control+enter', 'new'],
     () => {
       if (!isProcessModalOpen) {
         setIsProcessModalOpen(true);

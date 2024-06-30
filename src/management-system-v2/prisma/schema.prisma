@@ -87,7 +87,6 @@ model Membership {
   userId        String
   environmentId String
   createdOn     DateTime  
-
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   space         Space     @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 }
@@ -100,13 +99,13 @@ model Folder {
   parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id],onDelete: Cascade)
   parentId       String?
   type           String    @default("folder")
-  owner           User?     @relation(fields: [createdBy], references: [id])
+  owner           User?    @relation(fields: [createdBy], references: [id])
   createdBy      String?
-  space          Space @relation(fields: [environmentId], references: [id], onDelete:Cascade)
+  space          Space     @relation(fields: [environmentId], references: [id], onDelete:Cascade)
   environmentId  String
   processes      Process[] 
   childrenFolder Folder[]  @relation("folderChildren")
-  lastEditedOn     DateTime
+  lastEditedOn   DateTime
   createdOn      DateTime 
 }
 

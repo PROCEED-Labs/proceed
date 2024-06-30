@@ -72,6 +72,14 @@ const CreateEnvironmentButton: FC<CreateEnvironmentModalProps> = ({ text }) => {
             />
           </Form.Item>
 
+          <Form.Item name="contactPhoneNumber" {...antDesignInputProps(formErrors, 'description')}>
+            <Input
+              type='number'
+              style={{ height: 50 }}
+              placeholder="contact number"
+            />
+          </Form.Item>
+
           <Form.Item name="logoUrl" {...antDesignInputProps(formErrors, 'logoUrl')}>
             <Input placeholder="Environment Logo Url" />
           </Form.Item>

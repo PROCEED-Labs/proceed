@@ -1,7 +1,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
-import { Result } from 'antd';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import RoleId from './role-id-page';

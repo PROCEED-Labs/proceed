@@ -79,7 +79,7 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   // TODO: change this to a more efficient query when the
   // persistence layer is implemented
-  if (getSystemAdmins().length === 0)
+  if (!user.guest && getSystemAdmins().length === 0)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,

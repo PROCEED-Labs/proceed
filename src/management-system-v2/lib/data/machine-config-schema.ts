@@ -16,7 +16,7 @@ export const AbstractConfigInputSchema = z.object({
       value: z.string().optional(),
     })
     .optional(),
-  userId: z
+  userId: z //TODO: change to userIdentifier
     .object({
       label: z.string().optional(),
       value: z.string().optional(),

@@ -7,7 +7,6 @@ import {
   PlusOutlined,
   CheckOutlined,
   EditOutlined,
-  ArrowUpOutlined,
   EyeOutlined,
   ExportOutlined,
   CaretRightOutlined,
@@ -24,6 +23,7 @@ import {
   Select,
   Radio,
   Collapse,
+  Dropdown,
 } from 'antd';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -183,7 +183,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               parentConfig={parentConfig}
-              selectedCofig={props.selectedConfig}
+              selectedConfig={props.selectedConfig}
             />
           ),
           style: panelStyle,
@@ -192,6 +192,17 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
     setCollapseItems(panels);
   };
+
+  const items = [
+    {
+      key: '1',
+      label: 'Target Configuration',
+    },
+    {
+      key: '2',
+      label: 'Machine Configuration',
+    },
+  ];
 
   return (
     <Layout>
@@ -230,7 +241,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                 {name}
               </Title>
             </div>
-            <ToolbarGroup>
+            <Space.Compact>
               <Select
                 popupMatchSelectWidth={false}
                 placeholder="Select Version"
@@ -269,12 +280,23 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                       createVersion={createConfigVersion}
                     ></VersionCreationButton>
                   </Tooltip>
-                  <Tooltip title="Back to Parent">
-                    <Button icon={<ArrowUpOutlined />} disabled={true} />
-                  </Tooltip>
                 </>
               )}
-            </ToolbarGroup>
+            </Space.Compact>
+          </Space>
+          <Space>
+            <Dropdown menu={{ items }}>
+              <Button>
+                <Space>
+                  Add Child Configuration{' '}
+                  <PlusOutlined
+                    style={{
+                      margin: '0 0 0 6px',
+                    }}
+                  />
+                </Space>
+              </Button>
+            </Dropdown>
           </Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>

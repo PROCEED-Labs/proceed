@@ -37,10 +37,10 @@ export function defaultConfiguration(): AbstractConfig {
     id: v4(),
     type: 'config',
     environmentId: '',
-    owner: { label: 'owner', value: '' },
-    picture: { label: 'picture', value: '' },
+    owner: { label: 'Owner', value: '' },
+    picture: { label: 'Picture', value: '' },
     name: 'Default Machine Configuration',
-    description: { label: 'description', value: '' },
+    description: { label: 'Description', value: '' },
     variables: [],
     customFields: [],
     parameters: [],
@@ -383,6 +383,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setTreeData(configArray);
   };
 
+  //TODO: Put this in a separate file
   const createTarget = () => {
     // We can only have one target configuration
     if (parentConfig.targetConfig) return;

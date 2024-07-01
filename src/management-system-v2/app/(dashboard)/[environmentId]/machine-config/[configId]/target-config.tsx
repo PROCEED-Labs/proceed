@@ -18,6 +18,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
+import AddFieldDropdownButton from './addFieldDropdownButton';
 
 type MachineDataViewProps = {
   configId: string;
@@ -144,7 +145,11 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
             <Button>
               <Space>
                 Add
-                <PlusOutlined />
+                <PlusOutlined
+                  style={{
+                    margin: '0 0 0 6px',
+                  }}
+                />
               </Space>
             </Button>
           </Dropdown>

@@ -68,7 +68,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         // Unkown server error or was not sent from server (e.g. network error)
         message.open({
           type: 'error',
-          content: 'Someting went wrong while submitting the data',
+          content: 'Something went wrong while submitting the data',
         });
       }
       setSubmitting(false);
@@ -123,17 +123,15 @@ const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
     <>
       <Form.Item
         name={[index, 'name']}
-        label="Machine Configuration Name"
-        rules={[{ required: true, message: 'Please fill out the Machine Configuration Name' }]}
+        label="Configuration Name"
+        rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'description']}
-        label="Machine Configuration Description"
-        rules={[
-          { required: false, message: 'Please fill out the Machine Configuration Description' },
-        ]}
+        label="Configuration Description"
+        rules={[{ required: false, message: 'Please fill out the Configuration Description' }]}
       >
         <Input.TextArea showCount rows={4} maxLength={150} />
       </Form.Item>

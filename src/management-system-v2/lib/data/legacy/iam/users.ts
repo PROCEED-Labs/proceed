@@ -79,7 +79,7 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   // TODO: change this to a more efficient query when the
   // persistence layer is implemented
-  if (getSystemAdmins().length === 0)
+  if (!user.guest && getSystemAdmins().length === 0)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,
@@ -153,6 +153,14 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
     }
 
     updatedUser = { ...(user as AuthenticatedUser), ...newUserData };
+
+    // TODO: change this to a more efficient query when the
+    // persistence layer is implemented
+    if (!inputUser.guest && getSystemAdmins().length === 0)
+      addSystemAdmin({
+        role: 'admin',
+        userId: user.id,
+      });
   }
 
   usersMetaObject[user.id] = updatedUser;

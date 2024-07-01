@@ -1,7 +1,9 @@
 'use client';
-import { FC } from 'react';
+import { FC, useCallback } from 'react';
 import { StarOutlined } from '@ant-design/icons';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
+import { isUserGuest as ServerActionIsUserGuest } from '@/lib/data/users';
+import { App } from 'antd';
 
 type StarType = {
   id: string;
@@ -9,7 +11,22 @@ type StarType = {
 };
 
 const FavouriteStar: FC<StarType> = ({ id, className }) => {
-  const { favourites: favs, updateFavouriteProcesses: updateFavs } = useFavouriteProcesses();
+  const { favourites: favs, updateFavouriteProcesses } = useFavouriteProcesses();
+  const { message } = App.useApp();
+
+  const updateFavs = useCallback(
+    async (id: string) => {
+      if (await ServerActionIsUserGuest()) {
+        message.info({
+          content: 'To save your favourite processes permanantly, you need to sign in.',
+          duration: 5,
+        });
+      }
+
+      updateFavouriteProcesses(id);
+    },
+    [id],
+  );
 
   return (
     <>
@@ -20,8 +37,6 @@ const FavouriteStar: FC<StarType> = ({ id, className }) => {
         onClick={(e) => {
           e.stopPropagation();
           updateFavs(id);
-          console.log(id);
-          console.log(favs);
         }}
         className={favs?.includes(id) ? undefined : className}
       />

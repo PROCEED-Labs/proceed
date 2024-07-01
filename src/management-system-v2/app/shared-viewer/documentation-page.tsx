@@ -120,6 +120,7 @@ const BPMNSharedViewer = ({
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
+      const name = getTitle(el);
 
       let nestedSubprocess;
       let importedProcess;
@@ -168,7 +169,7 @@ const BPMNSharedViewer = ({
       return {
         svg,
         id: el.id,
-        name: getTitle(el),
+        name,
         description,
         meta,
         milestones,

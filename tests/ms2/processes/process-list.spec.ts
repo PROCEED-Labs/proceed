@@ -679,6 +679,8 @@ test.describe('shortcuts in process-list', () => {
       page.locator('tbody>tr[class="ant-table-placeholder"]'),
       'Only the ant-design-placeholder row should be visible, if the list is empty',
     ).toBeVisible();
+
+    processListPage.getDefinitionIds().splice(0, 1);
   });
 
   /*  Select all Processes - ctrl / meta + a */

@@ -29,7 +29,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Text from 'antd/es/typography/Text';
-import AddFieldDropdownButton from './addFieldDropdownButton';
+import AddFieldDropdownButton from './add-field-dropdown-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -114,39 +114,24 @@ export default function Parameters(props: MachineDataViewProps) {
     </Space.Compact>
   );
 
-  //change to make it reusable instead
-  const linkedParametersHeader = (
-    <Space.Compact block size="small">
-      <Text>Linked Parameters</Text>
-      <Tooltip title="Add Parameter">
-        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
-      </Tooltip>
-    </Space.Compact>
-  );
-
-  //change to make it reusable instead
-  const nestedParametersHeader = (
-    <Space.Compact block size="small">
-      <Text>Nested Parameters</Text>
-      <Tooltip title="Add Parameter">
-        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
-      </Tooltip>
-    </Space.Compact>
-  );
-
   const parameterItemHeader = (parameter: ConfigParameter) => (
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-        <Text>{parameter.key}</Text>
+        <Space>
+          <Text>{parameter.key}: </Text>
+          <Text>{parameter.value}</Text>
+          <Text>{parameter.unit}</Text>
+          <Text type="secondary">({parameter.language})</Text>
+        </Space>
         <Space align="center">
           <Tooltip title="Copy">
-            <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 16px' }} />
+            <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 10px' }} />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button icon={<EditOutlined />} type="text" style={{ margin: '0 16px' }} />
+            <Button icon={<EditOutlined />} type="text" style={{ margin: '0 10px' }} />
           </Tooltip>
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" style={{ margin: '0 16px' }} />
+            <Button icon={<DeleteOutlined />} type="text" style={{ margin: '0 10px' }} />
           </Tooltip>
         </Space>
       </Flex>
@@ -155,12 +140,6 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 24,
-    background: token.colorFillAlter,
-    borderRadius: token.borderRadiusLG,
-    border: 'none',
-  };
-  const nestedPanelStyle = {
     margin: '0 0 16px 0',
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
@@ -182,25 +161,6 @@ export default function Parameters(props: MachineDataViewProps) {
     },
   ];
 
-  const linkedParameters = [
-    {
-      key: '1',
-      label: linkedParametersHeader,
-      children: [
-        <div>
-          <Row gutter={16} style={{ margin: 16 }}>
-            <Col span={24}>
-              <Space>
-                <Tag color="purple">Key XY</Tag>
-                <Tag color="blue">Key AB</Tag>
-              </Space>
-            </Col>
-          </Row>{' '}
-        </div>,
-      ],
-      style: nestedPanelStyle,
-    },
-  ];
   // const nestedParameters = [
   //   {
   //     key: '1',
@@ -212,21 +172,21 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const parameterContent = (parameter: ConfigParameter) => (
     <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
           {' '}
           Key{' '}
         </Col>
-        <Col span={21} className="gutter-row">
+        <Col span={20} className="gutter-row">
           <Input value={parameter.key} />
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
           {' '}
           Value{' '}
         </Col>
-        <Col span={21} className="gutter-row">
+        <Col span={20} className="gutter-row">
           <Input value={parameter.value} />
         </Col>
         <Col span={1} className="gutter-row">
@@ -235,12 +195,12 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
           {' '}
           Unit{' '}
         </Col>
-        <Col span={21} className="gutter-row">
+        <Col span={20} className="gutter-row">
           <Input value={parameter.unit} />
         </Col>
         <Col span={1} className="gutter-row">
@@ -249,12 +209,12 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
           {' '}
           Language{' '}
         </Col>
-        <Col span={21} className="gutter-row">
+        <Col span={20} className="gutter-row">
           <Input value={parameter.language} />
         </Col>
         <Col span={1} className="gutter-row">
@@ -263,16 +223,18 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={23} className="gutter-row">
-          <Collapse
-            bordered={false}
-            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-            style={{
-              background: 'none',
-            }}
-            items={linkedParameters}
-          />
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
+          Linked Parameters
+        </Col>
+        <Col span={20} className="gutter-row">
+          <Space>
+            <Tag color="purple">Key XY</Tag>
+            <Tag color="blue">Key AB</Tag>
+          </Space>
+          <Tooltip title="Add Parameter">
+            <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
+          </Tooltip>
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -280,8 +242,11 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={23} className="gutter-row">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+        <Col span={3} className="gutter-row">
+          Nested Parameters
+        </Col>
+        <Col span={20} className="gutter-row">
           <Collapse
             bordered={false}
             expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
@@ -297,7 +262,7 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
+      <Row gutter={[24, 24]} style={{ margin: '10px 0' }} justify="start">
         <Col span={2} className="gutter-row">
           <Dropdown menu={{ items }}>
             <Button>
@@ -316,7 +281,7 @@ export default function Parameters(props: MachineDataViewProps) {
     </div>
   );
 
-  const getParametersItems = (): any => {
+  const getParameterItems = (): any => {
     let list = [];
     for (let parameter of editingConfig.parameters) {
       list.push({
@@ -329,39 +294,12 @@ export default function Parameters(props: MachineDataViewProps) {
     return list;
   };
 
-  const getItems = (panelStyle: {
-    marginBottom: number;
-    background: string;
-    borderRadius: number;
-    border: string;
-  }) => [
-    {
-      key: '1',
-      label: parametersHeader,
-      children: (
-        <Collapse
-          bordered={false}
-          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-          style={{
-            background: 'none',
-          }}
-          items={getParametersItems()}
-        />
-      ),
-      style: panelStyle,
-    },
-  ];
-
   return (
-    <div>
-      <Collapse
-        bordered={false}
-        expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-        style={{
-          background: token.colorBgContainer,
-        }}
-        items={getItems(panelStyle)}
-      />
-    </div>
+    <Collapse
+      bordered={false}
+      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+      ghost
+      items={getParameterItems()}
+    />
   );
 }

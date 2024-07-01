@@ -391,7 +391,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     foundMachine.targetConfig = {
       ...defaultConfiguration(),
       name: name,
-      description: { label: 'description', value: description },
+      description: { label: 'Description', value: description },
       type: 'target-config',
       owner: foundMachine.owner,
       environmentId: foundMachine.environmentId,
@@ -403,8 +403,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     parentConfig.machineConfigs.push({
       ...defaultConfiguration(),
       name: name,
-      description: { label: 'description', value: description },
-      machine: { label: 'machine', value: '' },
+      description: { label: 'Description', value: description },
+      machine: { label: 'Machine', value: '' },
       type: 'machine-config',
       owner: parentConfig.owner,
       environmentId: parentConfig.environmentId,

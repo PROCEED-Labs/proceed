@@ -11,7 +11,7 @@ import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
-import AddFieldDropdownButton from './addFieldDropdownButton';
+import AddFieldDropdownButton from './add-field-dropdown-button';
 
 type MachineDataViewProps = {
   configId: string;

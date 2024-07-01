@@ -17,7 +17,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import AddFieldDropdownButton from './addFieldDropdownButton';
+import AddFieldDropdownButton from './add-field-dropdown-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -139,7 +139,10 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={23} className="gutter-row">
+        <Col span={2} className="gutter-row">
+          Parameters
+        </Col>
+        <Col span={21} className="gutter-row">
           <Parameters
             backendSaveParentConfig={props.backendSaveParentConfig}
             configId={props.configId}

@@ -10,6 +10,8 @@ import {
   EyeOutlined,
   ExportOutlined,
   CaretRightOutlined,
+  CopyOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -38,6 +40,8 @@ import Title from 'antd/es/typography/Title';
 import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
+import getTargetConfigHeader from './target-config-header';
+import getAddChildDropdown from './add-child-dropdown-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -162,7 +166,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       if (currentConfig.targetConfig) {
         panels.push({
           key: '2',
-          label: 'Target Configuration: ' + currentConfig.targetConfig.name,
+          label: getTargetConfigHeader(currentConfig.targetConfig.name),
           children: (
             <TargetConfiguration
               backendSaveParentConfig={saveParentConfig}
@@ -192,17 +196,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
     setCollapseItems(panels);
   };
-
-  const items = [
-    {
-      key: '1',
-      label: 'Target Configuration',
-    },
-    {
-      key: '2',
-      label: 'Machine Configuration',
-    },
-  ];
 
   return (
     <Layout>
@@ -284,20 +277,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               )}
             </Space.Compact>
           </Space>
-          <Space>
-            <Dropdown menu={{ items }}>
-              <Button>
-                <Space>
-                  Add Child Configuration{' '}
-                  <PlusOutlined
-                    style={{
-                      margin: '0 0 0 6px',
-                    }}
-                  />
-                </Space>
-              </Button>
-            </Dropdown>
-          </Space>
+          <Space>{getAddChildDropdown()}</Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>
               <Radio.Button value="start">

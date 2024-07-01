@@ -147,20 +147,7 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
             leftNode={
               <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  {breakpoint.xs ? null : (
-                    <>
-                      {/*TODO: Add "create role" button with functionality*/}
-                      <Button type="primary">
-                        {breakpoint.xl ? 'New Role (tba)' : 'New (tba)'}
-                      </Button>
-                      {/* <ProcessCreationButton style={{ marginRight: '10px' }} type="primary">
-                        {breakpoint.xl ? 'New Process' : 'New'}
-                      </ProcessCreationButton>
-                      <ProcessImportButton type="default">
-                        {breakpoint.xl ? 'Import Process' : 'Import'}
-                      </ProcessImportButton> */}
-                    </>
-                  )}
+                  {breakpoint.xs ? null : <HeaderActions />}
 
                   {selectedRowKeys.length > 0 ? (
                     <Space size={20}>

@@ -1,18 +1,18 @@
-import { ComponentProps, ComponentType, cache } from 'react';
+import { cache } from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { AuthCan, AuthCanProps } from './auth-can';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
-import { headers } from 'next/headers';
-import { URL } from 'url';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
+import Ability, { adminRules } from '@/lib/ability/abilityHelper';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
+  const systemAdmin = getSystemAdminByUserId(userId);
 
-  return { session, userId };
+  return { session, userId, systemAdmin };
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will
@@ -29,7 +29,7 @@ export const getCurrentEnvironment = cache(
       permissionErrorHandling: { action: 'redirect' },
     },
   ) => {
-    const { userId } = await getCurrentUser();
+    const { userId, systemAdmin } = await getCurrentUser();
 
     // Use hardcoded environment /my/processes for personal spaces.
     if (spaceIdParam === 'my') {
@@ -38,6 +38,12 @@ export const getCurrentEnvironment = cache(
     }
 
     const activeSpace = decodeURIComponent(spaceIdParam);
+    if (systemAdmin) {
+      return {
+        ability: new Ability(adminRules, activeSpace),
+        activeEnvironment: { spaceId: activeSpace, isOrganization: false },
+      };
+    }
 
     if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
       switch (opts?.permissionErrorHandling.action) {

@@ -29,6 +29,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "antd": "5.16.2",
     "bcryptjs": "^2.4.3",
+    "boring-avatars": "^1.10.2",
     "bpmn-js": "17.2.1",
     "bpmn-js-differ": "2.0.2",
     "classnames": "2.5.1",
@@ -76,6 +77,7 @@
     "prettier": "3.2.5",
     "sass": "1.75.0",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "@types/nodemailer": "6.4.15"
   }
 }

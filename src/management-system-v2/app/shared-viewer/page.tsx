@@ -196,7 +196,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     <>
       <div style={{ height: '100vh' }}>
         {iframeMode ? (
-          <BPMNCanvas type="viewer" bpmn={{ bpmn: processData.bpmn }} />
+          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: processData.bpmn }} />
         ) : (
           <div className={styles.ProcessOverview}>
             <Layout

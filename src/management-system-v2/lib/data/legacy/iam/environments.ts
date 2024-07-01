@@ -16,7 +16,7 @@ export let environmentsMetaObject: { [Id: string]: Environment } =
   // @ts-ignore
   global.environmentsMetaObject || (global.environmentsMetaObject = {});
 
-export function getEnvironments(ability: Ability) {
+export function getEnvironments(ability?: Ability) {
   const environments = Object.values(environmentsMetaObject);
 
   //TODO: filter environments by ability

@@ -26,6 +26,7 @@ import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
+import { useAddControlCallback } from '@/lib/controls-store';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
@@ -99,6 +100,12 @@ const ModelerToolbar = ({
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
+  useAddControlCallback('modeler', 'control+enter', () => {
+    setShowPropertiesPanel(true); /* This does not cause rerenders if it is already set to true */
+  });
+  useAddControlCallback('modeler', 'esc', () => {
+    setShowPropertiesPanel(false);
+  });
 
   const handleProcessExportModalToggle = async () => {
     if (!showProcessExportModal && modeler) {
@@ -123,6 +130,10 @@ const ModelerToolbar = ({
     setShowProcessExportModal(!showProcessExportModal);
   };
 
+  useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
+    dependencies: [modeler, showProcessExportModal],
+  });
+
   const handleProcessExportModalToggleMobile = async (
     preselectedExportType: ProcessExportTypes,
   ) => {
@@ -139,6 +150,9 @@ const ModelerToolbar = ({
   const handleRedo = () => {
     modeler?.redo();
   };
+
+  useAddControlCallback('modeler', 'undo', handleUndo, { dependencies: [modeler] });
+  useAddControlCallback('modeler', 'redo', handleRedo, { dependencies: [modeler] });
 
   const handleReturnToParent = async () => {
     if (modeler) {

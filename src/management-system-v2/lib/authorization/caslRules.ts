@@ -3,6 +3,7 @@ import { packRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
+  FolderScopedResources,
   ResourceActionType,
   ResourceType,
   buildAbility,
@@ -291,20 +292,19 @@ export async function computeRulesForUser(userId: string, environmentId: string)
 
     for (const resource of resources) {
       if (!(resource in role.permissions)) continue;
-      const permissionsForResource = role.permissions[resource]!;
 
-      const actionsSet = new Set<ResourceActionType>();
-
-      permissionNumberToIdentifiers(permissionsForResource).forEach((action) =>
-        actionsSet.add(action),
-      );
+      const actionsNumber = role.permissions[resource]!;
+      const actions = permissionNumberToIdentifiers(actionsNumber);
 
       translatedRules.push({
         subject: resource,
-        action: [...actionsSet.values()],
+        action: actions,
         conditions: {
           conditions: {
             $: { $not_expired_value: role.expiration ?? null },
+            ...(role.parentId && FolderScopedResources.includes(resource as any)
+              ? { $1: { $property_has_to_be_child_of: role.parentId } }
+              : {}),
           },
         },
       });
@@ -321,7 +321,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
   translatedRules.push(disallowOutsideOfEnvRule(environmentId));
 
   // casl uses the ordering of the rules to decide
-  // this way inverted rules allways decide over normal rules
+  // this way inverted rules always decide over normal rules
   translatedRules.sort((a, b) => Number(a.inverted) - Number(b.inverted));
 
   return {

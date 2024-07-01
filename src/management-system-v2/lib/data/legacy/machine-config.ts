@@ -115,7 +115,7 @@ export async function createParentConfig(
         id: v4(),
         type: 'config',
         name: 'Default Parent Configuration',
-        description: { label: 'description', value: '' },
+        description: { label: 'Description', value: '' },
         variables: [],
         parameters: [],
         createdBy: environmentId,
@@ -136,7 +136,7 @@ export async function createParentConfig(
         targetConfig: undefined,
         machineConfigs: [],
         environmentId: environmentId,
-        owner: { label: 'owner', value: environmentId },
+        owner: { label: 'Owner', value: environmentId },
       } as ParentConfig),
       ...parentConfigData,
     };

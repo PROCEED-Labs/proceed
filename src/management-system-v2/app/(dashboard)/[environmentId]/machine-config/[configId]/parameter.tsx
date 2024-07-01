@@ -5,22 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   PlusOutlined,
-  MinusOutlined,
   EditOutlined,
-  KeyOutlined,
-  UserOutlined,
   DeleteOutlined,
   CopyOutlined,
   CaretRightOutlined,
-  DownOutlined,
-  CheckOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Input,
   Dropdown,
-  Select,
   Space,
   Col,
   Row,
@@ -28,7 +22,6 @@ import {
   Tooltip,
   Collapse,
   theme,
-  Card,
   Flex,
 } from 'antd';
 import { spaceURL } from '@/lib/utils';
@@ -111,88 +104,6 @@ export default function Parameters(props: MachineDataViewProps) {
     // }
     setEditingName(!editingName);
   };
-
-  // const parameterContent = (
-  //   <div>
-  //     <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-  //       <Col span={2} className="gutter-row">
-  //         {' '}
-  //         Parameters{' '}
-  //       </Col>
-  //       <Col span={22} className="gutter-row">
-  //         <Card>
-  //           <Button
-  //             icon={<PlusOutlined />}
-  //             type="dashed"
-  //             style={{ width: '100%', marginBottom: 16 }}
-  //             onClick={addNestedParameter}
-  //           >
-  //             Add Parameter
-  //           </Button>
-  //           {nestedParameters.map((param, i) => (
-  //             <Card
-  //               key={i}
-  //               type="inner"
-  //               title={`Nested Parameter ${i + 1}`}
-  //               extra={
-  //                 <Button
-  //                   icon={<MinusOutlined />}
-  //                   type="dashed"
-  //                   onClick={() => removeNestedParameter(i)}
-  //                 />
-  //               }
-  //               style={{ marginBottom: 16 }}
-  //             >
-  //               <Row gutter={16} style={{ marginBottom: 16 }}>
-  //                 <Col span={6}>
-  //                   <Input
-  //                     placeholder="Key"
-  //                     value={param.key}
-  //                     onChange={(e) => changeNestedParameter(i, 'key', e.target.value)}
-  //                     onBlur={saveParameters}
-  //                   />
-  //                 </Col>
-  //                 <Col span={6}>
-  //                   <Input
-  //                     placeholder="Value"
-  //                     value={param.value}
-  //                     onChange={(e) => changeNestedParameter(i, 'value', e.target.value)}
-  //                     onBlur={saveParameters}
-  //                   />
-  //                 </Col>
-  //                 <Col span={6}>
-  //                   <Input
-  //                     placeholder="Unit"
-  //                     value={param.unit}
-  //                     onChange={(e) => changeNestedParameter(i, 'unit', e.target.value)}
-  //                     onBlur={saveParameters}
-  //                   />
-  //                 </Col>
-  //                 <Col span={6}>
-  //                   <Input
-  //                     placeholder="Language"
-  //                     value={param.language}
-  //                     onChange={(e) => changeNestedParameter(i, 'language', e.target.value)}
-  //                     onBlur={saveParameters}
-  //                   />
-  //                 </Col>
-  //               </Row>
-  //               <Row gutter={16} style={{ marginBottom: 16 }}>
-  //                 <Col span={24}>
-  //                   <Space>
-  //                     <Tag color="purple">Key XY</Tag>
-  //                     <Tag color="blue">Key AB</Tag>
-  //                     <Button icon={<PlusOutlined />} type="dashed" />
-  //                   </Space>
-  //                 </Col>
-  //               </Row>
-  //             </Card>
-  //           ))}
-  //         </Card>
-  //       </Col>
-  //     </Row>
-  //   </div>
-  // );
 
   const parametersHeader = (
     <Space.Compact block size="small">

@@ -3,14 +3,7 @@
 import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import {
-  KeyOutlined,
-  UserOutlined,
-  DeleteOutlined,
-  CopyOutlined,
-  CaretRightOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { KeyOutlined, UserOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tooltip, Collapse, theme, Dropdown } from 'antd';

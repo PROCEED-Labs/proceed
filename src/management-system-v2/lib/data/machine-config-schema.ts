@@ -1,5 +1,6 @@
 import { string, z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
+import { Prettify, WithRequired } from '../typescript-utils';
 
 export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
@@ -26,8 +27,6 @@ export const AbstractConfigInputSchema = z.object({
 });
 
 export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
-
-import { Prettify, WithRequired } from '../typescript-utils';
 
 export const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
   environmentId: z.string(),
@@ -60,6 +59,21 @@ export type Field = {
 export type MachineConfigField = {
   id: string;
 } & Field;
+
+//Alternative
+export type FieldGroup = {
+  id: string | undefined;
+  key: string;
+  value: string;
+  unit: string | undefined;
+  language: string | undefined;
+};
+
+export type Parameter = Metadata &
+  FieldGroup & {
+    linkedParameters: string[] | undefined;
+    nestedParameters: Parameter[] | undefined;
+  };
 
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &

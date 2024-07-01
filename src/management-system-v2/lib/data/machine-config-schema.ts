@@ -60,11 +60,12 @@ export type MachineConfigField = {
   id: string;
 } & Field;
 
-//Alternative
+//Alternative TODO
 export type FieldGroup = {
-  id: string | undefined;
   key: string;
   value: string;
+  id: string | undefined;
+  label: string | undefined;
   unit: string | undefined;
   language: string | undefined;
 };

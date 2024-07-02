@@ -26,6 +26,7 @@ import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
+import classNames from 'classnames';
 
 const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
@@ -69,6 +70,7 @@ const ProcessList: FC<ProcessListProps> = ({
   const breakpoint = Grid.useBreakpoint();
 
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
+  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const { favourites: favProcesses } = useFavouriteProcesses();
@@ -95,11 +97,11 @@ const ProcessList: FC<ProcessListProps> = ({
           {record.type !== 'folder' && (
             <AuthCan {...resource} create>
               <Tooltip placement="top" title={'Copy'}>
-                <CopyOutlined
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyItem([record]);
-                  }}
+                <Button
+                  className={classNames(styles.ActionButton)}
+                  type="text"
+                  icon={<CopyOutlined />}
+                  onClick={() => copyItem([record])}
                 />
               </Tooltip>
             </AuthCan>
@@ -107,28 +109,38 @@ const ProcessList: FC<ProcessListProps> = ({
 
           {record.type !== 'folder' && (
             <Tooltip placement="top" title={'Export'}>
-              <ExportOutlined onClick={() => onExportProcess(record)} />
+              <Button
+                className={classNames(styles.ActionButton)}
+                type="text"
+                icon={<ExportOutlined />}
+                onClick={() => onExportProcess(record)}
+              />
             </Tooltip>
           )}
 
           <AuthCan {...resource} update>
             <Tooltip placement="top" title={'Edit'}>
-              <EditOutlined onClick={() => editItem(record)} />
+              <Button
+                className={classNames(styles.ActionButton)}
+                type="text"
+                icon={<EditOutlined />}
+                onClick={() => editItem(record)}
+              />
             </Tooltip>
           </AuthCan>
 
           <AuthCan delete {...resource}>
-            <Tooltip placement="top" title={'Delete'}>
-              <ConfirmationButton
-                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-                description="Are you sure you want to delete the selected process?"
-                onConfirm={() => deleteItems([record])}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
-            </Tooltip>
+            <ConfirmationButton
+              tooltip="Delete"
+              title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+              description="Are you sure you want to delete the selected process?"
+              onConfirm={() => deleteItems([record])}
+              buttonProps={{
+                icon: <DeleteOutlined />,
+                type: 'text',
+                className: styles.ActionButton,
+              }}
+            />
           </AuthCan>
         </>
       );
@@ -253,8 +265,10 @@ const ProcessList: FC<ProcessListProps> = ({
     {
       title: 'File Size',
       key: 'File Size',
-      sorter: folderAwareSort((a, b) => (a < b ? -1 : 1)),
+      // dataIndex:  /* TODO: */,
+      // sorter: folderAwareSort((a, b) => (parseInt(a) < parseInt(b) ? -1 : 1)),
       responsive: ['md'],
+      render: (_, __, rowIndex) => <>{rowIndex} MB</> /* TODO: */,
     },
     {
       title: 'Owner',
@@ -282,6 +296,14 @@ const ProcessList: FC<ProcessListProps> = ({
         ),
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
+    // {
+    //   width: 'fit-content',
+    //   dataIndex: 'id',
+    //   key: 'auto-sizer',
+    //   title: '',
+    //   render: (id, record) => '',
+    //   responsive: ['xl'],
+    // },
   ];
 
   let columnsFiltered = breakpoint.xl
@@ -322,17 +344,28 @@ const ProcessList: FC<ProcessListProps> = ({
         selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
         allColumnTitles: ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'],
         columnProps: {
-          width: 'fit-content',
+          width: '200px',
           responsive: ['xl'],
           render: (id, record) =>
             id !== folder.parentId && (
-              <Row justify="space-evenly" className={styles.HoverableTableCell}>
-                {actionBarGenerator(record)}
-              </Row>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                }}
+              >
+                <span style={{ flex: 1 }} />
+                <Row justify="end" wrap={false} className={styles.HoverableTableCell}>
+                  {actionBarGenerator(record)}
+                </Row>
+                <span style={{ width: '15%' }} />
+              </div>
             ),
         },
       }}
       tableProps={{
+        scroll: { x: breakpoint.xl ? (metaPanelisOpened ? '71vw' : '85.5vw') : '100%' },
         onRow: (item) => ({
           // onDoubleClick: () =>
           //   router.push(

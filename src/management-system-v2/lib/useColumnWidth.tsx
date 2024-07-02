@@ -11,10 +11,7 @@ import React, {
 import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
-import { only } from 'node:test';
-import { Props } from '@dnd-kit/core/dist/components/DragOverlay';
 import classNames from 'classnames';
-import { get } from 'node:http';
 
 export const useResizeableColumnWidth = (
   columns: NonNullable<TableProps['columns']>,
@@ -30,22 +27,14 @@ export const useResizeableColumnWidth = (
   const [resizeableColumns, setResizeableColumns] = useState(
     columns.map((col) => ({ ...col, width: col.width || minWidth })),
   );
-  const onlySelectedColumnsCauseRerender =
+  const initialisedWithHydratedValues =
     useRef(
       false,
     ); /* Basically a switch to check whther the state was updated once with the saved values, once hydrated */
+  const convertedWidthsToNumbers = useRef(false); /* Similar switch */
 
-  /* Once hydrated: change the size to what was saved in localstorage */
-  useEffect(() => {
-    if (!hydrated) return;
-
-    if (
-      onlySelectedColumnsCauseRerender.current &&
-      resizeableColumns.length === columnsInPreferences.length
-    )
-      return;
-
-    let newColumns = columns.map((column: any) => {
+  const computeNewColumns = useCallback(() => {
+    return columns.map((column: any) => {
       const columnInPreferences = columnsInPreferences.find(
         (col: any) => col.name === column.title,
       );
@@ -56,47 +45,89 @@ export const useResizeableColumnWidth = (
         width: columnInPreferences.width,
       };
     });
+  }, [columns, columnsInPreferences]);
 
+  /* Once hydrated, get the correct values from the localstorage and update state */
+  useEffect(() => {
+    if (!hydrated) return;
+
+    /* This should only run one time, after localstorage-store is hydrated */
+    if (initialisedWithHydratedValues.current) return;
+
+    const newColumns = computeNewColumns();
+    initialisedWithHydratedValues.current = true;
+    // console.debug('Updated columns with hydrated values');
     setResizeableColumns(newColumns);
+  }, [hydrated, computeNewColumns, initialisedWithHydratedValues.current]);
 
-    let timer: NodeJS.Timeout | undefined = undefined;
+  /* If the user selects different columns (i.e. columnsInPreferences change) update the state with new columns */
+  useEffect(() => {
+    if (!hydrated) return;
 
-    if (!onlySelectedColumnsCauseRerender.current && document) {
-      timer = setTimeout(() => {
-        /* Hydrating */
-        /* Replace 'auto' width with actual px values */
-        const resizeableElements = document.querySelectorAll('.react-resizable');
-        const widthsOfResizeableElements = Array.from(resizeableElements).map(
-          (element: any) => element.getBoundingClientRect().width,
-        );
-        /* Get the widths */
-        const widths = columns.map((column: any, index: number) => {
-          /* Check if not resizeable */
-          if (notResizeabel.includes(column.key)) return column.width || minWidth;
+    /* This should onl run if the length of the arrays is dfferent */
+    if (columnsInPreferences.length === resizeableColumns.length) return;
 
-          return widthsOfResizeableElements.shift() || minWidth;
-        });
+    const newColumns = computeNewColumns();
+    /* Since the localstorage could hold NaN */
+    convertedWidthsToNumbers.current = false;
+    // console.debug('Updated columns because of preference change');
+    setResizeableColumns(newColumns);
+  }, [columnsInPreferences, computeNewColumns, hydrated, resizeableColumns]);
 
-        /* Replace width */
-        newColumns = newColumns.map((column: any, index: number) => {
-          return {
-            ...column,
-            width: widths[index],
-          };
-        });
+  /* Since 'react-resizable' can only handle numbers as width for resize */
+  /* They need to be replaced with their actual pixel values */
+  useEffect(() => {
+    if (!hydrated) return;
 
-        setResizeableColumns(newColumns);
-      }, 1_000);
-    }
+    /* This should only happen, once the actual hydrated values have been read from localstorage and the browser had time to calculate its values  */
 
-    onlySelectedColumnsCauseRerender.current =
-      true; /* This is only true once the columns are set to the saved values (after hydration) */
+    /* Case: The state has not been updated yet with hydrated localsorage-values */
+    if (!initialisedWithHydratedValues.current) return;
+
+    /* This should also just be done if the current width values are not numbers */
+    if (convertedWidthsToNumbers.current) return;
+
+    /* Small timeout for browser to calculate values */
+    const timer = setTimeout(() => {
+      /* Replace 'auto' width with actual px values */
+      const resizeableElements = document.querySelectorAll('.react-resizable');
+      const widthsOfResizeableElements = Array.from(resizeableElements).map(
+        (element: any) => element.getBoundingClientRect().width,
+      );
+      /* Get the widths */
+      const widths = columns.map((column: any, index: number) => {
+        /* Check if not resizeable */
+        if (notResizeabel.includes(column.key)) return column.width || minWidth;
+
+        /* Ensure all columns have min width */
+        return Math.max(widthsOfResizeableElements.shift() || minWidth, minWidth);
+      });
+
+      /* Replace width */
+      const newColumns = resizeableColumns.map((column: any, index: number) => {
+        return {
+          ...column,
+          width: widths[index],
+        };
+      });
+
+      convertedWidthsToNumbers.current = true;
+      // console.debug('Converted widths to numbers');
+      setResizeableColumns(newColumns);
+    }, 500);
 
     return () => {
-      // onlySelectedColumnsCauseRerender.current = false;
-      if (timer) clearTimeout(timer);
+      clearTimeout(timer);
     };
-  }, [hydrated, columns, columnsInPreferences]);
+  }, [
+    columns,
+    resizeableColumns,
+    notResizeabel,
+    minWidth,
+    hydrated,
+    initialisedWithHydratedValues.current,
+    convertedWidthsToNumbers.current,
+  ]);
 
   const handleResize = useCallback(
     (index: number) =>
@@ -146,6 +177,15 @@ export const useResizeableColumnWidth = (
     };
   }) as TableColumnsType<any>;
 
+  columsWithResize.push({
+    width: 'fit-content',
+    dataIndex: 'id',
+    key: 'auto-sizer',
+    title: '',
+    render: (id, record) => '',
+    responsive: ['xl'],
+  });
+
   return useTruncateColumnText(columsWithResize);
   // return columsWithResize;
 };
@@ -191,9 +231,11 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
       return {
         ...column,
         render: (text: any, record: any, rowIndex: number) => {
-          const fallBackText = text.highlighted
+          const fallBackText = text?.highlighted
             ? text.highlighted
-            : text; /* In case fuzzy-search is used */
+            : text
+              ? text
+              : 'Missing-Display-Name'; /* In case fuzzy-search is used */
           const newRender = column.render
             ? () => column.render(text, record, rowIndex)
             : () => fallBackText;

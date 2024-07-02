@@ -19,6 +19,7 @@ type MachineDataViewProps = {
   selectedMachineConfig: TreeFindStruct;
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
+  editingEnabled: boolean;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -65,6 +66,8 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const showMobileView = useMobileModeler();
 
+  const editable = props.editingEnabled;
+
   return (
     <div>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -77,7 +80,7 @@ export default function MetaData(props: MachineDataViewProps) {
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -89,13 +92,13 @@ export default function MetaData(props: MachineDataViewProps) {
         <Col span={21} className="gutter-row">
           <Input
             value={editingMachineConfig.owner?.value?.split('|').pop()}
-            disabled
+            disabled={!editable}
             prefix={<UserOutlined />}
           />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -105,11 +108,16 @@ export default function MetaData(props: MachineDataViewProps) {
           Description{' '}
         </Col>
         <Col span={21} className="gutter-row">
-          <TextArea value={description} onChange={changeDescription} onBlur={saveDescription} />
+          <TextArea
+            disabled={!editable}
+            value={description}
+            onChange={changeDescription}
+            onBlur={saveDescription}
+          />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>

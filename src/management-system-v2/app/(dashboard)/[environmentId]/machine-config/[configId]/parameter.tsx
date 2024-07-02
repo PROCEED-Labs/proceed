@@ -36,6 +36,7 @@ type MachineDataViewProps = {
   selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
+  editingEnabled: boolean;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -64,6 +65,8 @@ export default function Parameters(props: MachineDataViewProps) {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const editable = props.editingEnabled;
 
   const changeNestedParameter = (index: number, key: string, value: string) => {
     const newNestedParameters = [...nestedParameters];
@@ -115,7 +118,12 @@ export default function Parameters(props: MachineDataViewProps) {
             <Button icon={<EditOutlined />} type="text" style={{ margin: '0 10px' }} />
           </Tooltip>
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" style={{ margin: '0 10px' }} />
+            <Button
+              disabled={!editable}
+              icon={<DeleteOutlined />}
+              type="text"
+              style={{ margin: '0 10px' }}
+            />
           </Tooltip>
         </Space>
       </Flex>
@@ -151,7 +159,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Key{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input value={parameter.key} />
+          <Input disabled={!editable} value={parameter.key} />
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
@@ -160,11 +168,11 @@ export default function Parameters(props: MachineDataViewProps) {
           Value{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input value={parameter.value} />
+          <Input disabled={!editable} value={parameter.value} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -174,11 +182,11 @@ export default function Parameters(props: MachineDataViewProps) {
           Unit{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input value={parameter.unit} />
+          <Input disabled={!editable} value={parameter.unit} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -188,11 +196,11 @@ export default function Parameters(props: MachineDataViewProps) {
           Language{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input value={parameter.language} />
+          <Input disabled={!editable} value={parameter.language} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -205,13 +213,13 @@ export default function Parameters(props: MachineDataViewProps) {
             <Tag color="purple">Key XY</Tag>
             <Tag color="blue">Key AB</Tag>
             <Tooltip title="Add Parameter Link">
-              <Button icon={<PlusOutlined />} size="small" />
+              <Button disabled={!editable} icon={<PlusOutlined />} size="small" />
             </Tooltip>
           </Space>
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -221,11 +229,13 @@ export default function Parameters(props: MachineDataViewProps) {
         </Col>
         <Col span={20} className="gutter-row">
           {getNestedParameters(nestedParameters)}
-          <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
+          {editable && (
+            <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
+          )}
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -253,7 +263,7 @@ export default function Parameters(props: MachineDataViewProps) {
         size="small"
         items={getParameterItems()}
       />
-      <Space>{getAddButton('Add Parameter')}</Space>
+      {editable && <Space>{getAddButton('Add Parameter')}</Space>}
     </>
   );
 }

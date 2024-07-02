@@ -118,9 +118,12 @@ export default function ConfigEditor(props: MachineDataViewProps) {
 
   const showMobileView = useMobileModeler();
 
-  const [position, setPosition] = useState('start');
+  const [position, setPosition] = useState('view');
+  const [editable, setEditable] = useState(false); //change back to false
   const onModeChange = (e: any) => {
     setPosition(e.target.value);
+    setEditable(e.target.value == 'edit');
+    router.refresh();
   };
 
   const { token } = theme.useToken();
@@ -179,13 +182,14 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     let panels = [];
     panels.push({
       key: '1',
-      label: getConfigHeader('Metadata', subHeaderDropdownItems, false),
+      label: getConfigHeader('Metadata', subHeaderDropdownItems, editable, false),
       children: (
         <MetaData
           backendSaveMachineConfig={saveParentConfig}
           configId={configId}
           rootMachineConfig={parentConfig}
           selectedMachineConfig={props.selectedConfig}
+          editingEnabled={editable}
         />
       ),
       style: panelStyle,
@@ -196,13 +200,14 @@ export default function ConfigEditor(props: MachineDataViewProps) {
         let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
-          label: getConfigHeader(title, subHeaderDropdownItems),
+          label: getConfigHeader(title, subHeaderDropdownItems, editable),
           children: (
             <TargetConfiguration
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               parentConfig={parentConfig}
               selectedConfig={props.selectedConfig}
+              editingEnabled={editable}
             />
           ),
           style: panelStyle,
@@ -211,13 +216,14 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       if (currentConfig.machineConfigs && currentConfig.machineConfigs.length > 0) {
         panels.push({
           key: '3',
-          label: getConfigHeader('Machine Configurations', [], false),
+          label: getConfigHeader('Machine Configurations', [], editable, false),
           children: (
             <MachineConfigurations
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               parentConfig={parentConfig}
               selectedConfig={props.selectedConfig}
+              editingEnabled={editable}
             />
           ),
           style: panelStyle,
@@ -295,7 +301,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                     label: name,
                   }))}
               />
-              {!showMobileView && (
+              {!showMobileView && editable && (
                 <>
                   <Tooltip title="Create New Version">
                     <VersionCreationButton
@@ -307,10 +313,12 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               )}
             </Space.Compact>
           </Space>
-          <Space>{getAddButton('Add Child Configuration', configHeaderDropdownItems)}</Space>
+          <Space>
+            {editable && getAddButton('Add Child Configuration', configHeaderDropdownItems)}
+          </Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>
-              <Radio.Button value="start">
+              <Radio.Button value="view">
                 View{' '}
                 <EyeOutlined
                   style={{
@@ -318,7 +326,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                   }}
                 />
               </Radio.Button>
-              <Radio.Button value="end">
+              <Radio.Button value="edit">
                 Edit{' '}
                 <EditOutlined
                   style={{
@@ -350,7 +358,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       >
         <Collapse
           bordered={false}
-          defaultActiveKey={['1']}
+          defaultActiveKey={['1', '2', '3']}
           expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
           style={{
             background: token.colorBgContainer,

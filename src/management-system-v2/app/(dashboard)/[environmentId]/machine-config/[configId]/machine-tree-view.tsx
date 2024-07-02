@@ -504,7 +504,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     ) {
       return [
         {
-          label: 'Create parameter',
+          label: 'Create Parameter',
           key: 'add_parameter',
           onClick: showCreateParameterModal,
         },

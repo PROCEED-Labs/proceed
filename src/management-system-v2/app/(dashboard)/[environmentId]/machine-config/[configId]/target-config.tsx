@@ -17,6 +17,7 @@ type MachineDataViewProps = {
   selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
+  editingEnabled: boolean;
 };
 
 export default function TargetConfiguration(props: MachineDataViewProps) {
@@ -62,6 +63,8 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   const showMobileView = useMobileModeler();
 
+  const editable = props.editingEnabled;
+
   const items = [
     {
       key: '1',
@@ -101,7 +104,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -110,11 +113,15 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           {editingConfig.owner?.label}
         </Col>
         <Col span={21} className="gutter-row">
-          <Input disabled value={editingConfig.owner?.value} prefix={<UserOutlined />} />
+          <Input
+            disabled={!editable}
+            value={editingConfig.owner?.value}
+            prefix={<UserOutlined />}
+          />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -123,11 +130,11 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           {editingConfig.description?.label}
         </Col>
         <Col span={21} className="gutter-row">
-          <TextArea value={editingConfig.description?.value} />
+          <TextArea disabled={!editable} value={editingConfig.description?.value} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
-            <Button icon={<DeleteOutlined />} type="text" />
+            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
         </Col>
       </Row>
@@ -141,6 +148,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
             backendSaveParentConfig={saveParentConfig}
             configId={configId}
             selectedConfig={{ parent: parentConfig, selection: editingConfig }}
+            editingEnabled={editable}
           />
         </Col>
       </Row>

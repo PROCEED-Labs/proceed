@@ -40,7 +40,7 @@ import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import getConfigHeader from './config-header';
-import getAddDropdown from './dropdown-add-button';
+import getAddButton from './add-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -117,15 +117,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   }, [props.selectedConfig, props.parentConfig]);
 
   const showMobileView = useMobileModeler();
-
-  const machConfigsHeader = (
-    <Space.Compact block size="small">
-      <Text>Machine Configurations</Text>
-      <Tooltip title="Add Machine Configuration">
-        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
-      </Tooltip>
-    </Space.Compact>
-  );
 
   const [position, setPosition] = useState('start');
   const onModeChange = (e: any) => {
@@ -220,7 +211,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       if (currentConfig.machineConfigs && currentConfig.machineConfigs.length > 0) {
         panels.push({
           key: '3',
-          label: machConfigsHeader,
+          label: getConfigHeader('Machine Configurations', [], false),
           children: (
             <MachineConfigurations
               backendSaveParentConfig={saveParentConfig}
@@ -316,7 +307,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               )}
             </Space.Compact>
           </Space>
-          <Space>{getAddDropdown('Add Child Configuration', configHeaderDropdownItems)}</Space>
+          <Space>{getAddButton('Add Child Configuration', configHeaderDropdownItems)}</Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>
               <Radio.Button value="start">

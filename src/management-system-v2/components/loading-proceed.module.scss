@@ -1,5 +1,6 @@
 $icon-colour: #a6adb5;
 $highlight-colour: #dadee2;
+$loader-colour: green;
 //   animation-name, animation-duration, animation-timing-function, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode, animation-play-state, and animation-timeline.
 // linear
 
@@ -95,5 +96,50 @@ $highlight-colour: #dadee2;
   }
   100% {
     background-position: 100% -100%;
+  }
+}
+
+.maskContainer {
+  // position: relative;
+  width: 100%;
+  height: 100%;
+  // background: red;
+  overflow: hidden;
+}
+
+.maskedContent {
+  // position: relative;
+  width: 100%;
+  height: 100%;
+  background: $icon-colour;
+}
+
+.svgMask {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.loadingIndicatorSVG {
+  position: relative;
+  top: 0;
+  background-color: $loader-colour;
+  width: 4%;
+  height: 100%;
+  transform: translateX(-100%);
+
+  &.visible {
+    animation: loopFromLeftToRight 6s linear 0s infinite forwards;
+  }
+}
+
+@keyframes loopFromLeftToRight {
+  0% {
+    left: -5%;
+  }
+  100% {
+    left: 105%;
   }
 }

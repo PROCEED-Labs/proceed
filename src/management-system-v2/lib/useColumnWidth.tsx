@@ -1,8 +1,20 @@
 import { TableColumnsType, TableProps, Tooltip } from 'antd';
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  FC,
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useUserPreferences } from './user-preferences';
 import { Resizable } from 'react-resizable';
 import styles from './useColumnWidth.module.scss';
+import { only } from 'node:test';
+import { Props } from '@dnd-kit/core/dist/components/DragOverlay';
+import classNames from 'classnames';
+import { get } from 'node:http';
 
 export const useResizeableColumnWidth = (
   columns: NonNullable<TableProps['columns']>,
@@ -47,8 +59,10 @@ export const useResizeableColumnWidth = (
 
     setResizeableColumns(newColumns);
 
+    let timer: NodeJS.Timeout | undefined = undefined;
+
     if (!onlySelectedColumnsCauseRerender.current && document) {
-      setTimeout(() => {
+      timer = setTimeout(() => {
         /* Hydrating */
         /* Replace 'auto' width with actual px values */
         const resizeableElements = document.querySelectorAll('.react-resizable');
@@ -77,6 +91,11 @@ export const useResizeableColumnWidth = (
 
     onlySelectedColumnsCauseRerender.current =
       true; /* This is only true once the columns are set to the saved values (after hydration) */
+
+    return () => {
+      // onlySelectedColumnsCauseRerender.current = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [hydrated, columns, columnsInPreferences]);
 
   const handleResize = useCallback(
@@ -131,17 +150,23 @@ export const useResizeableColumnWidth = (
   // return columsWithResize;
 };
 
-export const ResizableTitle = (props: any) => {
-  const { onResize, width, ...restProps } = props;
+type ResizeableTitleProps = PropsWithChildren & {
+  onResize: (e: any, { size }: any) => void;
+  width: number | string;
+};
 
+export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...restProps }) => {
   if (!width) {
     return <th {...restProps} />;
   }
 
   return (
     <Resizable
-      className={styles['react-resizable']}
-      width={width}
+      // ant-table-cell ant-table-cell-ellipsis ant-table-column-has-sorters
+      className={classNames(styles['react-resizable'])}
+      width={
+        width as number
+      } /* Can also be a string (e.g. 'auto'), but that case is managed in the useResizeableColumnWidth hook */
       height={0}
       handle={
         <span
@@ -150,9 +175,7 @@ export const ResizableTitle = (props: any) => {
             e.stopPropagation();
           }}
           // style={{ backgroundColor: 'red' }} /* Uncomment to see Handles */
-        >
-          {/* {width} */}
-        </span>
+        />
       }
       onResize={onResize}
       draggableOpts={{ enableUserSelectHack: false }}
@@ -189,7 +212,7 @@ export const useTruncateColumnText = (columns: NonNullable<TableProps['columns']
 
 type TruncateType = {
   width: number | string;
-  innerRender: () => JSX.Element | string;
+  innerRender: () => React.ReactNode;
 };
 
 const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
@@ -200,8 +223,11 @@ const TruncatedCell: FC<TruncateType> = ({ width, innerRender }) => {
     if (!containerRef.current || typeof width !== 'number') return;
 
     const widths = getWidthsOfInnerElements(containerRef.current);
+    const innerWidth =
+      containerRef.current.getClientRects()[0]
+        .width; /* This is the widht, without padding and border (i.e. the actual width its children can fill) */
 
-    if (widths.some((w) => w > width)) {
+    if (widths.some((w) => w > innerWidth)) {
       setOverFlowing(true);
     } else {
       setOverFlowing(false);
@@ -248,6 +274,24 @@ function getWidthsOfInnerElements(element: HTMLElement | Element) {
   children.forEach((child) => {
     widths.push(child.getBoundingClientRect().width);
   });
+
+  /* Check is child elements are displayed next to each other */
+  /* If they are displayed next to each other, add the sum of their width to widths */
+  const inlineChildrenWidth = children.reduce((acc, child) => {
+    const childStyles = getComputedStyle(child);
+    if (
+      childStyles.display === 'inline' ||
+      childStyles.display === 'inline-block' ||
+      childStyles.display === 'inline-flex' ||
+      childStyles.display === 'inline-grid' ||
+      childStyles.display === 'inline-table'
+    ) {
+      return acc + child.getBoundingClientRect().width;
+    }
+    return acc;
+  }, 0);
+  /* Append width of elements, that are next to each other */
+  widths.push(inlineChildrenWidth);
 
   /* Append nested children recursivly */
   children.forEach((child) => {

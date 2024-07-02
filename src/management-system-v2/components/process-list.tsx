@@ -188,7 +188,10 @@ const ProcessList: FC<ProcessListProps> = ({
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
-            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />}
+            <span>&nbsp;</span>
+            {/* Wrapping whitespace in a element allows to determine the total width (for tooltip) */}
+            {record.name.highlighted}
           </div>
         </SpaceLink>
       ),
@@ -346,11 +349,11 @@ const ProcessList: FC<ProcessListProps> = ({
             }
           },
         }),
-        // components: {
-        //   body: {
-        //     row: DraggableRow,
-        //   },
-        // },
+        components: {
+          body: {
+            row: DraggableRow,
+          },
+        },
       }}
     />
   );

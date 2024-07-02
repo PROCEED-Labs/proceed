@@ -5,7 +5,7 @@ import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'r
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
-import { ResizableTitle } from '@/lib/useColumnWidth';
+import { ResizeableTitle } from '@/lib/useColumnWidth';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
@@ -181,7 +181,7 @@ const ElementList = <T extends { id: string }>({
         ...components,
         header: {
           ...components?.header,
-          cell: ResizableTitle,
+          cell: ResizeableTitle,
         },
       }}
     />

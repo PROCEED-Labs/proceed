@@ -1,7 +1,7 @@
 import { Button, Dropdown, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-const getAddFieldDropdown = (
+const getAddDropdown = (
   label: string,
   items: {
     key: string;
@@ -24,4 +24,4 @@ const getAddFieldDropdown = (
   );
 };
 
-export default getAddFieldDropdown;
+export default getAddDropdown;

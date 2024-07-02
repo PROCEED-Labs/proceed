@@ -25,7 +25,6 @@ import {
   Select,
   Radio,
   Collapse,
-  Dropdown,
 } from 'antd';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -40,8 +39,8 @@ import Title from 'antd/es/typography/Title';
 import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
-import getTargetConfigHeader from './target-config-header';
-import getAddChildDropdown from './add-child-dropdown-button';
+import getConfigHeader from './config-header';
+import getAddDropdown from './dropdown-add-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -141,6 +140,45 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     border: 'none',
   };
 
+  //for target header and metadata header
+  const subHeaderDropdownItems = [
+    {
+      key: '1',
+      label: 'Custom Field',
+    },
+    {
+      key: '2',
+      label: 'Attachment',
+    },
+    {
+      key: '3',
+      label: 'Picture',
+    },
+    {
+      key: '4',
+      label: 'ID',
+    },
+    {
+      key: '5',
+      label: 'Owner',
+    },
+    {
+      key: '6',
+      label: 'Description',
+    },
+  ];
+
+  const configHeaderDropdownItems = [
+    {
+      key: '1',
+      label: 'Target Configuration',
+    },
+    {
+      key: '2',
+      label: 'Machine Configuration',
+    },
+  ];
+
   const updateItems = (panelStyle: {
     marginBottom: number;
     background: string;
@@ -150,7 +188,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     let panels = [];
     panels.push({
       key: '1',
-      label: 'Metadata',
+      label: getConfigHeader('Metadata', subHeaderDropdownItems, false),
       children: (
         <MetaData
           backendSaveMachineConfig={saveParentConfig}
@@ -164,9 +202,10 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     if (editingConfig.type === 'config') {
       const currentConfig = editingConfig as ParentConfig;
       if (currentConfig.targetConfig) {
+        let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
-          label: getTargetConfigHeader(currentConfig.targetConfig.name),
+          label: getConfigHeader(title, subHeaderDropdownItems),
           children: (
             <TargetConfiguration
               backendSaveParentConfig={saveParentConfig}
@@ -277,7 +316,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               )}
             </Space.Compact>
           </Space>
-          <Space>{getAddChildDropdown()}</Space>
+          <Space>{getAddDropdown('Add Child Configuration', configHeaderDropdownItems)}</Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>
               <Radio.Button value="start">

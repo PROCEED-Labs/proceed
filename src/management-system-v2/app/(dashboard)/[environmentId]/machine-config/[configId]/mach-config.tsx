@@ -17,7 +17,8 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import AddFieldDropdownButton from './add-field-dropdown-button';
+import getDropdown from './dropdown-add-button';
+import getConfigHeader from './config-header';
 
 type MachineDataViewProps = {
   configId: string;
@@ -122,22 +123,6 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
-        <Col span={2} className="gutter-row">
-          <Dropdown menu={{ items }}>
-            <Button>
-              <Space>
-                Add
-                <PlusOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Space>
-            </Button>
-          </Dropdown>
-        </Col>
-      </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           Parameters
@@ -172,7 +157,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     for (let machineConfig of parentConfig.machineConfigs) {
       list.push({
         key: machineConfig.id,
-        label: machineConfig.name,
+        label: getConfigHeader(machineConfig.name, items),
         children: [childConfigContent(machineConfig)],
         style: panelStyle,
       });

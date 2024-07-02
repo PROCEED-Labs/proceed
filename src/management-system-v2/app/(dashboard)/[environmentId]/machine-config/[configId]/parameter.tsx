@@ -29,7 +29,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Text from 'antd/es/typography/Text';
-import AddFieldDropdownButton from './add-field-dropdown-button';
+import getAddButton from './add-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -97,22 +97,6 @@ export default function Parameters(props: MachineDataViewProps) {
   }, [props.selectedConfig]);
 
   const showMobileView = useMobileModeler();
-
-  const toggleEditingName = () => {
-    // if (editingName) {
-    //   saveMachineConfig(configId, rootMachineConfig).then(() => {});
-    // }
-    setEditingName(!editingName);
-  };
-
-  const parametersHeader = (
-    <Space.Compact block size="small">
-      <Text>Parameters</Text>
-      <Tooltip title="Add Parameter">
-        <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
-      </Tooltip>
-    </Space.Compact>
-  );
 
   const parameterItemHeader = (parameter: ConfigParameter) => (
     <Space.Compact block size="small">
@@ -250,32 +234,14 @@ export default function Parameters(props: MachineDataViewProps) {
           <Collapse
             bordered={false}
             expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-            style={{
-              background: 'none',
-            }}
             items={nestedParameters}
           />
+          <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
             <Button icon={<DeleteOutlined />} type="text" />
           </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }} justify="start">
-        <Col span={2} className="gutter-row">
-          <Dropdown menu={{ items }}>
-            <Button>
-              <Space>
-                Add
-                <PlusOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Space>
-            </Button>
-          </Dropdown>
         </Col>
       </Row>
     </div>
@@ -295,11 +261,14 @@ export default function Parameters(props: MachineDataViewProps) {
   };
 
   return (
-    <Collapse
-      bordered={false}
-      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-      ghost
-      items={getParameterItems()}
-    />
+    <>
+      <Collapse
+        bordered={false}
+        expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+        ghost
+        items={getParameterItems()}
+      />
+      <Space>{getAddButton('Add Parameter')}</Space>
+    </>
   );
 }

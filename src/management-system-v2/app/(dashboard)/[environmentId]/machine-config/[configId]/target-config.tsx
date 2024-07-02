@@ -11,7 +11,7 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import getAddFieldDropdown from './add-field-dropdown-button';
+import getDropdown from './dropdown-add-button';
 
 type MachineDataViewProps = {
   configId: string;
@@ -130,22 +130,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           <Tooltip title="Delete">
             <Button icon={<DeleteOutlined />} type="text" />
           </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
-        <Col span={2} className="gutter-row">
-          <Dropdown menu={{ items }}>
-            <Button>
-              <Space>
-                Add
-                <PlusOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Space>
-            </Button>
-          </Dropdown>
         </Col>
       </Row>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">

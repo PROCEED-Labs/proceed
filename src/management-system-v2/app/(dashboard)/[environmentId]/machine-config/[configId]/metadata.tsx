@@ -11,7 +11,8 @@ import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
-import AddFieldDropdownButton from './add-field-dropdown-button';
+
+//TODO: make this reusable for the target and machine configurations?
 
 type MachineDataViewProps = {
   configId: string;
@@ -64,33 +65,6 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const showMobileView = useMobileModeler();
 
-  const items = [
-    {
-      key: '1',
-      label: 'Custom Field',
-    },
-    {
-      key: '2',
-      label: 'Attachment',
-    },
-    {
-      key: '3',
-      label: 'Picture',
-    },
-    {
-      key: '4',
-      label: 'ID',
-    },
-    {
-      key: '5',
-      label: 'Owner',
-    },
-    {
-      key: '6',
-      label: 'Description',
-    },
-  ];
-
   return (
     <div>
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
@@ -137,22 +111,6 @@ export default function MetaData(props: MachineDataViewProps) {
           <Tooltip title="Delete">
             <Button icon={<DeleteOutlined />} type="text" />
           </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
-        <Col span={2} className="gutter-row">
-          <Dropdown menu={{ items }}>
-            <Button>
-              <Space>
-                Add
-                <PlusOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Space>
-            </Button>
-          </Dropdown>
         </Col>
       </Row>
     </div>

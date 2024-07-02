@@ -47,11 +47,34 @@ export function rulesCacheDeleteAll() {
   rulesCache.clear();
 }
 
-export function getSpaceFolderTree(spaceId: string) {
-  const tree: TreeMap = {};
+const folderTreeCache =
+  // @ts-ignore
+  (global.folderTreeCache as LRUCache<string, TreeMap>) ||
+  // @ts-ignore
+  (global.folderTreeCache = new LRUCache<string, TreeMap>({ max: 500 }));
 
-  for (const folder of getFolders(spaceId)) {
-    if (folder.parentId) tree[folder.id] = folder.parentId;
+export function getCachedFolderTree(spaceId: string) {
+  return folderTreeCache.get(spaceId);
+}
+
+export function cacheFolderTree(spaceId: string, tree: TreeMap) {
+  folderTreeCache.set(spaceId, tree);
+}
+
+export function deleteCachedFolderTree(spaceId: string) {
+  folderTreeCache.delete(spaceId);
+}
+
+export function getSpaceFolderTree(spaceId: string) {
+  let tree = getCachedFolderTree(spaceId);
+
+  if (!tree) {
+    tree = {} as TreeMap;
+    for (const folder of getFolders(spaceId)) {
+      if (folder.parentId) tree[folder.id] = folder.parentId;
+    }
+
+    cacheFolderTree(spaceId, tree);
   }
 
   return tree;
@@ -74,7 +97,7 @@ export async function getUserRules(userId: string, environmentId: string) {
     userRules = rules;
   }
 
-  return userRules as NonNullable<typeof userRules>;
+  return userRules;
 }
 
 export async function getAbilityForUser(userId: string, environmentId: string) {

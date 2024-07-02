@@ -83,6 +83,7 @@ export function init() {
 }
 init();
 import { removeProcess } from './_process';
+import { deleteCachedFolderTree } from '@/lib/authorization/authorization';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -150,6 +151,8 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
       throw new Error(`Environment ${folder.environmentId} already has a root folder`);
   }
 
+  deleteCachedFolderTree(folder.environmentId);
+
   // Store
   const newFolder = {
     ...folder,
@@ -187,6 +190,8 @@ export function deleteFolder(folderId: string, ability?: Ability) {
   }
 
   _deleteFolder(folderData, ability);
+
+  deleteCachedFolderTree(folderData.folder.environmentId);
 }
 
 /** internal function to delete folders from bottom to top */
@@ -294,6 +299,8 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   if (isInSubtree(folderId, newParentId)) throw new Error('Folder cannot be moved to its children');
 
   // Store
+  deleteCachedFolderTree(folderData.folder.environmentId);
+
   oldParentData.children.splice(folderIndex, 1);
   oldParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', oldParentData.folder.id, oldParentData.folder);

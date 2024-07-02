@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
@@ -170,7 +170,26 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
-  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
+  const createProcessButton = (
+    <ProcessCreationButton
+      wrapperElement="Create Process"
+      defaultOpen={
+        typeof window !== 'undefined' &&
+        new URLSearchParams(document.location.search).has('createprocess')
+      }
+    />
+  );
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(document.location.search);
+    if (searchParams.has('createprocess')) {
+      searchParams.delete('createprocess');
+      router.replace(
+        window.location.origin + window.location.pathname + '?' + searchParams.toString(),
+      );
+    }
+  }, []);
+
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
@@ -267,7 +286,7 @@ const Processes = ({
       } catch (e) {
         message.open({
           type: 'error',
-          content: `Someting went wrong`,
+          content: `Something went wrong`,
         });
       }
     });
@@ -280,7 +299,7 @@ const Processes = ({
     moveItems,
   };
 
-  // Here all the loading states shoud be ORed together
+  // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (

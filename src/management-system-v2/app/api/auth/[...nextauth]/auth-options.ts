@@ -127,6 +127,13 @@ if (process.env.NODE_ENV === 'production') {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID as string,
       clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      profile(profile) {
+        const image = profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+          : null;
+
+        return { ...profile, image };
+      },
     }),
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID as string,

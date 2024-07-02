@@ -5,9 +5,16 @@ import { addRole, deleteRole, getRoleByName, roleMetaObjects } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
 import { addMember, membershipMetaObject, removeMember } from './memberships';
-import { Environment, EnvironmentInput, environmentSchema } from '../../environment-schema';
+import {
+  Environment,
+  EnvironmentInput,
+  UserOrganizationEnvironmentInput,
+  UserOrganizationEnvironmentInputSchema,
+  environmentSchema,
+} from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
 import { createFolder } from '../folders';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -144,6 +151,30 @@ export function deleteEnvironment(environmentId: string, ability?: Ability) {
 
   delete environmentsMetaObject[environmentId];
   store.remove('environments', environmentId);
+}
+
+export function updateOrganization(
+  environmentId: string,
+  environmentInput: Partial<UserOrganizationEnvironmentInput>,
+  ability?: Ability,
+) {
+  const environment = getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
+
+  if (
+    ability &&
+    !ability.can('update', toCaslResource('Environment', environment), { environmentId })
+  )
+    throw new UnauthorizedError();
+
+  if (!environment.organization) throw new Error('Environment is not an organization');
+
+  const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
+  const newEnvironmentData: Environment = { ...environment, ...update };
+
+  environmentsMetaObject[environmentId] = newEnvironmentData;
+  store.update('environments', environmentId, newEnvironmentData);
+
+  return newEnvironmentData;
 }
 
 /**

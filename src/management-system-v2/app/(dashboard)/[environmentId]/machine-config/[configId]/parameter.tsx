@@ -127,32 +127,21 @@ export default function Parameters(props: MachineDataViewProps) {
     margin: '0 0 16px 0',
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
-    border: 'none',
+    border: 'solid 1px #d9d9d9',
   };
 
-  const items = [
-    {
-      key: '1',
-      label: 'Value',
-    },
-    {
-      key: '2',
-      label: 'Unit',
-    },
-    {
-      key: '3',
-      label: 'Language',
-    },
-  ];
-
-  // const nestedParameters = [
-  //   {
-  //     key: '1',
-  //     label: nestedParametersHeader,
-  //     children: [],
-  //     style: nestedPanelStyle,
-  //   },
-  // ];
+  const getNestedParameters = (nestedParameters: ConfigParameter[] = []) => {
+    if (nestedParameters && nestedParameters.length > 0) {
+      return (
+        <Collapse
+          bordered={false}
+          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+          items={nestedParameters}
+        />
+      );
+    }
+    return getAddButton('Add Nested Parameter');
+  };
 
   const parameterContent = (parameter: ConfigParameter) => (
     <div>
@@ -215,10 +204,10 @@ export default function Parameters(props: MachineDataViewProps) {
           <Space>
             <Tag color="purple">Key XY</Tag>
             <Tag color="blue">Key AB</Tag>
+            <Tooltip title="Add Parameter Link">
+              <Button icon={<PlusOutlined />} size="small" />
+            </Tooltip>
           </Space>
-          <Tooltip title="Add Parameter">
-            <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 16px' }} />
-          </Tooltip>
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -231,11 +220,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Nested Parameters
         </Col>
         <Col span={20} className="gutter-row">
-          <Collapse
-            bordered={false}
-            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-            items={nestedParameters}
-          />
+          {getNestedParameters(nestedParameters)}
           <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
         </Col>
         <Col span={1} className="gutter-row">
@@ -263,9 +248,9 @@ export default function Parameters(props: MachineDataViewProps) {
   return (
     <>
       <Collapse
-        bordered={false}
         expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
         ghost
+        size="small"
         items={getParameterItems()}
       />
       <Space>{getAddButton('Add Parameter')}</Space>

@@ -17,7 +17,6 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import getDropdown from './dropdown-add-button';
 import getConfigHeader from './config-header';
 
 type MachineDataViewProps = {

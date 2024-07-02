@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Space, Tooltip, Flex, Dropdown } from 'antd';
 
 import Text from 'antd/es/typography/Text';
-import getAddDropdown from './dropdown-add-button';
+import getAddButton from './add-button';
 
 const getTooltips = () => {
   return (
@@ -37,7 +37,7 @@ const getConfigHeader = (
         <Flex align="center" justify="space-between" style={{ width: '100%' }}>
           <Space align="center">
             <Text style={{ margin: '0 10px 0 0' }}>{title}</Text>
-            {getAddDropdown('Add Field', items)}
+            {getAddButton('Add', items)}
           </Space>
           <Space align="center">{tooltips && getTooltips()}</Space>
         </Flex>

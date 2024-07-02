@@ -155,20 +155,34 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Setting')) {
+  if (can('view', 'Setting') || can('manage', 'Environment')) {
+    const children: MenuProps['items'] = [];
+
+    if (can('manage', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
+            Organization Settings
+          </Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
+    if (can('view', 'Setting'))
+      children.push({
+        key: 'general-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',
       type: 'group',
-      children: [
-        {
-          key: 'general-settings',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
+      children,
     });
   }
 

@@ -84,6 +84,7 @@ export function init() {
 init();
 import { removeProcess } from './_process';
 import { deleteCachedFolderTree } from '@/lib/authorization/authorization';
+import { Prettify } from '@/lib/typescript-utils';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -222,7 +223,7 @@ function _deleteFolder(
 
 export function updateFolderMetaData(
   folderId: string,
-  newMetaDataInput: Partial<FolderUserInput>,
+  newMetaDataInput: Prettify<Partial<Omit<FolderUserInput, 'environmentId' | 'parentId'>>>,
   ability?: Ability,
 ) {
   const folderData = foldersMetaObject.folders[folderId];
@@ -231,12 +232,9 @@ export function updateFolderMetaData(
   if (ability && !ability.can('update', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
-  const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
-  if (
-    newMetaDataInput.environmentId &&
-    newMetaDataInput.environmentId != folderData.folder.environmentId
-  )
-    throw new Error('environmentId cannot be changed');
+  const newMetaData = FolderUserInputSchema.omit({ environmentId: true, parentId: true })
+    .partial()
+    .parse(newMetaDataInput);
 
   const newFolder: Folder = {
     ...folderData.folder,

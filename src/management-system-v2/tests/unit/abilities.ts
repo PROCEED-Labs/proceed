@@ -116,6 +116,30 @@ describe('Condition: property_has_to_be_child_of', () => {
     expect(ability.can('update', { id: '000', parentId: '1-4' })).toBe(false);
   });
 
+  test('Throw on circular reference', () => {
+    const ability = buildAbility(
+      [
+        {
+          action: 'view',
+          subject: 'Folder',
+          conditions: {
+            conditions: {
+              $: { $property_has_to_be_child_of: '1-0' },
+            },
+          },
+        },
+      ],
+      {
+        '1-1': '1-2',
+        '1-2': '1-1',
+      },
+    );
+
+    expect(() =>
+      ability.can('view', toCaslResource('Folder', { id: '000', parentId: '1-2' })),
+    ).toThrow();
+  });
+
   test('Test folder actions on rule scoped to that folder', () => {
     const ability = getAbility({
       action: ['delete', 'update'],
@@ -183,6 +207,31 @@ describe('Condition: property_has_to_be_parent_of', () => {
 
     // since toCaslResource wasn't used -> no way to identify the resource
     expect(ability.can('update', { id: '000', parentId: '1-4' })).toBe(false);
+  });
+
+  test('Throw on circular reference', () => {
+    const ability = buildAbility(
+      [
+        {
+          action: 'view',
+          subject: 'Folder',
+          conditions: {
+            conditions: {
+              $: { $property_has_to_be_parent_of: '1-3' },
+            },
+          },
+        },
+      ],
+      {
+        '1-1': '1-2',
+        '1-2': '1-1',
+        '1-3': '1-2',
+      },
+    );
+
+    expect(() =>
+      ability.can('view', toCaslResource('Folder', { id: '000', parentId: '1-0' })),
+    ).toThrow();
   });
 
   test('Actions on parents', () => {

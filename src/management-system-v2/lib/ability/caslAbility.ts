@@ -68,10 +68,11 @@ const conditions = {
       false,
     ),
   $property_has_to_be_child_of: (valueInCondition: string, _, tree) => {
-    if (!tree)
+    if (!tree) {
       throw new Error(
         'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
       );
+    }
 
     return (resource: any) => {
       if (!valueInCondition) return false;
@@ -83,16 +84,19 @@ const conditions = {
       )
         return true;
 
-      // If the resource doesn't specify a parentId|folderId we can't know where it should be in the tree.
+      // If the resource doesn't specify a perent we can't know where it should be in the tree.
       // Although this would probably be an error, this should be caught by zod, so here
       // we just return false implying that this rule doesn't apply.
-      if (!resource.parentId && !resource.folderId) return false;
+      if (!resource.parentId) return false;
 
-      let currentFolder = resource.parentId || resource.folderId;
+      let currentFolder = resource.parentId;
+      const seen = new Set<string>();
       while (currentFolder) {
-        if (currentFolder === valueInCondition) {
-          return true;
-        }
+        if (currentFolder === valueInCondition) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
         currentFolder = tree[currentFolder];
       }
 
@@ -100,10 +104,11 @@ const conditions = {
     };
   },
   $property_has_to_be_parent_of: (valueInCondition: string, _, tree) => {
-    if (!tree)
+    if (!tree) {
       throw new Error(
         'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
       );
+    }
 
     return (resource: any) => {
       if (!valueInCondition) return false;
@@ -115,10 +120,13 @@ const conditions = {
       if (!resource.id) throw new Error('Folder does not have an id');
 
       let currentFolder = valueInCondition;
+      const seen = new Set<string>();
       while (currentFolder) {
-        if (currentFolder === resource.id) {
-          return true;
-        }
+        if (currentFolder === resource.id) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
         currentFolder = tree[currentFolder];
       }
 

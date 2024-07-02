@@ -132,6 +132,20 @@ if (process.env.NODE_ENV === 'production') {
       clientId: process.env.TWITTER_CLIENT_ID as string,
       clientSecret: process.env.TWITTER_CLIENT_SECRET as string,
       version: '2.0',
+      profile({ data, email }) {
+        const nameParts = data.name.split(' ');
+        const fistName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+
+        return {
+          email,
+          username: data.username,
+          id: data.id,
+          image: data.profile_image_url,
+          firstName: fistName.length > 0 ? fistName : undefined,
+          lastName: lastName.length > 0 ? lastName : undefined,
+        };
+      },
     }),
   );
 }

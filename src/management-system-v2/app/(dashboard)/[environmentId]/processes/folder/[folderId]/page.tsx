@@ -18,6 +18,7 @@ import { LeftOutlined } from '@ant-design/icons';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({
@@ -35,16 +36,20 @@ const ProcessesPage = async ({
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
-    if (item.type === 'folder') {
-      return {
-        ...getFolderById(item.id),
-        type: 'folder' as const,
-      };
-    } else {
-      return await getProcess(item.id);
-    }
-  })) satisfies ListItem[];
+  const folderContents = (
+    await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
+      if (item.type === 'folder') {
+        return {
+          ...getFolderById(item.id),
+          type: 'folder' as const,
+        };
+      }
+
+      const process = await getProcess(item.id);
+      console.log('process', process);
+      if (ability.can('view', toCaslResource('Process', process))) return process;
+    })
+  ).filter((el) => el) as ListItem[];
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;

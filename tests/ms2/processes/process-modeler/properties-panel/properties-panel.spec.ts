@@ -9,10 +9,6 @@ test('open properties panel for process and fill property values', async ({
   const openButton = propertiesPanelPage.page.getByRole('button', { name: 'info-circle' });
   await openButton.click();
 
-  // input fields should be disabled because values are fixed
-  await expect(propertiesPanelPage.generalSection.locator('input[name="Name"]')).toBeDisabled();
-  await expect(propertiesPanelPage.generalSection.locator('input[name="Type"]')).toBeDisabled();
-
   // Create/Edit/Delete image
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
   const placeholderImageURL =
@@ -60,7 +56,7 @@ test('open properties panel for process and fill property values', async ({
 
   // Fill Planned Cost Input
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('');
-  await propertiesPanelPage.page.getByTestId('plannedCostInputEdit').click();
+  await propertiesPanelPage.page.getByPlaceholder('Planned Cost').click();
   await propertiesPanelPage.page.getByPlaceholder('Planned Cost').fill('100');
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('100');
 
@@ -90,6 +86,9 @@ test('open properties panel for process and fill property values', async ({
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Value'),
   ).toHaveValue('');
   await propertiesPanelPage.addCustomProperty('New Custom Property', 'New Custom Value');
+  await propertiesPanelPage.customPropertiesSection
+    .getByRole('button', { name: 'Add Property' })
+    .click();
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Name'),
   ).toHaveCount(2);
@@ -108,7 +107,10 @@ test('open properties panel for process and fill property values', async ({
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Value').nth(1),
   ).toHaveValue('');
-  await propertiesPanelPage.customPropertiesSection.getByRole('button', { name: 'delete' }).click();
+  await propertiesPanelPage.customPropertiesSection
+    .getByRole('button', { name: 'delete' })
+    .first()
+    .click();
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Name'),
   ).toHaveCount(1);
@@ -135,14 +137,10 @@ test('open properties panel for element and fill property values', async ({
   await openButton.click();
 
   await expect(propertiesPanelPage.generalSection.locator('input[name="Name"]')).toHaveValue('');
-  await propertiesPanelPage.generalSection.getByTestId('nameInputEdit').click();
+  await propertiesPanelPage.generalSection.getByPlaceholder('Element Name').click();
   await propertiesPanelPage.generalSection.locator('input[name="Name"]').fill('New Name');
   await expect(propertiesPanelPage.generalSection.locator('input[name="Name"]')).toHaveValue(
     'New Name',
-  );
-  await expect(propertiesPanelPage.generalSection.locator('input[name="Type"]')).toBeDisabled();
-  await expect(propertiesPanelPage.generalSection.locator('input[name="Type"]')).toHaveValue(
-    'bpmn:StartEvent',
   );
 
   await expect(propertiesPanelPage.imageSection).toHaveText('Add Image');
@@ -169,8 +167,9 @@ test('open properties panel for element and fill property values', async ({
   const descriptionViewer = propertiesPanelPage.page.getByRole('textbox', {
     name: 'description-viewer',
   });
-  await expect(descriptionViewer).toHaveText('');
+  await expect(descriptionViewer).not.toBeVisible();
   await propertiesPanelPage.addDescription('New Description');
+  await expect(descriptionViewer).toBeVisible();
   await expect(descriptionViewer).toHaveText('New Description');
 
   const milestonesTable = propertiesPanelPage.milestonesSection.getByRole('table');
@@ -188,7 +187,7 @@ test('open properties panel for element and fill property values', async ({
   await expect(firstContentRow).toHaveText('No data');
 
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('');
-  await propertiesPanelPage.page.getByTestId('plannedCostInputEdit').click();
+  await propertiesPanelPage.page.getByPlaceholder('Planned Cost').click();
   await propertiesPanelPage.page.getByPlaceholder('Planned Cost').fill('100');
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('100');
 
@@ -216,6 +215,9 @@ test('open properties panel for element and fill property values', async ({
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Value'),
   ).toHaveValue('');
   await propertiesPanelPage.addCustomProperty('New Custom Property', 'New Custom Value');
+  await propertiesPanelPage.customPropertiesSection
+    .getByRole('button', { name: 'Add Property' })
+    .click();
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Name'),
   ).toHaveCount(2);
@@ -234,7 +236,10 @@ test('open properties panel for element and fill property values', async ({
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Value').nth(1),
   ).toHaveValue('');
-  await propertiesPanelPage.customPropertiesSection.getByRole('button', { name: 'delete' }).click();
+  await propertiesPanelPage.customPropertiesSection
+    .getByRole('button', { name: 'delete' })
+    .first()
+    .click();
   await expect(
     propertiesPanelPage.customPropertiesSection.getByPlaceholder('Custom Name'),
   ).toHaveCount(1);

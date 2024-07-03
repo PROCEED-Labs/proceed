@@ -8,7 +8,7 @@ import styles from './properties-panel.module.scss';
 
 import { Input, ColorPicker, Space, Grid, Divider, Modal } from 'antd';
 
-import { CloseOutlined, EditOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@ant-design/icons';
 import { getMetaDataFromElement, setProceedElement } from '@proceed/bpmn-helper';
 import CustomPropertySection from './custom-property-section';
 import MilestoneSelectionSection from './milestone-selection-section';
@@ -32,7 +32,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   const strokeColor = getStrokeColor(selectedElement, '#000000FF');
 
   const [name, setName] = useState(selectedElement.businessObject.name);
-  const [isNameEditing, setIsNameEditing] = useState(false);
 
   const costsPlanned: { value: number; unit: string } | undefined = metaData.costsPlanned;
   const timePlannedDuration: string | undefined = metaData.timePlannedDuration;
@@ -71,7 +70,6 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   }, [selectedElement]);
 
   const handleNameChange = (event: FocusEvent<HTMLInputElement>) => {
-    setIsNameEditing(false);
     const modeling = modeler!.getModeling();
     modeling.updateProperties(selectedElement as any, { name: event.target.value });
   };
@@ -133,26 +131,14 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         </Divider>
         <Input
           name="Name"
+          placeholder="Element Name"
           style={{ fontSize: '0.85rem' }}
           addonBefore="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={handleNameChange}
           disabled={selectedElement.type === 'bpmn:Process'}
-          readOnly={!isNameEditing}
-          suffix={
-            selectedElement.type === 'bpmn:Process' || isNameEditing ? null : (
-              <EditOutlined
-                onClick={() => {
-                  setIsNameEditing(true);
-                }}
-                data-testid="nameInputEdit"
-              ></EditOutlined>
-            )
-          }
         />
-
-        <Input name="Type" addonBefore="Type" value={selectedElement.type} disabled />
 
         <div
           style={{

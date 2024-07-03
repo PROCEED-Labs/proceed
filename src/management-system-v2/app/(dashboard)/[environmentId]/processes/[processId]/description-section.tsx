@@ -1,10 +1,11 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
-import React, { useEffect, useState } from 'react';
-import { EditOutlined } from '@ant-design/icons';
-import { Divider, Grid, Modal, Space } from 'antd';
+import React, { useState } from 'react';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Divider, Grid, Modal, Space } from 'antd';
 import dynamic from 'next/dynamic';
+import ScrollBar from '@/components/scrollbar';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
@@ -43,7 +44,6 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
   return (
     <Space
       direction="vertical"
-      size="large"
       style={{ width: '100%' }}
       role="group"
       aria-labelledby="description-title"
@@ -52,18 +52,53 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
         <span id="description-title" style={{ marginRight: '0.3em' }}>
           Description
         </span>
-        <EditOutlined
-          onClick={() => {
-            setShowPopupEditor(true);
-          }}
-        ></EditOutlined>
       </Divider>
       <div
-        style={{ maxHeight: '40vh', overflowY: 'auto' }}
-        role="textbox"
-        aria-label="description-viewer"
+        style={{
+          backgroundColor: '#fafafa',
+          border: '1px solid #f0f0f0',
+          borderRadius: '0.5rem',
+          padding: '0.5rem',
+          cursor: 'pointer',
+        }}
       >
-        <TextViewer initialValue={description}></TextViewer>
+        {description ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <EditOutlined
+                onClick={() => {
+                  setShowPopupEditor(true);
+                }}
+              ></EditOutlined>
+            </div>
+            <ScrollBar>
+              <div
+                style={{ maxHeight: '40vh' }}
+                role="textbox"
+                aria-label="description-viewer"
+                onClick={() => {
+                  setShowPopupEditor(true);
+                }}
+              >
+                <TextViewer initialValue={description}></TextViewer>
+              </div>
+            </ScrollBar>
+          </>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Button
+              style={{ fontSize: '0.75rem' }}
+              type="text"
+              size="small"
+              icon={<PlusOutlined></PlusOutlined>}
+              onClick={() => {
+                setShowPopupEditor(true);
+              }}
+            >
+              Add Description
+            </Button>
+          </div>
+        )}
       </div>
 
       <Modal

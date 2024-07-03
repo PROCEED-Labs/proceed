@@ -193,14 +193,9 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
           <span id="milestones-title" style={{ marginRight: '0.3em' }}>
             Milestones
           </span>
-          <PlusOutlined
-            onClick={() => {
-              setIsMilestoneModalOpen(true);
-            }}
-          ></PlusOutlined>
         </Divider>
         <Table
-          pagination={{ pageSize: 5 }}
+          pagination={{ pageSize: 5, position: ['bottomCenter'] }}
           rowKey="id"
           columns={[
             {
@@ -243,6 +238,21 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
               ),
             },
           ]}
+          footer={() => (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Button
+                onClick={() => {
+                  setIsMilestoneModalOpen(true);
+                }}
+                type="text"
+                size="small"
+                style={{ fontSize: '0.75rem' }}
+                icon={<PlusOutlined />}
+              >
+                <span>Add Milestone</span>
+              </Button>
+            </div>
+          )}
           dataSource={milestones}
         ></Table>
       </Space>

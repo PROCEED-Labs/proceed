@@ -162,6 +162,8 @@ export class ProcessListPage {
       await waitForHydration(this.page);
     }
 
+    this.processDefinitionIds.push(id);
+
     return id;
   }
 

@@ -652,6 +652,9 @@ test.describe('shortcuts in process-list', () => {
       page.locator(`tr[data-row-key="${processID}"]`),
       'Couldnot find newly added process in list',
     ).toBeVisible();
+
+    // clean up the process
+    await processListPage.removeProcess(processID);
   });
   /* Delete Process - del*/
   test('delete a process with del', async ({ processListPage }) => {
@@ -769,6 +772,10 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if both AAA are selected */
     await expect(page.getByRole('note')).toContainText('2');
+
+    // clear the search bar for the process cleanup to get all processes (.fill('') and .clear() open the delete modal in chrome for some reason)
+    await inputSearch.getByPlaceholder(/search/i).focus();
+    await inputSearch.getByPlaceholder(/search/i).press('Backspace');
   });
 
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
@@ -864,6 +871,9 @@ test.describe('shortcuts in process-list', () => {
     await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
       /export/i,
     );
+
+    // close modal to allow cleanup to work as expected
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
   });
 
   /* TODO: */

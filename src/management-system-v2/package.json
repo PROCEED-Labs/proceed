@@ -31,6 +31,7 @@
     "@atlaskit/icon": "22.2.0",
     "@atlaskit/select": "17.9.0",
     "@atlaskit/tabs": "16.1.2",
+    "@atlaskit/link": "1.0.0",
     "@casl/ability": "6.7.1",
     "@monaco-editor/react": "4.6.0",
     "@proceed/bpmn-helper": "1.0.0",

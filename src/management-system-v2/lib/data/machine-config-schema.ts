@@ -41,40 +41,25 @@ export type Metadata = {
   lastEditedOn: string;
 };
 
-export type ConfigParameter = Metadata & {
-  id: string;
-  key: string;
-  value: string;
-  unit: string;
-  language: string;
-  linkedParameters: string[];
-  nestedParameters: ConfigParameter[];
-};
+export type ConfigParameter = Metadata &
+  FieldGroup<'param'> & {
+    linkedParameters: string[];
+    nestedParameters: ConfigParameter[];
+  };
 
-export type Field = {
-  label: string;
-  value: string;
-};
-
-export type MachineConfigField = {
-  id: string;
-} & Field;
+export type MachineConfigField = FieldGroup<
+  'description' | 'owner' | 'userId' | 'custom' | 'machine'
+>;
 
 //Alternative TODO
-export type FieldGroup = {
-  key: string;
+export type FieldGroup<T> = {
+  type: T;
+  key: string | undefined;
   value: string;
   id: string | undefined;
-  label: string | undefined;
   unit: string | undefined;
   language: string | undefined;
 };
-
-export type Parameter = Metadata &
-  FieldGroup & {
-    linkedParameters: string[] | undefined;
-    nestedParameters: Parameter[] | undefined;
-  };
 
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &

@@ -447,7 +447,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const addParameter = () => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
     const date = new Date().toUTCString();
-    const defaultParameter = {
+    const defaultParameter: ConfigParameter = {
       id: v4(),
       createdBy: environment.spaceId,
       createdOn: date,
@@ -459,6 +459,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       unit: parameterUnit,
       value: parameterValue,
       key: parameterKey,
+      type: 'param',
     };
     if (_configType === 'parameter') {
       let ref = findParameter(_configId.toString(), parentConfig, 'config');

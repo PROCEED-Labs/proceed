@@ -2,43 +2,26 @@ import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
 import { closeModal, openModal } from '../../testUtils';
 
-test('documentation page functionality', async ({ page, ms2Page, processListPage }) => {
+test('documentation page functionality', async ({
+  page,
+  ms2Page,
+  processListPage,
+  processModelerPage,
+}) => {
   /*********************** Setup **************************/
 
   // import the first process imported by the importer process and create a version to reference
   const { definitionId: import1Id } = await processListPage.importProcess('import1.bpmn');
   await page.locator(`tr[data-row-key="${import1Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  let versionModal = await openModal(page, () =>
-    page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
-  );
-  await versionModal.getByPlaceholder('Version Name').fill('Version 1');
-  await versionModal.getByPlaceholder('Version Description').fill('First Version');
-  await closeModal(versionModal, () =>
-    versionModal.getByRole('button', { name: 'Create Version' }).click(),
-  );
-  await page.getByText('Latest Version').click();
-  await page.getByText('Version 1').click();
-  await page.waitForURL(/\?version=/);
-  const import1Version = page.url().split('?version=').pop();
+  const import1Version = await processModelerPage.createVersion('Version 1', 'First Version');
 
   await processListPage.goto();
   // import the second process imported by the importer process and create a version to reference
   const { definitionId: import2Id } = await processListPage.importProcess('import2.bpmn');
   await page.locator(`tr[data-row-key="${import2Id}"]`).dblclick();
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
-  versionModal = await openModal(page, () =>
-    page.getByLabel('general-modeler-toolbar').getByRole('button', { name: 'plus' }).click(),
-  );
-  await versionModal.getByPlaceholder('Version Name').fill('Version 2');
-  await versionModal.getByPlaceholder('Version Description').fill('Second Version');
-  await closeModal(versionModal, () =>
-    versionModal.getByRole('button', { name: 'Create Version' }).click(),
-  );
-  await page.getByText('Latest Version').click();
-  await page.getByText('Version 2').click();
-  await page.waitForURL(/\?version=/);
-  const import2Version = page.url().split('?version=').pop();
+  const import2Version = await processModelerPage.createVersion('Version 2', 'Second Version');
 
   // share this process so it is visible in the  documentation for other users
   const shareModal = await openModal(page, () =>

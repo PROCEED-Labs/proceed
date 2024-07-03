@@ -43,7 +43,7 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
       userEnvironments={userEnvironments}
       activeSpace={{ spaceId: userId || '', isOrganization: false }}
     >
-      <div style={{ padding: '1rem', width: '100%' }}>
+      <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
         <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>
       </div>
     </Layout>

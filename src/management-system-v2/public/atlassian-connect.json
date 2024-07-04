@@ -25,11 +25,35 @@
     "generalPages": [
       {
         "url": "/confluence",
+        "key": "proceed-process-list-page",
+        "name": {
+          "value": "PROCEED Process List"
+        },
+        "location": ""
+      }
+    ],
+    "customContent": [
+      {
         "key": "proceed-process-list",
         "name": {
           "value": "PROCEED Process List"
         },
-        "location": "system.space.sidebar/main-links"
+        "apiSupport": {
+          "supportedContainerTypes": ["space"]
+        },
+        "uiSupport": {
+          "listViewComponent": {
+            "moduleKey": "proceed-process-list-page"
+          },
+          "contentViewComponent": {
+            "moduleKey": "proceed-process-list-page"
+          },
+          "icons": {
+            "item": {
+              "url": "/proceed-icon.png"
+            }
+          }
+        }
       }
     ],
     "dynamicContentMacros": [

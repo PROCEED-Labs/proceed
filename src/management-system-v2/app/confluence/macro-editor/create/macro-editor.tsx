@@ -32,16 +32,22 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
   }, []);
 
   const storeProcessAttachment = async (process: Process) => {
+    console.log('store process attachment', process);
     const processSVG = await getSVGFromBPMN(process.bpmn);
     const processPNG = await getPNGFromSVG(processSVG);
     const bpmnBlob = new Blob([process.bpmn], { type: 'application/xml' });
 
+    console.log('processSVG', processSVG);
+    console.log('processPNG', processPNG);
+    console.log('bpmnBlob', bpmnBlob);
     const formData = new FormData();
     formData.append('id', process.id);
     formData.append('bpmn', bpmnBlob);
     formData.append('image', processPNG);
+    console.log('formData', formData);
 
     await createAttachment('14712843', formData);
+    console.log('after creating attachment');
   };
 
   return (
@@ -97,6 +103,7 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
                   console.log('something went wrong', res.error);
                 } else {
                   const process = res[0];
+                  console.log('process', process);
                   storeProcessAttachment(process);
                 }
               });

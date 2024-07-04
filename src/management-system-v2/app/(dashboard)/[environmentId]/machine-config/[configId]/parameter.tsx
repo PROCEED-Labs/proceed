@@ -258,20 +258,22 @@ export default function Parameters(props: MachineDataViewProps) {
 
   return (
     <>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {(editable || parameterItems.length > 0) && 'Parameters'}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Collapse
-            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-            ghost
-            size="small"
-            items={parameterItems}
-          />
-          {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
-        </Col>
-      </Row>
+      {(editable || parameterItems.length > 0) && (
+        <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+          <Col span={2} className="gutter-row">
+            Parameters
+          </Col>
+          <Col span={21} className="gutter-row">
+            <Collapse
+              expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+              ghost
+              size="small"
+              items={parameterItems}
+            />
+            {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
+          </Col>
+        </Row>
+      )}
     </>
   );
 }

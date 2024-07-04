@@ -107,7 +107,7 @@ export default function MetaData(props: MachineDataViewProps) {
   const items = props.configType == 'machine' ? machineItems : baseItems;
 
   return (
-    <div>
+    <>
       <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
@@ -159,12 +159,14 @@ export default function MetaData(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row" />
-        <Col span={21} className="gutter-row">
-          {editable && getAddButton('Add Field', items, '')}
-        </Col>
-      </Row>
-    </div>
+      {editable && (
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+          <Col span={2} className="gutter-row" />
+          <Col span={21} className="gutter-row">
+            {getAddButton('Add Field', items, '')}
+          </Col>
+        </Row>
+      )}
+    </>
   );
 }

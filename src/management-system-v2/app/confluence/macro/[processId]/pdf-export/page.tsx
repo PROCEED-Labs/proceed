@@ -10,6 +10,7 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
   const documentation = await getProcessDocumentation(bpmn);
   const definitionsName = await getDefinitionsName(bpmn);
 
+  const baseUrl = process.env.NEXTAUTH_URL ?? '';
   return (
     <div
       style={{
@@ -19,14 +20,16 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
     >
       <div
         style={{
-          height: '100px',
           padding: '10px',
           borderBottom: '1px solid #f0f0f0',
           backgroundColor: '#f0f0f0',
           alignItems: 'center',
         }}
       >
-        <img style={{ width: '42px', marginRight: '10px' }} src="/proceed-icon.png"></img>
+        <img
+          style={{ width: '42px', marginRight: '10px' }}
+          src={`${baseUrl}/proceed-icon.png`}
+        ></img>
         <span style={{ fontWeight: 'bold' }}>{definitionsName}</span>
       </div>
       <div>
@@ -34,7 +37,6 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
       </div>
       <div
         style={{
-          height: '100px',
           padding: '10px',
           borderTop: '1px solid #f0f0f0',
           backgroundColor: '#f0f0f0',

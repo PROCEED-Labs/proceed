@@ -88,6 +88,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         configId={configId}
         selectedMachineConfig={{ parent: parentConfig, selection: machineConfigData }}
         rootMachineConfig={parentConfig}
+        configType="machine"
       />
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
@@ -124,7 +125,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     for (let machineConfig of parentConfig.machineConfigs) {
       list.push({
         key: machineConfig.id,
-        label: machineConfig.name /* getConfigHeader(machineConfig.name, items) */,
+        label: machineConfig.name,
         children: [childConfigContent(machineConfig)],
         extra: getTooltips(editable, true, true, editable),
         style: panelStyle,

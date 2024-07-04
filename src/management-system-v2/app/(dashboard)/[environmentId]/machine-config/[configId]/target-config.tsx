@@ -100,6 +100,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         configId={configId}
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
+        configType="target"
       />
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
         <Col span={2} className="gutter-row">

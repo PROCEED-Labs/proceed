@@ -3,13 +3,7 @@
 import { ParentConfig, ConfigParameter } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  CopyOutlined,
-  CaretRightOutlined,
-} from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Button,

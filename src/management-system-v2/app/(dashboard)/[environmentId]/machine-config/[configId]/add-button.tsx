@@ -5,10 +5,10 @@ const getButton = (label: string) => {
   return (
     <Button>
       <Space>
-        {label}
+        {label.length > 0 && label}
         <PlusOutlined
           style={{
-            margin: '0 0 0 6px',
+            margin: label.length > 0 ? '0 0 0 6px' : '0',
           }}
         />
       </Space>

@@ -39,7 +39,6 @@ import Title from 'antd/es/typography/Title';
 import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
-import getConfigHeader from './config-header';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
 
@@ -192,8 +191,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     let panels = [];
     panels.push({
       key: '1',
-      label:
-        'Metadata' /* getConfigHeader('Metadata', subHeaderDropdownItems, editable, false, false, false), */,
+      label: 'Metadata',
       children: (
         <MetaData
           backendSaveMachineConfig={saveParentConfig}
@@ -201,6 +199,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           rootMachineConfig={parentConfig}
           selectedMachineConfig={props.selectedConfig}
           editingEnabled={editable}
+          configType="parent"
         />
       ),
       extra: getTooltips(editable, true, true, false),
@@ -212,7 +211,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
         let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
-          label: title /* getConfigHeader(title, subHeaderDropdownItems, editable) */,
+          label: title,
           children: (
             <TargetConfiguration
               backendSaveParentConfig={saveParentConfig}
@@ -241,7 +240,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
         );
         panels.push({
           key: '3',
-          label: label /* getConfigHeader('Machine Configurations', [], editable, false) */,
+          label: label,
           children: (
             <MachineConfigurations
               backendSaveParentConfig={saveParentConfig}

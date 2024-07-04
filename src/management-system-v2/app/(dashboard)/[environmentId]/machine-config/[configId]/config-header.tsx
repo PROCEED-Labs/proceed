@@ -8,27 +8,6 @@ import Text from 'antd/es/typography/Text';
 import getTooltips from './getTooltips';
 import getAddButton from './add-button';
 
-/* const getTooltips = (editable: boolean) => {
-  return (
-    <>
-      <Tooltip title="Copy">
-        <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 10px' }} />
-      </Tooltip>
-      <Tooltip title="Edit">
-        <Button icon={<EditOutlined />} type="text" style={{ margin: '0 10px' }} />
-      </Tooltip>
-      <Tooltip title="Delete">
-        <Button
-          disabled={!editable}
-          icon={<DeleteOutlined />}
-          type="text"
-          style={{ margin: '0 10px' }}
-        />
-      </Tooltip>
-    </>
-  );
-}; */
-
 const getConfigHeader = (
   title: string,
   items: {
@@ -46,7 +25,8 @@ const getConfigHeader = (
         <Flex align="center" justify="space-between" style={{ width: '100%' }}>
           <Space align="center">
             <Text style={{ margin: '0 10px' }}>{title}</Text>
-            {/* {editable && getAddButton('Add', items)} */}
+            {/*editable && getAddButton('Add Field', items)*/}
+            {/*editable && <PlusOutlined style={{ margin: '0 10px' }} />*/}
           </Space>
           {getTooltips(editable, showCopy, showEdit, showDelete)}
         </Flex>

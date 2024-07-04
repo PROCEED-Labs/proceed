@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { KeyOutlined, UserOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown } from 'antd';
+import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown, Flex } from 'antd';
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import getAddButton from './add-button';
 
 //TODO: make this reusable for the target and machine configurations?
 
@@ -21,7 +22,42 @@ type MachineDataViewProps = {
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
   editingEnabled: boolean;
+  configType: string;
 };
+
+const baseItems = [
+  {
+    key: '1',
+    label: 'Custom Field',
+  },
+  {
+    key: '2',
+    label: 'ID',
+  },
+  {
+    key: '3',
+    label: 'Owner',
+  },
+  {
+    key: '4',
+    label: 'Description',
+  },
+  {
+    key: '5',
+    label: 'Picture',
+  },
+  {
+    key: '6',
+    label: 'Attachment',
+  },
+];
+
+const machineItems = baseItems.concat([
+  {
+    key: '7',
+    label: 'Machine',
+  },
+]);
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -69,6 +105,8 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
+
+  const items = props.configType == 'machine' ? machineItems : baseItems;
 
   return (
     <div>
@@ -121,6 +159,12 @@ export default function MetaData(props: MachineDataViewProps) {
           <Tooltip title="Delete">
             <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
           </Tooltip>
+        </Col>
+      </Row>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+        <Col span={2} className="gutter-row" />
+        <Col span={21} className="gutter-row">
+          {editable && getAddButton('Add Field', items, '')}
         </Col>
       </Row>
     </div>

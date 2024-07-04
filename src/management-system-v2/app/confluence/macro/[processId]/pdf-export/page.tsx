@@ -32,7 +32,7 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
         ></img>
         <span style={{ fontWeight: 'bold' }}>{definitionsName}</span>
       </div>
-      <div>
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
         <img src={`data:image/png;base64, ${base64}`}></img>
       </div>
       <div

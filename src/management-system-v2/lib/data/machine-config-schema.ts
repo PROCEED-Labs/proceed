@@ -61,6 +61,29 @@ export type FieldGroup<T> = {
   language: string | undefined;
 };
 
+//New Schema:
+export type PropertyContent = {
+  value: any;
+  type: string;
+  displayName: string; //with default values for the different keys
+  language: string | undefined;
+  unit: string | undefined;
+};
+
+export type Property<T> = {
+  key: T; //'description' | 'owner' | 'userId' | 'custom' | 'machine' | 'param'
+  values: PropertyContent[];
+};
+
+export type Parameter = Property<'param'> &
+  Metadata & {
+    linkedParameters: string[];
+    nestedParameters: ConfigParameter[];
+  };
+
+export type ConfigField = Property<'description' | 'owner' | 'userId' | 'custom' | 'machine'>;
+//New Schema End
+
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
     Metadata & {

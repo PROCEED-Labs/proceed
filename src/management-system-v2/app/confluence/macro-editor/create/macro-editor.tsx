@@ -2,7 +2,7 @@
 
 import Modal, { ModalBody, ModalFooter, ModalHeader, ModalTitle } from '@atlaskit/modal-dialog';
 import Button from '@atlaskit/button';
-import { addProcesses } from '@/lib/data/processes';
+import { addProcesses, getProcessBPMN } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { useState, useEffect, CSSProperties } from 'react';
 
@@ -10,6 +10,9 @@ import { Process } from '@/lib/data/process-schema';
 import Modeler from './confluence-modeler';
 import ProcessModal from '../../process-modal';
 import { updateProcessGuestAccessRights } from '@/lib/sharing/process-sharing';
+import { getPNGFromSVG } from '@/lib/process-export/image-export';
+import { getSVGFromBPMN } from '@/lib/process-export/util';
+import { createAttachment, getAttachmentProcessBase64Image } from '../../helpers';
 
 const MacroEditor = ({ processes }: { processes: Process[] }) => {
   const { spaceId } = useEnvironment();
@@ -28,31 +31,22 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
     }
   }, []);
 
+  const storeProcessAttachment = async (process: Process) => {
+    const processSVG = await getSVGFromBPMN(process.bpmn);
+    const processPNG = await getPNGFromSVG(processSVG);
+    const bpmnBlob = new Blob([process.bpmn], { type: 'application/xml' });
+
+    const formData = new FormData();
+    formData.append('id', process.id);
+    formData.append('bpmn', bpmnBlob);
+    formData.append('image', processPNG);
+
+    await createAttachment('14712843', formData);
+  };
+
   return (
     <div>
       {process ? (
-        // <Modal
-        //   isBlanketHidden
-        //   width="100vw"
-        //   height="100vh"
-        //   onClose={() => window.AP.confluence.closeMacroEditor()}
-        // >
-        //   <ModalHeader>
-        //     <ModalTitle>Process Editor</ModalTitle>
-        //   </ModalHeader>
-        //   <ModalBody>
-        //     <Modeler
-        //       style={{ width: '100%', height: '100%' }}
-        //       process={{ name: process.name, id: process.id, bpmn: process.bpmn }}
-        //       versions={process.versions}
-        //     />
-        //   </ModalBody>
-        //   <ModalFooter>
-        //     <Button appearance="primary" onClick={() => window.AP.confluence.closeMacroEditor()}>
-        //       Close
-        //     </Button>
-        //   </ModalFooter>
-        // </Modal>
         <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           <div
             style={{
@@ -67,8 +61,21 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
             <Button
               appearance="primary"
               onClick={() => {
-                window.AP.confluence.saveMacro({ processId: process.id });
-                window.AP.confluence.closeMacroEditor();
+                getProcessBPMN(process.id, spaceId)
+                  .then((bpmnResponse) => {
+                    if (typeof bpmnResponse === 'string') {
+                      return { ...process, bpmn: bpmnResponse };
+                    } else {
+                      return process;
+                    }
+                  })
+                  .then((updatedProcess) => {
+                    return storeProcessAttachment(updatedProcess);
+                  })
+                  .then(() => {
+                    window.AP.confluence.saveMacro({ processId: process.id });
+                    window.AP.confluence.closeMacroEditor();
+                  });
               }}
             >
               Close
@@ -90,21 +97,7 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
                   console.log('something went wrong', res.error);
                 } else {
                   const process = res[0];
-
-                  const timestamp = Date.now();
-                  updateProcessGuestAccessRights(
-                    process.id,
-                    {
-                      sharedAs: 'public',
-                      shareTimestamp: 100,
-                    },
-                    spaceId,
-                  ).then((res) => {
-                    if (window.AP && window.AP.confluence) {
-                      window.AP.confluence.saveMacro({ processId: process.id });
-                      window.AP.confluence.closeMacroEditor();
-                    }
-                  });
+                  storeProcessAttachment(process);
                 }
               });
             } else {

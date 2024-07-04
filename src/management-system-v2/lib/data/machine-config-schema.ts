@@ -75,7 +75,7 @@ export type Property<T> = {
   values: PropertyContent[];
 };
 
-export type Parameter = Property<'param'> &
+export type Parameter = Property<'param'> & //change name to ConfigParameter later
   Metadata & {
     linkedParameters: string[];
     nestedParameters: ConfigParameter[];

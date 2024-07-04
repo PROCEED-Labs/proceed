@@ -1,7 +1,7 @@
 {
   "name": "Confluence PROCEED",
   "description": "PROCEED in Confluence",
-  "key": "confluence-proceed",
+  "key": "proceed-confluence-app",
   "baseUrl": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app",
   "vendor": {
     "name": "PROCEED",
@@ -20,7 +20,7 @@
       "name": {
         "value": "PROCEED Configuration"
       },
-      "key": "my-config-page"
+      "key": "proceed-config-page"
     },
     "generalPages": [
       {
@@ -65,14 +65,14 @@
         },
         "width": "400px",
         "height": "400px",
-        "key": "proceed-create-macro",
+        "key": "bpmn-create-macro",
         "bodyType": "none",
         "outputType": "block",
         "name": {
-          "value": "PROCEED Process Modeler"
+          "value": "BPMN Process Modeler"
         },
         "description": {
-          "value": "Create a new PROCEED Process"
+          "value": "Create a new BPMN Process"
         },
         "url": "/confluence/macro/{processId}",
         "editor": {
@@ -101,16 +101,21 @@
         ]
       },
       {
+        "renderModes": {
+          "pdf": {
+            "url": "/confluence/macro/{processId}/pdf-export"
+          }
+        },
         "width": "400px",
         "height": "400px",
         "key": "proceed-embed-macro",
         "bodyType": "none",
         "outputType": "block",
         "name": {
-          "value": "Embed PROCEED Process"
+          "value": "Embed PROCEED BPMN Process"
         },
         "description": {
-          "value": "Embed PROCEED Processes into Confluence"
+          "value": "Embed PROCEED BPMN Processes into Confluence"
         },
         "url": "/confluence/macro/{processId}",
         "editor": {

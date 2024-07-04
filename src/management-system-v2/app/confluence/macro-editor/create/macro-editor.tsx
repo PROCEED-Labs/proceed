@@ -46,8 +46,7 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
     formData.append('image', processPNG);
     console.log('formData', formData);
 
-    await createAttachment('14712843', formData);
-    console.log('after creating attachment');
+    return createAttachment('14712843', formData);
   };
 
   return (
@@ -104,7 +103,12 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
                 } else {
                   const process = res[0];
                   console.log('process', process);
-                  storeProcessAttachment(process);
+                  storeProcessAttachment(process).then(() => {
+                    if (window.AP && window.AP.confluence) {
+                      window.AP.confluence.saveMacro({ processId: process.id });
+                      window.AP.confluence.closeMacroEditor();
+                    }
+                  });
                 }
               });
             } else {

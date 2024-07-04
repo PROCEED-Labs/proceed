@@ -1,3 +1,4 @@
+import { getAttachmentProcessBase64Image, getAttachments } from '@/app/confluence/helpers';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
 import { getProcess } from '@/lib/data/legacy/process';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
@@ -11,9 +12,9 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
 
   //   console.log('url', url);
 
-  const process = await getProcess(processId, true);
+  const base64 = await getAttachmentProcessBase64Image('14712843', processId);
 
-  return <BPMNSharedViewer isOwner={false} processData={process} availableImports={{}} />;
+  return <img src={`data:image/png;base64, ${base64}`}></img>;
 };
 
 export default Page;

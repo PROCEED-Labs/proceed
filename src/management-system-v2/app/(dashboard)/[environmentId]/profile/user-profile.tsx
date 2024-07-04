@@ -32,6 +32,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
+  const firstName = userData.guest || 'confluence' in userData ? 'Guest' : userData.firstName || '';
+  const lastName = userData.guest || 'confluence' in userData ? '' : userData.lastName || '';
+
   return (
     <>
       <UserDataModal
@@ -91,9 +94,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.guest && !('confluence' in userData) ? userData.firstName : 'Guest'} ${
-                  !userData.guest && !('confluence' in userData) ? userData.lastName : ''
-                }`,
+                value: `${firstName} ${lastName}`,
                 action: () => setChangeNameModalOpen(true),
               },
               {

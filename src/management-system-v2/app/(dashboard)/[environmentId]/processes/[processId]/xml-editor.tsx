@@ -121,6 +121,11 @@ const XmlEditor: FC<XmlEditorProps> = ({
     if (editorRef.current && monacoRef.current) {
       const newBpmn = editorRef.current.getValue();
 
+      if (!newBpmn) {
+        onClose();
+        return;
+      }
+
       const { error } = await checkBpmn(newBpmn);
 
       if (!error) {

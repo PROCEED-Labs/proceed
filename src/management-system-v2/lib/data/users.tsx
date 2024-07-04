@@ -74,3 +74,10 @@ export async function getUsersFavourites(): Promise<String[]> {
   }
   return user.favourites ?? [];
 }
+
+export async function isUserGuest() {
+  const { userId } = await getCurrentUser();
+  const user = usersMetaObject[userId];
+
+  return user.guest;
+}

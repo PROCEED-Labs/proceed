@@ -26,7 +26,7 @@ const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps
       size={64}
       name={user.id}
       variant="marble"
-      colors={['#a1ff0a', '#ffd300', '#580aff', '#0aefff']}
+      colors={['#51843A', '#599140', '#62A046', '#780116', '#982D28', '#B85939', '#F7B05B']}
     />
   );
 

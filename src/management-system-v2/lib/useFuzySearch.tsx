@@ -13,7 +13,14 @@ function highlightText<TObj>(
   dataIndexElement: keyof TObj,
   color: string = '#3e93de',
 ) {
-  const value = (fuseElement.item[dataIndexElement] as string) || '';
+  let value;
+  if (typeof fuseElement.item[dataIndexElement] === 'string')
+    value = (fuseElement.item[dataIndexElement] as string) || '';
+  else {
+    if ('value' in (fuseElement.item[dataIndexElement] as object))
+      value = (fuseElement.item[dataIndexElement] as { value: string }).value || '';
+    else value = '';
+  }
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 
   if (!matches || !value) return { highlighted: <span>{value}</span>, value };

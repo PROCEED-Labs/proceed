@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Space, Tooltip, Flex, Dropdown } from 'antd';
 
 import Text from 'antd/es/typography/Text';
+import getTooltips from './getTooltips';
 import getAddButton from './add-button';
 
-const getTooltips = (editable: boolean) => {
+/* const getTooltips = (editable: boolean) => {
   return (
     <>
       <Tooltip title="Copy">
@@ -26,7 +27,7 @@ const getTooltips = (editable: boolean) => {
       </Tooltip>
     </>
   );
-};
+}; */
 
 const getConfigHeader = (
   title: string,
@@ -35,7 +36,9 @@ const getConfigHeader = (
     label: string;
   }[],
   editable: boolean,
-  tooltips: boolean = true,
+  showCopy: boolean = true,
+  showEdit: boolean = true,
+  showDelete: boolean = true,
 ) => {
   return (
     <>
@@ -43,9 +46,9 @@ const getConfigHeader = (
         <Flex align="center" justify="space-between" style={{ width: '100%' }}>
           <Space align="center">
             <Text style={{ margin: '0 10px' }}>{title}</Text>
-            {editable && getAddButton('Add', items)}
+            {/* {editable && getAddButton('Add', items)} */}
           </Space>
-          <Space align="center">{tooltips && getTooltips(editable)}</Space>
+          {getTooltips(editable, showCopy, showEdit, showDelete)}
         </Flex>
       </Space.Compact>
     </>

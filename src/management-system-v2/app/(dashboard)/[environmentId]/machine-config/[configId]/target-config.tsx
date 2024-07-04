@@ -11,6 +11,8 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
+import { Metadata } from 'libphonenumber-js';
+import MetaData from './metadata';
 
 type MachineDataViewProps = {
   configId: string;
@@ -94,7 +96,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   return (
     <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      {/*<Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           ID{' '}
@@ -108,7 +110,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {editingConfig.owner?.label}
         </Col>
@@ -125,7 +127,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {editingConfig.description?.label}
         </Col>
@@ -138,6 +140,15 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
+      */}
+      <MetaData
+        editingEnabled={editable}
+        backendSaveMachineConfig={saveParentConfig}
+        customConfig={editingConfig}
+        configId={configId}
+        selectedMachineConfig={undefined}
+        rootMachineConfig={parentConfig}
+      />
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }} justify="start">
         <Col span={2} className="gutter-row">
           Parameters

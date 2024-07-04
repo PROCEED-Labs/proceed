@@ -41,6 +41,7 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import getConfigHeader from './config-header';
 import getAddButton from './add-button';
+import getTooltips from './getTooltips';
 
 type MachineDataViewProps = {
   configId: string;
@@ -106,6 +107,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
   };
 
+  const [editable, setEditable] = useState(false); //change back to false
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -114,21 +116,20 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     setName(editingConfig.name);
     setDescription(editingConfig.description?.value);
     updateItems(panelStyle);
-  }, [props.selectedConfig, props.parentConfig]);
+  }, [props.selectedConfig, props.parentConfig, editable]);
 
   const showMobileView = useMobileModeler();
 
   const [position, setPosition] = useState('view');
-  const [editable, setEditable] = useState(false); //change back to false
   const onModeChange = (e: any) => {
     setPosition(e.target.value);
-    setEditable(e.target.value == 'edit');
+    setEditable(e.target.value === 'edit'); //alternative: !editable
     router.refresh();
   };
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 24,
+    marginBottom: 16,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'none',
@@ -182,7 +183,8 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     let panels = [];
     panels.push({
       key: '1',
-      label: getConfigHeader('Metadata', subHeaderDropdownItems, editable, false),
+      label:
+        'Metadata' /* getConfigHeader('Metadata', subHeaderDropdownItems, editable, false, false, false), */,
       children: (
         <MetaData
           backendSaveMachineConfig={saveParentConfig}
@@ -192,6 +194,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           editingEnabled={editable}
         />
       ),
+      extra: getTooltips(editable, true, true, false),
       style: panelStyle,
     });
     if (editingConfig.type === 'config') {
@@ -200,7 +203,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
         let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
-          label: getConfigHeader(title, subHeaderDropdownItems, editable),
+          label: title /* getConfigHeader(title, subHeaderDropdownItems, editable) */,
           children: (
             <TargetConfiguration
               backendSaveParentConfig={saveParentConfig}
@@ -210,13 +213,26 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               editingEnabled={editable}
             />
           ),
+          extra: getTooltips(editable, true, true, editable),
           style: panelStyle,
         });
       }
       if (currentConfig.machineConfigs && currentConfig.machineConfigs.length > 0) {
+        const label = (
+          <Space.Compact size="small">
+            <Space align="center">
+              <text>Machine Configurations</text>
+              {editable && (
+                <Tooltip title="Add Machine Configuration">
+                  <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 10px 0 10px' }} />
+                </Tooltip>
+              )}
+            </Space>
+          </Space.Compact>
+        );
         panels.push({
           key: '3',
-          label: getConfigHeader('Machine Configurations', [], editable, false),
+          label: label /* getConfigHeader('Machine Configurations', [], editable, false) */,
           children: (
             <MachineConfigurations
               backendSaveParentConfig={saveParentConfig}
@@ -226,6 +242,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               editingEnabled={editable}
             />
           ),
+          /* extra: editable && (
+            <Tooltip title="Add Machine Configuration">
+              <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 0 0 10px' }} />
+            </Tooltip>
+          ), */
           style: panelStyle,
         });
       }

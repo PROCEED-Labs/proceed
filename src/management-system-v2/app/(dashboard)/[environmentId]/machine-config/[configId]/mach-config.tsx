@@ -18,6 +18,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
 import getConfigHeader from './config-header';
+import getTooltips from './getTooltips';
 
 type MachineDataViewProps = {
   configId: string;
@@ -85,7 +86,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           ID{' '}
@@ -99,7 +100,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {machineConfigData.owner?.label}
         </Col>
@@ -116,7 +117,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {machineConfigData.description?.label}
         </Col>
@@ -164,8 +165,9 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     for (let machineConfig of parentConfig.machineConfigs) {
       list.push({
         key: machineConfig.id,
-        label: getConfigHeader(machineConfig.name, items),
+        label: machineConfig.name /* getConfigHeader(machineConfig.name, items) */,
         children: [childConfigContent(machineConfig)],
+        extra: getTooltips(editable, true, true, editable),
         style: panelStyle,
       });
     }

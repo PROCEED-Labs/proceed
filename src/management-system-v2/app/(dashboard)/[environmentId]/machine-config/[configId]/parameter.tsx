@@ -30,6 +30,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
+import getTooltips from './getTooltips';
 
 type MachineDataViewProps = {
   configId: string;
@@ -110,7 +111,8 @@ export default function Parameters(props: MachineDataViewProps) {
           <Text>{parameter.unit}</Text>
           <Text type="secondary">({parameter.language})</Text>
         </Space>
-        <Space align="center">
+        {getTooltips(editable, true, true, editable)}
+        {/* <Space align="center">
           <Tooltip title="Copy">
             <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 10px' }} />
           </Tooltip>
@@ -125,26 +127,27 @@ export default function Parameters(props: MachineDataViewProps) {
               style={{ margin: '0 10px' }}
             />
           </Tooltip>
-        </Space>
+        </Space> */}
       </Flex>
     </Space.Compact>
   );
 
   const { token } = theme.useToken();
   const panelStyle = {
-    margin: '0 0 16px 0',
+    margin: '0 0 10px 0',
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'solid 1px #d9d9d9',
   };
 
-  const getNestedParameters = (nestedParameters: ConfigParameter[] = []) => {
+  const getNestedParameters = () => {
     if (nestedParameters && nestedParameters.length > 0) {
       return (
         <Collapse
           bordered={false}
           expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
           items={nestedParameters}
+          style={{ display: nestedParameters.length > 0 ? 'block' : 'none' }}
         />
       );
     }
@@ -153,7 +156,7 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const parameterContent = (parameter: ConfigParameter) => (
     <div>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           {' '}
           Key{' '}
@@ -162,7 +165,7 @@ export default function Parameters(props: MachineDataViewProps) {
           <Input disabled={!editable} value={parameter.key} />
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           {' '}
           Value{' '}
@@ -176,7 +179,7 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           {' '}
           Unit{' '}
@@ -190,7 +193,7 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           {' '}
           Language{' '}
@@ -204,7 +207,7 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           Linked Parameters
         </Col>
@@ -223,12 +226,12 @@ export default function Parameters(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '10px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           Nested Parameters
         </Col>
         <Col span={20} className="gutter-row">
-          {getNestedParameters(nestedParameters)}
+          {getNestedParameters()}
           {editable && (
             <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
           )}

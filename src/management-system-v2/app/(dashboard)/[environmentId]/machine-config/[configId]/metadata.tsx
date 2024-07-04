@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig } from '@/lib/data/machine-config-schema';
+import { AbstractConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { KeyOutlined, UserOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
@@ -17,6 +17,7 @@ import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree
 type MachineDataViewProps = {
   configId: string;
   selectedMachineConfig: TreeFindStruct;
+  customConfig?: AbstractConfig;
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
   editingEnabled: boolean;
@@ -36,7 +37,9 @@ export default function MetaData(props: MachineDataViewProps) {
   const rootMachineConfig = { ...props.rootMachineConfig };
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
-    : defaultConfiguration();
+    : props.customConfig
+      ? props.customConfig
+      : defaultConfiguration();
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
@@ -65,12 +68,11 @@ export default function MetaData(props: MachineDataViewProps) {
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
-
   const editable = props.editingEnabled;
 
   return (
     <div>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           ID{' '}
@@ -84,7 +86,7 @@ export default function MetaData(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           Owner{' '}
@@ -102,7 +104,7 @@ export default function MetaData(props: MachineDataViewProps) {
           </Tooltip>
         </Col>
       </Row>
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
           Description{' '}

@@ -86,6 +86,35 @@ export const getAttachmentProcessBase64Image = async (pageId: string, processId:
   return base64;
 };
 
+export const getAttachmentProcessBpmn = async (pageId: string, processId: string) => {
+  const attachments = await getAttachments(pageId);
+  console.log('attachments', attachments);
+  const processAttachment = attachments.results.find(
+    (attachment: { title: string }) => attachment.title === `${processId}.bpmn`,
+  );
+  console.log('processAttachment', processAttachment);
+
+  const processBpmnURL = `${attachments._links.base}${processAttachment._links.download}`;
+  console.log('processImageURL', processBpmnURL);
+
+  const apiToken =
+    'ATATT3xFfGF0GbPbaGHtjHkCBb-H5eOKNlIM8NBs-ofrD22TFZO7DaOauxH3ras3xrtp2cv98l27yH3kbmeWcbxDdIZpoSs27_Cy-dMcPp_GDgb8KkNpomM9pnikqhYHNbRMRkgLK7vOzcp5b21_ZAWTr4kexeXfed707-bOqXGsGqiZql9GIxc=09697613';
+  const res = await fetch(processBpmnURL, {
+    method: 'GET',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
+    },
+  });
+
+  console.log('res', res);
+  const arrayBuffer = await res.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const bpmn = buffer.toString('utf-8');
+  console.log('bpmn', bpmn);
+
+  return bpmn;
+};
+
 export const getSpaces = async (jwtToken: any) => {
   console.log('jwtToken', jwtToken);
   const tokenVerified = await verifyJwt(jwtToken);

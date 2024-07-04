@@ -3,15 +3,12 @@
 import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { KeyOutlined, UserOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tooltip, Collapse, theme, Dropdown } from 'antd';
+import { Col, Row } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import { Metadata } from 'libphonenumber-js';
 import MetaData from './metadata';
 
 type MachineDataViewProps = {
@@ -96,51 +93,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   return (
     <div>
-      {/*<Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          ID{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input disabled value={editingConfig.id} prefix={<KeyOutlined />} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {editingConfig.owner?.label}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input
-            disabled={!editable}
-            value={editingConfig.owner?.value}
-            prefix={<UserOutlined />}
-          />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {editingConfig.description?.label}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <TextArea disabled={!editable} value={editingConfig.description?.value} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      */}
       <MetaData
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}

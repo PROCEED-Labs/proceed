@@ -3,13 +3,7 @@
 import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import {
-  KeyOutlined,
-  UserOutlined,
-  DeleteOutlined,
-  CaretRightOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { KeyOutlined, UserOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tooltip, Collapse, Dropdown, theme } from 'antd';
@@ -17,8 +11,8 @@ import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
 import Parameters from './parameter';
-import getConfigHeader from './config-header';
 import getTooltips from './getTooltips';
+import MetaData from './metadata';
 
 type MachineDataViewProps = {
   configId: string;
@@ -37,7 +31,8 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const firstRender = useRef(true);
   const parentConfig = { ...props.parentConfig };
-
+  const saveParentConfig = props.backendSaveParentConfig;
+  const configId = props.configId;
   const editingConfig = props.selectedConfig
     ? { ...props.selectedConfig.selection }
     : defaultConfiguration();
@@ -86,58 +81,22 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {' '}
-          ID{' '}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input disabled value={machineConfigData.id} prefix={<KeyOutlined />} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {machineConfigData.owner?.label}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input
-            disabled={!editable}
-            value={machineConfigData.owner?.value}
-            prefix={<UserOutlined />}
-          />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          {machineConfigData.description?.label}
-        </Col>
-        <Col span={21} className="gutter-row">
-          <TextArea disabled={!editable} value={machineConfigData.description?.value} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
+      <MetaData
+        editingEnabled={editable}
+        backendSaveMachineConfig={saveParentConfig}
+        customConfig={editingConfig}
+        configId={configId}
+        selectedMachineConfig={{ parent: parentConfig, selection: machineConfigData }}
+        rootMachineConfig={parentConfig}
+      />
       <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           Parameters
         </Col>
         <Col span={21} className="gutter-row">
           <Parameters
-            backendSaveParentConfig={props.backendSaveParentConfig}
-            configId={props.configId}
+            backendSaveParentConfig={saveParentConfig}
+            configId={configId}
             parentConfig={parentConfig}
             selectedConfig={{ parent: parentConfig, selection: machineConfigData }}
             editingEnabled={editable}

@@ -74,6 +74,27 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
   return undefined;
 }
 
+export function deleteParameter(id: string, parentConfig: ParentConfig): boolean {
+  let p = findParameter(id, parentConfig, 'config');
+  if (!p) return false;
+  let parent;
+  if (p.type === 'parameter') {
+    parent = p.parent as ConfigParameter;
+    parent.nestedParameters = parent.nestedParameters.filter((node, _) => {
+      if (node.id) return id.indexOf(node.id) === -1;
+      return true;
+    });
+  } else {
+    parent = p.parent as AbstractConfig;
+    parent.parameters = parent.parameters.filter((node, _) => {
+      if (node.id) return id.indexOf(node.id) === -1;
+      return true;
+    });
+  }
+
+  return true;
+}
+
 export function findParameter(
   id: string,
   _parent: AbstractConfig | ConfigParameter,
@@ -84,7 +105,7 @@ export function findParameter(
     let parent = _parent as ParentConfig;
     for (let parameter of parent.parameters) {
       if (parameter.id === id) {
-        return { selection: parameter, parent: _parent, type: type };
+        return { selection: parameter, parent: _parent, type: 'config' };
       }
       found = findParameter(id, parameter, 'parameter');
       if (found) return found;
@@ -94,7 +115,7 @@ export function findParameter(
     if (parent.targetConfig) {
       for (let parameter of parent.targetConfig.parameters) {
         if (parameter.id === id) {
-          return { selection: parameter, parent: parent.targetConfig, type: type };
+          return { selection: parameter, parent: parent.targetConfig, type: 'target-config' };
         }
         found = findParameter(id, parameter, 'parameter');
         if (found) return found;
@@ -105,7 +126,7 @@ export function findParameter(
     for (let machineConfig of parent.machineConfigs) {
       for (let parameter of machineConfig.parameters) {
         if (parameter.id === id) {
-          return { selection: parameter, parent: machineConfig, type: type };
+          return { selection: parameter, parent: machineConfig, type: 'machine-config' };
         }
         found = findParameter(id, parameter, 'parameter');
         if (found) return found;
@@ -117,7 +138,7 @@ export function findParameter(
     let parent = _parent as ConfigParameter;
     for (let parameter of parent.nestedParameters) {
       if (parameter.id === id) {
-        return { selection: parameter, parent: _parent, type: type };
+        return { selection: parameter, parent: _parent, type: 'parameter' };
       }
       found = findParameter(id, parameter, 'parameter');
       if (found) return found;
@@ -146,7 +167,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [parameterUnit, setParameterUnit] = useState<string>('');
   const [parameterLanguage, setParameterLanguage] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [selectedMachineConfig, setSelectedMachineConfig] = useState<TreeFindStruct>(undefined);
+  const [selectedMachineConfig, setSelectedMachineConfig] = useState<
+    TreeFindStruct | TreeFindParameterStruct
+  >(undefined);
 
   const changeName = (e: any) => {
     let newName = e.target.value;
@@ -266,13 +289,21 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     },
   ) => {
     setSelectedOnTree(selectedKeys);
-    let foundMachine: TreeFindStruct = { parent: parentConfig, selection: parentConfig };
+    let foundMachine: TreeFindStruct | TreeFindParameterStruct = {
+      parent: parentConfig,
+      selection: parentConfig,
+    };
     // Check if it is not the parent config
     if (selectedKeys.length !== 0 && selectedKeys.indexOf(parentConfig.id) === -1) {
       const [_configId, _configType] = selectedKeys[0].toString().split('|', 2);
       //Then search the right one
       let ref = findConfig(_configId, parentConfig);
       if (ref !== undefined) foundMachine = ref;
+      else {
+        // try to find parameter
+        let ref2 = findParameter(_configId, parentConfig, 'config');
+        if (ref2 !== undefined) foundMachine = ref2;
+      }
     }
     setSelectedMachineConfig(foundMachine);
     props.onSelectConfig(foundMachine);
@@ -282,11 +313,19 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     node: EventDataNode<TreeDataNode>;
   }) => {
     // Lets fix to only one selection for now
-    const machineId = info.node.key;
-    setSelectedOnTree([machineId]);
-    let foundMachine: TreeFindStruct = { parent: parentConfig, selection: parentConfig };
-    let ref = findConfig(machineId.toString(), parentConfig);
+    const [_configId, _configType] = info.node.key.toString().split('|', 2);
+    setSelectedOnTree([info.node.key]);
+    let foundMachine: TreeFindStruct | TreeFindParameterStruct = {
+      parent: parentConfig,
+      selection: parentConfig,
+    };
+    let ref = findConfig(_configId, parentConfig);
     if (ref !== undefined) foundMachine = ref;
+    else {
+      // try to find parameter
+      let ref2 = findParameter(_configId, parentConfig, 'config');
+      if (ref2 !== undefined) foundMachine = ref2;
+    }
     setSelectedMachineConfig(foundMachine);
   };
 
@@ -437,7 +476,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       parentConfig.targetConfig = undefined;
     }
     parentConfig.machineConfigs = childrenMachineConfigList;
-
+    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
+    deleteParameter(_configId, parentConfig);
     saveAndUpdateElements();
   };
   const updateTree = () => {
@@ -552,12 +592,24 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       </Dropdown>
       <Modal
         open={deleteConfirmOpen}
-        title={'Deleting ' + (selectedMachineConfig ? selectedMachineConfig.selection.name : '')}
+        title={
+          'Deleting ' +
+          (selectedMachineConfig
+            ? 'name' in selectedMachineConfig.selection
+              ? selectedMachineConfig.selection.name
+              : selectedMachineConfig.selection.key
+            : '')
+        }
         onOk={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       >
         <p>
-          Are you sure you want to delete the configuration {selectedMachineConfig?.selection.name}{' '}
+          Are you sure you want to delete the configuration{' '}
+          {selectedMachineConfig
+            ? 'name' in selectedMachineConfig.selection
+              ? selectedMachineConfig.selection.name
+              : selectedMachineConfig.selection.key
+            : ''}{' '}
           with id {selectedMachineConfig?.selection.id}?
         </p>
       </Modal>

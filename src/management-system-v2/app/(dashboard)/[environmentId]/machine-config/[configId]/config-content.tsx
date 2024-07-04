@@ -29,7 +29,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
 
   useEffect(() => {
     setSelectedConfig({ parent: parentConfig, selection: parentConfig });
-  }, []);
+  }, [parentConfig]);
 
   const onSelectConfig = (relation: TreeFindStruct) => {
     setSelectedConfig(relation);

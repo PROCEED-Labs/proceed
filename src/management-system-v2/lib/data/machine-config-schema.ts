@@ -72,7 +72,7 @@ export type PropertyContent = {
 
 export type Property<T> = {
   key: T; //'description' | 'owner' | 'userId' | 'custom' | 'machine' | 'param'
-  values: PropertyContent[];
+  content: PropertyContent[];
 };
 
 export type Parameter = Property<'param'> & //change name to ConfigParameter later

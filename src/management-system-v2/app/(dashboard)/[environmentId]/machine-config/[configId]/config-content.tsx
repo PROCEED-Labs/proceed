@@ -6,8 +6,9 @@ import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Button, Layout } from 'antd';
 import ConfigEditor from './config-editor';
-import ConfigurationTreeView, { TreeFindStruct } from './machine-tree-view';
+import ConfigurationTreeView from './machine-tree-view';
 import { useRouter } from 'next/navigation';
+import { TreeFindParameterStruct, TreeFindStruct } from '../configuration-helper';
 
 const { Sider } = Layout;
 
@@ -21,7 +22,10 @@ export default function ConfigContent(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const router = useRouter();
-  const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct>(undefined);
+  const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct | TreeFindParameterStruct>({
+    selection: props.originalParentConfig,
+    parent: props.originalParentConfig,
+  });
 
   const configId = props.configId;
   const saveConfig = props.backendSaveParentConfig;
@@ -31,7 +35,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
     setSelectedConfig({ parent: parentConfig, selection: parentConfig });
   }, [parentConfig]);
 
-  const onSelectConfig = (relation: TreeFindStruct) => {
+  const onSelectConfig = (relation: TreeFindStruct | TreeFindParameterStruct) => {
     setSelectedConfig(relation);
   };
 
@@ -71,12 +75,16 @@ export default function ConfigContent(props: VariablesEditorProps) {
         onClick={() => setCollapsed(!collapsed)}
         style={{ fontSize: '24px' }}
       />
-      <ConfigEditor
-        backendSaveParentConfig={saveConfig}
-        configId={configId}
-        parentConfig={parentConfig}
-        selectedConfig={selectedConfig}
-      />
+      {selectedConfig?.selection.type !== 'param' ? (
+        <ConfigEditor
+          backendSaveParentConfig={saveConfig}
+          configId={configId}
+          parentConfig={parentConfig}
+          selectedConfig={selectedConfig as TreeFindStruct}
+        />
+      ) : (
+        <div></div>
+      )}
     </Layout>
   );
 }

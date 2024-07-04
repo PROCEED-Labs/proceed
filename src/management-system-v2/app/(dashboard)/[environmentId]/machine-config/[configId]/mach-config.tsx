@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tooltip, Collapse, Dropdown, theme } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import Parameters from './parameter';
 import getTooltips from './getTooltips';
 import MetaData from './metadata';

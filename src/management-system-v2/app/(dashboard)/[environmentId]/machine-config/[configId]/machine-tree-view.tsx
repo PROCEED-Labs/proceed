@@ -13,6 +13,15 @@ import { Key, useEffect, useRef, useState } from 'react';
 import { v3, v4 } from 'uuid';
 import TextArea from 'antd/es/input/TextArea';
 import { useEnvironment } from '@/components/auth-can';
+import {
+  TreeFindParameterStruct,
+  TreeFindStruct,
+  createMachineConfigInParent,
+  createTargetConfigInParent,
+  deleteParameter,
+  findConfig,
+  findParameter,
+} from '../configuration-helper';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -21,131 +30,6 @@ type ConfigurationTreeViewProps = {
   onSelectConfig: Function;
   onUpdate: Function;
 };
-
-export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig } | undefined;
-export type TreeFindParameterStruct =
-  | {
-      selection: ConfigParameter;
-      parent: AbstractConfig | ConfigParameter;
-      type: AbstractConfig['type'] | 'parameter';
-    }
-  | undefined;
-
-export function defaultConfiguration(): AbstractConfig {
-  const date = new Date().toUTCString();
-  return {
-    id: v4(),
-    type: 'config',
-    environmentId: '',
-    owner: { label: 'Owner', value: '' },
-    picture: { label: 'Picture', value: '' },
-    name: 'Default Machine Configuration',
-    description: { label: 'Description', value: '' },
-    variables: [],
-    customFields: [],
-    parameters: [],
-    departments: [],
-    inEditingBy: [],
-    createdOn: date,
-    lastEdited: date,
-    sharedAs: 'protected',
-    shareTimestamp: 0,
-    allowIframeTimestamp: 0,
-    versions: [],
-    folderId: '',
-    createdBy: '',
-    lastEditedBy: '',
-    lastEditedOn: '',
-  } as AbstractConfig;
-}
-
-export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
-  if (id === _parent.id) {
-    return { selection: _parent, parent: _parent };
-  }
-  if (_parent.targetConfig && id === _parent.targetConfig.id) {
-    return { selection: _parent.targetConfig, parent: _parent };
-  }
-  for (let machineConfig of _parent.machineConfigs) {
-    if (machineConfig.id === id) {
-      return { selection: machineConfig, parent: _parent };
-    }
-  }
-  return undefined;
-}
-
-export function deleteParameter(id: string, parentConfig: ParentConfig): boolean {
-  let p = findParameter(id, parentConfig, 'config');
-  if (!p) return false;
-  let parent;
-  if (p.type === 'parameter') {
-    parent = p.parent as ConfigParameter;
-    parent.nestedParameters = parent.nestedParameters.filter((node, _) => {
-      if (node.id) return id.indexOf(node.id) === -1;
-      return true;
-    });
-  } else {
-    parent = p.parent as AbstractConfig;
-    parent.parameters = parent.parameters.filter((node, _) => {
-      if (node.id) return id.indexOf(node.id) === -1;
-      return true;
-    });
-  }
-
-  return true;
-}
-
-export function findParameter(
-  id: string,
-  _parent: AbstractConfig | ConfigParameter,
-  type: AbstractConfig['type'] | 'parameter',
-): TreeFindParameterStruct {
-  let found = undefined;
-  if (type === 'config') {
-    let parent = _parent as ParentConfig;
-    for (let parameter of parent.parameters) {
-      if (parameter.id === id) {
-        return { selection: parameter, parent: _parent, type: 'config' };
-      }
-      found = findParameter(id, parameter, 'parameter');
-      if (found) return found;
-    }
-    if (found) return found;
-    // search in targetConfig
-    if (parent.targetConfig) {
-      for (let parameter of parent.targetConfig.parameters) {
-        if (parameter.id === id) {
-          return { selection: parameter, parent: parent.targetConfig, type: 'target-config' };
-        }
-        found = findParameter(id, parameter, 'parameter');
-        if (found) return found;
-      }
-    }
-    // search in all machine configs
-    if (found) return found;
-    for (let machineConfig of parent.machineConfigs) {
-      for (let parameter of machineConfig.parameters) {
-        if (parameter.id === id) {
-          return { selection: parameter, parent: machineConfig, type: 'machine-config' };
-        }
-        found = findParameter(id, parameter, 'parameter');
-        if (found) return found;
-      }
-      if (found) return found;
-    }
-    if (found) return found;
-  } else {
-    let parent = _parent as ConfigParameter;
-    for (let parameter of parent.nestedParameters) {
-      if (parameter.id === id) {
-        return { selection: parameter, parent: _parent, type: 'parameter' };
-      }
-      found = findParameter(id, parameter, 'parameter');
-      if (found) return found;
-    }
-  }
-  return found;
-}
 
 export default function ConfigurationTreeView(props: ConfigurationTreeViewProps) {
   const router = useRouter();
@@ -422,32 +306,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setTreeData(configArray);
   };
 
-  //TODO: Put this in a separate file
   const createTarget = () => {
-    // We can only have one target configuration
-    if (parentConfig.targetConfig) return;
-    let foundMachine = parentConfig;
-    foundMachine.targetConfig = {
-      ...defaultConfiguration(),
-      name: name,
-      description: { label: 'Description', value: description },
-      type: 'target-config',
-      owner: foundMachine.owner,
-      environmentId: foundMachine.environmentId,
-    };
+    createTargetConfigInParent(parentConfig, name, description);
     saveAndUpdateElements();
   };
 
   const createMachine = () => {
-    parentConfig.machineConfigs.push({
-      ...defaultConfiguration(),
-      name: name,
-      description: { label: 'Description', value: description },
-      machine: { label: 'Machine', value: '' },
-      type: 'machine-config',
-      owner: parentConfig.owner,
-      environmentId: parentConfig.environmentId,
-    });
+    createMachineConfigInParent(parentConfig, name, description);
     saveAndUpdateElements();
   };
 

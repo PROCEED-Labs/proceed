@@ -29,7 +29,7 @@ import {
 
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Text from 'antd/es/typography/Text';
@@ -78,7 +78,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
 
   const selectedVersion =
     editingConfig.versions.find(
-      (version) => version.version === parseInt(selectedVersionId ?? '-1'),
+      (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
     ) ?? LATEST_VERSION;
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
@@ -163,16 +163,25 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     },
   ];
 
-  const configHeaderDropdownItems = [
-    {
-      key: '1',
-      label: 'Target Configuration',
-    },
-    {
-      key: '2',
+  const configHeaderDropdownItems = () => {
+    const menu = [];
+    if (parentConfig.targetConfig === undefined) {
+      menu.push({
+        key: 'target-config',
+        label: 'Target Configuration',
+      });
+    }
+    menu.push({
+      key: 'machine-config',
       label: 'Machine Configuration',
-    },
-  ];
+    });
+    return menu;
+  };
+
+  const onClickAddMachineButton = (e: any) => {
+    if (e.key === 'target-config') {
+    }
+  };
 
   const updateItems = (panelStyle: {
     marginBottom: number;
@@ -335,7 +344,12 @@ export default function ConfigEditor(props: MachineDataViewProps) {
             </Space.Compact>
           </Space>
           <Space>
-            {editable && getAddButton('Add Child Configuration', configHeaderDropdownItems)}
+            {editable &&
+              getAddButton(
+                'Add Child Configuration',
+                configHeaderDropdownItems(),
+                onClickAddMachineButton,
+              )}
           </Space>
           <Space>
             <Radio.Group value={position} onChange={onModeChange}>

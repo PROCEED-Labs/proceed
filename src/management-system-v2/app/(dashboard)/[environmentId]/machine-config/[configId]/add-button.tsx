@@ -22,8 +22,9 @@ const getDropdown = (
     key: string;
     label: string;
   }[],
+  onClickHandle: any,
 ) => {
-  return <Dropdown menu={{ items }}>{getButton(label)}</Dropdown>;
+  return <Dropdown menu={{ items, onClick: onClickHandle }}>{getButton(label)}</Dropdown>;
 };
 
 const getAddButton = (
@@ -32,9 +33,10 @@ const getAddButton = (
     key: string;
     label: string;
   }[] = [],
+  onClickHandle: any,
 ) => {
   if (items.length > 0) {
-    return getDropdown(label, items);
+    return getDropdown(label, items, onClickHandle);
   }
   return getButton(label);
 };

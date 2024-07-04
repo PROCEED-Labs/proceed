@@ -27,7 +27,7 @@ import {
 import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from './machine-tree-view';
+import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
@@ -151,7 +151,7 @@ export default function Parameters(props: MachineDataViewProps) {
         />
       );
     }
-    return getAddButton('Add Nested Parameter');
+    return getAddButton('Add Nested Parameter', undefined, () => {});
   };
 
   const parameterContent = (parameter: ConfigParameter) => (
@@ -233,7 +233,9 @@ export default function Parameters(props: MachineDataViewProps) {
         <Col span={20} className="gutter-row">
           {getNestedParameters()}
           {editable && (
-            <Space style={{ margin: '10px 0 0 0' }}>{getAddButton('Add Nested Parameter')}</Space>
+            <Space style={{ margin: '10px 0 0 0' }}>
+              {getAddButton('Add Nested Parameter', undefined, () => {})}
+            </Space>
           )}
         </Col>
         <Col span={1} className="gutter-row">
@@ -266,7 +268,7 @@ export default function Parameters(props: MachineDataViewProps) {
         size="small"
         items={getParameterItems()}
       />
-      {editable && <Space>{getAddButton('Add Parameter')}</Space>}
+      {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
     </>
   );
 }

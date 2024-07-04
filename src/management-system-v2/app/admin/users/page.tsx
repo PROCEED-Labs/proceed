@@ -39,7 +39,7 @@ export default async function UsersPage() {
     const orgs = getUserOrganizationEnvironments(user.id).length;
     if (orgs > 0) console.log(getUserOrganizationEnvironments(user.id));
 
-    if (user.guest)
+    if (user.guest || 'confluence' in user)
       return {
         ...user,
         guest: false as const,

@@ -59,20 +59,13 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         rootMachineConfig={parentConfig}
         configType="machine"
       />
-      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-        <Col span={2} className="gutter-row">
-          Parameters
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Parameters
-            backendSaveParentConfig={saveParentConfig}
-            configId={configId}
-            parentConfig={parentConfig}
-            selectedConfig={{ parent: parentConfig, selection: machineConfigData }}
-            editingEnabled={editable}
-          />
-        </Col>
-      </Row>
+      <Parameters
+        backendSaveParentConfig={saveParentConfig}
+        configId={configId}
+        parentConfig={parentConfig}
+        selectedConfig={{ parent: parentConfig, selection: machineConfigData }}
+        editingEnabled={editable}
+      />
     </div>
   );
 

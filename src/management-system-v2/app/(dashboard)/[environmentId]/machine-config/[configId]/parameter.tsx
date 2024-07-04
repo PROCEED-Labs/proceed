@@ -254,15 +254,24 @@ export default function Parameters(props: MachineDataViewProps) {
     return list;
   };
 
+  const parameterItems = getParameterItems();
+
   return (
     <>
-      <Collapse
-        expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-        ghost
-        size="small"
-        items={getParameterItems()}
-      />
-      {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
+      <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
+        <Col span={2} className="gutter-row">
+          {(editable || parameterItems.length > 0) && 'Parameters'}
+        </Col>
+        <Col span={21} className="gutter-row">
+          <Collapse
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            ghost
+            size="small"
+            items={parameterItems}
+          />
+          {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
+        </Col>
+      </Row>
     </>
   );
 }

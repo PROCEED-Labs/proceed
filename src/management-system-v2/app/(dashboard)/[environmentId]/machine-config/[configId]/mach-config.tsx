@@ -48,37 +48,6 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const editable = props.editingEnabled;
 
-  const items = [
-    {
-      key: '1',
-      label: 'Custom Field',
-    },
-    {
-      key: '2',
-      label: 'Attachment',
-    },
-    {
-      key: '3',
-      label: 'Machine',
-    },
-    {
-      key: '4',
-      label: 'Picture',
-    },
-    {
-      key: '5',
-      label: 'ID',
-    },
-    {
-      key: '6',
-      label: 'Owner',
-    },
-    {
-      key: '7',
-      label: 'Description',
-    },
-  ];
-
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
       <MetaData

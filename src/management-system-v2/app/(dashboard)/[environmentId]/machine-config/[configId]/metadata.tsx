@@ -13,8 +13,6 @@ import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import getAddButton from './add-button';
 
-//TODO: make this reusable for the target and machine configurations?
-
 type MachineDataViewProps = {
   configId: string;
   selectedMachineConfig: TreeFindStruct;

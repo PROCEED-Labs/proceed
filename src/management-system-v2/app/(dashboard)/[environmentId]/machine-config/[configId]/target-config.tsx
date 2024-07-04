@@ -64,33 +64,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   const editable = props.editingEnabled;
 
-  const items = [
-    {
-      key: '1',
-      label: 'Custom Field',
-    },
-    {
-      key: '2',
-      label: 'Attachment',
-    },
-    {
-      key: '3',
-      label: 'Picture',
-    },
-    {
-      key: '4',
-      label: 'ID',
-    },
-    {
-      key: '5',
-      label: 'Owner',
-    },
-    {
-      key: '6',
-      label: 'Description',
-    },
-  ];
-
   return (
     <div>
       <MetaData

@@ -250,11 +250,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               editingEnabled={editable}
             />
           ),
-          /* extra: editable && (
-            <Tooltip title="Add Machine Configuration">
-              <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 0 0 10px' }} />
-            </Tooltip>
-          ), */
           style: panelStyle,
         });
       }

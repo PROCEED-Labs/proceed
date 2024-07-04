@@ -13,29 +13,32 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '400px',
         border: '1px solid #f0f0f0',
-        borderRadius: '0.5rem',
+        borderRadius: '8px',
       }}
     >
       <div
         style={{
-          padding: '0.75rem',
+          height: '100px',
+          padding: '10px',
           borderBottom: '1px solid #f0f0f0',
           backgroundColor: '#f0f0f0',
           alignItems: 'center',
         }}
       >
-        <img style={{ width: '3rem', marginRight: '0.75rem' }} src="/proceed-icon.png"></img>
+        <img style={{ width: '42px', marginRight: '10px' }} src="/proceed-icon.png"></img>
         <span style={{ fontWeight: 'bold' }}>{definitionsName}</span>
       </div>
-      <div style={{ flexGrow: 1 }}>
+      <div>
         <img src={`data:image/png;base64, ${base64}`}></img>
       </div>
       <div
-        style={{ padding: '0.75rem', borderTop: '1px solid #f0f0f0', backgroundColor: '#f0f0f0' }}
+        style={{
+          height: '100px',
+          padding: '10px',
+          borderTop: '1px solid #f0f0f0',
+          backgroundColor: '#f0f0f0',
+        }}
       >
         <span style={{ fontWeight: 'bold' }}>Description:</span> <span> {documentation}</span>
       </div>

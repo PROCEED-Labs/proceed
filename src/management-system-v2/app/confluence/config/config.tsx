@@ -9,9 +9,11 @@ import { updateConfluenceClientSelectedSpace } from '@/lib/data/confluence';
 const SpaceSelectionTab = ({
   userEnvironments,
   onSelect,
+  initialSpace,
 }: {
   userEnvironments: Environment[];
   onSelect: (value: { label: string; value: string } | null) => void;
+  initialSpace: string;
 }) => {
   const options = userEnvironments
     .filter((environment) => environment.organization)
@@ -21,6 +23,8 @@ const SpaceSelectionTab = ({
       }
       return { label: environment.id, value: environment.id };
     });
+
+  const initialOption = options.find((option) => option.value === initialSpace);
 
   return (
     <div style={{ minHeight: '500px' }}>
@@ -34,7 +38,12 @@ const SpaceSelectionTab = ({
       >
         <div style={{ minWidth: '300px', marginRight: '2rem' }}>
           <Label htmlFor="single-select-example">Choose for PROCEED Space</Label>
-          <Select inputId="single-select-example" options={options} onChange={onSelect} />
+          <Select
+            inputId="single-select-example"
+            options={options}
+            onChange={onSelect}
+            defaultValue={initialOption}
+          />
         </div>
         <span>
           Processes are stored and managed by PROCEED. Choose for your desired PROCEED Space to
@@ -48,9 +57,11 @@ const SpaceSelectionTab = ({
 const Config = ({
   userEnvironments,
   clientKey,
+  initialSpace,
 }: {
   userEnvironments: Environment[];
   clientKey: string;
+  initialSpace: string;
 }) => {
   console.log('environments', userEnvironments);
   const selectSpace = async (selectedSpace: { label: string; value: string } | null) => {
@@ -107,6 +118,7 @@ const Config = ({
       <TabPanel>
         <SpaceSelectionTab
           userEnvironments={userEnvironments}
+          initialSpace={initialSpace}
           onSelect={selectSpace}
         ></SpaceSelectionTab>
       </TabPanel>

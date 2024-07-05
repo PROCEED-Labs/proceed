@@ -7,6 +7,7 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import Config from './config';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 
 const ConfigPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
   console.log('searchparams', searchParams.jwt);
@@ -30,6 +31,8 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
       ),
     );
 
+    const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
+
     return (
       <Layout
         hideFooter={true}
@@ -39,7 +42,11 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
         activeSpace={{ spaceId: userId || '', isOrganization: false }}
       >
         <div style={{ padding: '1rem', width: '100%' }}>
-          <Config userEnvironments={userEnvironments} clientKey={clientKey}></Config>
+          <Config
+            userEnvironments={userEnvironments}
+            clientKey={clientKey}
+            initialSpace={confluenceClientInfos.proceedSpace}
+          ></Config>
         </div>
       </Layout>
     );

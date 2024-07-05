@@ -7,66 +7,62 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import ManagableProcessList from './managable-process-list';
 import { headers, cookies } from 'next/headers';
+import { signIn } from 'next-auth/react';
 
 const ConfluencePage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
   const jwt = searchParams.jwt;
-  const res = await fetch('https://proceed-test.atlassian.net/wiki/api/v2/pages', {
-    method: 'GET',
-    headers: {
-      Authorization: `JWT ${jwt}`,
-    },
-  });
+  console.log('jwt', jwt);
+  // const signInRes = await signIn('confluence-signin', { token: jwt, redirect: false });
+  // console.log('signInRes', signInRes);
 
   // const headersList = headers();
   // const headersObject = Object.fromEntries(headersList.entries());
   // console.log(headersObject);
   // const cookiesList = cookies().getAll();
   // console.log(cookiesList);
-
+  console.log('confluence page');
   const { userId } = await getCurrentUser();
-  const { ability } = await getCurrentEnvironment(userId);
-  // get all the processes the user has access to
-  const ownedProcesses = (await getProcesses(ability)) as Process[];
+  console.log('userId', userId);
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  if (userId) {
+    const { ability } = await getCurrentEnvironment(userId);
+    console.log('ability', ability);
+    // get all the processes the user has access to
+    const ownedProcesses = (await getProcesses(ability)) as Process[];
+
+    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    userEnvironments.push(
+      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
+        getEnvironmentById(environmentId),
+      ),
+    );
+
+    return (
+      <Layout
+        hideFooter={true}
+        loggedIn={!!userId}
+        layoutMenuItems={[]}
+        userEnvironments={userEnvironments}
+        activeSpace={{ spaceId: userId || '', isOrganization: false }}
+      >
+        <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
+          <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout
       hideFooter={true}
-      loggedIn={!!userId}
+      loggedIn={false}
       layoutMenuItems={[]}
-      userEnvironments={userEnvironments}
-      activeSpace={{ spaceId: userId || '', isOrganization: false }}
+      userEnvironments={[]}
+      activeSpace={{ spaceId: '', isOrganization: false }}
+      redirectUrl="/confluence"
     >
-      <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
-        <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>
-      </div>
+      <span>OKAY</span>
     </Layout>
-    // <div>
-    //   <div>
-    //     <span>COOKIES:</span>
-    //     {cookiesList.map((cookie) => (
-    //       <div key={cookie.name}>
-    //         <span>Name: {cookie.name}</span>
-    //         <span>Value: {cookie.value}</span>
-    //       </div>
-    //     ))}
-    //   </div>
-    //   <div>
-    //     <span>HEADER:</span>
-    //     {Object.keys(headersObject).map((headerKey) => (
-    //       <div key={headerKey}>
-    //         <span>Key: {headerKey}</span>
-    //         <span>Value: {headersObject[headerKey]}</span>
-    //       </div>
-    //     ))}
-    //   </div>
-    // </div>
   );
 };
 

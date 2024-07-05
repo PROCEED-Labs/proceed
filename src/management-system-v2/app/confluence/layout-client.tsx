@@ -1,13 +1,14 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect } from 'react';
 import { Layout as AntLayout, Grid, MenuProps } from 'antd';
 import cn from 'classnames';
 import { Environment } from '@/lib/data/environment-schema';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { SpaceContext } from '../(dashboard)/[environmentId]/layout-client';
 import './globals.css';
+import { redirect } from 'next/navigation';
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
@@ -19,6 +20,7 @@ const Layout: FC<
     layoutMenuItems: NonNullable<MenuProps['items']>;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideFooter?: boolean;
+    redirectUrl?: string;
   }>
 > = ({
   loggedIn,
@@ -27,20 +29,29 @@ const Layout: FC<
   activeSpace,
   children,
   hideFooter,
+  redirectUrl,
 }) => {
-  // if (window && window.AP) {
-  //   console.log('get Token', window.AP.context);
-  //   window.AP.context.getToken((token) => {
-  //     console.log('JWT Token', token);
-  //     signIn('confluence-signin', { token, redirect: false })
-  //       .then((res) => {
-  //         console.log('signin response', res);
-  //       })
-  //       .catch((err) => {
-  //         console.log('signin catch', err);
-  //       });
-  //   });
-  // }
+  console.log('layout');
+  const session = useSession();
+
+  useEffect(() => {
+    console.log('use effect layout client', session);
+    if (window && window.AP && window.AP.context && session.status === 'unauthenticated') {
+      console.log('get Token', window.AP.context);
+      console.log('redirectUrl', redirectUrl);
+      window.AP.context.getToken((token) => {
+        console.log('JWT Token', token);
+        signIn('confluence-signin', { token, redirect: true, callbackUrl: redirectUrl })
+          .then((res) => {
+            console.log('signin response', res);
+            // if (redirectUrl) redirect(redirectUrl);
+          })
+          .catch((err) => {
+            console.log('signin catch', err);
+          });
+      });
+    }
+  }, [session.status]);
 
   return (
     <SpaceContext.Provider value={activeSpace}>

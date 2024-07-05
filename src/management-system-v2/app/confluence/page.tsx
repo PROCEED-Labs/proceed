@@ -61,7 +61,7 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
       activeSpace={{ spaceId: '', isOrganization: false }}
       redirectUrl="/confluence"
     >
-      <span>OKAY</span>
+      <></>
     </Layout>
   );
 };

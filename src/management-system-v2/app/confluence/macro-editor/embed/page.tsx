@@ -9,25 +9,41 @@ import Layout from '../../layout-client';
 
 const MacroEditorPage = async () => {
   const { userId } = await getCurrentUser();
-  const { ability } = await getCurrentEnvironment(userId);
-  // get all the processes the user has access to
-  const ownedProcesses = (await getProcesses(ability)) as Process[];
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  if (userId) {
+    const { ability } = await getCurrentEnvironment(userId);
+    // get all the processes the user has access to
+    const ownedProcesses = (await getProcesses(ability)) as Process[];
+
+    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    userEnvironments.push(
+      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
+        getEnvironmentById(environmentId),
+      ),
+    );
+    return (
+      <Layout
+        hideFooter
+        loggedIn={!!userId}
+        layoutMenuItems={[]}
+        userEnvironments={userEnvironments}
+        activeSpace={{ spaceId: userId || '', isOrganization: false }}
+      >
+        <MacroEditor processes={ownedProcesses}></MacroEditor>
+      </Layout>
+    );
+  }
+
   return (
     <Layout
       hideFooter
-      loggedIn={!!userId}
+      loggedIn={false}
       layoutMenuItems={[]}
-      userEnvironments={userEnvironments}
-      activeSpace={{ spaceId: userId || '', isOrganization: false }}
+      userEnvironments={[]}
+      activeSpace={{ spaceId: '', isOrganization: false }}
+      redirectUrl="/confluence/macro-editor/embed"
     >
-      <MacroEditor processes={ownedProcesses}></MacroEditor>
+      <></>
     </Layout>
   );
 };

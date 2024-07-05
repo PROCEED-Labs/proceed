@@ -36,7 +36,13 @@ const Layout: FC<
 
   useEffect(() => {
     console.log('use effect layout client', session);
-    if (window && window.AP && window.AP.context && session.status === 'unauthenticated') {
+    if (
+      window &&
+      window.AP &&
+      window.AP.context &&
+      session.status === 'unauthenticated' &&
+      redirectUrl
+    ) {
       console.log('get Token', window.AP.context);
       console.log('redirectUrl', redirectUrl);
       window.AP.context.getToken((token) => {

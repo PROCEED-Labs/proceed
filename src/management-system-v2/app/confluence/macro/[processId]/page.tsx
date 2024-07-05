@@ -13,42 +13,62 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
   console.log('params', params);
 
   const { userId } = await getCurrentUser();
-  const { ability } = await getCurrentEnvironment(userId);
 
-  // get all the processes the user has access to
-  const ownedProcesses = (
-    await Promise.all(
-      (await getProcesses(ability)).map(async (process) => {
-        const res = await getProcessBPMN(process.id, userId);
-        if (typeof res === 'string') {
-          return { ...process, bpmn: res };
-        }
-        return { ...process };
-      }),
-    )
-  ).filter((process) => !!('bpmn' in process)) as Process[];
+  if (userId) {
+    const { ability } = await getCurrentEnvironment(userId);
 
-  const process = ownedProcesses.find((p) => p.id === processId);
+    // get all the processes the user has access to
+    const ownedProcesses = (
+      await Promise.all(
+        (await getProcesses(ability)).map(async (process) => {
+          const res = await getProcessBPMN(process.id, userId);
+          if (typeof res === 'string') {
+            return { ...process, bpmn: res };
+          }
+          return { ...process };
+        }),
+      )
+    ).filter((process) => !!('bpmn' in process)) as Process[];
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+    const process = ownedProcesses.find((p) => p.id === processId);
+
+    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    userEnvironments.push(
+      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
+        getEnvironmentById(environmentId),
+      ),
+    );
+
+    return (
+      <>
+        <Layout
+          hideFooter={true}
+          loggedIn={!!userId}
+          layoutMenuItems={[]}
+          userEnvironments={userEnvironments}
+          activeSpace={{ spaceId: userId || '', isOrganization: false }}
+        >
+          {process ? (
+            <Macro process={process}></Macro>
+          ) : (
+            <span>Process not found for {userId}</span>
+          )}
+        </Layout>
+      </>
+    );
+  }
 
   return (
-    <>
-      <Layout
-        hideFooter={true}
-        loggedIn={!!userId}
-        layoutMenuItems={[]}
-        userEnvironments={userEnvironments}
-        activeSpace={{ spaceId: userId || '', isOrganization: false }}
-      >
-        {process ? <Macro process={process}></Macro> : <span>Process not found for {userId}</span>}
-      </Layout>
-    </>
+    <Layout
+      hideFooter
+      loggedIn={false}
+      layoutMenuItems={[]}
+      userEnvironments={[]}
+      activeSpace={{ spaceId: '', isOrganization: false }}
+      redirectUrl={`/confluence/macro/${processId}`}
+    >
+      <></>
+    </Layout>
   );
 };
 

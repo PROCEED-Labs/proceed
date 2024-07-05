@@ -8,40 +8,32 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import Config from './config';
 
 const ConfigPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  console.log('query', searchParams);
-  const jwt = searchParams.jwt;
-  const res = await fetch('https://proceed-test.atlassian.net/wiki/api/v2/pages', {
-    method: 'GET',
-    headers: {
-      Authorization: `JWT ${jwt}`,
-    },
-  });
-  console.log('res', res);
-  const { session, userId } = await getCurrentUser();
-  const { ability } = await getCurrentEnvironment(userId);
-  // get all the processes the user has access to
-  const ownedProcesses = (await getProcesses(ability)) as Process[];
+  const { userId } = await getCurrentUser();
 
-  const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-  userEnvironments.push(
-    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-      getEnvironmentById(environmentId),
-    ),
-  );
+  if (userId) {
+    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    userEnvironments.push(
+      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
+        getEnvironmentById(environmentId),
+      ),
+    );
 
-  return (
-    <Layout
-      hideFooter={true}
-      loggedIn={!!userId}
-      layoutMenuItems={[]}
-      userEnvironments={userEnvironments}
-      activeSpace={{ spaceId: userId || '', isOrganization: false }}
-    >
-      <div style={{ padding: '1rem', width: '100%' }}>
-        <Config userEnvironments={userEnvironments}></Config>
-      </div>
-    </Layout>
-  );
+    return (
+      <Layout
+        hideFooter={true}
+        loggedIn={!!userId}
+        layoutMenuItems={[]}
+        userEnvironments={userEnvironments}
+        activeSpace={{ spaceId: userId || '', isOrganization: false }}
+      >
+        <div style={{ padding: '1rem', width: '100%' }}>
+          <Config userEnvironments={userEnvironments}></Config>
+        </div>
+      </Layout>
+    );
+  }
+
+  return <div>Log In to continue</div>;
 };
 
 export default ConfigPage;

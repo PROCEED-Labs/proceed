@@ -11,6 +11,8 @@ import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
 import { verifyJwt } from '@/app/confluence/helpers';
+import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -37,16 +39,24 @@ const nextAuthOptions: AuthOptions = {
         if (credentials) {
           try {
             const decodedToken = await verifyJwt(credentials.token);
+            const confluenceClientInfos = await getConfluenceClientInfos(decodedToken.iss);
+            console.log('deocedToken', decodedToken);
 
             const existingUser = getUserById(decodedToken.sub as string);
 
             if (!existingUser) {
-              return addUser({
+              const user = addUser({
                 id: decodedToken.sub as string,
                 username: `Confluence_User_${decodedToken.sub}`,
                 confluence: true,
                 guest: false,
               });
+
+              if (confluenceClientInfos.proceedSpace) {
+                addMember(confluenceClientInfos.proceedSpace, user.id);
+              }
+            } else if (!isMember(confluenceClientInfos.proceedSpace, existingUser.id)) {
+              addMember(confluenceClientInfos.proceedSpace, existingUser.id);
             }
             return existingUser;
           } catch (err) {

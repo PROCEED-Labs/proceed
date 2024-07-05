@@ -50,8 +50,8 @@ export function getAppDataPath() {
  * Find the path to the folder where the info about all Processes is stored
  * @returns {String}
  */
-function getSharedSecretFolder() {
-  return path.join(getAppDataPath(), 'SharedSecret');
+function getConfluenceClientFolder() {
+  return path.join(getAppDataPath(), 'Confluence');
 }
 /**
  * Find the path to the folder where the info about all Processes is stored
@@ -115,34 +115,57 @@ function getUserTaskDir(id) {
 }
 
 /**
- * Saves sharedSecret
+ * Adds new confluence client
  *
  * @param {String} clientKey
  * @param {String} sharedSecret
  * @param {String} baseUrl
  */
-export async function saveSharedSecret(clientKey, sharedSecret, baseUrl) {
-  const sharedSecretDir = getSharedSecretFolder();
+export async function addConfluenceClient(clientKey, sharedSecret, baseUrl) {
+  const confluenceClientDir = getConfluenceClientFolder();
 
-  fse.ensureDirSync(sharedSecretDir);
+  fse.ensureDirSync(confluenceClientDir);
 
-  const sharedSecretData = JSON.stringify({ [clientKey]: { sharedSecret, baseUrl } });
-  fse.writeFileSync(path.join(sharedSecretDir, `sharedSecret.json`), sharedSecretData);
+  const sharedSecretData = JSON.stringify({ clientKey, sharedSecret, baseUrl });
+  fse.writeFileSync(path.join(confluenceClientDir, `${clientKey}.json`), sharedSecretData);
 }
 
 /**
- * Get sharedSecret
+ * Update confluence client infos
+ *
+ * @param {String} clientKey
+ * @param {object} clientInfos
+ */
+export async function updateConfluenceClientInfos(clientKey, newClientInfos) {
+  const initialConfluenceClientInfos = await getConfluenceClientInfos(clientKey);
+
+  if (initialConfluenceClientInfos) {
+    const confluenceClientDir = getConfluenceClientFolder();
+
+    fse.ensureDirSync(confluenceClientDir);
+
+    const sharedSecretData = JSON.stringify({
+      ...initialConfluenceClientInfos,
+      ...newClientInfos,
+      clientKey,
+    });
+    fse.writeFileSync(path.join(confluenceClientDir, `${clientKey}.json`), sharedSecretData);
+  }
+}
+
+/**
+ * Get infos of confluence client
  *
  * @param {String} clientKey
  */
-export async function getSharedSecret() {
-  const sharedSecretDir = getSharedSecretFolder();
-  const sharedSecretFilePath = path.join(sharedSecretDir, 'sharedSecret.json');
+export async function getConfluenceClientInfos(clientKey) {
+  const confluenceClientDir = getConfluenceClientFolder();
+  const confluenceClientFilePath = path.join(confluenceClientDir, `${clientKey}.json`);
 
-  if (fse.existsSync(sharedSecretFilePath)) {
-    const sharedSecretData = JSON.parse(fse.readFileSync(sharedSecretFilePath, 'utf-8'));
+  if (fse.existsSync(confluenceClientFilePath)) {
+    const confluenceClientData = JSON.parse(fse.readFileSync(confluenceClientFilePath, 'utf-8'));
 
-    return sharedSecretData;
+    return confluenceClientData;
   }
   return { error: 'Does not exist' };
 }

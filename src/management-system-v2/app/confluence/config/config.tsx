@@ -4,6 +4,7 @@ import Tabs, { Tab, TabList, TabPanel } from '@atlaskit/tabs';
 import { Label } from '@atlaskit/form';
 import Select from '@atlaskit/select';
 import { createFolder } from '@/lib/data/folders';
+import { updateConfluenceClientSelectedSpace } from '@/lib/data/confluence';
 
 const SpaceSelectionTab = ({
   userEnvironments,
@@ -44,7 +45,13 @@ const SpaceSelectionTab = ({
   );
 };
 
-const Config = ({ userEnvironments }: { userEnvironments: Environment[] }) => {
+const Config = ({
+  userEnvironments,
+  clientKey,
+}: {
+  userEnvironments: Environment[];
+  clientKey: string;
+}) => {
   console.log('environments', userEnvironments);
   const selectSpace = async (selectedSpace: { label: string; value: string } | null) => {
     console.log('selectedSpace', selectedSpace);
@@ -58,6 +65,7 @@ const Config = ({ userEnvironments }: { userEnvironments: Environment[] }) => {
         environmentId: selectedSpace.value,
       });
       console.log('res', res);
+      await updateConfluenceClientSelectedSpace(clientKey, selectedSpace.value);
     }
     const users = JSON.parse((await getConfluenceUsers()) as string).results;
     const atlassianUsers = users.filter(

@@ -6,9 +6,21 @@ import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import Config from './config';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 const ConfigPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
+  console.log('searchparams', searchParams.jwt);
+  const jwtToken = searchParams.jwt;
+  const decoded = jwt.decode(jwtToken, { complete: true });
+  const { iss: clientKey } = decoded!.payload as JwtPayload;
+  console.log('clientKey', clientKey);
+
+  if (!clientKey) {
+    throw new Error('Could not extract ClientKey from given JWT Token');
+  }
+
   const { userId } = await getCurrentUser();
+  console.log('userId', userId);
 
   if (userId) {
     const userEnvironments: Environment[] = [getEnvironmentById(userId)];
@@ -27,7 +39,7 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
         activeSpace={{ spaceId: userId || '', isOrganization: false }}
       >
         <div style={{ padding: '1rem', width: '100%' }}>
-          <Config userEnvironments={userEnvironments}></Config>
+          <Config userEnvironments={userEnvironments} clientKey={clientKey}></Config>
         </div>
       </Layout>
     );

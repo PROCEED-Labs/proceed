@@ -32,8 +32,11 @@ const Page = async ({ params: { processId } }: { params: { processId: string } }
         ></img>
         <span style={{ fontWeight: 'bold' }}>{definitionsName}</span>
       </div>
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        <img src={`data:image/png;base64, ${base64}`}></img>
+      <div style={{ padding: '20px' }}>
+        <img
+          src={`data:image/png;base64, ${base64}`}
+          style={{ display: 'block', margin: 'auto', width: 'auto' }}
+        ></img>
       </div>
       <div
         style={{

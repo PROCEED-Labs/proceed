@@ -53,10 +53,13 @@ const nextAuthOptions: AuthOptions = {
               });
 
               if (confluenceClientInfos.proceedSpace) {
-                addMember(confluenceClientInfos.proceedSpace, user.id);
+                addMember(confluenceClientInfos.proceedSpace.id, user.id);
               }
-            } else if (!isMember(confluenceClientInfos.proceedSpace, existingUser.id)) {
-              addMember(confluenceClientInfos.proceedSpace, existingUser.id);
+            } else if (
+              confluenceClientInfos.proceedSpace &&
+              !isMember(confluenceClientInfos.proceedSpace.id, existingUser.id)
+            ) {
+              addMember(confluenceClientInfos.proceedSpace.id, existingUser.id);
             }
             return existingUser;
           } catch (err) {

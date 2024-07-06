@@ -7,21 +7,60 @@ import { Environment } from '@/lib/data/environment-schema';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { getProcesses } from '@/lib/data/legacy/process';
 import { Process } from '@/lib/data/process-schema';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 
-const MacroPage = async ({ params }: { params: { processId: string } }) => {
+const MacroPage = async ({
+  params,
+  searchParams,
+}: {
+  params: { processId: string };
+  searchParams: any;
+}) => {
+  console.log('searchparams', searchParams.jwt);
+  const jwtToken = searchParams.jwt;
+
+  if (!jwtToken) {
+    return <span>Page can only be accessed inside of Confluence</span>;
+  }
+
+  const decoded = jwt.decode(jwtToken, { complete: true });
+  const { iss: clientKey } = decoded!.payload as JwtPayload;
+  console.log('clientKey', clientKey);
+
+  if (!clientKey) {
+    return <span>Page can only be accessed inside of Confluence</span>;
+  }
+
   const processId = params.processId;
   console.log('params', params);
 
   const { userId } = await getCurrentUser();
 
   if (userId) {
-    const { ability } = await getCurrentEnvironment(userId);
+    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
+    userEnvironments.push(
+      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
+        getEnvironmentById(environmentId),
+      ),
+    );
 
-    // get all the processes the user has access to
+    const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
+    const confluenceSelectedProceedSpace = userEnvironments.find(
+      (environment) => environment.id === confluenceClientInfos.proceedSpace?.id,
+    );
+
+    if (!confluenceSelectedProceedSpace) {
+      return <span>There is no selected PROCEED Space for this Confluence Domain. </span>;
+    }
+
+    const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
+
+    // get all the processes the user has access to in the selected space for confluence
     const ownedProcesses = (
       await Promise.all(
         (await getProcesses(ability)).map(async (process) => {
-          const res = await getProcessBPMN(process.id, userId);
+          const res = await getProcessBPMN(process.id, confluenceSelectedProceedSpace.id);
           if (typeof res === 'string') {
             return { ...process, bpmn: res };
           }
@@ -32,13 +71,6 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
 
     const process = ownedProcesses.find((p) => p.id === processId);
 
-    const userEnvironments: Environment[] = [getEnvironmentById(userId)];
-    userEnvironments.push(
-      ...getUserOrganizationEnvironments(userId).map((environmentId) =>
-        getEnvironmentById(environmentId),
-      ),
-    );
-
     return (
       <>
         <Layout
@@ -46,7 +78,7 @@ const MacroPage = async ({ params }: { params: { processId: string } }) => {
           loggedIn={!!userId}
           layoutMenuItems={[]}
           userEnvironments={userEnvironments}
-          activeSpace={{ spaceId: userId || '', isOrganization: false }}
+          activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
         >
           {process ? (
             <Macro process={process}></Macro>

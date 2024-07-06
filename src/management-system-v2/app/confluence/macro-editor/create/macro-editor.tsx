@@ -14,7 +14,13 @@ import { getPNGFromSVG } from '@/lib/process-export/image-export';
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 import { createAttachment, getAttachmentProcessBase64Image } from '../../helpers';
 
-const MacroEditor = ({ processes }: { processes: Process[] }) => {
+const MacroEditor = ({
+  processes,
+  confluenceFolderId,
+}: {
+  processes: Process[];
+  confluenceFolderId: string;
+}) => {
   const { spaceId } = useEnvironment();
   const [process, setProcess] = useState<Process | undefined>(undefined);
 
@@ -95,26 +101,30 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
         <ProcessModal
           title="Create Process"
           open={true}
-          close={(values) => {
+          close={async (values) => {
             if (values) {
-              addProcesses([{ ...values }], spaceId).then((res) => {
-                if ('error' in res) {
-                  console.log('something went wrong', res.error);
-                } else {
-                  const process = res[0];
-                  console.log('process', process);
-                  storeProcessAttachment(process).then(() => {
-                    if (window.AP && window.AP.confluence) {
-                      window.AP.confluence.saveMacro({ processId: process.id });
-                      window.AP.confluence.closeMacroEditor();
-                    }
-                  });
+              console.log('confluenceFolderId', confluenceFolderId);
+              const res = await addProcesses(
+                [{ ...values, folderId: confluenceFolderId }],
+                spaceId,
+              );
+              console.log('res', res);
+
+              if ('error' in res) {
+                throw new Error('Something went wrong while adding process');
+              } else {
+                const process = res[0];
+                console.log('process', process);
+                await storeProcessAttachment(process);
+
+                if (window.AP && window.AP.confluence) {
+                  window.AP.confluence.saveMacro({ processId: process.id });
                 }
-              });
-            } else {
-              if (window.AP && window.AP.confluence) {
-                window.AP.confluence.closeMacroEditor();
               }
+            }
+
+            if (window.AP && window.AP.confluence) {
+              window.AP.confluence.closeMacroEditor();
             }
           }}
         ></ProcessModal>

@@ -157,6 +157,7 @@ export async function updateConfluenceClientInfos(clientKey, newClientInfos) {
  * Get infos of confluence client
  *
  * @param {String} clientKey
+ * @returns {Promise<{ clientKey: string; sharedSecret: string; baseUrl: string; proceedSpace?: {id: string, confluenceFolderId: string} }>}
  */
 export async function getConfluenceClientInfos(clientKey) {
   const confluenceClientDir = getConfluenceClientFolder();

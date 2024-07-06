@@ -9,11 +9,11 @@ import { updateConfluenceClientSelectedSpace } from '@/lib/data/confluence';
 const SpaceSelectionTab = ({
   userEnvironments,
   onSelect,
-  initialSpace,
+  initialSpaceId,
 }: {
   userEnvironments: Environment[];
   onSelect: (value: { label: string; value: string } | null) => void;
-  initialSpace: string;
+  initialSpaceId?: string;
 }) => {
   const options = userEnvironments
     .filter((environment) => environment.organization)
@@ -24,7 +24,7 @@ const SpaceSelectionTab = ({
       return { label: environment.id, value: environment.id };
     });
 
-  const initialOption = options.find((option) => option.value === initialSpace);
+  const initialOption = options.find((option) => option.value === initialSpaceId);
 
   return (
     <div style={{ minHeight: '500px' }}>
@@ -57,11 +57,11 @@ const SpaceSelectionTab = ({
 const Config = ({
   userEnvironments,
   clientKey,
-  initialSpace,
+  initialSpaceId,
 }: {
   userEnvironments: Environment[];
   clientKey: string;
-  initialSpace: string;
+  initialSpaceId?: string;
 }) => {
   console.log('environments', userEnvironments);
   const selectSpace = async (selectedSpace: { label: string; value: string } | null) => {
@@ -76,7 +76,15 @@ const Config = ({
         environmentId: selectedSpace.value,
       });
       console.log('res', res);
-      await updateConfluenceClientSelectedSpace(clientKey, selectedSpace.value);
+
+      if ('error' in res) {
+        throw new Error('Could not create folder for selected space');
+      }
+
+      await updateConfluenceClientSelectedSpace(clientKey, {
+        id: selectedSpace.value,
+        confluenceFolderId: res.id,
+      });
     }
     const users = JSON.parse((await getConfluenceUsers()) as string).results;
     const atlassianUsers = users.filter(
@@ -118,7 +126,7 @@ const Config = ({
       <TabPanel>
         <SpaceSelectionTab
           userEnvironments={userEnvironments}
-          initialSpace={initialSpace}
+          initialSpaceId={initialSpaceId}
           onSelect={selectSpace}
         ></SpaceSelectionTab>
       </TabPanel>

@@ -4,9 +4,9 @@ import { updateConfluenceClientInfos, getConfluenceClientInfos } from './legacy/
 
 export const updateConfluenceClientSelectedSpace = async (
   clientKey: string,
-  selectedSpace: string,
+  selectedSpaceInfo: { id: string; confluenceFolderId: string },
 ) => {
-  await updateConfluenceClientInfos(clientKey, { proceedSpace: selectedSpace });
+  await updateConfluenceClientInfos(clientKey, { proceedSpace: selectedSpaceInfo });
 };
 
 export const getConfluenceClientSelectedSpace = async (clientKey: string) => {

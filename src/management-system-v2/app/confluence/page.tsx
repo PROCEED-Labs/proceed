@@ -8,28 +8,30 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import ManagableProcessList from './managable-process-list';
 import { headers, cookies } from 'next/headers';
 import { signIn } from 'next-auth/react';
+import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 const ConfluencePage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  const jwt = searchParams.jwt;
-  console.log('jwt', jwt);
-  // const signInRes = await signIn('confluence-signin', { token: jwt, redirect: false });
-  // console.log('signInRes', signInRes);
+  console.log('searchparams', searchParams.jwt);
+  const jwtToken = searchParams.jwt;
 
-  // const headersList = headers();
-  // const headersObject = Object.fromEntries(headersList.entries());
-  // console.log(headersObject);
-  // const cookiesList = cookies().getAll();
-  // console.log(cookiesList);
+  if (!jwtToken) {
+    return <span>Page can only be accessed inside of Confluence</span>;
+  }
+
+  const decoded = jwt.decode(jwtToken, { complete: true });
+  const { iss: clientKey } = decoded!.payload as JwtPayload;
+  console.log('clientKey', clientKey);
+
+  if (!clientKey) {
+    return <span>Page can only be accessed inside of Confluence</span>;
+  }
+
   console.log('confluence page');
   const { userId } = await getCurrentUser();
   console.log('userId', userId);
 
   if (userId) {
-    const { ability } = await getCurrentEnvironment(userId);
-    console.log('ability', ability);
-    // get all the processes the user has access to
-    const ownedProcesses = (await getProcesses(ability)) as Process[];
-
     const userEnvironments: Environment[] = [getEnvironmentById(userId)];
     userEnvironments.push(
       ...getUserOrganizationEnvironments(userId).map((environmentId) =>
@@ -37,13 +39,29 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
       ),
     );
 
+    const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
+    const confluenceSelectedProceedSpace = userEnvironments.find(
+      (environment) => environment.id === confluenceClientInfos.proceedSpace?.id,
+    );
+
+    if (!confluenceSelectedProceedSpace) {
+      return <span>There is no selected PROCEED Space for this Confluence Domain. </span>;
+    }
+
+    const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
+    console.log('ability', ability);
+    // get all the processes the user has access to
+    const ownedProcesses = (await getProcesses(ability)) as Process[];
+
+    console.log('userEnvironments', userEnvironments);
+
     return (
       <Layout
         hideFooter={true}
         loggedIn={!!userId}
         layoutMenuItems={[]}
         userEnvironments={userEnvironments}
-        activeSpace={{ spaceId: userId || '', isOrganization: false }}
+        activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
       >
         <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
           <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>

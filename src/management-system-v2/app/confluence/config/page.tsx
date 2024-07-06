@@ -45,7 +45,7 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
           <Config
             userEnvironments={userEnvironments}
             clientKey={clientKey}
-            initialSpace={confluenceClientInfos.proceedSpace}
+            initialSpaceId={confluenceClientInfos.proceedSpace?.id}
           ></Config>
         </div>
       </Layout>

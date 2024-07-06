@@ -46,7 +46,7 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
 
     const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
     // get all the processes the user has access to
-    const ownedProcesses = (await getProcesses(ability)) as Process[];
+    const ownedProcesses = (await getProcesses(ability, true)) as Process[];
 
     return (
       <Layout

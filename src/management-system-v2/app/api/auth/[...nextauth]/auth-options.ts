@@ -76,6 +76,21 @@ const nextAuthOptions: AuthOptions = {
               !isMember(confluenceClientInfos.proceedSpace.id, existingUser.id)
             ) {
               addMember(confluenceClientInfos.proceedSpace.id, existingUser.id);
+
+              const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
+              if (!adminRole) {
+                throw new Error(
+                  `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
+                );
+              }
+
+              addRoleMappings([
+                {
+                  environmentId: confluenceClientInfos.proceedSpace.id,
+                  roleId: adminRole.id,
+                  userId: existingUser.id,
+                },
+              ]);
             }
             return existingUser;
           } catch (err) {

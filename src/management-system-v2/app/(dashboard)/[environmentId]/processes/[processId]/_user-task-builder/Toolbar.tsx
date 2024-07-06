@@ -12,7 +12,7 @@ import {
 
 import styles from './index.module.scss';
 
-import { useEditor } from '@craftjs/core';
+import { useEditor, Node } from '@craftjs/core';
 import { useAddControlCallback } from '@/lib/controls-store';
 
 export type EditorLayout = 'computer' | 'mobile';
@@ -45,11 +45,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       }
 
       const childNodeId = currentColumn.data.nodes[0];
+      const childNode = state.nodes[childNodeId];
 
       selected = {
         id: childNodeId,
-        name: state.nodes[childNodeId].data.name,
-        settings: state.nodes[childNodeId].related && state.nodes[childNodeId].related.settings,
+        name: childNode.data.name,
+        settings: childNode.related && childNode.related.settings,
+        onDelete: childNode.data.custom.onDelete as undefined | ((node: Node) => void),
+        node: childNode,
       };
     }
 
@@ -119,7 +122,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               danger
               type="text"
               icon={<DeleteOutlined />}
-              onClick={() => actions.delete(deleteId)}
+              onClick={async () => {
+                if (selected?.onDelete) {
+                  await selected.onDelete(selected.node);
+                }
+                actions.delete(deleteId);
+              }}
             />
           </>
         )}

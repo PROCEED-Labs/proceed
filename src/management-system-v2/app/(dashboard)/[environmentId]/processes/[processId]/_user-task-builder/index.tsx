@@ -19,6 +19,7 @@ import Header from './Header';
 import Input from './Input';
 import CheckboxOrRadio from './CheckboxOrRadio';
 import Table from './Table';
+import Image from './Image';
 
 import { toHtml, iframeDocument } from './utils';
 
@@ -136,6 +137,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
         Input,
         CheckboxOrRadio,
         Table,
+        Image,
       }}
       handlers={(store: EditorStore) =>
         new CustomEventhandlers({

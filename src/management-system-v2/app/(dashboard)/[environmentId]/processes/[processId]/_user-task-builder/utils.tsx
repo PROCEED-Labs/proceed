@@ -16,6 +16,7 @@ import Header from './Header';
 import Input from './Input';
 import CheckboxOrRadio from './CheckboxOrRadio';
 import Table from './Table';
+import Image from './Image';
 
 const styles = `
 body {
@@ -109,6 +110,16 @@ body {
   margin: 3px;
 }
 
+.user-task-form-image {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.user-task-form-image img {
+  max-width: 100%;
+}
+
 `;
 
 export function toHtml(json: string) {
@@ -125,6 +136,7 @@ export function toHtml(json: string) {
         CheckboxOrRadio,
         Column,
         Table,
+        Image,
       }}
     >
       <Frame data={json} />
@@ -170,6 +182,26 @@ export const iframeDocument = `
       .user-task-form-container svg {
         height: 50px;
       }
+
+      .user-task-form-image {
+        position: relative;
+      }
+
+      .user-task-form-image > div {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.5);
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .user-task-form-image > div > span {
+        margin: 0 10px;
+        cursor: pointer;
+        color: white;
+      } 
 
       ${styles}
     </style>

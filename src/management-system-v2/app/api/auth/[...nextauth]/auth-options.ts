@@ -13,6 +13,8 @@ import renderSigninLinkEmail from './signin-link-email';
 import { verifyJwt } from '@/app/confluence/helpers';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
+import { getRoleByName } from '@/lib/data/legacy/iam/roles';
+import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -54,6 +56,20 @@ const nextAuthOptions: AuthOptions = {
 
               if (confluenceClientInfos.proceedSpace) {
                 addMember(confluenceClientInfos.proceedSpace.id, user.id);
+                const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
+                if (!adminRole) {
+                  throw new Error(
+                    `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
+                  );
+                }
+
+                addRoleMappings([
+                  {
+                    environmentId: confluenceClientInfos.proceedSpace.id,
+                    roleId: adminRole.id,
+                    userId: user.id,
+                  },
+                ]);
               }
             } else if (
               confluenceClientInfos.proceedSpace &&

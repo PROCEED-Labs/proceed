@@ -120,7 +120,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
 
     const user = usersMetaObject[userId];
     if (!user) throw new Error('User not found');
-    if (user.guest || 'confluence' in user) throw new Error('Guests cannot have role mappings');
+    if (user.guest) throw new Error('Guests cannot have role mappings');
 
     const id = v4();
     const createdOn = new Date().toUTCString();
@@ -133,13 +133,24 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
     };
 
     userMappings.push(newRoleMapping);
-    role.members.push({
-      userId: userId,
-      username: user.username ?? '',
-      firstName: user.firstName ?? '',
-      lastName: user.lastName ?? '',
-      email: user.email,
-    });
+
+    if ('confluence' in user) {
+      role.members.push({
+        userId: userId,
+        username: user.username ?? '',
+        firstName: '',
+        lastName: '',
+        email: 'confluence@email.com',
+      });
+    } else {
+      role.members.push({
+        userId: userId,
+        username: user.username ?? '',
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        email: user.email,
+      });
+    }
 
     // persist new role mapping in file system
     store.setDictElement('roleMappings', roleMappingsMetaObjects);

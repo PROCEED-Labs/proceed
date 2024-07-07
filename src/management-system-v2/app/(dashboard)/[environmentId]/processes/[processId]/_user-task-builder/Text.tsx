@@ -1,11 +1,8 @@
 import { useNode, UserComponent } from '@craftjs/core';
 
-import { Slider, Row, Col, InputNumber, Input, Space } from 'antd';
+import { InputNumber, Space } from 'antd';
 
-const { TextArea } = Input;
-
-import { useState } from 'react';
-import { ComponentSettings } from './utils';
+import { ComponentSettings, EditableText } from './utils';
 
 type TextProps = {
   text: string;
@@ -14,23 +11,9 @@ type TextProps = {
 
 const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
   const {
-    connectors: { connect, drag },
+    connectors: { connect },
     actions: { setProp },
   } = useNode();
-
-  const [editable, setEditable] = useState(false);
-  const [current, setCurrent] = useState(text);
-
-  const handleDoubleClick = () => {
-    setEditable(true);
-  };
-
-  const handleSave = () => {
-    setProp((props: TextProps) => {
-      props.text = current;
-    });
-    setEditable(false);
-  };
 
   return (
     <div
@@ -38,22 +21,12 @@ const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
         r && connect(r);
       }}
     >
-      {editable ? (
-        <TextArea
-          autoFocus
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          onBlur={handleSave}
-          onPressEnter={(e) => {
-            if (!e.shiftKey) handleSave();
-          }}
-          onMouseDownCapture={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <p style={{ fontSize, whiteSpace: 'pre-line' }} onDoubleClick={handleDoubleClick}>
-          {text}
-        </p>
-      )}
+      <EditableText
+        value={text}
+        tagName="p"
+        style={{ fontSize, whiteSpace: 'pre-line' }}
+        onChange={(newText) => setProp((props: TextProps) => (props.text = newText))}
+      />
     </div>
   );
 };

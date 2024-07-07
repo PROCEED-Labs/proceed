@@ -1,10 +1,10 @@
-import { Input as AntInput, Typography, Select, Button, Space } from 'antd';
+import { Typography, Select, Button, Space } from 'antd';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { v4 } from 'uuid';
-import { ComponentSettings } from './utils';
+import { ComponentSettings, EditableText } from './utils';
 
 type CheckboxOrRadioProps = {
   type: 'checkbox' | 'radio';
@@ -25,30 +25,19 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
     isHovered,
   } = useNode((state) => {
     const parent = state.data.parent && query.node(state.data.parent).get();
-
     return { isHovered: !!parent && parent.events.hovered };
   });
 
-  const [currentEditIndex, setCurrentEditIndex] = useState(-1);
-  const [currentLabel, setCurrentLabel] = useState('');
-
-  const handleDoubleClick = (index: number) => {
-    setCurrentLabel(data[index].label);
-    setCurrentEditIndex(index);
-  };
-
-  const handleLabelSave = (index: number) => {
+  const handleLabelEdit = (index: number, text: string) => {
     setProp((props: CheckboxOrRadioProps) => {
       props.data = data.map((entry, entryIndex) => {
         let newLabel = entry.label;
 
-        if (entryIndex === index) newLabel = currentLabel;
+        if (entryIndex === index) newLabel = text;
 
         return { ...entry, label: newLabel };
       });
     });
-    setCurrentLabel('');
-    setCurrentEditIndex(-1);
   };
 
   const handleClick = (index: number) => {
@@ -89,24 +78,13 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
       <div className="user-task-form-input-group">
         {data.map(({ label, value, checked }, index) => (
           <span key={index}>
-            {index === currentEditIndex ? (
-              <AntInput
-                autoFocus
-                value={currentLabel}
-                onChange={(e) => setCurrentLabel(e.target.value)}
-                onBlur={() => handleLabelSave(index)}
-                onPressEnter={() => handleLabelSave(index)}
-                onMouseDownCapture={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <label
-                onDoubleClick={() => handleDoubleClick(index)}
-                htmlFor={inputIds[index]}
-                onClick={(e) => e.preventDefault()}
-              >
-                {label}
-              </label>
-            )}
+            <EditableText
+              value={label}
+              tagName="label"
+              htmlFor={inputIds[index]}
+              onChange={(newText) => handleLabelEdit(index, newText)}
+              onClick={(e) => e.preventDefault()}
+            />
             <input
               id={inputIds[index]}
               type={type}

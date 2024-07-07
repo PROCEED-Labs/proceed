@@ -1,6 +1,6 @@
 import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
 
-import { InputNumber, Space, Modal, Typography } from 'antd';
+import { InputNumber, Space, Typography } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 import { ComponentSettings } from './utils';

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Typography, Select, Row, Input, Space } from 'antd';
+import React from 'react';
+import { Typography, Select, Space } from 'antd';
+
+import { EditableText } from './utils';
 
 import { UserComponent, useNode } from '@craftjs/core';
 import { ComponentSettings } from './utils';
@@ -15,23 +17,7 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
     actions: { setProp },
   } = useNode();
 
-  const [editable, setEditable] = useState(false);
-  const [current, setCurrent] = useState(text);
-
   const headerType = ['h1', 'h2', 'h3', 'h4', 'h5'];
-
-  const handleDoubleClick = () => {
-    setEditable(true);
-  };
-
-  const handleSave = () => {
-    setProp((props: HeaderProps) => {
-      props.text = current;
-    });
-    setEditable(false);
-  };
-
-  const h = <h1 />;
 
   return (
     <div
@@ -39,24 +25,11 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
         r && connect(r);
       }}
     >
-      {editable ? (
-        <Input
-          autoFocus
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          onBlur={handleSave}
-          onPressEnter={handleSave}
-          onMouseDownCapture={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <>
-          {React.createElement(
-            headerType[type - 1],
-            { onDoubleClick: handleDoubleClick },
-            <>{current}</>
-          )}
-        </>
-      )}
+      <EditableText
+        value={text}
+        tagName={headerType[type - 1]}
+        onChange={(newText) => setProp((props: HeaderProps) => (props.text = newText))}
+      />
     </div>
   );
 };

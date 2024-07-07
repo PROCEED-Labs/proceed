@@ -1,11 +1,164 @@
 import { useNode, UserComponent, useEditor } from '@craftjs/core';
 
-import { Button, InputNumber, Input, Dropdown, MenuProps } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 
-import { useState } from 'react';
+import { EditableText } from './utils';
 
 type TableProps = {
   tableData?: string[][];
+};
+
+const TableCell: React.FC<
+  React.PropsWithChildren<{
+    rowIndex: number;
+    content: string;
+    onChange: (newContent: string) => void;
+  }>
+> = ({ rowIndex, content, onChange, children }) => {
+  const contextMenu: MenuProps['items'] = [{ key: '1', label: 'Test' }];
+
+  return (
+    <Dropdown menu={{ items: contextMenu }} trigger={['contextMenu']}>
+      {rowIndex ? (
+        <td className="user-task-form-table-cell">
+          <EditableText value={content} tagName="span" onChange={onChange} />
+          {children}
+        </td>
+      ) : (
+        <th className="user-task-form-table-cell">
+          <EditableText value={content} tagName="span" onChange={onChange} />
+          {children}
+        </th>
+      )}
+    </Dropdown>
+  );
+};
+
+const TableRow: React.FC<{
+  tableData: Required<TableProps>['tableData'];
+  rowIndex: number;
+  isHovered: boolean;
+  addColumn: (colIndex: number) => void;
+  removeColumn: (colIndex: number) => void;
+  addRow: (rowIndex: number) => void;
+  removeRow: (rowIndex: number) => void;
+  onUpdateContent: (newContent: string, rowIndex: number, colIndex: number) => void;
+}> = ({
+  tableData,
+  rowIndex,
+  isHovered,
+  addColumn,
+  removeColumn,
+  addRow,
+  removeRow,
+  onUpdateContent,
+}) => {
+  return (
+    <tr>
+      {tableData[rowIndex].map((col, colIndex) => (
+        <TableCell
+          rowIndex={rowIndex}
+          key={`col-${colIndex}`}
+          content={col}
+          onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
+        >
+          {/* remove a column (cannot remove if there is only a single row) */}
+          {isHovered && rowIndex === tableData.length - 1 && tableData.length > 1 && (
+            <Button
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: '50%',
+                transform: 'translate(-50%,50%)',
+              }}
+              title="Remove Column"
+              onClick={() => removeColumn(colIndex)}
+            >
+              -
+            </Button>
+          )}
+
+          {/* add a column at the start or between two other columns */}
+          {isHovered && !rowIndex && (
+            <Button
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                transform: 'translate(-50%, -50%)',
+              }}
+              title="Add Column"
+              onClick={() => addColumn(colIndex)}
+            >
+              +
+            </Button>
+          )}
+
+          {/* add a column at the end */}
+          {isHovered && !rowIndex && colIndex === tableData[0].length - 1 && (
+            <Button
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                transform: 'translate(50%, -50%)',
+              }}
+              title="Add Column"
+              onClick={() => addColumn(colIndex + 1)}
+            >
+              +
+            </Button>
+          )}
+
+          {/* remove a row (the header row cannot be removed) */}
+          {isHovered && !!rowIndex && !colIndex && (
+            <Button
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 0,
+                transform: 'translate(-50%, -50%)',
+              }}
+              title="Remove Row"
+              onClick={() => removeRow(rowIndex)}
+            >
+              -
+            </Button>
+          )}
+
+          {/* add a new row (cannot add a row before the header row) */}
+          {isHovered && colIndex === tableData[0].length - 1 && (
+            // TODO: Seems not to work if the button is clicked outside of the borders of the table
+            <Button
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                transform: 'translate(50%, 50%)',
+              }}
+              title="Add Row"
+              onClick={() => addRow(rowIndex + 1)}
+            >
+              +
+            </Button>
+          )}
+
+          {/* {rowIndex === cellEditing.row && colIndex === cellEditing.col ? (
+              <Input
+                autoFocus
+                value={cellEditing.value}
+                onChange={(e) => setCellEditing({ ...cellEditing, value: e.target.value })}
+                onBlur={handleCellEditSave}
+                onPressEnter={handleCellEditSave}
+                onMouseDownCapture={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <>{col}</>
+            )} */}
+        </TableCell>
+      ))}
+    </tr>
+  );
 };
 
 const Table: UserComponent<TableProps> = ({
@@ -25,8 +178,6 @@ const Table: UserComponent<TableProps> = ({
 
     return { isHovered: !!parent && parent.events.hovered };
   });
-
-  const [cellEditing, setCellEditing] = useState({ row: -1, col: -1, value: '' });
 
   const addRow = (index: number) => {
     setProp((props: TableProps) => {
@@ -61,154 +212,22 @@ const Table: UserComponent<TableProps> = ({
     });
   };
 
-  const handleCellEditSave = () => {
-    const { row, col, value } = cellEditing;
-
+  const handleCellEdit = (newContent: string, rowIndex: number, colIndex: number) => {
     const newRow = [
-      ...tableData[row].slice(0, col),
-      value,
-      ...tableData[row].slice(col + 1, undefined),
+      ...tableData[rowIndex].slice(0, colIndex),
+      newContent,
+      ...tableData[rowIndex].slice(colIndex + 1, undefined),
     ];
 
     const newTableData = [
-      ...tableData.slice(0, row),
+      ...tableData.slice(0, rowIndex),
       newRow,
-      ...tableData.slice(row + 1, undefined),
+      ...tableData.slice(rowIndex + 1, undefined),
     ];
 
     setProp((props: TableProps) => {
       props.tableData = newTableData;
     });
-
-    setCellEditing({ row: -1, col: -1, value: '' });
-  };
-
-  const TableCell: React.FC<
-    React.PropsWithChildren<{ rowIndex: number; onDoubleClick: () => void }>
-  > = ({ rowIndex, children, onDoubleClick }) => {
-    const contextMenu: MenuProps['items'] = [{ key: '1', label: 'Test' }];
-
-    return (
-      <Dropdown menu={{ items: contextMenu }} trigger={['contextMenu']}>
-        {rowIndex ? (
-          <td className="user-task-form-table-cell" onDoubleClick={onDoubleClick}>
-            {children}
-          </td>
-        ) : (
-          <th className="user-task-form-table-cell" onDoubleClick={onDoubleClick}>
-            {children}
-          </th>
-        )}
-      </Dropdown>
-    );
-  };
-
-  const TableRow: React.FC<{ tD: typeof tableData; rowIndex: number }> = ({ tD, rowIndex }) => {
-    return (
-      <tr>
-        {tableData[rowIndex].map((col, colIndex) => (
-          <TableCell
-            rowIndex={rowIndex}
-            key={`col-${colIndex}`}
-            onDoubleClick={() => setCellEditing({ row: rowIndex, col: colIndex, value: col })}
-          >
-            {/* remove a column (cannot remove if there is only a single row) */}
-            {isHovered && rowIndex === tD.length - 1 && tD.length > 1 && (
-              <Button
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '50%',
-                  transform: 'translate(-50%,50%)',
-                }}
-                title="Remove Column"
-                onClick={() => removeColumn(colIndex)}
-              >
-                -
-              </Button>
-            )}
-
-            {/* add a column at the start or between two other columns */}
-            {isHovered && !rowIndex && (
-              <Button
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                title="Add Column"
-                onClick={() => addColumn(colIndex)}
-              >
-                +
-              </Button>
-            )}
-
-            {/* add a column at the end */}
-            {isHovered && !rowIndex && colIndex === tD[0].length - 1 && (
-              <Button
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  transform: 'translate(50%, -50%)',
-                }}
-                title="Add Column"
-                onClick={() => addColumn(colIndex + 1)}
-              >
-                +
-              </Button>
-            )}
-
-            {/* remove a row (the header row cannot be removed) */}
-            {isHovered && !!rowIndex && !colIndex && (
-              <Button
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: 0,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                title="Remove Row"
-                onClick={() => removeRow(rowIndex)}
-              >
-                -
-              </Button>
-            )}
-
-            {/* add a new row (cannot add a row before the header row) */}
-            {isHovered && colIndex === tD[0].length - 1 && (
-              // TODO: Seems not to work if the button is clicked outside of the borders of the table
-              <Button
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  transform: 'translate(50%, 50%)',
-                }}
-                title="Add Row"
-                onClick={() => addRow(rowIndex + 1)}
-              >
-                +
-              </Button>
-            )}
-
-            {rowIndex === cellEditing.row && colIndex === cellEditing.col ? (
-              <Input
-                autoFocus
-                value={cellEditing.value}
-                onChange={(e) => setCellEditing({ ...cellEditing, value: e.target.value })}
-                onBlur={handleCellEditSave}
-                onPressEnter={handleCellEditSave}
-                onMouseDownCapture={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <>{col}</>
-            )}
-          </TableCell>
-        ))}
-      </tr>
-    );
   };
 
   return (
@@ -219,11 +238,30 @@ const Table: UserComponent<TableProps> = ({
       }}
     >
       <thead>
-        <TableRow rowIndex={0} tD={tableData} />
+        <TableRow
+          isHovered={isHovered}
+          rowIndex={0}
+          tableData={tableData}
+          addRow={addRow}
+          removeRow={removeRow}
+          addColumn={addColumn}
+          removeColumn={removeColumn}
+          onUpdateContent={handleCellEdit}
+        />
       </thead>
       <tbody>
         {[...Array(tableData.length - 1).keys()].map((index) => (
-          <TableRow rowIndex={index + 1} tD={tableData} key={`row-${index}`} />
+          <TableRow
+            isHovered={isHovered}
+            rowIndex={index + 1}
+            tableData={tableData}
+            key={`row-${index}`}
+            addRow={addRow}
+            removeRow={removeRow}
+            addColumn={addColumn}
+            removeColumn={removeColumn}
+            onUpdateContent={handleCellEdit}
+          />
         ))}
       </tbody>
     </table>

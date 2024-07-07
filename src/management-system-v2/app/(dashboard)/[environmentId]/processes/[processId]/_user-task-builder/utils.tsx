@@ -1,9 +1,11 @@
-import { Editor, Frame, EditorStore, useNode, UserComponent } from '@craftjs/core';
+import { Editor, Frame } from '@craftjs/core';
 import React, { useRef, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import { Button, Dropdown, Flex } from 'antd';
 import { EllipsisOutlined } from '@ant-design/icons';
+
+import ContentEditable from 'react-contenteditable';
 
 import Overflow, { OverFlowSpaceItem } from '@/components/Overflow';
 
@@ -268,5 +270,59 @@ export const ComponentSettings: React.FC<ComponentSettingsProps> = ({ controls }
         containerRef={ref}
       />
     </Flex>
+  );
+};
+
+type ContentEditableProps = ConstructorParameters<typeof ContentEditable>[0];
+
+type EditableTextProps = Omit<
+  ContentEditableProps,
+  'html' | 'disabled' | 'onDoubleClick' | 'onChange' | 'tagName' | 'ref'
+> & {
+  value: string;
+  onChange: (newText: string) => void;
+  tagName: string;
+  htmlFor?: string;
+};
+
+export const EditableText: React.FC<EditableTextProps> = ({
+  value,
+  onChange,
+  tagName,
+  ...props
+}) => {
+  const ref = useRef<HTMLElement>(null);
+
+  const [editable, setEditable] = useState(false);
+
+  return (
+    <ContentEditable
+      innerRef={ref}
+      html={value}
+      tagName={tagName}
+      disabled={!editable}
+      onDoubleClick={() => {
+        setEditable(true);
+        setTimeout(() => {
+          if (ref.current) {
+            ref.current.focus();
+            const builderIframe = document.getElementById(
+              'user-task-builder-iframe'
+            ) as HTMLIFrameElement;
+            let sel = builderIframe.contentWindow!.getSelection();
+
+            if (sel) {
+              sel.selectAllChildren(ref.current);
+              sel.collapseToEnd();
+            }
+          }
+        }, 5);
+      }}
+      onMouseDownCapture={(e) => editable && e.stopPropagation()}
+      onBlur={() => setEditable(false)}
+      onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
+      onChange={(e) => onChange(e.target.value)}
+      {...props}
+    />
   );
 };

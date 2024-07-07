@@ -169,12 +169,14 @@ export const getSpaces = async (jwtToken: any) => {
   }
 };
 
-export const getPagesBySpaceId = async (spaceId: string): Promise<string[]> => {
+export const getPagesBySpaceKey = async (
+  spaceKey: string,
+): Promise<{ id: string; title: string }[]> => {
   const apiToken =
     'ATATT3xFfGF0GbPbaGHtjHkCBb-H5eOKNlIM8NBs-ofrD22TFZO7DaOauxH3ras3xrtp2cv98l27yH3kbmeWcbxDdIZpoSs27_Cy-dMcPp_GDgb8KkNpomM9pnikqhYHNbRMRkgLK7vOzcp5b21_ZAWTr4kexeXfed707-bOqXGsGqiZql9GIxc=09697613';
 
   const res = await fetch(
-    `https://proceed-test.atlassian.net/wiki/rest/api/space/${spaceId}/content`,
+    `https://proceed-test.atlassian.net/wiki/rest/api/space/${spaceKey}/content`,
     {
       method: 'GET',
       headers: {
@@ -184,7 +186,10 @@ export const getPagesBySpaceId = async (spaceId: string): Promise<string[]> => {
   );
 
   const jsonResult = await res.json();
-  return jsonResult.page.results.map((page: { id: any }) => page.id);
+  return jsonResult.page.results.map((page: { id: string; title: string }) => ({
+    id: page.id,
+    title: page.title,
+  }));
 };
 
 export const getPageContentById = async (pageId: string): Promise<string> => {
@@ -222,21 +227,21 @@ export const findPROCEEDMacrosInPageContent = (pageContent: string) => {
   return processIds;
 };
 
-export const findPROCEEDMacrosInSpace = async (spaceId: string) => {
-  const pages = await getPagesBySpaceId(spaceId);
+export const findPROCEEDMacrosInSpace = async (spaceKey: string) => {
+  const pages = await getPagesBySpaceKey(spaceKey);
   console.log('pages', pages);
-  const results: { [key: string]: string[] } = {};
+  const results: { [key: string]: { id: string; title: string }[] } = {};
 
-  await asyncForEach(pages, async (pageId) => {
-    const content = (await getPageContentById(pageId)) as string;
+  await asyncForEach(pages, async ({ id, title }) => {
+    const content = (await getPageContentById(id)) as string;
     console.log('content', content);
     const processIds = await findPROCEEDMacrosInPageContent(content);
     console.log('processIds', processIds);
     processIds.forEach((processId) => {
-      if (results[processId] && !results[processId].includes(pageId)) {
-        results[processId].push(pageId);
+      if (results[processId] && !results[processId].find((page) => page.id === id)) {
+        results[processId].push({ id, title });
       } else {
-        results[processId] = [pageId];
+        results[processId] = [{ id, title }];
       }
     });
   });

@@ -13,7 +13,7 @@ import TagGroup from '@atlaskit/tag-group';
 import Tag, { SimpleTag } from '@atlaskit/tag';
 import { HeadType, RowType } from '@atlaskit/dynamic-table/dist/types/types';
 
-export type ConfluenceProceedProcess = Process & { container: string[] };
+export type ConfluenceProceedProcess = Process & { container: { id: string; title: string }[] };
 
 const ProcessList = ({
   processes: initialProcesses,
@@ -65,7 +65,11 @@ const ProcessList = ({
           'container' in process ? (
             <TagGroup>
               {process.container.map((containerItem) => (
-                <SimpleTag key={process.id + '-' + containerItem} text={containerItem} href="/" />
+                <SimpleTag
+                  key={process.id + '-' + containerItem.id}
+                  text={containerItem.title}
+                  href={`https://proceed-test.atlassian.net/wiki/spaces/~7120203a3f17e3744f4cd0accc1311bd5daad6/pages/${containerItem.id}`}
+                />
               ))}
             </TagGroup>
           ) : (

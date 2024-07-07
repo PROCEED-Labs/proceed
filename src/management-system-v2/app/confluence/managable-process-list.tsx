@@ -7,12 +7,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ProcessModal from './process-modal';
+import ProcessExportModal from '@/components/process-export';
 
 const ActionButtons = ({ process }: { process: Process }) => {
   const { spaceId } = useEnvironment();
   const router = useRouter();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isModelerOpen, setIsModelerOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const closeEditModal = async (values?: { name: string; description: string }) => {
     console.log('close edit modal');
@@ -30,10 +31,6 @@ const ActionButtons = ({ process }: { process: Process }) => {
     setIsEditModalOpen(false);
   };
 
-  const closeModeler = () => {
-    setIsModelerOpen(false);
-  };
-
   const deleteProcess = (id: string) => {
     deleteProcesses([id], spaceId).then(() => router.refresh());
   };
@@ -43,11 +40,10 @@ const ActionButtons = ({ process }: { process: Process }) => {
       <ButtonGroup>
         <Button
           onClick={() => {
-            setIsModelerOpen(true);
+            setIsExportModalOpen(true);
           }}
-          appearance="primary"
         >
-          Open
+          Export
         </Button>
         <Button
           onClick={() => {
@@ -64,6 +60,11 @@ const ActionButtons = ({ process }: { process: Process }) => {
           Delete
         </Button>
       </ButtonGroup>
+      <ProcessExportModal
+        processes={[{ definitionId: process.id }]}
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      />
       <ProcessModal
         title="Edit Process"
         processData={process}

@@ -4,6 +4,8 @@ import styles from './processes.module.scss';
 import { ComponentProps, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
+  CopyOutlined,
+  EditOutlined,
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
@@ -28,7 +30,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
-import { useEnvironment } from '@/components/auth-can';
+import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from '@/components/folder-creation-button';
 import {
@@ -320,6 +322,24 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
+                      {/* TODO: */}
+                      {/* Copy */}
+                      {/* <AuthCan create Process>
+                        <Tooltip placement="top" title={'Copy'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<CopyOutlined />}
+                            onClick={() => {
+                              const processes = selectedRowKeys.map((definitionId) => ({
+                                definitionId: definitionId as string,
+                              }));
+                              // copyItem(processes);
+                            }}
+                          />
+                        </Tooltip>
+                      </AuthCan> */}
+                      {/* Export */}
                       <Tooltip placement="top" title={'Export'}>
                         <ExportOutlined
                           className={styles.Icon}
@@ -328,7 +348,8 @@ const Processes = ({
                           }}
                         />
                       </Tooltip>
-
+                      {/* Edit (only if one selected) */}
+                      {/* Delete */}
                       {canDeleteSelected && (
                         <Tooltip placement="top" title={'Delete'}>
                           <ConfirmationButton

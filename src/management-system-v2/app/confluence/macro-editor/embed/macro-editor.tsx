@@ -14,10 +14,10 @@ import Modal, {
 import { getPNGFromSVG } from '@/lib/process-export/image-export';
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 import { createAttachment } from '../../helpers';
+import ProcessImportButton from '@/components/process-import';
 
-const ActionButtons = ({ process }: { process: Process }) => {
+const MacroEditor = ({ processes }: { processes: Process[] }) => {
   const storeProcessAttachment = async (process: Process) => {
-    console.log('store process attachment', process);
     const processSVG = await getSVGFromBPMN(process.bpmn);
     const processPNG = await getPNGFromSVG(processSVG);
     const bpmnBlob = new Blob([process.bpmn], { type: 'application/xml' });
@@ -30,36 +30,45 @@ const ActionButtons = ({ process }: { process: Process }) => {
     await createAttachment('14712843', formData);
   };
 
-  const saveMacro = async () => {
+  const saveMacro = async (process: Process) => {
     if (window.AP && window.AP.confluence) {
       await storeProcessAttachment(process);
       window.AP.confluence.saveMacro({ processId: process.id });
       window.AP.confluence.closeMacroEditor();
     }
   };
-  return (
-    <ButtonGroup>
-      <Button appearance="primary" onClick={() => saveMacro()}>
-        Embed
-      </Button>
-    </ButtonGroup>
-  );
-};
 
-const MacroEditor = ({ processes }: { processes: Process[] }) => {
   return (
     <div>
       <ModalTransition>
         <Modal isBlanketHidden width="50vw" onClose={() => window.AP.confluence.closeMacroEditor()}>
           <ModalHeader>
-            <ModalTitle>Embed Process</ModalTitle>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <ModalTitle>Embed Process</ModalTitle>
+              <ProcessImportButton
+                type="text"
+                modalOkText="Import & Embed"
+                style={{ padding: 0 }}
+                onImport={(processes) => {
+                  const process = processes[0];
+                  saveMacro(process);
+                }}
+                allowMultipleImports={false}
+              >
+                <Button>Import Process</Button>
+              </ProcessImportButton>
+            </div>
           </ModalHeader>
           <ModalBody>
             <div style={{ padding: '1rem', width: '100%' }}>
               <ProcessList
                 processes={processes}
                 ActionButtons={({ process }: { process: Process }) => (
-                  <ActionButtons process={process} />
+                  <ButtonGroup>
+                    <Button appearance="primary" onClick={() => saveMacro(process)}>
+                      Embed
+                    </Button>
+                  </ButtonGroup>
                 )}
               />
             </div>

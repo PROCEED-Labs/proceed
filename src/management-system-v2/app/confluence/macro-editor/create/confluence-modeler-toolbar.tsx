@@ -27,9 +27,7 @@ const ModelerToolbar = ({ canUndo, canRedo, viewOnly = false }: ModelerToolbarPr
   }, [modeler, selectedElementId]);
 
   const currentRoot = modeler && modeler.getCurrentRoot();
-  console.log('currentrott', currentRoot);
   const subprocessId = currentRoot && bpmnIs(currentRoot, 'bpmn:SubProcess') && currentRoot.id;
-  console.log('subprocessid', subprocessId);
 
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);

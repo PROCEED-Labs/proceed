@@ -38,19 +38,14 @@ const MacroEditor = ({
   }, []);
 
   const storeProcessAttachment = async (process: Process) => {
-    console.log('store process attachment', process);
     const processSVG = await getSVGFromBPMN(process.bpmn);
     const processPNG = await getPNGFromSVG(processSVG);
     const bpmnBlob = new Blob([process.bpmn], { type: 'application/xml' });
 
-    console.log('processSVG', processSVG);
-    console.log('processPNG', processPNG);
-    console.log('bpmnBlob', bpmnBlob);
     const formData = new FormData();
     formData.append('id', process.id);
     formData.append('bpmn', bpmnBlob);
     formData.append('image', processPNG);
-    console.log('formData', formData);
 
     return createAttachment('14712843', formData);
   };
@@ -103,18 +98,15 @@ const MacroEditor = ({
           open={true}
           close={async (values) => {
             if (values) {
-              console.log('confluenceFolderId', confluenceFolderId);
               const res = await addProcesses(
                 [{ ...values, folderId: confluenceFolderId }],
                 spaceId,
               );
-              console.log('res', res);
 
               if ('error' in res) {
                 throw new Error('Something went wrong while adding process');
               } else {
                 const process = res[0];
-                console.log('process', process);
                 await storeProcessAttachment(process);
 
                 if (window.AP && window.AP.confluence) {

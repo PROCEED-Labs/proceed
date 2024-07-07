@@ -12,7 +12,6 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { getRootFolder } from '@/lib/data/legacy/folders';
 
 const MacroEditorPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  console.log('searchparams', searchParams.jwt);
   const jwtToken = searchParams.jwt;
 
   if (!jwtToken) {
@@ -21,13 +20,12 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
 
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  console.log('clientKey', clientKey);
 
   if (!clientKey) {
     return <span>Page can only be accessed inside of Confluence</span>;
   }
 
-  const { session, userId } = await getCurrentUser();
+  const { userId } = await getCurrentUser();
 
   if (userId) {
     const userEnvironments: Environment[] = [getEnvironmentById(userId)];

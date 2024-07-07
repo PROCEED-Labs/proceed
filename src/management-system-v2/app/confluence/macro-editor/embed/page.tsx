@@ -10,7 +10,6 @@ import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 const MacroEditorPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  console.log('searchparams', searchParams.jwt);
   const jwtToken = searchParams.jwt;
 
   if (!jwtToken) {
@@ -19,7 +18,6 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
 
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  console.log('clientKey', clientKey);
 
   if (!clientKey) {
     return <span>Page can only be accessed inside of Confluence</span>;

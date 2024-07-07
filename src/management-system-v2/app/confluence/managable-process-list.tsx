@@ -1,5 +1,5 @@
 'use client';
-import ProcessList from './process-list';
+import ProcessList, { ConfluenceProceedProcess } from './process-list';
 import { Process } from '@/lib/data/process-schema';
 import Button, { ButtonGroup } from '@atlaskit/button';
 import { deleteProcesses, updateProcess } from '@/lib/data/processes';
@@ -19,13 +19,9 @@ const ActionButtons = ({ process }: { process: Process }) => {
     console.log('close edit modal');
 
     if (values) {
-      if ('origin' in process) {
-        console.log('changed confluence process');
-      } else {
-        updateProcess(process.id, spaceId, undefined, values.description, values.name).then(() =>
-          router.refresh(),
-        );
-      }
+      updateProcess(process.id, spaceId, undefined, values.description, values.name).then(() =>
+        router.refresh(),
+      );
     }
 
     setIsEditModalOpen(false);
@@ -75,7 +71,7 @@ const ActionButtons = ({ process }: { process: Process }) => {
   );
 };
 
-const ManagableProcessList = ({ processes }: { processes: Process[] }) => {
+const ManagableProcessList = ({ processes }: { processes: ConfluenceProceedProcess[] }) => {
   return (
     <div style={{ padding: '1rem', width: '100%' }}>
       <ProcessList

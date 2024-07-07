@@ -17,7 +17,6 @@ const MacroPage = async ({
   params: { processId: string };
   searchParams: any;
 }) => {
-  console.log('searchparams', searchParams.jwt);
   const jwtToken = searchParams.jwt;
 
   if (!jwtToken) {
@@ -26,14 +25,12 @@ const MacroPage = async ({
 
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  console.log('clientKey', clientKey);
 
   if (!clientKey) {
     return <span>Page can only be accessed inside of Confluence</span>;
   }
 
   const processId = params.processId;
-  console.log('params', params);
 
   const { userId } = await getCurrentUser();
 

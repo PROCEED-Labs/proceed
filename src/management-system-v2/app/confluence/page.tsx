@@ -11,9 +11,9 @@ import { signIn } from 'next-auth/react';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { findPROCEEDMacrosInSpace } from './helpers';
+import { ConfluenceProceedProcess } from './process-list';
 
 const ConfluencePage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  console.log('searchparams', searchParams.jwt);
   const jwtToken = searchParams.jwt;
 
   if (!jwtToken) {
@@ -22,15 +22,12 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
 
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  console.log('clientKey', clientKey);
 
   if (!clientKey) {
     return <span>Page can only be accessed inside of Confluence</span>;
   }
 
-  console.log('confluence page');
   const { userId } = await getCurrentUser();
-  console.log('userId', userId);
 
   if (userId) {
     const userEnvironments: Environment[] = [getEnvironmentById(userId)];
@@ -50,19 +47,16 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
     }
 
     const { ability } = await getCurrentEnvironment(confluenceSelectedProceedSpace.id);
-    console.log('ability', ability);
-    // get all the processes the user has access to
-    const ownedProcesses = (await getProcesses(ability)) as Process[];
 
-    console.log('userEnvironments', userEnvironments);
+    // get all the processes the user has access to
+    const ownedProcesses = await getProcesses(ability);
 
     const result = await findPROCEEDMacrosInSpace('~7120203a3f17e3744f4cd0accc1311bd5daad6');
-    console.log('result', result);
 
     const ownedProcessesWithContainerInfo = ownedProcesses.map((process) => ({
       ...process,
       container: result[process.id],
-    }));
+    })) as ConfluenceProceedProcess[];
 
     return (
       <Layout

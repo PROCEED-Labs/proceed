@@ -16,35 +16,18 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 import { createAttachment } from '../../helpers';
 
 const ActionButtons = ({ process }: { process: Process }) => {
-  const [processId, setProcessId] = useState('');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.AP && window.AP.confluence) {
-      window.AP.confluence.getMacroData((data: any) => {
-        if (data) {
-          setProcessId(data.processId || data.parameters?.processId || '');
-        }
-      });
-    }
-  }, []);
-
   const storeProcessAttachment = async (process: Process) => {
     console.log('store process attachment', process);
     const processSVG = await getSVGFromBPMN(process.bpmn);
     const processPNG = await getPNGFromSVG(processSVG);
     const bpmnBlob = new Blob([process.bpmn], { type: 'application/xml' });
 
-    console.log('processSVG', processSVG);
-    console.log('processPNG', processPNG);
-    console.log('bpmnBlob', bpmnBlob);
     const formData = new FormData();
     formData.append('id', process.id);
     formData.append('bpmn', bpmnBlob);
     formData.append('image', processPNG);
-    console.log('formData', formData);
 
     await createAttachment('14712843', formData);
-    console.log('after creating attachment');
   };
 
   const saveMacro = async () => {

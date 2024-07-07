@@ -73,7 +73,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         configId={configId}
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
-        configType="target"
       />
       <Parameters
         parentConfig={parentConfig}

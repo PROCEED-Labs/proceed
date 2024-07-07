@@ -203,7 +203,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           rootMachineConfig={parentConfig}
           selectedMachineConfig={props.selectedConfig}
           editingEnabled={editable}
-          configType="parent"
         />
       ),
       extra: getTooltips(editable, true, true, false),

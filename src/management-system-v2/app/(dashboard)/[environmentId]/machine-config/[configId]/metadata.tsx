@@ -20,7 +20,6 @@ type MachineDataViewProps = {
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
   editingEnabled: boolean;
-  configType: string;
 };
 
 const baseItems = [
@@ -66,6 +65,7 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const firstRender = useRef(true);
   const [name, setName] = useState<string | undefined>('');
+  const [owner, setOwner] = useState<string | undefined>('');
   const [description, setDescription] = useState<string | undefined>('');
 
   const rootMachineConfig = { ...props.rootMachineConfig };
@@ -82,9 +82,17 @@ export default function MetaData(props: MachineDataViewProps) {
     let newDescription = e.target.value;
     setDescription(newDescription);
   };
+  const changeOwner = (e: any) => {
+    let newOwner = e.target.value;
+    setOwner(newOwner);
+  };
 
-  const saveDescription = (e: any) => {
+  const saveAll = (e: any) => {
     if (refEditingMachineConfig) {
+      if (refEditingMachineConfig.selection.name)
+        refEditingMachineConfig.selection.name = name ? name : '';
+      if (refEditingMachineConfig.selection.owner)
+        refEditingMachineConfig.selection.owner.value = owner ? owner : '';
       if (refEditingMachineConfig.selection.description)
         refEditingMachineConfig.selection.description.value = description ? description : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
@@ -99,12 +107,13 @@ export default function MetaData(props: MachineDataViewProps) {
     }
     setName(editingMachineConfig.name);
     setDescription(editingMachineConfig.description?.value);
+    setOwner(editingMachineConfig.owner?.value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
 
-  const items = props.configType == 'machine' ? machineItems : baseItems;
+  const items = editingMachineConfig.type === 'machine-config' ? machineItems : baseItems;
 
   return (
     <>
@@ -129,7 +138,9 @@ export default function MetaData(props: MachineDataViewProps) {
         </Col>
         <Col span={21} className="gutter-row">
           <Input
-            value={editingMachineConfig.owner?.value?.split('|').pop()}
+            value={owner}
+            onChange={changeOwner}
+            onBlur={saveAll}
             disabled={!editable}
             prefix={<UserOutlined />}
           />
@@ -150,7 +161,7 @@ export default function MetaData(props: MachineDataViewProps) {
             disabled={!editable}
             value={description}
             onChange={changeDescription}
-            onBlur={saveDescription}
+            onBlur={saveAll}
           />
         </Col>
         <Col span={1} className="gutter-row">

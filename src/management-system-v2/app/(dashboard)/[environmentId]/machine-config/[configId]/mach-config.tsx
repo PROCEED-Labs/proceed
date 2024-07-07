@@ -55,9 +55,8 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         backendSaveMachineConfig={saveParentConfig}
         customConfig={editingConfig}
         configId={configId}
-        selectedMachineConfig={{ parent: parentConfig, selection: machineConfigData }}
+        selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
-        configType="machine"
       />
       <Parameters
         backendSaveParentConfig={saveParentConfig}

@@ -11,15 +11,18 @@ import { Process } from '@/lib/data/process-schema';
 
 import TagGroup from '@atlaskit/tag-group';
 import Tag, { SimpleTag } from '@atlaskit/tag';
+import { HeadType, RowType } from '@atlaskit/dynamic-table/dist/types/types';
 
 export type ConfluenceProceedProcess = Process & { container: string[] };
 
 const ProcessList = ({
   processes: initialProcesses,
   ActionButtons,
+  includeContainer = true,
 }: {
   processes: ConfluenceProceedProcess[] | Process[];
   ActionButtons: any;
+  includeContainer?: boolean;
 }) => {
   useEffect(() => {
     setProcesses([...initialProcesses]);
@@ -28,18 +31,35 @@ const ProcessList = ({
   const [processes, setProcesses] = useState([...initialProcesses]);
 
   // applied as rows in the form
-  const rows = processes.map((process, index) => ({
-    key: `row-${index}-${process.name}`,
-    cells: [
-      {
-        key: process.name,
-        content: process.name,
-      },
-      {
-        key: 'description' + process.description + process.id,
-        content: process.description,
-      },
-      {
+  const rows: Array<RowType> = processes.map((process, index) => {
+    const row = {
+      key: `row-${index}-${process.name}`,
+      cells: [
+        {
+          key: process.name,
+          content: process.name,
+        },
+        {
+          key: 'description' + process.description + process.id,
+          content: process.description,
+        },
+        {
+          key: 'lastEdited' + process.lastEdited + process.id,
+          content: new Date(process.lastEdited).toLocaleString(),
+        },
+        {
+          key: 'createdOn' + process.createdOn + process.id,
+          content: new Date(process.createdOn).toLocaleDateString(),
+        },
+        {
+          key: 'action' + process.id,
+          content: <ActionButtons process={process}></ActionButtons>,
+        },
+      ],
+    };
+
+    if (includeContainer) {
+      row.cells.push({
         key: 'container' + process.id,
         content:
           'container' in process ? (
@@ -49,9 +69,12 @@ const ProcessList = ({
               ))}
             </TagGroup>
           ) : (
-            ''
+            <span></span>
           ),
-      },
+      });
+    }
+
+    row.cells.push(
       {
         key: 'lastEdited' + process.lastEdited + process.id,
         content: new Date(process.lastEdited).toLocaleString(),
@@ -64,10 +87,12 @@ const ProcessList = ({
         key: 'action' + process.id,
         content: <ActionButtons process={process}></ActionButtons>,
       },
-    ],
-  }));
+    );
 
-  const head = {
+    return row;
+  });
+
+  const head: HeadType = {
     cells: [
       {
         key: 'name',
@@ -80,28 +105,34 @@ const ProcessList = ({
         shouldTruncate: true,
         isSortable: true,
       },
-      {
-        key: 'container',
-        content: 'Container',
-        isSortable: true,
-      },
-      {
-        key: 'lastEdited',
-        content: 'Last Edited',
-        isSortable: true,
-      },
-      {
-        key: 'createdOn',
-        content: 'Created On',
-        isSortable: true,
-      },
-      {
-        key: 'actions',
-        content: '',
-        width: 10,
-      },
     ],
   };
+
+  if (includeContainer) {
+    head.cells.push({
+      key: 'container',
+      content: 'Container',
+      isSortable: true,
+    });
+  }
+
+  head.cells.push(
+    {
+      key: 'lastEdited',
+      content: 'Last Edited',
+      isSortable: true,
+    },
+    {
+      key: 'createdOn',
+      content: 'Created On',
+      isSortable: true,
+    },
+    {
+      key: 'actions',
+      content: '',
+      width: 10,
+    },
+  );
 
   const onSearch = (value: string, _e: any, info?: { source?: 'input' | 'clear' | undefined }) => {
     console.log(info?.source, value);

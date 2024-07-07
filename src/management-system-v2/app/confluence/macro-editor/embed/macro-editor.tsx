@@ -79,6 +79,7 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
                     </Button>
                   </ButtonGroup>
                 )}
+                includeContainer={false}
               />
             </div>
           </ModalBody>

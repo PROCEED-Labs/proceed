@@ -72,7 +72,8 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   if (
     !user.isGuest &&
-    ((user.username && getUserByUsername(user.username)) || getUserByEmail(user.email))
+    ((user.username && (await getUserByUsername(user.username))) ||
+      (await getUserByEmail(user.email!)))
   )
     throw new Error('User with this email or username already exists');
 
@@ -232,7 +233,7 @@ export async function updateUser(userId: string, inputUser: Partial<Authenticate
       if (!inputUser.isGuest && (await getSystemAdmins()).length === 0)
         addSystemAdmin({
           role: 'admin',
-          userId: user.id,
+          userId: user!.id,
         });
     }
 

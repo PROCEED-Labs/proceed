@@ -57,7 +57,7 @@ const HeaderActions: FC = () => {
     actionButton = (
       <div style={{ padding: '1rem' }}>
         <Select
-          options={userSpaces.map((space) => ({
+          options={userSpaces?.map((space) => ({
             label: (
               <Link
                 href={spaceURL(

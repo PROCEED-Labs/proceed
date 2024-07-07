@@ -37,23 +37,11 @@ const ProcessList = ({
       cells: [
         {
           key: process.name,
-          content: process.name,
+          content: <span>{process.name}</span>,
         },
         {
           key: 'description' + process.description + process.id,
           content: process.description,
-        },
-        {
-          key: 'lastEdited' + process.lastEdited + process.id,
-          content: new Date(process.lastEdited).toLocaleString(),
-        },
-        {
-          key: 'createdOn' + process.createdOn + process.id,
-          content: new Date(process.createdOn).toLocaleDateString(),
-        },
-        {
-          key: 'action' + process.id,
-          content: <ActionButtons process={process}></ActionButtons>,
         },
       ],
     };

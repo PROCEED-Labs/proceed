@@ -1,6 +1,11 @@
 {
   "name": "Confluence PROCEED",
   "description": "PROCEED in Confluence",
+  "icon": {
+    "width": 16,
+    "height": 16,
+    "url": "/proceed-icon.png"
+  },
   "key": "proceed-confluence-app",
   "baseUrl": "https://pr-281---ms-server-staging-c4f6qdpj7q-ew.a.run.app",
   "vendor": {
@@ -19,6 +24,9 @@
       "url": "/confluence/config",
       "name": {
         "value": "PROCEED Configuration"
+      },
+      "icon": {
+        "url": "/proceed-icon.png"
       },
       "key": "proceed-config-page"
     },
@@ -74,6 +82,9 @@
         "description": {
           "value": "Create a new BPMN Process"
         },
+        "icon": {
+          "url": "/proceed-icon.png"
+        },
         "url": "/confluence/macro/{processId}",
         "editor": {
           "url": "/confluence/macro-editor/create",
@@ -116,6 +127,9 @@
         },
         "description": {
           "value": "Embed PROCEED BPMN Processes into Confluence"
+        },
+        "icon": {
+          "url": "/proceed-icon.png"
         },
         "url": "/confluence/macro/{processId}",
         "editor": {

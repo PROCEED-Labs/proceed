@@ -107,15 +107,7 @@ export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
 
   // TODO: change this to a more efficient query when the
   // persistence layer is implemented
-  if (getSystemAdmins().length === 0)
-    addSystemAdmin({
-      role: 'admin',
-      userId: user.id,
-    });
-
-  // TODO: change this to a more efficient query when the
-  // persistence layer is implemented
-  if (getSystemAdmins().length === 0)
+  if ((await getSystemAdmins()).length === 0)
     addSystemAdmin({
       role: 'admin',
       userId: user.id,

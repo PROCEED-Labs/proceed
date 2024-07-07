@@ -32,7 +32,7 @@ export default async function UsersPage() {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
 
-  const adminData = getSystemAdminByUserId(user.userId);
+  const adminData = await getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
   const users = Promise.all(

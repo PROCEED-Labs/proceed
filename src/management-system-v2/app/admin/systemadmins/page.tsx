@@ -22,7 +22,7 @@ async function deleteAdmins(userIds: string[]) {
 
   try {
     for (const userId of userIds) {
-      const adminMapping = getSystemAdminByUserId(userId);
+      const adminMapping = await getSystemAdminByUserId(userId);
       if (!adminMapping) return userError('Admin not found');
 
       deleteSystemAdmin(adminMapping.id);
@@ -57,7 +57,7 @@ async function getNonAdminUsers() {
     return userError('Not a system admin', UserErrorType.PermissionError);
 
   try {
-    const systemAdmins = getSystemAdmins();
+    const systemAdmins = await getSystemAdmins();
     return getUsers().filter(
       (user) => !user.isGuest && !systemAdmins.some((admin) => admin.userId === user.id),
     ) as AuthenticatedUser[];
@@ -70,7 +70,7 @@ export type getNonAdminUsers = typeof getNonAdminUsers;
 export default async function ManageAdminsPage() {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
+  const adminData = await getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
   if (adminData.role !== 'admin') return <UnauthorizedFallback />;
 

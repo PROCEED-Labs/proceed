@@ -1,4 +1,15 @@
 -- CreateTable
+CREATE TABLE "SystemAdmin" (
+    "id" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'admin',
+    "userId" TEXT NOT NULL,
+    "createdOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastEditedOn" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SystemAdmin_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "firstName" TEXT,
@@ -129,6 +140,9 @@ CREATE TABLE "RoleMember" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "SystemAdmin_userId_key" ON "SystemAdmin"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
@@ -139,6 +153,9 @@ CREATE UNIQUE INDEX "OauthAccount_providerAccountId_key" ON "OauthAccount"("prov
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Version_version_key" ON "Version"("version");
+
+-- AddForeignKey
+ALTER TABLE "SystemAdmin" ADD CONSTRAINT "SystemAdmin_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "OauthAccount" ADD CONSTRAINT "OauthAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

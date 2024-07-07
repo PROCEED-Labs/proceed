@@ -10,7 +10,7 @@ import Ability, { adminRules } from '@/lib/ability/abilityHelper';
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
-  const systemAdmin = getSystemAdminByUserId(userId);
+  const systemAdmin = await getSystemAdminByUserId(userId);
 
   return { session, userId, systemAdmin };
 });
@@ -36,16 +36,15 @@ export const getCurrentEnvironment = cache(
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
-
     const activeSpace = decodeURIComponent(spaceIdParam);
     if (systemAdmin) {
       return {
         ability: new Ability(adminRules, activeSpace),
-        activeEnvironment: { spaceId: activeSpace, isOrganization: false },
+        activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
       };
     }
 
-    if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
+    if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');

@@ -1,7 +1,7 @@
 'use client';
 
 import Content from '@/components/content';
-import { Button, Form, Grid, Input, Steps, StepsProps, Typography, message } from 'antd';
+import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
 import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
@@ -26,7 +26,7 @@ const CreateOrganizationPage = ({
   createInactiveEnvironment,
 }: CreateOrganizationPageProps) => {
   const breakpoint = Grid.useBreakpoint();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi } = App.useApp();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -86,26 +86,30 @@ const CreateOrganizationPage = ({
   return (
     <div
       style={{
-        height: '100vh',
+        minHeight: '100svh',
+        height: '1px', // hack to make children inherit correct height
       }}
     >
-      {contextHolder}
       <Content
         headerCenter={
           breakpoint.xs ? undefined : (
-            <Image
-              src={'/proceed.svg'}
+            <Link
               style={{
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 paddingBottom: '15px',
               }}
-              alt="PROCEED Logo"
-              width={breakpoint.xs ? 85 : 160}
-              height={breakpoint.xs ? 35 : 63}
-              priority
-            />
+              href={'/'}
+            >
+              <Image
+                src={'/proceed.svg'}
+                alt="PROCEED Logo"
+                width={breakpoint.xs ? 85 : 160}
+                height={breakpoint.xs ? 35 : 63}
+                priority
+              />
+            </Link>
           )
         }
       >

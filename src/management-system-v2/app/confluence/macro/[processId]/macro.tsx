@@ -42,7 +42,11 @@ const Macro = ({ process }: { process: Process }) => {
             <img style={{ width: '3rem', marginRight: '0.75rem' }} src="/proceed-icon.png"></img>
             <span style={{ fontWeight: 'bold' }}>{process.name}</span>
           </div>
-          <Link href={`/processes/${process.id}`} rel="noopener noreferrer" target="_blank">
+          <Link
+            href={`${process.environmentId}/processes/${process.id}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             View in PROCEED
           </Link>
         </div>

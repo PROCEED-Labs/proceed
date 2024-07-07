@@ -71,6 +71,7 @@ export type PropertyContent = {
 };
 
 export type Property<T> = {
+  id: string | undefined;
   key: T; //'description' | 'owner' | 'userId' | 'custom' | 'machine' | 'param'
   content: PropertyContent[];
 };

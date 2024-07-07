@@ -22,6 +22,7 @@ import {
   findConfig,
   findParameter,
 } from '../configuration-helper';
+import MachineConfigModal from '@/components/machine-config-modal';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -115,17 +116,19 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setParameterValue('');
   };
 
-  const handleCreateMachineOk = () => {
+  const handleCreateMachineOk = (
+    values: {
+      name: string;
+      description: string;
+    }[],
+  ): Promise<void> => {
     if (machineType === 'machine-config') {
-      createMachine();
+      createMachine(values[0]);
     } else {
-      createTarget();
+      createTarget(values[0]);
     }
     setCreateMachineOpen(false);
-  };
-
-  const handleCreateMachineCancel = () => {
-    setCreateMachineOpen(false);
+    return Promise.resolve();
   };
 
   const handleCreateParameterOk = () => {
@@ -306,13 +309,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setTreeData(configArray);
   };
 
-  const createTarget = () => {
-    createTargetConfigInParent(parentConfig, name, description);
+  const createTarget = (values: { name: string; description: string }) => {
+    createTargetConfigInParent(parentConfig, values.name, values.description);
     saveAndUpdateElements();
   };
 
-  const createMachine = () => {
-    createMachineConfigInParent(parentConfig, name, description);
+  const createMachine = (values: { name: string; description: string }) => {
+    createMachineConfigInParent(parentConfig, values.name, values.description);
     saveAndUpdateElements();
   };
 
@@ -478,17 +481,14 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           with id {selectedMachineConfig?.selection.id}?
         </p>
       </Modal>
-      <Modal
+      <MachineConfigModal
         open={createMachineOpen}
-        title={'New ' + (machineType === 'target-config' ? 'target' : 'machine') + ' configuration'}
-        onOk={handleCreateMachineOk}
-        onCancel={handleCreateMachineCancel}
-      >
-        Name:
-        <Input required value={name} onChange={changeName} />
-        Description:
-        <TextArea value={description} onChange={changeDescription} />
-      </Modal>
+        title={`Creating ${machineType === 'target-config' ? 'target' : 'machine'} configuration`}
+        onCancel={() => {
+          setCreateMachineOpen(false);
+        }}
+        onSubmit={handleCreateMachineOk}
+      />
       <Modal
         open={createParameterOpen}
         title={'New parameter'}

@@ -29,7 +29,13 @@ import {
 
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import {
+  TreeFindStruct,
+  createMachineConfigInParent,
+  createTargetConfigInParent,
+  defaultConfiguration,
+  findConfig,
+} from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Text from 'antd/es/typography/Text';
@@ -41,6 +47,8 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
+import MachineConfigModal from '@/components/machine-config-modal';
+import { copyParentConfig } from '@/lib/data/legacy/machine-config';
 
 type MachineDataViewProps = {
   configId: string;
@@ -60,7 +68,9 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const [collapseItems, setCollapseItems] = useState<any[]>([]);
   const [name, setName] = useState<string | undefined>('');
   const [oldName, setOldName] = useState<string | undefined>('');
+  const [openCreateConfigModal, setOpenCreateConfigModal] = useState(false);
   const [description, setDescription] = useState<string | undefined>('');
+  const [createConfigType, setCreateConfigType] = useState<string>('');
 
   const parentConfig = { ...props.parentConfig };
   const editingConfig = props.selectedConfig
@@ -115,7 +125,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     setName(editingConfig.name);
     setDescription(editingConfig.description?.value);
     updateItems(panelStyle);
-  }, [props.selectedConfig, props.parentConfig, editable]);
+  }, [props.selectedConfig, editable, parentConfig]);
 
   const showMobileView = useMobileModeler();
 
@@ -134,34 +144,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     border: 'none',
   };
 
-  //for target header and metadata header
-  const subHeaderDropdownItems = [
-    {
-      key: '1',
-      label: 'Custom Field',
-    },
-    {
-      key: '2',
-      label: 'Attachment',
-    },
-    {
-      key: '3',
-      label: 'Picture',
-    },
-    {
-      key: '4',
-      label: 'ID',
-    },
-    {
-      key: '5',
-      label: 'Owner',
-    },
-    {
-      key: '6',
-      label: 'Description',
-    },
-  ];
-
   const configHeaderDropdownItems = () => {
     const menu = [];
     if (parentConfig.targetConfig === undefined) {
@@ -179,7 +161,29 @@ export default function ConfigEditor(props: MachineDataViewProps) {
 
   const onClickAddMachineButton = (e: any) => {
     if (e.key === 'target-config') {
+      setCreateConfigType('target');
+    } else {
+      setCreateConfigType('machine');
     }
+    setOpenCreateConfigModal(true);
+  };
+
+  const handleCreateConfig = (
+    values: {
+      name: string;
+      description: string;
+    }[],
+  ): Promise<void> => {
+    const valueFromModal = values[0];
+    if (createConfigType === 'target') {
+      createTargetConfigInParent(parentConfig, valueFromModal.name, valueFromModal.description);
+    } else {
+      createMachineConfigInParent(parentConfig, valueFromModal.name, valueFromModal.description);
+    }
+    saveParentConfig(configId, parentConfig).then(() => {});
+    setOpenCreateConfigModal(false);
+    router.refresh();
+    return Promise.resolve();
   };
 
   const updateItems = (panelStyle: {
@@ -258,143 +262,151 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   };
 
   return (
-    <Layout>
-      <Header
-        style={{
-          background: '#fff',
-          margin: '0 16px',
-          padding: '0 16px',
-          borderRadius: borderRadiusLG,
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-          <Space>
-            <div onBlur={saveName}>
-              <Title
-                editable={{
-                  icon: (
-                    <EditOutlined
-                      style={{
-                        margin: '0 10px',
-                      }}
-                    />
-                  ),
-                  tooltip: 'Edit',
-                  onStart: pushName,
-                  onCancel: restoreName,
-                  onChange: setName,
-                  onEnd: saveName,
-                  enterIcon: <CheckOutlined />,
-                }}
-                level={5}
-                style={{ margin: '0' }}
-              >
-                {name}
-              </Title>
-            </div>
-            <Space.Compact>
-              <Select
-                popupMatchSelectWidth={false}
-                placeholder="Select Version"
-                showSearch
-                filterOption={filterOption}
-                value={{
-                  value: selectedVersion.version,
-                  label: selectedVersion.name,
-                }}
-                onSelect={(_, option) => {
-                  // change the version info in the query but keep other info
-                  const searchParams = new URLSearchParams(query);
-                  if (!option.value || option.value === -1) searchParams.delete('version');
-                  else searchParams.set(`version`, `${option.value}`);
-                  router.push(
-                    spaceURL(
-                      environment,
-                      `/machine-config/${configId as string}${
-                        searchParams.size ? '?' + searchParams.toString() : ''
-                      }`,
-                    ),
-                  );
-                }}
-                options={[LATEST_VERSION]
-                  .concat(editingConfig.versions ?? [])
-                  .map(({ version, name }) => ({
-                    value: version,
-                    label: name,
-                  }))}
-              />
-              {!showMobileView && editable && (
-                <>
-                  <Tooltip title="Create New Version">
-                    <VersionCreationButton
-                      icon={<PlusOutlined />}
-                      createVersion={createConfigVersion}
-                    ></VersionCreationButton>
-                  </Tooltip>
-                </>
-              )}
-            </Space.Compact>
-          </Space>
-          <Space>
-            {editable &&
-              getAddButton(
-                'Add Child Configuration',
-                configHeaderDropdownItems(),
-                onClickAddMachineButton,
-              )}
-          </Space>
-          <Space>
-            <Radio.Group value={position} onChange={onModeChange}>
-              <Radio.Button value="view">
-                View{' '}
-                <EyeOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Radio.Button>
-              <Radio.Button value="edit">
-                Edit{' '}
-                <EditOutlined
-                  style={{
-                    margin: '0 0 0 6px',
-                  }}
-                />
-              </Radio.Button>
-            </Radio.Group>
-            <Button>
-              Export{' '}
-              <ExportOutlined
-                style={{
-                  margin: '0 0 0 16px',
-                }}
-              />
-            </Button>
-          </Space>
-        </Flex>
-      </Header>
-      <Content
-        style={{
-          margin: '24px 16px 0',
-          padding: '16px',
-          background: colorBgContainer,
-          borderRadius: borderRadiusLG,
-          minHeight: 'auto',
-          height: 'auto',
-        }}
-      >
-        <Collapse
-          bordered={false}
-          defaultActiveKey={['1', '2', '3']}
-          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+    <>
+      <Layout>
+        <Header
           style={{
-            background: token.colorBgContainer,
+            background: '#fff',
+            margin: '0 16px',
+            padding: '0 16px',
+            borderRadius: borderRadiusLG,
+            display: 'flex',
+            alignItems: 'center',
           }}
-          items={collapseItems}
-        />
-      </Content>
-    </Layout>
+        >
+          <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+            <Space>
+              <div onBlur={saveName}>
+                <Title
+                  editable={{
+                    icon: (
+                      <EditOutlined
+                        style={{
+                          margin: '0 10px',
+                        }}
+                      />
+                    ),
+                    tooltip: 'Edit',
+                    onStart: pushName,
+                    onCancel: restoreName,
+                    onChange: setName,
+                    onEnd: saveName,
+                    enterIcon: <CheckOutlined />,
+                  }}
+                  level={5}
+                  style={{ margin: '0' }}
+                >
+                  {name}
+                </Title>
+              </div>
+              <Space.Compact>
+                <Select
+                  popupMatchSelectWidth={false}
+                  placeholder="Select Version"
+                  showSearch
+                  filterOption={filterOption}
+                  value={{
+                    value: selectedVersion.version,
+                    label: selectedVersion.name,
+                  }}
+                  onSelect={(_, option) => {
+                    // change the version info in the query but keep other info
+                    const searchParams = new URLSearchParams(query);
+                    if (!option.value || option.value === -1) searchParams.delete('version');
+                    else searchParams.set(`version`, `${option.value}`);
+                    router.push(
+                      spaceURL(
+                        environment,
+                        `/machine-config/${configId as string}${
+                          searchParams.size ? '?' + searchParams.toString() : ''
+                        }`,
+                      ),
+                    );
+                  }}
+                  options={[LATEST_VERSION]
+                    .concat(editingConfig.versions ?? [])
+                    .map(({ version, name }) => ({
+                      value: version,
+                      label: name,
+                    }))}
+                />
+                {!showMobileView && editable && (
+                  <>
+                    <Tooltip title="Create New Version">
+                      <VersionCreationButton
+                        icon={<PlusOutlined />}
+                        createVersion={createConfigVersion}
+                      ></VersionCreationButton>
+                    </Tooltip>
+                  </>
+                )}
+              </Space.Compact>
+            </Space>
+            <Space>
+              {editable &&
+                getAddButton(
+                  'Add Child Configuration',
+                  configHeaderDropdownItems(),
+                  onClickAddMachineButton,
+                )}
+            </Space>
+            <Space>
+              <Radio.Group value={position} onChange={onModeChange}>
+                <Radio.Button value="view">
+                  View{' '}
+                  <EyeOutlined
+                    style={{
+                      margin: '0 0 0 6px',
+                    }}
+                  />
+                </Radio.Button>
+                <Radio.Button value="edit">
+                  Edit{' '}
+                  <EditOutlined
+                    style={{
+                      margin: '0 0 0 6px',
+                    }}
+                  />
+                </Radio.Button>
+              </Radio.Group>
+              <Button>
+                Export{' '}
+                <ExportOutlined
+                  style={{
+                    margin: '0 0 0 16px',
+                  }}
+                />
+              </Button>
+            </Space>
+          </Flex>
+        </Header>
+        <Content
+          style={{
+            margin: '24px 16px 0',
+            padding: '16px',
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+            minHeight: 'auto',
+            height: 'auto',
+          }}
+        >
+          <Collapse
+            bordered={false}
+            defaultActiveKey={['1', '2', '3']}
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            style={{
+              background: token.colorBgContainer,
+            }}
+            items={collapseItems}
+          />
+        </Content>
+      </Layout>
+      <MachineConfigModal
+        open={openCreateConfigModal}
+        title={`Creating ${createConfigType} configuration`}
+        onCancel={() => setOpenCreateConfigModal(false)}
+        onSubmit={handleCreateConfig}
+      />
+    </>
   );
 }

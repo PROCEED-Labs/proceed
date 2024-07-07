@@ -114,7 +114,7 @@
       {
         "renderModes": {
           "pdf": {
-            "url": "/confluence/macro/{processId}/pdf-export"
+            "url": "/confluence/macro/{processId}/pdf-export?contentId={content.id}"
           }
         },
         "width": "400px",

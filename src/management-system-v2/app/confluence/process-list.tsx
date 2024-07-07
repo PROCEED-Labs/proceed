@@ -12,48 +12,20 @@ import { Process } from '@/lib/data/process-schema';
 import TagGroup from '@atlaskit/tag-group';
 import Tag, { SimpleTag } from '@atlaskit/tag';
 
+export type ConfluenceProceedProcess = Process & { container: string[] };
+
 const ProcessList = ({
   processes: initialProcesses,
   ActionButtons,
 }: {
-  processes: Process[];
+  processes: ConfluenceProceedProcess[] | Process[];
   ActionButtons: any;
 }) => {
-  const confluenceMockProcesses = [
-    {
-      id: '1',
-      name: 'Process A',
-      description: 'This is a process',
-      origin: 'Confluence',
-      container: ['Test Page'],
-      lastEdited: 1715543462411,
-      createdOn: 1715543462411,
-    },
-    {
-      id: '2',
-      name: 'Process B',
-      description: 'This is a process',
-      origin: 'Confluence',
-      container: ['Process Page'],
-      lastEdited: 1715543462411,
-      createdOn: 1715543462411,
-    },
-    {
-      id: '3',
-      name: 'Process C',
-      description: 'This is another process',
-      origin: 'Confluence',
-      container: ['Test Page 1', 'Test Page 2'],
-      lastEdited: 1715543462411,
-      createdOn: 1715543462411,
-    },
-  ];
-
   useEffect(() => {
-    setProcesses([...initialProcesses, ...confluenceMockProcesses]);
+    setProcesses([...initialProcesses]);
   }, [initialProcesses]);
 
-  const [processes, setProcesses] = useState([...initialProcesses, ...confluenceMockProcesses]);
+  const [processes, setProcesses] = useState([...initialProcesses]);
 
   // applied as rows in the form
   const rows = processes.map((process, index) => ({
@@ -66,10 +38,6 @@ const ProcessList = ({
       {
         key: 'description' + process.description + process.id,
         content: process.description,
-      },
-      {
-        key: 'origin' + process.id,
-        content: 'origin' in process ? process.origin : 'PROCEED',
       },
       {
         key: 'container' + process.id,
@@ -110,11 +78,6 @@ const ProcessList = ({
         key: 'description',
         content: 'Description',
         shouldTruncate: true,
-        isSortable: true,
-      },
-      {
-        key: 'origin',
-        content: 'Origin',
         isSortable: true,
       },
       {

@@ -34,7 +34,6 @@ type BuilderProps = {
 };
 
 const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
-  const breakpoint = Grid.useBreakpoint();
   const { query } = useEditor();
 
   const iframeContainerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +42,10 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 
   const { width: iframeMaxWidth } = useBoundingClientRect(iframeContainerRef, ['width']);
 
+  const breakpoint = Grid.useBreakpoint();
+
+  const isMobile = breakpoint.xs;
+
   useEffect(() => {
     if (iframeMaxWidth < 601) setIframeLayout('mobile');
     else setIframeLayout('computer');
@@ -50,8 +53,8 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 
   return (
     <Modal
-      width={breakpoint.xs ? '100vw' : '90vw'}
       centered
+      width={isMobile ? '100vw' : '90vw'}
       styles={{ body: { height: '85vh' } }}
       open={open}
       title="Edit User Task"
@@ -64,16 +67,20 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       }}
     >
       <div className={styles.BuilderUI}>
-        <Toolbar
-          iframeMaxWidth={iframeMaxWidth}
-          iframeLayout={iframeLayout}
-          onLayoutChange={setIframeLayout}
-        />
+        {!isMobile && (
+          <Toolbar
+            iframeMaxWidth={iframeMaxWidth}
+            iframeLayout={iframeLayout}
+            onLayoutChange={setIframeLayout}
+          />
+        )}
         <AntRow className={styles.EditorBody}>
-          <Col span={4}>
-            <Toolbox />
-          </Col>
-          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={20}>
+          {!isMobile && (
+            <Col span={4}>
+              <Toolbox />
+            </Col>
+          )}
+          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
             <IFrame
               id="user-task-builder-iframe"
               width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
@@ -125,6 +132,10 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 };
 
 const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
+  const breakpoint = Grid.useBreakpoint();
+
+  const isMobile = breakpoint.xs;
+
   return (
     <Editor
       resolver={{
@@ -139,6 +150,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
         Table,
         Image,
       }}
+      enabled={!isMobile}
       handlers={(store: EditorStore) =>
         new CustomEventhandlers({
           store,

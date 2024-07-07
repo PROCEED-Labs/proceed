@@ -1,22 +1,26 @@
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcesses } from '@/lib/data/legacy/_process';
-import { Process } from '@/lib/data/process-schema';
 import Layout from './layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import ManagableProcessList from './managable-process-list';
-import { headers, cookies } from 'next/headers';
-import { signIn } from 'next-auth/react';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { findPROCEEDMacrosInSpace } from './helpers';
 import { ConfluenceProceedProcess } from './process-list';
 
-const ConfluencePage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
+const ConfluencePage = async ({
+  params,
+  searchParams,
+}: {
+  params: any;
+  searchParams: { jwt: string; spaceKey: string };
+}) => {
   const jwtToken = searchParams.jwt;
+  const spaceKey = searchParams.spaceKey;
 
-  if (!jwtToken) {
+  if (!jwtToken || !spaceKey) {
     return <span>Page can only be accessed inside of Confluence</span>;
   }
 
@@ -51,7 +55,7 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(ability);
 
-    const result = await findPROCEEDMacrosInSpace('~7120203a3f17e3744f4cd0accc1311bd5daad6');
+    const result = await findPROCEEDMacrosInSpace(spaceKey);
 
     const ownedProcessesWithContainerInfo = ownedProcesses.map((process) => ({
       ...process,

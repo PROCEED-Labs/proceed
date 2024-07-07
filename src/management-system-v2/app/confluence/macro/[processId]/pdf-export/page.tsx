@@ -4,9 +4,16 @@ import {
 } from '@/app/confluence/helpers';
 import { getDefinitionsName, getProcessDocumentation } from '@proceed/bpmn-helper';
 
-const Page = async ({ params: { processId } }: { params: { processId: string } }) => {
-  const base64 = await getAttachmentProcessBase64Image('14712843', processId);
-  const bpmn = await getAttachmentProcessBpmn('14712843', processId);
+const Page = async ({
+  params: { processId },
+  searchParams,
+}: {
+  params: { processId: string };
+  searchParams: { contentId: string };
+}) => {
+  const contentId = searchParams.contentId;
+  const base64 = await getAttachmentProcessBase64Image(contentId, processId);
+  const bpmn = await getAttachmentProcessBpmn(contentId, processId);
   const documentation = await getProcessDocumentation(bpmn);
   const definitionsName = await getDefinitionsName(bpmn);
 

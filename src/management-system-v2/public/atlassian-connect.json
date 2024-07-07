@@ -24,7 +24,7 @@
     },
     "generalPages": [
       {
-        "url": "/confluence",
+        "url": "/confluence?spaceKey={space.key}",
         "key": "proceed-process-list-page",
         "name": {
           "value": "PROCEED Process List"
@@ -60,7 +60,7 @@
       {
         "renderModes": {
           "pdf": {
-            "url": "/confluence/macro/{processId}/pdf-export"
+            "url": "/confluence/macro/{processId}/pdf-export?contentId={content.id}"
           }
         },
         "width": "400px",

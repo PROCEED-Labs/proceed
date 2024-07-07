@@ -9,7 +9,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useCallback, useState } from 'react';
-import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import { ParentConfig, ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,13 @@ import {
   FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
-import { deleteParentConfigurations } from '@/lib/data/legacy/machine-config';
+import {
+  deleteParentConfigurations,
+  createParentConfig,
+  saveParentConfig,
+  getConfigurationById,
+  copyParentConfig,
+} from '@/lib/data/legacy/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -33,8 +39,9 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
+import { v4 } from 'uuid';
 
-type InputItem = ParentConfigMetadata;
+type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 const ParentConfigList = ({
@@ -201,13 +208,36 @@ const ParentConfigList = ({
   }
 
   function handleEdit(values: { id: string; name: string; description: string }[]): Promise<void> {
-    throw new Error('Function not implemented.');
+    const valuesFromModal = values[0];
+    if (editingItem) {
+      saveParentConfig(valuesFromModal.id, {
+        ...editingItem,
+        description: { label: 'description', value: valuesFromModal.description },
+        name: valuesFromModal.name,
+      }).then(() => {});
+      setOpenEditModal(false);
+      router.refresh();
+    }
+    return Promise.resolve();
   }
 
   function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
-    throw new Error('Function not implemented.');
+    const valuesFromModal = values[0];
+    if (copySelection[0]) {
+      copyParentConfig(
+        valuesFromModal.originalId,
+        {
+          name: valuesFromModal.name,
+          description: { label: 'description', value: valuesFromModal.description },
+        },
+        space.spaceId,
+      ).then(() => {});
+      setOpenCopyModal(false);
+      router.refresh();
+    }
+    return Promise.resolve();
   }
 
   const addPreferences = useUserPreferences.use.addPreferences();
@@ -333,7 +363,7 @@ const ParentConfigList = ({
                   title="Delete machine Config"
                   externalOpen={openDeleteModal}
                   onExternalClose={() => setOpenDeleteModal(false)}
-                  description="Are you sure you want to delete the selected processes?"
+                  description="Are you sure you want to delete the selected configurations?"
                   onConfirm={() => deleteItems(selectedRowElements)}
                   buttonProps={{
                     icon: <DeleteOutlined />,

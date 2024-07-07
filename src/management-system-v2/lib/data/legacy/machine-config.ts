@@ -103,6 +103,57 @@ export async function getConfigurationById(
   return parentConfig;
 }
 
+export async function copyParentConfig(
+  originalId: string,
+  machineConfigInput: AbstractConfigInput,
+  environmentId: string,
+) {
+  try {
+    let originalConfig = parentConfigMetaObjects[originalId];
+    if (!originalConfig) {
+      return;
+    }
+
+    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
+    const date = new Date().toUTCString();
+    const metadata: ParentConfig = {
+      ...originalConfig,
+      ...({
+        id: v4(),
+        name: parentConfigData.name,
+        description: parentConfigData.description,
+        createdOn: date,
+        lastEditedOn: date,
+        createdBy: environmentId,
+        lastEditedBy: environmentId,
+      } as ParentConfig),
+    };
+
+    if (!metadata.folderId) {
+      metadata.folderId = getRootFolder(metadata.environmentId).id;
+    }
+
+    const folderData = foldersMetaObject.folders[metadata.folderId];
+    if (!folderData) throw new Error('Folder not found');
+    const { id: definitionId } = metadata;
+    if (parentConfigMetaObjects[definitionId]) {
+      throw new Error(`A parent configuration with the id ${definitionId} already exists!`);
+    }
+
+    parentConfigMetaObjects[definitionId] = metadata;
+    store.add('machineConfig', removeExcessiveInformation(metadata));
+
+    eventHandler.dispatch('machineConfigCopied', {
+      configOriginal: originalConfig,
+      configCopy: metadata,
+    });
+
+    return machineConfigInput;
+  } catch (e) {
+    return userError("Couldn't save Machine Config");
+  }
+}
+
 export async function createParentConfig(
   machineConfigInput: AbstractConfigInput,
   environmentId: string,

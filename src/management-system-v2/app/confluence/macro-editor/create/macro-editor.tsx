@@ -47,7 +47,16 @@ const MacroEditor = ({
     formData.append('bpmn', bpmnBlob);
     formData.append('image', processPNG);
 
-    return createAttachment('14712843', formData);
+    const confluencePageId = await getConfluencePageId();
+    await createAttachment(confluencePageId, formData);
+  };
+
+  const getConfluencePageId = () => {
+    return new Promise((resolve) => {
+      window.AP.context.getContext((context) => {
+        resolve(context.confluence.content.id);
+      });
+    }) as Promise<string>;
   };
 
   return (

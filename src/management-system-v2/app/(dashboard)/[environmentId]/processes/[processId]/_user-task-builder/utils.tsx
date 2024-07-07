@@ -120,6 +120,10 @@ body {
   max-width: 100%;
 }
 
+p, h1, h2, h3, h4, h5, th, td {
+  cursor: default;
+}
+
 `;
 
 export function toHtml(json: string) {
@@ -140,7 +144,7 @@ export function toHtml(json: string) {
       }}
     >
       <Frame data={json} />
-    </Editor>,
+    </Editor>
   );
 
   return `

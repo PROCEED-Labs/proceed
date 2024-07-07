@@ -62,7 +62,9 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
             setProp((props: ImageProps) => {
               const newFilename =
                 imageFileName &&
-                `/api/private/${environment.spaceId}/processes/${params.processId as string}/images/${imageFileName}`;
+                `/api/private/${environment.spaceId}/processes/${
+                  params.processId as string
+                }/images/${imageFileName}`;
               props.src = newFilename;
               props.width = undefined;
             });
@@ -86,8 +88,6 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
           onMouseDownCapture={(e) => {
             e.stopPropagation();
             e.preventDefault();
-
-            console.log(e);
 
             setIsResizing(true);
 

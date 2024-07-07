@@ -47,6 +47,7 @@ const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
           onPressEnter={(e) => {
             if (!e.shiftKey) handleSave();
           }}
+          onMouseDownCapture={(e) => e.stopPropagation()}
         />
       ) : (
         <p style={{ fontSize, whiteSpace: 'pre-line' }} onDoubleClick={handleDoubleClick}>

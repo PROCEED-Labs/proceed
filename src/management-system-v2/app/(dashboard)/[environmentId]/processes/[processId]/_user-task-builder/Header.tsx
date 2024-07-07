@@ -46,13 +46,14 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
           onChange={(e) => setCurrent(e.target.value)}
           onBlur={handleSave}
           onPressEnter={handleSave}
+          onMouseDownCapture={(e) => e.stopPropagation()}
         />
       ) : (
         <>
           {React.createElement(
             headerType[type - 1],
             { onDoubleClick: handleDoubleClick },
-            <>{current}</>,
+            <>{current}</>
           )}
         </>
       )}

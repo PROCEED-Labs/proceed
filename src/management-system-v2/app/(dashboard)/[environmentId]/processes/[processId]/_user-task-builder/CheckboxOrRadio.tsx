@@ -96,9 +96,14 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
                 onChange={(e) => setCurrentLabel(e.target.value)}
                 onBlur={() => handleLabelSave(index)}
                 onPressEnter={() => handleLabelSave(index)}
+                onMouseDownCapture={(e) => e.stopPropagation()}
               />
             ) : (
-              <label onDoubleClick={() => handleDoubleClick(index)} htmlFor={inputIds[index]}>
+              <label
+                onDoubleClick={() => handleDoubleClick(index)}
+                htmlFor={inputIds[index]}
+                onClick={(e) => e.preventDefault()}
+              >
                 {label}
               </label>
             )}

@@ -9,9 +9,10 @@ import { ComponentSettings } from './utils';
 type InputProps = {
   label: string;
   type?: 'text' | 'number' | 'email';
+  defaultValue?: string;
 };
 
-const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
+const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue = '' }) => {
   const {
     connectors: { connect },
     actions: { setProp },
@@ -19,6 +20,8 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
 
   const [labelEditable, setLabelEditable] = useState(false);
   const [currentLabel, setCurrentLabel] = useState(label);
+
+  const [defaultEditable, setDefaultEditable] = useState(false);
 
   const handleDoubleClick = () => {
     setLabelEditable(true);
@@ -48,6 +51,7 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
             onChange={(e) => setCurrentLabel(e.target.value)}
             onBlur={handleSave}
             onPressEnter={handleSave}
+            onMouseDownCapture={(e) => e.stopPropagation()}
           />
         ) : (
           <label onDoubleClick={handleDoubleClick} htmlFor={inputId}>
@@ -56,7 +60,24 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text' }) => {
         )}
       </div>
 
-      <input id={inputId} type={type} />
+      <input
+        id={inputId}
+        type={type}
+        value={defaultValue}
+        onMouseDownCapture={(e) => defaultEditable && e.stopPropagation()}
+        onDoubleClick={(e) => {
+          e.currentTarget.focus();
+          setDefaultEditable(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+            setDefaultEditable(false);
+          }
+        }}
+        onBlur={() => setDefaultEditable(false)}
+        onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
+      />
     </div>
   );
 };
@@ -108,6 +129,7 @@ Input.craft = {
   props: {
     type: 'text',
     label: 'Double-Click Me',
+    defaultValue: '',
   },
 };
 

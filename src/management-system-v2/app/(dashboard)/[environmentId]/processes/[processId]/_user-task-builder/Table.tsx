@@ -200,6 +200,7 @@ const Table: UserComponent<TableProps> = ({
                 onChange={(e) => setCellEditing({ ...cellEditing, value: e.target.value })}
                 onBlur={handleCellEditSave}
                 onPressEnter={handleCellEditSave}
+                onMouseDownCapture={(e) => e.stopPropagation()}
               />
             ) : (
               <>{col}</>

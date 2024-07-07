@@ -236,7 +236,15 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               <text>Machine Configurations</text>
               {editable && (
                 <Tooltip title="Add Machine Configuration">
-                  <Button icon={<PlusOutlined />} type="text" style={{ margin: '0 10px 0 10px' }} />
+                  <Button
+                    onClick={() => {
+                      setCreateConfigType('machine');
+                      setOpenCreateConfigModal(true);
+                    }}
+                    icon={<PlusOutlined />}
+                    type="text"
+                    style={{ margin: '0 10px 0 10px' }}
+                  />
                 </Tooltip>
               )}
             </Space>

@@ -10,6 +10,7 @@ import { headers, cookies } from 'next/headers';
 import { signIn } from 'next-auth/react';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { findPROCEEDMacrosInSpace } from './helpers';
 
 const ConfluencePage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
   console.log('searchparams', searchParams.jwt);
@@ -55,6 +56,14 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
 
     console.log('userEnvironments', userEnvironments);
 
+    const result = await findPROCEEDMacrosInSpace('~7120203a3f17e3744f4cd0accc1311bd5daad6');
+    console.log('result', result);
+
+    const ownedProcessesWithContainerInfo = ownedProcesses.map((process) => ({
+      ...process,
+      container: result[process.id],
+    }));
+
     return (
       <Layout
         hideFooter={true}
@@ -64,7 +73,7 @@ const ConfluencePage = async ({ params, searchParams }: { params: any; searchPar
         activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
       >
         <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
-          <ManagableProcessList processes={ownedProcesses}></ManagableProcessList>
+          <ManagableProcessList processes={ownedProcessesWithContainerInfo}></ManagableProcessList>
         </div>
       </Layout>
     );

@@ -28,6 +28,7 @@
     "@atlaskit/textfield": "6.3.1",
     "@atlaskit/tooltip": "18.4.0",
     "@atlaskit/tag": "12.2.1",
+    "@atlaskit/tag-group": "10.4.0",
     "@atlaskit/icon": "22.2.0",
     "@atlaskit/select": "17.9.0",
     "@atlaskit/tabs": "16.1.2",

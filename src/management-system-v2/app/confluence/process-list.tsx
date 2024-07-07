@@ -9,6 +9,9 @@ import { CheckboxSelect } from '@atlaskit/select';
 import { Col, Row } from 'antd';
 import { Process } from '@/lib/data/process-schema';
 
+import TagGroup from '@atlaskit/tag-group';
+import Tag, { SimpleTag } from '@atlaskit/tag';
+
 const ProcessList = ({
   processes: initialProcesses,
   ActionButtons,
@@ -22,7 +25,7 @@ const ProcessList = ({
       name: 'Process A',
       description: 'This is a process',
       origin: 'Confluence',
-      container: 'Test Page',
+      container: ['Test Page'],
       lastEdited: 1715543462411,
       createdOn: 1715543462411,
     },
@@ -31,7 +34,7 @@ const ProcessList = ({
       name: 'Process B',
       description: 'This is a process',
       origin: 'Confluence',
-      container: 'Process Page',
+      container: ['Process Page'],
       lastEdited: 1715543462411,
       createdOn: 1715543462411,
     },
@@ -40,7 +43,7 @@ const ProcessList = ({
       name: 'Process C',
       description: 'This is another process',
       origin: 'Confluence',
-      container: 'Test Page',
+      container: ['Test Page 1', 'Test Page 2'],
       lastEdited: 1715543462411,
       createdOn: 1715543462411,
     },
@@ -70,7 +73,16 @@ const ProcessList = ({
       },
       {
         key: 'container' + process.id,
-        content: 'container' in process ? <a href="">{process.container}</a> : '',
+        content:
+          'container' in process ? (
+            <TagGroup>
+              {process.container.map((containerItem) => (
+                <SimpleTag key={process.id + '-' + containerItem} text={containerItem} href="/" />
+              ))}
+            </TagGroup>
+          ) : (
+            ''
+          ),
       },
       {
         key: 'lastEdited' + process.lastEdited + process.id,

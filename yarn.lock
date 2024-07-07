@@ -556,6 +556,14 @@
     "@babel/runtime" "^7.0.0"
     "@emotion/react" "^11.7.1"
 
+"@atlaskit/tag-group@10.4.0":
+  version "10.4.0"
+  resolved "https://registry.yarnpkg.com/@atlaskit/tag-group/-/tag-group-10.4.0.tgz#06de1527cf7bf9250b71b2dbc6b782deb1386a48"
+  integrity sha512-d8g6GHvo+L3UGmNzYr8woqWKKFXY1WowueGhKwgU3c9uxbWpx64a94HVczHU4OTaW4kYccQ7vVg2ibQeceEfCA==
+  dependencies:
+    "@babel/runtime" "^7.0.0"
+    "@emotion/react" "^11.7.1"
+
 "@atlaskit/tag@12.2.1":
   version "12.2.1"
   resolved "https://registry.yarnpkg.com/@atlaskit/tag/-/tag-12.2.1.tgz#280e5e307a7ba72629a69b21f46fed388f6f15ec"

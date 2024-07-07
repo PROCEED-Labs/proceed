@@ -2,6 +2,7 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import * as AtlassianJwt from 'atlassian-jwt';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 export const createAttachment = async (pageId: string, attachmentFormData: FormData) => {
   const processId = attachmentFormData.get('id');
@@ -166,6 +167,81 @@ export const getSpaces = async (jwtToken: any) => {
     console.log('res json', await res.json());
     return res;
   }
+};
+
+export const getPagesBySpaceId = async (spaceId: string): Promise<string[]> => {
+  const apiToken =
+    'ATATT3xFfGF0GbPbaGHtjHkCBb-H5eOKNlIM8NBs-ofrD22TFZO7DaOauxH3ras3xrtp2cv98l27yH3kbmeWcbxDdIZpoSs27_Cy-dMcPp_GDgb8KkNpomM9pnikqhYHNbRMRkgLK7vOzcp5b21_ZAWTr4kexeXfed707-bOqXGsGqiZql9GIxc=09697613';
+
+  const res = await fetch(
+    `https://proceed-test.atlassian.net/wiki/rest/api/space/${spaceId}/content`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
+      },
+    },
+  );
+
+  const jsonResult = await res.json();
+  return jsonResult.page.results.map((page: { id: any }) => page.id);
+};
+
+export const getPageContentById = async (pageId: string): Promise<string> => {
+  const apiToken =
+    'ATATT3xFfGF0GbPbaGHtjHkCBb-H5eOKNlIM8NBs-ofrD22TFZO7DaOauxH3ras3xrtp2cv98l27yH3kbmeWcbxDdIZpoSs27_Cy-dMcPp_GDgb8KkNpomM9pnikqhYHNbRMRkgLK7vOzcp5b21_ZAWTr4kexeXfed707-bOqXGsGqiZql9GIxc=09697613';
+
+  const res = await fetch(
+    `https://proceed-test.atlassian.net/wiki/rest/api/content/${pageId}?expand=body.storage`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
+      },
+    },
+  );
+  const jsonResult = await res.json();
+  return jsonResult.body.storage.value;
+};
+
+export const findPROCEEDMacrosInPageContent = (pageContent: string) => {
+  const PROCEEDMacroNames = ['proceed-embed-macro', 'bpmn-create-macro'].join('|');
+  const regex = new RegExp(
+    `<ac:structured-macro[^>]*ac:name="(${PROCEEDMacroNames})"[^>]*>(.*?)</ac:structured-macro>`,
+    'gs',
+  );
+  const macros = pageContent.match(regex) || [];
+  const processIds: string[] = [];
+  macros.forEach((macro) => {
+    const processIdMatch = macro.match(/<ac:parameter ac:name="processId">(.*?)<\/ac:parameter>/);
+    if (processIdMatch) {
+      processIds.push(processIdMatch[1]);
+    }
+  });
+
+  return processIds;
+};
+
+export const findPROCEEDMacrosInSpace = async (spaceId: string) => {
+  const pages = await getPagesBySpaceId(spaceId);
+  console.log('pages', pages);
+  const results: { [key: string]: string[] } = {};
+
+  await asyncForEach(pages, async (pageId) => {
+    const content = (await getPageContentById(pageId)) as string;
+    console.log('content', content);
+    const processIds = await findPROCEEDMacrosInPageContent(content);
+    console.log('processIds', processIds);
+    processIds.forEach((processId) => {
+      if (results[processId] && !results[processId].includes(pageId)) {
+        results[processId].push(pageId);
+      } else {
+        results[processId] = [pageId];
+      }
+    });
+  });
+
+  return results;
 };
 
 export const verifyJwt = async (jwtToken: any) => {

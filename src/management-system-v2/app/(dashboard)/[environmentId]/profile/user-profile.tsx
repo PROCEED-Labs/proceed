@@ -32,6 +32,9 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
+  const firstName = userData.isGuest ? 'Guest' : userData.firstName || '';
+  const lastName = userData.isGuest ? '' : userData.lastName || '';
+
   return (
     <>
       <UserDataModal

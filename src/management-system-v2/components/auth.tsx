@@ -6,6 +6,9 @@ import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
 import Ability, { adminRules } from '@/lib/ability/abilityHelper';
+import { globalOrganizationRules, globalUserRules } from '@/lib/authorization/globalRules';
+import { packRules } from '@casl/ability/extra';
+import { AbilityRule } from '@/lib/ability/caslAbility';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
@@ -37,10 +40,17 @@ export const getCurrentEnvironment = cache(
       spaceIdParam = userId;
     }
     const activeSpace = decodeURIComponent(spaceIdParam);
+
+    const isOrganization = activeSpace !== userId;
+
     if (systemAdmin) {
+      const rules = adminRules;
+      if (!isOrganization) rules.push(...packRules<AbilityRule>(globalUserRules));
+      else rules.push(...packRules<AbilityRule>(globalOrganizationRules));
+
       return {
-        ability: new Ability(adminRules, activeSpace),
-        activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+        ability: new Ability(rules, activeSpace),
+        activeEnvironment: { spaceId: activeSpace, isOrganization },
       };
     }
 
@@ -62,7 +72,7 @@ export const getCurrentEnvironment = cache(
 
     return {
       ability,
-      activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+      activeEnvironment: { spaceId: activeSpace, isOrganization },
     };
   },
 );

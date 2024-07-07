@@ -4,7 +4,7 @@ import { z } from 'zod';
 // TODO: add min and max constraints
 export const UserOrganizationEnvironmentInputSchema = z.object({
   name: z.string().min(4, { message: 'Name must be at least 4 characters long' }),
-  description: z.string().min(10, { message: 'Description must be at least 4 characters long' }),
+  description: z.string().min(4, { message: 'Description must be at least 4 characters long' }),
   contactPhoneNumber: z
     .string()
     .transform((arg, ctx) => {

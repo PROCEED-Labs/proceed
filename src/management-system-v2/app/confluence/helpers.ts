@@ -53,6 +53,7 @@ export const getAttachments = async (pageId: string) => {
       headers: {
         Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
       },
+      cache: 'no-cache',
     },
   );
 
@@ -77,6 +78,7 @@ export const getAttachmentProcessBase64Image = async (pageId: string, processId:
     headers: {
       Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
     },
+    cache: 'no-cache',
   });
 
   console.log('res', res);
@@ -106,6 +108,7 @@ export const getAttachmentProcessBpmn = async (pageId: string, processId: string
     headers: {
       Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
     },
+    cache: 'no-cache',
   });
 
   console.log('res', res);
@@ -182,6 +185,7 @@ export const getPagesBySpaceKey = async (
       headers: {
         Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
       },
+      cache: 'no-cache',
     },
   );
 
@@ -203,6 +207,7 @@ export const getPageContentById = async (pageId: string): Promise<string> => {
       headers: {
         Authorization: `Basic ${Buffer.from(`lucasgold99@gmail.com:${apiToken}`).toString('base64')}`,
       },
+      cache: 'no-cache',
     },
   );
   const jsonResult = await res.json();

@@ -72,7 +72,7 @@ export default function MetaData(props: MachineDataViewProps) {
   const editingMachineConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
     : props.customConfig
-      ? props.customConfig
+      ? { ...props.customConfig }
       : defaultConfiguration();
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
@@ -120,7 +120,7 @@ export default function MetaData(props: MachineDataViewProps) {
       <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
         <Col span={2} className="gutter-row">
           {' '}
-          ID{' '}
+          ID {editingMachineConfig.type}
         </Col>
         <Col span={21} className="gutter-row">
           <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />

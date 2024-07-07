@@ -89,7 +89,7 @@ const getProcessInfo = async (
     }
   }
 
-  return { isOwner, processData };
+  return { isOwner, processData } as { isOwner: boolean; processData: Process };
 };
 
 /**

@@ -16,6 +16,7 @@ import { Environment } from '@/lib/data/environment-schema';
 import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
+import { User } from '@/lib/data/user-schema';
 
 async function deleteSpace(spaceIds: string[]) {
   'use server';
@@ -38,7 +39,7 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
 
   if (params?.userId) {
     const userId = decodeURIComponent(params.userId);
-    const user = getUserById(userId, { throwIfNotFound: false });
+    const user = await getUserById(userId, { throwIfNotFound: false });
     if (!user) redirect('/admin/spaces');
 
     title = (
@@ -46,18 +47,23 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
         <Button type="text" icon={<LeftOutlined />} href="/admin/spaces">
           Back to MS spaces
         </Button>
-        {`${getUserName(user)}'s Spaces`}
+        {`${getUserName(user as User)}'s Spaces`}
       </Space>
     );
 
-    const userSpaces: Environment[] = [{ id: userId, organization: false, ownerId: userId }];
-    userSpaces.push(
-      ...getUserOrganizationEnvironments(userId).map((spaceId) => getEnvironmentById(spaceId)),
-    );
+    const userSpaces: any[] = [await getEnvironmentById(userId)];
+    const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+    const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
+      return await getEnvironmentById(environmentId);
+    });
 
-    spacesTableRepresentation = getSpaceRepresentation(userSpaces);
+    const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+
+    userSpaces.push(...orgEnvironments);
+
+    spacesTableRepresentation = await getSpaceRepresentation(userSpaces);
   } else {
-    spacesTableRepresentation = getSpaceRepresentation(getEnvironments());
+    spacesTableRepresentation = await getSpaceRepresentation(getEnvironments());
   }
 
   return (

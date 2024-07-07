@@ -59,7 +59,7 @@ async function getNonAdminUsers() {
   try {
     const systemAdmins = getSystemAdmins();
     return getUsers().filter(
-      (user) => !user.guest && !systemAdmins.some((admin) => admin.userId === user.id),
+      (user) => !user.isGuest && !systemAdmins.some((admin) => admin.userId === user.id),
     ) as AuthenticatedUser[];
   } catch (e) {
     return userError('Something went wrong');
@@ -74,18 +74,22 @@ export default async function ManageAdminsPage() {
   if (!adminData) redirect('/');
   if (adminData.role !== 'admin') return <UnauthorizedFallback />;
 
-  const systemAdmins = getSystemAdmins().map((admin) => {
-    const user = getUserById(admin.userId) as AuthenticatedUser;
-    return {
-      ...user,
-      role: admin.role,
-    };
-  });
+  const systemAdmins = async (): Promise<(AuthenticatedUser & { role: 'admin' })[]> => {
+    const admins = await getSystemAdmins();
+    return Promise.all(
+      admins.map(async (admin) => {
+        const user = (await getUserById(admin.userId)) as AuthenticatedUser;
+        return { ...user, role: admin.role };
+      }),
+    );
+  };
+
+  const adminsList = await systemAdmins();
 
   return (
     <Content title="System admins">
       <SystemAdminsTable
-        admins={systemAdmins}
+        admins={adminsList}
         deleteAdmins={deleteAdmins}
         addAdmin={addAdmin}
         getNonAdminUsers={getNonAdminUsers}

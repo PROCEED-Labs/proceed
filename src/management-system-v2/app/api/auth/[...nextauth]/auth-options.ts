@@ -51,7 +51,7 @@ const nextAuthOptions: AuthOptions = {
     async jwt({ token, user: _user, trigger }) {
       let user = _user as User | undefined;
 
-      if (trigger === 'update') user = getUserById(token.user.id);
+      if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
 
       if (trigger === 'signIn') token.csrfToken = randomUUID();
 

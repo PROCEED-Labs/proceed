@@ -35,19 +35,28 @@ const ProcessesPage = async ({
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(
-    await getFolderChildren(folder.id, ability),
-    async (item) => {
-      if (item.type === 'folder') {
-        return {
-          ...(await getFolderById(item.id)),
-          type: 'folder' as const,
-        };
-      } else {
-        return await getProcess(item.id);
-      }
-    },
-  )) satisfies ListItem[];
+  const getFolderItemDetails = async (item: any): Promise<ListItem> => {
+    if (item.type === 'folder') {
+      const folderDetails = await getFolderById(item.id);
+      return {
+        ...folderDetails,
+        type: 'folder' as const,
+      };
+    } else {
+      const process = await getProcess(item.id);
+      return process as ListItem;
+    }
+  };
+
+  const getFolderContents = async (folderId: string, ability: any): Promise<ListItem[]> => {
+    const children = await getFolderChildren(folderId, ability);
+    const folderContents = await asyncMap(children, getFolderItemDetails);
+
+    return folderContents satisfies ListItem[];
+  };
+
+  const folderContents = await getFolderContents(folder.id, ability);
+
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;
   while (currentFolder.parentId) {

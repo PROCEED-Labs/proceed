@@ -88,6 +88,7 @@ export async function getMemebers(environmentId: string, ability?: Ability) {
   if (ability) ability;
 
   if (enableUseDB) {
+    console.log(environmentId);
     const workspace = await db.space.findUnique({
       where: {
         id: environmentId,

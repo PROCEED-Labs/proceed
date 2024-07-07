@@ -79,7 +79,7 @@ export async function getUsersFavourites(): Promise<String[]> {
 
 export async function isUserGuest() {
   const { userId } = await getCurrentUser();
-  const user = usersMetaObject[userId];
+  const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
 
-  return user.guest;
+  return user?.isGuest;
 }

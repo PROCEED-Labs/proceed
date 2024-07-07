@@ -124,8 +124,10 @@ export const getProcess = async (definitionId: string, spaceId: string) => {
   const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
-
-  return enableUseDB ? await _getProcess(definitionId) : getProcessMetaObjects()[definitionId];
+  const result = enableUseDB
+    ? await _getProcess(definitionId)
+    : getProcessMetaObjects()[definitionId];
+  return result as Process;
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {

@@ -35,27 +35,33 @@ export default async function UsersPage() {
   const adminData = getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
-  const users = getUsers().map((user) => {
-    const orgs = getUserOrganizationEnvironments(user.id).length;
-    if (orgs > 0) console.log(getUserOrganizationEnvironments(user.id));
+  const users = Promise.all(
+    (await getUsers()).map(async (user) => {
+      const orgs = (await getUserOrganizationEnvironments(user.id)).length;
 
-    if (user.guest)
-      return {
-        ...user,
-        guest: false as const,
-        email: '',
-        username: 'Guest',
-        firstName: 'Guest',
-        lastName: '',
-        orgs,
-      };
+      if (orgs > 0) {
+        console.log(await getUserOrganizationEnvironments(user.id));
+      }
 
-    return { ...user, orgs };
-  });
+      return user.isGuest
+        ? {
+            ...user,
+            isGuest: false as const,
+            email: '',
+            username: 'Guest',
+            firstName: 'Guest',
+            lastName: '',
+            orgs,
+          }
+        : { ...user, orgs };
+    }),
+  );
+
+  const usersList = await users;
 
   return (
     <Content title="MS users">
-      <UserTable users={users} deleteUsers={deleteUsers} />
+      <UserTable users={usersList} deleteUsers={deleteUsers} />
     </Content>
   );
 }

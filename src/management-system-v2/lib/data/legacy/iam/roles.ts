@@ -9,6 +9,8 @@ import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import { getFolderById } from '../folders';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data';
+import { Membership } from './memberships';
+import { Prettify } from '@/lib/typescript-utils.js';
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
 
@@ -39,25 +41,13 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
     const roles = await db.role.findMany({
       where: environmentId ? { environmentId: environmentId } : undefined,
       include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
+        members: true,
       },
     });
 
     const filteredRoles = ability ? ability.filter('view', 'Process', roles) : roles;
 
-    return filteredRoles;
+    return filteredRoles as Role[];
   }
   const roles = environmentId
     ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
@@ -117,11 +107,12 @@ export async function getRoleById(roleId: string, ability?: Ability) {
         },
       })
     : roleMetaObjects[roleId];
-  if (!ability) return role;
+
+  if (!ability) return role as Role;
 
   if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
 
-  return role;
+  return role as Role;
 }
 
 /**

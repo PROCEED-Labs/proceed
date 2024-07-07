@@ -193,8 +193,8 @@ export async function selectAsLatestVersion(processId: string, version: number) 
   // make sure that the html is also rolled back
   const processHtmlMapping = await getProcessUserTasksHtml(processId);
 
-  const editableBpmn = await getProcessBpmn(processId);
-  const versionBpmn = await getProcessVersionBpmn(processId, version);
+  const editableBpmn = (await getProcessBpmn(processId)) as string;
+  const versionBpmn = (await getProcessVersionBpmn(processId, version)) as string;
   const fileNamesinEditableVersion = await getUsedFileNames(editableBpmn);
 
   const { bpmn: convertedBpmn, changedFileNames } = await convertToEditableBpmn(versionBpmn);

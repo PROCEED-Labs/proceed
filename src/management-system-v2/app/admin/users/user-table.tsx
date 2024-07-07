@@ -16,7 +16,7 @@ export default function UserTable({
   deleteUsers: serverDeleteUsers,
 }: {
   users: {
-    guest: false;
+    isGuest: false;
     id: string;
     email: string;
     username?: string;

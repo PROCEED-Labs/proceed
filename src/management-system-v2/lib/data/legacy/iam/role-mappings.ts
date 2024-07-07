@@ -262,10 +262,6 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
       userMappings.push(newRoleMapping);
       role.members.push({
         userId: userId,
-        username: user.username ?? '',
-        firstName: user.firstName ?? '',
-        lastName: user.lastName ?? '',
-        email: user.email,
       });
 
       // persist new role mapping in file system

@@ -5,7 +5,10 @@ import { Process } from '@/lib/data/process-schema';
 import { useRouter } from 'next/navigation';
 import Link from '@atlaskit/link';
 
+const baseUrl = process.env.NEXTAUTH_URL ?? '';
+
 const Macro = ({ process }: { process: Process }) => {
+  const proceedURL = `${baseUrl}/${process.environmentId}/processes/${process.id}`;
   const router = useRouter();
   useEffect(() => {
     if (typeof window !== 'undefined' && window.AP && window.AP.confluence) {
@@ -42,11 +45,7 @@ const Macro = ({ process }: { process: Process }) => {
             <img style={{ width: '3rem', marginRight: '0.75rem' }} src="/proceed-icon.png"></img>
             <span style={{ fontWeight: 'bold' }}>{process.name}</span>
           </div>
-          <Link
-            href={`${process.environmentId}/processes/${process.id}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <Link href={proceedURL} rel="noopener noreferrer" target="_blank">
             View in PROCEED
           </Link>
         </div>

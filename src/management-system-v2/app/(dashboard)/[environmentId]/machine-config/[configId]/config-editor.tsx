@@ -119,11 +119,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
-      setName(editingConfig.name);
       return;
     }
+    setName(editingConfig.name);
     updateItems(panelStyle);
-  }, [editable]);
+  }, [editable, props.selectedConfig]);
 
   const showMobileView = useMobileModeler();
 

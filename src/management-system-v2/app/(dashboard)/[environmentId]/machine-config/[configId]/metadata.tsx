@@ -92,9 +92,11 @@ export default function MetaData(props: MachineDataViewProps) {
       if (refEditingMachineConfig.selection.name)
         refEditingMachineConfig.selection.name = name ? name : '';
       if (refEditingMachineConfig.selection.owner)
-        refEditingMachineConfig.selection.owner.value = owner ? owner : '';
+        refEditingMachineConfig.selection.owner.content[0].value = owner ? owner : '';
       if (refEditingMachineConfig.selection.description)
-        refEditingMachineConfig.selection.description.value = description ? description : '';
+        refEditingMachineConfig.selection.description.content[0].value = description
+          ? description
+          : '';
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -106,8 +108,8 @@ export default function MetaData(props: MachineDataViewProps) {
       return;
     }
     setName(editingMachineConfig.name);
-    setDescription(editingMachineConfig.description?.value);
-    setOwner(editingMachineConfig.owner?.value);
+    setDescription(editingMachineConfig.description?.content[0].value);
+    setOwner(editingMachineConfig.owner?.content[0].value);
   }, [props.selectedMachineConfig]);
 
   const showMobileView = useMobileModeler();

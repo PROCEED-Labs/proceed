@@ -40,6 +40,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { v4 } from 'uuid';
+import { predefinedDefault } from './configuration-helper';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -212,7 +213,7 @@ const ParentConfigList = ({
     if (editingItem) {
       saveParentConfig(valuesFromModal.id, {
         ...editingItem,
-        description: { label: 'description', value: valuesFromModal.description },
+        description: predefinedDefault('description', valuesFromModal.description),
         name: valuesFromModal.name,
       }).then(() => {});
       setOpenEditModal(false);
@@ -230,7 +231,7 @@ const ParentConfigList = ({
         valuesFromModal.originalId,
         {
           name: valuesFromModal.name,
-          description: { label: 'description', value: valuesFromModal.description },
+          description: predefinedDefault('description', valuesFromModal.description),
         },
         space.spaceId,
       ).then(() => {});

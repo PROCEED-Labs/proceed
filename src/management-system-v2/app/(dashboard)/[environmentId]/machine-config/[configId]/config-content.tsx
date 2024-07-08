@@ -20,7 +20,6 @@ type VariablesEditorProps = {
 
 export default function ConfigContent(props: VariablesEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<string>('');
   const router = useRouter();
   const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct | TreeFindParameterStruct>({
     selection: props.originalParentConfig,
@@ -40,9 +39,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
   };
 
   const treeOnUpdate = (editedConfig: ParentConfig) => {
-    const date = new Date().toUTCString();
     router.refresh();
-    setLastUpdate(date);
     setParentConfig(editedConfig);
   };
 
@@ -75,7 +72,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
         onClick={() => setCollapsed(!collapsed)}
         style={{ fontSize: '24px' }}
       />
-      {selectedConfig?.selection.type !== 'param' ? (
+      {selectedConfig?.selection && 'type' in selectedConfig?.selection ? (
         <ConfigEditor
           backendSaveParentConfig={saveConfig}
           configId={configId}

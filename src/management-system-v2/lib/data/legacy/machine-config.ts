@@ -154,6 +154,14 @@ export async function copyParentConfig(
   }
 }
 
+function predefinedDefault<T>(key: string, val: T) {
+  return {
+    id: v4(),
+    key: key,
+    content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
+  };
+}
+
 export async function createParentConfig(
   machineConfigInput: AbstractConfigInput,
   environmentId: string,
@@ -166,15 +174,15 @@ export async function createParentConfig(
         id: v4(),
         type: 'config',
         name: 'Default Parent Configuration',
-        description: { label: 'Description', value: '' },
+        description: predefinedDefault('description', ''),
         variables: [],
         parameters: [],
         createdBy: environmentId,
         lastEditedBy: environmentId,
         lastEditedOn: date,
-        userId: { label: 'User ID', value: environmentId },
+        userId: predefinedDefault('userIdentification', ''),
         customFields: [],
-        picture: { label: 'Picture', value: '' },
+        picture: predefinedDefault('picture', ''),
         departments: [],
         inEditingBy: [],
         createdOn: date,
@@ -187,7 +195,7 @@ export async function createParentConfig(
         targetConfig: undefined,
         machineConfigs: [],
         environmentId: environmentId,
-        owner: { label: 'Owner', value: environmentId },
+        owner: predefinedDefault('owner', ''),
       } as ParentConfig),
       ...parentConfigData,
     };

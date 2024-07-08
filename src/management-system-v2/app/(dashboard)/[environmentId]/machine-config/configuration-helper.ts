@@ -1,5 +1,18 @@
-import { AbstractConfig, ConfigParameter, ParentConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  ConfigField,
+  ConfigParameter,
+  ParentConfig,
+} from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
+
+export function predefinedDefault<T>(key: string, val: T) {
+  return {
+    id: v4(),
+    key: key,
+    content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
+  };
+}
 
 export function defaultConfiguration(): AbstractConfig {
   const date = new Date().toUTCString();
@@ -7,10 +20,10 @@ export function defaultConfiguration(): AbstractConfig {
     id: v4(),
     type: 'config',
     environmentId: '',
-    owner: { label: 'Owner', value: '' },
-    picture: { label: 'Picture', value: '' },
+    owner: predefinedDefault('owner', ''),
+    picture: predefinedDefault('picture', ''),
     name: 'Default Machine Configuration',
-    description: { label: 'Description', value: '' },
+    description: predefinedDefault('description', ''),
     variables: [],
     customFields: [],
     parameters: [],
@@ -37,8 +50,8 @@ export const createMachineConfigInParent = (
   parentConfig.machineConfigs.push({
     ...defaultConfiguration(),
     name: nameValue,
-    description: { label: 'Description', value: descriptionValue },
-    machine: { label: 'Machine', value: '' },
+    description: predefinedDefault('description', descriptionValue),
+    machine: predefinedDefault('machine', ''),
     type: 'machine-config',
     owner: parentConfig.owner,
     environmentId: parentConfig.environmentId,
@@ -56,7 +69,7 @@ export const createTargetConfigInParent = (
   foundMachine.targetConfig = {
     ...defaultConfiguration(),
     name: nameValue,
-    description: { label: 'Description', value: descriptionValue },
+    description: predefinedDefault('description', descriptionValue),
     type: 'target-config',
     owner: foundMachine.owner,
     environmentId: foundMachine.environmentId,

@@ -17,9 +17,11 @@ function highlightText<TObj>(
   if (typeof fuseElement.item[dataIndexElement] === 'string')
     value = (fuseElement.item[dataIndexElement] as string) || '';
   else {
-    if ('value' in (fuseElement.item[dataIndexElement] as object))
-      value = (fuseElement.item[dataIndexElement] as { value: string }).value || '';
-    else value = '';
+    // if it is a ConfigField
+    if ('content' in (fuseElement.item[dataIndexElement] as object))
+      value =
+        (fuseElement.item[dataIndexElement] as { content: [{ value: string }] }).content[0].value ||
+        '';
   }
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 

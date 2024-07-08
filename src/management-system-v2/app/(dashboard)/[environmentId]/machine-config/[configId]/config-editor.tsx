@@ -69,7 +69,6 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const [name, setName] = useState<string | undefined>('');
   const [oldName, setOldName] = useState<string | undefined>('');
   const [openCreateConfigModal, setOpenCreateConfigModal] = useState(false);
-  const [description, setDescription] = useState<string | undefined>('');
   const [createConfigType, setCreateConfigType] = useState<string>('');
 
   const parentConfig = { ...props.parentConfig };
@@ -120,12 +119,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
+      setName(editingConfig.name);
       return;
     }
-    setName(editingConfig.name);
-    setDescription(editingConfig.description?.value);
     updateItems(panelStyle);
-  }, [props.selectedConfig, editable, parentConfig]);
+  }, [editable]);
 
   const showMobileView = useMobileModeler();
 

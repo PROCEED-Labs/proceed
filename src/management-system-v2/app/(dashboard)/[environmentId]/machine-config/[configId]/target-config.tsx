@@ -25,9 +25,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const [editingName, setEditingName] = useState(false);
-  const [name, setName] = useState<string | undefined>('');
-  const [description, setDescription] = useState<string | undefined>('');
 
   const parentConfig = { ...props.parentConfig };
   const editingConfig = props.parentConfig.targetConfig
@@ -38,26 +35,11 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   const configId = props.configId;
   const selectedVersionId = query.get('version');
 
-  const changeDescription = (e: any) => {
-    let newDescription = e.target.value;
-    setDescription(newDescription);
-  };
-
-  const saveDescription = (e: any) => {
-    if (refEditingConfig && refEditingConfig.selection.description) {
-      refEditingConfig.selection.description.value = description ? description : '';
-      saveParentConfig(configId, parentConfig).then(() => {});
-      router.refresh();
-    }
-  };
-
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    setName(editingConfig.name);
-    setDescription(editingConfig.description?.value);
   }, [props.selectedConfig]);
 
   const showMobileView = useMobileModeler();

@@ -2,27 +2,28 @@ import { string, z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
 
+const ConfigFieldZod = z.object({
+  id: z.string(),
+  key: z.string(),
+  content: z.array(
+    z.object({
+      value: z.any(),
+      type: z.string(),
+      displayName: z.string(),
+      language: z.string().optional(),
+      unit: z.string().optional(),
+    }),
+  ),
+});
+
 export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  description: z
-    .object({
-      label: z.string().optional(),
-      value: z.string().optional(),
-    })
-    .optional(),
-  owner: z
-    .object({
-      label: z.string().optional(),
-      value: z.string().optional(),
-    })
-    .optional(),
-  userId: z //TODO: change to userIdentifier
-    .object({
-      label: z.string().optional(),
-      value: z.string().optional(),
-    })
-    .optional(),
+  description: ConfigFieldZod.optional(),
+  owner: ConfigFieldZod.optional(),
+  userId: ConfigFieldZod.optional(),
+  machine: ConfigFieldZod.optional(),
+  picture: ConfigFieldZod.optional(),
   folderId: z.string().optional(),
 });
 
@@ -41,26 +42,6 @@ export type Metadata = {
   lastEditedOn: string;
 };
 
-export type ConfigParameter = Metadata &
-  FieldGroup<'param'> & {
-    linkedParameters: string[];
-    nestedParameters: ConfigParameter[];
-  };
-
-export type MachineConfigField = FieldGroup<
-  'description' | 'owner' | 'userId' | 'custom' | 'machine'
->;
-
-//Alternative TODO
-export type FieldGroup<T> = {
-  type: T;
-  key: string | undefined;
-  value: string;
-  id: string | undefined;
-  unit: string | undefined;
-  language: string | undefined;
-};
-
 //New Schema:
 export type PropertyContent = {
   value: any;
@@ -72,33 +53,31 @@ export type PropertyContent = {
 
 export type Property<T> = {
   id: string | undefined;
-  key: T; //'description' | 'owner' | 'userId' | 'custom' | 'machine' | 'param'
+  key: T; //'custom' | 'param'
   content: PropertyContent[];
 };
 
-export type Parameter = Property<'param'> & //change name to ConfigParameter later
+export type ConfigParameter = Property<'param'> & //change name to ConfigParameter later
   Metadata & {
     linkedParameters: string[];
     nestedParameters: ConfigParameter[];
   };
 
-export type ConfigField = Property<'description' | 'owner' | 'userId' | 'custom' | 'machine'>;
+export type ConfigField = Property<'custom'>;
 //New Schema End
 
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
     Metadata & {
-      picture: { label: string; value: string };
       parameters: ConfigParameter[];
-      customFields: MachineConfigField[];
+      customFields: ConfigField[];
     } & VersionedObject<'config' | 'target-config' | 'machine-config'>
 >;
 
 export type MachineConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
-    AbstractConfigMetadata & {
-      machine: { label: string; value: string };
-    } & VersionedObject<'machine-config'>
+    AbstractConfigMetadata &
+    VersionedObject<'machine-config'>
 >;
 
 export type TargetConfigMetadata = Prettify<

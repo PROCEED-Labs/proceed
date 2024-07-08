@@ -6,7 +6,8 @@ import {
   ConfigParameter,
   TargetConfig,
 } from '@/lib/data/machine-config-schema';
-import { Dropdown, Input, MenuProps, Modal, Tag, Tree, TreeDataNode } from 'antd';
+import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tree, TreeDataNode } from 'antd';
+import Text from 'antd/es/typography/Text';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
@@ -259,7 +260,12 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     let tagByType = (
       <>
         <Tag color="lime">P</Tag>
-        {_parameter.key}
+        <Space>
+          <Text>{_parameter.content[0].displayName}: </Text>
+          <Text>{_parameter.content[0].value}</Text>
+          <Text>{_parameter.content[0].unit}</Text>
+          <Text type="secondary">({_parameter.content[0].language})</Text>
+        </Space>
       </>
     );
 
@@ -357,17 +363,22 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     const date = new Date().toUTCString();
     const defaultParameter: ConfigParameter = {
       id: v4(),
+      key: 'param',
       createdBy: environment.spaceId,
       createdOn: date,
-      language: parameterLanguage,
       lastEditedBy: environment.spaceId,
       lastEditedOn: date,
       linkedParameters: [],
       nestedParameters: [],
-      unit: parameterUnit,
-      value: parameterValue,
-      key: parameterKey,
-      type: 'param',
+      content: [
+        {
+          displayName: parameterKey[0].toUpperCase() + parameterKey.slice(1),
+          language: parameterLanguage,
+          type: 'string',
+          value: parameterValue,
+          unit: parameterUnit,
+        },
+      ],
     };
     if (_configType === 'parameter') {
       let ref = findParameter(_configId.toString(), parentConfig, 'config');
@@ -465,7 +476,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           (selectedMachineConfig
             ? 'name' in selectedMachineConfig.selection
               ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.key
+              : selectedMachineConfig.selection.content[0].displayName
             : '')
         }
         onOk={handleDeleteConfirm}
@@ -476,7 +487,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           {selectedMachineConfig
             ? 'name' in selectedMachineConfig.selection
               ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.key
+              : selectedMachineConfig.selection.content[0].displayName
             : ''}{' '}
           with id {selectedMachineConfig?.selection.id}?
         </p>

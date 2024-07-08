@@ -10,6 +10,7 @@ import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
 import { getCurrentEnvironment } from './auth';
+import { predefinedDefault } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -37,7 +38,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
     const machineConfig = await (customAction?.(values[0]) ??
       createParentConfig(
         {
-          description: { label: 'Description', value: values[0].description },
+          description: predefinedDefault('description', values[0].description),
           name: values[0].name,
           folderId: folderId,
         },

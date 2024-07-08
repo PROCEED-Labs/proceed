@@ -18,7 +18,6 @@ import {
   theme,
   Flex,
 } from 'antd';
-import { spaceURL } from '@/lib/utils';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
@@ -42,10 +41,6 @@ export default function Parameters(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const [editingName, setEditingName] = useState(false);
-  const [name, setName] = useState<string | undefined>('');
-  const [description, setDescription] = useState<string | undefined>('');
-
   const parentConfig = { ...props.parentConfig };
   const editingConfig = props.selectedConfig
     ? { ...props.selectedConfig.selection }
@@ -63,15 +58,6 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const editable = props.editingEnabled;
 
-  const changeNestedParameter = (index: number, key: string, value: string) => {
-    const newNestedParameters = [...nestedParameters];
-    if (key === 'key') newNestedParameters[index].key = value;
-    else if (key === 'value') newNestedParameters[index].value = value;
-    else if (key === 'unit') newNestedParameters[index].unit = value;
-    else if (key === 'language') newNestedParameters[index].language = value;
-    setNestedParameters(newNestedParameters);
-  };
-
   const saveParameters = () => {
     if (refEditingMachineConfig) {
       refEditingMachineConfig.selection.parameters = nestedParameters;
@@ -80,17 +66,11 @@ export default function Parameters(props: MachineDataViewProps) {
     }
   };
 
-  const removeNestedParameter = (index: number) => {
-    setNestedParameters(nestedParameters.filter((_, i) => i !== index));
-  };
-
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    setName(editingConfig.name);
-    setDescription(editingConfig.description?.value);
     if (refEditingMachineConfig) setNestedParameters(refEditingMachineConfig.selection.parameters);
   }, [props.selectedConfig]);
 
@@ -100,10 +80,10 @@ export default function Parameters(props: MachineDataViewProps) {
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
         <Space>
-          <Text>{parameter.key}: </Text>
-          <Text>{parameter.value}</Text>
-          <Text>{parameter.unit}</Text>
-          <Text type="secondary">({parameter.language})</Text>
+          <Text>{parameter.content[0].displayName}: </Text>
+          <Text>{parameter.content[0].value}</Text>
+          <Text>{parameter.content[0].unit}</Text>
+          <Text type="secondary">({parameter.content[0].language})</Text>
         </Space>
         {getTooltips(editable, true, true, editable)}
         {/* <Space align="center">
@@ -156,7 +136,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Key{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.key} />
+          <Input disabled={!editable} value={parameter.content[0].displayName} />
         </Col>
       </Row>
       <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
@@ -165,7 +145,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Value{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.value} />
+          <Input disabled={!editable} value={parameter.content[0].value} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -179,7 +159,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Unit{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.unit} />
+          <Input disabled={!editable} value={parameter.content[0].unit} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
@@ -193,7 +173,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Language{' '}
         </Col>
         <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.language} />
+          <Input disabled={!editable} value={parameter.content[0].language} />
         </Col>
         <Col span={1} className="gutter-row">
           <Tooltip title="Delete">

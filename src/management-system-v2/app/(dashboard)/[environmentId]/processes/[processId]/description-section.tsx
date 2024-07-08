@@ -53,53 +53,52 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
           Description
         </span>
       </Divider>
-      <div
-        style={{
-          backgroundColor: '#fafafa',
-          border: '1px solid #f0f0f0',
-          borderRadius: '0.5rem',
-          padding: '0.5rem',
-          cursor: 'pointer',
-        }}
-      >
-        {description ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <EditOutlined
-                onClick={() => {
-                  setShowPopupEditor(true);
-                }}
-              ></EditOutlined>
-            </div>
-            <ScrollBar>
-              <div
-                style={{ maxHeight: '40vh' }}
-                role="textbox"
-                aria-label="description-viewer"
-                onClick={() => {
-                  setShowPopupEditor(true);
-                }}
-              >
-                <TextViewer initialValue={description}></TextViewer>
-              </div>
-            </ScrollBar>
-          </>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Button
-              style={{ fontSize: '0.75rem' }}
-              type="text"
-              size="small"
-              icon={<PlusOutlined></PlusOutlined>}
+
+      {description ? (
+        <div
+          style={{
+            backgroundColor: '#fafafa',
+            border: '1px solid #f0f0f0',
+            borderRadius: '0.5rem',
+            padding: '0.5rem',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <EditOutlined
+              onClick={() => {
+                setShowPopupEditor(true);
+              }}
+            ></EditOutlined>
+          </div>
+          <ScrollBar>
+            <div
+              style={{ maxHeight: '40vh' }}
+              role="textbox"
+              aria-label="description-viewer"
               onClick={() => {
                 setShowPopupEditor(true);
               }}
             >
-              Add Description
-            </Button>
-          </div>
-        )}
-      </div>
+              <TextViewer initialValue={description}></TextViewer>
+            </div>
+          </ScrollBar>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Button
+            style={{ fontSize: '0.75rem' }}
+            type="text"
+            size="small"
+            icon={<PlusOutlined></PlusOutlined>}
+            onClick={() => {
+              setShowPopupEditor(true);
+            }}
+          >
+            Add Description
+          </Button>
+        </div>
+      )}
 
       <Modal
         width={breakpoint.xs ? '100vw' : '75vw'}

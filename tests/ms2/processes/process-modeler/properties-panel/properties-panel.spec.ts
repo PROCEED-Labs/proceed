@@ -39,20 +39,21 @@ test('open properties panel for process and fill property values', async ({
   await propertiesPanelPage.addDescription('New Description');
   await expect(descriptionViewer).toHaveText('New Description');
 
-  // Create Milestone and check table
+  // Create Milestone and check if table exists
   const milestonesTable = propertiesPanelPage.milestonesSection.getByRole('table');
-  const firstContentRow = milestonesTable.getByRole('row').nth(1);
-  await expect(firstContentRow).toHaveText('No data');
+  await expect(milestonesTable).not.toBeVisible();
   await propertiesPanelPage.addMilestone({
     ID: '123',
     name: 'Milestone A',
     description: 'Milestone Description',
   });
+  await expect(milestonesTable).toBeVisible();
+  const firstContentRow = milestonesTable.getByRole('row').nth(1);
   await expect(firstContentRow.getByRole('cell').first()).toHaveText('123');
   await expect(firstContentRow.getByRole('cell').nth(1)).toHaveText('Milestone A');
   await expect(firstContentRow.getByRole('cell').nth(2)).toHaveText('Milestone Description');
   await firstContentRow.getByLabel('delete').click();
-  await expect(firstContentRow).toHaveText('No data');
+  await expect(milestonesTable).not.toBeVisible();
 
   // Fill Planned Cost Input
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('');
@@ -173,18 +174,19 @@ test('open properties panel for element and fill property values', async ({
   await expect(descriptionViewer).toHaveText('New Description');
 
   const milestonesTable = propertiesPanelPage.milestonesSection.getByRole('table');
-  const firstContentRow = milestonesTable.getByRole('row').nth(1);
-  await expect(firstContentRow).toHaveText('No data');
+  await expect(milestonesTable).not.toBeVisible();
   await propertiesPanelPage.addMilestone({
     ID: '123',
     name: 'Milestone A',
     description: 'Milestone Description',
   });
+  await expect(milestonesTable).toBeVisible();
+  const firstContentRow = milestonesTable.getByRole('row').nth(1);
   await expect(firstContentRow.getByRole('cell').first()).toHaveText('123');
   await expect(firstContentRow.getByRole('cell').nth(1)).toHaveText('Milestone A');
   await expect(firstContentRow.getByRole('cell').nth(2)).toHaveText('Milestone Description');
   await firstContentRow.getByLabel('delete').click();
-  await expect(firstContentRow).toHaveText('No data');
+  await expect(milestonesTable).not.toBeVisible();
 
   await expect(propertiesPanelPage.page.getByPlaceholder('Planned Cost')).toHaveValue('');
   await propertiesPanelPage.page.getByPlaceholder('Planned Cost').click();

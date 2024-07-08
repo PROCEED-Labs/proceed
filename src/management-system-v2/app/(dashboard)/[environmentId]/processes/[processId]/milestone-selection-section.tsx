@@ -194,67 +194,69 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({ selectedEl
             Milestones
           </span>
         </Divider>
-        <Table
-          pagination={{ pageSize: 5, position: ['bottomCenter'] }}
-          rowKey="id"
-          columns={[
-            {
-              title: 'ID',
-              dataIndex: 'id',
-              key: 'id',
-              sorter: (a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }),
-            },
-            {
-              title: 'Name',
-              dataIndex: 'name',
-              key: 'name',
-              sorter: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
-            },
-            {
-              title: 'Description',
-              dataIndex: 'description',
-              key: 'description',
-              render: (description) => (
-                <MilestoneDescriptionViewer description={description}></MilestoneDescriptionViewer>
-              ),
-            },
-            {
-              title: '',
-              dataIndex: 'edit',
-              key: 'edit',
-              render: (_, record) => (
-                <Space size="small">
-                  <EditOutlined
-                    onClick={() => {
-                      openMilestoneModal(record);
-                    }}
-                  />
-                  <DeleteOutlined
-                    onClick={() => {
-                      removeMilestone(record.id);
-                    }}
-                  />
-                </Space>
-              ),
-            },
-          ]}
-          footer={() => (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Button
-                onClick={() => {
-                  setIsMilestoneModalOpen(true);
-                }}
-                type="text"
-                size="small"
-                style={{ fontSize: '0.75rem' }}
-                icon={<PlusOutlined />}
-              >
-                <span>Add Milestone</span>
-              </Button>
-            </div>
-          )}
-          dataSource={milestones}
-        ></Table>
+        {milestones.length > 0 && (
+          <Table
+            pagination={{ pageSize: 5, position: ['bottomCenter'] }}
+            rowKey="id"
+            columns={[
+              {
+                title: 'ID',
+                dataIndex: 'id',
+                key: 'id',
+                sorter: (a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }),
+              },
+              {
+                title: 'Name',
+                dataIndex: 'name',
+                key: 'name',
+                sorter: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
+              },
+              {
+                title: 'Description',
+                dataIndex: 'description',
+                key: 'description',
+                render: (description) => (
+                  <MilestoneDescriptionViewer
+                    description={description}
+                  ></MilestoneDescriptionViewer>
+                ),
+              },
+              {
+                title: '',
+                dataIndex: 'edit',
+                key: 'edit',
+                render: (_, record) => (
+                  <Space size="small">
+                    <EditOutlined
+                      onClick={() => {
+                        openMilestoneModal(record);
+                      }}
+                    />
+                    <DeleteOutlined
+                      onClick={() => {
+                        removeMilestone(record.id);
+                      }}
+                    />
+                  </Space>
+                ),
+              },
+            ]}
+            dataSource={milestones}
+          ></Table>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Button
+            onClick={() => {
+              setIsMilestoneModalOpen(true);
+            }}
+            type="text"
+            size="small"
+            style={{ fontSize: '0.75rem' }}
+            icon={<PlusOutlined />}
+          >
+            <span>Add Milestone</span>
+          </Button>
+        </div>
       </Space>
       <MilestoneModal
         show={isMilestoneModalOpen}

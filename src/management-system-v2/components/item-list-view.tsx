@@ -116,13 +116,22 @@ const ElementList = <T extends { id: string }>({
           selectedRowKeys: selectedElementsKeys,
           // onChange: (_, selectedRows) => elementSelection.setSelectionElements(selectedRows),
           getCheckboxProps: (record) => ({ name: record.id }),
-          onSelect: (record, __, selectedRows, nativeEvent) => {
-            console.log(nativeEvent);
+          onSelect: (record, selected, selectedRows, nativeEvent) => {
             // @ts-ignore
             if (nativeEvent.shiftKey && elementSelection.selectedElements.length > 0) {
-              console.log('shift key pressed');
+              // console.log('shift key pressed');
+              /* If checkbox shiftclick is recognizeable, a drag select can be implemented here */
+              /* Currently, the event is not fired in most browser on checkbox */
             } else {
-              elementSelection.setSelectionElements(selectedRows);
+              // console.log('data length', data.length);
+              // console.log('setting rows', selectedRows);
+              if (selected) {
+                elementSelection.setSelectionElements((prev) => [...prev, record]);
+              } else {
+                elementSelection.setSelectionElements((prev) =>
+                  prev.filter(({ id }) => id !== record.id),
+                );
+              }
             }
             lastItemClicked.current = record;
           },

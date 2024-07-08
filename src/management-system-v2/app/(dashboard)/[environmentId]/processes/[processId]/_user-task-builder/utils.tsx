@@ -1,8 +1,8 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import { Button, Dropdown, Flex } from 'antd';
+import { Button, Dropdown, Flex, Space, Input as AntInput } from 'antd';
 import { EllipsisOutlined } from '@ant-design/icons';
 
 import ContentEditable from 'react-contenteditable';
@@ -19,6 +19,7 @@ import Input from './Input';
 import CheckboxOrRadio from './CheckboxOrRadio';
 import Table from './Table';
 import Image from './Image';
+import { createPortal } from 'react-dom';
 
 const styles = `
 body {
@@ -146,7 +147,7 @@ export function toHtml(json: string) {
       }}
     >
       <Frame data={json} />
-    </Editor>
+    </Editor>,
   );
 
   return `
@@ -273,6 +274,61 @@ export const ComponentSettings: React.FC<ComponentSettingsProps> = ({ controls }
   );
 };
 
+const getIframe = () => document.getElementById('user-task-builder-iframe') as HTMLIFrameElement;
+const getSelection = () => getIframe().contentWindow!.getSelection();
+
+type ContextMenuProps = React.PropsWithChildren<{
+  canOpen?: (openEvent: React.MouseEvent<HTMLElement, MouseEvent>) => boolean;
+  menu: ReactNode;
+}>;
+
+export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, menu }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    const handleClick = () => setShowMenu(false);
+    window.addEventListener('click', handleClick);
+
+    getIframe().contentWindow?.addEventListener('click', handleClick);
+    return () => {
+      window.removeEventListener('click', handleClick);
+      getIframe().contentWindow?.removeEventListener('click', handleClick);
+      setShowMenu(false);
+    };
+  }, []);
+
+  return (
+    <>
+      {showMenu &&
+        createPortal(
+          <div
+            style={{
+              zIndex: 1000,
+              position: 'absolute',
+              ...menuPosition,
+            }}
+          >
+            {menu}
+          </div>,
+          document.body,
+        )}
+      <div
+        onContextMenu={(e) => {
+          if (canOpen && !canOpen(e)) return;
+          const { top, left } = getIframe().getBoundingClientRect();
+          e.preventDefault();
+          e.stopPropagation();
+          setShowMenu(true);
+          setMenuPosition({ left: left + e.clientX + 5, top: top + e.clientY + 5 });
+        }}
+      >
+        {children}
+      </div>
+    </>
+  );
+};
+
 type ContentEditableProps = ConstructorParameters<typeof ContentEditable>[0];
 
 type EditableTextProps = Omit<
@@ -285,6 +341,7 @@ type EditableTextProps = Omit<
   htmlFor?: string;
 };
 
+// TODO: make this closable by an exposed function
 export const EditableText: React.FC<EditableTextProps> = ({
   value,
   onChange,
@@ -294,35 +351,119 @@ export const EditableText: React.FC<EditableTextProps> = ({
   const ref = useRef<HTMLElement>(null);
 
   const [editable, setEditable] = useState(false);
+  const [currentLinkValue, setCurrentLinkValue] = useState<string>();
+
+  useEffect(() => {
+    const handleClick = () => {
+      if (editable) {
+        setEditable(false);
+        setCurrentLinkValue(undefined);
+      }
+    };
+
+    getIframe().contentWindow?.addEventListener('click', handleClick);
+    return () => {
+      getIframe().contentWindow?.removeEventListener('click', handleClick);
+    };
+  }, [editable]);
+
+  // TODO: muss wahrscheinlich ein portal ins iframe sein weil es sonst nicht für Elemente funktioniert die relativ positioniert sind
+  const contextMenu = (
+    <Space.Compact size="large">
+      {typeof currentLinkValue === 'string' ? (
+        <AntInput
+          value={currentLinkValue}
+          onChange={(e) => setCurrentLinkValue(e.target.value)}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          onPressEnter={() => {
+            if (currentLinkValue) {
+              getIframe().contentDocument!.execCommand('createLink', false, currentLinkValue);
+            } else {
+              getIframe().contentDocument!.execCommand('unlink', false);
+            }
+            setCurrentLinkValue(undefined);
+          }}
+        />
+      ) : (
+        <>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              getIframe().contentDocument!.execCommand('bold', false);
+            }}
+          >
+            Bold
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              getIframe().contentDocument!.execCommand('italic', false);
+            }}
+          >
+            Italic
+          </Button>
+
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const sel = getSelection();
+              const link = sel?.anchorNode?.parentElement;
+              setCurrentLinkValue('');
+            }}
+          >
+            Link
+          </Button>
+        </>
+      )}
+    </Space.Compact>
+  );
 
   return (
-    <ContentEditable
-      innerRef={ref}
-      html={value}
-      tagName={tagName}
-      disabled={!editable}
-      onDoubleClick={() => {
-        setEditable(true);
-        setTimeout(() => {
-          if (ref.current) {
-            ref.current.focus();
-            const builderIframe = document.getElementById(
-              'user-task-builder-iframe'
-            ) as HTMLIFrameElement;
-            let sel = builderIframe.contentWindow!.getSelection();
-
-            if (sel) {
-              sel.selectAllChildren(ref.current);
-              sel.collapseToEnd();
-            }
+    <ContextMenu
+      canOpen={(e) => {
+        if (!editable) return false;
+        const sel = getSelection();
+        if (sel?.isCollapsed && (e.target as HTMLElement).tagName === 'A') {
+          const link = e.target as HTMLAnchorElement;
+          const range = getIframe().contentDocument?.createRange();
+          if (range) {
+            sel.removeAllRanges();
+            range.selectNode(link);
+            sel.addRange(range);
+            setCurrentLinkValue(link.href);
+            return true;
           }
-        }, 5);
+        }
+        return !sel?.isCollapsed && !!ref.current?.contains(sel?.anchorNode || null);
       }}
-      onMouseDownCapture={(e) => editable && e.stopPropagation()}
-      onBlur={() => setEditable(false)}
-      onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
-      onChange={(e) => onChange(e.target.value)}
-      {...props}
-    />
+      menu={contextMenu}
+    >
+      <ContentEditable
+        innerRef={ref}
+        html={value}
+        tagName={tagName}
+        disabled={!editable}
+        onDoubleClick={() => {
+          setEditable(true);
+          setTimeout(() => {
+            if (ref.current) {
+              ref.current.focus();
+              const sel = getSelection();
+              if (sel) {
+                sel.selectAllChildren(ref.current);
+                sel.collapseToEnd();
+              }
+            }
+          }, 5);
+        }}
+        onMouseDownCapture={(e) => editable && e.stopPropagation()}
+        onClickCapture={(e) => e.stopPropagation()}
+        onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
+        onChange={(e) => onChange(e.target.value)}
+        {...props}
+      />
+    </ContextMenu>
   );
 };

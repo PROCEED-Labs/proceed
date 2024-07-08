@@ -101,6 +101,8 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         let initDragTimeout: ReturnType<typeof setTimeout> | null = null;
 
         const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
+          if (e.button !== 0) return;
+
           e.craft.stopPropagation();
           e.preventDefault();
 

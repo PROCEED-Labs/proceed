@@ -240,7 +240,7 @@ export default function Parameters(props: MachineDataViewProps) {
     <>
       {(editable || parameterItems.length > 0) && (
         <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-          <Col span={2} className="gutter-row">
+          <Col span={3} className="gutter-row">
             Parameters
           </Col>
           <Col span={21} className="gutter-row">

@@ -13,7 +13,7 @@ import {
   KeyOutlined,
   UserOutlined,
   DeleteOutlined,
-  PlusOutlined,
+  EyeInvisibleOutlined,
   EditOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
@@ -90,6 +90,7 @@ export default function MetaData(props: MachineDataViewProps) {
   const [createValue, setCreateValue] = useState<string>('');
   const [isOnChange, setIsOnChange] = useState<boolean>(false);
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
+  const [idVisible, setIdVisible] = useState<boolean>(true);
 
   const rootMachineConfig = { ...props.rootMachineConfig };
   const editingMachineConfig = props.selectedMachineConfig
@@ -345,15 +346,29 @@ export default function MetaData(props: MachineDataViewProps) {
 
   return (
     <>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={3} className="gutter-row">
-          {' '}
-          Internal ID
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
-        </Col>
-      </Row>
+      {idVisible && (
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+          <Col span={3} className="gutter-row">
+            {' '}
+            Internal ID
+          </Col>
+          <Col span={20} className="gutter-row">
+            <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
+          </Col>
+          <Col span={1}>
+            <Tooltip title="Hide Internal ID">
+              <Button
+                disabled={!editable}
+                onClick={() => {
+                  setIdVisible(false);
+                }}
+                icon={<EyeInvisibleOutlined />}
+                type="text"
+              />
+            </Tooltip>
+          </Col>
+        </Row>
+      )}
       {ConfigPredefinedLiterals.map((field: ConfigPredefinedFields) => {
         return getPredefinedField(field);
       })}
@@ -362,7 +377,7 @@ export default function MetaData(props: MachineDataViewProps) {
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-          <Col span={2} className="gutter-row" />
+          <Col span={3} className="gutter-row" />
           <Col span={21} className="gutter-row">
             {getAddButton('Add Field', getDropdownAddField(editingMachineConfig), onClickAddField)}
           </Col>
@@ -370,13 +385,13 @@ export default function MetaData(props: MachineDataViewProps) {
       )}
       <Modal
         open={createFieldOpen}
-        title={'Create custom field'}
+        title={'Create Custom Field'}
         onOk={createField}
         onCancel={() => {
           setCreateFieldOpen(false);
         }}
       >
-        Display Name:
+        Name:
         <Input
           required
           value={createDisplayName}

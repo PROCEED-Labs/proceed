@@ -85,7 +85,7 @@ export default function Parameters(props: MachineDataViewProps) {
           <Text>{parameter.content[0].unit}</Text>
           <Text type="secondary">({parameter.content[0].language})</Text>
         </Space>
-        {getTooltips(editable, true, true, editable)}
+        {getTooltips(editable, ['copy', 'edit', 'delete'])}
         {/* <Space align="center">
           <Tooltip title="Copy">
             <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 10px' }} />

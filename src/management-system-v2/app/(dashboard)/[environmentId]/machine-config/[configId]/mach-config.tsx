@@ -88,7 +88,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         key: machineConfig.id,
         label: machineConfig.name,
         children: [childConfigContent(machineConfig)],
-        extra: getTooltips(editable, true, true, editable),
+        extra: getTooltips(editable, ['edit', 'copy', 'delete']),
         style: panelStyle,
       });
     }

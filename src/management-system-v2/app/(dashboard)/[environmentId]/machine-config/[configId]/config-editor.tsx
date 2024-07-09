@@ -203,7 +203,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
           editingEnabled={editable}
         />
       ),
-      extra: getTooltips(editable, true, true, false),
+      extra: getTooltips(editable, ['copy', 'edit']),
       style: panelStyle,
     });
     if (editingConfig.type === 'config') {
@@ -222,7 +222,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
               editingEnabled={editable}
             />
           ),
-          extra: getTooltips(editable, true, true, editable),
+          extra: getTooltips(editable, ['copy', 'edit', 'delete']),
           style: panelStyle,
         });
       }

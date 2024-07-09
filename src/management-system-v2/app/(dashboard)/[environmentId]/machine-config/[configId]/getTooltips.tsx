@@ -1,30 +1,28 @@
 'use client';
 
-import { EditOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Button, Space, Tooltip } from 'antd';
 
 const getTooltips = (
   editable: boolean,
-  showCopy: boolean = true,
-  showEdit: boolean = true,
-  showDelete: boolean = true,
+  options: string[], // 'copy', 'edit', 'delete'
 ) => {
   return (
     <Space align="center">
-      {showCopy && (
+      {options.includes('copy') && (
         <Tooltip title="Copy">
           <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 0 0 10px' }} />
         </Tooltip>
       )}
-      {showEdit && (
+      {options.includes('edit') && (
         <Tooltip title="Edit">
           <Button icon={<EditOutlined />} type="text" style={{ margin: '0 0 0 10px' }} />
         </Tooltip>
       )}
-      {showDelete && (
+      {editable && options.includes('delete') && (
         <Tooltip title="Delete">
           <Button
-            disabled={!editable}
+            /* disabled={!editable} */
             icon={<DeleteOutlined />}
             type="text"
             style={{ margin: '0 0 0 10px' }}

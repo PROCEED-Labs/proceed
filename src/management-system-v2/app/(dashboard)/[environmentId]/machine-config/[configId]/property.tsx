@@ -202,39 +202,36 @@ export default function Property(props: MachineDataViewProps) {
         label: propertyItemHeader(propertyItem),
         children: [propertyContent(propertyItem)],
         style: panelStyle,
+        /* extra: getTooltips(editable, ['copy', 'edit', 'delete'], {
+          delete: () => {
+            deleteProperty(propertyItem);
+          },
+        }), */
       });
     }
     return list;
   };
   const propertyItems = getPropertyItems();
+  const addButtonTitle =
+    'Add ' + propertyField.key[0].toUpperCase() + propertyField.key.slice(1) + ' Item';
   return (
     <>
       {(editable || propertyItems.length > 0) && (
-        <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-          {/* <Col span={3} className="gutter-row">
-            {
-              //TODO
-              props.label ||
-                propertyField.key[0].toUpperCase() + propertyField.key.slice(1) ||
-                propertyField.content[0].displayName
-            }
-          </Col> */}
-          <Col span={24} className="gutter-row">
-            <Collapse
-              expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-              ghost
-              size="small"
-              items={propertyItems}
-            />
-            {editable && (
-              <Space>
-                {getAddButton('Add Property Item', undefined, () => {
-                  setOpenCreatePropertyModal(true);
-                })}
-              </Space>
-            )}
-          </Col>
-        </Row>
+        <>
+          <Collapse
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            ghost
+            size="small"
+            items={propertyItems}
+          />
+          {editable && (
+            <Space>
+              {getAddButton(addButtonTitle, undefined, () => {
+                setOpenCreatePropertyModal(true);
+              })}
+            </Space>
+          )}
+        </>
       )}
       <CreatePropertyModal
         title="Create Property Modal"

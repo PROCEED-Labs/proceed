@@ -288,9 +288,9 @@ export default function MetaData(props: MachineDataViewProps) {
 
   const getCustomField = (field: ConfigField, idx: number) => {
     return (
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        {/* <Col span={3} className="gutter-row"> */}
-        {/* {editable ? (
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
+        <Col span={3} className="gutter-row">
+          {/* {editable ? (
             <div onBlur={saveCustomFields}>
               <Text
                 editable={{
@@ -315,8 +315,9 @@ export default function MetaData(props: MachineDataViewProps) {
           ) : (
             field.content[0].displayName
           )} */}
-        {/* </Col> */}
-        <Col span={24} className="gutter-row">
+          {field.key[0].toUpperCase() + field.key.slice(1)}
+        </Col>
+        <Col span={21} className="gutter-row">
           <Property
             backendSaveParentConfig={saveMachineConfig}
             configId={configId}

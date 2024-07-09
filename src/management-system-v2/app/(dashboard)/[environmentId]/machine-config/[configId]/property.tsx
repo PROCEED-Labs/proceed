@@ -28,6 +28,7 @@ type MachineDataViewProps = {
   customConfig?: AbstractConfig;
   editingEnabled: boolean;
   field: ConfigField | ConfigParameter;
+  label: string | undefined;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -165,7 +166,8 @@ export default function Property(props: MachineDataViewProps) {
           <Col span={3} className="gutter-row">
             {
               //TODO
-              propertyField.key[0].toUpperCase() + propertyField.key.slice(1) ||
+              props.label ||
+                propertyField.key[0].toUpperCase() + propertyField.key.slice(1) ||
                 propertyField.content[0].displayName
             }
           </Col>

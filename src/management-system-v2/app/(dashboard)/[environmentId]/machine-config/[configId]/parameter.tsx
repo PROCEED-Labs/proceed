@@ -86,22 +86,6 @@ export default function Parameters(props: MachineDataViewProps) {
           <Text type="secondary">({parameter.content[0].language})</Text>
         </Space>
         {getTooltips(editable, ['copy', 'edit', 'delete'])}
-        {/* <Space align="center">
-          <Tooltip title="Copy">
-            <Button icon={<CopyOutlined />} type="text" style={{ margin: '0 10px' }} />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button icon={<EditOutlined />} type="text" style={{ margin: '0 10px' }} />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              disabled={!editable}
-              icon={<DeleteOutlined />}
-              type="text"
-              style={{ margin: '0 10px' }}
-            />
-          </Tooltip>
-        </Space> */}
       </Flex>
     </Space.Compact>
   );
@@ -130,57 +114,61 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const parameterContent = (parameter: ConfigParameter) => (
     <div>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          {' '}
-          Key{' '}
-        </Col>
-        <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.content[0].displayName} />
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          {' '}
-          Value{' '}
-        </Col>
-        <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.content[0].value} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          {' '}
-          Unit{' '}
-        </Col>
-        <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.content[0].unit} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          {' '}
-          Language{' '}
-        </Col>
-        <Col span={20} className="gutter-row">
-          <Input disabled={!editable} value={parameter.content[0].language} />
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
+      {editable && (
+        <>
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              {' '}
+              Key{' '}
+            </Col>
+            <Col span={20} className="gutter-row">
+              <Input disabled={!editable} value={parameter.content[0].displayName} />
+            </Col>
+          </Row>
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              {' '}
+              Value{' '}
+            </Col>
+            <Col span={20} className="gutter-row">
+              <Input disabled={!editable} value={parameter.content[0].value} />
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
+          </Row>
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              {' '}
+              Unit{' '}
+            </Col>
+            <Col span={20} className="gutter-row">
+              <Input disabled={!editable} value={parameter.content[0].unit} />
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
+          </Row>
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              {' '}
+              Language{' '}
+            </Col>
+            <Col span={20} className="gutter-row">
+              <Input disabled={!editable} value={parameter.content[0].language} />
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
+          </Row>
+        </>
+      )}
       <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
           Linked Parameters

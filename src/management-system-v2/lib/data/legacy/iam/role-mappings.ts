@@ -138,7 +138,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
       username: user.username ?? '',
       firstName: user.firstName ?? '',
       lastName: user.lastName ?? '',
-      email: user.email,
+      email: user.email ?? '',
     });
 
     // persist new role mapping in file system

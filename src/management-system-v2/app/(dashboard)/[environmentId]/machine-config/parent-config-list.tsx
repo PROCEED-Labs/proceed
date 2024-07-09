@@ -346,50 +346,31 @@ const ParentConfigList = ({
                   </Button>
                 </Dropdown>
               )}
+
+              <SelectionActions count={selectedRowKeys.length}>
+                <Tooltip placement="top" title={'Export'}>
+                  <ExportOutlined
+                    /* className={styles.Icon} */
+                    style={{ margin: '0 10px' }}
+                    onClick={() => exportItems(selectedRowElements)}
+                  />
+                </Tooltip>
+
+                <Tooltip placement="top" title={'Delete'}>
+                  <ConfirmationButton
+                    title="Delete Configuration"
+                    externalOpen={openDeleteModal}
+                    onExternalClose={() => setOpenDeleteModal(false)}
+                    description="Are you sure you want to delete the selected configuration(s)?"
+                    onConfirm={() => deleteItems(selectedRowElements)}
+                    buttonProps={{
+                      icon: <DeleteOutlined />,
+                      type: 'text',
+                    }}
+                  />
+                </Tooltip>
+              </SelectionActions>
             </span>
-            <SelectionActions count={selectedRowKeys.length}>
-              {/* <Button style={{ marginLeft: '4px' }}>Create Folder with Selection</Button> */}
-              {/* <Button onClick={deleteHandle} style={{ marginLeft: '4px' }}>
-                Delete Selected Items
-              </Button> */}
-              <Tooltip placement="top" title={'Export'}>
-                <ExportOutlined
-                  className={styles.Icon}
-                  onClick={() => exportItems(selectedRowElements)}
-                />
-              </Tooltip>
-
-              <Tooltip placement="top" title={'Delete'}>
-                <ConfirmationButton
-                  title="Delete machine Config"
-                  externalOpen={openDeleteModal}
-                  onExternalClose={() => setOpenDeleteModal(false)}
-                  description="Are you sure you want to delete the selected configurations?"
-                  onConfirm={() => deleteItems(selectedRowElements)}
-                  buttonProps={{
-                    icon: <DeleteOutlined />,
-                    type: 'text',
-                  }}
-                />
-              </Tooltip>
-            </SelectionActions>
-
-            {/*<span>
-                <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>
-                  <Button
-                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                    onClick={() => addPreferences({ 'icon-view-in-process-list': false })}
-                  >
-                    <UnorderedListOutlined />
-                  </Button>
-                  <Button
-                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                    onClick={() => addPreferences({ 'icon-view-in-process-list': true })}
-                  >
-                    <AppstoreOutlined />
-                  </Button>
-                </Space.Compact>
-              </span>*/}
           </span>
         }
         searchProps={{

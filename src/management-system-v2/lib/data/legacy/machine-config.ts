@@ -154,10 +154,11 @@ export async function copyParentConfig(
   }
 }
 
-function predefinedDefault<T>(key: string, val: T) {
+function predefinedDefault<T>(key: string, val: T, hiding: boolean = true) {
   return {
     id: v4(),
     key: key,
+    hiding: hiding,
     content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
   };
 }
@@ -174,7 +175,7 @@ export async function createParentConfig(
         id: v4(),
         type: 'config',
         name: 'Default Parent Configuration',
-        description: predefinedDefault('description', ''),
+        description: predefinedDefault('description', '', false),
         variables: [],
         parameters: [],
         createdBy: environmentId,
@@ -195,6 +196,7 @@ export async function createParentConfig(
         targetConfig: undefined,
         machineConfigs: [],
         environmentId: environmentId,
+        machine: predefinedDefault('machine', ''),
         owner: predefinedDefault('owner', ''),
       } as ParentConfig),
       ...parentConfigData,

@@ -213,7 +213,7 @@ const ParentConfigList = ({
     if (editingItem) {
       saveParentConfig(valuesFromModal.id, {
         ...editingItem,
-        description: predefinedDefault('description', valuesFromModal.description),
+        description: predefinedDefault('description', valuesFromModal.description, false),
         name: valuesFromModal.name,
       }).then(() => {});
       setOpenEditModal(false);
@@ -231,7 +231,7 @@ const ParentConfigList = ({
         valuesFromModal.originalId,
         {
           name: valuesFromModal.name,
-          description: predefinedDefault('description', valuesFromModal.description),
+          description: predefinedDefault('description', valuesFromModal.description, false),
         },
         space.spaceId,
       ).then(() => {});

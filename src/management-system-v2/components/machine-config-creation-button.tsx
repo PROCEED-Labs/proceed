@@ -38,7 +38,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
     const machineConfig = await (customAction?.(values[0]) ??
       createParentConfig(
         {
-          description: predefinedDefault('description', values[0].description),
+          description: predefinedDefault('description', values[0].description, false),
           name: values[0].name,
           folderId: folderId,
         },

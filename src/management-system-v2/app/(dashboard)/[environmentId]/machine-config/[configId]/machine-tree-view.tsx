@@ -6,7 +6,7 @@ import {
   ConfigParameter,
   TargetConfig,
 } from '@/lib/data/machine-config-schema';
-import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tree, TreeDataNode } from 'antd';
+import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tooltip, Tree, TreeDataNode } from 'antd';
 import Text from 'antd/es/typography/Text';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
@@ -47,25 +47,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [createMachineOpen, setCreateMachineOpen] = useState(false);
   const [createParameterOpen, setCreateParameterOpen] = useState(false);
   const [machineType, setMachineType] = useState<AbstractConfig['type']>('target-config');
-  const [name, setName] = useState<string>('');
   const [parameterKey, setParameterKey] = useState<string>('');
   const [parameterValue, setParameterValue] = useState<string>('');
   const [parameterUnit, setParameterUnit] = useState<string>('');
   const [parameterLanguage, setParameterLanguage] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
   const [selectedMachineConfig, setSelectedMachineConfig] = useState<
     TreeFindStruct | TreeFindParameterStruct
   >(undefined);
-
-  const changeName = (e: any) => {
-    let newName = e.target.value;
-    setName(newName);
-  };
-
-  const changeDescription = (e: any) => {
-    let newDescription = e.target.value;
-    setDescription(newDescription);
-  };
 
   const changeParameterKey = (e: any) => {
     let newKey = e.target.value;
@@ -99,8 +87,6 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       setMachineType('machine-config');
     }
     setCreateMachineOpen(true);
-    setName('');
-    setDescription('');
   };
 
   const showCreateParameterModal = (e: any) => {
@@ -259,13 +245,18 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   ): TreeDataNode & { ref: ConfigParameter } => {
     let tagByType = (
       <>
-        <Tag color="lime">P</Tag>
-        <Space>
-          <Text>{_parameter.content[0].displayName}: </Text>
-          <Text>{_parameter.content[0].value}</Text>
-          <Text>{_parameter.content[0].unit}</Text>
-          <Text type="secondary">({_parameter.content[0].language})</Text>
-        </Space>
+        <Tooltip
+          placement="top"
+          title={
+            <Space size={3}>
+              {_parameter.content[0].displayName}:{_parameter.content[0].value}
+              {_parameter.content[0].unit}({_parameter.content[0].language})
+            </Space>
+          }
+        >
+          <Tag color="lime">P</Tag>
+          {_parameter.content[0].displayName}
+        </Tooltip>
       </>
     );
 

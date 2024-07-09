@@ -2,9 +2,19 @@ import { string, z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
 
+export const ConfigPredefinedLiterals = [
+  'description',
+  'owner',
+  'userId',
+  'machine',
+  'picture',
+] as const;
+export type ConfigPredefinedFields = (typeof ConfigPredefinedLiterals)[number];
+
 const ConfigFieldZod = z.object({
   id: z.string(),
   key: z.string(),
+  hiding: z.boolean().default(true),
   content: z.array(
     z.object({
       value: z.any(),

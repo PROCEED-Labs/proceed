@@ -6,10 +6,11 @@ import {
 } from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
 
-export function predefinedDefault<T>(key: string, val: T) {
+export function predefinedDefault<T>(key: string, val: T, hiding: boolean = true) {
   return {
     id: v4(),
     key: key,
+    hiding: hiding,
     content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
   };
 }
@@ -23,7 +24,7 @@ export function defaultConfiguration(): AbstractConfig {
     owner: predefinedDefault('owner', ''),
     picture: predefinedDefault('picture', ''),
     name: 'Default Machine Configuration',
-    description: predefinedDefault('description', ''),
+    description: predefinedDefault('description', '', false),
     variables: [],
     customFields: [],
     parameters: [],
@@ -50,7 +51,7 @@ export const createMachineConfigInParent = (
   parentConfig.machineConfigs.push({
     ...defaultConfiguration(),
     name: nameValue,
-    description: predefinedDefault('description', descriptionValue),
+    description: predefinedDefault('description', descriptionValue, false),
     machine: predefinedDefault('machine', ''),
     type: 'machine-config',
     owner: parentConfig.owner,
@@ -69,7 +70,7 @@ export const createTargetConfigInParent = (
   foundMachine.targetConfig = {
     ...defaultConfiguration(),
     name: nameValue,
-    description: predefinedDefault('description', descriptionValue),
+    description: predefinedDefault('description', descriptionValue, false),
     type: 'target-config',
     owner: foundMachine.owner,
     environmentId: foundMachine.environmentId,

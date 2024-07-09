@@ -324,7 +324,6 @@ export default function MetaData(props: MachineDataViewProps) {
             parentConfig={rootMachineConfig}
             selectedConfig={props.selectedMachineConfig}
             field={field}
-            color={idx & 1}
           />
         </Col>
         {/* <Col span={1} className="gutter-row">

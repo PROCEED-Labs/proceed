@@ -26,6 +26,7 @@ import { TreeFindStruct, defaultConfiguration, findConfig } from '../configurati
 import getAddButton from './add-button';
 import Text from 'antd/es/typography/Text';
 import { v4 } from 'uuid';
+import Property from './property';
 
 type MachineDataViewProps = {
   configId: string;
@@ -159,8 +160,6 @@ export default function MetaData(props: MachineDataViewProps) {
       predefValues[field] = editingMachineConfig[field]?.content[0].value;
       predefDisplayNames[field] = editingMachineConfig[field]?.content[0].displayName;
     }
-    console.log(predefValues, predefDisplayNames);
-    console.log(editingMachineConfig);
     setCustomFieldState(editingMachineConfig.customFields);
     setPredefinedFieldsState(predefValues);
     setPredefinedDisplayNameState(predefDisplayNames);
@@ -290,8 +289,8 @@ export default function MetaData(props: MachineDataViewProps) {
   const getCustomField = (field: ConfigField, idx: number) => {
     return (
       <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-        <Col span={3} className="gutter-row">
-          {editable ? (
+        {/* <Col span={3} className="gutter-row"> */}
+        {/* {editable ? (
             <div onBlur={saveCustomFields}>
               <Text
                 editable={{
@@ -315,20 +314,20 @@ export default function MetaData(props: MachineDataViewProps) {
             </div>
           ) : (
             field.content[0].displayName
-          )}
-        </Col>
-        <Col span={20} className="gutter-row">
-          <TextArea
-            autoSize
-            disabled={!editable}
-            value={field.content[0].value}
-            onChange={(e: any) => {
-              return onChangeCustom(idx, e);
-            }}
-            onBlur={saveAll}
+          )} */}
+        {/* </Col> */}
+        <Col span={24} className="gutter-row">
+          <Property
+            backendSaveParentConfig={saveMachineConfig}
+            configId={configId}
+            editingEnabled={editable}
+            parentConfig={rootMachineConfig}
+            selectedConfig={props.selectedMachineConfig}
+            field={field}
+            color={idx & 1}
           />
         </Col>
-        <Col span={1} className="gutter-row">
+        {/* <Col span={1} className="gutter-row">
           <Tooltip title="Delete">
             <Button
               disabled={!editable}
@@ -339,7 +338,7 @@ export default function MetaData(props: MachineDataViewProps) {
               type="text"
             />
           </Tooltip>
-        </Col>
+        </Col> */}
       </Row>
     );
   };

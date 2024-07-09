@@ -1,9 +1,9 @@
 import { Button, Dropdown, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-const getButton = (label: string) => {
+const getButton = (label: string, onClickHandle: any) => {
   return (
-    <Button>
+    <Button onClick={onClickHandle}>
       <Space>
         {label.length > 0 && label}
         <PlusOutlined
@@ -24,7 +24,9 @@ const getDropdown = (
   }[],
   onClickHandle: any,
 ) => {
-  return <Dropdown menu={{ items, onClick: onClickHandle }}>{getButton(label)}</Dropdown>;
+  return (
+    <Dropdown menu={{ items, onClick: onClickHandle }}>{getButton(label, onClickHandle)}</Dropdown>
+  );
 };
 
 const getAddButton = (
@@ -38,7 +40,7 @@ const getAddButton = (
   if (items.length > 0) {
     return getDropdown(label, items, onClickHandle);
   }
-  return getButton(label);
+  return getButton(label, onClickHandle);
 };
 
 export default getAddButton;

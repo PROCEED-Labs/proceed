@@ -1,37 +1,24 @@
 import { Page } from '@playwright/test';
-import { PlatformPath } from 'path';
 import * as path from 'path';
 import fs from 'fs';
 import JsZip from 'jszip';
 import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proceed/bpmn-helper';
 import { v4 } from 'uuid';
-import { expect } from './process-list.fixtures';
+import { expect } from './processes.fixtures';
+import { closeModal, openModal, waitForHydration } from '../testUtils';
 
 export class ProcessListPage {
   readonly page: Page;
-  readonly path: PlatformPath;
-  processListPageURL?: string;
   processDefinitionIds: string[] = [];
 
   constructor(page: Page) {
     this.page = page;
-    this.path = path;
-  }
-
-  getPageURL() {
-    return this.processListPageURL;
   }
 
   async goto() {
-    if (this.processListPageURL) await this.page.goto(this.processListPageURL);
-  }
-
-  async login() {
-    const { page } = this;
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Continue as a Guest' }).click();
-    await page.waitForURL('**/processes');
-    this.processListPageURL = page.url();
+    await this.page.goto('/processes');
+    await this.page.waitForURL('**/processes');
+    await waitForHydration(this.page);
   }
 
   /**
@@ -51,16 +38,21 @@ export class ProcessListPage {
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Import Process' }).click();
-    const filechooser = await fileChooserPromise;
+    const modal = await openModal(this.page, async () => {
+      const fileChooserPromise = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Import Process' }).click();
+      const filechooser = await fileChooserPromise;
 
-    await filechooser.setFiles({
-      name: filename,
-      mimeType: 'text/xml',
-      buffer: Buffer.from(bpmn, 'utf-8'),
+      await filechooser.setFiles({
+        name: filename,
+        mimeType: 'text/xml',
+        buffer: Buffer.from(bpmn, 'utf-8'),
+      });
     });
-    await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
+
+    await closeModal(modal, () => modal.getByRole('button', { name: 'Import' }).click());
+
+    this.processDefinitionIds.push(definitionId);
 
     return { definitionName: name as string, definitionId, bpmn };
   }
@@ -115,30 +107,41 @@ export class ProcessListPage {
   async removeProcess(definitionId: string) {
     const { page } = this;
 
-    await page
-      .locator(`tr[data-row-key="${definitionId}"]`)
-      .getByRole('button', { name: 'delete' })
-      .click();
+    const modal = await openModal(page, () =>
+      page
+        .locator(`tr[data-row-key="${definitionId}"]`)
+        .getByRole('button', { name: 'delete' })
+        .click(),
+    );
 
-    await page.getByRole('button', { name: 'OK' }).click();
+    await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
     this.processDefinitionIds = this.processDefinitionIds.filter((id) => id !== definitionId);
   }
 
-  async createProcess(options: {
-    processName?: string;
-    description?: string;
-    returnToProcessList?: boolean;
-  }) {
+  async createProcess(
+    options: {
+      processName?: string;
+      description?: string;
+      returnToProcessList?: boolean;
+    } = {
+      processName: 'My Process',
+      description: 'Process Description',
+      returnToProcessList: false,
+    },
+  ) {
     const page = this.page;
     const { processName, description, returnToProcessList } = options;
 
-    // TODO: reuse other page models for these set ups.
     // Add a new process.
-    await page.getByRole('button', { name: 'Create Process' }).click();
-    await page.getByRole('textbox', { name: '* Process Name :' }).fill(processName ?? 'My Process');
-    await page.getByLabel('Process Description').fill(description ?? 'Process Description');
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const modal = await openModal(this.page, () =>
+      page.getByRole('button', { name: 'Create Process' }).click(),
+    );
+    await modal
+      .getByRole('textbox', { name: '* Process Name :' })
+      .fill(processName ?? 'My Process');
+    await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
+    await modal.getByRole('button', { name: 'Create' }).click();
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const id = page.url().split('processes/').pop();
@@ -146,61 +149,37 @@ export class ProcessListPage {
     if (returnToProcessList) {
       /* Go back to Process-List */
       await this.goto();
-
-      /* Wait until on Process-List */
-      await page.waitForURL('**/processes');
+    } else {
+      await waitForHydration(this.page);
     }
-    /* Wait for Hydration */
-    await this.waitForHydration();
 
     return id;
   }
 
   async removeAllProcesses() {
-    const { page, processListPageURL } = this;
+    const { page } = this;
 
-    if (processListPageURL) {
-      await page.goto(processListPageURL);
-      await page.waitForURL('**/processes');
-      // check if there are processes to remove
-      if (!(await page.locator('tr[data-row-key]').all()).length) return;
+    if (this.processDefinitionIds.length) {
+      if (!page.url().endsWith('processes')) {
+        await this.goto();
+        await page.waitForURL('**/processes');
+      }
 
-      await page.waitForTimeout(
-        100,
-      ); /* Checking 'select all' is flaky TODO: replace timeout with proper fix */
+      // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
+      await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
+
       // remove all processes
       await page.getByLabel('Select all').check();
-      await page.getByRole('button', { name: 'delete' }).first().click();
-      await page.getByRole('button', { name: 'OK' }).click();
+      const modal = await openModal(this.page, () =>
+        page.getByRole('button', { name: 'delete' }).first().click(),
+      );
+      await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
       // Note: If used in a test, there should be a check for the empty list to
       // avoid double navigations next.
 
       this.processDefinitionIds = [];
     }
-  }
-
-  async readClipboard(readAsText) {
-    const { page } = this;
-    const result = await page.evaluate(async (readAsText) => {
-      if (readAsText) {
-        return await navigator.clipboard.readText();
-      } else {
-        const clipboardItems = await navigator.clipboard.read();
-        return clipboardItems[0].types[0];
-      }
-    }, readAsText);
-
-    return result;
-  }
-
-  async waitForHydration() {
-    const { page } = this;
-    /* Gves time for everything to load */
-    const accountButton = await page.getByRole('link', { name: 'user' });
-    await accountButton.hover();
-    await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'visible' });
-    await page.getByRole('main').click();
   }
 
   async createFolder({
@@ -215,10 +194,12 @@ export class ProcessListPage {
     // NOTE: selecting a table could break
     const table = page.locator('table tbody');
     await table.click({ button: 'right' });
-    await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-    await page.getByLabel('Folder name').fill(folderName);
-    if (folderDescription) await page.getByLabel('Description').fill(folderDescription);
-    await page.getByRole('button', { name: 'OK' }).click();
+    const modal = await openModal(this.page, () =>
+      page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+    );
+    await modal.getByLabel('Folder name').fill(folderName);
+    if (folderDescription) await modal.getByLabel('Description').fill(folderDescription);
+    await closeModal(modal, () => page.getByRole('button', { name: 'OK' }).click());
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
     await expect(folderRow).toBeVisible();

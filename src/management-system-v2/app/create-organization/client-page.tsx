@@ -1,7 +1,7 @@
 'use client';
 
 import Content from '@/components/content';
-import { Button, Form, Grid, Input, Steps, StepsProps, Typography, message } from 'antd';
+import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography } from 'antd';
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
 import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
@@ -10,10 +10,11 @@ import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
 import { CountryCode, getCountries, getCountryCallingCode } from 'libphonenumber-js';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
+import Link from 'next/link';
 
 const getCountryOption = (country: CountryCode) => {
   const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
@@ -43,12 +44,13 @@ const CreateOrganizationPage = ({
   createInactiveEnvironment,
 }: CreateOrganizationPageProps) => {
   const breakpoint = Grid.useBreakpoint();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi } = App.useApp();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
   const [form] = Form.useForm();
   const [formErrors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
+  const phoneNumberRef = useRef<InputRef>(null);
   const [country, setCountry] = useState<CountryCode>('DE');
   const [isDataValid, setIsDataValid] = useState(false);
   function checkEnvironmentData(dataInput?: any) {
@@ -107,26 +109,30 @@ const CreateOrganizationPage = ({
   return (
     <div
       style={{
-        height: '100vh',
+        minHeight: '100svh',
+        height: '1px', // hack to make children inherit correct height
       }}
     >
-      {contextHolder}
       <Content
         headerCenter={
           breakpoint.xs ? undefined : (
-            <Image
-              src={'/proceed.svg'}
+            <Link
               style={{
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 paddingBottom: '15px',
               }}
-              alt="PROCEED Logo"
-              width={breakpoint.xs ? 85 : 160}
-              height={breakpoint.xs ? 35 : 63}
-              priority
-            />
+              href={'/'}
+            >
+              <Image
+                src={'/proceed.svg'}
+                alt="PROCEED Logo"
+                width={breakpoint.xs ? 85 : 160}
+                height={breakpoint.xs ? 35 : 63}
+                priority
+              />
+            </Link>
           )
         }
       >
@@ -189,9 +195,13 @@ const CreateOrganizationPage = ({
                       options={getCountries().map(getCountryOption)}
                       style={{ minWidth: '8rem' }}
                       value={country}
-                      onChange={setCountry}
+                      onChange={(value) => {
+                        setCountry(value);
+                        phoneNumberRef.current?.focus();
+                      }}
                     />
                   }
+                  ref={phoneNumberRef}
                 />
               </Form.Item>
               <Form.Item>
@@ -225,7 +235,7 @@ const CreateOrganizationPage = ({
                     Easy process modeling
                   </Typography.Title>
                   <Typography.Paragraph style={{ textAlign: 'center' }}>
-                    Organizations allow you to mange your processes and collaborate with your team
+                    Organizations allow you to manage your processes and collaborate with your team
                     in one place.
                   </Typography.Paragraph>
                 </div>

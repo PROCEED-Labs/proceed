@@ -41,6 +41,13 @@ export type ResourceActionType = (typeof resourceAction)[number];
 
 export type PermissionNumber = number;
 
+export type TreeMap = {
+  [folderId: string]: string;
+};
+
+export const FolderScopedResources = ['Process', 'Project', 'Template', 'Folder'] as const;
+export type FolderScopedResource = (typeof FolderScopedResources)[number];
+
 const conditions = {
   $in: (valueInCondition: any[]) => (inputValue: any) => valueInCondition.includes(inputValue),
   $eq: (valueInCondition: any) => (inputValue: any) => valueInCondition === inputValue,
@@ -60,7 +67,80 @@ const conditions = {
       'and',
       false,
     ),
-} as const;
+  $property_has_to_be_child_of: (valueInCondition: string, _, tree) => {
+    if (!tree) {
+      throw new Error(
+        'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
+      );
+    }
+
+    return (resource: any) => {
+      if (!valueInCondition) return false;
+
+      // Folder permissions are also applied to the folder itself
+      if (
+        (resource.__caslSubjectType__ as ResourceType) === 'Folder' &&
+        resource.id === valueInCondition
+      )
+        return true;
+
+      // If the resource doesn't specify a perent we can't know where it should be in the tree.
+      // Although this would probably be an error, this should be caught by zod, so here
+      // we just return false implying that this rule doesn't apply.
+      if (!resource.parentId) return false;
+
+      let currentFolder = resource.parentId;
+      const seen = new Set<string>();
+      while (currentFolder) {
+        if (currentFolder === valueInCondition) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
+        currentFolder = tree[currentFolder];
+      }
+
+      return false;
+    };
+  },
+  $property_has_to_be_parent_of: (valueInCondition: string, _, tree) => {
+    if (!tree) {
+      throw new Error(
+        'If you specify a subtree (key: hasToBeChildOf) for a condition, you have to build the ability with a tree',
+      );
+    }
+
+    return (resource: any) => {
+      if (!valueInCondition) return false;
+
+      // NOTE: maybe not throw an error but return false
+      if ((resource.__caslSubjectType__ as ResourceType) !== 'Folder')
+        throw new Error('This condition can only be used with folders');
+
+      if (!resource.id) throw new Error('Folder does not have an id');
+
+      let currentFolder = valueInCondition;
+      const seen = new Set<string>();
+      while (currentFolder) {
+        if (currentFolder === resource.id) return true;
+
+        if (seen.has(currentFolder)) throw new Error('Circular reference in folder tree');
+        seen.add(currentFolder);
+
+        currentFolder = tree[currentFolder];
+      }
+
+      return false;
+    };
+  },
+} satisfies Record<
+  string,
+  (
+    valueInConditionsObject: any,
+    resource: any,
+    tree?: TreeMap,
+  ) => (inputValueFromResource: any) => boolean
+>;
 
 type ConditionOperator = keyof typeof conditions;
 type ConditionsObject = {
@@ -75,6 +155,8 @@ type ConditionsObject = {
 };
 
 function combineFunctions(functions: ((resource: any) => boolean)[], operator: 'or' | 'and') {
+  if (functions.length === 0) return () => true;
+
   return (resource: any) => {
     for (const fn of functions) {
       if (operator === 'or' && fn(resource)) return true;
@@ -121,35 +203,35 @@ function testConidition(
   return condition(value);
 }
 
-function conditionsMatcher(conditionsObject: ConditionsObject) {
-  const conditionsForResource: ((resource: any) => boolean)[] = [];
+function conditionsMatcherFactory(tree?: TreeMap) {
+  return function conditionsMatcher(conditionsObject: ConditionsObject) {
+    const conditionsForResource: ((resource: any) => boolean)[] = [];
 
-  for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
-    for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
-      if (conditionOperator.startsWith('$property_'))
+    for (const [path, condition] of Object.entries(conditionsObject.conditions)) {
+      for (const [conditionOperator, valueInCondition] of Object.entries(condition)) {
         conditionsForResource.push((resource) =>
           testConidition(
-            path.split('.'),
+            conditionOperator.startsWith('$property_') ? ['$'] : path.split('.'),
             resource,
-            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
+            conditions[conditionOperator as ConditionOperator](
+              valueInCondition as never,
+              resource,
+              tree,
+            ),
             conditionsObject.wildcardOperator || 'and',
             conditionsObject.pathNotFound || false,
           ),
         );
-      else
-        conditionsForResource.push((resource) =>
-          testConidition(
-            path.split('.'),
-            resource,
-            conditions[conditionOperator as ConditionOperator](valueInCondition as never, resource),
-            conditionsObject.wildcardOperator || 'and',
-            conditionsObject.pathNotFound || false,
-          ),
-        );
+      }
     }
-  }
 
-  return combineFunctions(conditionsForResource, conditionsObject.conditionsOperator || 'and');
+    const combinedFunctions = combineFunctions(
+      conditionsForResource,
+      conditionsObject.conditionsOperator || 'and',
+    );
+
+    return combinedFunctions;
+  };
 }
 
 export type CaslAbility = PureAbility<
@@ -168,14 +250,14 @@ const resolveAction = createAliasResolver(
   },
 );
 
-export function buildAbility(rules: AbilityRule[]) {
+export function buildAbility(rules: AbilityRule[], tree?: TreeMap) {
   const builder = new AbilityBuilder<CaslAbility>(PureAbility);
 
   const ability = builder.build({
     resolveAction,
     anyAction: 'admin',
     anySubjectType: 'All',
-    conditionsMatcher,
+    conditionsMatcher: conditionsMatcherFactory(tree),
     fieldMatcher: fieldPatternMatcher,
   });
 

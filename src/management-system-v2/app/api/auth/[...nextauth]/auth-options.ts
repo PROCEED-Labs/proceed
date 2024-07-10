@@ -60,26 +60,9 @@ const nextAuthOptions: AuthOptions = {
 
       return session;
     },
-    signIn: async ({ account, user: _user, email }) => {
+    signIn: async ({ account, user: _user }) => {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
-
-      if (
-        sessionUser &&
-        !sessionUser.guest &&
-        account?.provider === 'email' &&
-        !(_user as Partial<AuthenticatedUser>).emailVerified &&
-        !email?.verificationRequest
-      ) {
-        const userSigninIn = getUserById(_user.id);
-
-        if (!userSigninIn) {
-          updateUser(sessionUser.id, {
-            email: _user.email as string,
-            emailVerified: new Date(),
-          });
-        }
-      }
 
       if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
         const user = _user as Partial<AuthenticatedUser>;

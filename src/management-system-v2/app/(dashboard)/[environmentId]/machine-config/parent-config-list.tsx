@@ -2,7 +2,7 @@
 
 import styles from '@/components/item-list-view.module.scss';
 
-import { Button, Grid, Dropdown, TableColumnsType, Tooltip, Row } from 'antd';
+import { Button, Grid, Dropdown, TableColumnsType, Tooltip, Row, TableColumnType } from 'antd';
 import { FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -41,9 +41,20 @@ import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { v4 } from 'uuid';
 import { predefinedDefault } from './configuration-helper';
+import { count } from 'console';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+
+function folderAwareSort(
+  sortFunction: (a: ParentConfigListConfigs, b: ParentConfigListConfigs) => number,
+) {
+  const sorter: TableColumnType<ParentConfigListConfigs>['sorter'] = (a, b, sortOrder) => {
+    const factor = sortOrder === 'ascend' ? 1 : -1;
+    return sortFunction(a, b);
+  };
+  return sorter;
+}
 
 const ParentConfigList = ({
   data,
@@ -78,6 +89,7 @@ const ParentConfigList = ({
   const [openEditModal, setOpenEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ParentConfigListConfigs | null>(null);
   const [openExportModal, setOpenExportModal] = useState(false);
+  const [count, setCount] = useState<number>(0); // Ensure count is a number
 
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
@@ -278,13 +290,13 @@ const ParentConfigList = ({
           </div>
         </SpaceLink>
       ),
-      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      // sorter: (a, b) => a.name.value.localeCompare(b.name.value),
+      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => (
         <SpaceLink
           href={`/machine-config/${record.id}`}
@@ -310,12 +322,14 @@ const ParentConfigList = ({
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
+      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       responsive: ['md'],
     },
     {
       title: 'Config Type',
       dataIndex: 'ConfigType',
       key: 'Config Type',
+      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => <>{record.type}</>,
       responsive: ['sm'],
     },
@@ -324,6 +338,9 @@ const ParentConfigList = ({
       dataIndex: 'Machine',
       key: 'Machine',
       render: (_, record) => <>{record.type}</>,
+      sorter: folderAwareSort(
+        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+      ),
       responsive: ['sm'],
     },
   ];
@@ -333,7 +350,7 @@ const ParentConfigList = ({
       <Bar
         leftNode={
           <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-            <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <span style={{ display: 'flex', justifyContent: 'center' }}>
               {!breakpoint.xs && (
                 <Dropdown
                   trigger={['click']}
@@ -351,11 +368,28 @@ const ParentConfigList = ({
                 <Tooltip placement="top" title={'Export'}>
                   <ExportOutlined
                     /* className={styles.Icon} */
-                    style={{ margin: '0 10px' }}
+                    style={{ margin: '0 8px' }}
                     onClick={() => exportItems(selectedRowElements)}
                   />
                 </Tooltip>
 
+                <Tooltip placement="top" title={'Copy'}>
+                  <CopyOutlined
+                    // className={styles.Icon}
+                    style={{ margin: '0 8px' }}
+                    onClick={() => copyItem(selectedRowElements)}
+                    disabled={count === 0 || count > 1}
+                  />
+                </Tooltip>
+
+                <Tooltip placement="top" title={'Edit'}>
+                  <EditOutlined
+                    style={{ margin: '0 8px' }}
+                    // className={styles.Icon}
+                    onClick={() => editItem(selectedRowElements[0])}
+                    disabled={count !== 1}
+                  />
+                </Tooltip>
                 <Tooltip placement="top" title={'Delete'}>
                   <ConfirmationButton
                     title="Delete Configuration"
@@ -371,6 +405,23 @@ const ParentConfigList = ({
                 </Tooltip>
               </SelectionActions>
             </span>
+
+            {/*<span>
+                <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => addPreferences({ 'icon-view-in-process-list': false })}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => addPreferences({ 'icon-view-in-process-list': true })}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+              </span>*/}
           </span>
         }
         searchProps={{

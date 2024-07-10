@@ -188,7 +188,6 @@ export default function MetaData(props: MachineDataViewProps) {
             {
               displayName: createDisplayName,
               language: '',
-              type: 'string',
               unit: '',
               value: createValue,
             },

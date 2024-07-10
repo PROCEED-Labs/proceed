@@ -1,6 +1,7 @@
 import { string, z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
+import { Prop } from 'vue/types/v3-component-props';
 
 export const ConfigPredefinedLiterals = [
   'description',
@@ -54,12 +55,20 @@ export type Metadata = {
 
 //New Schema:
 export type PropertyContent = {
+  displayName: string; //default: key
   value: any;
-  type: string;
-  displayName: string; //with default values for the different keys
   language: string | undefined;
   unit: string | undefined;
 };
+
+export type Parameter<T> = {
+  id: string | undefined;
+  key: string;
+  type: T; //TODO {description, owner, userId, machine, custom}
+  content: PropertyContent[];
+  linkedParameters: string[];
+  nestedParameters: ConfigParameter[];
+} & Metadata;
 
 export type Property<T> = {
   id: string | undefined;

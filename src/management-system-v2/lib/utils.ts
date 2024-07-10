@@ -360,4 +360,9 @@ export class ObjectSetArray {
 export function getUniqueArray(array: JSONObject[], ids: string | string[] | undefined) {
   /* Helper function to get Array-Props on instance */
   return new ObjectSetArray(array, ids) as any as ObjectSetArrayType;
+  /* 
+  TODO:
+  - Correct type on class itself rather than helper function
+  - after using an array method that returns an array (returned array is wrapped in ObjectSetArray) - e.g. .map / .filter / ... - the proxy wraps it, so the return type should not be array but ObjectSetArray
+  */
 }

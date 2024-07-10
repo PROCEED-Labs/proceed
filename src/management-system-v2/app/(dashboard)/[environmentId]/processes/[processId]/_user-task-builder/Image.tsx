@@ -1,12 +1,13 @@
 import { useEditor, useNode, UserComponent, Node } from '@craftjs/core';
 
-import { InputNumber, Space, Typography } from 'antd';
+import { InputNumber } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
-import { ComponentSettings } from './utils';
+
 import { fallbackImage, ImageUpload } from '../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
+import { Setting } from './utils';
 
 type ImageProps = {
   src?: string;
@@ -169,14 +170,11 @@ export const ImageSettings = () => {
     }
   }, [dom, width]);
 
-  const items = [
-    {
-      key: 'width',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title style={{ marginBottom: 0 }} level={5}>
-            Width:
-          </Typography.Title>
+  return (
+    <>
+      <Setting
+        label="Width"
+        control={
           <InputNumber
             disabled={!src}
             value={currentWidth}
@@ -190,12 +188,10 @@ export const ImageSettings = () => {
               setCurrentWidth(newWidth);
             }}
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
 Image.craft = {

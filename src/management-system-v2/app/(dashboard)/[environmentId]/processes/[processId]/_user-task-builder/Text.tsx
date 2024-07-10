@@ -1,8 +1,8 @@
 import { useNode, UserComponent } from '@craftjs/core';
 
-import { InputNumber, Space } from 'antd';
+import { InputNumber } from 'antd';
 
-import { ComponentSettings, EditableText } from './utils';
+import { EditableText, Setting } from './utils';
 
 type TextProps = {
   text: string;
@@ -39,22 +39,20 @@ export const TextSettings = () => {
     fontSize: node.data.props.fontSize,
   }));
 
-  const items = [
-    {
-      key: 'type',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
+  return (
+    <>
+      <Setting
+        label="Font Size"
+        control={
           <InputNumber
             value={fontSize}
             addonAfter="pt"
             onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
 Text.craft = {

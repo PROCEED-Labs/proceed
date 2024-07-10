@@ -1,0 +1,37 @@
+.Sidebar {
+  :global(.ant-divider:first-of-type) {
+    margin-top: 0;
+  }
+
+  .Toolbox {
+    display: flex;
+    flex-wrap: wrap;
+
+    .CreationButton {
+      // width: 100px;
+      // width: 40%;
+      // height: fit-content;
+      padding: 40px;
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      margin: 2px;
+
+      :global(.ant-btn-icon) {
+        font-size: 2em;
+
+        margin: 0 0 10px 0 !important;
+        margin-right: 0;
+      }
+    }
+  }
+
+  .Settings {
+    & > div {
+      padding-top: 5px;
+    }
+  }
+}

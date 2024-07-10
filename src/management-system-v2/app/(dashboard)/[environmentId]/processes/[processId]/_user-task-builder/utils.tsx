@@ -1,13 +1,8 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, ReactNode, useEffect, useId, useRef, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import { Button, Dropdown, Flex, Space, Input as AntInput } from 'antd';
-import { EllipsisOutlined } from '@ant-design/icons';
-
 import ContentEditable from 'react-contenteditable';
-
-import Overflow, { OverFlowSpaceItem } from '@/components/Overflow';
 
 import SubmitButton from './SubmitButton';
 import Text from './Text';
@@ -16,7 +11,7 @@ import Row from './Row';
 import Column from './Column';
 import Header from './Header';
 import Input from './Input';
-import CheckboxOrRadio from './CheckboxOrRadio';
+import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
 import Image from './Image';
 import { createPortal } from 'react-dom';
@@ -140,7 +135,7 @@ export function toHtml(json: string) {
         Row,
         Header,
         Input,
-        CheckboxOrRadio,
+        CheckboxOrRadioGroup,
         Column,
         Table,
         Image,
@@ -240,40 +235,6 @@ export const defaultForm = `
 }
 `;
 
-export type ComponentSettingsProps = {
-  controls: OverFlowSpaceItem[];
-};
-
-export const ComponentSettings: React.FC<ComponentSettingsProps> = ({ controls }) => {
-  const ref = useRef<HTMLElement>(null);
-  const [overflowOpen, setOverflowOpen] = useState(false);
-
-  return (
-    <Flex gap="middle" ref={ref} style={{ flexGrow: 1, overflow: 'hidden' }} align="center">
-      <Overflow
-        renderHidden={(items) => {
-          return (
-            <Dropdown
-              open={overflowOpen}
-              menu={{
-                items,
-              }}
-            >
-              <Button
-                type="text"
-                icon={<EllipsisOutlined />}
-                onClick={() => setOverflowOpen(!overflowOpen)}
-              />
-            </Dropdown>
-          );
-        }}
-        items={controls}
-        containerRef={ref}
-      />
-    </Flex>
-  );
-};
-
 const getIframe = () => document.getElementById('user-task-builder-iframe') as HTMLIFrameElement;
 const getSelection = () => getIframe().contentWindow!.getSelection();
 
@@ -341,7 +302,6 @@ type EditableTextProps = Omit<
   htmlFor?: string;
 };
 
-// TODO: make this closable by an exposed function
 export const EditableText: React.FC<EditableTextProps> = ({
   value,
   onChange,
@@ -351,119 +311,63 @@ export const EditableText: React.FC<EditableTextProps> = ({
   const ref = useRef<HTMLElement>(null);
 
   const [editable, setEditable] = useState(false);
-  const [currentLinkValue, setCurrentLinkValue] = useState<string>();
 
   useEffect(() => {
-    const handleClick = () => {
-      if (editable) {
-        setEditable(false);
-        setCurrentLinkValue(undefined);
+    if (editable && ref.current) {
+      ref.current.focus();
+      const sel = getSelection();
+      if (sel) {
+        sel.selectAllChildren(ref.current);
+        sel.collapseToEnd();
       }
-    };
+    } else {
+      const selection = ref.current?.ownerDocument.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
+    }
+  }, [editable]);
 
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      setEditable(false);
+      console.log(e);
+    };
     getIframe().contentWindow?.addEventListener('click', handleClick);
     return () => {
       getIframe().contentWindow?.removeEventListener('click', handleClick);
     };
-  }, [editable]);
-
-  // TODO: muss wahrscheinlich ein portal ins iframe sein weil es sonst nicht für Elemente funktioniert die relativ positioniert sind
-  const contextMenu = (
-    <Space.Compact size="large">
-      {typeof currentLinkValue === 'string' ? (
-        <AntInput
-          value={currentLinkValue}
-          onChange={(e) => setCurrentLinkValue(e.target.value)}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          onPressEnter={() => {
-            if (currentLinkValue) {
-              getIframe().contentDocument!.execCommand('createLink', false, currentLinkValue);
-            } else {
-              getIframe().contentDocument!.execCommand('unlink', false);
-            }
-            setCurrentLinkValue(undefined);
-          }}
-        />
-      ) : (
-        <>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              getIframe().contentDocument!.execCommand('bold', false);
-            }}
-          >
-            Bold
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              getIframe().contentDocument!.execCommand('italic', false);
-            }}
-          >
-            Italic
-          </Button>
-
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              const sel = getSelection();
-              const link = sel?.anchorNode?.parentElement;
-              setCurrentLinkValue('');
-            }}
-          >
-            Link
-          </Button>
-        </>
-      )}
-    </Space.Compact>
-  );
+  }, []);
 
   return (
-    <ContextMenu
-      canOpen={(e) => {
-        if (!editable) return false;
-        const sel = getSelection();
-        if (sel?.isCollapsed && (e.target as HTMLElement).tagName === 'A') {
-          const link = e.target as HTMLAnchorElement;
-          const range = getIframe().contentDocument?.createRange();
-          if (range) {
-            sel.removeAllRanges();
-            range.selectNode(link);
-            sel.addRange(range);
-            setCurrentLinkValue(link.href);
-            return true;
-          }
-        }
-        return !sel?.isCollapsed && !!ref.current?.contains(sel?.anchorNode || null);
+    <ContentEditable
+      innerRef={ref}
+      html={value}
+      tagName={tagName}
+      disabled={!editable}
+      onDoubleClick={() => setEditable(true)}
+      onMouseDownCapture={(e) => editable && e.stopPropagation()}
+      onClick={(e) => {
+        editable && e.stopPropagation();
       }}
-      menu={contextMenu}
-    >
-      <ContentEditable
-        innerRef={ref}
-        html={value}
-        tagName={tagName}
-        disabled={!editable}
-        onDoubleClick={() => {
-          setEditable(true);
-          setTimeout(() => {
-            if (ref.current) {
-              ref.current.focus();
-              const sel = getSelection();
-              if (sel) {
-                sel.selectAllChildren(ref.current);
-                sel.collapseToEnd();
-              }
-            }
-          }, 5);
-        }}
-        onMouseDownCapture={(e) => editable && e.stopPropagation()}
-        onClickCapture={(e) => e.stopPropagation()}
-        onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
-        onChange={(e) => onChange(e.target.value)}
-        {...props}
-      />
-    </ContextMenu>
+      onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
+      onChange={(e) => onChange(e.target.value)}
+      {...props}
+    />
+  );
+};
+
+export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ label, control }) => {
+  const id = useId();
+
+  const clonedControl = React.cloneElement(control, { id, style: { flexShrink: 1 } });
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', margin: '5px' }}>
+      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
+        {label}:
+      </label>
+      {clonedControl}
+    </div>
   );
 };

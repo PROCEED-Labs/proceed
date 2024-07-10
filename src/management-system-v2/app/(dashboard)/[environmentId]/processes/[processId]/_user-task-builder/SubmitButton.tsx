@@ -1,5 +1,3 @@
-import { Row, Typography, Select } from 'antd';
-
 import { useNode, UserComponent } from '@craftjs/core';
 
 type SubmitButtonProps = React.PropsWithChildren & {

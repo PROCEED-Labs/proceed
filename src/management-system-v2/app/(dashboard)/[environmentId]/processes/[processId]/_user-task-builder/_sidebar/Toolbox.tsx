@@ -1,23 +1,21 @@
-import React, { ReactNode } from 'react';
-
-import { Button as AntButton, Row } from 'antd';
+import { Element, NodeTree, useEditor, WithoutPrivateActions } from '@craftjs/core';
+import { Button as AntButton } from 'antd';
+import { ReactNode } from 'react';
 
 import { LuFormInput, LuImage, LuTable, LuText } from 'react-icons/lu';
 import { MdCheckBox, MdRadioButtonChecked, MdTitle } from 'react-icons/md';
 import { RxGroup } from 'react-icons/rx';
 
-import { Element, useEditor, NodeTree, WithoutPrivateActions } from '@craftjs/core';
+import styles from './index.module.scss';
 
-import styles from './Sidebar.module.scss';
-
-import Text from './Text';
-import Container from './Container';
-import Input from './Input';
-import CheckboxOrRadio from './CheckboxOrRadio';
-import Header from './Header';
-import Column from './Column';
-import Table from './Table';
-import Image from './Image';
+import Text from '../Text';
+import Container from '../Container';
+import Input from '../Input';
+import CheckboxOrRadioGroup from '../CheckboxOrRadioGroup';
+import Header from '../Header';
+import Column from '../Column';
+import Table from '../Table';
+import Image from '../Image';
 
 function selectOnCreation(nodeTree: NodeTree, actions: WithoutPrivateActions<null>) {
   const newNode = Object.values(nodeTree.nodes || {}).find((el) => el.data.name !== 'Row');
@@ -53,9 +51,9 @@ const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }
   );
 };
 
-export const Toolbox = () => {
+const Toolbox = () => {
   return (
-    <Row className={styles.Sidebar}>
+    <div className={styles.Toolbox}>
       <CreationButton title="Header" icon={<MdTitle />}>
         <Header text="Double Click Me" />
       </CreationButton>
@@ -66,10 +64,10 @@ export const Toolbox = () => {
         <Input type="text" label="Double Click Me" />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>
-        <CheckboxOrRadio type="radio" />
+        <CheckboxOrRadioGroup type="radio" />
       </CreationButton>
       <CreationButton title="Checkbox" icon={<MdCheckBox />}>
-        <CheckboxOrRadio type="checkbox" />
+        <CheckboxOrRadioGroup type="checkbox" />
       </CreationButton>
       <CreationButton title="Table" icon={<LuTable />}>
         <Table />
@@ -80,6 +78,8 @@ export const Toolbox = () => {
       <CreationButton title="Image" icon={<LuImage />}>
         <Image />
       </CreationButton>
-    </Row>
+    </div>
   );
 };
+
+export default Toolbox;

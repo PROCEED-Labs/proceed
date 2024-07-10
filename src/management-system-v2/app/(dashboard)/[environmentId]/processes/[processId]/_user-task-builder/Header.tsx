@@ -1,10 +1,9 @@
 import React from 'react';
-import { Typography, Select, Space } from 'antd';
+import { Select } from 'antd';
 
-import { EditableText } from './utils';
+import { EditableText, Setting } from './utils';
 
 import { UserComponent, useNode } from '@craftjs/core';
-import { ComponentSettings } from './utils';
 
 type HeaderProps = {
   type?: 1 | 2 | 3 | 4 | 5;
@@ -42,14 +41,11 @@ export const HeaderSettings = () => {
     type: node.data.props.type,
   }));
 
-  const items = [
-    {
-      key: 'type',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title style={{ marginBottom: 0 }} level={5}>
-            Type:
-          </Typography.Title>
+  return (
+    <>
+      <Setting
+        label="Type"
+        control={
           <Select
             options={[
               { value: 1, label: '1' },
@@ -65,12 +61,10 @@ export const HeaderSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
 Header.craft = {

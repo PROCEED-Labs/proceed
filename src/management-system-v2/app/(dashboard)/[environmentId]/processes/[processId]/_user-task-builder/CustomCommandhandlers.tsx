@@ -1,4 +1,4 @@
-import { DefaultEventHandlers, NodeId, Node, NodeTree, ROOT_NODE } from '@craftjs/core';
+import { DefaultEventHandlers, NodeId, NodeTree, ROOT_NODE } from '@craftjs/core';
 
 import CustomPositioner from './CustomPositioner';
 import React from 'react';

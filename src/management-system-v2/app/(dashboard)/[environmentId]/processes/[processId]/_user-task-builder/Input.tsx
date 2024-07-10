@@ -1,10 +1,9 @@
-import { Typography, Select, Space } from 'antd';
+import { Select } from 'antd';
 
 import { UserComponent, useNode } from '@craftjs/core';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
-import { v4 } from 'uuid';
-import { ComponentSettings, EditableText } from './utils';
+import { EditableText, Setting } from './utils';
 
 type InputProps = {
   label: string;
@@ -20,7 +19,7 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue =
 
   const [defaultEditable, setDefaultEditable] = useState(false);
 
-  const inputId = v4();
+  const inputId = useId();
 
   return (
     <div
@@ -33,6 +32,8 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue =
         <EditableText
           value={label}
           tagName="label"
+          htmlFor={inputId}
+          onClick={(e) => e.preventDefault()}
           onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
         />
       </div>
@@ -67,14 +68,11 @@ export const InputSettings = () => {
     type: node.data.props.type,
   }));
 
-  const items = [
-    {
-      key: 'type',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title style={{ marginBottom: 0 }} level={5}>
-            Type:
-          </Typography.Title>
+  return (
+    <>
+      <Setting
+        label="Type"
+        control={
           <Select
             options={[
               { value: 'text', label: 'Text' },
@@ -88,12 +86,10 @@ export const InputSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
 Input.craft = {

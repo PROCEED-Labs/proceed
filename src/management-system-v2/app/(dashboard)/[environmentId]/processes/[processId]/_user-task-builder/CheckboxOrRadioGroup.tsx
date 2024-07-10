@@ -1,18 +1,66 @@
-import { Typography, Select, Button, Space } from 'antd';
+import { useId } from 'react';
+
+import { Select, Button } from 'antd';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
-import { useMemo } from 'react';
 
-import { v4 } from 'uuid';
-import { ComponentSettings, EditableText } from './utils';
+import { EditableText, Setting } from './utils';
+import { WithRequired } from '@/lib/typescript-utils';
 
-type CheckboxOrRadioProps = {
+type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
   variable?: string;
   data?: { label: string; value: string; checked?: boolean }[];
 };
 
-const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
+type CheckBoxOrRadioButtonProps = WithRequired<
+  Omit<CheckBoxOrRadioGroupProps, 'data'>,
+  'variable'
+> & {
+  label: string;
+  value: string;
+  checked?: boolean;
+  onChange: () => void;
+  onLabelChange: (newLabel: string) => void;
+};
+
+const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
+  type,
+  variable,
+  label,
+  value,
+  checked,
+  onChange,
+  onLabelChange,
+}) => {
+  const id = useId();
+
+  return (
+    <>
+      <EditableText
+        value={label}
+        tagName="label"
+        htmlFor={id}
+        onChange={onLabelChange}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      />
+      <input
+        id={id}
+        type={type}
+        value={value}
+        name={variable}
+        checked={checked}
+        onClick={onChange}
+        onChange={onChange}
+      />
+    </>
+  );
+};
+
+const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   type,
   variable = 'test',
   data = [{ label: 'Double-Click Me', value: '', checked: false }],
@@ -29,7 +77,7 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
   });
 
   const handleLabelEdit = (index: number, text: string) => {
-    setProp((props: CheckboxOrRadioProps) => {
+    setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = data.map((entry, entryIndex) => {
         let newLabel = entry.label;
 
@@ -41,7 +89,7 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
   };
 
   const handleClick = (index: number) => {
-    setProp((props: CheckboxOrRadioProps) => {
+    setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = data.map((entry, entryIndex) => {
         if (entryIndex === index) return { ...entry, checked: !entry.checked };
         else return { ...entry, checked: type === 'radio' ? false : entry.checked };
@@ -50,7 +98,7 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
   };
 
   const handleAddButton = (index: number) => {
-    setProp((props: CheckboxOrRadioProps) => {
+    setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [
         ...data.slice(0, index + 1),
         { label: 'Double-Click Me', value: '', checked: false },
@@ -60,14 +108,10 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
   };
 
   const handleRemoveButton = (index: number) => {
-    setProp((props: CheckboxOrRadioProps) => {
+    setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [...data.slice(0, index), ...data.slice(index + 1)];
     });
   };
-
-  const inputIds = useMemo(() => {
-    return data.map(() => v4());
-  }, [data.length]);
 
   return (
     <div
@@ -78,21 +122,14 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
       <div className="user-task-form-input-group">
         {data.map(({ label, value, checked }, index) => (
           <span key={index}>
-            <EditableText
-              value={label}
-              tagName="label"
-              htmlFor={inputIds[index]}
-              onChange={(newText) => handleLabelEdit(index, newText)}
-              onClick={(e) => e.preventDefault()}
-            />
-            <input
-              id={inputIds[index]}
+            <CheckboxOrRadioButton
               type={type}
+              variable={variable}
+              label={label}
               value={value}
-              name={variable}
               checked={checked}
-              onClick={() => handleClick(index)}
               onChange={() => handleClick(index)}
+              onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
             />
             {isHovered && (
               <Button
@@ -127,7 +164,7 @@ const CheckboxOrRadio: UserComponent<CheckboxOrRadioProps> = ({
   );
 };
 
-export const CheckboxOrRadioSettings = () => {
+export const CheckBoxOrRadioGroupSettings = () => {
   const {
     actions: { setProp },
     variable,
@@ -135,14 +172,11 @@ export const CheckboxOrRadioSettings = () => {
     variable: node.data.props.variable,
   }));
 
-  const items = [
-    {
-      key: 'type',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title style={{ marginBottom: 0 }} level={5}>
-            Variable:
-          </Typography.Title>
+  return (
+    <>
+      <Setting
+        label="Variable"
+        control={
           <Select
             options={[
               { value: 'var1', label: 'Var1' },
@@ -151,25 +185,23 @@ export const CheckboxOrRadioSettings = () => {
             ]}
             value={variable}
             onChange={(val) =>
-              setProp((props: CheckboxOrRadioProps) => {
+              setProp((props: CheckBoxOrRadioGroupProps) => {
                 props.variable = val;
               })
             }
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
-CheckboxOrRadio.craft = {
+CheckBoxOrRadioGroup.craft = {
   rules: {
     canDrag: () => false,
   },
   related: {
-    settings: CheckboxOrRadioSettings,
+    settings: CheckBoxOrRadioGroupSettings,
   },
   props: {
     variable: 'test',
@@ -177,4 +209,4 @@ CheckboxOrRadio.craft = {
   },
 };
 
-export default CheckboxOrRadio;
+export default CheckBoxOrRadioGroup;

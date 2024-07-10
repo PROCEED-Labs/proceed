@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Row, Button, Divider, Flex, Col } from 'antd';
+import { Row, Button, Divider, Col, Space } from 'antd';
 
 import {
   DesktopOutlined,
@@ -28,37 +28,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   iframeLayout,
   onLayoutChange,
 }) => {
-  const { query, actions, canUndo, canRedo, selected, deleteId } = useEditor((state, query) => {
+  const { query, actions, canUndo, canRedo, onDelete } = useEditor((state, query) => {
     const currentColumn = Array.from(state.events.selected)
       .map((id) => state.nodes[id])
       .find((node) => node && node.data.name === 'Column');
 
-    let selected;
-    let deleteId;
+    let onDelete;
 
     if (currentColumn) {
       const parentRow = currentColumn.data.parent && state.nodes[currentColumn.data.parent];
+      let deleteId = currentColumn.id;
+
       if (parentRow && parentRow.data.nodes.length === 1) {
         deleteId = parentRow.id;
-      } else {
-        deleteId = currentColumn.id;
       }
 
       const childNodeId = currentColumn.data.nodes[0];
       const childNode = state.nodes[childNodeId];
 
-      selected = {
-        id: childNodeId,
-        name: childNode.data.name,
-        settings: childNode.related && childNode.related.settings,
-        onDelete: childNode.data.custom.onDelete as undefined | ((node: Node) => void),
-        node: childNode,
+      onDelete = async () => {
+        if (childNode.data.custom.onDelete) {
+          await (childNode.data.custom.onDelete as (node: Node) => Promise<void>)(childNode);
+        }
+        actions.delete(deleteId!);
       };
     }
 
     return {
-      selected,
-      deleteId,
+      onDelete,
       canUndo: query.history.canUndo(),
       canRedo: query.history.canRedo(),
     };
@@ -70,13 +67,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   useAddControlCallback('user-task-editor', 'redo', () => {
     if (query.history.canRedo()) actions.history.redo();
   });
+  useAddControlCallback(
+    'user-task-editor',
+    'delete',
+    () => {
+      onDelete?.();
+    },
+    { dependencies: [onDelete] },
+  );
 
   return (
     <Row className={styles.EditorHeader}>
       <Col span={4}></Col>
       <Col span={20}>
-        <Flex justify="center" align="center" style={{ width: '100%' }}>
-          <Flex align="center">
+        <Space.Compact size="large" style={{ width: '100%', justifyContent: 'center' }}>
+          <>
             <Button
               type="text"
               icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
@@ -88,9 +93,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
               onClick={() => actions.history.redo()}
             />
-          </Flex>
-          <Divider type="vertical" />
-          <Flex align="center">
+          </>
+          <>
+            <Divider type="vertical" />
             <Button
               type="text"
               icon={
@@ -108,32 +113,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               }
               onClick={() => onLayoutChange('mobile')}
             />
-          </Flex>
+          </>
 
-          {selected && (
-            <>
-              <Divider type="vertical" />
-
-              {selected.settings ? React.createElement(selected.settings) : 'No settings available'}
-            </>
-          )}
-          {deleteId && (
-            <>
-              <Divider type="vertical" />
-              <Button
-                danger
-                type="text"
-                icon={<DeleteOutlined />}
-                onClick={async () => {
-                  if (selected?.onDelete) {
-                    await selected.onDelete(selected.node);
-                  }
-                  actions.delete(deleteId);
-                }}
-              />
-            </>
-          )}
-        </Flex>
+          <>
+            <Divider type="vertical" />
+            <Button
+              danger
+              disabled={!onDelete}
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={async () => {
+                await onDelete!();
+              }}
+            />
+          </>
+        </Space.Compact>
       </Col>
     </Row>
   );

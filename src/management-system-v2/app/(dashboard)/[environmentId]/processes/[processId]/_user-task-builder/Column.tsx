@@ -1,9 +1,6 @@
 import { UserComponent, useNode } from '@craftjs/core';
 
-const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
-  children,
-  fixed = false,
-}) => {
+const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({ children }) => {
   const {
     connectors: { connect, drag },
     isDragged,

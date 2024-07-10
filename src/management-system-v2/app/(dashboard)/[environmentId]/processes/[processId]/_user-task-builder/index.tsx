@@ -13,11 +13,11 @@ import Text from './Text';
 import Container from './Container';
 import Row from './Row';
 import Column from './Column';
-import { Toolbox } from './Sidebar';
+import Sidebar from './_sidebar';
 import { Toolbar, EditorLayout } from './Toolbar';
 import Header from './Header';
 import Input from './Input';
-import CheckboxOrRadio from './CheckboxOrRadio';
+import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
 import Image from './Image';
 
@@ -36,7 +36,10 @@ type BuilderProps = {
 const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const { query } = useEditor();
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
+
+  const [iframeWasMounted, setIframeWasMounted] = useState(false);
 
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
 
@@ -53,6 +56,7 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
 
   return (
     <Modal
+      className={styles.BuilderModal}
       centered
       width={isMobile ? '100vw' : '90vw'}
       styles={{ body: { height: '85vh' } }}
@@ -60,6 +64,7 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       title="Edit User Task"
       okText="Save"
       onCancel={onClose}
+      okButtonProps={{ disabled: isMobile }}
       onOk={() => {
         const json = query.serialize();
         console.log(json);
@@ -75,19 +80,31 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
           />
         )}
         <AntRow className={styles.EditorBody}>
-          {!isMobile && (
+          {!isMobile && iframeWasMounted && (
             <Col span={4}>
-              <Toolbox />
+              <Sidebar iframeRef={iframeRef} />
             </Col>
           )}
-          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
+          <Col
+            ref={iframeContainerRef}
+            className={styles.HtmlEditor}
+            span={isMobile || !iframeWasMounted ? 24 : 20}
+          >
             <IFrame
               id="user-task-builder-iframe"
+              ref={iframeRef}
               width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
               height="100%"
               style={{ border: 0, margin: 'auto' }}
               initialContent={iframeDocument}
               mountTarget="#mountHere"
+              contentDidMount={() => {
+                setIframeWasMounted(true);
+                // will prevent that we focus the iframe when clicking into the empty space of its body which would prevent button clicks like Delete to register on the main document body
+                iframeRef.current?.contentDocument?.body.addEventListener('mousedown', (e) =>
+                  e.preventDefault(),
+                );
+              }}
             >
               <Frame>
                 <Element is={Container} padding={5} background="#fff" borderThickness={0} canvas>
@@ -146,7 +163,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
         Row,
         Column,
         Input,
-        CheckboxOrRadio,
+        CheckboxOrRadioGroup,
         Table,
         Image,
       }}
@@ -164,6 +181,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
         checker={{
           undo: (e) => e.ctrlKey && e.key === 'z',
           redo: (e) => e.ctrlKey && e.shiftKey && e.key === 'Z',
+          delete: (e) => e.key === 'Delete',
         }}
       />
       <EditorModal open={open} onClose={onClose} />

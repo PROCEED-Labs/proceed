@@ -1,9 +1,10 @@
 import React from 'react';
 
-import { Typography, InputNumber, ColorPicker, Empty, Space } from 'antd';
+import { InputNumber, ColorPicker, Empty } from 'antd';
 
 import { UserComponent, useNode } from '@craftjs/core';
-import { ComponentSettings } from './utils';
+
+import { Setting } from './utils';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;
@@ -52,14 +53,11 @@ export const ContainerSettings = () => {
     borderColor: node.data.props.borderColor,
   }));
 
-  const items = [
-    {
-      key: 'padding',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title level={5} style={{ marginBottom: 0 }}>
-            Padding:
-          </Typography.Title>
+  return (
+    <>
+      <Setting
+        label="Padding"
+        control={
           <InputNumber
             min={0}
             addonAfter="px"
@@ -70,16 +68,11 @@ export const ContainerSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-    {
-      key: 'bg-color',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title level={5} style={{ marginBottom: 0 }}>
-            Background Color:
-          </Typography.Title>
+        }
+      />
+      <Setting
+        label="Background Color"
+        control={
           <ColorPicker
             value={background}
             onChange={(_, val) =>
@@ -88,16 +81,11 @@ export const ContainerSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-    {
-      key: 'border-thickness',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title level={5} style={{ marginBottom: 0 }}>
-            Border Thickness:
-          </Typography.Title>
+        }
+      />
+      <Setting
+        label="Border Thickness"
+        control={
           <InputNumber
             min={0}
             addonAfter="px"
@@ -108,16 +96,11 @@ export const ContainerSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-    {
-      key: 'border-color',
-      label: (
-        <Space style={{ minWidth: 'max-content' }} align="center">
-          <Typography.Title level={5} style={{ marginBottom: 0 }}>
-            Border Color:
-          </Typography.Title>
+        }
+      />
+      <Setting
+        label="Border Color"
+        control={
           <ColorPicker
             value={borderColor}
             onChange={(_, val) =>
@@ -126,12 +109,10 @@ export const ContainerSettings = () => {
               })
             }
           />
-        </Space>
-      ),
-    },
-  ];
-
-  return <ComponentSettings controls={items} />;
+        }
+      />
+    </>
+  );
 };
 
 Container.craft = {

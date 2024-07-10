@@ -73,11 +73,35 @@ type ObjectSetArrayType = Array<JSONObject> & {
   toArray(): JSONObject[];
 };
 
+/**
+ * Creates a Set-Array that only allows unique entries.
+ *
+ * The Set-Array is a wrapper around an array that only allows unique entries.
+ * The uniqueness of an entry is determined by the values of the properties specified in the ids argument.
+ *
+ * Besides the standard array methods, the Set-Array provides the following methods:
+ * - add(elements: JSONObject[] | JSONObject): JSONObject[] — Adds new elements to the end of the Set-Array. Duplicates will overwrite exisiting values.
+ * - toArray(): JSONObject[] — Returns a copy of the Set-Array.
+ */
 export class ObjectSetArray {
   #array: JSONObject[] = [];
   private ids: string[] = [];
   private idSets: Set<string> = new Set();
 
+  /**
+   * @param array - The array to turn into a Set-Array. It should contain objects.
+   * @param ids - The properties that identify an object. If a single string is provided, the value of that property will be used to identify an object. If an array of strings is provided, the concatenated string of the values of those properties will be used to identify an object. If no ids are provided, all keys of the first object in the array will be used (therfore elements should be uniform).
+   *
+   * @example
+   * const array = [{ name: 'Alice', age: 20 }, { name: 'Alice', age: 20 }, { name: 'Alice', age: 24 }, { name: 'Bob', age: 30 }];
+   * const uniqueArray1 = new ObjectSetArray(array, ['name', 'age']);
+   *
+   * uniqueArray1.toArray(); // [{ name: 'Alice', age: 20 }, { name: 'Alice', age: 24 }, { name: 'Bob', age: 30 }]
+   *
+   * const uniqueArray2 = new ObjectSetArray(array, 'name');
+   *
+   * uniqueArray2.toArray(); // [{ name: 'Alice', age: 20 }, { name: 'Bob', age: 30 }] // First occurence of Alice is kept
+   */
   constructor(array: JSONObject[], ids: string | string[] | undefined) {
     this.setIds(ids);
     this.array = array;
@@ -269,8 +293,13 @@ export class ObjectSetArray {
     return deletedElements;
   }
 
+  /**
+   * Since filling an Set-Multiple with multiple identical elements is not possible, this method is not supported.
+   */
   public fill(value: JSONObject, start?: number, end?: number): JSONObject[] {
-    return this.array.fill(value, start, end);
+    throw new Error(
+      'Filling an ObjectSetArray with multiple identical elements is not possible. If you want to add multiple identical elements, convert the Set-Array to an array first by calling .toArray() on it.',
+    );
   }
 
   [Symbol.iterator]() {

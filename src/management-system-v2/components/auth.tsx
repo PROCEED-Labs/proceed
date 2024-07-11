@@ -44,9 +44,9 @@ export const getCurrentEnvironment = cache(
     const isOrganization = activeSpace !== userId;
 
     if (systemAdmin) {
-      const rules = adminRules;
-      if (!isOrganization) rules.push(...packRules<AbilityRule>(globalUserRules));
-      else rules.push(...packRules<AbilityRule>(globalOrganizationRules));
+      let rules;
+      if (!isOrganization) rules = adminRules.concat(packRules<AbilityRule>(globalUserRules));
+      else rules = adminRules.concat(packRules<AbilityRule>(globalOrganizationRules));
 
       return {
         ability: new Ability(rules, activeSpace),

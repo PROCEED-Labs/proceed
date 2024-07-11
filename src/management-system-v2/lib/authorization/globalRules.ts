@@ -7,12 +7,12 @@ type SystemRules = (AbilityRule & { inverted: true })[];
 
 //TODO read global rules from config file
 
-export const globalOrganizationRules = [] satisfies SystemRules;
+export const globalOrganizationRules = Object.freeze([] satisfies SystemRules);
 
-export const globalUserRules = [
+export const globalUserRules = Object.freeze([
   {
     inverted: true,
     action: [...resourceAction],
     subject: ['Role', 'RoleMapping', 'Machine', 'Execution', 'EnvConfig', 'User', 'Environment'],
   },
-] satisfies SystemRules;
+] satisfies SystemRules);

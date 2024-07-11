@@ -6,9 +6,10 @@ import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
 import Ability, { adminRules } from '@/lib/ability/abilityHelper';
-import { globalOrganizationRules, globalUserRules } from '@/lib/authorization/globalRules';
-import { packRules } from '@casl/ability/extra';
-import { AbilityRule } from '@/lib/ability/caslAbility';
+import {
+  packedGlobalOrganizationRules,
+  packedGlobalUserRules,
+} from '@/lib/authorization/globalRules';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
@@ -45,8 +46,8 @@ export const getCurrentEnvironment = cache(
 
     if (systemAdmin) {
       let rules;
-      if (!isOrganization) rules = adminRules.concat(packRules<AbilityRule>(globalUserRules));
-      else rules = adminRules.concat(packRules<AbilityRule>(globalOrganizationRules));
+      if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
+      else rules = adminRules.concat(packedGlobalUserRules);
 
       return {
         ability: new Ability(rules, activeSpace),

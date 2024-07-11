@@ -81,6 +81,7 @@ type ObjectSetArrayType = Array<JSONObject> & {
  *
  * Besides the standard array methods, the Set-Array provides the following methods:
  * - add(elements: JSONObject[] | JSONObject): JSONObject[] — Adds new elements to the end of the Set-Array. Duplicates will overwrite exisiting values.
+ * - has(element: JSONObject): boolean — Checks if the Set-Array contains a specific element.
  * - toArray(): JSONObject[] — Returns a copy of the Set-Array.
  *
  * @throws Error when setting identical entries via indexing or when trying to fill the Set-Array with multiple identical elements.
@@ -223,6 +224,21 @@ export class ObjectSetArray {
     });
 
     return overwrittenElements;
+  }
+
+  /**
+   * Checks if the Set-Array contains a specific element.
+   *
+   * @param element — The element to check for.
+   *
+   * @returns true if the element is in the Set-Array, false otherwise.
+   */
+  public has(element: JSONObject) {
+    let entry = '';
+    for (const id of this.ids) {
+      entry += JSON.stringify(element[id]);
+    }
+    return this.idSets.has(entry);
   }
 
   /**

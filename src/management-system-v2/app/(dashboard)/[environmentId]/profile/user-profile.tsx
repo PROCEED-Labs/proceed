@@ -47,6 +47,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
       const response = await serverRequestEmailChange(data.email);
       if (response && 'error' in response) throw response;
 
+      setChangeEmailModalOpen(false);
       notification.success({
         message: 'Email change request successful',
         description: 'Check your Email for the verification link',

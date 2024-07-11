@@ -1,19 +1,19 @@
 import { z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
 import { Prettify, WithRequired } from '../typescript-utils';
-import { Localization, LocalizationZod } from './locale';
+import { LocalizationZod } from './locale';
+
+const ParameterContentZod = z.object({
+  value: z.string(),
+  displayName: z.string(),
+  language: LocalizationZod,
+  unit: z.string().optional(),
+});
 
 const ParameterZod = z.object({
   id: z.string().optional(),
   type: z.string().optional(),
-  content: z.array(
-    z.object({
-      value: z.string(),
-      displayName: z.string(),
-      language: LocalizationZod,
-      unit: z.string().optional(),
-    }),
-  ),
+  content: z.array(ParameterContentZod),
   linkedParameters: z.array(z.string()),
   parameters: z.record(z.string(), z.any()),
 });
@@ -40,7 +40,7 @@ export type Metadata = {
   lastEditedOn: string;
 };
 
-export type ParameterContent = z.infer<typeof ParameterZod.shape.content>;
+export type ParameterContent = z.infer<typeof ParameterContentZod>;
 
 export type Parameter = z.infer<typeof ParameterZod>;
 

@@ -168,7 +168,7 @@ function defaultParameter(key: string, val: string): Parameter {
       {
         displayName: key[0].toUpperCase() + key.slice(1),
         value: val,
-        language: LocalizationName['en'],
+        language: 'en',
         unit: '',
       },
     ],

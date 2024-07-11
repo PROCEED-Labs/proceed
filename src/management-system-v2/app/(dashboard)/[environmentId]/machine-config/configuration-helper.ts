@@ -1,5 +1,11 @@
 import { LocalizationName } from '@/lib/data/locale';
-import { AbstractConfig, Parameter, ParentConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  MachineConfig,
+  Parameter,
+  ParentConfig,
+  TargetConfig,
+} from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
 
 export function defaultParameter(key: string, val: string): Parameter {
@@ -10,7 +16,7 @@ export function defaultParameter(key: string, val: string): Parameter {
       {
         displayName: key[0].toUpperCase() + key.slice(1),
         value: val,
-        language: LocalizationName['en'],
+        language: 'en',
         unit: '',
       },
     ],
@@ -105,51 +111,79 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
 }
 
 export function deleteParameter(id: string, parentConfig: ParentConfig): boolean {
+  let deleted = false;
   let p = findParameter(id, parentConfig, 'config');
   if (!p) return false;
   let parent;
   if (p.type === 'parameter') {
     parent = p.parent as Parameter;
-    parent.parameters = parent.parameters.filter((node, _) => {
-      if (node.id) return id.indexOf(node.id) === -1;
-      return true;
-    });
+    for (let prop in parent.parameters) {
+      if (parent.parameters[prop].id === id) {
+        delete parent.parameters[prop];
+        deleted = true;
+      }
+      if (deleted) break;
+    }
   } else if (p.type === 'config') {
-    parent = p.parent as AbstractConfig;
-    parent.metadata = parent.metadata.filter((node, _) => {
-      if (node.id) return id.indexOf(node.id) === -1;
-      return true;
-    });
+    parent = p.parent as ParentConfig;
+    for (let prop in parent.metadata) {
+      if (parent.metadata[prop].id === id) {
+        delete parent.metadata[prop];
+        deleted = true;
+      }
+      if (deleted) break;
+    }
   } else {
-    parent = p.parent as AbstractConfig;
-    parent.metadata = parent.metadata.filter((node, _) => {
-      if (node.id) return id.indexOf(node.id) === -1;
-      return true;
-    });
+    parent = p.parent as TargetConfig | MachineConfig;
+    for (let prop in parent.metadata) {
+      if (parent.metadata[prop].id === id) {
+        delete parent.metadata[prop];
+        deleted = true;
+      }
+      if (deleted) break;
+    }
+    if (deleted) return true;
+    for (let prop in parent.parameters) {
+      if (parent.metadata[prop].id === id) {
+        delete parent.metadata[prop];
+        deleted = true;
+      }
+      if (deleted) break;
+    }
   }
-
-  return true;
+  return deleted;
 }
 
 export function findParameter(
   id: string,
   _parent: AbstractConfig | Parameter,
-  type: AbstractConfig['type'] | 'parameter',
+  type: AbstractConfig['type'] | 'parameter' | 'metadata',
 ): TreeFindParameterStruct {
   let found = undefined;
   if (type === 'config') {
     let parent = _parent as ParentConfig;
-    for (let parameter of parent.metadata) {
+    for (let prop in parent.metadata) {
+      let parameter = parent.metadata[prop];
       if (parameter.id === id) {
         return { selection: parameter, parent: _parent, type: 'config' };
       }
-      found = findParameter(id, parameter, 'parameter');
+      found = findParameter(id, parameter, 'metadata');
       if (found) return found;
     }
     if (found) return found;
     // search in targetConfig
     if (parent.targetConfig) {
-      for (let parameter of parent.targetConfig.parameters) {
+      for (let prop in parent.targetConfig.metadata) {
+        let parameter = parent.targetConfig.metadata[prop];
+        if (parameter.id === id) {
+          return { selection: parameter, parent: parent.targetConfig, type: 'target-config' };
+        }
+        found = findParameter(id, parameter, 'metadata');
+        if (found) return found;
+      }
+      if (found) return found;
+      for (let prop in parent.targetConfig.parameters) {
+        let parameter = parent.targetConfig.parameters[prop];
         if (parameter.id === id) {
           return { selection: parameter, parent: parent.targetConfig, type: 'target-config' };
         }
@@ -160,7 +194,8 @@ export function findParameter(
     // search in all machine configs
     if (found) return found;
     for (let machineConfig of parent.machineConfigs) {
-      for (let parameter of machineConfig.parameters) {
+      for (let prop in machineConfig.parameters) {
+        let parameter = machineConfig.parameters[prop];
         if (parameter.id === id) {
           return { selection: parameter, parent: machineConfig, type: 'machine-config' };
         }
@@ -168,11 +203,21 @@ export function findParameter(
         if (found) return found;
       }
       if (found) return found;
+      for (let prop in machineConfig.metadata) {
+        let parameter = machineConfig.metadata[prop];
+        if (parameter.id === id) {
+          return { selection: parameter, parent: machineConfig, type: 'machine-config' };
+        }
+        found = findParameter(id, parameter, 'metadata');
+        if (found) return found;
+      }
+      if (found) return found;
     }
     if (found) return found;
   } else {
     let parent = _parent as Parameter;
-    for (let parameter of parent.parameters) {
+    for (let prop in parent.parameters) {
+      let parameter = parent.parameters[prop];
       if (parameter.id === id) {
         return { selection: parameter, parent: _parent, type: 'parameter' };
       }

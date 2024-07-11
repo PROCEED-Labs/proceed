@@ -143,7 +143,13 @@ export const LocalizationName = {
   yi: 'Yiddish',
   yo: 'Yoruba - Èdè Yorùbá',
   zu: 'Zulu - isiZulu',
-};
+} as const;
 
-export const LocalizationZod = z.nativeEnum(LocalizationName);
+function typedObjectKeys<T extends object>(obj: T) {
+  return Object.keys(obj) as (keyof typeof obj)[];
+}
+
+export const [LocalizationCode1, ...LocalizationCodeN] = typedObjectKeys(LocalizationName);
+
+export const LocalizationZod = z.enum([LocalizationCode1, ...LocalizationCodeN]);
 export type Localization = z.infer<typeof LocalizationZod>;

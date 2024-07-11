@@ -3,7 +3,7 @@
 import {
   ParentConfig,
   AbstractConfig,
-  ConfigParameter,
+  Parameter,
   TargetConfig,
 } from '@/lib/data/machine-config-schema';
 import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tooltip, Tree, TreeDataNode } from 'antd';
@@ -24,6 +24,7 @@ import {
   findParameter,
 } from '../configuration-helper';
 import MachineConfigModal from '@/components/machine-config-modal';
+import { Localization } from '@/lib/data/locale';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -50,7 +51,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [parameterKey, setParameterKey] = useState<string>('');
   const [parameterValue, setParameterValue] = useState<string>('');
   const [parameterUnit, setParameterUnit] = useState<string>('');
-  const [parameterLanguage, setParameterLanguage] = useState<string>('');
+  const [parameterLanguage, setParameterLanguage] = useState<Localization>('en');
   const [selectedMachineConfig, setSelectedMachineConfig] = useState<
     TreeFindStruct | TreeFindParameterStruct
   >(undefined);
@@ -98,7 +99,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     // }
     setCreateParameterOpen(true);
     setParameterKey('');
-    setParameterLanguage('');
+    setParameterLanguage('en');
     setParameterUnit('');
     setParameterValue('');
   };
@@ -241,8 +242,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   };
 
   const configParameterToTreeElement = (
-    _parameter: ConfigParameter,
-  ): TreeDataNode & { ref: ConfigParameter } => {
+    _parameter: Parameter,
+  ): TreeDataNode & { ref: Parameter } => {
     let tagByType = (
       <>
         <Tooltip
@@ -268,10 +269,11 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     };
   };
 
-  const parameterSearch = (_parentParameter: ConfigParameter): TreeDataNode => {
+  const parameterSearch = (_parentParameter: Parameter): TreeDataNode => {
     let node: TreeDataNode = configParameterToTreeElement(_parentParameter);
     node.children = [];
-    for (let nestedParameter of _parentParameter.nestedParameters) {
+    for (let prop in _parentParameter.parameters) {
+      let nestedParameter = _parentParameter.parameters[prop];
       node.children.push(parameterSearch(nestedParameter));
     }
     return node;
@@ -283,8 +285,10 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     if (parentConfig.targetConfig) {
       let childNode: TreeDataNode = configToTreeElement(parentConfig.targetConfig);
       childNode.children = [];
-      for (let parameter of parentConfig.targetConfig.parameters)
+      for (let prop in parentConfig.targetConfig.parameters) {
+        let parameter = parentConfig.targetConfig.parameters[prop];
         childNode.children.push(parameterSearch(parameter));
+      }
       list.push(childNode);
     }
     const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
@@ -293,8 +297,10 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     for (let childrenConfig of machineConfigs) {
       let childNode: TreeDataNode = configToTreeElement(childrenConfig);
       childNode.children = [];
-      for (let parameter of childrenConfig.parameters)
+      for (let prop in childrenConfig.parameters) {
+        let parameter = childrenConfig.parameters[prop];
         childNode.children.push(parameterSearch(parameter));
+      }
       list.push(childNode);
     }
     return list;
@@ -352,20 +358,15 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const addParameter = () => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
     const date = new Date().toUTCString();
-    const defaultParameter: ConfigParameter = {
+    const defaultParameter: Parameter = {
       id: v4(),
-      key: 'param',
-      createdBy: environment.spaceId,
-      createdOn: date,
-      lastEditedBy: environment.spaceId,
-      lastEditedOn: date,
       linkedParameters: [],
-      nestedParameters: [],
+      parameters: [],
+      type: 'https://schema.org/' + parameterKey,
       content: [
         {
           displayName: parameterKey[0].toUpperCase() + parameterKey.slice(1),
           language: parameterLanguage,
-          type: 'string',
           value: parameterValue,
           unit: parameterUnit,
         },
@@ -374,11 +375,11 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     if (_configType === 'parameter') {
       let ref = findParameter(_configId.toString(), parentConfig, 'config');
       if (ref === undefined) return;
-      ref.selection.nestedParameters.push(defaultParameter);
+      ref.selection.parameters[parameterKey] = defaultParameter;
     } else {
       let ref = findConfig(_configId.toString(), parentConfig);
       if (ref === undefined) return;
-      ref.selection.parameters.push(defaultParameter);
+      ref.selection.metadata[parameterKey] = defaultParameter;
     }
     saveAndUpdateElements();
   };

@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
+import { Localization } from '@/lib/data/locale';
 
 export type CreatePropertyModalReturnType = {
   displayName: string;
-  language: string;
+  language: Localization;
   unit: string;
   value: string;
 };

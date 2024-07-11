@@ -2,10 +2,9 @@
 
 import {
   ParentConfig,
-  ConfigParameter,
   AbstractConfig,
-  ConfigField,
-  PropertyContent,
+  Parameter,
+  ParameterContent,
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -14,7 +13,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import {
+  TreeFindStruct,
+  defaultConfiguration,
+  findConfig,
+  findParameter,
+} from '../configuration-helper';
 import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
@@ -28,7 +32,7 @@ type MachineDataViewProps = {
   backendSaveParentConfig: Function;
   customConfig?: AbstractConfig;
   editingEnabled: boolean;
-  field: ConfigField | ConfigParameter;
+  field: Parameter;
   label?: string;
 };
 
@@ -51,7 +55,7 @@ export default function Property(props: MachineDataViewProps) {
   const { token } = theme.useToken();
 
   const [openCreatePropertyModal, setOpenCreatePropertyModal] = useState<boolean>(false);
-  const [propertyField, setPropertyField] = useState<ConfigField | ConfigParameter>(props.field);
+  const [propertyField, setPropertyField] = useState<Parameter>(props.field);
 
   const editable = props.editingEnabled;
 
@@ -61,38 +65,30 @@ export default function Property(props: MachineDataViewProps) {
       setPropertyField(props.field);
       return;
     }
+    saveProperty();
   }, [propertyField]);
 
   const showMobileView = useMobileModeler();
 
-  const deleteProperty = (propertyItem: PropertyContent) => {
-    let copyPropertyContent = propertyField.content.filter((item: PropertyContent) => {
+  const deleteProperty = (propertyItem: ParameterContent) => {
+    let copyPropertyContent = propertyField.content.filter((item: ParameterContent) => {
       return item !== propertyItem;
     });
     let propertyCopy = { ...propertyField };
     propertyCopy.content = copyPropertyContent;
     setPropertyField(propertyCopy);
-    saveProperty();
   };
 
   const saveProperty = () => {
-    if (refEditingMachineConfig) {
-      if (propertyField.key === 'custom') {
-        for (let [idx, customField] of refEditingMachineConfig.selection.customFields.entries()) {
-          if (customField.id === propertyField.id) {
-            refEditingMachineConfig.selection.customFields[idx] = propertyField;
-          }
-        }
-      }
-      // TODO: implement!!
-      if (propertyField.key === 'param') {
-      }
+    if (refEditingMachineConfig && propertyField.id) {
+      let paramRef = findParameter(propertyField.id, parentConfig, 'config');
+      paramRef!.selection = propertyField;
       saveMachineConfig(configId, parentConfig).then(() => {});
       router.refresh();
     }
   };
 
-  const propertyItemHeader = (propertyItem: PropertyContent) => (
+  const propertyItemHeader = (propertyItem: ParameterContent) => (
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
         <Space>
@@ -117,7 +113,7 @@ export default function Property(props: MachineDataViewProps) {
     border: 'solid 1px #d9d9d9',
   };
 
-  const propertyContent = (propertyItem: PropertyContent) => (
+  const propertyContent = (propertyItem: ParameterContent) => (
     <div>
       {editable && (
         <>
@@ -211,8 +207,7 @@ export default function Property(props: MachineDataViewProps) {
     return list;
   };
   const propertyItems = getPropertyItems();
-  const addButtonTitle =
-    'Add ' + propertyField.key[0].toUpperCase() + propertyField.key.slice(1) + ' Item';
+  const addButtonTitle = 'Add ' + props.label + ' Item';
   return (
     <>
       {(editable || propertyItems.length > 0) && (

@@ -1,6 +1,11 @@
 'use client';
 
-import { ParentConfig, ConfigParameter } from '@/lib/data/machine-config-schema';
+import {
+  ParentConfig,
+  Parameter,
+  TargetConfig,
+  MachineConfig,
+} from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PlusOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
@@ -37,7 +42,7 @@ export default function Parameters(props: MachineDataViewProps) {
   const saveMachineConfig = props.backendSaveParentConfig;
   const configId = props.configId;
   const selectedVersionId = query.get('version');
-  const [nestedParameters, setNestedParameters] = useState<ConfigParameter[]>([]); // State for nested parameters
+  const [nestedParameters, setNestedParameters] = useState<object>({}); // State for nested parameters
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -47,7 +52,7 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const saveParameters = () => {
     if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection.parameters = nestedParameters;
+      // refEditingMachineConfig.selection.metadata = nestedParameters;
       saveMachineConfig(configId, parentConfig).then(() => {});
       router.refresh();
     }
@@ -58,12 +63,15 @@ export default function Parameters(props: MachineDataViewProps) {
       firstRender.current = false;
       return;
     }
-    if (refEditingMachineConfig) setNestedParameters(refEditingMachineConfig.selection.parameters);
+    // if (refEditingMachineConfig)
+    //   setNestedParameters(
+    //     (refEditingMachineConfig.selection as TargetConfig | MachineConfig).parameters,
+    //   );
   }, [props.selectedConfig]);
 
   const showMobileView = useMobileModeler();
 
-  const parameterItemHeader = (parameter: ConfigParameter) => (
+  const parameterItemHeader = (parameter: Parameter) => (
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
         <Space>
@@ -85,21 +93,21 @@ export default function Parameters(props: MachineDataViewProps) {
     border: 'solid 1px #d9d9d9',
   };
 
-  const getNestedParameters = () => {
-    if (nestedParameters && nestedParameters.length > 0) {
-      return (
-        <Collapse
-          bordered={false}
-          expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-          items={nestedParameters}
-          style={{ display: nestedParameters.length > 0 ? 'block' : 'none' }}
-        />
-      );
-    }
-    return getAddButton('Add Nested Parameter', undefined, () => {});
-  };
+  // const getNestedParameters = () => {
+  //   if (nestedParameters && nestedParameters.length > 0) {
+  //     return (
+  //       <Collapse
+  //         bordered={false}
+  //         expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+  //         items={nestedParameters}
+  //         style={{ display: nestedParameters.length > 0 ? 'block' : 'none' }}
+  //       />
+  //     );
+  //   }
+  //   return getAddButton('Add Nested Parameter', undefined, () => {});
+  // };
 
-  const parameterContent = (parameter: ConfigParameter) => (
+  const parameterContent = (parameter: Parameter) => (
     <div>
       {editable && (
         <>
@@ -180,7 +188,7 @@ export default function Parameters(props: MachineDataViewProps) {
           Nested Parameters
         </Col>
         <Col span={20} className="gutter-row">
-          {getNestedParameters()}
+          {/* {getNestedParameters()} */}
           {editable && (
             <Space style={{ margin: '10px 0 0 0' }}>
               {getAddButton('Add Nested Parameter', undefined, () => {})}
@@ -198,7 +206,9 @@ export default function Parameters(props: MachineDataViewProps) {
 
   const getParameterItems = (): any => {
     let list = [];
-    for (let parameter of editingConfig.parameters) {
+    let _editingConfig = editingConfig as TargetConfig | MachineConfig;
+    for (let prop in _editingConfig.parameters) {
+      let parameter = _editingConfig.parameters[prop];
       list.push({
         key: parameter.id,
         label: parameterItemHeader(parameter),

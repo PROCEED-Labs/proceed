@@ -2,18 +2,20 @@
 
 import store from './store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import {
   ParentConfig,
   AbstractConfigInputSchema,
   ParentConfigMetadata,
   AbstractConfigInput,
+  Parameter,
 } from '../machine-config-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { LocalizationName } from '../locale';
 
 // @ts-ignore
 let firstInit = !global.parentConfigMetaObjects;
@@ -118,16 +120,20 @@ export async function copyParentConfig(
     const date = new Date().toUTCString();
     const metadata: ParentConfig = {
       ...originalConfig,
-      ...({
-        id: v4(),
-        name: parentConfigData.name,
-        description: parentConfigData.description,
-        createdOn: date,
-        lastEditedOn: date,
-        createdBy: environmentId,
-        lastEditedBy: environmentId,
-      } as ParentConfig),
     };
+
+    metadata.id = v4();
+    metadata.name = parentConfigData.name ?? '';
+    metadata.metadata = {
+      description: defaultParameter(
+        'description',
+        parentConfigData.metadata.description.content[0].value,
+      ),
+    };
+    metadata.createdOn = date;
+    metadata.lastEditedOn = date;
+    metadata.createdBy = environmentId;
+    metadata.lastEditedBy = environmentId;
 
     if (!metadata.folderId) {
       metadata.folderId = getRootFolder(metadata.environmentId).id;
@@ -154,12 +160,20 @@ export async function copyParentConfig(
   }
 }
 
-function predefinedDefault<T>(key: string, val: T, hiding: boolean = true) {
+function defaultParameter(key: string, val: string): Parameter {
   return {
     id: v4(),
-    key: key,
-    hiding: hiding,
-    content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
+    type: 'https://schema.org/' + key,
+    content: [
+      {
+        displayName: key[0].toUpperCase() + key.slice(1),
+        value: val,
+        language: LocalizationName['en'],
+        unit: '',
+      },
+    ],
+    linkedParameters: [],
+    parameters: {},
   };
 }
 
@@ -175,15 +189,11 @@ export async function createParentConfig(
         id: v4(),
         type: 'config',
         name: 'Default Parent Configuration',
-        description: predefinedDefault('description', '', false),
         variables: [],
-        parameters: [],
         createdBy: environmentId,
         lastEditedBy: environmentId,
         lastEditedOn: date,
-        userId: predefinedDefault('userIdentification', ''),
-        customFields: [],
-        picture: predefinedDefault('picture', ''),
+        metadata: {},
         departments: [],
         inEditingBy: [],
         createdOn: date,
@@ -196,8 +206,6 @@ export async function createParentConfig(
         targetConfig: undefined,
         machineConfigs: [],
         environmentId: environmentId,
-        machine: predefinedDefault('machine', ''),
-        owner: predefinedDefault('owner', ''),
       } as ParentConfig),
       ...parentConfigData,
     };
@@ -219,6 +227,7 @@ export async function createParentConfig(
 
     return metadata;
   } catch (e) {
+    console.log(e);
     return userError("Couldn't create Machine Config");
   }
 }

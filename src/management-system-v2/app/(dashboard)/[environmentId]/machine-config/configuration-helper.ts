@@ -1,17 +1,21 @@
-import {
-  AbstractConfig,
-  ConfigField,
-  ConfigParameter,
-  ParentConfig,
-} from '@/lib/data/machine-config-schema';
+import { LocalizationName } from '@/lib/data/locale';
+import { AbstractConfig, Parameter, ParentConfig } from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
 
-export function predefinedDefault<T>(key: string, val: T, hiding: boolean = true) {
+export function defaultParameter(key: string, val: string): Parameter {
   return {
     id: v4(),
-    key: key,
-    hiding: hiding,
-    content: [{ type: typeof val, displayName: key[0].toUpperCase() + key.slice(1), value: val }],
+    type: 'https://schema.org/' + key,
+    content: [
+      {
+        displayName: key[0].toUpperCase() + key.slice(1),
+        value: val,
+        language: LocalizationName['en'],
+        unit: '',
+      },
+    ],
+    linkedParameters: [],
+    parameters: {},
   };
 }
 
@@ -21,15 +25,9 @@ export function defaultConfiguration(): AbstractConfig {
     id: v4(),
     type: 'config',
     environmentId: '',
-    owner: predefinedDefault('owner', ''),
-    picture: predefinedDefault('picture', ''),
+    metadata: {},
     name: 'Default Machine Configuration',
-    description: predefinedDefault('description', '', false),
-    machine: predefinedDefault('machine', ''),
-    userId: predefinedDefault('userId', ''),
     variables: [],
-    customFields: [],
-    parameters: [],
     departments: [],
     inEditingBy: [],
     createdOn: date,
@@ -53,9 +51,11 @@ export const createMachineConfigInParent = (
   parentConfig.machineConfigs.push({
     ...defaultConfiguration(),
     name: nameValue,
-    description: predefinedDefault('description', descriptionValue, false),
+    metadata: {
+      description: defaultParameter('description', descriptionValue),
+    },
     type: 'machine-config',
-    owner: parentConfig.owner,
+    parameters: {},
     environmentId: parentConfig.environmentId,
   });
 };
@@ -71,9 +71,11 @@ export const createTargetConfigInParent = (
   foundMachine.targetConfig = {
     ...defaultConfiguration(),
     name: nameValue,
-    description: predefinedDefault('description', descriptionValue, false),
+    metadata: {
+      description: defaultParameter('description', descriptionValue),
+    },
     type: 'target-config',
-    owner: foundMachine.owner,
+    parameters: {},
     environmentId: foundMachine.environmentId,
   };
 };
@@ -81,8 +83,8 @@ export const createTargetConfigInParent = (
 export type TreeFindStruct = { selection: AbstractConfig; parent: ParentConfig } | undefined;
 export type TreeFindParameterStruct =
   | {
-      selection: ConfigParameter;
-      parent: AbstractConfig | ConfigParameter;
+      selection: Parameter;
+      parent: AbstractConfig | Parameter;
       type: AbstractConfig['type'] | 'parameter';
     }
   | undefined;
@@ -107,14 +109,20 @@ export function deleteParameter(id: string, parentConfig: ParentConfig): boolean
   if (!p) return false;
   let parent;
   if (p.type === 'parameter') {
-    parent = p.parent as ConfigParameter;
-    parent.nestedParameters = parent.nestedParameters.filter((node, _) => {
+    parent = p.parent as Parameter;
+    parent.parameters = parent.parameters.filter((node, _) => {
+      if (node.id) return id.indexOf(node.id) === -1;
+      return true;
+    });
+  } else if (p.type === 'config') {
+    parent = p.parent as AbstractConfig;
+    parent.metadata = parent.metadata.filter((node, _) => {
       if (node.id) return id.indexOf(node.id) === -1;
       return true;
     });
   } else {
     parent = p.parent as AbstractConfig;
-    parent.parameters = parent.parameters.filter((node, _) => {
+    parent.metadata = parent.metadata.filter((node, _) => {
       if (node.id) return id.indexOf(node.id) === -1;
       return true;
     });
@@ -125,13 +133,13 @@ export function deleteParameter(id: string, parentConfig: ParentConfig): boolean
 
 export function findParameter(
   id: string,
-  _parent: AbstractConfig | ConfigParameter,
+  _parent: AbstractConfig | Parameter,
   type: AbstractConfig['type'] | 'parameter',
 ): TreeFindParameterStruct {
   let found = undefined;
   if (type === 'config') {
     let parent = _parent as ParentConfig;
-    for (let parameter of parent.parameters) {
+    for (let parameter of parent.metadata) {
       if (parameter.id === id) {
         return { selection: parameter, parent: _parent, type: 'config' };
       }
@@ -163,8 +171,8 @@ export function findParameter(
     }
     if (found) return found;
   } else {
-    let parent = _parent as ConfigParameter;
-    for (let parameter of parent.nestedParameters) {
+    let parent = _parent as Parameter;
+    for (let parameter of parent.parameters) {
       if (parameter.id === id) {
         return { selection: parameter, parent: _parent, type: 'parameter' };
       }

@@ -183,7 +183,6 @@ export default function Property(props: MachineDataViewProps) {
     propertyCopy.content.push({
       displayName: valuesFromModal.displayName,
       language: valuesFromModal.language,
-      type: typeof valuesFromModal.value,
       unit: valuesFromModal.unit,
       value: valuesFromModal.value,
     });

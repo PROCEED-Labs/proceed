@@ -40,11 +40,11 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { v4 } from 'uuid';
-import { predefinedDefault } from './configuration-helper';
+import { defaultParameter } from './configuration-helper';
 import { count } from 'console';
 
 type InputItem = ParentConfig;
-export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
+export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
 function folderAwareSort(
   sortFunction: (a: ParentConfigListConfigs, b: ParentConfigListConfigs) => number,
@@ -74,8 +74,8 @@ const ParentConfigList = ({
   });
   const { filteredData, setSearchQuery: setSearchTerm } = useFuzySearch({
     data: data,
-    keys: ['name', 'description'],
-    highlightedKeys: ['name', 'description'],
+    keys: ['name'],
+    highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
 
@@ -142,7 +142,6 @@ const ParentConfigList = ({
     const dataToExport = items.map((item) => ({
       id: item.id,
       name: item.name.value,
-      description: item.description.value,
       type: item.type,
       lastEdited: item.lastEdited,
       createdOn: item.createdOn,
@@ -225,7 +224,10 @@ const ParentConfigList = ({
     if (editingItem) {
       saveParentConfig(valuesFromModal.id, {
         ...editingItem,
-        description: predefinedDefault('description', valuesFromModal.description, false),
+        metadata: {
+          ...editingItem.metadata,
+          description: defaultParameter('description', valuesFromModal.description),
+        },
         name: valuesFromModal.name,
       }).then(() => {});
       setOpenEditModal(false);
@@ -243,7 +245,9 @@ const ParentConfigList = ({
         valuesFromModal.originalId,
         {
           name: valuesFromModal.name,
-          description: predefinedDefault('description', valuesFromModal.description, false),
+          metadata: {
+            description: defaultParameter('description', valuesFromModal.description),
+          },
         },
         space.spaceId,
       ).then(() => {});
@@ -306,10 +310,10 @@ const ParentConfigList = ({
             display: 'block',
           }}
         >
-          {(record.description.value ?? '').length == 0 ? (
+          {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
             <>&emsp;</>
           ) : (
-            record.description.highlighted
+            record.metadata.description?.content[0].value
           )}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}
@@ -468,7 +472,7 @@ const ParentConfigList = ({
                 {
                   id: editingItem.id,
                   name: editingItem.name.value ?? '',
-                  description: editingItem.description.value ?? '',
+                  description: editingItem.metadata.description?.content[0].value ?? '',
                 },
               ]
             : []
@@ -481,7 +485,7 @@ const ParentConfigList = ({
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection.map((config) => ({
           name: `${config.name.value} (Copy)`,
-          description: config.description.value ?? '',
+          description: config.metadata.description?.content[0].value ?? '',
           originalId: config.id,
         }))}
         onSubmit={handleCopy}

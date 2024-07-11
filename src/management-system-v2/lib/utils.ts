@@ -105,6 +105,21 @@ export class ObjectSetArray {
    * uniqueArray2.toArray(); // [{ name: 'Alice', age: 20 }, { name: 'Bob', age: 30 }] // First occurence of Alice is kept
    */
   constructor(array: JSONObject[], ids: string | string[] | undefined) {
+    /* Check if the passes array is an array of objects */
+    if (!Array.isArray(array) || array.some((item) => typeof item !== 'object')) {
+      throw new Error(
+        'The array passed to ObjectSetArray must be an array of objects. passed: ' + typeof array,
+      );
+    }
+    /* Check if all ids exist on all elements of the array */
+    if (ids) {
+      const checkIds = Array.isArray(ids) ? ids : [ids];
+      if (array.some((item) => !checkIds.every((id) => id in item))) {
+        throw new Error(
+          `Not all ids exist on all elements of the array. ids: ${checkIds.join(', ')}`,
+        );
+      }
+    }
     this.setIds(ids);
     this.array = array;
     // @ts-ignore

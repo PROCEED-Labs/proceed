@@ -140,7 +140,7 @@ const ElementList = <T extends { id: string }>({
           onSelectAll: (selected, selectedRows, changeRows) => {
             elementSelection.setSelectionElements((oldSelection) => {
               if (selected) {
-                return [...new ObjectSetArray([...oldSelection, ...selectedRows], 'id')] as T[];
+                return [...new ObjectSetArray([...oldSelection, ...changeRows], 'id')] as T[];
               } else {
                 return [
                   ...new ObjectSetArray(

@@ -6,10 +6,12 @@ import { getDefinitionsInfos, setDefinitionsId, setTargetNamespace } from '@proc
 import { v4 } from 'uuid';
 import { expect } from './processes.fixtures';
 import { closeModal, openModal, waitForHydration } from '../testUtils';
+import { asyncMap } from 'proceed-management-system/src/shared-frontend-backend/helpers/javascriptHelpers';
 
 export class ProcessListPage {
   readonly page: Page;
-  processDefinitionIds: string[] = [];
+  public processDefinitionIds: string[] = [];
+  public folderIds: string[] = [];
 
   constructor(page: Page) {
     this.page = page;
@@ -145,6 +147,7 @@ export class ProcessListPage {
     await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
     const id = page.url().split('processes/').pop();
+    this.processDefinitionIds.push(id);
 
     if (returnToProcessList) {
       /* Go back to Process-List */
@@ -156,7 +159,7 @@ export class ProcessListPage {
     return id;
   }
 
-  async removeAllProcesses() {
+  async removeAllProcessesAndFolders() {
     const { page } = this;
 
     if (this.processDefinitionIds.length) {
@@ -165,20 +168,43 @@ export class ProcessListPage {
         await page.waitForURL('**/processes');
       }
 
+      /* Ensure that the search input is cleared */
+      const inputSearch = await page.locator('.ant-input-affix-wrapper');
+      await inputSearch.getByPlaceholder(/search/i).fill('');
+      /* Ensure nothing is selected (esc) */
+      await page.keyboard.press('Escape');
+      /* Check nothing selected */
+      await expect(await page.getByRole('note')).not.toBeVisible();
+
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
 
-      // remove all processes
-      await page.getByLabel('Select all').check();
-      const modal = await openModal(this.page, () =>
-        page.getByRole('button', { name: 'delete' }).first().click(),
-      );
-      await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
+      while (this.processDefinitionIds.length > 0 || this.folderIds.length > 0) {
+        /* Get all currently visible processes */
+        const processRows = await page.locator('tr[data-row-key]').all();
+        const visibleIds = await asyncMap(processRows, async (el) =>
+          el.getAttribute('data-row-key'),
+        );
 
-      // Note: If used in a test, there should be a check for the empty list to
-      // avoid double navigations next.
+        // remove all processes
+        await page.getByLabel('Select all').check();
+        const modal = await openModal(this.page, () =>
+          page.getByRole('button', { name: 'delete' }).first().click(),
+        );
+        await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
-      this.processDefinitionIds = [];
+        const before = this.processDefinitionIds.length;
+        /* Remove entries from the process list */
+        this.processDefinitionIds = this.processDefinitionIds.filter(
+          (entry) => !visibleIds.includes(entry),
+        );
+        /* Remove entries from folder list */
+        this.folderIds = this.folderIds.filter((entry) => !visibleIds.includes(entry));
+
+        // Note: If used in a test, there should be a check for the empty list to
+        // avoid double navigations next.
+        // this.processDefinitionIds = [];
+      }
     }
   }
 
@@ -202,6 +228,8 @@ export class ProcessListPage {
     await closeModal(modal, () => page.getByRole('button', { name: 'OK' }).click());
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
+    /* Add folder id for tracking */
+    this.folderIds.push(await folderRow.getAttribute('data-row-key'));
     await expect(folderRow).toBeVisible();
   }
 }

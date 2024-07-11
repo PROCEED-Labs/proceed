@@ -10,6 +10,8 @@ import {
   deleteVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
 import { updateUser } from '@/lib/data/legacy/iam/users';
+import { sendEmail } from '../email/mailer';
+import renderSigninLinkEmail from '../email/signin-link-email';
 
 export async function requestEmailChange(newEmail: string) {
   try {
@@ -27,8 +29,22 @@ export async function requestEmailChange(newEmail: string) {
 
     createVerificationToken(verificationToken);
 
-    // TODO: send email
-    console.log(redirectUrl);
+    const signinMail = renderSigninLinkEmail({
+      signInLink: redirectUrl,
+      expires: verificationToken.expires,
+      headerText: 'Change your email address',
+      description:
+        'Hi, you have requested to change the email address associated with your PROCEED account. Please click the link below to confirm this change:',
+      footerText:
+        'If you did not request this email change, you can ignore this email. Your account remains secure and can only be accessed with your original email address. The PROCEED Crew',
+    });
+
+    sendEmail({
+      to: email,
+      subject: 'PROCEED: Change your email address',
+      html: signinMail.html,
+      text: signinMail.text,
+    });
   } catch (e) {
     if (e instanceof z.ZodError) return userError('Invalid email');
 

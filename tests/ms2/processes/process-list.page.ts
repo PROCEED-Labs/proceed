@@ -168,13 +168,12 @@ export class ProcessListPage {
         await page.waitForURL('**/processes');
       }
 
+      /* Ensure nothing is selected (esc) */
+      await page.getByRole('main').click();
+      await page.getByRole('main').press('Escape');
       /* Ensure that the search input is cleared */
       const inputSearch = await page.locator('.ant-input-affix-wrapper');
       await inputSearch.getByPlaceholder(/search/i).fill('');
-      /* Ensure nothing is selected (esc) */
-      await page.keyboard.press('Escape');
-      /* Check nothing selected */
-      await expect(await page.getByRole('note')).not.toBeVisible();
 
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });

@@ -11,7 +11,7 @@ import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
-import renderSigninLinkEmail from './signin-link-email';
+import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -30,7 +30,10 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
 
         sendEmail({
           to: params.identifier,

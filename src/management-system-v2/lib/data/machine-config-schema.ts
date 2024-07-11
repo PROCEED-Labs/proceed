@@ -61,15 +61,6 @@ export type PropertyContent = {
   unit: string | undefined;
 };
 
-export type Parameter<T> = {
-  id: string | undefined;
-  key: string;
-  type: T; //TODO {description, owner, userId, machine, custom}
-  content: PropertyContent[];
-  linkedParameters: string[];
-  nestedParameters: ConfigParameter[];
-} & Metadata;
-
 export type Property<T> = {
   id: string | undefined;
   key: T; //'custom' | 'param'
@@ -117,3 +108,59 @@ export type ParentConfig = Prettify<ParentConfigMetadata>;
 export type AbstractConfig = Prettify<AbstractConfigMetadata>;
 export type TargetConfig = Prettify<TargetConfigMetadata>;
 export type MachineConfig = Prettify<MachineConfigMetadata>;
+
+//Ideal Schema (actual Metadata is missing)
+/*
+Configuration:
+{
+  id: string,                 //added
+	metaData: {
+		<Parameter>,
+		<Parameter>,
+		...
+	},
+	targetConfiguration: {
+    <Child Configuration>
+	},
+	machineConfigurations: [
+		<Child Configuration>,
+    <Child Configuration>,
+		...
+	]
+}
+
+Child Configuration:
+{
+    id: string,               //added
+		metaData: {
+			<Parameter>,
+			<Parameter>,
+			...
+		},
+		parameters: {
+			<Parameter>,
+			<Parameter>,
+			...
+		}
+},
+
+Parameter:
+<key>: { 			              //unique on this level
+	id: string 		            //unique for on all levels -> used for linking
+	type: string	            //schema.org - we probably won’t really do anything with this
+	content: [
+		{
+			displayName: string   //default: key
+			value: string
+			unit: string
+			language: enum        //for the dropdown
+		},
+		...
+	],
+	linkedParameters: [ids]
+	parameters: {
+		<Parameter>,
+		<Parameter>,
+		...
+	}
+} */

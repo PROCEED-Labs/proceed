@@ -129,9 +129,8 @@ const MacroEditor = ({
           open={true}
           close={async (values) => {
             if (values) {
-              createProcess(values).then((process) => {
-                window.AP.confluence.saveMacro({ processId: process.id });
-              });
+              const process = await createProcess(values);
+              window.AP.confluence.saveMacro({ processId: process.id });
             }
             window.AP.confluence.closeMacroEditor();
           }}

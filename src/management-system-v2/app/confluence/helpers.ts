@@ -256,12 +256,21 @@ export const findPROCEEDMacrosInSpace = async (spaceKey: string) => {
 
 export const verifyJwt = async (jwtToken: any) => {
   const decoded = jwt.decode(jwtToken, { complete: true });
-  const { iss: clientKey } = decoded!.payload as JwtPayload;
 
-  if (clientKey) {
-    const confluenceClientData = await getConfluenceClientInfos(clientKey);
-    const sharedSecret = confluenceClientData.sharedSecret;
+  if (!decoded) {
+    throw new Error('JWT Decoding failed');
+  }
 
+  const { iss: clientKey } = decoded.payload as JwtPayload;
+
+  if (!clientKey) {
+    throw new Error('No ClientKey in JWT');
+  }
+
+  const confluenceClientData = await getConfluenceClientInfos(clientKey);
+  const sharedSecret = confluenceClientData.sharedSecret;
+
+  try {
     const verified = AtlassianJwt.decodeSymmetric(
       jwtToken,
       sharedSecret,
@@ -269,6 +278,7 @@ export const verifyJwt = async (jwtToken: any) => {
     );
 
     return verified;
+  } catch (err: any) {
+    throw new Error('JWT Verification failed', err);
   }
-  return false;
 };

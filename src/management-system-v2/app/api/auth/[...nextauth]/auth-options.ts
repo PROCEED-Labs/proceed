@@ -39,63 +39,51 @@ const nextAuthOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (credentials) {
+          let decodedToken;
           try {
-            const decodedToken = await verifyJwt(credentials.token);
-            const confluenceClientInfos = await getConfluenceClientInfos(decodedToken.iss);
-            console.log('deocedToken', decodedToken);
-
-            const existingUser = getUserById(decodedToken.sub as string);
-
-            if (!existingUser) {
-              const user = addUser({
-                id: decodedToken.sub as string,
-                username: `Confluence_User_${decodedToken.sub}`,
-                confluence: true,
-                guest: false,
-              });
-
-              if (confluenceClientInfos.proceedSpace) {
-                addMember(confluenceClientInfos.proceedSpace.id, user.id);
-                const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
-                if (!adminRole) {
-                  throw new Error(
-                    `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
-                  );
-                }
-
-                addRoleMappings([
-                  {
-                    environmentId: confluenceClientInfos.proceedSpace.id,
-                    roleId: adminRole.id,
-                    userId: user.id,
-                  },
-                ]);
-              }
-            } else if (
-              confluenceClientInfos.proceedSpace &&
-              !isMember(confluenceClientInfos.proceedSpace.id, existingUser.id)
-            ) {
-              addMember(confluenceClientInfos.proceedSpace.id, existingUser.id);
-
-              const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
-              if (!adminRole) {
-                throw new Error(
-                  `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
-                );
-              }
-
-              addRoleMappings([
-                {
-                  environmentId: confluenceClientInfos.proceedSpace.id,
-                  roleId: adminRole.id,
-                  userId: existingUser.id,
-                },
-              ]);
-            }
-            return existingUser;
+            decodedToken = await verifyJwt(credentials.token);
           } catch (err) {
-            console.log('error in authorize', err);
+            throw new Error('Confluence Sign In failed because JWT is not verified.');
           }
+
+          const confluenceClientInfos = await getConfluenceClientInfos(decodedToken.iss);
+
+          let confluenceUser = getUserById(decodedToken.sub as string);
+
+          if (!confluenceUser) {
+            // add User if not existing already (=> Sign Up)
+            confluenceUser = addUser({
+              id: decodedToken.sub as string,
+              username: `Confluence_User_${decodedToken.sub}`,
+              confluence: true,
+              guest: false,
+            });
+          }
+
+          if (
+            confluenceClientInfos.proceedSpace &&
+            !isMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id)
+          ) {
+            // Add Confluence User to configured proceed space to gain access to shared processes
+            addMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id);
+
+            const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
+            if (!adminRole) {
+              throw new Error(
+                `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
+              );
+            }
+
+            addRoleMappings([
+              {
+                environmentId: confluenceClientInfos.proceedSpace.id,
+                roleId: adminRole.id,
+                userId: confluenceUser.id,
+              },
+            ]);
+          }
+
+          return confluenceUser;
         }
         return null;
       },

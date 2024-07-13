@@ -5,6 +5,7 @@ import { Label } from '@atlaskit/form';
 import Select from '@atlaskit/select';
 import { createFolder } from '@/lib/data/folders';
 import { updateConfluenceClientSelectedSpace } from '@/lib/data/confluence';
+import { CSSProperties } from 'react';
 
 const SpaceSelectionTab = ({
   userEnvironments,
@@ -26,30 +27,28 @@ const SpaceSelectionTab = ({
 
   const initialOption = options.find((option) => option.value === initialSpaceId);
 
+  const wrapperStyle: CSSProperties = {
+    minHeight: '500px',
+    marginBlock: '1rem',
+    display: 'flex',
+    flexDirection: 'row',
+  };
+
   return (
-    <div style={{ minHeight: '500px' }}>
-      <div
-        style={{
-          marginBlock: '1rem',
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'end',
-        }}
-      >
-        <div style={{ minWidth: '300px', marginRight: '2rem' }}>
-          <Label htmlFor="single-select-example">Choose for PROCEED Space</Label>
-          <Select
-            inputId="single-select-example"
-            options={options}
-            onChange={onSelect}
-            defaultValue={initialOption}
-          />
-        </div>
-        <span>
-          Processes are stored and managed by PROCEED. Choose for your desired PROCEED Space to
-          store the created processes in.
-        </span>
+    <div style={wrapperStyle}>
+      <div style={{ minWidth: '300px', marginRight: '2rem' }}>
+        <Label htmlFor="single-select-example">Choose for PROCEED Space</Label>
+        <Select
+          inputId="single-select-example"
+          options={options}
+          onChange={onSelect}
+          defaultValue={initialOption}
+        />
       </div>
+      <span style={{ marginTop: '1.25rem' }}>
+        Processes are stored and managed by PROCEED. Choose for your desired PROCEED Space to store
+        the created processes in.
+      </span>
     </div>
   );
 };

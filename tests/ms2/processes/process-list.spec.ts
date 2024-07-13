@@ -680,6 +680,11 @@ test.describe('shortcuts in process-list', () => {
       page.locator('tbody>tr[class="ant-table-placeholder"]'),
       'Only the ant-design-placeholder row should be visible, if the list is empty',
     ).toBeVisible();
+
+    /* Remove processId from processListPage */
+    processListPage.processDefinitionIds = processListPage.processDefinitionIds.filter(
+      (id) => id !== processID,
+    );
   });
 
   /*  Select all Processes - ctrl / meta + a */
@@ -872,114 +877,140 @@ test.describe('shortcuts in process-list', () => {
   // test('Drag select with shift + click', async ({ processListPage }) => {});
 });
 
-test('Selecting Processes', async ({ processListPage }) => {
-  const { page } = processListPage;
-
-  const getNumberOfVisibleRows = async () => {
-    return await page.locator('tbody tr').count();
-  };
-
-  /* TODO: The number of processes necessary to cause second page depends on viewport height */
-  /* Create 10 processes + XYZ Process ( =11) */
-  const processIDs = [];
-  for (let i = 1; i <= 5; i++) {
-    processIDs.push(
+test.describe('Selecting Processes', () => {
+  test.beforeEach(async ({ processListPage }) => {
+    const { page } = processListPage;
+    /* TODO: The number of processes necessary to cause second page depends on viewport height */
+    /* Create 10 processes + XYZ Process ( =11) */
+    for (let i = 1; i <= 5; i++) {
       await processListPage.createProcess({
         processName: `Process ${i}`,
         returnToProcessList: true,
-      }),
-    );
-  }
-  /* Copy + Paste */
-  await page.getByRole('main').press('Control+a');
-  await page.getByRole('main').press('Control+c');
-  const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
-  await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+      });
+    }
+    /* Copy + Paste */
+    await page.getByRole('main').press('Control+a');
+    await page.getByRole('main').press('Control+c');
+    const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
+    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
 
-  /* Add Copys to processListPage.processDefinitionIds */
-  /* Search for '(Copy)' */
-  const inputSearch = await page.locator('.ant-input-affix-wrapper');
-  await inputSearch.getByPlaceholder(/search/i).fill('(Copy)');
+    /* Add Copys to processListPage.processDefinitionIds */
+    /* Search for '(Copy)' */
+    const inputSearch = await page.locator('.ant-input-affix-wrapper');
+    await inputSearch.getByPlaceholder(/search/i).fill('(Copy)');
 
-  /* Get their ids */
-  const processRows = await page.locator('tr[data-row-key]').all();
-  const visibleIds = await asyncMap(processRows, async (el) => el.getAttribute('data-row-key'));
-  processListPage.processDefinitionIds.push(...visibleIds);
-  processIDs.push(...visibleIds);
+    /* Get their ids */
+    const processRows = await page.locator('tr[data-row-key]').all();
+    const visibleIds = await asyncMap(processRows, async (el) => el.getAttribute('data-row-key'));
+    processListPage.processDefinitionIds.push(...visibleIds);
 
-  /* Clear Search */
-  await inputSearch.getByPlaceholder(/search/i).fill('');
-  await page.getByRole('main').press('Escape');
+    /* Clear Search */
+    await inputSearch.getByPlaceholder(/search/i).fill('');
+    await page.getByRole('main').press('Escape');
 
-  /* Deselect */
-  await page.getByRole('main').press('Escape');
+    /* Deselect */
+    await page.locator('body').press('Escape');
 
-  /* Add XYZ */
-  processIDs.push(
+    // /* Add XYZ */
     await processListPage.createProcess({
       processName: 'XYZ',
       returnToProcessList: true,
-    }),
-  );
+    });
+  });
 
-  /* ____________________________________ */
-  /* Selection persists after page change */
-  /* Select the first process*/
-  const firstRow = await page.locator(`tr[data-row-key="${processIDs[0]}"]`);
-  await firstRow.locator(`input[name="${processIDs[0]}"]`).click();
-  const indicator = await page.getByRole('note');
+  test('Selecting Processes with click', async ({ processListPage }) => {
+    const { page } = processListPage;
+    const inputSearch = await page.locator('.ant-input-affix-wrapper');
 
-  /* Check if selected */
-  await expect(firstRow, 'Could not select first process').toHaveClass(/ant-table-row-selected/);
-  await expect(indicator).toContainText('1');
+    const getNumberOfVisibleRows = async () => {
+      return await page.locator('tbody tr').count();
+    };
 
-  /* Change page */
-  await page.getByRole('button', { name: 'right' }).click();
+    const processIDs = processListPage.getDefinitionIds();
 
-  /* Check if selection persists */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
-  await expect(indicator).toContainText('1');
+    /* ____________________________________ */
+    /* Selection persists after page change */
+    /* Select the first process*/
+    const firstRow = await page.locator(`tr[data-row-key="${processIDs[0]}"]`);
+    await firstRow.locator(`input[name="${processIDs[0]}"]`).click();
+    const indicator = await page.getByRole('note');
 
-  /* Select all visible works aswell */
-  await page.getByLabel('Select all').check();
+    /* Check if selected */
+    await expect(firstRow, 'Could not select first process').toHaveClass(/ant-table-row-selected/);
+    await expect(indicator).toContainText('1');
 
-  /* Check */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(await getNumberOfVisibleRows());
-  await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    /* Change page */
+    await page.getByRole('button', { name: 'right' }).click();
 
-  /* Deselect all visible */
-  await page.getByLabel('Select all').uncheck();
+    /* Check if selection persists */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
+    await expect(indicator).toContainText('1');
 
-  /* Check */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
-  await expect(indicator).toContainText('1');
+    /* Select all visible works aswell */
+    await page.getByLabel('Select all').check();
 
-  /* ____________________________________ */
-  /* Selection persist after search */
-  /* Search for 'XYZ' (last process) */
-  await inputSearch.getByPlaceholder(/search/i).fill('XYZ');
+    /* Check */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(
+      await getNumberOfVisibleRows(),
+    );
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
 
-  /* Select the process (that should be visible now) element in table */
-  await page.locator(`input[name="${processIDs[10]}"]`).check();
+    /* Deselect all visible */
+    await page.getByLabel('Select all').uncheck();
 
-  /* Check */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(1);
-  await expect(indicator).toContainText('2');
+    /* Check */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
+    await expect(indicator).toContainText('1');
 
-  /* Deselect the XYZ Process */
-  await page.locator(`input[name="${processIDs[10]}"]`).uncheck();
+    /* ____________________________________ */
+    /* Selection persist after search */
+    /* Search for 'XYZ' (last process) */
+    await inputSearch.getByPlaceholder(/search/i).fill('XYZ');
 
-  /* Check */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
-  await expect(indicator).toContainText('1');
+    /* Select the process (that should be visible now) element in table */
+    await page.locator(`input[name="${processIDs[10]}"]`).check();
 
-  /* Select all visible works aswell */
-  await page.getByLabel('Select all').check();
+    /* Check */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(1);
+    await expect(indicator).toContainText('2');
 
-  /* Check */
-  await expect(page.locator('.ant-table-row-selected')).toHaveCount(await getNumberOfVisibleRows());
-  await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+    /* Deselect the XYZ Process */
+    await page.locator(`input[name="${processIDs[10]}"]`).uncheck();
 
-  /* ____________________________________ */
-  /* Selection persists after folder change (? TODO:) */
+    /* Check */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
+    await expect(indicator).toContainText('1');
+
+    /* Select all visible works aswell */
+    await page.getByLabel('Select all').check();
+
+    /* Check */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(
+      await getNumberOfVisibleRows(),
+    );
+    await expect(indicator).toContainText(`${(await getNumberOfVisibleRows()) + 1}`);
+
+    /* ____________________________________ */
+    /* Selection persists after folder change (? TODO:) */
+  });
+  test('Selecting Processes over multiple table pages with shortcuts', async ({
+    processListPage,
+  }) => {
+    const { page } = processListPage;
+    const processIDs = processListPage.getDefinitionIds();
+    const getNumberOfVisibleRows = async () => {
+      return await page.locator('tbody tr').count();
+    };
+
+    /* Select all with ctrl + a */
+    await page.getByRole('main').press('Control+a');
+
+    /* Check if all visible selected */
+    await expect(page.locator('.ant-table-row-selected')).toHaveCount(
+      await getNumberOfVisibleRows(),
+    );
+
+    /* Check if displayed note show correct number */
+    await expect(await page.getByRole('note')).toContainText(`${processIDs.length}`);
+  });
 });

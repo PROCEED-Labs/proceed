@@ -169,8 +169,8 @@ export class ProcessListPage {
       }
 
       /* Ensure nothing is selected (esc) */
-      await page.getByRole('main').click();
-      await page.getByRole('main').press('Escape');
+      await page.locator('body').focus();
+      await page.locator('body').press('Escape');
       /* Ensure that the search input is cleared */
       const inputSearch = await page.locator('.ant-input-affix-wrapper');
       await inputSearch.getByPlaceholder(/search/i).fill('');

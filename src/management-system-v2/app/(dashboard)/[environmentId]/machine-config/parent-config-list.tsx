@@ -169,7 +169,7 @@ const ParentConfigList = ({
               <Tooltip placement="top" title={'Copy'}>
                 <CopyOutlined
                   onClick={(e) => {
-                    e.stopPropagation();
+                    // e.stopPropagation();
                     copyItem([record]);
                   }}
                 />
@@ -210,6 +210,7 @@ const ParentConfigList = ({
 
   function copyItem(items: ParentConfigListConfigs[]) {
     setCopySelection(items);
+    setSelectedRowElements([items[0]]);
     setOpenCopyModal(true);
   }
 
@@ -236,24 +237,49 @@ const ParentConfigList = ({
     return Promise.resolve();
   }
 
+  // function handleCopy(
+  //   values: { name: string; description: string; originalId: string }[],
+  // ): Promise<void> {
+  //   const valuesFromModal = values[0];
+  //   if (copySelection[0]) {
+  //     copyParentConfig(
+  //       valuesFromModal.originalId,
+  //       {
+  //         name: valuesFromModal.name,
+  //         metadata: {
+  //           description: defaultParameter('description', valuesFromModal.description),
+  //         },
+  //       },
+  //       space.spaceId,
+  //     ).then(() => {});
+  //     setOpenCopyModal(false);
+  //     router.refresh();
+  //   }
+  //   return Promise.resolve();
+  // }
+
+  //copy multiple items
   function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
-    const valuesFromModal = values[0];
-    if (copySelection[0]) {
-      copyParentConfig(
-        valuesFromModal.originalId,
+    const promises = values.map((valueFromModal) => {
+      return copyParentConfig(
+        valueFromModal.originalId,
         {
-          name: valuesFromModal.name,
+          name: valueFromModal.name,
           metadata: {
-            description: defaultParameter('description', valuesFromModal.description),
+            description: defaultParameter('description', valueFromModal.description),
           },
         },
         space.spaceId,
-      ).then(() => {});
+      );
+    });
+
+    Promise.all(promises).then(() => {
       setOpenCopyModal(false);
       router.refresh();
-    }
+    });
+
     return Promise.resolve();
   }
 
@@ -383,7 +409,6 @@ const ParentConfigList = ({
                     // className={styles.Icon}
                     style={{ margin: '0 8px' }}
                     onClick={() => copyItem(selectedRowElements)}
-                    disabled={count === 0 || count > 1}
                   />
                 </Tooltip>
 
@@ -480,7 +505,7 @@ const ParentConfigList = ({
         }
         onSubmit={handleEdit}
       />
-      <MachineConfigModal
+      {/* <MachineConfigModal
         open={openCopyModal}
         title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'es' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
@@ -489,6 +514,19 @@ const ParentConfigList = ({
           description: config.metadata.description?.content[0].value ?? '',
           originalId: config.id,
         }))}
+        onSubmit={handleCopy}
+      /> */}
+      <MachineConfigModal
+        open={openCopyModal}
+        title={`Copy Machine Config${selectedRowKeys.length > 1 ? 's' : ''}`}
+        onCancel={() => setOpenCopyModal(false)}
+        initialData={[
+          {
+            name: `${copySelection[0]?.name.value} (Copy)`,
+            description: copySelection[0]?.metadata.description?.content[0].value ?? '',
+            originalId: copySelection[0]?.id,
+          },
+        ]}
         onSubmit={handleCopy}
       />
     </>

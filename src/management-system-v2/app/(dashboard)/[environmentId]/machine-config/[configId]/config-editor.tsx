@@ -184,6 +184,29 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     return Promise.resolve();
   };
 
+  const exportCurrentConfig = () => {
+    const dataToExport = {
+      id: editingConfig.id,
+      name: editingConfig.name,
+      type: editingConfig.type,
+      lastEdited: editingConfig.lastEdited,
+      createdOn: editingConfig.createdOn,
+      versions: editingConfig.versions,
+      metadata: editingConfig.metadata,
+      machineConfigs: editingConfig,
+      targetConfig: editingConfig,
+    };
+
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `${editingConfig.name}_export.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
   const updateItems = (panelStyle: {
     marginBottom: number;
     background: string;
@@ -375,7 +398,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                   />
                 </Radio.Button>
               </Radio.Group>
-              <Button>
+              <Button onClick={exportCurrentConfig}>
                 Export{' '}
                 <ExportOutlined
                   style={{

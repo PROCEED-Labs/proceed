@@ -140,7 +140,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
         username: user.username ?? '',
         firstName: '',
         lastName: '',
-        email: 'confluence@email.com',
+        email: '',
       });
     } else {
       role.members.push({
@@ -148,7 +148,7 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
         username: user.username ?? '',
         firstName: user.firstName ?? '',
         lastName: user.lastName ?? '',
-        email: user.email,
+        email: user.email ?? '',
       });
     }
 

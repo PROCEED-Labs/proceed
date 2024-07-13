@@ -61,12 +61,13 @@ export function getUserByUsername(username: string, opts?: { throwIfNotFound?: b
 export function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
-  if (
-    !user.guest &&
-    !('confluence' in user) &&
-    ((user.username && getUserByUsername(user.username)) || getUserByEmail(user.email))
-  )
-    throw new Error('User with this email or username already exists');
+  if (!user.guest && !('confluence' in user)) {
+    if (user.username && getUserByUsername(user.username))
+      throw new Error('User with this username already exists');
+
+    if (user.email && getUserByEmail(user.email))
+      throw new Error('User with this email already exists');
+  }
 
   if (!user.id) user.id = v4();
 

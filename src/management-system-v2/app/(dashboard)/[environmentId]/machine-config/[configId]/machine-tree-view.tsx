@@ -5,6 +5,7 @@ import {
   AbstractConfig,
   Parameter,
   TargetConfig,
+  MachineConfig,
 } from '@/lib/data/machine-config-schema';
 import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tooltip, Tree, TreeDataNode } from 'antd';
 import Text from 'antd/es/typography/Text';
@@ -357,6 +358,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   const addParameter = () => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
+    console.log(selectedOnTree[0]);
     const date = new Date().toUTCString();
     const defaultParameter: Parameter = {
       id: v4(),
@@ -379,7 +381,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     } else {
       let ref = findConfig(_configId.toString(), parentConfig);
       if (ref === undefined) return;
-      ref.selection.metadata[parameterKey] = defaultParameter;
+      let _selection = ref.selection as MachineConfig | TargetConfig;
+      _selection.parameters[parameterKey] = defaultParameter;
     }
     saveAndUpdateElements();
   };

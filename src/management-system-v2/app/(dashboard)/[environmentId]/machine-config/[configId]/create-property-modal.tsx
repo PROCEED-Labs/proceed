@@ -19,6 +19,7 @@ import { UserError } from '@/lib/user-error';
 import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
 export type CreatePropertyModalReturnType = {
+  key?: string;
   displayName: string;
   language: Localization;
   unit: string;
@@ -32,6 +33,7 @@ type CreatePropertyModalProps<T extends CreatePropertyModalReturnType> = {
   onCancel: () => void;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  showKey?: boolean;
 };
 
 const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
@@ -134,9 +136,18 @@ type CreatePropertyInputsProps = {
   index: number;
 };
 
-const PropertyInputs = ({ index }: CreatePropertyInputsProps) => {
+const PropertyInputs = ({ index }: CreatePropertyInputsProps, showKey: boolean) => {
   return (
     <>
+      {showKey && (
+        <Form.Item
+          name={[index, 'key']}
+          label="Property Key"
+          rules={[{ required: true, message: 'Please fill out the Property Key' }]}
+        >
+          <Input />
+        </Form.Item>
+      )}
       <Form.Item
         name={[index, 'displayName']}
         label="Property Display Name"

@@ -22,7 +22,6 @@ import {
 import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
-import { Config } from 'winston/lib/winston/config';
 import CreatePropertyModal, { CreatePropertyModalReturnType } from './create-property-modal';
 
 type MachineDataViewProps = {
@@ -35,8 +34,6 @@ type MachineDataViewProps = {
   field: Parameter;
   label?: string;
 };
-
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 export default function Property(props: MachineDataViewProps) {
   const router = useRouter();
@@ -51,7 +48,6 @@ export default function Property(props: MachineDataViewProps) {
   let refEditingMachineConfig = findConfig(editingConfig.id, parentConfig);
   const saveMachineConfig = props.backendSaveParentConfig;
   const configId = props.configId;
-  const selectedVersionId = query.get('version');
   const { token } = theme.useToken();
 
   const [openCreatePropertyModal, setOpenCreatePropertyModal] = useState<boolean>(false);
@@ -215,6 +211,11 @@ export default function Property(props: MachineDataViewProps) {
           <Collapse
             expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
             ghost
+            collapsible={
+              editable || ('parameters' in propertyField && propertyField.parameters.length > 0)
+                ? 'icon'
+                : 'disabled'
+            }
             size="small"
             items={propertyItems}
           />
@@ -228,7 +229,7 @@ export default function Property(props: MachineDataViewProps) {
         </>
       )}
       <CreatePropertyModal
-        title="Create Property Modal"
+        title="Create Property"
         open={openCreatePropertyModal}
         onCancel={() => setOpenCreatePropertyModal(false)}
         onSubmit={createProperty}

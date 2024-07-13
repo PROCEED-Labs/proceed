@@ -8,12 +8,10 @@ import {
   MachineConfig,
 } from '@/lib/data/machine-config-schema';
 import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tooltip, Tree, TreeDataNode } from 'antd';
-import Text from 'antd/es/typography/Text';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
-import { v3, v4 } from 'uuid';
-import TextArea from 'antd/es/input/TextArea';
+import { v4 } from 'uuid';
 import { useEnvironment } from '@/components/auth-can';
 import {
   TreeFindParameterStruct,
@@ -25,7 +23,7 @@ import {
   findParameter,
 } from '../configuration-helper';
 import MachineConfigModal from '@/components/machine-config-modal';
-import { Localization } from '@/lib/data/locale';
+import CreatePropertyModal, { CreatePropertyModalReturnType } from './create-property-modal';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -47,35 +45,12 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [createMachineOpen, setCreateMachineOpen] = useState(false);
+  const [createMetadataOpen, setCreateMetadataOpen] = useState(false);
   const [createParameterOpen, setCreateParameterOpen] = useState(false);
   const [machineType, setMachineType] = useState<AbstractConfig['type']>('target-config');
-  const [parameterKey, setParameterKey] = useState<string>('');
-  const [parameterValue, setParameterValue] = useState<string>('');
-  const [parameterUnit, setParameterUnit] = useState<string>('');
-  const [parameterLanguage, setParameterLanguage] = useState<Localization>('en');
   const [selectedMachineConfig, setSelectedMachineConfig] = useState<
     TreeFindStruct | TreeFindParameterStruct
   >(undefined);
-
-  const changeParameterKey = (e: any) => {
-    let newKey = e.target.value;
-    setParameterKey(newKey);
-  };
-
-  const changeParameterValue = (e: any) => {
-    let newValue = e.target.value;
-    setParameterValue(newValue);
-  };
-
-  const changeParameterLanguage = (e: any) => {
-    let newLanguage = e.target.value;
-    setParameterLanguage(newLanguage);
-  };
-
-  const changeParameterUnit = (e: any) => {
-    let newUnit = e.target.value;
-    setParameterUnit(newUnit);
-  };
 
   const showDeleteConfirmModal = () => {
     setDeleteConfirmOpen(true);
@@ -91,18 +66,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     setCreateMachineOpen(true);
   };
 
-  const showCreateParameterModal = (e: any) => {
-    // let type = e.key.replace('create-', '');
-    // if (type === 'target') {
-    //   setMachineType('target-config');
-    // } else {
-    //   setMachineType('machine-config');
-    // }
+  const showCreateParameterModal = (_: any) => {
     setCreateParameterOpen(true);
-    setParameterKey('');
-    setParameterLanguage('en');
-    setParameterUnit('');
-    setParameterValue('');
   };
 
   const handleCreateMachineOk = (
@@ -120,9 +85,16 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     return Promise.resolve();
   };
 
-  const handleCreateParameterOk = () => {
-    addParameter();
+  const handleCreateParameterOk = (values: CreatePropertyModalReturnType[]): Promise<void> => {
+    addParameter(values[0], 'parameter');
     setCreateParameterOpen(false);
+    return Promise.resolve();
+  };
+
+  const handleCreateMetadataOk = (values: CreatePropertyModalReturnType[]): Promise<void> => {
+    addParameter(values[0], 'metadata');
+    setCreateMetadataOpen(false);
+    return Promise.resolve();
   };
 
   const handleCreateParameterCancel = () => {
@@ -243,7 +215,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   };
 
   const configParameterToTreeElement = (
+    key: string,
     _parameter: Parameter,
+    type: 'metadata' | 'parameter',
   ): TreeDataNode & { ref: Parameter } => {
     let tagByType = (
       <>
@@ -256,8 +230,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
             </Space>
           }
         >
-          <Tag color="lime">P</Tag>
-          {_parameter.content[0].displayName}
+          {type === 'parameter' && <Tag color="lime">P</Tag>}
+          {type === 'metadata' && <Tag color="cyan">P</Tag>}
+          {key}
         </Tooltip>
       </>
     );
@@ -270,12 +245,16 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     };
   };
 
-  const parameterSearch = (_parentParameter: Parameter): TreeDataNode => {
-    let node: TreeDataNode = configParameterToTreeElement(_parentParameter);
+  const parameterSearch = (
+    key: string,
+    _parentParameter: Parameter,
+    type: 'metadata' | 'parameter',
+  ): TreeDataNode => {
+    let node: TreeDataNode = configParameterToTreeElement(key, _parentParameter, type);
     node.children = [];
     for (let prop in _parentParameter.parameters) {
       let nestedParameter = _parentParameter.parameters[prop];
-      node.children.push(parameterSearch(nestedParameter));
+      node.children.push(parameterSearch(prop, nestedParameter, 'parameter'));
     }
     return node;
   };
@@ -286,9 +265,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     if (parentConfig.targetConfig) {
       let childNode: TreeDataNode = configToTreeElement(parentConfig.targetConfig);
       childNode.children = [];
+      for (let prop in parentConfig.targetConfig.metadata) {
+        let parameter = parentConfig.targetConfig.metadata[prop];
+        childNode.children.push(parameterSearch(prop, parameter, 'metadata'));
+      }
       for (let prop in parentConfig.targetConfig.parameters) {
         let parameter = parentConfig.targetConfig.parameters[prop];
-        childNode.children.push(parameterSearch(parameter));
+        childNode.children.push(parameterSearch(prop, parameter, 'parameter'));
       }
       list.push(childNode);
     }
@@ -298,9 +281,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     for (let childrenConfig of machineConfigs) {
       let childNode: TreeDataNode = configToTreeElement(childrenConfig);
       childNode.children = [];
+      for (let prop in childrenConfig.metadata) {
+        let parameter = childrenConfig.metadata[prop];
+        childNode.children.push(parameterSearch(prop, parameter, 'metadata'));
+      }
       for (let prop in childrenConfig.parameters) {
         let parameter = childrenConfig.parameters[prop];
-        childNode.children.push(parameterSearch(parameter));
+        childNode.children.push(parameterSearch(prop, parameter, 'parameter'));
       }
       list.push(childNode);
     }
@@ -309,7 +296,12 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   const mountTreeData = () => {
     let configArray: TreeDataNode[] = [configToTreeElement(parentConfig)];
-    configArray[0].children = loopTreeData(parentConfig);
+    configArray[0].children = [];
+    for (let prop in parentConfig.metadata) {
+      let parameter = parentConfig.metadata[prop];
+      configArray[0].children.push(parameterSearch(prop, parameter, 'metadata'));
+    }
+    configArray[0].children = configArray[0].children.concat(loopTreeData(parentConfig));
     setTreeData(configArray);
   };
 
@@ -352,36 +344,52 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     deleteParameter(_configId, parentConfig);
     saveAndUpdateElements();
   };
+
   const updateTree = () => {
     mountTreeData();
   };
 
-  const addParameter = () => {
+  const addParameter = (
+    valuesFromModal: CreatePropertyModalReturnType,
+    addType: 'parameter' | 'metadata',
+  ) => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
-    const date = new Date().toUTCString();
     const defaultParameter: Parameter = {
       id: v4(),
       linkedParameters: [],
       parameters: [],
-      type: 'https://schema.org/' + parameterKey,
+      type: 'https://schema.org/' + valuesFromModal.key ?? valuesFromModal.displayName,
       content: [
         {
-          displayName: parameterKey[0].toUpperCase() + parameterKey.slice(1),
-          language: parameterLanguage,
-          value: parameterValue,
-          unit: parameterUnit,
+          displayName:
+            valuesFromModal.displayName[0].toUpperCase() + valuesFromModal.displayName.slice(1),
+          language: valuesFromModal.language,
+          value: valuesFromModal.value,
+          unit: valuesFromModal.unit,
         },
       ],
     };
     if (_configType === 'parameter') {
       let ref = findParameter(_configId.toString(), parentConfig, 'config');
       if (ref === undefined) return;
-      ref.selection.parameters[parameterKey] = defaultParameter;
+      ref.selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] =
+        defaultParameter;
     } else {
       let ref = findConfig(_configId.toString(), parentConfig);
       if (ref === undefined) return;
-      let _selection = ref.selection as MachineConfig | TargetConfig;
-      _selection.parameters[parameterKey] = defaultParameter;
+      if (_configType !== 'config') {
+        let _selection = ref.selection as MachineConfig | TargetConfig;
+        if (addType === 'metadata') {
+          _selection.metadata[valuesFromModal.key ?? valuesFromModal.displayName] =
+            defaultParameter;
+        } else {
+          _selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] =
+            defaultParameter;
+        }
+      } else {
+        let _selection = ref.selection as ParentConfig;
+        _selection.metadata[valuesFromModal.key ?? valuesFromModal.displayName] = defaultParameter;
+      }
     }
     saveAndUpdateElements();
   };
@@ -403,6 +411,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         onClick: showCreateMachineModal,
       },
       {
+        label: 'Create Metadata',
+        key: 'add_metadata',
+        onClick: () => {
+          setCreateMetadataOpen(true);
+        },
+      },
+      {
         label: 'Update',
         key: 'update',
         onClick: updateTree,
@@ -416,7 +431,18 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       _configType === 'machine-config' ||
       _configType === 'parameter'
     ) {
+      let items = [];
+      if (_configType !== 'parameter') {
+        items.push({
+          label: 'Create Metadata',
+          key: 'add_metadata',
+          onClick: () => {
+            setCreateMetadataOpen(true);
+          },
+        });
+      }
       return [
+        ...items,
         {
           label: 'Create Parameter',
           key: 'add_parameter',
@@ -494,21 +520,22 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         }}
         onSubmit={handleCreateMachineOk}
       />
-      <Modal
+      <CreatePropertyModal
+        title="Create Metadata"
+        open={createMetadataOpen}
+        onCancel={() => setCreateMetadataOpen(false)}
+        onSubmit={handleCreateMetadataOk}
+        okText="Create"
+        showKey
+      />
+      <CreatePropertyModal
+        title="Create Parameter"
         open={createParameterOpen}
-        title={'New parameter'}
-        onOk={handleCreateParameterOk}
         onCancel={handleCreateParameterCancel}
-      >
-        Key:
-        <Input required value={parameterKey} onChange={changeParameterKey} />
-        Value:
-        <Input required value={parameterValue} onChange={changeParameterValue} />
-        Unit:
-        <Input value={parameterUnit} onChange={changeParameterUnit} />
-        Language:
-        <Input value={parameterLanguage} onChange={changeParameterLanguage} />
-      </Modal>
+        onSubmit={handleCreateParameterOk}
+        okText="Create"
+        showKey
+      />
     </>
   );
 }

@@ -149,8 +149,8 @@ export function deleteParameter(id: string, parentConfig: ParentConfig): boolean
     }
     if (deleted) return true;
     for (let prop in parent.parameters) {
-      if (parent.metadata[prop].id === id) {
-        delete parent.metadata[prop];
+      if (parent.parameters[prop].id === id) {
+        delete parent.parameters[prop];
         deleted = true;
       }
       if (deleted) break;

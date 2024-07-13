@@ -191,11 +191,12 @@ export default function MetaData(props: MachineDataViewProps) {
         </Row>
       )}
       <CreatePropertyModal
-        title="Create Custom Field Modal"
+        title="Create Custom Field"
         open={createFieldOpen}
         onCancel={() => setCreateFieldOpen(false)}
         onSubmit={createField}
         okText="Create"
+        showKey
       />
     </>
   );

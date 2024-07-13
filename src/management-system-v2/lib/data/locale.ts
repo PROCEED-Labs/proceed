@@ -153,3 +153,7 @@ export const [LocalizationCode1, ...LocalizationCodeN] = typedObjectKeys(Localiz
 
 export const LocalizationZod = z.enum([LocalizationCode1, ...LocalizationCodeN]);
 export type Localization = z.infer<typeof LocalizationZod>;
+
+export const languageItemsSelect = Object.entries(LocalizationName).map(([k, v]) => {
+  return { value: k, label: v };
+});

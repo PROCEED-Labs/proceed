@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  App,
+  Collapse,
+  CollapseProps,
+  Dropdown,
+  Typography,
+  Space,
+  MenuProps,
+  Select,
+} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import { UserError } from '@/lib/user-error';
-import { Localization } from '@/lib/data/locale';
+import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
 export type CreatePropertyModalReturnType = {
   displayName: string;
@@ -45,7 +58,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
           label: data.displayName,
-          children: <MachineConfigInputs index={index} />,
+          children: <PropertyInputs index={index} />,
         }))
       : undefined;
 
@@ -108,7 +121,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs index={0} />
+          <PropertyInputs index={0} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -121,7 +134,7 @@ type CreatePropertyInputsProps = {
   index: number;
 };
 
-const MachineConfigInputs = ({ index }: CreatePropertyInputsProps) => {
+const PropertyInputs = ({ index }: CreatePropertyInputsProps) => {
   return (
     <>
       <Form.Item
@@ -150,7 +163,15 @@ const MachineConfigInputs = ({ index }: CreatePropertyInputsProps) => {
         label="Property Language"
         rules={[{ required: false, message: 'Please fill out the Property Language' }]}
       >
-        <Input />
+        <Select
+          showSearch
+          placeholder="Search to Select"
+          optionFilterProp="label"
+          filterSort={(optionA, optionB) =>
+            (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+          }
+          options={languageItemsSelect}
+        />
       </Form.Item>
     </>
   );

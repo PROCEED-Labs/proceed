@@ -1,6 +1,11 @@
 'use client';
 
-import { AbstractConfig, Parameter, ParentConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  AbstractConfigInputSchema,
+  Parameter,
+  ParentConfig,
+} from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -15,11 +20,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown, Flex, Modal } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import {
+  TreeFindStruct,
+  defaultConfiguration,
+  defaultParameter,
+  findConfig,
+} from '../configuration-helper';
 import getAddButton from './add-button';
 import Text from 'antd/es/typography/Text';
 import { v4 } from 'uuid';
 import Property from './property';
+import CreatePropertyModal, { CreatePropertyModalReturnType } from './create-property-modal';
 
 const ConfigPredefinedLiterals = [
   'description',
@@ -38,7 +49,7 @@ type MachineDataViewProps = {
   editingEnabled: boolean;
 };
 
-const getDropdownAddField = (config: AbstractConfig) => {
+const getDropdownAddField = (config: AbstractConfig, stateMetadata: AbstractConfig['metadata']) => {
   let items = [
     {
       key: 'custom-field',
@@ -47,7 +58,7 @@ const getDropdownAddField = (config: AbstractConfig) => {
   ];
   for (let field of ConfigPredefinedLiterals) {
     if (config.type !== 'machine-config' && field === 'machine') continue;
-    if (!(field in config.metadata))
+    if (!(field in stateMetadata))
       items.push({
         key: field,
         label: field[0].toUpperCase() + field.slice(1),
@@ -62,8 +73,6 @@ export default function MetaData(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const [createDisplayName, setCreateDisplayName] = useState<string>('');
-  const [createValue, setCreateValue] = useState<string>('');
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [idVisible, setIdVisible] = useState<boolean>(true);
 
@@ -76,6 +85,9 @@ export default function MetaData(props: MachineDataViewProps) {
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
+  const [editingMetadata, setEditingMetadata] = useState<AbstractConfig['metadata']>(
+    editingMachineConfig.metadata,
+  );
 
   const onClickAddField = (e: any) => {
     const clickedButton = e.key;
@@ -103,10 +115,18 @@ export default function MetaData(props: MachineDataViewProps) {
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
 
-  const createField = () => {
+  const createField = (values: CreatePropertyModalReturnType[]): Promise<void> => {
     if (refEditingMachineConfig) {
-      setCreateFieldOpen(false);
+      const valuesFromModal = values[0];
+      const field = defaultParameter(
+        valuesFromModal.displayName,
+        valuesFromModal.value,
+        valuesFromModal.language,
+        valuesFromModal.unit,
+      );
     }
+    setCreateFieldOpen(false);
+    return Promise.resolve();
   };
 
   const getCustomField = (key: string, field: Parameter, idx: number) => {
@@ -155,34 +175,28 @@ export default function MetaData(props: MachineDataViewProps) {
           </Col>
         </Row>
       )}
-      {Object.entries(editingMachineConfig.metadata).map(([key, val], idx: number) => {
+      {Object.entries(editingMetadata).map(([key, val], idx: number) => {
         return getCustomField(key, val, idx);
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
           <Col span={3} className="gutter-row" />
           <Col span={21} className="gutter-row">
-            {getAddButton('Add Field', getDropdownAddField(editingMachineConfig), onClickAddField)}
+            {getAddButton(
+              'Add Field',
+              getDropdownAddField(editingMachineConfig, editingMetadata),
+              onClickAddField,
+            )}
           </Col>
         </Row>
       )}
-      <Modal
+      <CreatePropertyModal
+        title="Create Custom Field Modal"
         open={createFieldOpen}
-        title={'Create Custom Field'}
-        onOk={createField}
-        onCancel={() => {
-          setCreateFieldOpen(false);
-        }}
-      >
-        Name:
-        <Input
-          required
-          value={createDisplayName}
-          onChange={(e) => setCreateDisplayName(e.target.value)}
-        />
-        Value:
-        <Input required value={createValue} onChange={(e) => setCreateValue(e.target.value)} />
-      </Modal>
+        onCancel={() => setCreateFieldOpen(false)}
+        onSubmit={createField}
+        okText="Create"
+      />
     </>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig } from '@/lib/data/machine-config-schema';
+import { ParentConfig, AbstractConfig } from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
@@ -72,7 +72,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
         onClick={() => setCollapsed(!collapsed)}
         style={{ fontSize: '24px' }}
       />
-      {selectedConfig?.selection && 'type' in selectedConfig?.selection ? (
+      {selectedConfig?.selection && !('content' in selectedConfig?.selection) ? (
         <ConfigEditor
           backendSaveParentConfig={saveConfig}
           configId={configId}

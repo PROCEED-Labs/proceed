@@ -1,4 +1,4 @@
-import { LocalizationName } from '@/lib/data/locale';
+import { Localization, LocalizationName } from '@/lib/data/locale';
 import {
   AbstractConfig,
   MachineConfig,
@@ -8,7 +8,12 @@ import {
 } from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
 
-export function defaultParameter(key: string, val: string): Parameter {
+export function defaultParameter(
+  key: string,
+  val: string,
+  language?: Localization,
+  unit?: string,
+): Parameter {
   return {
     id: v4(),
     type: 'https://schema.org/' + key,
@@ -16,8 +21,8 @@ export function defaultParameter(key: string, val: string): Parameter {
       {
         displayName: key[0].toUpperCase() + key.slice(1),
         value: val,
-        language: 'en',
-        unit: '',
+        language: language ?? 'en',
+        unit: unit ?? '',
       },
     ],
     linkedParameters: [],

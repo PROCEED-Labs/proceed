@@ -51,7 +51,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
       <MetaData
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
-        customConfig={editingConfig}
+        customConfig={parentConfig.targetConfig}
         configId={configId}
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}

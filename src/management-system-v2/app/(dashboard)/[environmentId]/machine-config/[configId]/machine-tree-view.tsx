@@ -358,7 +358,6 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   const addParameter = () => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
-    console.log(selectedOnTree[0]);
     const date = new Date().toUTCString();
     const defaultParameter: Parameter = {
       id: v4(),

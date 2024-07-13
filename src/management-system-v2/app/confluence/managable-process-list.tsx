@@ -16,8 +16,6 @@ const ActionButtons = ({ process }: { process: Process }) => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const closeEditModal = async (values?: { name: string; description: string }) => {
-    console.log('close edit modal');
-
     if (values) {
       updateProcess(process.id, spaceId, undefined, values.description, values.name).then(() =>
         router.refresh(),

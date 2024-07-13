@@ -10,7 +10,7 @@ import { Col, Row } from 'antd';
 import { Process } from '@/lib/data/process-schema';
 
 import TagGroup from '@atlaskit/tag-group';
-import Tag, { SimpleTag } from '@atlaskit/tag';
+import { SimpleTag } from '@atlaskit/tag';
 import { HeadType, RowType } from '@atlaskit/dynamic-table/dist/types/types';
 
 export type ConfluenceProceedProcess = Process & { container: { id: string; title: string }[] };

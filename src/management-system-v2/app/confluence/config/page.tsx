@@ -1,6 +1,4 @@
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { getProcesses } from '@/lib/data/legacy/_process';
-import { Process } from '@/lib/data/process-schema';
+import { getCurrentUser } from '@/components/auth';
 import Layout from '../layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
@@ -31,13 +29,7 @@ const ConfigPage = async ({ params, searchParams }: { params: any; searchParams:
     const confluenceClientInfos = await getConfluenceClientInfos(clientKey);
 
     return (
-      <Layout
-        hideFooter={true}
-        loggedIn={!!userId}
-        layoutMenuItems={[]}
-        userEnvironments={userEnvironments}
-        activeSpace={{ spaceId: userId || '', isOrganization: false }}
-      >
+      <Layout hideFooter={true} activeSpace={{ spaceId: userId || '', isOrganization: false }}>
         <div style={{ padding: '1rem', width: '100%' }}>
           <Config
             userEnvironments={userEnvironments}

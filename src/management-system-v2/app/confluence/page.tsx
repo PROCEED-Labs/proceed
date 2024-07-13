@@ -65,9 +65,6 @@ const ConfluencePage = async ({
     return (
       <Layout
         hideFooter={true}
-        loggedIn={!!userId}
-        layoutMenuItems={[]}
-        userEnvironments={userEnvironments}
         activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
       >
         <div style={{ padding: '1rem', width: '100%', minHeight: '600px' }}>
@@ -80,9 +77,6 @@ const ConfluencePage = async ({
   return (
     <Layout
       hideFooter={true}
-      loggedIn={false}
-      layoutMenuItems={[]}
-      userEnvironments={[]}
       activeSpace={{ spaceId: '', isOrganization: false }}
       redirectUrl="/confluence"
     >

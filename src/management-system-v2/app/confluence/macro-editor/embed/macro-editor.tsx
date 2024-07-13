@@ -1,7 +1,7 @@
 'use client';
 
 import { Process } from '@/lib/data/process-schema';
-import { useState, useEffect } from 'react';
+import { CSSProperties } from 'react';
 import ProcessList from '../../process-list';
 import Button, { ButtonGroup } from '@atlaskit/button';
 import Modal, {
@@ -47,20 +47,25 @@ const MacroEditor = ({ processes }: { processes: Process[] }) => {
     }
   };
 
+  const headerStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    width: '100%',
+  };
+
   return (
     <div>
       <ModalTransition>
         <Modal isBlanketHidden width="50vw" onClose={() => window.AP.confluence.closeMacroEditor()}>
           <ModalHeader>
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <div style={headerStyle}>
               <ModalTitle>Embed Process</ModalTitle>
               <ProcessImportButton
                 type="text"
                 modalOkText="Import & Embed"
                 style={{ padding: 0 }}
                 onImport={(processes) => {
-                  const process = processes[0];
-                  saveMacro(process);
+                  saveMacro(processes[0]);
                 }}
                 allowMultipleImports={false}
               >

@@ -65,9 +65,6 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
       <>
         <Layout
           hideFooter
-          loggedIn={!!userId}
-          layoutMenuItems={[]}
-          userEnvironments={userEnvironments}
           activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
         >
           <MacroEditor
@@ -82,9 +79,6 @@ const MacroEditorPage = async ({ params, searchParams }: { params: any; searchPa
   return (
     <Layout
       hideFooter
-      loggedIn={false}
-      layoutMenuItems={[]}
-      userEnvironments={[]}
       activeSpace={{ spaceId: '', isOrganization: false }}
       redirectUrl="/confluence/macro-editor/create"
     >

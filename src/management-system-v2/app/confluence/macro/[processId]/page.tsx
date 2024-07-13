@@ -72,9 +72,6 @@ const MacroPage = async ({
       <>
         <Layout
           hideFooter={true}
-          loggedIn={!!userId}
-          layoutMenuItems={[]}
-          userEnvironments={userEnvironments}
           activeSpace={{ spaceId: confluenceSelectedProceedSpace.id, isOrganization: true }}
         >
           {process ? (
@@ -90,9 +87,6 @@ const MacroPage = async ({
   return (
     <Layout
       hideFooter
-      loggedIn={false}
-      layoutMenuItems={[]}
-      userEnvironments={[]}
       activeSpace={{ spaceId: '', isOrganization: false }}
       redirectUrl={`/confluence/macro/${processId}`}
     >

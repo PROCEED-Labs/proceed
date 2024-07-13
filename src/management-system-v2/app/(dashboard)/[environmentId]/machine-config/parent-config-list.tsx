@@ -310,11 +310,12 @@ const ParentConfigList = ({
             display: 'block',
           }}
         >
-          {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
+          {/* {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
             <>&emsp;</>
           ) : (
             record.metadata.description?.content[0].value
-          )}
+          )} */}
+          {record.metadata ? record.metadata.description?.content[0].value ?? '' : ''}
           {/* Makes the link-cell clickable, when there is no description */}
           {/* </div> */}
         </SpaceLink>

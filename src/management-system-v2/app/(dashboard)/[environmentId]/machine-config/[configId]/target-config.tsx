@@ -49,6 +49,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   return (
     <div>
       <MetaData
+        editableConfigProperty="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
         customConfig={parentConfig.targetConfig}

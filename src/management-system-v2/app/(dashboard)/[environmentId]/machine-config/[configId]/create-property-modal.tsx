@@ -43,6 +43,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
   onCancel,
   onSubmit,
   initialData,
+  showKey,
 }: CreatePropertyModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +61,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
           label: data.displayName,
-          children: <PropertyInputs index={index} />,
+          children: <PropertyInputs index={index} showKey={showKey} />,
         }))
       : undefined;
 
@@ -123,7 +124,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <PropertyInputs index={0} />
+          <PropertyInputs index={0} showKey={showKey} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -134,9 +135,10 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
 
 type CreatePropertyInputsProps = {
   index: number;
+  showKey?: boolean;
 };
 
-const PropertyInputs = ({ index }: CreatePropertyInputsProps, showKey: boolean) => {
+const PropertyInputs = ({ index, showKey }: CreatePropertyInputsProps) => {
   return (
     <>
       {showKey && (

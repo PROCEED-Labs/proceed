@@ -221,19 +221,27 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   ): TreeDataNode & { ref: Parameter } => {
     let tagByType = (
       <>
-        <Tooltip
-          placement="top"
-          title={
-            <Space size={3}>
-              {_parameter.content[0].displayName}:{_parameter.content[0].value}
-              {_parameter.content[0].unit}({_parameter.content[0].language})
-            </Space>
-          }
-        >
-          {type === 'parameter' && <Tag color="lime">P</Tag>}
-          {type === 'metadata' && <Tag color="cyan">P</Tag>}
-          {key}
-        </Tooltip>
+        {_parameter.content.length > 0 ? (
+          <Tooltip
+            placement="top"
+            title={
+              <Space size={3}>
+                {_parameter.content[0].displayName}:{_parameter.content[0].value}
+                {_parameter.content[0].unit}({_parameter.content[0].language})
+              </Space>
+            }
+          >
+            {type === 'parameter' && <Tag color="lime">P</Tag>}
+            {type === 'metadata' && <Tag color="cyan">P</Tag>}
+            {key}
+          </Tooltip>
+        ) : (
+          <div>
+            {type === 'parameter' && <Tag color="lime">P</Tag>}
+            {type === 'metadata' && <Tag color="cyan">P</Tag>}
+            {key}
+          </div>
+        )}
       </>
     );
 
@@ -496,7 +504,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           (selectedMachineConfig
             ? 'name' in selectedMachineConfig.selection
               ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.content[0].displayName
+              : selectedMachineConfig.selection.content.length > 0
+                ? selectedMachineConfig.selection.content[0].displayName
+                : ''
             : '')
         }
         onOk={handleDeleteConfirm}
@@ -507,7 +517,9 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           {selectedMachineConfig
             ? 'name' in selectedMachineConfig.selection
               ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.content[0].displayName
+              : selectedMachineConfig.selection.content.length > 0
+                ? selectedMachineConfig.selection.content[0].displayName
+                : ''
             : ''}{' '}
           with id {selectedMachineConfig?.selection.id}?
         </p>

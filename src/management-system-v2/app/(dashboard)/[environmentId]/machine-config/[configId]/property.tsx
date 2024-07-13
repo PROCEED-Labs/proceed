@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PlusOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex } from 'antd';
+import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex, Select } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -23,6 +23,7 @@ import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
 import getTooltips from './getTooltips';
 import CreatePropertyModal, { CreatePropertyModalReturnType } from './create-property-modal';
+import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
 type MachineDataViewProps = {
   configId: string;
@@ -32,6 +33,7 @@ type MachineDataViewProps = {
   customConfig?: AbstractConfig;
   editingEnabled: boolean;
   field: Parameter;
+  onDelete: Function;
   label?: string;
 };
 
@@ -50,6 +52,8 @@ export default function Property(props: MachineDataViewProps) {
   const configId = props.configId;
   const { token } = theme.useToken();
 
+  const [deleted, setDeleted] = useState<boolean>(false);
+  const [created, setCreated] = useState<boolean>(false);
   const [openCreatePropertyModal, setOpenCreatePropertyModal] = useState<boolean>(false);
   const [propertyField, setPropertyField] = useState<Parameter>(props.field);
 
@@ -58,44 +62,71 @@ export default function Property(props: MachineDataViewProps) {
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
-      setPropertyField(props.field);
       return;
+    } else {
+      saveProperty();
     }
-    saveProperty();
-  }, [propertyField]);
+  }, [deleted, created]);
+
+  useEffect(() => {}, [propertyField]);
 
   const showMobileView = useMobileModeler();
 
-  const deleteProperty = (propertyItem: ParameterContent) => {
+  const deleteContent = (propertyItem: ParameterContent) => {
     let copyPropertyContent = propertyField.content.filter((item: ParameterContent) => {
       return item !== propertyItem;
     });
     let propertyCopy = { ...propertyField };
     propertyCopy.content = copyPropertyContent;
     setPropertyField(propertyCopy);
+    setDeleted(!deleted);
+    props.onDelete(propertyField);
   };
 
   const saveProperty = () => {
     if (refEditingMachineConfig && propertyField.id) {
       let paramRef = findParameter(propertyField.id, parentConfig, 'config');
-      paramRef!.selection = propertyField;
-      saveMachineConfig(configId, parentConfig).then(() => {});
-      router.refresh();
+      if (paramRef) {
+        paramRef.selection.linkedParameters = propertyField.linkedParameters;
+        paramRef.selection.parameters = propertyField.parameters;
+        paramRef.selection.content = propertyField.content;
+        saveMachineConfig(configId, parentConfig).then(() => {});
+        router.refresh();
+      }
     }
   };
 
-  const propertyItemHeader = (propertyItem: ParameterContent) => (
+  const onChangePropertyField = (e: any, propertyContent: ParameterContent) => {
+    let index = propertyField.content.indexOf(propertyContent as any);
+    let propertyCopy = { ...propertyField };
+    if (typeof e !== 'string') {
+      const newValue = e.target.value;
+      if (e.target.id === 'propertyValue') {
+        propertyCopy.content[index].value = newValue;
+      } else if (e.target.id === 'propertyName') {
+        propertyCopy.content[index].displayName = newValue;
+      } else if (e.target.id === 'propertyUnit') {
+        propertyCopy.content[index].unit = newValue;
+      }
+    } else {
+      const newValue = e;
+      propertyCopy.content[index].language = newValue as Localization;
+    }
+    setPropertyField(propertyCopy);
+  };
+
+  const propertyItemHeader = (propertyContent: ParameterContent) => (
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
         <Space>
-          <Text>{propertyItem.displayName}: </Text>
-          <Text>{propertyItem.value}</Text>
-          <Text>{propertyItem.unit}</Text>
-          <Text type="secondary">({propertyItem.language})</Text>
+          <Text>{propertyContent.displayName}: </Text>
+          <Text>{propertyContent.value}</Text>
+          <Text>{propertyContent.unit}</Text>
+          <Text type="secondary">({propertyContent.language})</Text>
         </Space>
         {getTooltips(editable, ['copy', 'edit', 'delete'], {
           delete: () => {
-            deleteProperty(propertyItem);
+            deleteContent(propertyContent);
           },
         })}
       </Flex>
@@ -116,10 +147,16 @@ export default function Property(props: MachineDataViewProps) {
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
               {' '}
-              Key{' '}
+              Display Name{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={propertyItem.displayName} />
+              <Input
+                id="propertyName"
+                disabled={!editable}
+                onChange={(e) => onChangePropertyField(e, propertyItem)}
+                value={propertyItem.displayName}
+                onBlur={saveProperty}
+              />
             </Col>
           </Row>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
@@ -128,7 +165,13 @@ export default function Property(props: MachineDataViewProps) {
               Value{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={propertyItem.value} />
+              <Input
+                id="propertyValue"
+                disabled={!editable}
+                onChange={(e) => onChangePropertyField(e, propertyItem)}
+                onBlur={saveProperty}
+                value={propertyItem.value}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -142,7 +185,13 @@ export default function Property(props: MachineDataViewProps) {
               Unit{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={propertyItem.unit} />
+              <Input
+                id="propertyUnit"
+                disabled={!editable}
+                onChange={(e) => onChangePropertyField(e, propertyItem)}
+                onBlur={saveProperty}
+                value={propertyItem.unit}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -156,7 +205,21 @@ export default function Property(props: MachineDataViewProps) {
               Language{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={propertyItem.language} />
+              <Select
+                showSearch
+                disabled={!editable}
+                defaultValue={propertyItem.language}
+                placeholder="Search to Select"
+                optionFilterProp="label"
+                filterSort={(optionA, optionB) =>
+                  (optionA?.label ?? '')
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? '').toLowerCase())
+                }
+                onChange={(e) => onChangePropertyField(e, propertyItem)}
+                onBlur={saveProperty}
+                options={languageItemsSelect}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -169,7 +232,7 @@ export default function Property(props: MachineDataViewProps) {
     </div>
   );
 
-  const createProperty = (values: CreatePropertyModalReturnType[]): Promise<void> => {
+  const createContent = (values: CreatePropertyModalReturnType[]): Promise<void> => {
     let propertyCopy = { ...propertyField };
     const valuesFromModal = values[0];
     propertyCopy.content.push({
@@ -179,8 +242,8 @@ export default function Property(props: MachineDataViewProps) {
       value: valuesFromModal.value,
     });
     setPropertyField(propertyCopy);
+    setCreated(true);
     setOpenCreatePropertyModal(false);
-    saveProperty();
     return Promise.resolve();
   };
 
@@ -232,8 +295,9 @@ export default function Property(props: MachineDataViewProps) {
         title="Create Property"
         open={openCreatePropertyModal}
         onCancel={() => setOpenCreatePropertyModal(false)}
-        onSubmit={createProperty}
+        onSubmit={createContent}
         okText="Create"
+        showKey={false}
       />
     </>
   );

@@ -51,6 +51,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
       <MetaData
+        editableConfigProperty="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
         customConfig={machineConfigData}
@@ -58,12 +59,15 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
       />
-      <Parameters
-        backendSaveParentConfig={saveParentConfig}
-        configId={configId}
-        parentConfig={parentConfig}
-        selectedConfig={{ parent: parentConfig, selection: machineConfigData }}
+      <div>Parameters</div>
+      <MetaData
+        editableConfigProperty="parameters"
         editingEnabled={editable}
+        backendSaveMachineConfig={saveParentConfig}
+        customConfig={machineConfigData}
+        configId={configId}
+        selectedMachineConfig={undefined}
+        rootMachineConfig={parentConfig}
       />
     </div>
   );

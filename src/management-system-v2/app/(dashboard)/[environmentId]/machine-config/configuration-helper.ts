@@ -107,9 +107,11 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
   if (_parent.targetConfig && id === _parent.targetConfig.id) {
     return { selection: _parent.targetConfig, parent: _parent };
   }
-  for (let machineConfig of _parent.machineConfigs) {
-    if (machineConfig.id === id) {
-      return { selection: machineConfig, parent: _parent };
+  if (_parent.machineConfigs) {
+    for (let machineConfig of _parent.machineConfigs) {
+      if (machineConfig.id === id) {
+        return { selection: machineConfig, parent: _parent };
+      }
     }
   }
   return undefined;

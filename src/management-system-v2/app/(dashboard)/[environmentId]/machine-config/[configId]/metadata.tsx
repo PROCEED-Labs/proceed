@@ -5,6 +5,7 @@ import {
   AbstractConfigInputSchema,
   Parameter,
   ParentConfig,
+  TargetConfig,
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -24,6 +25,7 @@ import {
   TreeFindStruct,
   defaultConfiguration,
   defaultParameter,
+  deleteParameter,
   findConfig,
 } from '../configuration-helper';
 import getAddButton from './add-button';
@@ -47,24 +49,7 @@ type MachineDataViewProps = {
   rootMachineConfig: ParentConfig;
   backendSaveMachineConfig: Function;
   editingEnabled: boolean;
-};
-
-const getDropdownAddField = (config: AbstractConfig, stateMetadata: AbstractConfig['metadata']) => {
-  let items = [
-    {
-      key: 'custom-field',
-      label: 'Custom Field',
-    },
-  ];
-  for (let field of ConfigPredefinedLiterals) {
-    if (config.type !== 'machine-config' && field === 'machine') continue;
-    if (!(field in stateMetadata))
-      items.push({
-        key: field,
-        label: field[0].toUpperCase() + field.slice(1),
-      });
-  }
-  return items;
+  editableConfigProperty: 'metadata' | 'parameters';
 };
 
 export default function MetaData(props: MachineDataViewProps) {
@@ -85,21 +70,39 @@ export default function MetaData(props: MachineDataViewProps) {
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
-  const [editingMetadata, setEditingMetadata] = useState<AbstractConfig['metadata']>(
-    editingMachineConfig.metadata,
+  const [editingMetadata, setEditingMetadata] = useState<TargetConfig['parameters']>(
+    props.editableConfigProperty === 'metadata'
+      ? editingMachineConfig.metadata
+      : 'parameters' in editingMachineConfig
+        ? (editingMachineConfig as TargetConfig).parameters
+        : {},
   );
 
-  const onClickAddField = (e: any) => {
-    const clickedButton = e.key;
-    if (clickedButton === 'custom-field') {
-      setCreateFieldOpen(true);
-    } else {
-      // changeHiding(clickedButton, false);
+  const onContentDelete = (param: Parameter) => {
+    if (param.content.length <= 0 && param.id) {
+      deleteParameter(param.id, rootMachineConfig);
+      let copyMetadata = { ...editingMetadata };
+      for (let prop in copyMetadata) {
+        if (param.id === copyMetadata[prop].id) {
+          delete copyMetadata[prop];
+          break;
+        }
+      }
+      setEditingMetadata(copyMetadata);
     }
+  };
+
+  const onClickAddField = (e: any) => {
+    setCreateFieldOpen(true);
   };
 
   const saveAll = () => {
     if (refEditingMachineConfig) {
+      if (props.editableConfigProperty === 'metadata') {
+        refEditingMachineConfig.selection.metadata = editingMetadata;
+      } else {
+        (refEditingMachineConfig.selection as TargetConfig).parameters = editingMetadata;
+      }
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
@@ -111,6 +114,10 @@ export default function MetaData(props: MachineDataViewProps) {
       return;
     }
   }, [props.selectedMachineConfig]);
+
+  useEffect(() => {
+    saveAll();
+  }, [editingMetadata]);
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
@@ -124,6 +131,9 @@ export default function MetaData(props: MachineDataViewProps) {
         valuesFromModal.language,
         valuesFromModal.unit,
       );
+      let copyMetadata = { ...editingMetadata };
+      copyMetadata[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      setEditingMetadata(copyMetadata);
     }
     setCreateFieldOpen(false);
     return Promise.resolve();
@@ -141,8 +151,9 @@ export default function MetaData(props: MachineDataViewProps) {
             configId={configId}
             editingEnabled={editable}
             parentConfig={rootMachineConfig}
-            selectedConfig={props.selectedMachineConfig}
+            selectedConfig={refEditingMachineConfig}
             field={field}
+            onDelete={onContentDelete}
             label={key[0].toUpperCase() + key.slice(1)}
           />
         </Col>
@@ -152,7 +163,7 @@ export default function MetaData(props: MachineDataViewProps) {
 
   return (
     <>
-      {idVisible && (
+      {idVisible && props.editableConfigProperty === 'metadata' && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
           <Col span={3} className="gutter-row">
             {' '}
@@ -182,16 +193,12 @@ export default function MetaData(props: MachineDataViewProps) {
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
           <Col span={3} className="gutter-row" />
           <Col span={21} className="gutter-row">
-            {getAddButton(
-              'Add Field',
-              getDropdownAddField(editingMachineConfig, editingMetadata),
-              onClickAddField,
-            )}
+            {getAddButton('Add Field', undefined, onClickAddField)}
           </Col>
         </Row>
       )}
       <CreatePropertyModal
-        title="Create Custom Field"
+        title="Create Metadata"
         open={createFieldOpen}
         onCancel={() => setCreateFieldOpen(false)}
         onSubmit={createField}

@@ -196,6 +196,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       label: 'Metadata',
       children: (
         <MetaData
+          editableConfigProperty="metadata"
           backendSaveMachineConfig={saveParentConfig}
           configId={configId}
           rootMachineConfig={parentConfig}

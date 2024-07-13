@@ -63,9 +63,16 @@ const Config = ({
   clientKey: string;
   initialSpaceId?: string;
 }) => {
-  console.log('environments', userEnvironments);
+  const getConfluenceURL = () => {
+    return new Promise((resolve) => {
+      window.AP.context.getContext((response) => {
+        const URL = response.url.displayUrl as string;
+        resolve(URL);
+      });
+    }) as Promise<string>;
+  };
+
   const selectSpace = async (selectedSpace: { label: string; value: string } | null) => {
-    console.log('selectedSpace', selectedSpace);
     // Create Confluence Folder in PROCEED which is shared for every user in this space => anyone can create and edit processes
     if (selectedSpace) {
       const confluenceURL = await getConfluenceURL();
@@ -75,7 +82,6 @@ const Config = ({
         parentId: null,
         environmentId: selectedSpace.value,
       });
-      console.log('res', res);
 
       if ('error' in res) {
         throw new Error('Could not create folder for selected space');
@@ -86,41 +92,12 @@ const Config = ({
         confluenceFolderId: res.id,
       });
     }
-    const users = JSON.parse((await getConfluenceUsers()) as string).results;
-    const atlassianUsers = users.filter(
-      (user: { accountType: string }) => user.accountType === 'atlassian',
-    );
-    console.log('atlassianUsers', atlassianUsers);
-    console.log('users', users);
-  };
-
-  const getConfluenceURL = () => {
-    return new Promise((resolve) => {
-      window.AP.context.getContext((response) => {
-        console.log('response', response);
-        const URL = response.url.displayUrl as string;
-        resolve(URL);
-      });
-    }) as Promise<string>;
-  };
-
-  const getConfluenceUsers = () => {
-    return new Promise((resolve) => {
-      window.AP.request({
-        url: '/rest/api/group/50ac3cda-c74a-4eca-8a5f-772b5f16bc41/membersByGroupId',
-        type: 'GET',
-        success: function (responseText: string) {
-          resolve(responseText);
-        },
-      });
-    });
   };
 
   return (
-    <Tabs onChange={(index) => console.log('Selected Tab', index + 1)} id="default">
+    <Tabs id="default">
       <TabList>
         <Tab>PROCEED Space</Tab>
-        <Tab>User Management</Tab>
         <Tab>Other</Tab>
       </TabList>
       <TabPanel>
@@ -132,9 +109,6 @@ const Config = ({
       </TabPanel>
       <TabPanel>
         <div>This is the content area of the second tab.</div>
-      </TabPanel>
-      <TabPanel>
-        <div>This is the content area of the third tab.</div>
       </TabPanel>
     </Tabs>
   );

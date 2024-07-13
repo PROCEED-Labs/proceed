@@ -10,18 +10,15 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
 
 const ConfigPage = async ({ params, searchParams }: { params: any; searchParams: any }) => {
-  console.log('searchparams', searchParams.jwt);
   const jwtToken = searchParams.jwt;
   const decoded = jwt.decode(jwtToken, { complete: true });
   const { iss: clientKey } = decoded!.payload as JwtPayload;
-  console.log('clientKey', clientKey);
 
   if (!clientKey) {
     throw new Error('Could not extract ClientKey from given JWT Token');
   }
 
   const { userId } = await getCurrentUser();
-  console.log('userId', userId);
 
   if (userId) {
     const userEnvironments: Environment[] = [getEnvironmentById(userId)];

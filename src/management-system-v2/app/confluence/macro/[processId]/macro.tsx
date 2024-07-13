@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { CSSProperties, useEffect } from 'react';
 import Modeler from '../../macro-editor/create/confluence-modeler';
 import { Process } from '@/lib/data/process-schema';
 import { useRouter } from 'next/navigation';
@@ -20,27 +20,33 @@ const Macro = ({ process }: { process: Process }) => {
     }
   }, []);
 
+  const wrapperStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '400px',
+    border: '1px solid #f0f0f0',
+    borderRadius: '0.5rem',
+  };
+
+  const headerStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '0.75rem',
+    borderBottom: '1px solid #f0f0f0',
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  };
+
+  const footerStyle: CSSProperties = {
+    padding: '0.75rem',
+    borderTop: '1px solid #f0f0f0',
+    backgroundColor: '#f0f0f0',
+  };
+
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '400px',
-          border: '1px solid #f0f0f0',
-          borderRadius: '0.5rem',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '0.75rem',
-            borderBottom: '1px solid #f0f0f0',
-            backgroundColor: '#f0f0f0',
-            alignItems: 'center',
-          }}
-        >
+      <div style={wrapperStyle}>
+        <div style={headerStyle}>
           <div>
             <img style={{ width: '3rem', marginRight: '0.75rem' }} src="/proceed-icon.png"></img>
             <span style={{ fontWeight: 'bold' }}>{process.name}</span>
@@ -52,10 +58,8 @@ const Macro = ({ process }: { process: Process }) => {
         <div style={{ flexGrow: 1, position: 'relative' }}>
           <Modeler isViewer process={{ name: process.name, id: process.id, bpmn: process.bpmn }} />
         </div>
-        <div
-          style={{ padding: '0.75rem', borderTop: '1px solid #f0f0f0', backgroundColor: '#f0f0f0' }}
-        >
-          <span style={{ fontWeight: 'bold' }}>Description:</span>{' '}
+        <div style={footerStyle}>
+          <span style={{ fontWeight: 'bold' }}>Description:&nbsp;</span>
           <span> {process.description}</span>
         </div>
       </div>

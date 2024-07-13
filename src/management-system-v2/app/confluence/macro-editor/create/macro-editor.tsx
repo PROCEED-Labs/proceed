@@ -1,6 +1,5 @@
 'use client';
 
-import Modal, { ModalBody, ModalFooter, ModalHeader, ModalTitle } from '@atlaskit/modal-dialog';
 import Button from '@atlaskit/button';
 import { addProcesses, getProcessBPMN } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
@@ -9,10 +8,9 @@ import { useState, useEffect, CSSProperties } from 'react';
 import { Process } from '@/lib/data/process-schema';
 import Modeler from './confluence-modeler';
 import ProcessModal from '../../process-modal';
-import { updateProcessGuestAccessRights } from '@/lib/sharing/process-sharing';
 import { getPNGFromSVG } from '@/lib/process-export/image-export';
 import { getSVGFromBPMN } from '@/lib/process-export/util';
-import { createAttachment, getAttachmentProcessBase64Image } from '../../helpers';
+import { createAttachment } from '../../helpers';
 
 const MacroEditor = ({
   processes,
@@ -59,38 +57,62 @@ const MacroEditor = ({
     }) as Promise<string>;
   };
 
+  const updateProcess = async () => {
+    if (process) {
+      const bpmnResponse = await getProcessBPMN(process.id, spaceId);
+
+      if (typeof bpmnResponse === 'object' && 'error' in bpmnResponse) {
+        throw new Error('Could not retrieve BPMN of process');
+      }
+
+      const processWithBpmn = { ...process, bpmn: bpmnResponse };
+      await storeProcessAttachment(processWithBpmn);
+
+      window.AP.confluence.saveMacro({ processId: process.id });
+      window.AP.confluence.closeMacroEditor();
+    }
+  };
+
+  const createProcess = async (values: { name: string; description: string }) => {
+    const res = await addProcesses([{ ...values, folderId: confluenceFolderId }], spaceId);
+
+    if ('error' in res) {
+      throw new Error('Something went wrong while adding process');
+    } else {
+      const process = res[0];
+      await storeProcessAttachment(process);
+      return process;
+    }
+  };
+
+  const fullScreenStyle: CSSProperties = {
+    width: '100vw',
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
+  const headerStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '10px',
+    alignItems: 'center',
+    borderBottom: '1px solid lightgrey',
+  };
+
   return (
     <div>
       {process ? (
-        <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '10px',
-              alignItems: 'center',
-              borderBottom: '1px solid lightgrey',
-            }}
-          >
+        <div style={fullScreenStyle}>
+          <div style={headerStyle}>
             <span>{process.name}</span>
             <Button
               appearance="primary"
               onClick={() => {
-                getProcessBPMN(process.id, spaceId)
-                  .then((bpmnResponse) => {
-                    if (typeof bpmnResponse === 'string') {
-                      return { ...process, bpmn: bpmnResponse };
-                    } else {
-                      return process;
-                    }
-                  })
-                  .then((updatedProcess) => {
-                    return storeProcessAttachment(updatedProcess);
-                  })
-                  .then(() => {
-                    window.AP.confluence.saveMacro({ processId: process.id });
-                    window.AP.confluence.closeMacroEditor();
-                  });
+                updateProcess().then(() => {
+                  window.AP.confluence.saveMacro({ processId: process.id });
+                  window.AP.confluence.closeMacroEditor();
+                });
               }}
             >
               Close
@@ -107,26 +129,11 @@ const MacroEditor = ({
           open={true}
           close={async (values) => {
             if (values) {
-              const res = await addProcesses(
-                [{ ...values, folderId: confluenceFolderId }],
-                spaceId,
-              );
-
-              if ('error' in res) {
-                throw new Error('Something went wrong while adding process');
-              } else {
-                const process = res[0];
-                await storeProcessAttachment(process);
-
-                if (window.AP && window.AP.confluence) {
-                  window.AP.confluence.saveMacro({ processId: process.id });
-                }
-              }
+              createProcess(values).then((process) => {
+                window.AP.confluence.saveMacro({ processId: process.id });
+              });
             }
-
-            if (window.AP && window.AP.confluence) {
-              window.AP.confluence.closeMacroEditor();
-            }
+            window.AP.confluence.closeMacroEditor();
           }}
         ></ProcessModal>
       )}

@@ -62,7 +62,7 @@ export default function Content(props: MachineDataViewProps) {
   let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
   const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
-  const [editingMetadata, setEditingMetadata] = useState<TargetConfig['parameters']>(
+  const [editingContent, setEditingContent] = useState<TargetConfig['parameters']>(
     props.contentType === 'metadata'
       ? editingMachineConfig.metadata
       : 'parameters' in editingMachineConfig
@@ -73,14 +73,14 @@ export default function Content(props: MachineDataViewProps) {
   const onContentDelete = (param: Parameter) => {
     if (param.content.length <= 0 && param.id) {
       deleteParameter(param.id, rootMachineConfig);
-      let copyMetadata = { ...editingMetadata };
-      for (let prop in copyMetadata) {
-        if (param.id === copyMetadata[prop].id) {
-          delete copyMetadata[prop];
+      let copyContent = { ...editingContent };
+      for (let prop in copyContent) {
+        if (param.id === copyContent[prop].id) {
+          delete copyContent[prop];
           break;
         }
       }
-      setEditingMetadata(copyMetadata);
+      setEditingContent(copyContent);
     }
   };
 
@@ -91,9 +91,9 @@ export default function Content(props: MachineDataViewProps) {
   const saveAll = () => {
     if (refEditingMachineConfig) {
       if (props.contentType === 'metadata') {
-        refEditingMachineConfig.selection.metadata = editingMetadata;
+        refEditingMachineConfig.selection.metadata = editingContent;
       } else {
-        (refEditingMachineConfig.selection as TargetConfig).parameters = editingMetadata;
+        (refEditingMachineConfig.selection as TargetConfig).parameters = editingContent;
       }
       saveMachineConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
@@ -109,10 +109,31 @@ export default function Content(props: MachineDataViewProps) {
 
   useEffect(() => {
     saveAll();
-  }, [editingMetadata]);
+  }, [editingContent]);
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
+
+  //TODO
+  const [key, setKey] = useState<string | undefined>('');
+  const [oldKey, setOldKey] = useState<string | undefined>('');
+
+  const pushKey = () => {
+    setOldKey(key);
+  };
+
+  const restoreKey = () => {
+    setKey(oldKey);
+  };
+
+  const saveKey = () => {
+    //TODO
+    /* if (refEditingMachineConfig) {
+      refEditingMachineConfig.selection. [...] .key = key ? key : [...] .displayName; //TODO
+      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      router.refresh();
+    } */
+  };
 
   const createField = (values: CreateParameterModalReturnType[]): Promise<void> => {
     if (refEditingMachineConfig) {
@@ -123,9 +144,9 @@ export default function Content(props: MachineDataViewProps) {
         valuesFromModal.language,
         valuesFromModal.unit,
       );
-      let copyMetadata = { ...editingMetadata };
-      copyMetadata[valuesFromModal.key ?? valuesFromModal.displayName] = field;
-      setEditingMetadata(copyMetadata);
+      let copyContent = { ...editingContent };
+      copyContent[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      setEditingContent(copyContent);
     }
     setCreateFieldOpen(false);
     return Promise.resolve();
@@ -140,12 +161,15 @@ export default function Content(props: MachineDataViewProps) {
               editable && {
                 icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
                 tooltip: 'Edit Parameter Key',
-                onChange: () => {}, //TODO
+                onStart: pushKey,
+                onCancel: restoreKey,
+                onChange: setKey,
+                onEnd: saveKey /* TODO */,
                 enterIcon: <CheckOutlined />,
               }
             }
           >
-            {key[0].toUpperCase() + key.slice(1)}
+            {key[0].toUpperCase() + key.slice(1) /*TODO */}
           </Paragraph>
         </Col>
         <Col span={21} className="gutter-row">
@@ -191,7 +215,7 @@ export default function Content(props: MachineDataViewProps) {
           </Col>
         </Row>
       )}
-      {Object.entries(editingMetadata).map(([key, val], idx: number) => {
+      {Object.entries(editingContent).map(([key, val], idx: number) => {
         return getCustomField(key, val, idx);
       })}
       {editable && (
@@ -256,7 +280,7 @@ export default function Content(props: MachineDataViewProps) {
               </Col>
             </Row>
           )}
-          {Object.entries(editingMetadata).map(([key, val], idx: number) => {
+          {Object.entries(editingContent).map(([key, val], idx: number) => {
             return getCustomField(key, val, idx);
           })}
           {editable && (

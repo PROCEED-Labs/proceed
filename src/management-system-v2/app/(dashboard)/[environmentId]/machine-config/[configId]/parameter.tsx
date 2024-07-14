@@ -8,7 +8,7 @@ import {
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { PlusOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CaretRightOutlined, ClearOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex, Select } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -174,8 +174,8 @@ export default function Param(props: MachineDataViewProps) {
               />
             </Col>
             <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              <Tooltip title="Clear">
+                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
               </Tooltip>
             </Col>
           </Row>
@@ -194,8 +194,8 @@ export default function Param(props: MachineDataViewProps) {
               />
             </Col>
             <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              <Tooltip title="Clear">
+                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
               </Tooltip>
             </Col>
           </Row>
@@ -222,8 +222,8 @@ export default function Param(props: MachineDataViewProps) {
               />
             </Col>
             <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              <Tooltip title="Clear">
+                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
               </Tooltip>
             </Col>
           </Row>

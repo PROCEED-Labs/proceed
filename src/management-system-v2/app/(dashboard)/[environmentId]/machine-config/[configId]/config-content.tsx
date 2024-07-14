@@ -8,7 +8,7 @@ import {
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { KeyOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+import { KeyOutlined, EyeInvisibleOutlined, CheckOutlined, EditOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Col, Row, Tooltip, Collapse, theme } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -23,6 +23,7 @@ import {
 import getAddButton from './add-button';
 import Param from './parameter';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
+import Paragraph from 'antd/es/typography/Paragraph';
 
 const ConfigPredefinedLiterals = [
   'description',
@@ -46,6 +47,7 @@ export default function Content(props: MachineDataViewProps) {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
+  const { token } = theme.useToken();
 
   const firstRender = useRef(true);
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
@@ -133,7 +135,18 @@ export default function Content(props: MachineDataViewProps) {
     return (
       <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
         <Col span={3} className="gutter-row">
-          {key[0].toUpperCase() + key.slice(1)}
+          <Paragraph
+            editable={
+              editable && {
+                icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
+                tooltip: 'Edit Parameter Key',
+                onChange: () => {}, //TODO
+                enterIcon: <CheckOutlined />,
+              }
+            }
+          >
+            {key[0].toUpperCase() + key.slice(1)}
+          </Paragraph>
         </Col>
         <Col span={21} className="gutter-row">
           <Param

@@ -305,21 +305,19 @@ export default function ConfigEditor(props: MachineDataViewProps) {
             <Space>
               <div onBlur={saveName}>
                 <Title
-                  editable={{
-                    icon: (
-                      <EditOutlined
-                        style={{
-                          margin: '0 10px',
-                        }}
-                      />
-                    ),
-                    tooltip: 'Edit',
-                    onStart: pushName,
-                    onCancel: restoreName,
-                    onChange: setName,
-                    onEnd: saveName,
-                    enterIcon: <CheckOutlined />,
-                  }}
+                  editable={
+                    editable && {
+                      icon: (
+                        <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />
+                      ),
+                      tooltip: 'Edit Configuration Name',
+                      onStart: pushName,
+                      onCancel: restoreName,
+                      onChange: setName,
+                      onEnd: saveName,
+                      enterIcon: <CheckOutlined />,
+                    }
+                  }
                   level={5}
                   style={{ margin: '0' }}
                 >

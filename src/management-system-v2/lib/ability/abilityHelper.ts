@@ -83,9 +83,11 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export const adminRules = packRules([
-  {
-    subject: 'All',
-    action: 'admin',
-  },
-] as AbilityRule[]);
+export const adminRules = Object.freeze(
+  packRules([
+    {
+      subject: 'All',
+      action: 'admin',
+    },
+  ] as AbilityRule[]),
+);

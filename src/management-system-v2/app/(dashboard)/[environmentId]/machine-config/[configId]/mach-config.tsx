@@ -4,14 +4,13 @@ import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { KeyOutlined, UserOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
-import TextArea from 'antd/es/input/TextArea';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tooltip, Collapse, Dropdown, theme } from 'antd';
+import { Collapse, theme } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import getTooltips from './tooltips';
-import MetaData from './config-content';
+import Content from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
@@ -49,7 +48,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
-      <MetaData
+      <Content
         contentType="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
@@ -58,8 +57,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
       />
-      <div>Parameters</div>
-      <MetaData
+      <Content
         contentType="parameters"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
@@ -73,7 +71,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const { token } = theme.useToken();
   const panelStyle = {
-    marginBottom: 24,
+    marginBottom: 20,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'none',

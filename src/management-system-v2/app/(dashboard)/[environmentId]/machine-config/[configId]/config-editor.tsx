@@ -10,8 +10,6 @@ import {
   EyeOutlined,
   ExportOutlined,
   CaretRightOutlined,
-  CopyOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -38,17 +36,14 @@ import {
 } from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
-import Text from 'antd/es/typography/Text';
-import MetaData from './config-content';
+import Content_ from './config-content';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
-import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import getAddButton from './add-button';
 import getTooltips from './tooltips';
 import MachineConfigModal from '@/components/machine-config-modal';
-import { copyParentConfig } from '@/lib/data/legacy/machine-config';
 
 type MachineDataViewProps = {
   configId: string;
@@ -218,7 +213,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       key: '1',
       label: 'Meta Data',
       children: (
-        <MetaData
+        <Content_
           contentType="metadata"
           backendSaveMachineConfig={saveParentConfig}
           configId={configId}

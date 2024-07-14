@@ -37,7 +37,7 @@ type MachineDataViewProps = {
   label?: string;
 };
 
-export default function Property(props: MachineDataViewProps) {
+export default function Param(props: MachineDataViewProps) {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();

@@ -4,11 +4,10 @@ import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
-import { Col, Row } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
-import MetaData from './config-content';
+import Content from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
@@ -47,7 +46,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   return (
     <div>
-      <MetaData
+      <Content
         contentType="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
@@ -56,7 +55,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
       />
-      <MetaData
+      <Content
         contentType="parameters"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}

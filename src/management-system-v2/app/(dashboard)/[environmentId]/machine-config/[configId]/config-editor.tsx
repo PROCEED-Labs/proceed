@@ -39,14 +39,14 @@ import {
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Text from 'antd/es/typography/Text';
-import MetaData from './metadata';
+import MetaData from './config-content';
 import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
 import { ToolbarGroup } from '@/components/toolbar';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import getAddButton from './add-button';
-import getTooltips from './getTooltips';
+import getTooltips from './tooltips';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { copyParentConfig } from '@/lib/data/legacy/machine-config';
 
@@ -115,7 +115,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
   };
 
-  const [editable, setEditable] = useState(false); //change back to false
+  const [editable, setEditable] = useState(false);
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -216,10 +216,10 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     let panels = [];
     panels.push({
       key: '1',
-      label: 'Metadata',
+      label: 'Meta Data',
       children: (
         <MetaData
-          editableConfigProperty="metadata"
+          contentType="metadata"
           backendSaveMachineConfig={saveParentConfig}
           configId={configId}
           rootMachineConfig={parentConfig}
@@ -289,6 +289,9 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     }
     setCollapseItems(panels);
   };
+
+  const machineConfigModalTitle =
+    createConfigType === 'target' ? 'Create Target Configuration' : 'Create Machine Configuration';
 
   return (
     <>
@@ -432,7 +435,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       </Layout>
       <MachineConfigModal
         open={openCreateConfigModal}
-        title={`Creating ${createConfigType} configuration`}
+        title={machineConfigModalTitle}
         onCancel={() => setOpenCreateConfigModal(false)}
         onSubmit={handleCreateConfig}
       />

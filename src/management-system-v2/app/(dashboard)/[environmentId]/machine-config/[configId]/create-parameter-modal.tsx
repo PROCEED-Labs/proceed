@@ -18,7 +18,7 @@ import { DownOutlined } from '@ant-design/icons';
 import { UserError } from '@/lib/user-error';
 import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
-export type CreatePropertyModalReturnType = {
+export type CreateParameterModalReturnType = {
   key?: string;
   displayName: string;
   language: Localization;
@@ -26,7 +26,7 @@ export type CreatePropertyModalReturnType = {
   value: string;
 };
 
-type CreatePropertyModalProps<T extends CreatePropertyModalReturnType> = {
+type CreateParameterModalProps<T extends CreateParameterModalReturnType> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -36,7 +36,7 @@ type CreatePropertyModalProps<T extends CreatePropertyModalReturnType> = {
   showKey?: boolean;
 };
 
-const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
+const CreateParameterModal = <T extends CreateParameterModalReturnType>({
   open,
   title,
   okText,
@@ -44,7 +44,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
   onSubmit,
   initialData,
   showKey,
-}: CreatePropertyModalProps<T>) => {
+}: CreateParameterModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
@@ -61,7 +61,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
           label: data.displayName,
-          children: <PropertyInputs index={index} showKey={showKey} />,
+          children: <ParameterInputs index={index} showKey={showKey} />,
         }))
       : undefined;
 
@@ -116,7 +116,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
       <Form
         form={form}
         layout="vertical"
-        name="create_property_form"
+        name="create_parameter_form"
         initialValues={initialData}
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -124,7 +124,7 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <PropertyInputs index={0} showKey={showKey} />
+          <ParameterInputs index={0} showKey={showKey} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -133,48 +133,48 @@ const CreatePropertyModal = <T extends CreatePropertyModalReturnType>({
   );
 };
 
-type CreatePropertyInputsProps = {
+type CreateParameterInputsProps = {
   index: number;
   showKey?: boolean;
 };
 
-const PropertyInputs = ({ index, showKey }: CreatePropertyInputsProps) => {
+const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
   return (
     <>
       {showKey && (
         <Form.Item
           name={[index, 'key']}
-          label="Property Key"
-          rules={[{ required: true, message: 'Please fill out the Property Key' }]}
+          label="Key"
+          rules={[{ required: true, message: 'Please fill out the Parameter Key' }]}
         >
           <Input />
         </Form.Item>
       )}
       <Form.Item
         name={[index, 'displayName']}
-        label="Property Display Name"
-        rules={[{ required: true, message: 'Please fill out the Property Display Name' }]}
+        label="Display Name"
+        rules={[{ required: true, message: 'Please fill out the Parameter Display Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'value']}
-        label="Property Value"
-        rules={[{ required: false, message: 'Please fill out the Property Value' }]}
+        label="Value"
+        rules={[{ required: false, message: 'Please fill out the Parameter Value' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'unit']}
-        label="Property Unit"
-        rules={[{ required: false, message: 'Please fill out the Property Unit' }]}
+        label="Unit"
+        rules={[{ required: false, message: 'Please fill out the Parameter Unit' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'language']}
-        label="Property Language"
-        rules={[{ required: false, message: 'Please fill out the Property Language' }]}
+        label="Language"
+        rules={[{ required: false, message: 'Please fill out the Parameter Language' }]}
       >
         <Select
           showSearch
@@ -190,4 +190,4 @@ const PropertyInputs = ({ index, showKey }: CreatePropertyInputsProps) => {
   );
 };
 
-export default CreatePropertyModal;
+export default CreateParameterModal;

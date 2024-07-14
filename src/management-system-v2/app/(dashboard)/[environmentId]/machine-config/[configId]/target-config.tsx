@@ -8,8 +8,7 @@ import { Col, Row } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
-import Parameters from './parameter';
-import MetaData from './metadata';
+import MetaData from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
@@ -49,7 +48,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   return (
     <div>
       <MetaData
-        editableConfigProperty="metadata"
+        contentType="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
         customConfig={parentConfig.targetConfig}
@@ -57,12 +56,14 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         selectedMachineConfig={undefined}
         rootMachineConfig={parentConfig}
       />
-      <Parameters
-        parentConfig={parentConfig}
-        backendSaveParentConfig={saveParentConfig}
-        configId={configId}
-        selectedConfig={{ parent: parentConfig, selection: editingConfig }}
+      <MetaData
+        contentType="parameters"
         editingEnabled={editable}
+        backendSaveMachineConfig={saveParentConfig}
+        customConfig={parentConfig.targetConfig}
+        configId={configId}
+        selectedMachineConfig={undefined}
+        rootMachineConfig={parentConfig}
       />
     </div>
   );

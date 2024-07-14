@@ -5,7 +5,7 @@ import {
   getConfigurationById,
   saveParentConfig,
 } from '@/lib/data/legacy/machine-config';
-import ConfigContent from './config-content';
+import ConfigContent from './config-page-content';
 
 type MachineConfigProps = {
   params: { configId: string; environmentId: string };

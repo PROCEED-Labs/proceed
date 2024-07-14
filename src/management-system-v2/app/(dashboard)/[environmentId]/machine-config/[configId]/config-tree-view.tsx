@@ -23,7 +23,7 @@ import {
   findParameter,
 } from '../configuration-helper';
 import MachineConfigModal from '@/components/machine-config-modal';
-import CreatePropertyModal, { CreatePropertyModalReturnType } from './create-property-modal';
+import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -85,13 +85,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     return Promise.resolve();
   };
 
-  const handleCreateParameterOk = (values: CreatePropertyModalReturnType[]): Promise<void> => {
+  const handleCreateParameterOk = (values: CreateParameterModalReturnType[]): Promise<void> => {
     addParameter(values[0], 'parameter');
     setCreateParameterOpen(false);
     return Promise.resolve();
   };
 
-  const handleCreateMetadataOk = (values: CreatePropertyModalReturnType[]): Promise<void> => {
+  const handleCreateMetadataOk = (values: CreateParameterModalReturnType[]): Promise<void> => {
     addParameter(values[0], 'metadata');
     setCreateMetadataOpen(false);
     return Promise.resolve();
@@ -358,7 +358,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   };
 
   const addParameter = (
-    valuesFromModal: CreatePropertyModalReturnType,
+    valuesFromModal: CreateParameterModalReturnType,
     addType: 'parameter' | 'metadata',
   ) => {
     const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
@@ -532,7 +532,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         }}
         onSubmit={handleCreateMachineOk}
       />
-      <CreatePropertyModal
+      <CreateParameterModal
         title="Create Metadata"
         open={createMetadataOpen}
         onCancel={() => setCreateMetadataOpen(false)}
@@ -540,7 +540,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         okText="Create"
         showKey
       />
-      <CreatePropertyModal
+      <CreateParameterModal
         title="Create Parameter"
         open={createParameterOpen}
         onCancel={handleCreateParameterCancel}

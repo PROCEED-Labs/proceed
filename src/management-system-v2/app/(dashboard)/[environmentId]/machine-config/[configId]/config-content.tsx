@@ -1,87 +1,212 @@
 'use client';
 
-import { ParentConfig, AbstractConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  AbstractConfigInputSchema,
+  Parameter,
+  ParentConfig,
+  TargetConfig,
+} from '@/lib/data/machine-config-schema';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
-import { Button, Layout } from 'antd';
-import ConfigEditor from './config-editor';
-import ConfigurationTreeView from './machine-tree-view';
-import { useRouter } from 'next/navigation';
-import { TreeFindParameterStruct, TreeFindStruct } from '../configuration-helper';
+import {
+  KeyOutlined,
+  DeleteOutlined,
+  EyeInvisibleOutlined,
+  EditOutlined,
+  CheckOutlined,
+} from '@ant-design/icons';
+import TextArea from 'antd/es/input/TextArea';
+import { useEffect, useRef, useState } from 'react';
+import { Button, Input, Space, Col, Row, Tag, Tooltip, Dropdown, Flex, Modal } from 'antd';
+import useMobileModeler from '@/lib/useMobileModeler';
+import { useEnvironment } from '@/components/auth-can';
+import {
+  TreeFindStruct,
+  defaultConfiguration,
+  defaultParameter,
+  deleteParameter,
+  findConfig,
+} from '../configuration-helper';
+import getAddButton from './add-button';
+import Text from 'antd/es/typography/Text';
+import { v4 } from 'uuid';
+import Property from './parameter';
+import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 
-const { Sider } = Layout;
+const ConfigPredefinedLiterals = [
+  'description',
+  'owner',
+  'userIdentification',
+  'machine',
+  'picture',
+];
 
-type VariablesEditorProps = {
+type MachineDataViewProps = {
   configId: string;
-  originalParentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
+  selectedMachineConfig: TreeFindStruct;
+  customConfig?: AbstractConfig;
+  rootMachineConfig: ParentConfig;
+  backendSaveMachineConfig: Function;
+  editingEnabled: boolean;
+  contentType: 'metadata' | 'parameters';
 };
 
-export default function ConfigContent(props: VariablesEditorProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function MetaData(props: MachineDataViewProps) {
   const router = useRouter();
-  const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct | TreeFindParameterStruct>({
-    selection: props.originalParentConfig,
-    parent: props.originalParentConfig,
-  });
+  const environment = useEnvironment();
+  const query = useSearchParams();
 
+  const firstRender = useRef(true);
+  const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
+  const [idVisible, setIdVisible] = useState<boolean>(true);
+
+  const rootMachineConfig = { ...props.rootMachineConfig };
+  const editingMachineConfig = props.selectedMachineConfig
+    ? { ...props.selectedMachineConfig.selection }
+    : props.customConfig
+      ? { ...props.customConfig }
+      : defaultConfiguration();
+  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
+  const saveMachineConfig = props.backendSaveMachineConfig;
   const configId = props.configId;
-  const saveConfig = props.backendSaveParentConfig;
-  const [parentConfig, setParentConfig] = useState<ParentConfig>(props.originalParentConfig);
+  const [editingMetadata, setEditingMetadata] = useState<TargetConfig['parameters']>(
+    props.contentType === 'metadata'
+      ? editingMachineConfig.metadata
+      : 'parameters' in editingMachineConfig
+        ? (editingMachineConfig as TargetConfig).parameters
+        : {},
+  );
+
+  const onContentDelete = (param: Parameter) => {
+    if (param.content.length <= 0 && param.id) {
+      deleteParameter(param.id, rootMachineConfig);
+      let copyMetadata = { ...editingMetadata };
+      for (let prop in copyMetadata) {
+        if (param.id === copyMetadata[prop].id) {
+          delete copyMetadata[prop];
+          break;
+        }
+      }
+      setEditingMetadata(copyMetadata);
+    }
+  };
+
+  const onClickAddField = (e: any) => {
+    setCreateFieldOpen(true);
+  };
+
+  const saveAll = () => {
+    if (refEditingMachineConfig) {
+      if (props.contentType === 'metadata') {
+        refEditingMachineConfig.selection.metadata = editingMetadata;
+      } else {
+        (refEditingMachineConfig.selection as TargetConfig).parameters = editingMetadata;
+      }
+      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      router.refresh();
+    }
+  };
 
   useEffect(() => {
-    setSelectedConfig({ parent: parentConfig, selection: parentConfig });
-  }, [parentConfig]);
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+  }, [props.selectedMachineConfig]);
 
-  const onSelectConfig = (relation: TreeFindStruct | TreeFindParameterStruct) => {
-    setSelectedConfig(relation);
+  useEffect(() => {
+    saveAll();
+  }, [editingMetadata]);
+
+  const showMobileView = useMobileModeler();
+  const editable = props.editingEnabled;
+
+  const createField = (values: CreateParameterModalReturnType[]): Promise<void> => {
+    if (refEditingMachineConfig) {
+      const valuesFromModal = values[0];
+      const field = defaultParameter(
+        valuesFromModal.displayName,
+        valuesFromModal.value,
+        valuesFromModal.language,
+        valuesFromModal.unit,
+      );
+      let copyMetadata = { ...editingMetadata };
+      copyMetadata[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      setEditingMetadata(copyMetadata);
+    }
+    setCreateFieldOpen(false);
+    return Promise.resolve();
   };
 
-  const treeOnUpdate = (editedConfig: ParentConfig) => {
-    router.refresh();
-    setParentConfig(editedConfig);
+  const getCustomField = (key: string, field: Parameter, idx: number) => {
+    return (
+      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
+        <Col span={3} className="gutter-row">
+          {key[0].toUpperCase() + key.slice(1)}
+        </Col>
+        <Col span={21} className="gutter-row">
+          <Property
+            backendSaveParentConfig={saveMachineConfig}
+            configId={configId}
+            editingEnabled={editable}
+            parentConfig={rootMachineConfig}
+            selectedConfig={refEditingMachineConfig}
+            field={field}
+            onDelete={onContentDelete}
+            label={key[0].toUpperCase() + key.slice(1)}
+          />
+        </Col>
+      </Row>
+    );
   };
+
+  const addButtonTitle = props.contentType == 'metadata' ? 'Add Meta Data' : 'Add Parameter';
 
   return (
-    <Layout style={{ height: '100vh' }}>
-      <Sider
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        width={300}
-        trigger={null}
-        style={{ background: '#fff', display: collapsed ? 'none' : 'block' }}
-      >
-        <div style={{ width: '100%', padding: '0' }}>
-          {!collapsed && (
-            <>
-              <ConfigurationTreeView
-                onUpdate={treeOnUpdate}
-                onSelectConfig={onSelectConfig}
-                backendSaveParentConfig={saveConfig}
-                configId={configId}
-                parentConfig={parentConfig}
+    <>
+      {idVisible && props.contentType === 'metadata' && (
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+          <Col span={3} className="gutter-row">
+            {' '}
+            Internal ID
+          </Col>
+          <Col span={20} className="gutter-row">
+            <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
+          </Col>
+          <Col span={1}>
+            <Tooltip title="Hide Internal ID">
+              <Button
+                disabled={!editable}
+                onClick={() => {
+                  setIdVisible(false);
+                }}
+                icon={<EyeInvisibleOutlined />}
+                type="text"
               />
-            </>
-          )}
-        </div>
-      </Sider>
-      <Button
-        type="text"
-        icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-        onClick={() => setCollapsed(!collapsed)}
-        style={{ fontSize: '24px' }}
-      />
-      {selectedConfig?.selection && !('content' in selectedConfig?.selection) ? (
-        <ConfigEditor
-          backendSaveParentConfig={saveConfig}
-          configId={configId}
-          parentConfig={parentConfig}
-          selectedConfig={selectedConfig as TreeFindStruct}
-        />
-      ) : (
-        <div></div>
+            </Tooltip>
+          </Col>
+        </Row>
       )}
-    </Layout>
+      {Object.entries(editingMetadata).map(([key, val], idx: number) => {
+        return getCustomField(key, val, idx);
+      })}
+      {editable && (
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+          <Col span={3} className="gutter-row" />
+          <Col span={21} className="gutter-row">
+            {getAddButton(addButtonTitle, undefined, onClickAddField)}
+          </Col>
+        </Row>
+      )}
+      <CreateParameterModal
+        title={props.contentType == 'metadata' ? 'Create Meta Data' : 'Create Parameter'}
+        open={createFieldOpen}
+        onCancel={() => setCreateFieldOpen(false)}
+        onSubmit={createField}
+        okText="Create"
+        showKey
+      />
+    </>
   );
 }

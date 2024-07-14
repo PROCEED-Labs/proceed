@@ -2,33 +2,42 @@
 
 import {
   ParentConfig,
+  AbstractConfig,
   Parameter,
-  TargetConfig,
-  MachineConfig,
+  ParameterContent,
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PlusOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex } from 'antd';
+import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex, Select } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import {
+  TreeFindStruct,
+  defaultConfiguration,
+  findConfig,
+  findParameter,
+} from '../configuration-helper';
 import Text from 'antd/es/typography/Text';
 import getAddButton from './add-button';
-import getTooltips from './getTooltips';
+import getTooltips from './tooltips';
+import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
+import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
 type MachineDataViewProps = {
   configId: string;
   selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
+  customConfig?: AbstractConfig;
   editingEnabled: boolean;
+  field: Parameter;
+  onDelete: Function;
+  label?: string;
 };
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
-
-export default function Parameters(props: MachineDataViewProps) {
+export default function Property(props: MachineDataViewProps) {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -41,51 +50,89 @@ export default function Parameters(props: MachineDataViewProps) {
   let refEditingMachineConfig = findConfig(editingConfig.id, parentConfig);
   const saveMachineConfig = props.backendSaveParentConfig;
   const configId = props.configId;
-  const selectedVersionId = query.get('version');
-  const [nestedParameters, setNestedParameters] = useState<object>({}); // State for nested parameters
+  const { token } = theme.useToken();
 
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const [deleted, setDeleted] = useState<boolean>(false);
+  const [created, setCreated] = useState<boolean>(false);
+  const [openCreateParameterModal, setOpenCreateParameterModal] = useState<boolean>(false);
+  const [parameterField, setParameterField] = useState<Parameter>(props.field);
 
   const editable = props.editingEnabled;
-
-  const saveParameters = () => {
-    if (refEditingMachineConfig) {
-      // refEditingMachineConfig.selection.metadata = nestedParameters;
-      saveMachineConfig(configId, parentConfig).then(() => {});
-      router.refresh();
-    }
-  };
 
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
+    } else {
+      saveParameter();
     }
-    // if (refEditingMachineConfig)
-    //   setNestedParameters(
-    //     (refEditingMachineConfig.selection as TargetConfig | MachineConfig).parameters,
-    //   );
-  }, [props.selectedConfig]);
+  }, [deleted, created]);
+
+  useEffect(() => {}, [parameterField]);
 
   const showMobileView = useMobileModeler();
 
-  const parameterItemHeader = (parameter: Parameter) => (
+  const deleteContent = (parameterItem: ParameterContent) => {
+    let copyParameterContent = parameterField.content.filter((item: ParameterContent) => {
+      return item !== parameterItem;
+    });
+    let parameterCopy = { ...parameterField };
+    parameterCopy.content = copyParameterContent;
+    setParameterField(parameterCopy);
+    setDeleted(!deleted);
+    props.onDelete(parameterField);
+  };
+
+  const saveParameter = () => {
+    if (refEditingMachineConfig && parameterField.id) {
+      let paramRef = findParameter(parameterField.id, parentConfig, 'config');
+      if (paramRef) {
+        paramRef.selection.linkedParameters = parameterField.linkedParameters;
+        paramRef.selection.parameters = parameterField.parameters;
+        paramRef.selection.content = parameterField.content;
+        saveMachineConfig(configId, parentConfig).then(() => {});
+        router.refresh();
+      }
+    }
+  };
+
+  const onChangeParameterField = (e: any, parameterContent: ParameterContent) => {
+    let index = parameterField.content.indexOf(parameterContent as any);
+    let parameterCopy = { ...parameterField };
+    if (typeof e !== 'string') {
+      const newValue = e.target.value;
+      if (e.target.id === 'parameterValue') {
+        parameterCopy.content[index].value = newValue;
+      } else if (e.target.id === 'parameterName') {
+        parameterCopy.content[index].displayName = newValue;
+      } else if (e.target.id === 'parameterUnit') {
+        parameterCopy.content[index].unit = newValue;
+      }
+    } else {
+      const newValue = e;
+      parameterCopy.content[index].language = newValue as Localization;
+    }
+    setParameterField(parameterCopy);
+  };
+
+  const parameterItemHeader = (parameterContent: ParameterContent) => (
     <Space.Compact block size="small">
       <Flex align="center" justify="space-between" style={{ width: '100%' }}>
         <Space>
-          <Text>{parameter.content[0].displayName}: </Text>
-          <Text>{parameter.content[0].value}</Text>
-          <Text>{parameter.content[0].unit}</Text>
-          <Text type="secondary">({parameter.content[0].language})</Text>
+          <Text>{parameterContent.displayName}: </Text>
+          <Text>{parameterContent.value}</Text>
+          <Text>{parameterContent.unit}</Text>
+          {parameterContent.language && <Text type="secondary">({parameterContent.language})</Text>}
         </Space>
-        {getTooltips(editable, ['copy', 'edit', 'delete'])}
+        {getTooltips(editable, ['copy', 'edit', 'delete'], {
+          delete: () => {
+            deleteContent(parameterContent);
+          },
+        })}
       </Flex>
     </Space.Compact>
   );
 
-  const { token } = theme.useToken();
   const panelStyle = {
     margin: '0 0 10px 0',
     background: token.colorFillAlter,
@@ -93,31 +140,23 @@ export default function Parameters(props: MachineDataViewProps) {
     border: 'solid 1px #d9d9d9',
   };
 
-  // const getNestedParameters = () => {
-  //   if (nestedParameters && nestedParameters.length > 0) {
-  //     return (
-  //       <Collapse
-  //         bordered={false}
-  //         expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-  //         items={nestedParameters}
-  //         style={{ display: nestedParameters.length > 0 ? 'block' : 'none' }}
-  //       />
-  //     );
-  //   }
-  //   return getAddButton('Add Nested Parameter', undefined, () => {});
-  // };
-
-  const parameterContent = (parameter: Parameter) => (
+  const parameterContent = (parameterItem: ParameterContent) => (
     <div>
       {editable && (
         <>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
               {' '}
-              Key{' '}
+              Display Name{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={parameter.content[0].displayName} />
+              <Input
+                id="parameterName"
+                disabled={!editable}
+                onChange={(e) => onChangeParameterField(e, parameterItem)}
+                value={parameterItem.displayName}
+                onBlur={saveParameter}
+              />
             </Col>
           </Row>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
@@ -126,7 +165,13 @@ export default function Parameters(props: MachineDataViewProps) {
               Value{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={parameter.content[0].value} />
+              <Input
+                id="parameterValue"
+                disabled={!editable}
+                onChange={(e) => onChangeParameterField(e, parameterItem)}
+                onBlur={saveParameter}
+                value={parameterItem.value}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -140,7 +185,13 @@ export default function Parameters(props: MachineDataViewProps) {
               Unit{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={parameter.content[0].unit} />
+              <Input
+                id="parameterUnit"
+                disabled={!editable}
+                onChange={(e) => onChangeParameterField(e, parameterItem)}
+                onBlur={saveParameter}
+                value={parameterItem.unit}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -154,7 +205,21 @@ export default function Parameters(props: MachineDataViewProps) {
               Language{' '}
             </Col>
             <Col span={20} className="gutter-row">
-              <Input disabled={!editable} value={parameter.content[0].language} />
+              <Select
+                showSearch
+                disabled={!editable}
+                defaultValue={parameterItem.language}
+                placeholder="Search to Select"
+                optionFilterProp="label"
+                filterSort={(optionA, optionB) =>
+                  (optionA?.label ?? '')
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? '').toLowerCase())
+                }
+                onChange={(e) => onChangeParameterField(e, parameterItem)}
+                onBlur={saveParameter}
+                options={languageItemsSelect}
+              />
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">
@@ -185,13 +250,13 @@ export default function Parameters(props: MachineDataViewProps) {
       </Row>
       <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
         <Col span={3} className="gutter-row">
-          Nested Parameters
+          Parameters
         </Col>
         <Col span={20} className="gutter-row">
           {/* {getNestedParameters()} */}
           {editable && (
             <Space style={{ margin: '10px 0 0 0' }}>
-              {getAddButton('Add Nested Parameter', undefined, () => {})}
+              {getAddButton('Add Parameter', undefined, () => {})}
             </Space>
           )}
         </Col>
@@ -204,41 +269,73 @@ export default function Parameters(props: MachineDataViewProps) {
     </div>
   );
 
+  const createContent = (values: CreateParameterModalReturnType[]): Promise<void> => {
+    let parameterCopy = { ...parameterField };
+    const valuesFromModal = values[0];
+    parameterCopy.content.push({
+      displayName: valuesFromModal.displayName,
+      language: valuesFromModal.language,
+      unit: valuesFromModal.unit,
+      value: valuesFromModal.value,
+    });
+    setParameterField(parameterCopy);
+    setCreated(true);
+    setOpenCreateParameterModal(false);
+    return Promise.resolve();
+  };
+
   const getParameterItems = (): any => {
     let list = [];
-    let _editingConfig = editingConfig as TargetConfig | MachineConfig;
-    for (let prop in _editingConfig.parameters) {
-      let parameter = _editingConfig.parameters[prop];
+    for (let parameterItem of parameterField.content) {
+      //TODO
       list.push({
-        key: parameter.id,
-        label: parameterItemHeader(parameter),
-        children: [parameterContent(parameter)],
+        key: parameterField.content.indexOf(parameterItem),
+        label: parameterItemHeader(parameterItem),
+        children: [parameterContent(parameterItem)],
         style: panelStyle,
+        /* extra: getTooltips(editable, ['copy', 'edit', 'delete'], {
+          delete: () => {
+            deleteParameter(parameterItem);
+          },
+        }), */
       });
     }
     return list;
   };
-
   const parameterItems = getParameterItems();
-
+  const addButtonTitle = 'Add ' + props.label + ' Entry';
   return (
     <>
       {(editable || parameterItems.length > 0) && (
-        <Row gutter={[24, 24]} style={{ margin: '16px 0' }}>
-          <Col span={3} className="gutter-row">
-            Parameters
-          </Col>
-          <Col span={21} className="gutter-row">
-            <Collapse
-              expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-              ghost
-              size="small"
-              items={parameterItems}
-            />
-            {editable && <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>}
-          </Col>
-        </Row>
+        <>
+          <Collapse
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            ghost
+            collapsible={
+              editable || ('parameters' in parameterField && parameterField.parameters.length > 0)
+                ? 'icon'
+                : 'disabled'
+            }
+            size="small"
+            items={parameterItems}
+          />
+          {editable && (
+            <Space>
+              {getAddButton(addButtonTitle, undefined, () => {
+                setOpenCreateParameterModal(true);
+              })}
+            </Space>
+          )}
+        </>
       )}
+      <CreateParameterModal
+        title="Create Parameter"
+        open={openCreateParameterModal}
+        onCancel={() => setOpenCreateParameterModal(false)}
+        onSubmit={createContent}
+        okText="Create"
+        showKey={false}
+      />
     </>
   );
 }

@@ -10,9 +10,8 @@ import { Button, Input, Space, Col, Row, Tooltip, Collapse, Dropdown, theme } fr
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
-import Parameters from './parameter';
-import getTooltips from './getTooltips';
-import MetaData from './metadata';
+import getTooltips from './tooltips';
+import MetaData from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
@@ -51,7 +50,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const childConfigContent = (machineConfigData: MachineConfig) => (
     <div>
       <MetaData
-        editableConfigProperty="metadata"
+        contentType="metadata"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
         customConfig={machineConfigData}
@@ -61,7 +60,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       />
       <div>Parameters</div>
       <MetaData
-        editableConfigProperty="parameters"
+        contentType="parameters"
         editingEnabled={editable}
         backendSaveMachineConfig={saveParentConfig}
         customConfig={machineConfigData}

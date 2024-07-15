@@ -19,6 +19,7 @@ import { Environment } from '@/lib/data/environment-schema';
 import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
+import { env } from '@/lib/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -91,7 +92,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (process.env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,

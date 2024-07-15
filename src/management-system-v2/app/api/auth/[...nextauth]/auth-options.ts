@@ -10,9 +10,10 @@ import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
+import { env } from '@/lib/env-vars';
 
 const nextAuthOptions: AuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
   adapter: Adapter,
   session: {
     strategy: 'jwt',
@@ -85,15 +86,15 @@ const nextAuthOptions: AuthOptions = {
   },
 };
 
-if (process.env.USE_AUTH0) {
+if (env.USE_AUTH0) {
   nextAuthOptions.providers.push(
     Auth0Provider({
-      clientId: process.env.AUTH0_CLIENT_ID as string,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET as string,
-      issuer: process.env.AUTH0_ISSUER,
+      clientId: env.AUTH0_CLIENT_ID,
+      clientSecret: env.AUTH0_CLIENT_SECRET,
+      issuer: env.AUTH0_ISSUER,
       authorization: {
         params: {
-          scope: process.env.AUTH0_SCOPE,
+          scope: env.AUTH0_SCOPE,
         },
       },
       profile(profile) {
@@ -108,8 +109,8 @@ if (process.env.USE_AUTH0) {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -124,7 +125,7 @@ if (process.env.USE_AUTH0) {
   );
 }
 
-if (process.env.NODE_ENV === 'development') {
+if (env.NODE_ENV === 'development') {
   const developmentUsers = [
     {
       username: 'johndoe',
@@ -191,7 +192,7 @@ export type ExtractedProvider =
       credentials: Record<string, CredentialInput>;
     };
 
-// Unfortunatly, next-auth's getProviders() function does not return enough information to render the signin page.
+// Unfortunately, next-auth's getProviders() function does not return enough information to render the signin page.
 // So we need to manually map the providers
 // NOTE be careful not to leak any sensitive information
 export const getProviders = () =>

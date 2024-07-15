@@ -19,6 +19,7 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 import { SettingsOption } from './settings-modal';
+import { env } from '@/lib/env-vars';
 
 interface PageProps {
   searchParams: {
@@ -60,7 +61,7 @@ const getProcessInfo = async (
   }
 
   if (isOwner) {
-    // the user has access to the process so just get the necessary data from the appropiate/regular api
+    // the user has access to the process so just get the necessary data from the appropriate/regular api
     const processMetaData = await getProcess(definitionId, spaceId!);
 
     if (processMetaData && !('error' in processMetaData)) {
@@ -138,7 +139,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   let isOwner = false;
 
-  const key = process.env.JWT_SHARE_SECRET!;
+  const key = env.JWT_SHARE_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;

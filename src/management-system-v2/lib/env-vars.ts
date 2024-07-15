@@ -67,9 +67,9 @@ for (const variable in Object.keys(environmentVariables))
 // Parse environment variables
 type MergedValues = Env['all'] & Env['production'] & Env['test'] & Env['development'];
 const parsingResult = z.object(schemaOptions as MergedValues).safeParse(runtimeEnvVariables);
-const onBuild = false;
+const onBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
-if (!parsingResult.success) {
+if (!parsingResult.success && !onBuild) {
   let msg = '';
   for (const [variable, error] of Object.entries(parsingResult.error.flatten().fieldErrors))
     msg += `${variable}: ${JSON.stringify(error)}\n`;

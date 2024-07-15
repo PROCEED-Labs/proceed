@@ -7,7 +7,18 @@ import {
   TargetConfig,
   MachineConfig,
 } from '@/lib/data/machine-config-schema';
-import { Dropdown, Input, MenuProps, Modal, Space, Tag, Tooltip, Tree, TreeDataNode } from 'antd';
+import {
+  Dropdown,
+  Input,
+  MenuProps,
+  Modal,
+  Space,
+  Tag,
+  Tooltip,
+  Tree,
+  Button,
+  TreeDataNode,
+} from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
@@ -24,6 +35,7 @@ import {
 } from '../configuration-helper';
 import MachineConfigModal from '@/components/machine-config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
+import { FaFolderTree } from 'react-icons/fa6';
 
 type ConfigurationTreeViewProps = {
   configId: string;
@@ -51,7 +63,26 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   const [selectedMachineConfig, setSelectedMachineConfig] = useState<
     TreeFindStruct | TreeFindParameterStruct
   >(undefined);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
+  const getAllKeys = (data: TreeDataNode[]): React.Key[] => {
+    let keys: React.Key[] = [];
+    data.forEach((item) => {
+      keys.push(item.key);
+      if (item.children) {
+        keys = keys.concat(getAllKeys(item.children));
+      }
+    });
+    return keys;
+  };
+
+  const expandAllNodes = () => {
+    setExpandedKeys(getAllKeys(treeData));
+  };
+
+  const collapseAllNodes = () => {
+    setExpandedKeys([]);
+  };
   const showDeleteConfirmModal = () => {
     setDeleteConfirmOpen(true);
   };
@@ -336,9 +367,11 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     let childrenMachineConfigList = Array.isArray(parentConfig.machineConfigs)
       ? parentConfig.machineConfigs
       : [];
-    childrenMachineConfigList = childrenMachineConfigList.filter((node, _) => {
-      return selectedOnTree.indexOf(node.id + '|' + node.type) === -1;
-    });
+    childrenMachineConfigList = childrenMachineConfigList.filter(
+      (node: MachineConfig | TargetConfig, _: number) => {
+        return selectedOnTree.indexOf(node.id + '|' + node.type) === -1;
+      },
+    );
     if (
       parentConfig.targetConfig &&
       selectedOnTree.indexOf(
@@ -487,6 +520,31 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
 
   return (
     <>
+      <div style={{ position: 'relative', padding: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            position: 'absolute',
+            top: 10,
+            right: 60,
+            zIndex: 2,
+          }}
+        >
+          <Button
+            type="default"
+            onClick={() => {
+              if (expandedKeys.length === 0) {
+                expandAllNodes();
+              } else {
+                collapseAllNodes();
+              }
+            }}
+          >
+            <FaFolderTree />
+          </Button>
+        </div>
+      </div>
       <br />
       <Dropdown menu={{ items: mountContextMenu() }} trigger={['contextMenu']}>
         <Tree
@@ -495,6 +553,8 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           onSelect={onSelectTreeNode}
           loadData={onLoadData}
           treeData={treeData}
+          expandedKeys={expandedKeys}
+          onExpand={(keys: React.Key[]) => setExpandedKeys(keys)}
         />
       </Dropdown>
       <Modal

@@ -114,5 +114,8 @@
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.0",
     "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "react-resizable": "^3.0.5"
   }
 }

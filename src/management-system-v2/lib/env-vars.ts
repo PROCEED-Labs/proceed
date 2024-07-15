@@ -45,8 +45,7 @@ type EnvironmentVariables = {
 
 type Env = typeof environmentVariables;
 
-type MergedEnvironmentVariables = Env['all'] & Env['production'] & Env['test'] & Env['development'];
-
+// Get all environment variables needed
 const isServer = typeof window === 'undefined';
 const mode = (process.env.NODE_ENV ?? 'development') as 'development' | 'production' | 'test';
 const schemaOptions = {
@@ -54,23 +53,38 @@ const schemaOptions = {
   ...((environmentVariables as EnvironmentVariables)[mode] ?? {}),
 } as Partial<Record<string, ZodType>>;
 
-for (const key of Object.keys(environmentVariables)) {
-  if (!isServer && !key.startsWith('NEXT_PUBLIC_')) delete schemaOptions[key];
+// Remove server-only environment variables on client
+if (!isServer) {
+  for (const key of Object.keys(environmentVariables))
+    if (!key.startsWith('NEXT_PUBLIC_')) delete schemaOptions[key];
 }
 
+// Get values from env
 const runtimeEnvVariables: Record<string, any> = {};
 for (const variable in Object.keys(environmentVariables))
   runtimeEnvVariables[variable] = process.env[variable];
 
-export const env = new Proxy(
-  z.object(schemaOptions as MergedEnvironmentVariables).parse(runtimeEnvVariables),
-  {
-    get(target, prop) {
-      if (typeof prop !== 'string') return undefined;
-      if (!isServer && !(prop in schemaOptions) && prop.startsWith('NEXT_PUBLIC_'))
-        throw new Error('Attempted to access a server-side environment variable on the client');
+// Parse environment variables
+type MergedValues = Env['all'] & Env['production'] & Env['test'] & Env['development'];
+const parsingResult = z.object(schemaOptions as MergedValues).safeParse(runtimeEnvVariables);
+const onBuild = false;
 
-      return Reflect.get(target, prop);
-    },
+if (!parsingResult.success) {
+  let msg = '';
+  for (const [variable, error] of Object.entries(parsingResult.error.flatten().fieldErrors))
+    msg += `${variable}: ${JSON.stringify(error)}\n`;
+
+  throw new Error(`❌ Error parsing environment variables\n${msg}`);
+}
+
+const data = parsingResult.success && !onBuild ? parsingResult.data : {};
+
+export const env = new Proxy(data as Extract<typeof parsingResult, { success: true }>['data'], {
+  get(target, prop) {
+    if (typeof prop !== 'string') return undefined;
+    if (!isServer && !(prop in schemaOptions) && prop.startsWith('NEXT_PUBLIC_'))
+      throw new Error('Attempted to access a server-side environment variable on the client');
+
+    return Reflect.get(target, prop);
   },
-);
+});

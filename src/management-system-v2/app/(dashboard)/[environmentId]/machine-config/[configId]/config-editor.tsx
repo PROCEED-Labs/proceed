@@ -308,7 +308,9 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                   editable={
                     editable && {
                       icon: (
-                        <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />
+                        <EditOutlined
+                          style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 0 0 10px' }}
+                        />
                       ),
                       tooltip: 'Edit Configuration Name',
                       onStart: pushName,
@@ -324,7 +326,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
                   {name}
                 </Title>
               </div>
-              <Space.Compact>
+              <Space.Compact style={{ margin: '0 0 0 10px' }}>
                 <Select
                   popupMatchSelectWidth={false}
                   placeholder="Select Version"

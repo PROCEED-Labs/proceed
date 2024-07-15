@@ -173,15 +173,23 @@ export default function Content(props: MachineDataViewProps) {
   const getNestedParameters = (key: string, field: Parameter) => {
     return (
       <>
-        {Object.entries(field.parameters).map(([subFieldKey, subField]) => {
-          return getCustomField(subFieldKey, subField);
-        })}
+        {field.parameters &&
+          Object.entries(field.parameters).map(([subFieldKey, subField]) => {
+            return getCustomField(subFieldKey, subField);
+          })}
       </>
     );
   };
 
+  const linkedParametersChange = (key: string, paramIdList: string[]) => {
+    if (refEditingMachineConfig) {
+      let copyContent = { ...editingContent };
+      copyContent[key].linkedParameters = paramIdList;
+      setEditingContent(copyContent);
+    }
+  };
+
   const getCustomField = (key: string, field: Parameter) => {
-    console.log(key, field.parameters && Object.keys(field.parameters).length > 0);
     return (
       <>
         <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
@@ -229,7 +237,7 @@ export default function Content(props: MachineDataViewProps) {
                   style={{ minWidth: 250 }}
                   placeholder="Please select"
                   value={field.linkedParameters}
-                  // onChange={handleChange}
+                  onChange={(idList: string[]) => linkedParametersChange(key, idList)}
                   options={parametersList}
                 />
               </Space>

@@ -277,19 +277,21 @@ export default function Param(props: MachineDataViewProps) {
 
   const getParameterItems = (): any => {
     let list = [];
-    for (let parameterItem of parameterField.content) {
-      //TODO
-      list.push({
-        key: parameterField.content.indexOf(parameterItem),
-        label: parameterItemHeader(parameterItem),
-        children: [parameterContent(parameterItem)],
-        style: panelStyle,
-        /* extra: getTooltips(editable, ['copy', 'edit', 'delete'], {
+    if (parameterField.content) {
+      for (let parameterItem of parameterField.content) {
+        //TODO
+        list.push({
+          key: parameterField.content.indexOf(parameterItem),
+          label: parameterItemHeader(parameterItem),
+          children: [parameterContent(parameterItem)],
+          style: panelStyle,
+          /* extra: getTooltips(editable, ['copy', 'edit', 'delete'], {
           delete: () => {
             deleteParameter(parameterItem);
           },
         }), */
-      });
+        });
+      }
     }
     return list;
   };

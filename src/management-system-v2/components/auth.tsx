@@ -6,6 +6,10 @@ import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
 import Ability, { adminRules } from '@/lib/ability/abilityHelper';
+import {
+  packedGlobalOrganizationRules,
+  packedGlobalUserRules,
+} from '@/lib/authorization/globalRules';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
@@ -36,12 +40,18 @@ export const getCurrentEnvironment = cache(
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
-
     const activeSpace = decodeURIComponent(spaceIdParam);
+
+    const isOrganization = activeSpace !== userId;
+
     if (systemAdmin) {
+      let rules;
+      if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
+      else rules = adminRules.concat(packedGlobalUserRules);
+
       return {
-        ability: new Ability(adminRules, activeSpace),
-        activeEnvironment: { spaceId: activeSpace, isOrganization: false },
+        ability: new Ability(rules, activeSpace),
+        activeEnvironment: { spaceId: activeSpace, isOrganization },
       };
     }
 
@@ -63,7 +73,7 @@ export const getCurrentEnvironment = cache(
 
     return {
       ability,
-      activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+      activeEnvironment: { spaceId: activeSpace, isOrganization },
     };
   },
 );

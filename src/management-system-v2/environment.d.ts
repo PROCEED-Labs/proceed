@@ -12,6 +12,10 @@ namespace NodeJS {
     AUTH0_SCOPE?: string;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
+    DISCORD_CLIENT_ID?: string;
+    DISCORD_CLIENT_SECRET?: string;
+    TWITTER_CLIENT_ID?: string;
+    TWITTER_CLIENT_SECRET?: string;
 
     ENABLE_MACHINE_CONFIG?: string;
   }

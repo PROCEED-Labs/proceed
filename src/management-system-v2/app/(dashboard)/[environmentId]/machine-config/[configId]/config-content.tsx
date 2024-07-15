@@ -78,11 +78,13 @@ export default function Content(props: MachineDataViewProps) {
         : {},
   );
 
+  let paramIdToName: { [key: string]: string } = {};
   const parametersList: { label: string; value: string }[] = getAllParameters(
     rootMachineConfig,
     'config',
     '',
   ).map((item: { key: string; value: Parameter }) => {
+    paramIdToName[item.value.id ?? ''] = item.key;
     return { label: item.key, value: item.value.id ?? '' };
   });
 
@@ -144,7 +146,6 @@ export default function Content(props: MachineDataViewProps) {
 
   const saveKey = (editingKey: string) => {
     if (paramKey) {
-      console.log(editingKey, paramKey);
       let copyContent = { ...editingContent };
       let copyParam = { ...copyContent[editingKey] };
       delete copyContent[editingKey];
@@ -230,17 +231,27 @@ export default function Content(props: MachineDataViewProps) {
               Linked Parameters
             </Col>
             <Col span={20} className="gutter-row">
-              <Space>
-                <Select
-                  mode="multiple"
-                  allowClear
-                  style={{ minWidth: 250 }}
-                  placeholder="Please select"
-                  value={field.linkedParameters}
-                  onChange={(idList: string[]) => linkedParametersChange(key, idList)}
-                  options={parametersList}
-                />
-              </Space>
+              {editable && (
+                <Space>
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    style={{ minWidth: 250 }}
+                    placeholder="Please select"
+                    value={field.linkedParameters}
+                    onChange={(idList: string[]) => linkedParametersChange(key, idList)}
+                    options={parametersList}
+                  />
+                </Space>
+              )}
+              {!editable &&
+                field.linkedParameters.map((paramId: string) => {
+                  return (
+                    <Space>
+                      <Tag color="gray">{paramIdToName[paramId]}</Tag>
+                    </Space>
+                  );
+                })}
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Delete">

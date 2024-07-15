@@ -17,7 +17,7 @@ const environmentVariables = {
     USE_AUTH0: z.boolean(),
 
     SMTP_MAIL_USER: z.string(),
-    SMTP_MAIL_PORT: z.number(),
+    SMTP_MAIL_PORT: z.coerce.number(),
     SMTP_MAIL_HOST: z.string(),
     SMTP_MAIL_PASSWORD: z.string(),
 

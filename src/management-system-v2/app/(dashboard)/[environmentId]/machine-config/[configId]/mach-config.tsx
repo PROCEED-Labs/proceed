@@ -3,12 +3,19 @@
 import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { CaretRightOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, CopyOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Collapse, theme } from 'antd';
+import { Collapse, theme, Tooltip, Modal, Form, Input, message } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
+import {
+  TreeFindStruct,
+  defaultConfiguration,
+  findConfig,
+  createMachineConfigInParent,
+  generateUniqueId,
+  deleteMachineConfigInParent,
+} from '../configuration-helper';
 import getTooltips from './tooltips';
 import Content from './config-content';
 
@@ -28,7 +35,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const parentConfig = { ...props.parentConfig };
+  const [parentConfig, setParentConfig] = useState<ParentConfig>({ ...props.parentConfig });
   const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
   const editingConfig = props.selectedConfig
@@ -45,6 +52,8 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   const showMobileView = useMobileModeler();
 
   const editable = props.editingEnabled;
+  const [copyModalVisible, setCopyModalVisible] = useState(false);
+  const [configToCopy, setConfigToCopy] = useState<MachineConfig | null>(null);
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -52,6 +61,112 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'none',
+  };
+
+  const handleCopy = (machineConfig: MachineConfig) => {
+    setConfigToCopy(machineConfig);
+    setCopyModalVisible(true);
+  };
+
+  const handleCopyModalCancel = () => {
+    setCopyModalVisible(false);
+    setConfigToCopy(null);
+  };
+
+  const handleCopyModalCreate = (values: { name: string; description: string }) => {
+    if (configToCopy) {
+      const newConfig = {
+        ...configToCopy,
+        id: generateUniqueId(),
+        name: values.name,
+        metadata: {
+          description: {
+            content: [
+              {
+                value: values.description,
+                displayName: 'Description',
+                language: 'en',
+              },
+            ],
+          },
+        },
+        createdOn: new Date().toISOString(),
+        lastEditedOn: new Date().toISOString(),
+      };
+      createMachineConfigInParent(
+        parentConfig,
+        newConfig.name,
+        newConfig.metadata.description.content[0].value,
+      );
+      saveParentConfig(configId, parentConfig).then(() => {
+        setParentConfig({ ...parentConfig });
+        router.refresh();
+      });
+    }
+    setCopyModalVisible(false);
+  };
+
+  const handleDelete = (machineConfigId: string) => {
+    deleteMachineConfigInParent(parentConfig, machineConfigId);
+    setParentConfig({
+      ...parentConfig,
+      machineConfigs: parentConfig.machineConfigs.filter((config) => config.id !== machineConfigId),
+    });
+    saveParentConfig(configId, parentConfig).then(() => {
+      message.success('Configuration deleted successfully');
+    });
+  };
+
+  const CopyMachineConfigModal = ({
+    visible,
+    onCreate,
+    onCancel,
+  }: {
+    visible: boolean;
+    onCreate: (values: { name: string; description: string }) => void;
+    onCancel: () => void;
+  }) => {
+    const [form] = Form.useForm();
+    return (
+      <Modal
+        visible={visible}
+        title="Copy Machine Configuration"
+        okText="Copy"
+        cancelText="Cancel"
+        onCancel={onCancel}
+        onOk={() => {
+          form
+            .validateFields()
+            .then((values) => {
+              form.resetFields();
+              onCreate(values);
+            })
+            .catch((info) => {
+              console.log('Validate Failed:', info);
+            });
+        }}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          name="form_in_modal"
+          initialValues={{ modifier: 'public' }}
+        >
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[
+              { required: true, message: 'Please input the name of the machine configuration!' },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input type="textarea" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    );
   };
 
   const getContentItems = (
@@ -142,6 +257,25 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           />,
         ],
         /* extra: getTooltips(editable, ['edit', 'copy', 'delete']), */ //TODO
+        extra: (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Tooltip title="Copy">
+              <CopyOutlined
+                onClick={() => handleCopy(machineConfig)}
+                style={{ cursor: 'pointer', fontSize: '16px' }}
+              />
+            </Tooltip>
+            <Tooltip title="Edit">
+              <EditOutlined style={{ marginLeft: 25, cursor: 'pointer', fontSize: '16px' }} />
+            </Tooltip>
+            <Tooltip title="Delete">
+              <DeleteOutlined
+                onClick={() => handleDelete(machineConfig.id)}
+                style={{ marginLeft: 25, cursor: 'pointer', fontSize: '16px' }}
+              />
+            </Tooltip>
+          </div>
+        ),
         style: panelStyle,
       });
     }
@@ -149,13 +283,20 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   };
 
   return (
-    <Collapse
-      bordered={false}
-      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-      style={{
-        background: 'none',
-      }}
-      items={getItems(panelStyle)}
-    />
+    <>
+      <Collapse
+        bordered={false}
+        expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+        style={{
+          background: 'none',
+        }}
+        items={getItems(panelStyle)}
+      />
+      <CopyMachineConfigModal
+        visible={copyModalVisible}
+        onCreate={handleCopyModalCreate}
+        onCancel={handleCopyModalCancel}
+      />
+    </>
   );
 }

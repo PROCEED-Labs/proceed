@@ -54,6 +54,19 @@ export function defaultConfiguration(): AbstractConfig {
   } as AbstractConfig;
 }
 
+export const generateUniqueId = (): string => {
+  return '_' + Math.random().toString(36).substr(2, 9);
+};
+
+export const deleteMachineConfigInParent = (
+  parentConfig: ParentConfig,
+  machineConfigId: string,
+): void => {
+  parentConfig.machineConfigs = parentConfig.machineConfigs.filter(
+    (config) => config.id !== machineConfigId,
+  );
+};
+
 export const createMachineConfigInParent = (
   parentConfig: ParentConfig,
   nameValue: string,

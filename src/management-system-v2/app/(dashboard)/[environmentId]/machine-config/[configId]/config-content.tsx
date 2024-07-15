@@ -14,10 +14,9 @@ import {
   CheckOutlined,
   EditOutlined,
   DeleteOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, theme, Tag, Space, Select } from 'antd';
+import { Button, Input, Col, Row, Tooltip, theme, Tag, Space, Select, Card } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -189,6 +188,13 @@ export default function Content(props: MachineDataViewProps) {
     }
   };
 
+  const cardStyle = {
+    background: token.colorFillAlter,
+    borderRadius: token.borderRadiusLG,
+    border: 'solid 1px #d9d9d9',
+    margin: '10px 0 0 0',
+  };
+
   const getCustomField = (key: string, field: Parameter) => {
     return (
       <>
@@ -223,59 +229,61 @@ export default function Content(props: MachineDataViewProps) {
               label={key[0].toUpperCase() + key.slice(1)}
             />
             {(editable || (field.linkedParameters && field.linkedParameters.length > 0)) && (
-              <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-                <Col span={4} className="gutter-row">
-                  Linked Parameters
-                </Col>
-                <Col span={19} className="gutter-row">
-                  {editable && (
-                    <Space>
-                      <Select
-                        mode="multiple"
-                        allowClear
-                        style={{ minWidth: 250 }}
-                        placeholder="Select to Add"
-                        value={field.linkedParameters}
-                        onChange={(idList: string[]) => linkedParametersChange(key, idList)}
-                        options={parametersList}
-                      />
-                    </Space>
-                  )}
-                  {!editable &&
-                    field.linkedParameters.map((paramId: string) => {
-                      return (
-                        <Space>
-                          <Tag color="gray">{paramIdToName[paramId]}</Tag>
-                        </Space>
-                      );
-                    })}
-                </Col>
-                <Col span={1} className="gutter-row">
-                  <Tooltip title="Delete">
-                    <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-                  </Tooltip>
-                </Col>
-              </Row>
+              <Card style={cardStyle} size="small">
+                <Row gutter={[24, 24]} align="middle">
+                  <Col span={4} className="gutter-row">
+                    Linked Parameters
+                  </Col>
+                  <Col span={19} className="gutter-row">
+                    {editable && (
+                      <Space>
+                        <Select
+                          mode="multiple"
+                          allowClear
+                          style={{ minWidth: 250 }}
+                          placeholder="Select to Add"
+                          value={field.linkedParameters}
+                          onChange={(idList: string[]) => linkedParametersChange(key, idList)}
+                          options={parametersList}
+                        />
+                      </Space>
+                    )}
+                    {!editable &&
+                      field.linkedParameters.map((paramId: string) => {
+                        return (
+                          <Space>
+                            <Tag color="gray">{paramIdToName[paramId]}</Tag>
+                          </Space>
+                        );
+                      })}
+                  </Col>
+                  <Col span={1} className="gutter-row">
+                    <Tooltip title="Delete">
+                      <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                    </Tooltip>
+                  </Col>
+                </Row>
+              </Card>
             )}
             {(editable || (field.parameters && Object.keys(field.parameters).length > 0)) && (
-              <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-                <Col span={4} className="gutter-row">
-                  Nested Parameters
-                </Col>
-                <Col span={19} className="gutter-row">
-                  {getNestedParameters(key, field)}
-                  {editable && (
-                    <Space style={{ margin: '10px 0 0 0' }}>
-                      {getAddButton('Add Parameter', undefined, () => {})}
-                    </Space>
-                  )}
-                </Col>
-                <Col span={1} className="gutter-row">
-                  <Tooltip title="Delete">
-                    <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-                  </Tooltip>
-                </Col>
-              </Row>
+              <Card style={cardStyle} size="small">
+                <Row gutter={[24, 24]} align="middle">
+                  <Col span={4} className="gutter-row">
+                    Nested Parameters
+                  </Col>
+                  <Col span={19} className="gutter-row">
+                    {getNestedParameters(key, field)}
+                    {editable && (
+                      <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>
+                    )}
+                  </Col>
+                  <Col span={1} className="gutter-row">
+                    <Tooltip title="Delete">
+                      <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                    </Tooltip>
+                  </Col>
+                </Row>
+              </Card>
             )}
           </Col>
         </Row>
@@ -315,6 +323,7 @@ export default function Content(props: MachineDataViewProps) {
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+          {/* <Col span={3} className="gutter-row" /> */}
           <Col span={21} className="gutter-row">
             {getAddButton(addButtonTitle, undefined, onClickAddField)}
           </Col>

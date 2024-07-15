@@ -175,7 +175,17 @@ export default function Param(props: MachineDataViewProps) {
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
-                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
+                <Button
+                  disabled={!editable}
+                  onClick={() => {
+                    onChangeParameterField(
+                      { target: { value: '', id: 'parameterValue' } },
+                      parameterItem,
+                    );
+                  }}
+                  icon={<ClearOutlined />}
+                  type="text"
+                />
               </Tooltip>
             </Col>
           </Row>
@@ -195,7 +205,17 @@ export default function Param(props: MachineDataViewProps) {
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
-                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
+                <Button
+                  disabled={!editable}
+                  onClick={() => {
+                    onChangeParameterField(
+                      { target: { value: '', id: 'parameterUnit' } },
+                      parameterItem,
+                    );
+                  }}
+                  icon={<ClearOutlined />}
+                  type="text"
+                />
               </Tooltip>
             </Col>
           </Row>
@@ -208,7 +228,8 @@ export default function Param(props: MachineDataViewProps) {
               <Select
                 showSearch
                 disabled={!editable}
-                defaultValue={parameterItem.language}
+                value={parameterItem.language}
+                style={{ minWidth: 250 }}
                 placeholder="Search to Select"
                 optionFilterProp="label"
                 filterSort={(optionA, optionB) =>
@@ -223,49 +244,19 @@ export default function Param(props: MachineDataViewProps) {
             </Col>
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
-                <Button disabled={!editable} icon={<ClearOutlined />} type="text" />
+                <Button
+                  disabled={!editable}
+                  onClick={() => {
+                    onChangeParameterField('', parameterItem);
+                  }}
+                  icon={<ClearOutlined />}
+                  type="text"
+                />
               </Tooltip>
             </Col>
           </Row>
         </>
       )}
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          Linked Parameters
-        </Col>
-        <Col span={20} className="gutter-row">
-          <Space>
-            <Tag color="purple">Key XY</Tag>
-            <Tag color="blue">Key AB</Tag>
-            <Tooltip title="Add Parameter Link">
-              <Button disabled={!editable} icon={<PlusOutlined />} size="small" />
-            </Tooltip>
-          </Space>
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
-      <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-        <Col span={3} className="gutter-row">
-          Parameters
-        </Col>
-        <Col span={20} className="gutter-row">
-          {/* {getNestedParameters()} */}
-          {editable && (
-            <Space style={{ margin: '10px 0 0 0' }}>
-              {getAddButton('Add Parameter', undefined, () => {})}
-            </Space>
-          )}
-        </Col>
-        <Col span={1} className="gutter-row">
-          <Tooltip title="Delete">
-            <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-          </Tooltip>
-        </Col>
-      </Row>
     </div>
   );
 

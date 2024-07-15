@@ -234,3 +234,73 @@ export function findParameter(
   }
   return found;
 }
+
+export function getAllParameters(
+  _parent: AbstractConfig | Parameter,
+  type: AbstractConfig['type'] | 'parameter' | 'metadata',
+  path: string,
+): { key: string; value: Parameter }[] {
+  let found: { key: string; value: Parameter }[] = [];
+  if (type === 'config') {
+    let parent = _parent as ParentConfig;
+    for (let prop in parent.metadata) {
+      let parameter = parent.metadata[prop];
+      const nextPath = parent.name + '.';
+      found.push({ key: nextPath + prop, value: parameter });
+      found = found.concat(getAllParameters(parameter, 'metadata', path + nextPath + prop + '.'));
+    }
+    // search in targetConfig
+    if (parent.targetConfig) {
+      for (let prop in parent.targetConfig.metadata) {
+        let parameter = parent.targetConfig.metadata[prop];
+        const nextPath = parent.targetConfig.name + '.';
+        found.push({ key: nextPath + prop, value: parameter });
+        found = found.concat(getAllParameters(parameter, 'metadata', path + nextPath + prop + '.'));
+      }
+      for (let prop in parent.targetConfig.parameters) {
+        let parameter = parent.targetConfig.parameters[prop];
+        const nextPath = parent.targetConfig.name + '.';
+        found.push({ key: nextPath + prop, value: parameter });
+        found = found.concat(
+          getAllParameters(parameter, 'parameter', path + nextPath + prop + '.'),
+        );
+      }
+    }
+    // search in all machine configs
+    for (let index = 0; index < parent.machineConfigs.length; ++index) {
+      let machineConfig = parent.machineConfigs[index];
+      for (let prop in machineConfig.parameters) {
+        let parameter = machineConfig.parameters[prop];
+        const nextPath = machineConfig.name + '.';
+        found.push({
+          key: nextPath + prop,
+          value: parameter,
+        });
+        found = found.concat(
+          getAllParameters(parameter, 'parameter', path + nextPath + prop + '.'),
+        );
+      }
+      for (let prop in machineConfig.metadata) {
+        let parameter = machineConfig.metadata[prop];
+        const nextPath = machineConfig.name + '.';
+        found.push({
+          key: nextPath + prop,
+          value: parameter,
+        });
+        found = found.concat(getAllParameters(parameter, 'metadata', path + nextPath + prop + '.'));
+      }
+    }
+  } else {
+    let parent = _parent as Parameter;
+    for (let prop in parent.parameters) {
+      let parameter = parent.parameters[prop];
+      const nextPath = path;
+      found.push({
+        key: nextPath + prop,
+        value: parameter,
+      });
+      found = found.concat(getAllParameters(parameter, 'parameter', nextPath + prop + '.'));
+    }
+  }
+  return found;
+}

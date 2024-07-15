@@ -8,9 +8,16 @@ import {
 } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { KeyOutlined, EyeInvisibleOutlined, CheckOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  KeyOutlined,
+  EyeInvisibleOutlined,
+  CheckOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, Collapse, theme } from 'antd';
+import { Button, Input, Col, Row, Tooltip, Collapse, theme, Tag, Space, Select } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -19,6 +26,7 @@ import {
   defaultParameter,
   deleteParameter,
   findConfig,
+  getAllParameters,
 } from '../configuration-helper';
 import getAddButton from './add-button';
 import Param from './parameter';
@@ -70,6 +78,14 @@ export default function Content(props: MachineDataViewProps) {
         : {},
   );
 
+  const parametersList: { label: string; value: string }[] = getAllParameters(
+    rootMachineConfig,
+    'config',
+    '',
+  ).map((item: { key: string; value: Parameter }) => {
+    return { label: item.key, value: item.value.id ?? '' };
+  });
+
   const onContentDelete = (param: Parameter) => {
     if (param.content.length <= 0 && param.id) {
       deleteParameter(param.id, rootMachineConfig);
@@ -115,24 +131,26 @@ export default function Content(props: MachineDataViewProps) {
   const editable = props.editingEnabled;
 
   //TODO
-  const [key, setKey] = useState<string | undefined>('');
-  const [oldKey, setOldKey] = useState<string | undefined>('');
+  const [paramKey, setParamKey] = useState<string | undefined>('');
+  const [oldParamKey, setOldParamKey] = useState<string | undefined>('');
 
   const pushKey = () => {
-    setOldKey(key);
+    setOldParamKey(paramKey);
   };
 
   const restoreKey = () => {
-    setKey(oldKey);
+    setParamKey(oldParamKey);
   };
 
-  const saveKey = () => {
-    //TODO
-    /* if (refEditingMachineConfig) {
-      refEditingMachineConfig.selection. [...] .key = key ? key : [...] .displayName; //TODO
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
-      router.refresh();
-    } */
+  const saveKey = (editingKey: string) => {
+    if (paramKey) {
+      console.log(editingKey, paramKey);
+      let copyContent = { ...editingContent };
+      let copyParam = { ...copyContent[editingKey] };
+      delete copyContent[editingKey];
+      copyContent[paramKey] = { ...copyParam };
+      setEditingContent(copyContent);
+    }
   };
 
   const createField = (values: CreateParameterModalReturnType[]): Promise<void> => {
@@ -152,39 +170,98 @@ export default function Content(props: MachineDataViewProps) {
     return Promise.resolve();
   };
 
-  const getCustomField = (key: string, field: Parameter, idx: number) => {
+  const getNestedParameters = (key: string, field: Parameter) => {
     return (
-      <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
-        <Col span={3} className="gutter-row">
-          <Paragraph
-            editable={
-              editable && {
-                icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
-                tooltip: 'Edit Parameter Key',
-                onStart: pushKey,
-                onCancel: restoreKey,
-                onChange: setKey,
-                onEnd: saveKey /* TODO */,
-                enterIcon: <CheckOutlined />,
+      <>
+        {Object.entries(field.parameters).map(([subFieldKey, subField]) => {
+          return getCustomField(subFieldKey, subField);
+        })}
+      </>
+    );
+  };
+
+  const getCustomField = (key: string, field: Parameter) => {
+    console.log(key, field.parameters && Object.keys(field.parameters).length > 0);
+    return (
+      <>
+        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
+          <Col span={3} className="gutter-row">
+            <Paragraph
+              onBlur={() => saveKey(key)}
+              editable={
+                editable && {
+                  icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
+                  tooltip: 'Edit Parameter Key',
+                  onStart: pushKey,
+                  onCancel: restoreKey,
+                  onChange: setParamKey,
+                  onEnd: () => saveKey(key),
+                  enterIcon: <CheckOutlined />,
+                }
               }
-            }
-          >
-            {key[0].toUpperCase() + key.slice(1) /*TODO */}
-          </Paragraph>
-        </Col>
-        <Col span={21} className="gutter-row">
-          <Param
-            backendSaveParentConfig={saveMachineConfig}
-            configId={configId}
-            editingEnabled={editable}
-            parentConfig={rootMachineConfig}
-            selectedConfig={refEditingMachineConfig}
-            field={field}
-            onDelete={onContentDelete}
-            label={key[0].toUpperCase() + key.slice(1)}
-          />
-        </Col>
-      </Row>
+            >
+              {key[0].toUpperCase() + key.slice(1) /*TODO */}
+            </Paragraph>
+          </Col>
+          <Col span={21} className="gutter-row">
+            <Param
+              backendSaveParentConfig={saveMachineConfig}
+              configId={configId}
+              editingEnabled={editable}
+              parentConfig={rootMachineConfig}
+              selectedConfig={refEditingMachineConfig}
+              field={field}
+              onDelete={onContentDelete}
+              label={key[0].toUpperCase() + key.slice(1)}
+            />
+          </Col>
+        </Row>
+        {(editable || (field.linkedParameters && field.linkedParameters.length > 0)) && (
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              Linked Parameters
+            </Col>
+            <Col span={20} className="gutter-row">
+              <Space>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  style={{ minWidth: 250 }}
+                  placeholder="Please select"
+                  value={field.linkedParameters}
+                  // onChange={handleChange}
+                  options={parametersList}
+                />
+              </Space>
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
+          </Row>
+        )}
+        {(editable || (field.parameters && Object.keys(field.parameters).length > 0)) && (
+          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+            <Col span={3} className="gutter-row">
+              Nested Parameters ({key})
+            </Col>
+            <Col span={20} className="gutter-row">
+              {getNestedParameters(key, field)}
+              {editable && (
+                <Space style={{ margin: '10px 0 0 0' }}>
+                  {getAddButton('Add Parameter', undefined, () => {})}
+                </Space>
+              )}
+            </Col>
+            <Col span={1} className="gutter-row">
+              <Tooltip title="Delete">
+                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+              </Tooltip>
+            </Col>
+          </Row>
+        )}
+      </>
     );
   };
 
@@ -216,7 +293,7 @@ export default function Content(props: MachineDataViewProps) {
         </Row>
       )}
       {Object.entries(editingContent).map(([key, val], idx: number) => {
-        return getCustomField(key, val, idx);
+        return getCustomField(key, val);
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>

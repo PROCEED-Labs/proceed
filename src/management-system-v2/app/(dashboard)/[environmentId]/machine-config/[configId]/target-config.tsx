@@ -3,6 +3,8 @@
 import { ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { Collapse, theme } from 'antd';
+import { CaretRightOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
@@ -44,26 +46,97 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
 
   const editable = props.editingEnabled;
 
+  const { token } = theme.useToken();
+  const panelStyle = {
+    marginBottom: 20,
+    background: token.colorFillAlter,
+    borderRadius: token.borderRadiusLG,
+    border: 'none',
+  };
+
+  const getContentItems = (panelStyle: {
+    marginBottom: number;
+    background: string;
+    borderRadius: number;
+    border: string;
+  }): any => {
+    const contentItems = [];
+    if (
+      parentConfig.targetConfig &&
+      (editable ||
+        (parentConfig.targetConfig.metadata &&
+          Object.keys(parentConfig.targetConfig.metadata).length > 0))
+    ) {
+      contentItems.push({
+        key: 'meta',
+        label: 'Meta Data',
+        children: [
+          <Content
+            contentType="metadata"
+            editingEnabled={editable}
+            backendSaveMachineConfig={saveParentConfig}
+            customConfig={parentConfig.targetConfig}
+            configId={configId}
+            selectedMachineConfig={undefined}
+            rootMachineConfig={parentConfig}
+          />,
+        ],
+        style: panelStyle,
+      });
+    }
+    if (
+      parentConfig.targetConfig &&
+      (editable ||
+        (parentConfig.targetConfig.parameters &&
+          Object.keys(parentConfig.targetConfig.parameters).length > 0))
+    ) {
+      contentItems.push({
+        key: 'param',
+        label: 'Parameters',
+        children: [
+          <Content
+            contentType="parameters"
+            editingEnabled={editable}
+            backendSaveMachineConfig={saveParentConfig}
+            customConfig={parentConfig.targetConfig}
+            configId={configId}
+            selectedMachineConfig={undefined}
+            rootMachineConfig={parentConfig}
+          />,
+        ],
+        style: panelStyle,
+      });
+    }
+    return contentItems;
+  };
+
+  const activeKeys = [];
+  if (
+    parentConfig.targetConfig &&
+    (editable ||
+      (parentConfig.targetConfig.metadata &&
+        Object.keys(parentConfig.targetConfig.metadata).length > 0))
+  ) {
+    activeKeys.push('meta');
+  }
+  if (
+    parentConfig.targetConfig &&
+    (editable ||
+      (parentConfig.targetConfig.parameters &&
+        Object.keys(parentConfig.targetConfig.parameters).length > 0))
+  ) {
+    activeKeys.push('param');
+  }
+
   return (
-    <div>
-      <Content
-        contentType="metadata"
-        editingEnabled={editable}
-        backendSaveMachineConfig={saveParentConfig}
-        customConfig={parentConfig.targetConfig}
-        configId={configId}
-        selectedMachineConfig={undefined}
-        rootMachineConfig={parentConfig}
-      />
-      <Content
-        contentType="parameters"
-        editingEnabled={editable}
-        backendSaveMachineConfig={saveParentConfig}
-        customConfig={parentConfig.targetConfig}
-        configId={configId}
-        selectedMachineConfig={undefined}
-        rootMachineConfig={parentConfig}
-      />
-    </div>
+    <Collapse
+      bordered={false}
+      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+      defaultActiveKey={activeKeys}
+      style={{
+        background: 'none',
+      }}
+      items={getContentItems(panelStyle)}
+    />
   );
 }

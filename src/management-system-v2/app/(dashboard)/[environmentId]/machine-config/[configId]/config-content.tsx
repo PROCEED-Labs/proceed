@@ -223,63 +223,63 @@ export default function Content(props: MachineDataViewProps) {
               onDelete={onContentDelete}
               label={key[0].toUpperCase() + key.slice(1)}
             />
+            {(editable || (field.linkedParameters && field.linkedParameters.length > 0)) && (
+              <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+                <Col span={4} className="gutter-row">
+                  Linked Parameters
+                </Col>
+                <Col span={19} className="gutter-row">
+                  {editable && (
+                    <Space>
+                      <Select
+                        mode="multiple"
+                        allowClear
+                        style={{ minWidth: 250 }}
+                        placeholder="Please select"
+                        value={field.linkedParameters}
+                        onChange={(idList: string[]) => linkedParametersChange(key, idList)}
+                        options={parametersList}
+                      />
+                    </Space>
+                  )}
+                  {!editable &&
+                    field.linkedParameters.map((paramId: string) => {
+                      return (
+                        <Space>
+                          <Tag color="gray">{paramIdToName[paramId]}</Tag>
+                        </Space>
+                      );
+                    })}
+                </Col>
+                <Col span={1} className="gutter-row">
+                  <Tooltip title="Delete">
+                    <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                  </Tooltip>
+                </Col>
+              </Row>
+            )}
+            {(editable || (field.parameters && Object.keys(field.parameters).length > 0)) && (
+              <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
+                <Col span={4} className="gutter-row">
+                  Nested Parameters
+                </Col>
+                <Col span={19} className="gutter-row">
+                  {getNestedParameters(key, field)}
+                  {editable && (
+                    <Space style={{ margin: '10px 0 0 0' }}>
+                      {getAddButton('Add Parameter', undefined, () => {})}
+                    </Space>
+                  )}
+                </Col>
+                <Col span={1} className="gutter-row">
+                  <Tooltip title="Delete">
+                    <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                  </Tooltip>
+                </Col>
+              </Row>
+            )}
           </Col>
         </Row>
-        {(editable || (field.linkedParameters && field.linkedParameters.length > 0)) && (
-          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-            <Col span={3} className="gutter-row">
-              Linked Parameters
-            </Col>
-            <Col span={20} className="gutter-row">
-              {editable && (
-                <Space>
-                  <Select
-                    mode="multiple"
-                    allowClear
-                    style={{ minWidth: 250 }}
-                    placeholder="Please select"
-                    value={field.linkedParameters}
-                    onChange={(idList: string[]) => linkedParametersChange(key, idList)}
-                    options={parametersList}
-                  />
-                </Space>
-              )}
-              {!editable &&
-                field.linkedParameters.map((paramId: string) => {
-                  return (
-                    <Space>
-                      <Tag color="gray">{paramIdToName[paramId]}</Tag>
-                    </Space>
-                  );
-                })}
-            </Col>
-            <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-              </Tooltip>
-            </Col>
-          </Row>
-        )}
-        {(editable || (field.parameters && Object.keys(field.parameters).length > 0)) && (
-          <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
-            <Col span={3} className="gutter-row">
-              Nested Parameters ({key})
-            </Col>
-            <Col span={20} className="gutter-row">
-              {getNestedParameters(key, field)}
-              {editable && (
-                <Space style={{ margin: '10px 0 0 0' }}>
-                  {getAddButton('Add Parameter', undefined, () => {})}
-                </Space>
-              )}
-            </Col>
-            <Col span={1} className="gutter-row">
-              <Tooltip title="Delete">
-                <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
-              </Tooltip>
-            </Col>
-          </Row>
-        )}
       </>
     );
   };
@@ -316,7 +316,6 @@ export default function Content(props: MachineDataViewProps) {
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-          <Col span={3} className="gutter-row" />
           <Col span={21} className="gutter-row">
             {getAddButton(addButtonTitle, undefined, onClickAddField)}
           </Col>
@@ -333,84 +332,3 @@ export default function Content(props: MachineDataViewProps) {
     </>
   );
 }
-
-/*const { token } = theme.useToken();
-  const panelStyle = {
-    marginBottom: 20,
-    background: token.colorFillAlter,
-    borderRadius: token.borderRadiusLG,
-    border: 'none',
-  };
-
-  const getItems = (panelStyle: {
-    marginBottom: number;
-    background: string;
-    borderRadius: number;
-    border: string;
-  }): any => [
-    {
-      key: '1',
-      label: props.contentType === 'metadata' ? 'Meta Data' : 'Parameters',
-      children: [
-        <>
-          {idVisible && props.contentType === 'metadata' && (
-            <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-              <Col span={3} className="gutter-row">
-                {' '}
-                Internal ID
-              </Col>
-              <Col span={20} className="gutter-row">
-                <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
-              </Col>
-              <Col span={1}>
-                <Tooltip title="Hide Internal ID">
-                  <Button
-                    disabled={!editable}
-                    onClick={() => {
-                      setIdVisible(false);
-                    }}
-                    icon={<EyeInvisibleOutlined />}
-                    type="text"
-                  />
-                </Tooltip>
-              </Col>
-            </Row>
-          )}
-          {Object.entries(editingContent).map(([key, val], idx: number) => {
-            return getCustomField(key, val, idx);
-          })}
-          {editable && (
-            <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
-              <Col span={3} className="gutter-row" />
-              <Col span={21} className="gutter-row">
-                {getAddButton(addButtonTitle, undefined, onClickAddField)}
-              </Col>
-            </Row>
-          )}
-          <CreateParameterModal
-            title={props.contentType == 'metadata' ? 'Create Meta Data' : 'Create Parameter'}
-            open={createFieldOpen}
-            onCancel={() => setCreateFieldOpen(false)}
-            onSubmit={createField}
-            okText="Create"
-            showKey
-          />
-        </>,
-      ],
-      style: panelStyle,
-    },
-  ];
-
-  return (
-    <Collapse
-      bordered={false}
-      expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-      defaultActiveKey={['1']}
-      style={{
-        background: 'none',
-      }}
-      items={getItems(panelStyle)}
-    />
-  );
-}
-*/

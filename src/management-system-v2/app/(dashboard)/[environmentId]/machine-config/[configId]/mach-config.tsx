@@ -3,7 +3,7 @@
 import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { KeyOutlined, UserOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { CaretRightOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Collapse, theme } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -46,35 +46,67 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
 
   const editable = props.editingEnabled;
 
-  const childConfigContent = (machineConfigData: MachineConfig) => (
-    <div>
-      <Content
-        contentType="metadata"
-        editingEnabled={editable}
-        backendSaveMachineConfig={saveParentConfig}
-        customConfig={machineConfigData}
-        configId={configId}
-        selectedMachineConfig={undefined}
-        rootMachineConfig={parentConfig}
-      />
-      <Content
-        contentType="parameters"
-        editingEnabled={editable}
-        backendSaveMachineConfig={saveParentConfig}
-        customConfig={machineConfigData}
-        configId={configId}
-        selectedMachineConfig={undefined}
-        rootMachineConfig={parentConfig}
-      />
-    </div>
-  );
-
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 20,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
     border: 'none',
+  };
+
+  const getContentItems = (
+    machineConfigData: MachineConfig,
+    panelStyle: {
+      marginBottom: number;
+      background: string;
+      borderRadius: number;
+      border: string;
+    },
+  ): any => {
+    const contentItems = [];
+    if (
+      editable ||
+      (machineConfigData.metadata && Object.keys(machineConfigData.metadata).length > 0)
+    ) {
+      contentItems.push({
+        key: 'meta',
+        label: 'Meta Data',
+        children: [
+          <Content
+            contentType="metadata"
+            editingEnabled={editable}
+            backendSaveMachineConfig={saveParentConfig}
+            customConfig={machineConfigData}
+            configId={configId}
+            selectedMachineConfig={undefined}
+            rootMachineConfig={parentConfig}
+          />,
+        ],
+        style: panelStyle,
+      });
+    }
+    if (
+      editable ||
+      (machineConfigData.parameters && Object.keys(machineConfigData.parameters).length > 0)
+    ) {
+      contentItems.push({
+        key: 'param',
+        label: 'Parameters',
+        children: [
+          <Content
+            contentType="parameters"
+            editingEnabled={editable}
+            backendSaveMachineConfig={saveParentConfig}
+            customConfig={machineConfigData}
+            configId={configId}
+            selectedMachineConfig={undefined}
+            rootMachineConfig={parentConfig}
+          />,
+        ],
+        style: panelStyle,
+      });
+    }
+    return contentItems;
   };
 
   const getItems = (panelStyle: {
@@ -85,10 +117,30 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   }): any => {
     let list = [];
     for (let machineConfig of parentConfig.machineConfigs) {
+      const activeKeys = [];
+      if (editable || (machineConfig.metadata && Object.keys(machineConfig.metadata).length > 0)) {
+        activeKeys.push('meta');
+      }
+      if (
+        editable ||
+        (machineConfig.parameters && Object.keys(machineConfig.parameters).length > 0)
+      ) {
+        activeKeys.push('param');
+      }
       list.push({
         key: machineConfig.id,
         label: machineConfig.name,
-        children: [childConfigContent(machineConfig)],
+        children: [
+          <Collapse
+            bordered={false}
+            expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            defaultActiveKey={activeKeys}
+            style={{
+              background: 'none',
+            }}
+            items={getContentItems(machineConfig, panelStyle)}
+          />,
+        ],
         extra: getTooltips(editable, ['edit', 'copy', 'delete']),
         style: panelStyle,
       });

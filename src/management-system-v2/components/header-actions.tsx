@@ -20,10 +20,6 @@ const HeaderActions: FC = () => {
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) {
-    return null;
-  }
-
   if (!loggedIn) {
     return (
       <Space style={{ float: 'right', padding: '16px' }}>

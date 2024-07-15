@@ -141,7 +141,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             items={getContentItems(machineConfig, panelStyle)}
           />,
         ],
-        extra: getTooltips(editable, ['edit', 'copy', 'delete']),
+        /* extra: getTooltips(editable, ['edit', 'copy', 'delete']), */ //TODO
         style: panelStyle,
       });
     }

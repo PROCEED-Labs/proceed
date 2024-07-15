@@ -17,7 +17,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, Collapse, theme, Tag, Space, Select } from 'antd';
+import { Button, Input, Col, Row, Tooltip, theme, Tag, Space, Select } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -132,7 +132,6 @@ export default function Content(props: MachineDataViewProps) {
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
 
-  //TODO
   const [paramKey, setParamKey] = useState<string | undefined>('');
   const [oldParamKey, setOldParamKey] = useState<string | undefined>('');
 
@@ -235,7 +234,7 @@ export default function Content(props: MachineDataViewProps) {
                         mode="multiple"
                         allowClear
                         style={{ minWidth: 250 }}
-                        placeholder="Please select"
+                        placeholder="Select to Add"
                         value={field.linkedParameters}
                         onChange={(idList: string[]) => linkedParametersChange(key, idList)}
                         options={parametersList}

@@ -124,7 +124,7 @@ export default function Param(props: MachineDataViewProps) {
           <Text>{parameterContent.unit}</Text>
           {parameterContent.language && <Text type="secondary">({parameterContent.language})</Text>}
         </Space>
-        {getTooltips(editable, ['copy', 'edit', 'delete'], {
+        {getTooltips(editable, [/* 'copy', 'edit',  //TODO */ 'delete'], {
           delete: () => {
             deleteContent(parameterContent);
           },
@@ -279,17 +279,11 @@ export default function Param(props: MachineDataViewProps) {
     let list = [];
     if (parameterField.content) {
       for (let parameterItem of parameterField.content) {
-        //TODO
         list.push({
           key: parameterField.content.indexOf(parameterItem),
           label: parameterItemHeader(parameterItem),
           children: [parameterContent(parameterItem)],
           style: panelStyle,
-          /* extra: getTooltips(editable, ['copy', 'edit', 'delete'], {
-          delete: () => {
-            deleteParameter(parameterItem);
-          },
-        }), */
         });
       }
     }

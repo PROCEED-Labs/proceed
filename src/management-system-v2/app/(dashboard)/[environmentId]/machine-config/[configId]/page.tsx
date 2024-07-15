@@ -5,7 +5,7 @@ import {
   getConfigurationById,
   saveParentConfig,
 } from '@/lib/data/legacy/machine-config';
-import ConfigContent from './config-page-content';
+import ConfigPage from './config-page-content';
 
 type MachineConfigProps = {
   params: { configId: string; environmentId: string };
@@ -21,7 +21,7 @@ export default async function MachineConfigView({
   //replace ConfigContent <-> MachineConfigEditor as needed
   return (
     <Content title="Machine Configuration">
-      <ConfigContent
+      <ConfigPage
         originalParentConfig={machineConfig}
         backendSaveParentConfig={saveParentConfig}
         configId={configId}

@@ -145,7 +145,7 @@ const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
         <Form.Item
           name={[index, 'key']}
           label="Key"
-          rules={[{ required: true, message: 'Please fill out the Parameter Key' }]}
+          rules={[{ required: true, message: 'Please fill out the Key' }]}
         >
           <Input />
         </Form.Item>
@@ -153,28 +153,28 @@ const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
       <Form.Item
         name={[index, 'displayName']}
         label="Display Name"
-        rules={[{ required: true, message: 'Please fill out the Parameter Display Name' }]}
+        rules={[{ required: true, message: 'Please fill out the Display Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'value']}
         label="Value"
-        rules={[{ required: false, message: 'Please fill out the Parameter Value' }]}
+        rules={[{ required: false, message: 'Please fill out the Value' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'unit']}
         label="Unit"
-        rules={[{ required: false, message: 'Please fill out the Parameter Unit' }]}
+        rules={[{ required: false, message: 'Please fill out the Unit' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
         name={[index, 'language']}
         label="Language"
-        rules={[{ required: false, message: 'Please fill out the Parameter Language' }]}
+        rules={[{ required: false, message: 'Please fill out the Language' }]}
       >
         <Select
           showSearch

@@ -316,7 +316,7 @@ export default function Param(props: MachineDataViewProps) {
         </>
       )}
       <CreateParameterModal
-        title="Create Parameter"
+        title="Create Parameter Entry"
         open={openCreateParameterModal}
         onCancel={() => setOpenCreateParameterModal(false)}
         onSubmit={createContent}

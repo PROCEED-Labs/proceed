@@ -70,7 +70,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
   };
 
   return (
-    <Layout style={{ /* height: '100vh', */ display: 'flex', flexDirection: 'row' }}>
+    <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'row' }}>
       <ResizableBox
         className="custom-box"
         width={collapsed ? collapsedWidth : width}

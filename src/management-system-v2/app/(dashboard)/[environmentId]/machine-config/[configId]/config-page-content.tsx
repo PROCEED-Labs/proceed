@@ -9,11 +9,10 @@ import ConfigEditor from './config-editor';
 import ConfigurationTreeView from './config-tree-view';
 import { useRouter } from 'next/navigation';
 import { TreeFindParameterStruct, TreeFindStruct } from '../configuration-helper';
-import { ResizableBox } from 'react-resizable';
+import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
 import './ConfigContent.css';
 
-import { ResizeEvent, ResizeCallbackData } from 'react-resizable';
 const initialWidth = 300; // Initial width
 const collapsedWidth = 70; // Width when collapsed
 
@@ -95,7 +94,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
               }}
               onMouseDown={(e) => {
                 let startX = e.clientX;
-                const onMouseMove = (event) => {
+                const onMouseMove = (event: { clientX: number }) => {
                   const delta = event.clientX - startX;
                   handleResize(delta);
                   startX = event.clientX;
@@ -110,7 +109,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
             />
           )
         }
-        onResizeStop={(event: ResizeEvent, { size }) => {
+        onResizeStop={(event: ResizeEvent, { size }: ResizeCallbackData) => {
           setWidth(size.width);
           if (size.width <= collapsedWidth) {
             setCollapsed(true); // Collapse when the width is less than or equal to collapsedWidth

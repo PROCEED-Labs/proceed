@@ -50,6 +50,7 @@ type MachineDataViewProps = {
   selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
+  onChangeMode: Function;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
@@ -119,6 +120,9 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     setName(editingConfig.name);
     updateItems(panelStyle);
   }, [editable, props.selectedConfig]);
+  useEffect(() => {
+    props.onChangeMode(editable);
+  }, [editable]);
 
   const showMobileView = useMobileModeler();
 

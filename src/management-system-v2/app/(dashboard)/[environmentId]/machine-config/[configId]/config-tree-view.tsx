@@ -41,6 +41,7 @@ type ConfigurationTreeViewProps = {
   configId: string;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
+  editable: boolean;
   onSelectConfig: Function;
   onUpdate: Function;
 };
@@ -442,6 +443,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         label: 'Create Target Configuration',
         key: 'create-target',
         onClick: showCreateMachineModal,
+        disabled: !props.editable,
       });
     }
     const parentConfigContextMenu = [
@@ -450,6 +452,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         label: 'Create Machine Configuration',
         key: 'create-machine',
         onClick: showCreateMachineModal,
+        disabled: !props.editable,
       },
       {
         label: 'Create Metadata',
@@ -457,6 +460,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         onClick: () => {
           setCreateMetadataOpen(true);
         },
+        disabled: !props.editable,
       },
       {
         label: 'Update',
@@ -480,6 +484,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           onClick: () => {
             setCreateMetadataOpen(true);
           },
+          disabled: !props.editable,
         });
       }
       return [
@@ -488,6 +493,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Create Parameter',
           key: 'add_parameter',
           onClick: showCreateParameterModal,
+          disabled: !props.editable,
         },
         {
           label: 'Update',
@@ -498,6 +504,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Delete',
           key: 'delete',
           onClick: showDeleteConfirmModal,
+          disabled: !props.editable,
         },
       ];
     } else if (_configType === 'config') {
@@ -513,6 +520,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Delete',
           key: 'delete',
           onClick: showDeleteConfirmModal,
+          disabled: !props.editable,
         },
       ];
     }

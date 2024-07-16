@@ -46,6 +46,11 @@ export default function ConfigContent(props: VariablesEditorProps) {
     router.refresh();
     setParentConfig(editedConfig);
   };
+  const [editable, setEditable] = useState(false);
+
+  const onChangeMode = (_editable: boolean) => {
+    setEditable(_editable);
+  };
   const [width, setWidth] = useState(initialWidth);
 
   const handleResize = (delta: number) => {
@@ -144,6 +149,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
         {!collapsed && (
           <div className="content-wrapper">
             <ConfigurationTreeView
+              editable={editable}
               onUpdate={treeOnUpdate}
               onSelectConfig={onSelectConfig}
               backendSaveParentConfig={saveConfig}
@@ -155,6 +161,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
       </ResizableBox>
       {selectedConfig?.selection && !('content' in selectedConfig?.selection) ? (
         <ConfigEditor
+          onChangeMode={onChangeMode}
           backendSaveParentConfig={saveConfig}
           configId={configId}
           parentConfig={parentConfig}

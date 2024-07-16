@@ -70,11 +70,11 @@ export default function ConfigContent(props: VariablesEditorProps) {
   };
 
   return (
-    <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'row' }}>
+    <Layout style={{ /* height: '100vh', */ display: 'flex', flexDirection: 'row' }}>
       <ResizableBox
         className="custom-box"
         width={collapsed ? collapsedWidth : width}
-        height={Infinity}
+        /* height={Infinity} */
         axis="x"
         minConstraints={[collapsedWidth, 0]}
         maxConstraints={[window.innerWidth / 2, Infinity]}
@@ -88,7 +88,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
                 top: 0,
                 right: 0,
                 width: '8px',
-                height: '100%',
+                /* height: '100%', */
                 cursor: 'col-resize',
                 zIndex: 1,
               }}
@@ -126,7 +126,7 @@ export default function ConfigContent(props: VariablesEditorProps) {
           flexDirection: 'column',
           position: 'relative',
           overflow: 'auto',
-          height: '100vh',
+          /* height: '100vh', */
         }}
       >
         <Button

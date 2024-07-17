@@ -431,7 +431,7 @@ const Tasklist = ({
           )}
         </div>
       </div>
-      {(selectedUserTaskID || breakpoint.xl) && (
+      {(selectedUserTaskID ?? breakpoint.xl) && (
         <div className={styles.taskView}>
           {selectedUserTaskID && (
             <iframe

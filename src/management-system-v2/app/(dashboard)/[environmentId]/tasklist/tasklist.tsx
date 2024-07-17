@@ -333,7 +333,7 @@ const Tasklist = ({
 
   return (
     <div className={styles.Tasklist}>
-      <div className={selectedUserTaskID ? `${styles.list} selected` : styles.list}>
+      <div className={selectedUserTaskID !== null ? `${styles.list} selected` : styles.list}>
         <div className={styles.actionWrapper}>
           {selectedUserTaskID && !breakpoint.xl ? (
             <Button
@@ -386,7 +386,7 @@ const Tasklist = ({
           )}
         </div>
         <div className={styles.cardWrapper}>
-          {selectedUserTaskID && !breakpoint.xl ? (
+          {selectedUserTaskID !== null && !breakpoint.xl ? (
             <div style={{ minWidth: '300px', maxWidth: '600px', margin: 'auto' }}>
               <div style={{ marginInline: '1rem' }}>
                 <UserTaskCard
@@ -437,7 +437,7 @@ const Tasklist = ({
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
         <div className={styles.taskView}>
-          {selectedUserTaskID && (
+          {selectedUserTaskID ?? (
             <iframe
               srcDoc={userTaskHTML}
               style={{ width: '100%', height: '100%', border: 0 }}

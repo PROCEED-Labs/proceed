@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 import z from 'zod';
+import { resources } from './ability/caslAbility';
 
 // --------------------------------------------
 // Add environment variables here
@@ -10,6 +11,17 @@ const environmentVariables = {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    NEXT_PUBLIC_MS_ENABLED_RESOURCES: z.preprocess(
+      (input) => {
+        if (typeof input !== 'string') return input;
+        try {
+          return JSON.parse(input);
+        } catch {
+          return input;
+        }
+      },
+      z.array(z.enum(resources)).default([...resources]),
+    ),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),

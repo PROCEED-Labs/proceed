@@ -2,25 +2,34 @@
 // By default everything is allowed and these rules restrict access
 
 import { packRules } from '@casl/ability/extra';
-import { AbilityRule, resourceAction } from '../ability/caslAbility';
-import { RemoveReadOnly } from '../typescript-utils';
+import { AbilityRule, ResourceType, resourceAction, resources } from '../ability/caslAbility';
+import { env } from '../env-vars';
 
-type SystemRules = (AbilityRule & { inverted: true })[];
+const realResources = resources.filter((resource) => resource !== 'All');
+export const MSEnabledResources = env.MS_ENABLED_RESOURCES ?? resources;
 
-//TODO read global rules from config file
+function getRulesForTargetResources(targetResources: readonly ResourceType[]) {
+  const enabledResources = targetResources.filter((resource) =>
+    MSEnabledResources.includes(resource),
+  );
 
-export const globalOrganizationRules = Object.freeze([] satisfies SystemRules);
-export const packedGlobalOrganizationRules = packRules<AbilityRule>(
-  globalOrganizationRules as RemoveReadOnly<typeof globalOrganizationRules>,
-);
+  const disabledResources = realResources.filter(
+    (resource) => !enabledResources.includes(resource),
+  );
+  return [
+    {
+      inverted: true,
+      action: [...resourceAction],
+      subject: [...disabledResources],
+    },
+  ] satisfies AbilityRule[];
+}
 
-export const globalUserRules = Object.freeze([
-  {
-    inverted: true,
-    action: [...resourceAction],
-    subject: ['Role', 'RoleMapping', 'Machine', 'Execution', 'EnvConfig', 'User', 'Environment'],
-  },
-] satisfies SystemRules);
-export const packedGlobalUserRules = packRules<AbilityRule>(
-  globalUserRules as RemoveReadOnly<typeof globalUserRules>,
-);
+export const globalOrganizationRules = getRulesForTargetResources(MSEnabledResources);
+export const packedGlobalOrganizationRules = packRules<AbilityRule>(globalOrganizationRules);
+
+export const globalPersonalSpaceRules = getRulesForTargetResources([
+  'Process',
+  'Folder',
+] satisfies ResourceType[]);
+export const packedGlobalUserRules = packRules<AbilityRule>(globalPersonalSpaceRules);

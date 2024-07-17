@@ -19,24 +19,31 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
   initialValues,
 }) => {
   const [form] = Form.useForm<{ name: string; value: any }>();
-  const [submittable, setSubmittable] = useState(false);
 
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout>>();
   const values = Form.useWatch([], form);
 
   React.useEffect(() => {
     form.validateFields({ validateOnly: true }).then(
       () => {
-        setSubmittable(true);
+        clearTimeout(timeoutId);
+        if (values.value !== initialValues.value || values.name !== initialValues.name) {
+          const id = setTimeout(() => {
+            if (initialValues.name !== values.name) {
+              // replace custom property with a new name
+              onChange(values.name, values.value, initialValues.name);
+            } else {
+              onChange(values.name, values.value);
+            }
+          }, 2000);
+          setTimeoutId(id);
+        }
       },
       () => {
-        setSubmittable(false);
+        clearTimeout(timeoutId);
       },
     );
   }, [form, values]);
-
-  useEffect(() => {
-    form.setFieldsValue(initialValues);
-  }, [form, initialValues]);
 
   const validateName = async (name: any) => {
     // entered name already exists in other custom property
@@ -67,33 +74,15 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
           rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
           style={{ margin: 0, flexGrow: 1 }}
         >
-          <Input
-            name="Name"
-            addonBefore="Name"
-            placeholder="Custom Name"
-            onBlur={() => {
-              if (submittable) {
-                if (initialValues.name && initialValues.name !== values.name) {
-                  // replace custom property with a new name
-                  onChange(values.name, values.value, initialValues.name);
-                } else {
-                  onChange(values.name, values.value);
-                }
-              }
-            }}
-          />
+          <Input name="Name" addonBefore="Name" placeholder="Custom Name" />
         </Form.Item>
 
-        <Form.Item name="value" rules={[{ required: true }]} style={{ margin: 0, width: '100%' }}>
-          <Input
-            addonBefore="Value"
-            placeholder="Custom Value"
-            onBlur={() => {
-              if (submittable) {
-                onChange(values.name, values.value);
-              }
-            }}
-          />
+        <Form.Item
+          name="value"
+          rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
+          style={{ margin: 0, width: '100%' }}
+        >
+          <Input addonBefore="Value" placeholder="Custom Value" />
         </Form.Item>
       </Space>
       <Form.Item style={{ marginRight: 0, marginLeft: '1rem' }}>
@@ -146,6 +135,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   const [customProperties, setCustomProperties] = useState<{ name: string; value: string }[]>([]);
 
   useEffect(() => {
+    console.log('metadata changhed', metaData);
     const customMetaDataEntries = Object.entries(customMetaData);
 
     const newCustomProperties =
@@ -168,6 +158,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
     onChange(customPropertyName, null);
   };
 
+  let timeoutId: string | number | NodeJS.Timeout | undefined = undefined;
   return (
     <Space
       direction="vertical"
@@ -188,6 +179,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
             customMetaData={customMetaData}
             initialValues={{ name: element.name, value: element.value }}
             onChange={(name, value, oldName) => {
+              console.log('onchange', name, value);
               if (!value) {
                 deleteProperty(name);
               } else {

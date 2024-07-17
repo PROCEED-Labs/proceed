@@ -1,7 +1,7 @@
 import useModelerStateStore from './use-modeler-state-store';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as EditorClass, Viewer as ViewerClass } from '@toast-ui/react-editor';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Divider, Grid, Modal, Space } from 'antd';
 import dynamic from 'next/dynamic';
@@ -10,10 +10,16 @@ const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: fals
 const TextEditor = dynamic(() => import('@/components/text-editor'), { ssr: false });
 
 const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElement }) => {
-  const description =
-    (selectedElement.businessObject.documentation &&
-      selectedElement.businessObject.documentation[0]?.text) ||
-    '';
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    const newDescription =
+      (selectedElement.businessObject.documentation &&
+        (selectedElement.businessObject.documentation[0]?.text as string)) ||
+      '';
+    setDescription(newDescription);
+  }, [selectedElement.businessObject.documentation]);
+
   const modalEditorRef = React.useRef<EditorClass>(null);
   const modeler = useModelerStateStore((state) => state.modeler);
   const [showPopupEditor, setShowPopupEditor] = useState(false);
@@ -39,6 +45,8 @@ const DescriptionSection: React.FC<{ selectedElement: any }> = ({ selectedElemen
     } else {
       modeling.updateProperties(selectedElement as any, { documentation: null });
     }
+
+    setDescription(text || '');
   };
 
   return (

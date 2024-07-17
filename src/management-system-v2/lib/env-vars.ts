@@ -61,17 +61,18 @@ const schemaOptions = {
 
 // Remove server-only environment variables on client
 if (!isServer) {
-  for (const key of Object.keys(environmentVariables))
+  for (const key of Object.keys(schemaOptions))
     if (!key.startsWith('NEXT_PUBLIC_')) delete schemaOptions[key];
 }
 
 // Get values from env
 const runtimeEnvVariables: Record<string, any> = {};
-for (const variable in Object.keys(environmentVariables))
+for (const variable of Object.keys(schemaOptions))
   runtimeEnvVariables[variable] = process.env[variable];
 
 // Parse environment variables
 type MergedValues = Env['all'] & Env['production'] & Env['test'] & Env['development'];
+
 const parsingResult = z.object(schemaOptions as MergedValues).safeParse(runtimeEnvVariables);
 const onBuild = process.env.NEXT_PHASE === 'phase-production-build';
 

@@ -10,6 +10,7 @@ import { FaLongArrowAltDown, FaLongArrowAltUp } from 'react-icons/fa';
 import { IoArrowBack } from 'react-icons/io5';
 
 import styles from './tasklist.module.scss';
+import ScrollBar from '@/components/scrollbar';
 
 const StatusSelection = ({
   selectedValues,
@@ -396,38 +397,41 @@ const Tasklist = ({
               </div>
             </div>
           ) : (
-            <List
-              split={false}
-              style={{ maxWidth: breakpoint.xl ? '300px' : undefined }}
-              bordered={false}
-              dataSource={filteredAndSortedUserTasks}
-              pagination={{
-                position: 'bottom',
-                align: 'center',
-                responsive: true,
-                pageSize: 20,
-                showSizeChanger: false,
-              }}
-            >
-              <div className={styles.cardList}>
-                {filteredAndSortedUserTasks.map((item) => {
-                  return (
-                    <UserTaskCard
-                      key={item.id}
-                      userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
-                      selected={item.id === selectedUserTaskID}
-                      clickHandler={() => {
-                        if (selectedUserTaskID === item.id) {
-                          setSelectedUserTaskID(null);
-                        } else {
-                          setSelectedUserTaskID(item.id);
-                        }
-                      }}
-                    ></UserTaskCard>
-                  );
-                })}
-              </div>
-            </List>
+            <ScrollBar>
+              <List
+                split={false}
+                style={{ maxWidth: breakpoint.xl ? '300px' : undefined }}
+                bordered={false}
+                dataSource={filteredAndSortedUserTasks}
+                pagination={{
+                  size: 'small',
+                  position: 'bottom',
+                  align: 'center',
+                  responsive: true,
+                  pageSize: 20,
+                  showSizeChanger: false,
+                }}
+              >
+                <div className={styles.cardList}>
+                  {filteredAndSortedUserTasks.map((item) => {
+                    return (
+                      <UserTaskCard
+                        key={item.id}
+                        userTaskData={filteredAndSortedUserTasks.find((uT) => uT.id === item.id)!}
+                        selected={item.id === selectedUserTaskID}
+                        clickHandler={() => {
+                          if (selectedUserTaskID === item.id) {
+                            setSelectedUserTaskID(null);
+                          } else {
+                            setSelectedUserTaskID(item.id);
+                          }
+                        }}
+                      ></UserTaskCard>
+                    );
+                  })}
+                </div>
+              </List>
+            </ScrollBar>
           )}
         </div>
       </div>

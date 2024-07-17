@@ -20,6 +20,7 @@ import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
+import { RemoveReadOnly } from '@/lib/typescript-utils';
 
 const DashboardLayout = async ({
   children,
@@ -38,7 +39,7 @@ const DashboardLayout = async ({
   );
 
   const userRules = systemAdmin
-    ? adminRules
+    ? (adminRules as RemoveReadOnly<typeof adminRules>)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
   const layoutMenuItems: MenuProps['items'] = [];

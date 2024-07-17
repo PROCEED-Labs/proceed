@@ -336,7 +336,11 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
-      <UserTaskBuilder open={showUserTaskEditor} onClose={() => setShowUserTaskEditor(false)} />
+      <UserTaskBuilder
+        processId={processId}
+        open={showUserTaskEditor}
+        onClose={() => setShowUserTaskEditor(false)}
+      />
     </>
   );
 };

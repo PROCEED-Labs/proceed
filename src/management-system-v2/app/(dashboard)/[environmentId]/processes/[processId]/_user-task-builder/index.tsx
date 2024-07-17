@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
@@ -21,20 +21,29 @@ import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
 import Image from './Image';
 
-import { toHtml, iframeDocument } from './utils';
+import { iframeDocument, defaultForm } from './utils';
 
 import AddUserControls from '@/components/add-user-controls';
 
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
 
+import { saveProcessUserTask, getProcessUserTaskData } from '@/lib/data/processes';
+import useModelerStateStore from '../use-modeler-state-store';
+
+import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
+import { useEnvironment } from '@/components/auth-can';
+
 type BuilderProps = {
+  processId: string;
   open: boolean;
   onClose: () => void;
 };
 
-const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
-  const { query } = useEditor();
+const EditorModal: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
+  const { query, actions } = useEditor();
+
+  const environment = useEnvironment();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +57,33 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const isMobile = breakpoint.xs;
+
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+  const filename = useMemo(() => {
+    if (modeler && selectedElementId) {
+      const selectedElement = modeler.getElement(selectedElementId);
+      if (selectedElement && selectedElement.type === 'bpmn:UserTask') {
+        return (
+          (selectedElement.businessObject.fileName as string | undefined) ||
+          generateUserTaskFileName()
+        );
+      }
+    }
+
+    return undefined;
+  }, [modeler, selectedElementId]);
+
+  useEffect(() => {
+    if (filename && !open) {
+      getProcessUserTaskData(processId, filename, environment.spaceId).then((data) => {
+        let importData = defaultForm;
+        if (typeof data === 'string') importData = data;
+
+        actions.deserialize(importData);
+      });
+    }
+  }, [processId, open, filename, environment]);
 
   useEffect(() => {
     if (iframeMaxWidth < 601) setIframeLayout('mobile');
@@ -67,8 +103,20 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
       okButtonProps={{ disabled: isMobile }}
       onOk={() => {
         const json = query.serialize();
-        console.log(json);
-        console.log(toHtml(json));
+        if (modeler && selectedElementId) {
+          const selectedElement = modeler.getElement(selectedElementId);
+          if (selectedElement) {
+            if (filename !== selectedElement.businessObject.fileName) {
+              modeler.getModeling().updateProperties(selectedElement, {
+                fileName: filename,
+                implementation: getUserTaskImplementationString(),
+              });
+            }
+            saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
+              (res) => res && console.error(res.error),
+            );
+          }
+        }
       }}
     >
       <div className={styles.BuilderUI}>
@@ -106,40 +154,7 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
                 );
               }}
             >
-              <Frame>
-                <Element is={Container} padding={5} background="#fff" borderThickness={0} canvas>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="Hello World"></Text>
-                    </Column>
-                  </Element>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="Hello Universe"></Text>
-                    </Column>
-                  </Element>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="ABCDEFG"></Text>
-                    </Column>
-                  </Element>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="Test123"></Text>
-                    </Column>
-                  </Element>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="Lorem Ipsum"></Text>
-                    </Column>
-                  </Element>
-                  <Element is={Row} canvas>
-                    <Column>
-                      <Text text="Dolor sit amet"></Text>
-                    </Column>
-                  </Element>
-                </Element>
-              </Frame>
+              <Frame />
             </IFrame>
           </Col>
         </AntRow>
@@ -148,7 +163,7 @@ const EditorModal: React.FC<BuilderProps> = ({ open, onClose }) => {
   );
 };
 
-const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
+const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const isMobile = breakpoint.xs;
@@ -175,6 +190,8 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
           removeHoverOnMouseleave: true,
         })
       }
+      // TODO: maybe we can replace the automatic row creation and cleanup in the custom drag logic
+      // onBeforeMoveEnd={()}
     >
       <AddUserControls
         name="user-task-editor"
@@ -184,7 +201,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ open, onClose }) => {
           delete: (e) => e.key === 'Delete',
         }}
       />
-      <EditorModal open={open} onClose={onClose} />
+      <EditorModal processId={processId} open={open} onClose={onClose} />
     </Editor>
   );
 };

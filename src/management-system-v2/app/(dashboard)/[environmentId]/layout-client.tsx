@@ -22,7 +22,7 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
   }),
 );
 
-export const UserSpacesContext = createContext<Environment[]>([]);
+export const UserSpacesContext = createContext<Environment[] | null>(null);
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */

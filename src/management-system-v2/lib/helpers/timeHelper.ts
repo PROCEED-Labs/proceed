@@ -10,6 +10,12 @@ export type DurationValues = {
   seconds: number | null;
 };
 
+const MILISECONDS_PER_YEAR = 365 * 24 * 60 * 60 * 1000;
+const MILISECONDS_PER_MONTH = 30 * 60 * 60 * 1000 * 24;
+const MILISECONDS_PER_DAY = 60 * 60 * 1000 * 24;
+const MILISECONDS_PER_HOUR = 60 * 60 * 1000;
+const MILISECONDS_PER_MINUTE = 60 * 1000;
+
 /**
  * Calculate ISO Duration string based on given duration values
  */
@@ -46,20 +52,22 @@ export function transformMilisecondsToDurationValues(
     minutes: null,
     seconds: null,
   };
+
   if (miliseconds > 0) {
     if (!excludeAfterDays) {
-      durationValues.years = Math.floor(miliseconds / (365 * 60 * 60 * 1000 * 24));
-      miliseconds -= durationValues.years * (365 * 60 * 60 * 1000 * 24);
-      durationValues.months = Math.floor(miliseconds / (30 * 60 * 60 * 1000 * 24));
-      miliseconds -= durationValues.months * (30 * 60 * 60 * 1000 * 24);
+      durationValues.years = Math.floor(miliseconds / MILISECONDS_PER_YEAR);
+      miliseconds -= durationValues.years * MILISECONDS_PER_YEAR;
+      durationValues.months = Math.floor(miliseconds / MILISECONDS_PER_MONTH);
+      miliseconds -= durationValues.months * MILISECONDS_PER_MONTH;
     }
-    durationValues.days = Math.floor(miliseconds / (60 * 60 * 1000 * 24));
-    miliseconds -= durationValues.days * (60 * 60 * 1000 * 24);
-    durationValues.hours = Math.floor(miliseconds / (60 * 60 * 1000));
-    miliseconds -= durationValues.hours * (60 * 60 * 1000);
+
+    durationValues.days = Math.floor(miliseconds / MILISECONDS_PER_DAY);
+    miliseconds -= durationValues.days * MILISECONDS_PER_DAY;
+    durationValues.hours = Math.floor(miliseconds / MILISECONDS_PER_HOUR);
+    miliseconds -= durationValues.hours * MILISECONDS_PER_HOUR;
     // Minutes part from the difference
-    durationValues.minutes = Math.floor(miliseconds / (60 * 1000));
-    miliseconds -= durationValues.minutes * (60 * 1000);
+    durationValues.minutes = Math.floor(miliseconds / MILISECONDS_PER_MINUTE);
+    miliseconds -= durationValues.minutes * MILISECONDS_PER_MINUTE;
     //Seconds part from the difference
     durationValues.seconds = Math.floor(miliseconds / 1000);
     miliseconds -= durationValues.seconds * 1000;

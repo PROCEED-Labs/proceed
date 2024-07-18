@@ -2,7 +2,17 @@
 
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
-import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Select, Tooltip } from 'antd';
+import {
+  Layout as AntLayout,
+  Button,
+  Drawer,
+  Grid,
+  Menu,
+  MenuProps,
+  Modal,
+  Select,
+  Tooltip,
+} from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
@@ -14,6 +24,7 @@ import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
+import AuthenticatedUserDataModal from './profile/user-data-modal';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -45,7 +56,7 @@ const Layout: FC<
   hideSider,
 }) => {
   const session = useSession();
-  const router = useRouter();
+  const userData = session?.data?.user;
 
   const mobileDrawerOpen = useLayoutMobileDrawer((state) => state.open);
   const setMobileDrawerOpen = useLayoutMobileDrawer((state) => state.set);
@@ -71,6 +82,36 @@ const Layout: FC<
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
       <SpaceContext.Provider value={activeSpace}>
+        {userData && !userData.guest ? (
+          <AuthenticatedUserDataModal
+            modalOpen={!userData.username || !userData.lastName || !userData.firstName}
+            userData={userData}
+            close={() => {}}
+            structure={{
+              title: 'You need to complete your profile to continue',
+              password: false,
+              inputFields: [
+                {
+                  label: 'First Name',
+                  submitField: 'firstName',
+                  userDataField: 'firstName',
+                },
+                {
+                  label: 'Last Name',
+                  submitField: 'lastName',
+                  userDataField: 'lastName',
+                },
+                {
+                  label: 'Username',
+                  submitField: 'username',
+                  userDataField: 'username',
+                },
+              ],
+            }}
+            modalProps={{ closeIcon: null, destroyOnClose: true }}
+          />
+        ) : null}
+
         <AntLayout style={{ height: '100vh' }}>
           <AntLayout hasSider>
             {!hideSider && (
@@ -122,7 +163,7 @@ const Layout: FC<
             loggedIn ? (
               <>
                 <Tooltip title="Account Settings">
-                  <UserAvatar user={session.data?.user} />
+                  <UserAvatar user={userData} />
                 </Tooltip>
               </>
             ) : (

@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useState, useTransition } from 'react';
+import { ComponentProps, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
@@ -79,7 +79,6 @@ const Processes = ({
   favourites?: string[];
   folder: Folder;
 }) => {
-  const originalProcesses = processes;
   if (folder.parentId)
     processes = [
       {
@@ -139,19 +138,28 @@ const Processes = ({
     return 0;
   });
 
-  useAddControlCallback(
-    'process-list',
-    'selectall',
-    (e) => {
-      e.preventDefault();
-      setSelectedRowElements(filteredData ?? []);
-    },
-    { dependencies: [originalProcesses] },
-  );
+  const selectableElements = useRef(filteredData);
+  selectableElements.current = filteredData;
+
+  useAddControlCallback('process-list', 'selectall', (e) => {
+    e.preventDefault();
+    setSelectedRowElements(selectableElements.current ?? []);
+  });
+
   useAddControlCallback('process-list', 'esc', () => setSelectedRowElements([]));
   useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
-  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowElements));
-  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+  useAddControlCallback(
+    'process-list',
+    'copy',
+    () => {
+      setCopySelection(selectedRowElements);
+    },
+    { dependencies: [selectedRowElements] },
+  );
+
+  useAddControlCallback('process-list', 'paste', () => {
+    setOpenCopyModal(true);
+  });
   useAddControlCallback(
     'process-list',
     'export',

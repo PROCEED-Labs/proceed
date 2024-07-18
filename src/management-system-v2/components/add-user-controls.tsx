@@ -22,110 +22,31 @@ const AddUserControls: FC<ControlComponent> = ({ name, checker }) => {
 
   /* User-Controls */
   const controlChecker: CheckerType = checker ?? {
-    selectall: (e) => e.ctrlKey && e.key === 'a',
+    selectall: (e) => (e.ctrlKey || e.metaKey) && e.key === 'a',
     esc: (e) => e.key === 'Escape',
     del: (e) => e.key === 'Delete' && ability.can('delete', 'Process'),
     copy: (e) => (e.ctrlKey || e.metaKey) && e.key === 'c' && ability.can('create', 'Process'),
     paste: (e) => (e.ctrlKey || e.metaKey) && e.key === 'v' && ability.can('create', 'Process'),
-    controlenter: (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
-    shiftenter: (e) => e.shiftKey && e.key === 'Enter',
+    'control+enter': (e) => (e.ctrlKey || e.metaKey) && e.key === 'Enter',
+    'shift+enter': (e) => e.shiftKey && e.key === 'Enter',
     enter: (e) => !(e.ctrlKey || e.metaKey) && e.key === 'Enter',
     cut: (e) => (e.ctrlKey || e.metaKey) && e.key === 'x' /* TODO: ability */,
     export: (e) => (e.ctrlKey || e.metaKey) && e.key === 'e',
     import: (e) => (e.ctrlKey || e.metaKey) && e.key === 'i',
+    'control+arrowup': (e) => (e.ctrlKey || e.metaKey) && e.key === 'ArrowUp',
+    'control+arrowdown': (e) => (e.ctrlKey || e.metaKey) && e.key === 'ArrowDown',
+    'control+arrowleft': (e) => (e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft',
+    'control+arrowright': (e) => (e.ctrlKey || e.metaKey) && e.key === 'ArrowRight',
+    undo: (e) => (e.ctrlKey || e.metaKey) && e.key === 'z',
+    redo: (e) => (e.ctrlKey || e.metaKey) && e.key === 'y',
+    new: (e) => (e.ctrlKey || e.metaKey) && e.key === 'n',
+    left: (e) => e.key === 'ArrowLeft',
+    right: (e) => e.key === 'ArrowRight',
+    up: (e) => e.key === 'ArrowUp',
+    down: (e) => e.key === 'ArrowDown',
   };
 
   useControler(name, controlChecker);
-
-  // useAddControlCallback(
-  //   name,
-  //   'selectall',
-  //   () => {
-  //     console.log(`selectall from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'esc',
-  //   () => {
-  //     console.log(`esc from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'del',
-  //   () => {
-  //     console.log(`del from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'copy',
-  //   () => {
-  //     console.log(`copy from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'paste',
-  //   () => {
-  //     console.log(`paste from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'controlenter',
-  //   () => {
-  //     console.log(`controlenter from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'shiftenter',
-  //   () => {
-  //     console.log(`shiftenter from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'enter',
-  //   () => {
-  //     console.log(`enter from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'cut',
-  //   () => {
-  //     console.log(`cut from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'export',
-  //   () => {
-  //     console.log(`export from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-  // useAddControlCallback(
-  //   name,
-  //   'import',
-  //   () => {
-  //     console.log(`import from ${name}`);
-  //   },
-  //   { level: 5 },
-  // );
-
   return <></>;
 };
 

@@ -1,0 +1,145 @@
+$icon-colour: #a6adb5;
+$highlight-colour: #dadee2;
+$loader-colour: green;
+//   animation-name, animation-duration, animation-timing-function, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode, animation-play-state, and animation-timeline.
+// linear
+
+.small-Chevron {
+  position: absolute;
+  left: 0;
+  width: 39%;
+  height: 39.5%;
+  clip-path: polygon(71% 0%, 100% 50%, 71% 100%, 0% 100%, 28% 50%, 0% 0%);
+
+  &.visible {
+    animation:
+      shuffleSmall 3s linear 0s infinite forwards,
+      shine 6s linear 325ms infinite;
+    background: linear-gradient(
+      to top right,
+      $icon-colour 0%,
+      $icon-colour 45%,
+      $highlight-colour 50%,
+      $icon-colour 55%,
+      $icon-colour 100%
+    );
+    background-size: 500% 500%;
+  }
+}
+.big-Chevron {
+  right: 0;
+  position: absolute;
+  width: 73%;
+  height: 74%;
+  clip-path: polygon(71% 0%, 100% 50%, 71% 100%, 0% 100%, 28% 50%, 0% 0%);
+
+  &.visible {
+    animation:
+      shuffleBig 3s linear 0ms infinite forwards,
+      shine 6s linear infinite;
+    background: linear-gradient(
+      to top right,
+      $icon-colour 0%,
+      $icon-colour 45%,
+      $highlight-colour 50%,
+      $icon-colour 55%,
+      $icon-colour 100%
+    );
+    background-size: 500% 500%;
+  }
+}
+
+@keyframes shuffleBig {
+  0% {
+    transform: translate(0px);
+  }
+  20% {
+    transform: translate(0px);
+  }
+  50% {
+    transform: translate(10%);
+  }
+  70% {
+    transform: translate(4%);
+  }
+  80% {
+    transform: translate(2%);
+  }
+  100% {
+    transform: translate(0px);
+  }
+}
+@keyframes shuffleSmall {
+  0% {
+    transform: translate(0px);
+  }
+  20% {
+    transform: translate(16%);
+  }
+  50% {
+    transform: translate(18%);
+  }
+  80% {
+    transform: translate(18%);
+  }
+  100% {
+    transform: translate(0px);
+  }
+}
+
+@keyframes shine {
+  0% {
+    background-position: -100% 100%;
+  }
+  50% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% -100%;
+  }
+}
+
+.maskContainer {
+  // position: relative;
+  width: 100%;
+  height: 100%;
+  // background: red;
+  overflow: hidden;
+}
+
+.maskedContent {
+  // position: relative;
+  width: 100%;
+  height: 100%;
+  background: $icon-colour;
+}
+
+.svgMask {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.loadingIndicatorSVG {
+  position: relative;
+  top: 0;
+  background-color: $loader-colour;
+  width: 4%;
+  height: 100%;
+  transform: translateX(-100%);
+
+  &.visible {
+    animation: loopFromLeftToRight 6s linear 0s infinite forwards;
+  }
+}
+
+@keyframes loopFromLeftToRight {
+  0% {
+    left: -5%;
+  }
+  100% {
+    left: 105%;
+  }
+}

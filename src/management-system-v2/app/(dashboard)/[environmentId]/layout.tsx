@@ -10,6 +10,7 @@ import {
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
@@ -18,12 +19,14 @@ import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
 import { spaceURL } from '@/lib/utils';
+import { adminRules } from '@/lib/ability/abilityHelper';
+import { RemoveReadOnly } from '@/lib/typescript-utils';
 
 const DashboardLayout = async ({
   children,
   params,
 }: PropsWithChildren<{ params: { environmentId: string } }>) => {
-  const { userId } = await getCurrentUser();
+  const { userId, systemAdmin } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
@@ -35,9 +38,25 @@ const DashboardLayout = async ({
     ),
   );
 
-  const userRules = await getUserRules(userId, activeEnvironment.spaceId);
+  const userRules = systemAdmin
+    ? (adminRules as RemoveReadOnly<typeof adminRules>)
+    : await getUserRules(userId, activeEnvironment.spaceId);
 
   const layoutMenuItems: MenuProps['items'] = [];
+
+  if (systemAdmin)
+    layoutMenuItems.push({
+      key: 'ms-admin',
+      label: 'System Admin',
+      type: 'group',
+      children: [
+        {
+          key: 'admin-dashboard',
+          label: <Link href="/admin">System dashboard</Link>,
+          icon: <ControlOutlined />,
+        },
+      ],
+    });
 
   if (can('view', 'Process') || can('view', 'Template')) {
     const children: MenuProps['items'] = [];

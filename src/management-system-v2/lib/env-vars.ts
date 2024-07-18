@@ -15,7 +15,7 @@ const environmentVariables = {
   production: {
     NEXTAUTH_SECRET: z.string(),
 
-    USE_AUTH0: z.boolean(),
+    USE_AUTH0: z.coerce.boolean(),
 
     SMTP_MAIL_USER: z.string(),
     SMTP_MAIL_PORT: z.coerce.number(),

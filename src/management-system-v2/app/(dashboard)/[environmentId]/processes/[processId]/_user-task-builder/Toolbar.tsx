@@ -85,12 +85,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <Button
               type="text"
               icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
-              disabled={iframeMaxWidth < 601}
+              disabled={!canUndo}
               onClick={() => actions.history.undo()}
             />
             <Button
               type="text"
               icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
+              disabled={!canRedo}
               onClick={() => actions.history.redo()}
             />
           </>

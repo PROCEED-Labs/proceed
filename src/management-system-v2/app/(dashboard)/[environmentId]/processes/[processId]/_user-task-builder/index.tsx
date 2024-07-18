@@ -37,10 +37,20 @@ import { useEnvironment } from '@/components/auth-can';
 type BuilderProps = {
   processId: string;
   open: boolean;
+  hasUnsavedChanges: boolean;
   onClose: () => void;
+  onSave: () => void;
+  onInit: () => void;
 };
 
-const EditorModal: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
+const EditorModal: React.FC<BuilderProps> = ({
+  processId,
+  open,
+  hasUnsavedChanges,
+  onClose,
+  onSave,
+  onInit,
+}) => {
   const { query, actions } = useEditor();
 
   const environment = useEnvironment();
@@ -75,12 +85,14 @@ const EditorModal: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
   }, [modeler, selectedElementId]);
 
   useEffect(() => {
-    if (filename && !open) {
+    if (filename && open) {
       getProcessUserTaskData(processId, filename, environment.spaceId).then((data) => {
         let importData = defaultForm;
         if (typeof data === 'string') importData = data;
 
         actions.deserialize(importData);
+        actions.history.clear();
+        onInit();
       });
     }
   }, [processId, open, filename, environment]);
@@ -89,6 +101,25 @@ const EditorModal: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
     if (iframeMaxWidth < 601) setIframeLayout('mobile');
     else setIframeLayout('computer');
   }, [iframeMaxWidth]);
+
+  const handleSave = () => {
+    const json = query.serialize();
+    if (modeler && selectedElementId) {
+      const selectedElement = modeler.getElement(selectedElementId);
+      if (selectedElement) {
+        if (filename !== selectedElement.businessObject.fileName) {
+          modeler.getModeling().updateProperties(selectedElement, {
+            fileName: filename,
+            implementation: getUserTaskImplementationString(),
+          });
+        }
+        saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
+          (res) => res && console.error(res.error),
+        );
+        onSave();
+      }
+    }
+  };
 
   return (
     <Modal
@@ -99,25 +130,10 @@ const EditorModal: React.FC<BuilderProps> = ({ processId, open, onClose }) => {
       open={open}
       title="Edit User Task"
       okText="Save"
+      cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={onClose}
       okButtonProps={{ disabled: isMobile }}
-      onOk={() => {
-        const json = query.serialize();
-        if (modeler && selectedElementId) {
-          const selectedElement = modeler.getElement(selectedElementId);
-          if (selectedElement) {
-            if (filename !== selectedElement.businessObject.fileName) {
-              modeler.getModeling().updateProperties(selectedElement, {
-                fileName: filename,
-                implementation: getUserTaskImplementationString(),
-              });
-            }
-            saveProcessUserTask(processId, filename!, json, environment.spaceId).then(
-              (res) => res && console.error(res.error),
-            );
-          }
-        }
-      }}
+      onOk={handleSave}
     >
       <div className={styles.BuilderUI}>
         {!isMobile && (
@@ -168,41 +184,75 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
 
   const isMobile = breakpoint.xs;
 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const [modalApi, modalElement] = Modal.useModal();
+
+  const handleClose = () => {
+    if (!hasUnsavedChanges) {
+      onClose();
+    } else {
+      modalApi.confirm({
+        title: 'You have unsaved changes!',
+        content: 'Are you sure you want to close without saving?',
+        onOk: () => {
+          onClose();
+        },
+      });
+    }
+  };
+
   return (
-    <Editor
-      resolver={{
-        Header,
-        Text,
-        SubmitButton,
-        Container,
-        Row,
-        Column,
-        Input,
-        CheckboxOrRadioGroup,
-        Table,
-        Image,
-      }}
-      enabled={!isMobile}
-      handlers={(store: EditorStore) =>
-        new CustomEventhandlers({
-          store,
-          isMultiSelectEnabled: () => false,
-          removeHoverOnMouseleave: true,
-        })
-      }
-      // TODO: maybe we can replace the automatic row creation and cleanup in the custom drag logic
-      // onBeforeMoveEnd={()}
-    >
-      <AddUserControls
-        name="user-task-editor"
-        checker={{
-          undo: (e) => e.ctrlKey && e.key === 'z',
-          redo: (e) => e.ctrlKey && e.shiftKey && e.key === 'Z',
-          delete: (e) => e.key === 'Delete',
+    <>
+      <Editor
+        resolver={{
+          Header,
+          Text,
+          SubmitButton,
+          Container,
+          Row,
+          Column,
+          Input,
+          CheckboxOrRadioGroup,
+          Table,
+          Image,
         }}
-      />
-      <EditorModal processId={processId} open={open} onClose={onClose} />
-    </Editor>
+        enabled={!isMobile}
+        handlers={(store: EditorStore) =>
+          new CustomEventhandlers({
+            store,
+            isMultiSelectEnabled: () => false,
+            removeHoverOnMouseleave: true,
+          })
+        }
+        onNodesChange={() => {
+          setHasUnsavedChanges(true);
+        }}
+        // TODO: maybe we can replace the automatic row creation and cleanup in the custom drag logic
+        // onBeforeMoveEnd={()}
+      >
+        <AddUserControls
+          name="user-task-editor"
+          checker={{
+            undo: (e) => e.ctrlKey && e.key === 'z',
+            redo: (e) => e.ctrlKey && e.shiftKey && e.key === 'Z',
+            delete: (e) => e.key === 'Delete',
+          }}
+        />
+        <EditorModal
+          processId={processId}
+          open={open}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onClose={handleClose}
+          onInit={() => {
+            setHasUnsavedChanges(false);
+          }}
+          onSave={() => setHasUnsavedChanges(false)}
+        />
+      </Editor>
+
+      {modalElement}
+    </>
   );
 };
 

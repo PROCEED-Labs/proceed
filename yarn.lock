@@ -1375,20 +1375,20 @@
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.6.0.tgz#ec6cd237440700bc23ca23087f513c75508958b0"
   integrity sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==
 
-"@craftjs/core@^0.2.6":
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/@craftjs/core/-/core-0.2.6.tgz#c4f4876ff6673f659b5abd8eabde19851d3346a3"
-  integrity sha512-2IFCwv7BXRuuuhG7KlzACgFaEyJvub0XrwxJCwwlCTOJFECLYzY99Y1ENjwAwZqa4/t0z37DZEwuOlDR+WkQrQ==
+"@craftjs/core@^0.2.7":
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/@craftjs/core/-/core-0.2.8.tgz#d16bb0b5dd84417d631bf181adc491db7048307f"
+  integrity sha512-gVZgBWyhJBD3TYdFT60yZcJWhmLHx7SnAU+EjnXGMbOeU4EDr9iTnCIBhYAovGArG22UPo/sdTJqrE2MFR7Yjg==
   dependencies:
-    "@craftjs/utils" "^0.2.1"
+    "@craftjs/utils" "^0.2.2"
     debounce "^1.2.0"
     lodash "^4.17.21"
     tiny-invariant "^1.0.6"
 
-"@craftjs/utils@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@craftjs/utils/-/utils-0.2.1.tgz#249a16ec26c42c0f7224e6c797781c9842557de6"
-  integrity sha512-NNOdJO0KTG/+vh986WOhehtgwg1lr3mLwcIJHYymMuVAnzOrFgwHzZDuO/v7D0m9Xxbij7GE3VjzMLBHOxlWNA==
+"@craftjs/utils@^0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@craftjs/utils/-/utils-0.2.2.tgz#2480e106840d86eb678001ec8729a9e390c35c68"
+  integrity sha512-uk6626JncxxQUM9ESfFaRQP9F2McKIcN9RDvt3GZM7swUCDdDHnk7KlPcxBbSNn4ntpLIbpQQfyK5bYJtqHBAw==
   dependencies:
     immer "^9.0.6"
     lodash "^4.17.21"

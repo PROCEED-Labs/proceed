@@ -235,8 +235,8 @@ export const defaultForm = `
 }
 `;
 
-const getIframe = () => document.getElementById('user-task-builder-iframe') as HTMLIFrameElement;
-const getSelection = () => getIframe().contentWindow!.getSelection();
+const getIframe = () => document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
+const getSelection = () => getIframe()?.contentWindow!.getSelection();
 
 type ContextMenuProps = React.PropsWithChildren<{
   canOpen?: (openEvent: React.MouseEvent<HTMLElement, MouseEvent>) => boolean;
@@ -251,10 +251,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, men
     const handleClick = () => setShowMenu(false);
     window.addEventListener('click', handleClick);
 
-    getIframe().contentWindow?.addEventListener('click', handleClick);
+    getIframe()?.contentWindow?.addEventListener('click', handleClick);
     return () => {
       window.removeEventListener('click', handleClick);
-      getIframe().contentWindow?.removeEventListener('click', handleClick);
+      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
       setShowMenu(false);
     };
   }, []);
@@ -277,7 +277,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, men
       <div
         onContextMenu={(e) => {
           if (canOpen && !canOpen(e)) return;
-          const { top, left } = getIframe().getBoundingClientRect();
+          const iframe = getIframe();
+          if (!iframe) return;
+          const { top, left } = iframe.getBoundingClientRect();
           e.preventDefault();
           e.stopPropagation();
           setShowMenu(true);
@@ -333,9 +335,9 @@ export const EditableText: React.FC<EditableTextProps> = ({
       setEditable(false);
       console.log(e);
     };
-    getIframe().contentWindow?.addEventListener('click', handleClick);
+    getIframe()?.contentWindow?.addEventListener('click', handleClick);
     return () => {
-      getIframe().contentWindow?.removeEventListener('click', handleClick);
+      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
     };
   }, []);
 

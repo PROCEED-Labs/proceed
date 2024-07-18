@@ -1,12 +1,11 @@
-import Processes from '@/components/processes';
 import Content from '@/components/content';
-import { Result, Space } from 'antd';
+import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { notFound } from 'next/navigation';
+import { env } from '@/lib/env-vars';
 
 const ExecutionsPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!enableNewMSExecution) {
+  if (!env.ENABLE_EXECUTION) {
     return notFound();
   }
 

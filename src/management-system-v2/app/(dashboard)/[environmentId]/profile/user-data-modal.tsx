@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, useTransition } from 'react';
-import { Button, Form, Input, Modal, App } from 'antd';
+import { Button, Form, Input, Modal, App, ModalProps } from 'antd';
 import { updateUser } from '@/lib/data/users';
 import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/data/user-schema';
 import { useRouter } from 'next/navigation';
@@ -26,7 +26,8 @@ const AuthenticatedUserDataModal: FC<{
   structure: modalInput;
   modalOpen: boolean;
   close: () => void;
-}> = ({ structure, modalOpen, close: propClose, userData }) => {
+  modalProps?: ModalProps;
+}> = ({ structure, modalOpen, close: propClose, userData, modalProps }) => {
   const session = useSession();
   const [form] = Form.useForm();
   const [loading, startTransition] = useTransition();
@@ -63,7 +64,7 @@ const AuthenticatedUserDataModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title}>
+    <Modal open={modalOpen} onCancel={close} footer={null} title={structure.title} {...modalProps}>
       <Form form={form} layout="vertical" onFinish={submitData} initialValues={userData}>
         {structure.inputFields.map((input) => (
           <Form.Item

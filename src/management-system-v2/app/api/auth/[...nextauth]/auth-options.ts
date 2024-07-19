@@ -63,11 +63,15 @@ const nextAuthOptions: AuthOptions = {
 
       return session;
     },
-    signIn: async ({ account, user: _user }) => {
+    signIn: async ({ account, user: _user, email }) => {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
+      if (
+        sessionUser?.guest &&
+        account?.provider !== 'guest-loguin' &&
+        !email?.verificationRequest
+      ) {
         const user = _user as Partial<AuthenticatedUser>;
         const guestUser = getUserById(sessionUser.id);
 

@@ -60,7 +60,7 @@ const SignIn: FC<{
   userType: 'guest' | 'user' | 'none';
 }> = ({ providers, userType }) => {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') ?? '/';
+  const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
   const authError = searchParams.get('error');
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
@@ -127,7 +127,10 @@ const SignIn: FC<{
           <>
             <Form
               onFinish={(values) =>
-                signIn(guestProvider.id, { ...values, callbackUrl: '/processes?createprocess' })
+                signIn(guestProvider.id, {
+                  ...values,
+                  callbackUrl: callbackUrl || '/processes?createprocess',
+                })
               }
               key={guestProvider.id}
               layout="vertical"

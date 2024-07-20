@@ -1,23 +1,23 @@
 'use server';
+
 import { Storage } from '@google-cloud/storage';
 import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
 
-//TODO: extend it if necessary
 type ArtifactType = 'image' | 'html' | 'script' | 'pdf';
 
+// In-memory LRU cache setup
 const cache = new LRUCache<string, Buffer>({
   maxSize: 100,
-  ttl: 60 * 60 * 1000,
+  ttl: 60 * 60 * 1000, // Time-to-live in milliseconds
   sizeCalculation: (value, key) => {
     return 1;
   },
 });
 
 const DEPLOYMENT_ENV = process.env.DEPLOYMENT_ENV as 'cloud' | 'local';
-
 const BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET_NAME || '';
 
 function getLocalStorageBasePath(): string {
@@ -30,6 +30,7 @@ function getLocalStorageBasePath(): string {
   return appDir;
 }
 
+// Base directory for local file storage
 const LOCAL_STORAGE_BASE = path.join(getLocalStorageBasePath(), 'storage');
 
 let bucket: any;
@@ -40,6 +41,15 @@ if (DEPLOYMENT_ENV === 'cloud') {
   bucket = storage.bucket(BUCKET_NAME);
 }
 
+/**
+ * Constructs the file path based on the provided parameters.
+ * @param spaceId - The space identifier.
+ * @param userId - The user identifier.
+ * @param artifactType - The type of artifact ('image', 'html', 'script', 'pdf').
+ * @param fileName - The name of the file.
+ * @param processId - Optional process identifier.
+ * @returns The constructed file path.
+ */
 function getFilePath(
   spaceId: string,
   userId: string,
@@ -52,6 +62,16 @@ function getFilePath(
     : `spaces/${spaceId}/user/${userId}/processes/${processId}/artifacts/${artifactType}/${fileName}`;
 }
 
+/**
+ * Saves a file to either cloud storage or local storage.
+ * @param spaceId - The space identifier.
+ * @param userId - The user identifier.
+ * @param artifactType - The type of artifact.
+ * @param fileName - The name of the file.
+ * @param fileContent - The content of the file as a Buffer.
+ * @param processId - Optional process identifier.
+ * @returns A promise that resolves when the file has been saved.
+ */
 export async function saveFile(
   spaceId: string,
   userId: string,
@@ -62,10 +82,6 @@ export async function saveFile(
 ): Promise<void> {
   const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
 
-  if (cache.has(filePath)) {
-    cache.delete(filePath)!;
-  }
-
   if (DEPLOYMENT_ENV === 'cloud') {
     const file = bucket.file(filePath);
     await file.save(fileContent);
@@ -74,8 +90,22 @@ export async function saveFile(
     await fse.ensureDir(path.dirname(fullPath));
     await fse.writeFile(fullPath, fileContent);
   }
+
+  if (cache.has(filePath)) {
+    cache.delete(filePath)!;
+  }
 }
 
+/**
+ * Retrieves a file from either cloud storage or local storage.
+ * @param spaceId - The space identifier.
+ * @param userId - The user identifier.
+ * @param artifactType - The type of artifact.
+ * @param fileName - The name of the file.
+ * @param processId - Optional process identifier.
+ * @returns A promise that resolves with the file content as a Buffer.
+ * @throws An error if the file does not exist.
+ */
 export async function retrieveFile(
   spaceId: string,
   userId: string,
@@ -85,6 +115,7 @@ export async function retrieveFile(
 ): Promise<Buffer> {
   const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
 
+  // Check cache first
   if (cache.has(filePath)) {
     console.log('Cache hit: ', filePath);
     return cache.get(filePath)!;
@@ -109,6 +140,14 @@ export async function retrieveFile(
   return fileContent;
 }
 
+/**
+ * Lists files of a specific artifact type for a given user and process.
+ * @param spaceId - The space identifier.
+ * @param userId - The user identifier.
+ * @param processId - The process identifier.
+ * @param artifactType - The type of artifact.
+ * @returns A promise that resolves with an array of file names.
+ */
 export async function listFiles(
   spaceId: string,
   userId: string,
@@ -130,6 +169,16 @@ export async function listFiles(
   }
 }
 
+/**
+ * Deletes a file from either cloud storage or local storage.
+ * @param spaceId - The space identifier.
+ * @param userId - The user identifier.
+ * @param artifactType - The type of artifact.
+ * @param fileName - The name of the file.
+ * @param processId - Optional process identifier.
+ * @returns A promise that resolves when the file has been deleted.
+ * @throws An error if the file does not exist.
+ */
 export async function deleteFile(
   spaceId: string,
   userId: string,
@@ -150,6 +199,7 @@ export async function deleteFile(
       throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
     }
   }
+
   if (cache.has(filePath)) {
     cache.delete(filePath)!;
   }

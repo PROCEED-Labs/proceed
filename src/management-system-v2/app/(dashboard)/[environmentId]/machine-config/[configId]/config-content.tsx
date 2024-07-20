@@ -190,7 +190,7 @@ export default function Content(props: MachineDataViewProps) {
   const getCustomField = (key: string, field: Parameter) => {
     return (
       <>
-        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0' }}>
+        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0' }}>
           <Col span={3} className="gutter-row">
             <Paragraph
               onBlur={() => saveKey(key)}

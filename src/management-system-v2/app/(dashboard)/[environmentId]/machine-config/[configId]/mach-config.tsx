@@ -60,7 +60,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     marginBottom: 20,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
-    border: 'none',
+    //border: 'none',
   };
 
   const handleCopy = (machineConfig: MachineConfig) => {
@@ -175,7 +175,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       marginBottom: number;
       background: string;
       borderRadius: number;
-      border: string;
+      //border: string;
     },
   ): any => {
     const contentItems = [];
@@ -197,7 +197,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             rootMachineConfig={parentConfig}
           />,
         ],
-        style: panelStyle,
+        style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
       });
     }
     if (
@@ -218,7 +218,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             rootMachineConfig={parentConfig}
           />,
         ],
-        style: panelStyle,
+        style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
       });
     }
     return contentItems;
@@ -228,7 +228,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     marginBottom: number;
     background: string;
     borderRadius: number;
-    border: string;
+    //border: string;
   }): any => {
     let list = [];
     for (let machineConfig of parentConfig.machineConfigs) {
@@ -276,7 +276,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             </Tooltip>
           </div>
         ),
-        style: panelStyle,
+        style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
     }
     return list;

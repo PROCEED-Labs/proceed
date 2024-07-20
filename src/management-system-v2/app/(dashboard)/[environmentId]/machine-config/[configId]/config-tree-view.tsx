@@ -219,21 +219,21 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     if (_config.type === 'machine-config') {
       tagByType = (
         <>
-          <Tag color="red">M</Tag>
+          <Tag color="geekblue">M</Tag>
           {_config.name}
         </>
       );
     } else if (_config.type === 'target-config') {
       tagByType = (
         <>
-          <Tag color="purple">T</Tag>
+          <Tag color="blue">T</Tag>
           {_config.name}
         </>
       );
     } else {
       tagByType = (
         <>
-          <Tag color="green">C</Tag>
+          <Tag color="purple">C</Tag>
           {_config.name}
         </>
       );
@@ -263,13 +263,13 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
               </Space>
             }
           >
-            {type === 'parameter' && <Tag color="lime">P</Tag>}
+            {type === 'parameter' && <Tag color="green">P</Tag>}
             {type === 'metadata' && <Tag color="cyan">P</Tag>}
             {key}
           </Tooltip>
         ) : (
           <div>
-            {type === 'parameter' && <Tag color="lime">P</Tag>}
+            {type === 'parameter' && <Tag color="green">P</Tag>}
             {type === 'metadata' && <Tag color="cyan">P</Tag>}
             {key}
           </div>

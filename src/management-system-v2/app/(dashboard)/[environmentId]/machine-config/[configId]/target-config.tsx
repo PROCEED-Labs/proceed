@@ -51,14 +51,14 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
     marginBottom: 20,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
-    border: 'none',
+    //border: 'none',
   };
 
   const getContentItems = (panelStyle: {
     marginBottom: number;
     background: string;
     borderRadius: number;
-    border: string;
+    //border: string;
   }): any => {
     const contentItems = [];
     if (
@@ -81,7 +81,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
             rootMachineConfig={parentConfig}
           />,
         ],
-        style: panelStyle,
+        style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
       });
     }
     if (
@@ -104,7 +104,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
             rootMachineConfig={parentConfig}
           />,
         ],
-        style: panelStyle,
+        style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
       });
     }
     return contentItems;

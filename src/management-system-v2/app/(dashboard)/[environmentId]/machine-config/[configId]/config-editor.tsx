@@ -138,7 +138,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     marginBottom: 16,
     background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG,
-    border: 'none',
+    //border: 'none',
   };
 
   const configHeaderDropdownItems = () => {
@@ -211,7 +211,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     marginBottom: number;
     background: string;
     borderRadius: number;
-    border: string;
+    //border: string;
   }) => {
     let panels = [];
     panels.push({
@@ -228,7 +228,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
         />
       ),
       /* extra: getTooltips(editable, ['copy', 'edit']), */ ///TODO
-      style: panelStyle,
+      style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
     });
     if (editingConfig.type === 'config') {
       const currentConfig = editingConfig as ParentConfig;
@@ -247,7 +247,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
             />
           ),
           /* extra: getTooltips(editable, ['copy', 'edit', 'delete']), */ //TODO
-          style: panelStyle,
+          style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
         });
       }
       if (currentConfig.machineConfigs && currentConfig.machineConfigs.length > 0) {
@@ -283,7 +283,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
               editingEnabled={editable}
             />
           ),
-          style: panelStyle,
+          style: { ...panelStyle, border: '1px solid #d6e4ff' }, //geekblue-2
         });
       }
     }

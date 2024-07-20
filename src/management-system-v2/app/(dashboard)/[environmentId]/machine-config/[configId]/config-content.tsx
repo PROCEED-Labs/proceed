@@ -32,14 +32,6 @@ import Param from './parameter';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import Paragraph from 'antd/es/typography/Paragraph';
 
-const ConfigPredefinedLiterals = [
-  'description',
-  'owner',
-  'userIdentification',
-  'machine',
-  'picture',
-];
-
 type MachineDataViewProps = {
   configId: string;
   selectedMachineConfig: TreeFindStruct;
@@ -198,7 +190,7 @@ export default function Content(props: MachineDataViewProps) {
   const getCustomField = (key: string, field: Parameter) => {
     return (
       <>
-        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '16px 0' }}>
+        <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0' }}>
           <Col span={3} className="gutter-row">
             <Paragraph
               onBlur={() => saveKey(key)}
@@ -252,7 +244,7 @@ export default function Content(props: MachineDataViewProps) {
                       field.linkedParameters.map((paramId: string) => {
                         return (
                           <Space>
-                            <Tag color="gray">{paramIdToName[paramId]}</Tag>
+                            <Tag color="purple">{paramIdToName[paramId]}</Tag>
                           </Space>
                         );
                       })}
@@ -296,7 +288,7 @@ export default function Content(props: MachineDataViewProps) {
   return (
     <>
       {idVisible && props.contentType === 'metadata' && (
-        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           <Col span={3} className="gutter-row">
             {' '}
             Internal ID
@@ -322,7 +314,7 @@ export default function Content(props: MachineDataViewProps) {
         return getCustomField(key, val);
       })}
       {editable && (
-        <Row gutter={[24, 24]} align="middle" style={{ margin: '16px 0' }}>
+        <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           {/* <Col span={3} className="gutter-row" /> */}
           <Col span={21} className="gutter-row">
             {getAddButton(addButtonTitle, undefined, onClickAddField)}

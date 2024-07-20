@@ -391,7 +391,7 @@ const ParentConfigList = ({
       <Bar
         leftNode={
           <span style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-            <span style={{ display: 'flex', justifyContent: 'center' }}>
+            <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
               {!breakpoint.xs && (
                 <Dropdown
                   trigger={['click']}
@@ -404,6 +404,20 @@ const ParentConfigList = ({
                   </Button>
                 </Dropdown>
               )}
+              <Upload
+                accept=".json"
+                showUploadList={false}
+                beforeUpload={(file: File) => {
+                  importItems(file);
+                  return false; // Prevent automatic upload
+                }}
+              >
+                <Tooltip placement="top" title={'Import'}>
+                  <Button type="primary" style={{ margin: '0 10px' }}>
+                    Import
+                  </Button>
+                </Tooltip>
+              </Upload>
 
               <SelectionActions count={selectedRowKeys.length}>
                 <Tooltip placement="top" title={'Export'}>
@@ -413,20 +427,13 @@ const ParentConfigList = ({
                   />
                 </Tooltip>
 
-                <Tooltip placement="top" title={'Copy'}>
+                {/* <Tooltip placement="top" title={'Copy'}>
                   <CopyOutlined
-                    style={{ margin: '0 8px' }}
+                    style={{ margin: '0 10px' }}
                     onClick={() => copyItem(selectedRowElements)}
                   />
-                </Tooltip>
+                </Tooltip> */}
 
-                <Tooltip placement="top" title={'Edit'}>
-                  <EditOutlined
-                    style={{ margin: '0 8px' }}
-                    onClick={() => editItem(selectedRowElements[0])}
-                    disabled={count !== 1}
-                  />
-                </Tooltip>
                 <Tooltip placement="top" title={'Delete'}>
                   <ConfirmationButton
                     title="Delete Configuration"
@@ -441,20 +448,6 @@ const ParentConfigList = ({
                   />
                 </Tooltip>
               </SelectionActions>
-              <Upload
-                accept=".json"
-                showUploadList={false}
-                beforeUpload={(file: File) => {
-                  importItems(file);
-                  return false; // Prevent automatic upload
-                }}
-              >
-                <Tooltip placement="top" title={'Import'}>
-                  <Button type="primary" style={{ margin: '0 8px' }}>
-                    Import
-                  </Button>
-                </Tooltip>
-              </Upload>
             </span>
           </span>
         }

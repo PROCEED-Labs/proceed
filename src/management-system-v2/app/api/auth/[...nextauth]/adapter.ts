@@ -7,7 +7,7 @@ import {
   getOauthAccountByProviderId,
 } from '@/lib/data/legacy/iam/users';
 import {
-  createVerificationToken,
+  saveVerificationToken,
   deleteVerificationToken,
   getVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
@@ -34,7 +34,7 @@ const Adapter = {
     return getUserByEmail(email) ?? null;
   },
   createVerificationToken: async (token: VerificationToken) => {
-    return createVerificationToken(token);
+    return saveVerificationToken(token);
   },
   useVerificationToken: async (params: { identifier: string; token: string }) => {
     // next-auth checks if the token is expired

@@ -5,7 +5,7 @@ import { userError } from '../user-error';
 import { createChangeEmailVerificationToken, getTokenHash, notExpired } from './utils';
 import { getCurrentUser } from '@/components/auth';
 import {
-  createVerificationToken,
+  saveVerificationToken,
   getVerificationToken,
   deleteVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
@@ -27,7 +27,7 @@ export async function requestEmailChange(newEmail: string) {
       userId,
     });
 
-    createVerificationToken(verificationToken);
+    saveVerificationToken(verificationToken);
 
     const signinMail = renderSigninLinkEmail({
       signInLink: redirectUrl,

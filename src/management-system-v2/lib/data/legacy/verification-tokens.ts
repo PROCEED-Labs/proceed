@@ -52,7 +52,7 @@ export function deleteVerificationToken(params: Pick<VerificationToken, 'token' 
   delete verificationTokensMetaObject[token.token];
 }
 
-export function createVerificationToken(tokenInput: VerificationToken) {
+export function saveVerificationToken(tokenInput: VerificationToken) {
   const token = verificationTokenSchema.parse(tokenInput);
 
   if (verificationTokensMetaObject[token.token]) {

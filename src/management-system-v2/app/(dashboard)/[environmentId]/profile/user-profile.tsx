@@ -100,8 +100,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
         destroyOnClose
       >
         <Alert
-          type="warning"
-          message="We'll send a sign in link to your new email, if you don't open it in this browser your email won't be changed"
+          type="info"
+          message="We'll send you a verification link to your new email address."
           style={{ marginBottom: '1rem' }}
         />
         <Form

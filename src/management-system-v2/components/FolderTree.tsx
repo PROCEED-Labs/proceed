@@ -17,7 +17,7 @@ type TreeNode = NonNullable<TreeProps['treeData']>[number] & { element: FolderCh
 function generateNode(element: FolderChildren): TreeNode {
   let isLeaf = false;
 
-  if (element.type && element.type !== 'folder') isLeaf = true;
+  if (element.type !== 'folder') isLeaf = true;
 
   return {
     key: element.id,

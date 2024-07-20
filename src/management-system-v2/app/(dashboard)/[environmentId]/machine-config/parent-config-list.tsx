@@ -2,7 +2,16 @@
 
 import styles from '@/components/item-list-view.module.scss';
 
-import { Button, Grid, Dropdown, TableColumnsType, Tooltip, Row, TableColumnType } from 'antd';
+import {
+  Button,
+  Grid,
+  Dropdown,
+  TableColumnsType,
+  Tooltip,
+  Row,
+  TableColumnType,
+  Upload,
+} from 'antd';
 import { FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
@@ -257,6 +266,33 @@ const ParentConfigList = ({
   //   }
   //   return Promise.resolve();
   // }
+
+  const importItems = async (file: File) => {
+    try {
+      const text = await file.text();
+      const importedData: ParentConfig[] = JSON.parse(text);
+
+      for (const item of importedData) {
+        const config: AbstractConfigInput = {
+          id: v4(),
+          name: item.name,
+          metadata: item.metadata,
+          machineConfigs: item.machineConfigs || [],
+          targetConfig: item.targetConfig || null,
+          type: item.type,
+          createdOn: item.createdOn,
+          lastEdited: item.lastEdited,
+          versions: item.versions,
+        };
+        await createParentConfig(config, space.spaceId);
+      }
+      message.success('Import successful');
+      router.refresh();
+    } catch (error) {
+      message.error('Import failed');
+      console.error('Error importing items:', error);
+    }
+  };
 
   //copy multiple items
   function handleCopy(

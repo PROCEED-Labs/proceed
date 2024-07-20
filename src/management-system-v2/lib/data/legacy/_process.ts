@@ -29,10 +29,11 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { enableUseDB } from 'FeatureFlags';
+import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import db from '@/lib/data';
 import { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { v4 } from 'uuid';
+import { saveFile } from '../file-manager';
 
 let firstInit = false;
 // @ts-ignore

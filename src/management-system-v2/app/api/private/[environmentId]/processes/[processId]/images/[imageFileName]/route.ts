@@ -1,5 +1,5 @@
 import { fileTypeFromBuffer } from 'file-type';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
   deleteProcessImage,
@@ -13,6 +13,9 @@ import type { ReadableStream } from 'node:stream/web';
 import jwt from 'jsonwebtoken';
 
 import { TokenPayload } from '@/lib/sharing/process-sharing';
+import { getProcess } from '@/lib/data/processes';
+import { enableUseFileManager } from 'FeatureFlags';
+import { deleteFile, retrieveFile, saveFile } from '@/lib/data/file-manager';
 
 export async function GET(
   request: NextRequest,
@@ -20,10 +23,10 @@ export async function GET(
     params: { environmentId, processId, imageFileName },
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const processMetaObjects = getProcessMetaObjects();
-  const processMeta = processMetaObjects[processId];
+  const processMeta = await getProcess(processId, environmentId);
+  const { userId } = await getCurrentUser();
 
-  if (!processMeta) {
+  if (!processMeta || 'error' in processMeta) {
     return new NextResponse(null, {
       status: 404,
       statusText: 'Process with this id does not exist.',
@@ -60,7 +63,9 @@ export async function GET(
     });
   }
 
-  const imageBuffer = await getProcessImage(processId, imageFileName);
+  const imageBuffer = enableUseFileManager
+    ? await retrieveFile(environmentId, userId, 'image', imageFileName, processId)
+    : await getProcessImage(processId, imageFileName);
 
   const fileType = await fileTypeFromBuffer(imageBuffer);
 
@@ -85,8 +90,9 @@ export async function PUT(
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const { userId } = await getCurrentUser();
+
+  const process = await getProcess(processId, environmentId);
 
   if (!process) {
     return new NextResponse(null, {
@@ -152,7 +158,9 @@ export async function PUT(
     });
   }
 
-  await saveProcessImage(processId, imageFileName, imageBuffer);
+  if (enableUseFileManager) {
+    await saveFile(environmentId, userId, 'image', imageFileName, imageBuffer, processId);
+  } else await saveProcessImage(processId, imageFileName, imageBuffer);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });
 }
@@ -164,9 +172,9 @@ export async function DELETE(
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
+  const { userId } = await getCurrentUser();
 
-  const processMetaObjects = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, environmentId);
 
   if (!process) {
     return new NextResponse(null, {
@@ -182,7 +190,9 @@ export async function DELETE(
     });
   }
 
-  await deleteProcessImage(processId, imageFileName);
+  if (enableUseFileManager) {
+    await deleteFile(environmentId, userId, 'image', imageFileName, processId);
+  } else await deleteProcessImage(processId, imageFileName);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });
 }

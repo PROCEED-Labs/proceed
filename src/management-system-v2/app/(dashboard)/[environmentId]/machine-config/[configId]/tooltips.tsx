@@ -10,7 +10,7 @@ const getTooltips = (
   actions?: { [key: string]: MouseEventHandler | undefined },
 ) => {
   return (
-    <Space align="center">
+    <Space.Compact size="small">
       {options.includes('copy') && (
         <Tooltip title="Copy">
           <Button
@@ -42,7 +42,7 @@ const getTooltips = (
           />
         </Tooltip>
       )}
-    </Space>
+    </Space.Compact>
   );
 };
 

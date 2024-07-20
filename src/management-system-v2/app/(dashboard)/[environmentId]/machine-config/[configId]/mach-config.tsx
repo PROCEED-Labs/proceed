@@ -264,25 +264,6 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             handleDelete(machineConfig.id);
           },
         }),
-        /* extra: (
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Tooltip title="Copy">
-              <CopyOutlined
-                onClick={() => handleCopy(machineConfig)}
-                style={{ cursor: 'pointer', fontSize: '16px' }}
-              />
-            </Tooltip>
-            <Tooltip title="Edit">
-              <EditOutlined style={{ marginLeft: 25, cursor: 'pointer', fontSize: '16px' }} />
-            </Tooltip>
-            <Tooltip title="Delete">
-              <DeleteOutlined
-                onClick={() => handleDelete(machineConfig.id)}
-                style={{ marginLeft: 25, cursor: 'pointer', fontSize: '16px' }}
-              />
-            </Tooltip>
-          </div>
-        ), */
         style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
     }

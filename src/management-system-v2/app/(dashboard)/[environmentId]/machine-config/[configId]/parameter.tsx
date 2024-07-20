@@ -176,6 +176,7 @@ export default function Param(props: MachineDataViewProps) {
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
                 <Button
+                  size="small"
                   disabled={!editable}
                   onClick={() => {
                     onChangeParameterField(
@@ -206,6 +207,7 @@ export default function Param(props: MachineDataViewProps) {
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
                 <Button
+                  size="small"
                   disabled={!editable}
                   onClick={() => {
                     onChangeParameterField(
@@ -245,6 +247,7 @@ export default function Param(props: MachineDataViewProps) {
             <Col span={1} className="gutter-row">
               <Tooltip title="Clear">
                 <Button
+                  size="small"
                   disabled={!editable}
                   onClick={() => {
                     onChangeParameterField('', parameterItem);

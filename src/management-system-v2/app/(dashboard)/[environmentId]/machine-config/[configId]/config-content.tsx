@@ -249,11 +249,16 @@ export default function Content(props: MachineDataViewProps) {
                         );
                       })}
                   </Col>
-                  <Col span={1} className="gutter-row">
+                  {/* <Col span={1} className="gutter-row">
                     <Tooltip title="Delete">
-                      <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                      <Button
+                        size="small"
+                        disabled={!editable}
+                        icon={<DeleteOutlined />}
+                        type="text"
+                      />
                     </Tooltip>
-                  </Col>
+                  </Col> */}
                 </Row>
               </Card>
             )}
@@ -269,11 +274,16 @@ export default function Content(props: MachineDataViewProps) {
                       <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>
                     )}
                   </Col>
-                  <Col span={1} className="gutter-row">
+                  {/* <Col span={1} className="gutter-row">
                     <Tooltip title="Delete">
-                      <Button disabled={!editable} icon={<DeleteOutlined />} type="text" />
+                      <Button
+                        size="small"
+                        disabled={!editable}
+                        icon={<DeleteOutlined />}
+                        type="text"
+                      />
                     </Tooltip>
-                  </Col>
+                  </Col> */}
                 </Row>
               </Card>
             )}
@@ -299,6 +309,7 @@ export default function Content(props: MachineDataViewProps) {
           <Col span={1}>
             <Tooltip title="Hide Internal ID">
               <Button
+                size="small"
                 disabled={!editable}
                 onClick={() => {
                   setIdVisible(false);

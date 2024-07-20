@@ -46,7 +46,7 @@ export default function ChangeEmailCard({
   }
 
   return (
-    <Content title="Change Email">
+    <Content title="Change Email Address">
       <Card
         title="Are you sure you want to change your email?"
         style={{ width: '90%', maxWidth: '80ch', margin: 'auto' }}

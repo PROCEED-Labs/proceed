@@ -90,7 +90,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       )}
       <MachineConfigModal
         open={isMachineConfigModalOpen}
-        title="Create Machine Configuration"
+        title="Create Configuration"
         okText="Create"
         onCancel={() => setIsMachineConfigModalOpen(false)}
         onSubmit={createNewMachineConfig}

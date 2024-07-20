@@ -131,7 +131,7 @@ const ParentConfigList = ({
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Machine Configuration" />,
+      label: <MachineConfigCreationButton wrapperElement="Create Configuration" />,
       icon: <FileOutlined />,
     });
 

@@ -112,7 +112,7 @@ const DashboardLayout = async ({
   if (process.env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
       key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Config List</Link>,
       icon: <LuTable2 />,
     });
 

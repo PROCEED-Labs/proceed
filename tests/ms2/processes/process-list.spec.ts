@@ -1,5 +1,5 @@
-import { Browser, Page, chromium, firefox } from '@playwright/test';
-import { test, expect } from './process-list.fixtures';
+import { test, expect } from './processes.fixtures';
+import { openModal, closeModal, waitForHydration } from '../testUtils';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -13,14 +13,18 @@ test('create a new process and remove it again', async ({ processListPage }) => 
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
 
-  await page
-    .locator(`tr[data-row-key="${processDefinitionID}"]`)
-    .getByRole('button', { name: 'delete' })
-    .click();
+  const modal = await openModal(page, () =>
+    page
+      .locator(`tr[data-row-key="${processDefinitionID}"]`)
+      .getByRole('button', { name: 'delete' })
+      .click(),
+  );
 
-  await page.getByRole('button', { name: 'OK' }).click();
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).not.toBeVisible();
+
+  processListPage.getDefinitionIds().splice(0, 1);
 });
 
 test('import a process', async ({ processListPage }) => {
@@ -48,11 +52,13 @@ test('export a single process', async ({ processListPage }) => {
 
   /*************************** BPMN Export ********************************/
 
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
+  let modal = await openModal(page, () =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
+  );
   await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'bpmn' }).click();
+  await modal.getByRole('radio', { name: 'bpmn' }).click();
   const { filename: bpmnFilename, content: exportBpmn } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'string',
   );
   expect(bpmnFilename).toMatch(/.bpmn$/);
@@ -62,11 +68,12 @@ test('export a single process', async ({ processListPage }) => {
   /*************************** SVG Export ********************************/
 
   // test the svg export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
+  modal = await openModal(page, () =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
+  );
+  await modal.getByRole('radio', { name: 'svg' }).click();
   const { filename: svgFilename, content: exportSvg } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'string',
   );
 
@@ -83,12 +90,13 @@ test('export a single process', async ({ processListPage }) => {
   const { definitionId: subprocessDefinitionId, definitionName: subprocessDefinitionName } =
     await processListPage.importProcess('subprocess.bpmn');
   // test the svg export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
+  modal = await openModal(page, () =>
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
+  );
+  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
   const { filename: multiSvgFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'zip',
   );
 
@@ -139,11 +147,12 @@ test('export a single process', async ({ processListPage }) => {
   /*************************** PNG Export ********************************/
 
   // test the png export with only a single file
-  await page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
+  modal = await openModal(page, () =>
+    page.locator(`tr[data-row-key="${definitionId}"]`).getByLabel('export').click(),
+  );
+  await modal.getByRole('radio', { name: 'png' }).click();
   const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'string',
   );
 
@@ -151,14 +160,15 @@ test('export a single process', async ({ processListPage }) => {
   expect(pngFilename).toMatch(/.png$/);
 
   // test the png export with an additional file being exported (export of subprocesses is being selected)
-  await page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('radio', { name: 'png' }).click();
+  modal = await openModal(page, () =>
+    page.locator(`tr[data-row-key="${subprocessDefinitionId}"]`).getByLabel('export').click(),
+  );
+  await modal.getByRole('radio', { name: 'png' }).click();
   // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
 
   const { filename: multiPngFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'zip',
   );
 
@@ -196,14 +206,12 @@ test('export multiple processes', async ({ processListPage }) => {
   await page.locator(`tr[data-row-key="${process1Id}"]`).getByRole('checkbox').click();
   await page.locator(`tr[data-row-key="${process3Id}"]`).getByRole('checkbox').click();
 
-  await page.getByLabel('export').first().click();
+  let modal = await openModal(page, () => page.getByLabel('export').first().click());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'bpmn' }).click();
+  await modal.getByRole('radio', { name: 'bpmn' }).click();
 
   const { filename, content: zip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'zip',
   );
 
@@ -239,15 +247,13 @@ test('export multiple processes', async ({ processListPage }) => {
 
   /*************************** SVG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  modal = await openModal(page, () => page.getByLabel('export').first().click());
 
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-
-  await page.getByRole('radio', { name: 'svg' }).click();
-  await page.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
+  await modal.getByRole('radio', { name: 'svg' }).click();
+  await modal.getByRole('checkbox', { name: 'with collapsed subprocesses' }).click();
 
   const { filename: svgZipFilename, content: svgZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'zip',
   );
 
@@ -266,16 +272,16 @@ test('export multiple processes', async ({ processListPage }) => {
 
   /*************************** PNG Export ********************************/
 
-  await page.getByLabel('export').first().click();
+  modal = await openModal(page, () => page.getByLabel('export').first().click());
 
   await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('radio', { name: 'png' }).click();
+  await modal.getByRole('radio', { name: 'png' }).click();
   // the selection of the "with selected subprocesses" option should still be valid
-  await expect(page.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
+  await expect(modal.getByRole('checkbox', { name: 'with collapsed subprocesses' })).toBeChecked();
 
   const { filename: pngZipFilename, content: pngZip } = await processListPage.handleDownload(
-    async () => await page.getByRole('button', { name: 'OK' }).click(),
+    async () => await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click()),
     'zip',
   );
 
@@ -291,102 +297,6 @@ test('export multiple processes', async ({ processListPage }) => {
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest.png')).toBeTruthy();
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_X.png')).toBeTruthy();
   expect(pngZip.file(getFolderName(process3Name) + '/' + 'latest_subprocess_Y.png')).toBeTruthy();
-});
-
-test('share-modal-test', async ({ processListPage }) => {
-  const { page } = processListPage;
-
-  let clipboardData: string;
-
-  const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
-
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
-
-  await page.getByRole('button', { name: 'share-alt' }).click();
-
-  //await expect(page.getByText('Share', { exact: true })).toBeVisible();
-
-  /*************************** Embed in Website ********************************/
-
-  await page.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(page.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await page.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
-  await expect(page.locator('div[class="code"]')).toBeVisible();
-  await page.getByTitle('copy code', { exact: true }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
-  expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  // skip this test for firebox
-  if (page.context().browser().browserType() !== firefox) {
-    await page.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-    await page.waitForTimeout(100);
-    clipboardData = await processListPage.readClipboard(false);
-    await expect(clipboardData).toMatch('image/png');
-  } else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await page.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await page.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  await page.getByTitle('Export as file', { exact: true }).click();
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'cancel' }).click();
-
-  /*************************** Share Process with link ********************************/
-  await page.getByRole('button', { name: 'Share Public Link' }).click();
-  await page.getByText('Share Process with Public Link').click();
-
-  await expect(page.locator('input[name="generated share link"]')).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy link' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Save QR Code' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy QR Code' })).toBeEnabled();
-
-  await page.getByRole('button', { name: 'Copy link' }).click();
-
-  clipboardData = await processListPage.readClipboard(true);
-
-  // Visit the shared link
-  const browser: Browser = await chromium.launch();
-  const newPage: Page = await browser.newPage();
-
-  await newPage.goto(`${clipboardData}`);
-  await newPage.waitForURL(`${clipboardData}`);
-
-  // Add the shared process to the workspace
-  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
-  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
-
-  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
-  await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
-
-  await newPage.getByRole('button', { name: 'My Space' }).click();
-  await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
-
-  const newProcessId = newPage.url().split('/processes/').pop();
-
-  await newPage.getByRole('link', { name: 'process list' }).click();
-  await newPage.waitForURL(/processes/);
-  await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });
 
 test('toggle process list columns', async ({ processListPage }) => {
@@ -459,9 +369,11 @@ test('create a new folder and remove it with context menu', async ({ processList
   const folderId = crypto.randomUUID();
 
   await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page, () =>
+    page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+  );
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
@@ -482,16 +394,18 @@ test('create a new folder with new button and remove it', async ({ processListPa
 
   // NOTE: this could easily break
   await page.getByRole('button', { name: 'ellipsis' }).hover();
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page, () =>
+    page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+  );
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   const folderLocator = page.getByText(folderId);
   await expect(folderLocator).toBeVisible();
 
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
   await expect(folderLocator).not.toBeVisible();
 });
@@ -504,9 +418,11 @@ test('create a new folder and process, move process to folder and then delete bo
   // create folder
   const folderId = crypto.randomUUID();
   await page.getByText('No data').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Create Folder' }).click();
-  await page.getByLabel('Folder name').fill(folderId);
-  await page.getByRole('button', { name: 'OK' }).click();
+  let modal = await openModal(page, () =>
+    page.getByRole('menuitem', { name: 'Create Folder' }).click(),
+  );
+  await modal.getByLabel('Folder name').fill(folderId);
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   const folderRow = page.locator(`tr:has(div:has-text("${folderId}"))`);
   await expect(folderRow).toBeVisible();
 
@@ -516,7 +432,7 @@ test('create a new folder and process, move process to folder and then delete bo
     processName: processId,
     returnToProcessList: true,
   });
-  await processListPage.goto();
+
   const processLocator = page.locator(`tr[data-row-key="${processDefinitionID}"]`);
   await expect(processLocator).toBeVisible();
 
@@ -525,7 +441,8 @@ test('create a new folder and process, move process to folder and then delete bo
   await processLocator.hover();
   await page.mouse.down();
   await page.mouse.move(100, 100, { steps: 10 }); // needed to "start dragging" the element
-  await folderRow.hover();
+  // Without "force: true" the check for hoverability can fail when the hover event is blocked by the drag-shadow
+  await folderRow.hover({ force: true });
   await page.mouse.up();
 
   await expect(processLocator).not.toBeVisible();
@@ -536,14 +453,17 @@ test('create a new folder and process, move process to folder and then delete bo
 
   // check for process and delete it
   await expect(processLocator).toBeVisible();
-  await processLocator.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(page, () =>
+    processLocator.getByRole('button', { name: 'delete' }).click(),
+  );
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(processLocator).not.toBeVisible();
+  processListPage.getDefinitionIds().splice(0, 1);
 
   // go back and delete folder
   await page.goBack();
-  await folderRow.getByRole('button', { name: 'delete' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  modal = await openModal(page, () => folderRow.getByRole('button', { name: 'delete' }).click());
+  await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
   await expect(folderRow).not.toBeVisible();
 });
 
@@ -657,22 +577,14 @@ test('sorting process list columns', async ({ processListPage }) => {
   }
 });
 
-/* Favourites */ //TODO:
-// test('add and remove favourite processes', async ({ processListPage }) => {
-//   const { page } = processListPage;
-// });
-
 test.describe('shortcuts in process-list', () => {
   /* Create Process - ctrl / meta + enter */
   test('create and submit a new process with shortcuts', async ({ processListPage }) => {
     const { page } = processListPage;
     /* Open Modal with ctrl + enter */
-    await page.getByRole('main').press('Control+Enter');
-
-    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+    let modal = await openModal(page, () => page.getByRole('main').press('Control+Enter'));
 
     /* Check if Modal is visible */
-    let modal = await page.getByRole('dialog');
     await expect(modal, 'New-Process-Modal should be openable via shortcuts').toBeVisible();
 
     /* Check if correct modal opened */
@@ -682,17 +594,13 @@ test.describe('shortcuts in process-list', () => {
     );
 
     /* Close Modal with esc */
-    await page.getByRole('main').press('Escape');
-
-    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+    await closeModal(modal, () => page.getByRole('main').press('Escape'));
 
     /* Check if Modal closed */
     await expect(modal, 'Modals should be closeable via Esc').not.toBeVisible();
 
     /* Open Modal with meta + enter */
-    await page.getByRole('main').press('Meta+Enter');
-
-    modal = await page.getByRole('dialog');
+    modal = await openModal(page, () => page.getByRole('main').press('Control+Enter'));
 
     /* Check if Modal opened */
     await expect(modal, 'New-Process-Modal should be openable via ctrl/meta+enter').toBeVisible();
@@ -704,14 +612,14 @@ test.describe('shortcuts in process-list', () => {
     );
 
     /* Fill in the form */
-    await page.getByRole('dialog').press('Tab');
-    await page.getByRole('dialog').press('Tab');
-    await page.getByLabel(/name/i).fill('Some Name');
-    await page.getByLabel(/name/i).press('Tab');
-    await page.getByLabel(/description/i).fill('Some Description');
+    await modal.press('Tab');
+    await modal.press('Tab');
+    await modal.getByLabel(/name/i).fill('Some Name');
+    await modal.getByLabel(/name/i).press('Tab');
+    await modal.getByLabel(/description/i).fill('Some Description');
 
     /* Submit form with ctrl + enter */
-    await page.getByRole('main').press('Control+Enter');
+    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
 
     /* Wait for Modeler to open */
     await page.waitForURL(
@@ -722,12 +630,9 @@ test.describe('shortcuts in process-list', () => {
     // );
 
     /* Save Process-ID*/
-    const processID = page
-      .url()
-      .split(processListPage.getPageURL() + '/')
-      .pop();
+    const processID = page.url().split('/').pop();
 
-    await processListPage.waitForHydration();
+    await waitForHydration(page);
 
     /* Go back to process list by pressing esc twice */
     await page.getByRole('main').press('Escape');
@@ -759,10 +664,10 @@ test.describe('shortcuts in process-list', () => {
     await processRowCheckbox.check();
 
     /* Delete Process with del */
-    await page.getByRole('main').press('Delete');
+    const modal = await openModal(page, () => page.getByRole('main').press('Delete'));
 
     /* Confirm deletion */
-    await page.getByRole('main').press('Control+Enter');
+    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
 
     /* Check if Process was removed */
     await expect(
@@ -798,7 +703,7 @@ test.describe('shortcuts in process-list', () => {
       ).toHaveClass(/ant-table-row-selected/);
     }
 
-    /* Deselect all Processes with ctrl + a */
+    /* Deselect all Processes with esc */
     await page.getByRole('main').press('Escape');
 
     /* Check if all Processes are deselected */
@@ -860,7 +765,7 @@ test.describe('shortcuts in process-list', () => {
   });
 
   /* Copy and Paste Processes - ctrl / meta + c -> ctrl / meta + v */
-  test('copy and paste processes with ctrl + c -> ctrl + v', async ({
+  test('copy and paste process with ctrl + c -> ctrl + v', async ({
     processListPage,
     browserName,
   }) => {
@@ -878,12 +783,9 @@ test.describe('shortcuts in process-list', () => {
 
     /* Copy & Paste*/
     await page.getByRole('main').press('Control+c');
-    await page.getByRole('main').press('Control+v');
-
-    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+    const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
 
     /* Check if Modal is visible */
-    const modal = await page.getByRole('dialog');
     await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
 
     /* Check if correct modal opened */
@@ -891,9 +793,7 @@ test.describe('shortcuts in process-list', () => {
     await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
 
     /* Submit copy */
-    await page.getByRole('main').press('Control+Enter');
-
-    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
 
     /* Check if Process has been added */
     await expect(
@@ -905,16 +805,15 @@ test.describe('shortcuts in process-list', () => {
 
     /* Copy & Paste - META */
     await page.getByRole('main').press('Meta+c');
-    await page.getByRole('main').press('Meta+v');
+    const modal2 = await openModal(page, () => page.getByRole('main').press('Meta+v'));
     /* Make name unique */
-    await page.getByRole('dialog').press('Tab');
-    await page.getByRole('dialog').press('Tab');
-    await page.getByLabel(/name/i).press('ArrowRight');
-    await page.getByLabel(/name/i).fill(processName + ' - Meta');
+    await modal2.press('Tab');
+    await modal2.press('Tab');
+    await modal2.getByLabel(/name/i).press('ArrowRight');
+    await modal2.getByLabel(/name/i).fill(processName + ' - Meta');
 
     /* Check if Modal is visible */
-    const modal2 = await page.getByRole('dialog');
-    await expect(modal, 'Could not open copy modal with shortcut (meta)').toBeVisible();
+    await expect(modal2, 'Could not open copy modal with shortcut (meta)').toBeVisible();
 
     /* Check if correct modal opened */
     const modalTitle2 = await modal2.locator('div[class="ant-modal-title"]');
@@ -922,16 +821,77 @@ test.describe('shortcuts in process-list', () => {
 
     /* Submit copy */
     if (browserName !== 'firefox') {
-      await page.getByRole('main').press('Meta+Enter');
+      await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
     } else {
       await modal2.click();
-      await page.locator('body').press('Meta+Enter');
+      await closeModal(modal2, () => page.getByRole('main').press('Meta+Enter'));
     }
 
     /* Check if Process has been added */
     await expect(page.locator('tbody>tr')).toHaveCount(3);
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
+  });
+
+  test('copy and paste multiple processes with ctrl + c -> ctrl + v', async ({
+    processListPage,
+    browserName,
+  }) => {
+    const { page } = processListPage;
+
+    /* Create a process */
+    const names = ['A', 'B'];
+    const processIDs = [];
+    for (const name of names) {
+      processIDs.push(
+        await processListPage.createProcess({
+          processName: name,
+          returnToProcessList: true,
+        }),
+      );
+    }
+
+    /* Select all processes */
+    await page.getByRole('main').press('Control+a');
+
+    /* Copy & Paste*/
+    await page.getByRole('main').press('Control+c');
+    await page.getByRole('main').press('Control+v');
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Modal is visible */
+    const modal = await page.getByRole('dialog');
+    await expect(modal, 'Could not open export modal with shortcut').toBeVisible();
+
+    /* Check if correct modal opened */
+    const modalTitle = await modal.locator('div[class="ant-modal-title"]');
+    /* Title has copy in it */
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/copy/i);
+    /* Multiple processes */
+    const tablistNumberOfEntries = await modal.getByRole('tablist').locator('>div').count();
+    await expect(
+      tablistNumberOfEntries,
+      'Could not ensure that multiple processes are copied',
+    ).toBe(2);
+
+    /* Submit copy */
+    if (browserName !== 'firefox') {
+      await page.getByRole('main').press('Control+Enter');
+    } else {
+      await modal.click();
+      await page.locator('body').press('Control+Enter');
+    }
+
+    await page.waitForTimeout(1_000); /* Ensure that animation is over */
+
+    /* Check if Processes have been added */
+    await expect(page.locator('tbody>tr')).toHaveCount(4);
+
+    /* Check with names */
+    for (const name of names) {
+      await expect(page.locator('tbody')).toContainText(name + ' (Copy)');
+    }
   });
 
   /* Open Export Modal - ctrl / meta + e */
@@ -948,10 +908,9 @@ test.describe('shortcuts in process-list', () => {
     await page.locator(`input[name="${processID}"]`).click();
 
     /* Open Export Modal with ctrl + e */
-    await page.getByRole('main').press('Control+e');
+    const modal = await openModal(page, () => page.getByRole('main').press('Control+e'));
 
     /* Check if Modal is visible */
-    const modal = await page.getByRole('dialog');
     expect(modal, 'Could not open delete modal with shortcut').toBeVisible();
 
     /* Check if correct modal opened */
@@ -960,10 +919,414 @@ test.describe('shortcuts in process-list', () => {
       /export/i,
     );
   });
+});
+
+test.describe('Click-Controls in Process-List', () => {
+  test('Select multiple with ctrl / meta and click', async ({ processListPage }) => {
+    const { page } = processListPage;
+    const selectedColour = 'rgb(235, 248, 255)';
+
+    /* Create 2 Processes */
+    const namens = ['A', 'B'];
+    const processIDs = [];
+    for (const name of namens) {
+      processIDs.push(
+        await processListPage.createProcess({
+          processName: 'Process ' + name,
+          returnToProcessList: true,
+        }),
+      );
+    }
+
+    /* Switch to Icon-View */
+    await page.getByRole('button', { name: 'appstore' }).click();
+
+    /* Variables */
+    const counter = await page.getByRole('note');
+    const processA = await page.getByRole('button', { name: /Process A/ });
+    const processB = await page.getByRole('button', { name: /Process B/ });
+
+    /* Click on Process B */
+    processB.click();
+    /* Check if selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('1');
+    /* Blue outline */
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not select a Process in Icon-List with normal click',
+    ).toHaveCSS('background-color', selectedColour);
+
+    /* Deselect by clicking with ctrl */
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    /* Check if deselected */
+    /* Selected Counter not visible */
+    await expect(counter).not.toBeVisible();
+    /* Blue outline */
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not deselect a Process in Icon-List with ctrl+click',
+    ).not.toHaveCSS('background-color', selectedColour);
+
+    /* Select again with ctrl */
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    /* Check if selected again */
+    /* Selected Counter */
+    await expect(counter).toContainText('1');
+    /* Blue outline */
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not select a Process in Icon-List with ctrl+click',
+    ).toHaveCSS('background-color', selectedColour);
+
+    /* Select Process A */
+    processA.click();
+    /* Check if A selected and B not selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('1');
+    /* Blue outline */
+    await expect(
+      processA.locator('.ant-card'),
+      'Could not select a Process in Icon-List with normal click',
+    ).toHaveCSS('background-color', selectedColour);
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not deselect a Process in Icon-List with normal click',
+    ).not.toHaveCSS('background-color', selectedColour);
+
+    /* Additionally select Process B */
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Control'] });
+    /* Check if A and B are selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('2');
+    /* Blue outline */
+    await expect(
+      processA.locator('.ant-card'),
+      'Could not select multiple Processes in Icon-List with ctrl+click',
+    ).toHaveCSS('background-color', selectedColour);
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not select multiple Processes in Icon-List with ctrl+click',
+    ).toHaveCSS('background-color', selectedColour);
+
+    /* Deselect all Processes with esc */
+    await page.getByRole('main').press('Escape');
+    /* Check if deselected */
+    /* Selected Counter */
+    await expect(counter).not.toBeVisible();
+    /* Blue outline */
+    await expect(
+      processA.locator('.ant-card'),
+      'Could not deselect all Processes in Icon-List with esc',
+    ).not.toHaveCSS('background-color', selectedColour);
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not deselect all Processes in Icon-List with esc',
+    ).not.toHaveCSS('background-color', selectedColour);
+
+    /* Repeat with Meta instead of ctrl */
+    /* Select Process A */
+    await page.getByRole('button', { name: /Process A/ }).click({ modifiers: ['Meta'] });
+    /* Check if A selected B not selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('1');
+    /* Blue outline */
+    await expect(
+      processA.locator('.ant-card'),
+      'Could not select a Process in Icon-List with normal click',
+    ).toHaveCSS('background-color', selectedColour);
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not deselect a Process in Icon-List with normal click',
+    ).not.toHaveCSS('background-color', selectedColour);
+
+    /* Additionaly select B */
+    await page.getByRole('button', { name: /Process B/ }).click({ modifiers: ['Meta'] });
+    /* Check if both selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('2');
+    /* Blue outline */
+    await expect(
+      processA.locator('.ant-card'),
+      'Could not select multiple Processes in Icon-List with meta+click',
+    ).toHaveCSS('background-color', selectedColour);
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not select multiple Processes in Icon-List with meta+click',
+    ).toHaveCSS('background-color', selectedColour);
+  });
+
+  test('Drag select with shift + click', async ({ processListPage }) => {
+    const { page } = processListPage;
+    const selectedColour = 'rgb(235, 248, 255)';
+
+    /* Create 4 Processes */
+    const namens = ['A', 'B', 'C', 'D'];
+    const processIDs = [];
+    for (const name of namens) {
+      processIDs.push(
+        await processListPage.createProcess({
+          processName: 'Process ' + name,
+          returnToProcessList: true,
+        }),
+      );
+    }
+
+    /* Switch to Icon-View */
+    await page.getByRole('button', { name: 'appstore' }).click();
+
+    /* Variables */
+    const counter = await page.getByRole('note');
+    const processA = await page.getByRole('button', { name: /Process A/ });
+    const processB = await page.getByRole('button', { name: /Process B/ });
+    const processC = await page.getByRole('button', { name: /Process C/ });
+    const processD = await page.getByRole('button', { name: /Process D/ });
+
+    /* Select B (while pressing shift) */
+    await processB.click({ modifiers: ['Shift'] });
+    /* Check if B is selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('1');
+    /* Blue outline */
+    await expect(
+      processB.locator('.ant-card'),
+      'Could not select a Process in Icon-List with shift+click',
+    ).toHaveCSS('background-color', selectedColour);
+
+    /* Drag select until C */
+    await processC.click({ modifiers: ['Shift'] });
+    /* Check if B and C are selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('2');
+    /* Blue outline */
+    for (const process of [processB, processC]) {
+      await expect(
+        process.locator('.ant-card'),
+        'Could not select multiple Processes in Icon-List with shift+click',
+      ).toHaveCSS('background-color', selectedColour);
+    }
+
+    /* Drag select until D */
+    await processD.click({ modifiers: ['Shift'] });
+    /* Check if B, C and D are selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('3');
+    /* Blue outline */
+    for (const process of [processB, processC, processD]) {
+      await expect(
+        process.locator('.ant-card'),
+        'Could not select multiple Processes in Icon-List with shift+click',
+      ).toHaveCSS('background-color', selectedColour);
+    }
+
+    /* Deselect C */
+    await processC.click({ modifiers: ['Control'] });
+    /* Check if B and D are selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('2');
+    /* Blue outline */
+    for (const process of [processB, processD]) {
+      await expect(
+        process.locator('.ant-card'),
+        'Could not deselect a Process in Icon-List with ctrl+click',
+      ).toHaveCSS('background-color', selectedColour);
+    }
+
+    /* Select range(A,D) by shift clicking A */
+    await processA.click({ modifiers: ['Shift'] });
+    /* Check if A, B, C, D are selected */
+    /* Selected Counter */
+    await expect(counter).toContainText('4');
+    /* Blue outline */
+    for (const process of [processA, processB, processC, processD]) {
+      await expect(
+        process.locator('.ant-card'),
+        'Could not select multiple Processes in Icon-List with shift+click',
+      ).toHaveCSS('background-color', selectedColour);
+    }
+  });
+});
+
+test.describe('Favourites', () => {
+  test('Add new Favourite as Guest and recieve info message', async ({ processListPage }) => {
+    const { page } = processListPage;
+
+    /* Create a Process */
+    const processID = await processListPage.createProcess({
+      processName: 'Favourite Process',
+      returnToProcessList: true,
+    });
+
+    /* Star it */
+    await page
+      .locator(`tr[data-row-key="${processID}"]`)
+      .getByRole('img', { name: /star/i })
+      .click();
+
+    /* Check if Info-Message is displayed */
+    const message = await page.locator('.ant-message-info');
+    /* Check if visible */
+    await expect(message).toBeVisible();
+    /* Check if it contains appropriate words */
+    await expect(message).toContainText(
+      /(?=.*[sign in|log in])(?=.*[need|have to])(?=.*[save|store|persist])/i,
+    );
+  });
 
   /* TODO: */
+  // test.describe('Favourites as logged in user', () => {
+  //   test.beforeAll(async ({ processListPage }) => {
+  //     /* Login */
+  //     // TODO: Login as Jane Doe
+  //     console.log('Login as Jane Doe');
+  //   });
 
-  // test('Select multiple with ctrl / meta and click', async ({ processListPage }) => {});
+  //   /* TODO: Uncomment once logged in as jane doe  */
+  //   test('Favourites persist after login', async ({ processListPage }) => {
+  //     const { page } = processListPage;
 
-  // test('Drag select with shift + click', async ({ processListPage }) => {});
+  //     /* Create a Process and a Folder */
+  //     const processID = await processListPage.createProcess({
+  //       processName: 'Favourite Process',
+  //       returnToProcessList: true,
+  //     });
+  //     const folderID = await processListPage.createFolder({ folderName: 'Favourite Folder' });
+
+  //     /* Star them */
+  //     await page
+  //       .locator(`tr[data-row-key="${processID}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${processID}"]`).getByLabel('star'),
+  //       'Favourite Process should still be favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     const folderStar = await page
+  //       .locator(`tr[data-row-key="${folderID}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${folderID}"]`).getByLabel('star'),
+  //       'Favourite Folder should still be favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     /* Reload page */
+  //     await page.reload();
+
+  //     /* Check if Favourites are still there */
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${processID}"]`).getByLabel('star'),
+  //       'Favourite Process should still be favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${folderID}"]`).getByLabel('star'),
+  //       'Favourite Folder should still be favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     /* Now Remove them from favourites and check if it persists over reloads */
+
+  //     /* Unstar them */
+  //     await page
+  //       .locator(`tr[data-row-key="${processID}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${processID}"]`).getByLabel('star'),
+  //       'Favourite Process should not be favourite anymore',
+  //     ).not.toHaveCSS('color', 'rgb(255, 215, 0)');
+  //     await page
+  //       .locator(`tr[data-row-key="${folderID}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${folderID}"]`).getByLabel('star'),
+  //       'Favourite Folder should not be favourite anymore',
+  //     ).not.toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     /* Reload page */
+  //     await page.reload();
+
+  //     /* Check if Favourites are still there */
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${processID}"]`).getByLabel('star'),
+  //       'Favourite Process should not be favourite anymore',
+  //     ).not.toHaveCSS('color', 'rgb(255, 215, 0)');
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${folderID}"]`).getByLabel('star'),
+  //       'Favourite Folder should not be favourite anymore',
+  //     ).not.toHaveCSS('color', 'rgb(255, 215, 0)');
+  //   });
+
+  //   test('Sort by Favourites', async ({ processListPage }) => {
+  //     const { page } = processListPage;
+  //     const names = ['A', 'B', 'C'];
+  //     /* Create 3 Processes */
+  //     const processIDs = [];
+  //     for (const name of names) {
+  //       processIDs.push(
+  //         await processListPage.createProcess({
+  //           processName: 'Process ' + name,
+  //           returnToProcessList: true,
+  //         }),
+  //       );
+  //     }
+
+  //     /* Create 3 Folders */
+  //     const folderIDs = [];
+  //     for (const name of names) {
+  //       folderIDs.push(await processListPage.createFolder({ folderName: 'Folder ' + name }));
+  //     }
+
+  //     /* Make middle ones favourites */
+  //     await page
+  //       .locator(`tr[data-row-key="${processIDs[1]}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+
+  //     /* Check if golden stars are visible */
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${processIDs[1]}"]`).getByLabel('star'),
+  //       'Could not make process favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     /* Same for folder */
+  //     await page
+  //       .locator(`tr[data-row-key="${folderIDs[1]}"]`)
+  //       .getByRole('img', { name: /star/i })
+  //       .click();
+
+  //     await expect(
+  //       page.locator(`tr[data-row-key="${folderIDs[1]}"]`).getByLabel('star'),
+  //       'Could not make folder favourite',
+  //     ).toHaveCSS('color', 'rgb(255, 215, 0)');
+
+  //     /* Sort */
+  //     const allRows = await page.locator('tbody tr').all();
+  //     /* First click - ascending */
+  //     await page.locator('th').nth(1).click();
+
+  //     /* Check if correct order */
+  //     await expect(allRows[0], 'Could not sort Favourite-Folders ascending').toContainText(
+  //       'Folder B',
+  //     );
+  //     await expect(
+  //       allRows[names.length],
+  //       'Could not sort Favourite-Processes ascending',
+  //     ).toContainText('Process B');
+
+  //     /* Second click - descending */
+  //     await page.locator('th').nth(1).click();
+
+  //     /* Check if correct order */
+  //     await expect(
+  //       allRows[names.length - 1],
+  //       'Could not sort Favourite-Folders descending',
+  //     ).toContainText('Folder B');
+  //     await expect(
+  //       allRows[names.length * 2 - 1],
+  //       'Could not sort Favourite-Processes descending',
+  //     ).toContainText('Process B');
+  //   });
+  // });
 });

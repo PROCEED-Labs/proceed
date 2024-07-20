@@ -56,6 +56,7 @@ if (!global.stores) {
   stores.environmentMemberships = { store: getStore('environmentMemberships') };
   stores.folders = { store: getStore('folders') };
   stores.machineConfig = { store: getStore('machineConfig') };
+  stores.systemAdmins = { store: getStore('systemAdmins') };
 }
 
 /**

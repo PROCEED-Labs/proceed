@@ -92,7 +92,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
       />
 
       <Modal
-        title="Change your email"
+        title="Change your email address"
         open={changeEmailModalOpen}
         closeIcon={null}
         onCancel={() => setChangeEmailModalOpen(false)}

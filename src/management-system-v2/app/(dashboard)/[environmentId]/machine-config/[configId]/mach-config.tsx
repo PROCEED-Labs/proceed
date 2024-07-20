@@ -256,8 +256,15 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             items={getContentItems(machineConfig, panelStyle)}
           />,
         ],
-        /* extra: getTooltips(editable, ['edit', 'copy', 'delete']), */ //TODO
-        extra: (
+        extra: getTooltips(editable, ['copy', 'delete'], {
+          copy: () => {
+            handleCopy(machineConfig);
+          },
+          delete: () => {
+            handleDelete(machineConfig.id);
+          },
+        }),
+        /* extra: (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Copy">
               <CopyOutlined
@@ -275,7 +282,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
               />
             </Tooltip>
           </div>
-        ),
+        ), */
         style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
     }

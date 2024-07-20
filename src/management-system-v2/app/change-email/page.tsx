@@ -5,10 +5,10 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import ChangeEmailCard from './change-email-card';
 
-const searchParamsScema = z.object({ email: z.string().email(), token: z.string() });
+const searchParamsSchema = z.object({ email: z.string().email(), token: z.string() });
 
 export default async function ChangeEmailPage({ searchParams }: { searchParams: unknown }) {
-  const parsedSearchkParams = searchParamsScema.safeParse(searchParams);
+  const parsedSearchkParams = searchParamsSchema.safeParse(searchParams);
   if (!parsedSearchkParams.success) redirect('/');
   const { email, token } = parsedSearchkParams.data;
 

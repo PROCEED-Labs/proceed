@@ -149,7 +149,6 @@ export default function Content(props: MachineDataViewProps) {
       return;
     }
     saveAll();
-    console.log('ALO EDITING');
   }, [editingContent]);
 
   const showMobileView = useMobileModeler();

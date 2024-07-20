@@ -1,17 +1,17 @@
 import store from './store.js';
 import { z } from 'zod';
 
+const baseTokenSchema = z.object({
+  token: z.string(),
+  identifier: z.string(),
+  expires: z.date(),
+});
+
 const verificationTokenSchema = z.union([
-  z.object({
-    token: z.string(),
-    identifier: z.string(),
-    expires: z.date(),
+  baseTokenSchema.extend({
     updateEmail: z.literal(false).optional(),
   }),
-  z.object({
-    token: z.string(),
-    identifier: z.string(),
-    expires: z.date(),
+  baseTokenSchema.extend({
     updateEmail: z.literal(true),
     userId: z.string(),
   }),

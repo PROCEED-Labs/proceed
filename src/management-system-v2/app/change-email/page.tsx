@@ -8,9 +8,9 @@ import ChangeEmailCard from './change-email-card';
 const searchParamsSchema = z.object({ email: z.string().email(), token: z.string() });
 
 export default async function ChangeEmailPage({ searchParams }: { searchParams: unknown }) {
-  const parsedSearchkParams = searchParamsSchema.safeParse(searchParams);
-  if (!parsedSearchkParams.success) redirect('/');
-  const { email, token } = parsedSearchkParams.data;
+  const parsedSearchParams = searchParamsSchema.safeParse(searchParams);
+  if (!parsedSearchParams.success) redirect('/');
+  const { email, token } = parsedSearchParams.data;
 
   const { session } = await getCurrentUser();
   const userId = session?.user.id;

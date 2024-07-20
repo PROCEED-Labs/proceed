@@ -51,6 +51,12 @@ model OauthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum ProcessType {
+  Process
+  Template
+  Projects
+}
+
 model Process {
   id                   String   @id @default(uuid())
   originalId           String
@@ -60,7 +66,7 @@ model Process {
   lastEditedOn         DateTime
   inEditingBy          Json?
   processIds           String[]
-  type                 String
+  type                 ProcessType
   folder               Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId             String
   sharedAs             String
@@ -132,6 +138,8 @@ model Version {
   bpmn          String     @db.Xml
 }
 
+
+
 model Role {
   id           String      @id @default(uuid())
   space        Space       @relation(fields: [environmentId], references: [id], onDelete: Cascade)
@@ -140,7 +148,7 @@ model Role {
   description  String?
   note         String?
   permissions  Json
-  expiration   String?
+  expiration   DateTime?
   default      Boolean?
   createdOn    DateTime
   lastEditedOn DateTime

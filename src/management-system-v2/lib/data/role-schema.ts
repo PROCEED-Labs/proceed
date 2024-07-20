@@ -12,7 +12,7 @@ export const RoleInputSchema = z.object({
   description: z.string().nullish().optional(),
   note: z.string().nullish().optional(),
   permissions: z.object(perms as Permissions).partial(),
-  expiration: z.string().nullish().optional(),
+  expiration: z.date().nullish().optional(),
   default: z.boolean().optional().nullable(),
   parentId: z.string().optional(),
 });

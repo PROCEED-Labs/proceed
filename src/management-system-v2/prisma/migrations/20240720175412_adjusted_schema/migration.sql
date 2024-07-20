@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "ProcessType" AS ENUM ('Process', 'Template', 'Projects');
+
 -- CreateTable
 CREATE TABLE "SystemAdmin" (
     "id" TEXT NOT NULL,
@@ -45,7 +48,7 @@ CREATE TABLE "Process" (
     "lastEditedOn" TIMESTAMP(3) NOT NULL,
     "inEditingBy" JSONB,
     "processIds" TEXT[],
-    "type" TEXT NOT NULL,
+    "type" "ProcessType" NOT NULL,
     "folderId" TEXT NOT NULL,
     "sharedAs" TEXT NOT NULL,
     "shareTimestamp" BIGINT NOT NULL,
@@ -121,7 +124,7 @@ CREATE TABLE "Role" (
     "description" TEXT,
     "note" TEXT,
     "permissions" JSONB NOT NULL,
-    "expiration" TEXT,
+    "expiration" TIMESTAMP(3),
     "default" BOOLEAN,
     "createdOn" TIMESTAMP(3) NOT NULL,
     "lastEditedOn" TIMESTAMP(3) NOT NULL,

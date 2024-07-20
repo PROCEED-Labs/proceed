@@ -259,7 +259,7 @@ export default function Content(props: MachineDataViewProps) {
                   <Col span={4} className="gutter-row">
                     Linked Parameters
                   </Col>
-                  <Col span={19} className="gutter-row">
+                  <Col span={20} className="gutter-row">
                     {editable && (
                       <Space>
                         <Select
@@ -302,7 +302,7 @@ export default function Content(props: MachineDataViewProps) {
                   <Col span={4} className="gutter-row">
                     Nested Parameters
                   </Col>
-                  <Col span={19} className="gutter-row">
+                  <Col span={20} className="gutter-row">
                     {getNestedParameters(key, field)}
                     {editable && (
                       <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>

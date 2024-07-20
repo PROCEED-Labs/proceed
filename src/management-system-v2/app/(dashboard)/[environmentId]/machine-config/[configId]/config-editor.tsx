@@ -157,9 +157,10 @@ const ConfigEditor = (props: MachineDataViewProps) => {
   };
 
   const onClickAddMachineButton = (e: any) => {
+    if (!e.key) return;
     if (e.key === 'target-config') {
       setCreateConfigType('target');
-    } else {
+    } else if (e.key === 'machine-config') {
       setCreateConfigType('machine');
     }
     setOpenCreateConfigModal(true);

@@ -253,7 +253,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
   ): TreeDataNode & { ref: Parameter } => {
     let tagByType = (
       <>
-        {_parameter.content.length > 0 ? (
+        {_parameter.content && _parameter.content.length > 0 ? (
           <Tooltip
             placement="top"
             title={

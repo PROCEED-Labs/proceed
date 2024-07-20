@@ -129,9 +129,9 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     const [form] = Form.useForm();
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title="Copy Machine Configuration"
-        okText="Copy"
+        okText="Ok"
         cancelText="Cancel"
         onCancel={onCancel}
         onOk={() => {
@@ -162,7 +162,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             <Input />
           </Form.Item>
           <Form.Item name="description" label="Description">
-            <Input type="textarea" />
+            <Input.TextArea showCount rows={4} maxLength={150} />
           </Form.Item>
         </Form>
       </Modal>

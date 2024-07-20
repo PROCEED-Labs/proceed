@@ -55,7 +55,7 @@ type MachineDataViewProps = {
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
-export default function ConfigEditor(props: MachineDataViewProps) {
+const ConfigEditor = (props: MachineDataViewProps) => {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -67,7 +67,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
   const [openCreateConfigModal, setOpenCreateConfigModal] = useState(false);
   const [createConfigType, setCreateConfigType] = useState<string>('');
 
-  const parentConfig = { ...props.parentConfig };
+  const parentConfig: ParentConfig = { ...props.parentConfig };
   const editingConfig = props.selectedConfig
     ? { ...props.selectedConfig.selection }
     : defaultConfiguration();
@@ -192,11 +192,11 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       createdOn: editingConfig.createdOn,
       versions: editingConfig.versions,
       metadata: editingConfig.metadata,
-      machineConfigs: editingConfig,
-      targetConfig: editingConfig,
+      machineConfigs: editingConfig.machineConfigs || [],
+      targetConfig: editingConfig.targetConfig || null,
     };
 
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify([dataToExport], null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
@@ -206,6 +206,7 @@ export default function ConfigEditor(props: MachineDataViewProps) {
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
   const updateItems = (panelStyle: {
     marginBottom: number;
     background: string;
@@ -440,4 +441,5 @@ export default function ConfigEditor(props: MachineDataViewProps) {
       />
     </>
   );
-}
+};
+export default ConfigEditor;

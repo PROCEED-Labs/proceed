@@ -47,8 +47,8 @@ export default function Param(props: MachineDataViewProps) {
   const editingConfig = props.selectedConfig
     ? { ...props.selectedConfig.selection }
     : defaultConfiguration();
-  let refEditingMachineConfig = findConfig(editingConfig.id, parentConfig);
-  const saveMachineConfig = props.backendSaveParentConfig;
+  let refEditingConfig = findConfig(editingConfig.id, parentConfig);
+  const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
   const { token } = theme.useToken();
 
@@ -84,13 +84,13 @@ export default function Param(props: MachineDataViewProps) {
   };
 
   const saveParameter = () => {
-    if (refEditingMachineConfig && parameterField.id) {
+    if (refEditingConfig && parameterField.id) {
       let paramRef = findParameter(parameterField.id, parentConfig, 'config');
       if (paramRef) {
         paramRef.selection.linkedParameters = parameterField.linkedParameters;
         paramRef.selection.parameters = parameterField.parameters;
         paramRef.selection.content = parameterField.content;
-        saveMachineConfig(configId, parentConfig).then(() => {});
+        saveParentConfig(configId, parentConfig).then(() => {});
         router.refresh();
       }
     }

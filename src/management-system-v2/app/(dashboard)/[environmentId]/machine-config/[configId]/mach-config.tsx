@@ -190,7 +190,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           <Content
             contentType="metadata"
             editingEnabled={editable}
-            backendSaveMachineConfig={saveParentConfig}
+            backendSaveParentConfig={saveParentConfig}
             customConfig={machineConfigData}
             configId={configId}
             selectedMachineConfig={undefined}
@@ -211,7 +211,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
           <Content
             contentType="parameters"
             editingEnabled={editable}
-            backendSaveMachineConfig={saveParentConfig}
+            backendSaveParentConfig={saveParentConfig}
             customConfig={machineConfigData}
             configId={configId}
             selectedMachineConfig={undefined}

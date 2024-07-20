@@ -2,34 +2,20 @@
 
 import styles from '@/components/item-list-view.module.scss';
 
-import {
-  Button,
-  Grid,
-  Dropdown,
-  TableColumnsType,
-  Tooltip,
-  Row,
-  TableColumnType,
-  Upload,
-  message,
-  App,
-} from 'antd';
-import { FileOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, Grid, Dropdown, TableColumnsType, Tooltip, Row, TableColumnType } from 'antd';
+import { FileOutlined } from '@ant-design/icons';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
 import { useCallback, useState } from 'react';
-import {
-  AbstractConfigInput,
-  ParentConfig,
-  ParentConfigMetadata,
-} from '@/lib/data/machine-config-schema';
+import { ParentConfig, ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import MachineConfigCreationButton from '@/components/machine-config-creation-button';
+import { App } from 'antd';
 import SpaceLink from '@/components/space-link';
 import {
   CopyOutlined,
@@ -55,6 +41,7 @@ import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { v4 } from 'uuid';
 import { defaultParameter } from './configuration-helper';
+import { count } from 'console';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -131,7 +118,7 @@ const ParentConfigList = ({
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Configuration" />,
+      label: <MachineConfigCreationButton wrapperElement="Create Machine Configuration" />,
       icon: <FileOutlined />,
     });
 
@@ -158,10 +145,6 @@ const ParentConfigList = ({
       type: item.type,
       lastEdited: item.lastEdited,
       createdOn: item.createdOn,
-      versions: item.versions,
-      metadata: item.metadata,
-      machineConfigs: item.machineConfigs,
-      targetConfig: item.targetConfig,
     }));
 
     const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -169,37 +152,10 @@ const ParentConfigList = ({
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = `exported_item.json`;
+    a.download = 'exported_items.json';
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
-  };
-
-  const importItems = async (file: File) => {
-    try {
-      const text = await file.text();
-      const importedData: ParentConfig[] = JSON.parse(text);
-
-      for (const item of importedData) {
-        const config: AbstractConfigInput = {
-          id: v4(),
-          name: item.name,
-          metadata: item.metadata,
-          machineConfigs: item.machineConfigs || [],
-          targetConfig: item.targetConfig || null,
-          type: item.type,
-          createdOn: item.createdOn,
-          lastEdited: item.lastEdited,
-          versions: item.versions,
-        };
-        await createParentConfig(config, space.spaceId);
-      }
-      message.success('Import successful');
-      router.refresh();
-    } catch (error) {
-      message.error('Import failed');
-      console.error('Error importing items:', error);
-    }
   };
 
   const actionBarGenerator = useCallback(
@@ -213,6 +169,7 @@ const ParentConfigList = ({
               <Tooltip placement="top" title={'Copy'}>
                 <CopyOutlined
                   onClick={(e) => {
+                    // e.stopPropagation();
                     copyItem([record]);
                   }}
                 />
@@ -280,6 +237,28 @@ const ParentConfigList = ({
     return Promise.resolve();
   }
 
+  // function handleCopy(
+  //   values: { name: string; description: string; originalId: string }[],
+  // ): Promise<void> {
+  //   const valuesFromModal = values[0];
+  //   if (copySelection[0]) {
+  //     copyParentConfig(
+  //       valuesFromModal.originalId,
+  //       {
+  //         name: valuesFromModal.name,
+  //         metadata: {
+  //           description: defaultParameter('description', valuesFromModal.description),
+  //         },
+  //       },
+  //       space.spaceId,
+  //     ).then(() => {});
+  //     setOpenCopyModal(false);
+  //     router.refresh();
+  //   }
+  //   return Promise.resolve();
+  // }
+
+  //copy multiple items
   function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
@@ -315,8 +294,8 @@ const ParentConfigList = ({
         <SpaceLink
           href={`/machine-config/${record.id}`}
           style={{
-            color: 'inherit',
-            textDecoration: 'none',
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
             display: 'block',
           }}
         >
@@ -329,6 +308,10 @@ const ParentConfigList = ({
                   : styles.TabletTitleTruncation
             }
             style={{
+              // overflow: 'hidden',
+              // whiteSpace: 'nowrap',
+              // textOverflow: 'ellipsis',
+              // TODO: color
               color: undefined,
               fontStyle: undefined,
             }}
@@ -348,12 +331,19 @@ const ParentConfigList = ({
         <SpaceLink
           href={`/machine-config/${record.id}`}
           style={{
-            color: 'inherit',
-            textDecoration: 'none',
+            color: 'inherit' /* or any color you want */,
+            textDecoration: 'none' /* removes underline */,
             display: 'block',
           }}
         >
+          {/* {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
+            <>&emsp;</>
+          ) : (
+            record.metadata.description?.content[0].value
+          )} */}
           {record.metadata ? record.metadata.description?.content[0].value ?? '' : ''}
+          {/* Makes the link-cell clickable, when there is no description */}
+          {/* </div> */}
         </SpaceLink>
       ),
       responsive: ['sm'],
@@ -422,6 +412,7 @@ const ParentConfigList = ({
               <SelectionActions count={selectedRowKeys.length}>
                 <Tooltip placement="top" title={'Export'}>
                   <ExportOutlined
+                    /* className={styles.Icon} */
                     style={{ margin: '0 8px' }}
                     onClick={() => exportItems(selectedRowElements)}
                   />
@@ -429,11 +420,20 @@ const ParentConfigList = ({
 
                 {/* <Tooltip placement="top" title={'Copy'}>
                   <CopyOutlined
-                    style={{ margin: '0 10px' }}
+                    // className={styles.Icon}
+                    style={{ margin: '0 8px' }}
                     onClick={() => copyItem(selectedRowElements)}
                   />
                 </Tooltip> */}
 
+                <Tooltip placement="top" title={'Edit'}>
+                  <EditOutlined
+                    style={{ margin: '0 8px' }}
+                    // className={styles.Icon}
+                    onClick={() => editItem(selectedRowElements[0])}
+                    disabled={count !== 1}
+                  />
+                </Tooltip>
                 <Tooltip placement="top" title={'Delete'}>
                   <ConfirmationButton
                     title="Delete Configuration"
@@ -449,6 +449,23 @@ const ParentConfigList = ({
                 </Tooltip>
               </SelectionActions>
             </span>
+
+            {/*<span>
+                <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>
+                  <Button
+                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
+                    onClick={() => addPreferences({ 'icon-view-in-process-list': false })}
+                  >
+                    <UnorderedListOutlined />
+                  </Button>
+                  <Button
+                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
+                    onClick={() => addPreferences({ 'icon-view-in-process-list': true })}
+                  >
+                    <AppstoreOutlined />
+                  </Button>
+                </Space.Compact>
+              </span>*/}
           </span>
         }
         searchProps={{
@@ -502,6 +519,17 @@ const ParentConfigList = ({
         }
         onSubmit={handleEdit}
       />
+      {/* <MachineConfigModal
+        open={openCopyModal}
+        title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        onCancel={() => setOpenCopyModal(false)}
+        initialData={copySelection.map((config) => ({
+          name: `${config.name.value} (Copy)`,
+          description: config.metadata.description?.content[0].value ?? '',
+          originalId: config.id,
+        }))}
+        onSubmit={handleCopy}
+      /> */}
       <MachineConfigModal
         open={openCopyModal}
         title={`Copy Machine Config${selectedRowKeys.length > 1 ? 's' : ''}`}

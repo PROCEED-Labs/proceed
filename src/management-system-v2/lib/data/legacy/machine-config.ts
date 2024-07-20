@@ -227,7 +227,6 @@ export async function createParentConfig(
 
     return metadata;
   } catch (e) {
-    console.log(e);
     return userError("Couldn't create Machine Config");
   }
 }

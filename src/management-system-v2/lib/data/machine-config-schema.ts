@@ -21,7 +21,6 @@ const ParameterZod = z.object({
 export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  type: z.string().optional(),
   lastEdited: z.string().optional(),
   createdOn: z.string().optional(),
   versions: z.array(z.any()).optional(),

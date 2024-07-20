@@ -49,7 +49,7 @@ type MachineDataViewProps = {
   selectedMachineConfig: TreeFindStruct;
   customConfig?: AbstractConfig;
   rootMachineConfig: ParentConfig;
-  backendSaveMachineConfig: Function;
+  backendSaveParentConfig: Function;
   editingEnabled: boolean;
   contentType: 'metadata' | 'parameters';
 };
@@ -63,6 +63,7 @@ export default function Content(props: MachineDataViewProps) {
   const { token } = theme.useToken();
 
   const firstRender = useRef(true);
+  const firstRenderEditing = useRef(true);
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [idVisible, setIdVisible] = useState<boolean>(true);
 
@@ -72,8 +73,8 @@ export default function Content(props: MachineDataViewProps) {
     : props.customConfig
       ? { ...props.customConfig }
       : defaultConfiguration();
-  let refEditingMachineConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
-  const saveMachineConfig = props.backendSaveMachineConfig;
+  let refEditingConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
+  const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
   const [editingContent, setEditingContent] = useState<TargetConfig['parameters']>(
     props.contentType === 'metadata'
@@ -131,26 +132,24 @@ export default function Content(props: MachineDataViewProps) {
   };
 
   const saveAll = () => {
-    if (refEditingMachineConfig) {
+    if (refEditingConfig) {
       if (props.contentType === 'metadata') {
-        refEditingMachineConfig.selection.metadata = editingContent;
+        refEditingConfig.selection.metadata = editingContent;
       } else {
-        (refEditingMachineConfig.selection as TargetConfig).parameters = editingContent;
+        (refEditingConfig.selection as TargetConfig).parameters = editingContent;
       }
-      saveMachineConfig(configId, rootMachineConfig).then(() => {});
+      saveParentConfig(configId, rootMachineConfig).then(() => {});
       router.refresh();
     }
   };
 
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
+    if (firstRenderEditing.current) {
+      firstRenderEditing.current = false;
       return;
     }
-  }, [props.selectedMachineConfig]);
-
-  useEffect(() => {
     saveAll();
+    console.log('ALO EDITING');
   }, [editingContent]);
 
   const showMobileView = useMobileModeler();
@@ -178,7 +177,7 @@ export default function Content(props: MachineDataViewProps) {
   };
 
   const createField = (values: CreateParameterModalReturnType[]): Promise<void> => {
-    if (refEditingMachineConfig) {
+    if (refEditingConfig) {
       const valuesFromModal = values[0];
       const field = defaultParameter(
         valuesFromModal.displayName,
@@ -206,7 +205,7 @@ export default function Content(props: MachineDataViewProps) {
   };
 
   const linkedParametersChange = (key: string, paramIdList: string[]) => {
-    if (refEditingMachineConfig) {
+    if (refEditingConfig) {
       let copyContent = { ...editingContent };
       copyContent[key].linkedParameters = paramIdList;
       setEditingContent(copyContent);
@@ -244,11 +243,11 @@ export default function Content(props: MachineDataViewProps) {
           </Col>
           <Col span={21} className="gutter-row">
             <Param
-              backendSaveParentConfig={saveMachineConfig}
+              backendSaveParentConfig={saveParentConfig}
               configId={configId}
               editingEnabled={editable}
               parentConfig={rootMachineConfig}
-              selectedConfig={refEditingMachineConfig}
+              selectedConfig={refEditingConfig}
               field={field}
               onDelete={onContentDelete}
               label={key[0].toUpperCase() + key.slice(1)}

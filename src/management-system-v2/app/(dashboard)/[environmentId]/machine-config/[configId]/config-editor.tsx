@@ -220,7 +220,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
       children: (
         <Content_
           contentType="metadata"
-          backendSaveMachineConfig={saveParentConfig}
+          backendSaveParentConfig={saveParentConfig}
           configId={configId}
           rootMachineConfig={parentConfig}
           selectedMachineConfig={props.selectedConfig}

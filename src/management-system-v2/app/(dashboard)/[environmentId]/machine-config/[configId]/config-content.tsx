@@ -16,7 +16,19 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Col, Row, Tooltip, theme, Tag, Space, Select, Card } from 'antd';
+import {
+  Button,
+  Input,
+  Col,
+  Row,
+  Tooltip,
+  theme,
+  Tag,
+  Space,
+  Select,
+  Card,
+  SelectProps,
+} from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -41,6 +53,8 @@ type MachineDataViewProps = {
   editingEnabled: boolean;
   contentType: 'metadata' | 'parameters';
 };
+
+type TagRender = SelectProps['tagRender'];
 
 export default function Content(props: MachineDataViewProps) {
   const router = useRouter();
@@ -91,6 +105,25 @@ export default function Content(props: MachineDataViewProps) {
       }
       setEditingContent(copyContent);
     }
+  };
+
+  const linkedParametersTagRender: TagRender = (props: any) => {
+    const { label, value, closable, onClose } = props;
+    const onPreventMouseDown = (event: React.MouseEvent<HTMLSpanElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    return (
+      <Tag
+        color="purple"
+        onMouseDown={onPreventMouseDown}
+        closable={closable}
+        onClose={onClose}
+        style={{ marginInlineEnd: 4 }}
+      >
+        {label}
+      </Tag>
+    );
   };
 
   const onClickAddField = (e: any) => {
@@ -232,6 +265,7 @@ export default function Content(props: MachineDataViewProps) {
                         <Select
                           mode="multiple"
                           allowClear
+                          tagRender={linkedParametersTagRender}
                           style={{ minWidth: 250 }}
                           placeholder="Select to Add"
                           value={field.linkedParameters}

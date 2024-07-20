@@ -165,6 +165,9 @@ export class ProcessListPage {
         await page.waitForURL('**/processes');
       }
 
+      /* Ensure it is the list and not the icon view */
+      await page.getByRole('button', { name: 'unordered-list' }).click();
+
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
 
@@ -203,5 +206,20 @@ export class ProcessListPage {
     // NOTE: this could break if there is another folder with the same name
     const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
     await expect(folderRow).toBeVisible();
+
+    return folderRow.getAttribute('data-row-key');
+  }
+
+  async selectRow(id: string | string[]) {
+    const { page } = this;
+    const ids = Array.isArray(id) ? id : [id];
+    const rows = [];
+    for (const id of ids) {
+      const row = await page.locator(`tr[data-row-key="${id}"]`);
+      rows.push(row);
+      await row.check();
+    }
+
+    return rows;
   }
 }

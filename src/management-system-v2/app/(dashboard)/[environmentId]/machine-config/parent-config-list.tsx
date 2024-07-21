@@ -17,8 +17,12 @@ import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
-import { useCallback, useState } from 'react';
-import { ParentConfig, ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import { useCallback, useState, useEffect } from 'react';
+import {
+  AbstractConfigInput,
+  ParentConfig,
+  ParentConfigMetadata,
+} from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -143,10 +147,6 @@ const ParentConfigList = ({
   useAddControlCallback('machineconfig-list', 'esc', () => setSelectedRowElements([]));
   useAddControlCallback('machineconfig-list', 'del', () => setOpenDeleteModal(true));
 
-  function deleteHandle() {
-    deleteItems(selectedRowElements).then((res) => {});
-  }
-
   const exportItems = (items: ParentConfigListConfigs[]) => {
     const dataToExport = items.map((item) => ({
       id: item.id,
@@ -219,7 +219,7 @@ const ParentConfigList = ({
 
   function copyItem(items: ParentConfigListConfigs[]) {
     setCopySelection(items);
-    setSelectedRowElements([items[0]]);
+    setSelectedRowElements(items);
     setOpenCopyModal(true);
   }
 
@@ -246,26 +246,28 @@ const ParentConfigList = ({
     return Promise.resolve();
   }
 
-  // function handleCopy(
-  //   values: { name: string; description: string; originalId: string }[],
-  // ): Promise<void> {
-  //   const valuesFromModal = values[0];
-  //   if (copySelection[0]) {
-  //     copyParentConfig(
-  //       valuesFromModal.originalId,
-  //       {
-  //         name: valuesFromModal.name,
-  //         metadata: {
-  //           description: defaultParameter('description', valuesFromModal.description),
-  //         },
-  //       },
-  //       space.spaceId,
-  //     ).then(() => {});
-  //     setOpenCopyModal(false);
-  //     router.refresh();
-  //   }
-  //   return Promise.resolve();
-  // }
+  // copy multiple items
+  function handleCopy(
+    values: { name: string; description: string; originalId: string }[],
+  ): Promise<void> {
+    const promises = values.map((valueFromModal) => {
+      return copyParentConfig(
+        valueFromModal.originalId,
+        {
+          name: valueFromModal.name,
+          metadata: {
+            description: defaultParameter('description', valueFromModal.description),
+          },
+        },
+        space.spaceId,
+      );
+    });
+    Promise.all(promises).then(() => {
+      setOpenCopyModal(false);
+      router.refresh();
+    });
+    return Promise.resolve();
+  }
 
   const importItems = async (file: File) => {
     try {
@@ -293,31 +295,6 @@ const ParentConfigList = ({
       console.error('Error importing items:', error);
     }
   };
-
-  //copy multiple items
-  function handleCopy(
-    values: { name: string; description: string; originalId: string }[],
-  ): Promise<void> {
-    const promises = values.map((valueFromModal) => {
-      return copyParentConfig(
-        valueFromModal.originalId,
-        {
-          name: valueFromModal.name,
-          metadata: {
-            description: defaultParameter('description', valueFromModal.description),
-          },
-        },
-        space.spaceId,
-      );
-    });
-
-    Promise.all(promises).then(() => {
-      setOpenCopyModal(false);
-      router.refresh();
-    });
-
-    return Promise.resolve();
-  }
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
@@ -367,8 +344,8 @@ const ParentConfigList = ({
         <SpaceLink
           href={`/machine-config/${record.id}`}
           style={{
-            color: 'inherit' /* or any color you want */,
-            textDecoration: 'none' /* removes underline */,
+            color: 'inherit',
+            textDecoration: 'none',
             display: 'block',
           }}
         >
@@ -378,8 +355,6 @@ const ParentConfigList = ({
             record.metadata.description?.content[0].value
           )} */}
           {record.metadata ? record.metadata.description?.content[0].value ?? '' : ''}
-          {/* Makes the link-cell clickable, when there is no description */}
-          {/* </div> */}
         </SpaceLink>
       ),
       responsive: ['sm'],
@@ -448,28 +423,25 @@ const ParentConfigList = ({
               <SelectionActions count={selectedRowKeys.length}>
                 <Tooltip placement="top" title={'Export'}>
                   <ExportOutlined
-                    /* className={styles.Icon} */
                     style={{ margin: '0 8px' }}
                     onClick={() => exportItems(selectedRowElements)}
                   />
                 </Tooltip>
 
-                {/* <Tooltip placement="top" title={'Copy'}>
+                <Tooltip placement="top" title={'Copy'}>
                   <CopyOutlined
-                    // className={styles.Icon}
                     style={{ margin: '0 8px' }}
                     onClick={() => copyItem(selectedRowElements)}
                   />
-                </Tooltip> */}
+                </Tooltip>
 
-                <Tooltip placement="top" title={'Edit'}>
+                {/* <Tooltip placement="top" title={'Edit'}>
                   <EditOutlined
                     style={{ margin: '0 8px' }}
-                    // className={styles.Icon}
                     onClick={() => editItem(selectedRowElements[0])}
                     disabled={count !== 1}
                   />
-                </Tooltip>
+                </Tooltip> */}
                 <Tooltip placement="top" title={'Delete'}>
                   <ConfirmationButton
                     title="Delete Configuration"
@@ -555,28 +527,15 @@ const ParentConfigList = ({
         }
         onSubmit={handleEdit}
       />
-      {/* <MachineConfigModal
+      <MachineConfigModal
         open={openCopyModal}
-        title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'es' : ''}`}
+        title={`Copy Machine Config${selectedRowKeys.length > 1 ? 'urations' : ''}`}
         onCancel={() => setOpenCopyModal(false)}
         initialData={copySelection.map((config) => ({
           name: `${config.name.value} (Copy)`,
           description: config.metadata.description?.content[0].value ?? '',
           originalId: config.id,
         }))}
-        onSubmit={handleCopy}
-      /> */}
-      <MachineConfigModal
-        open={openCopyModal}
-        title={`Copy Machine Config${selectedRowKeys.length > 1 ? 's' : ''}`}
-        onCancel={() => setOpenCopyModal(false)}
-        initialData={[
-          {
-            name: `${copySelection[0]?.name.value} (Copy)`,
-            description: copySelection[0]?.metadata.description?.content[0].value ?? '',
-            originalId: copySelection[0]?.id,
-          },
-        ]}
         onSubmit={handleCopy}
       />
     </>

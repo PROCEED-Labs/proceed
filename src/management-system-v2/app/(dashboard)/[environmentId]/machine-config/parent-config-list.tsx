@@ -101,9 +101,6 @@ const ParentConfigList = ({
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ParentConfigListConfigs | null>(null);
-  const [openExportModal, setOpenExportModal] = useState(false);
-  const [count, setCount] = useState<number>(0); // Ensure count is a number
-
   const ability = useAbilityStore((state) => state.ability);
   const defaultDropdownItems = [];
 
@@ -154,6 +151,10 @@ const ParentConfigList = ({
       type: item.type,
       lastEdited: item.lastEdited,
       createdOn: item.createdOn,
+      versions: item.versions,
+      metadata: item.metadata,
+      machineConfigs: item.machineConfigs,
+      targetConfig: item.targetConfig,
     }));
 
     const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -414,7 +415,7 @@ const ParentConfigList = ({
                 }}
               >
                 <Tooltip placement="top" title={'Import'}>
-                  <Button type="primary" style={{ margin: '0 10px' }}>
+                  <Button type="default" style={{ margin: '0 10px' }}>
                     Import
                   </Button>
                 </Tooltip>
@@ -497,7 +498,7 @@ const ParentConfigList = ({
             addPreferences({ 'process-list-columns-desktop': cols });
           },
           selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-          allColumnTitles: ['Name', 'Description', 'LastEdited', 'Type', 'Machine'],
+          allColumnTitles: ['Description', 'LastEdited', 'Type', 'Machine'],
           columnProps: {
             width: 'fit-content',
             responsive: ['xl'],

@@ -107,6 +107,21 @@ export function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder;
 }
 
+export function getFolders(environmentId?: string, ability?: Ability) {
+  const _folders = environmentId
+    ? Object.values(foldersMetaObject.folders).filter(
+        (folder) => folder?.folder.environmentId === environmentId,
+      )
+    : Object.values(foldersMetaObject.folders);
+
+  const folders = _folders.map((f) => f!.folder);
+
+  if (ability)
+    return folders.filter((folder) => ability.can('view', toCaslResource('Folder', folder)));
+
+  return folders;
+}
+
 export function getFolderChildren(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');

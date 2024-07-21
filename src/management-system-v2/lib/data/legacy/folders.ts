@@ -223,7 +223,7 @@ function _deleteFolder(
 
 export function updateFolderMetaData(
   folderId: string,
-  newMetaDataInput: Partial<FolderUserInput>,
+  newMetaDataInput: Partial<Omit<FolderInput, 'parentId'>>,
   ability?: Ability,
 ) {
   const folderData = foldersMetaObject.folders[folderId];
@@ -232,12 +232,15 @@ export function updateFolderMetaData(
   if (ability && !ability.can('update', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
-  const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
-  if (
-    newMetaDataInput.environmentId &&
-    newMetaDataInput.environmentId != folderData.folder.environmentId
-  )
-    throw new Error('environmentId cannot be changed');
+  const newMetaData = FolderSchema.omit({
+    parentId: true,
+    id: true,
+    // if there is an ability, we interpret this as a user updating the folder
+    environmentId: ability ? true : undefined,
+    createdBy: ability ? true : undefined,
+  })
+    .partial()
+    .parse(newMetaDataInput);
 
   const newFolder: Folder = {
     ...folderData.folder,
@@ -275,7 +278,8 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   const newParentData = foldersMetaObject.folders[newParentId];
   if (!newParentData) throw new Error('New parent folder not found');
 
-  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+  // only perform this check when an ability is present (it means that a user is moving the folder)
+  if (ability && newParentData.folder.environmentId !== folderData.folder.environmentId)
     throw new Error('Cannot move folder to a different environment');
 
   const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
@@ -305,6 +309,7 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
+  folderData.folder.environmentId = newParentData.folder.environmentId;
   newParentData.children.push({ type: 'folder', id: folderData.folder.id });
   newParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', newParentData.folder.id, newParentData.folder);

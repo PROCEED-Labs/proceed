@@ -39,6 +39,7 @@ export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema> & { id: 
 export const GuestUserSchema = z.object({
   guest: z.literal(true),
   id: z.string().optional(),
+  signedInWithUserId: z.string().optional(),
 });
 export type GuestUser = z.infer<typeof GuestUserSchema> & { id: string };
 

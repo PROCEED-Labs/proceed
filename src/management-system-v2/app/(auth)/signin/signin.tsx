@@ -221,20 +221,14 @@ const SignIn: FC<{
         {userType === 'guest' && guestProvider && (
           <>
             {divider}
-            <Form
-              onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
-              key={guestProvider.id}
-              layout="vertical"
-            >
-              <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
-                Continue as Guest
-              </Button>
+            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+              Continue as Guest
+            </Button>
 
-              <Alert
-                message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
-                type="info"
-              />
-            </Form>
+            <Alert
+              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              type="info"
+            />
           </>
         )}
 

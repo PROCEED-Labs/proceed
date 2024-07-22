@@ -130,6 +130,21 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
   return undefined;
 }
 
+export function deleteLinks(param: Parameter, parentConfig: ParentConfig) {
+  let params = getAllParameters(parentConfig, 'config', '');
+  let paramsToBeDeleted = getAllParameters(param, 'parameter', 'p.');
+  let idList: string[] = paramsToBeDeleted.map((item) => {
+    return item.value.id ?? '';
+  });
+  idList.push(param.id ?? '');
+  for (let obj of params) {
+    obj.value.linkedParameters = obj.value.linkedParameters.filter((item) => {
+      return idList.indexOf(item) === -1;
+    });
+    console.log('Deleting:', obj, param);
+  }
+}
+
 export function deleteParameter(id: string, parentConfig: ParentConfig): boolean {
   let deleted = false;
   let p = findParameter(id, parentConfig, 'config');

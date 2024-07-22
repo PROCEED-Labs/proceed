@@ -28,6 +28,7 @@ import {
   Select,
   Card,
   SelectProps,
+  message,
 } from 'antd';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
@@ -36,6 +37,7 @@ import {
   TreeFindStruct,
   defaultConfiguration,
   defaultParameter,
+  deleteLinks,
   deleteParameter,
   findConfig,
   findParameter,
@@ -110,6 +112,8 @@ export default function Content(props: MachineDataViewProps) {
           break;
         }
       }
+      // Fix links
+      deleteLinks(param, parentConfig);
       setEditingContent(copyContent);
       setUpdating(true);
     }
@@ -260,6 +264,29 @@ export default function Content(props: MachineDataViewProps) {
     );
   };
 
+  const linkedParamsTwoWay = (
+    idListFilter: (string | undefined)[],
+    field: Parameter,
+    operation: 'remove' | 'add',
+  ) => {
+    if (!field.id) return;
+    for (let id of idListFilter) {
+      if (id) {
+        let ref = findParameter(id, parentConfig, 'config');
+        if (ref) {
+          if (operation === 'remove') {
+            ref.selection.linkedParameters = ref.selection.linkedParameters.filter((item) => {
+              return item !== field.id;
+            });
+          } else {
+            if (ref.selection.linkedParameters.indexOf(field.id) === -1)
+              ref.selection.linkedParameters.push(field.id);
+          }
+        }
+      }
+    }
+  };
+
   const linkedParametersChange = (
     key: string,
     paramIdList: string[],
@@ -268,6 +295,8 @@ export default function Content(props: MachineDataViewProps) {
   ) => {
     if (refEditingConfig) {
       let copyContent = { ...editingContent };
+      // Fix links in a two way method
+      linkedParamsTwoWay(paramIdList, field, 'add');
       if (type === 'nested' && field.id) {
         let ref: TreeFindParameterStruct = undefined;
         for (let prop in copyContent) {
@@ -281,7 +310,12 @@ export default function Content(props: MachineDataViewProps) {
           }
         }
         if (!ref) return Promise.resolve();
-        console.log(ref);
+        // Get removed Ids and make them two way again
+        let removedIds: (string | undefined)[] = ref.selection.linkedParameters.map((item) => {
+          if (paramIdList.indexOf(item) === -1) return item ?? '';
+        });
+        console.log(paramIdList, removedIds);
+        linkedParamsTwoWay(removedIds, field, 'remove');
         ref.selection.linkedParameters = paramIdList;
       } else {
         copyContent[key].linkedParameters = paramIdList;

@@ -37,6 +37,7 @@ import {
   defaultParameter,
   deleteParameter,
   findConfig,
+  findParameter,
   getAllParameters,
 } from '../configuration-helper';
 import getAddButton from './add-button';
@@ -48,7 +49,7 @@ type MachineDataViewProps = {
   configId: string;
   selectedMachineConfig: TreeFindStruct;
   customConfig?: AbstractConfig;
-  rootMachineConfig: ParentConfig;
+  parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
   editingEnabled: boolean;
   contentType: 'metadata' | 'parameters';
@@ -62,31 +63,33 @@ export default function Content(props: MachineDataViewProps) {
   const query = useSearchParams();
   const { token } = theme.useToken();
 
-  const firstRender = useRef(true);
   const firstRenderEditing = useRef(true);
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
+  const [updating, setUpdating] = useState<boolean>(false);
   const [idVisible, setIdVisible] = useState<boolean>(true);
 
-  const rootMachineConfig = { ...props.rootMachineConfig };
-  const editingMachineConfig = props.selectedMachineConfig
+  const [parentNestedSelection, setParentNestedSelection] = useState<Parameter>();
+
+  const parentConfig = { ...props.parentConfig };
+  const editingConfig = props.selectedMachineConfig
     ? { ...props.selectedMachineConfig.selection }
     : props.customConfig
       ? { ...props.customConfig }
       : defaultConfiguration();
-  let refEditingConfig = findConfig(editingMachineConfig.id, rootMachineConfig);
+  let refEditingConfig = findConfig(editingConfig.id, parentConfig);
   const saveParentConfig = props.backendSaveParentConfig;
   const configId = props.configId;
   const [editingContent, setEditingContent] = useState<TargetConfig['parameters']>(
     props.contentType === 'metadata'
-      ? editingMachineConfig.metadata
-      : 'parameters' in editingMachineConfig
-        ? (editingMachineConfig as TargetConfig).parameters
+      ? editingConfig.metadata
+      : 'parameters' in editingConfig
+        ? (editingConfig as TargetConfig).parameters
         : {},
   );
 
   let paramIdToName: { [key: string]: string } = {};
   const parametersList: { label: string; value: string }[] = getAllParameters(
-    rootMachineConfig,
+    parentConfig,
     'config',
     '',
   ).map((item: { key: string; value: Parameter }) => {
@@ -96,7 +99,7 @@ export default function Content(props: MachineDataViewProps) {
 
   const onContentDelete = (param: Parameter) => {
     if (param.content.length <= 0 && param.id) {
-      deleteParameter(param.id, rootMachineConfig);
+      deleteParameter(param.id, parentConfig);
       let copyContent = { ...editingContent };
       for (let prop in copyContent) {
         if (param.id === copyContent[prop].id) {
@@ -105,6 +108,7 @@ export default function Content(props: MachineDataViewProps) {
         }
       }
       setEditingContent(copyContent);
+      setUpdating(true);
     }
   };
 
@@ -127,20 +131,31 @@ export default function Content(props: MachineDataViewProps) {
     );
   };
 
-  const onClickAddField = (e: any) => {
+  const onClickAddField = (parent: Parameter, type: 'nested' | 'main') => {
+    if (type === 'nested') {
+      // setEditingContent({ ...parent.parameters });
+      setParentNestedSelection(parent);
+    }
     setCreateFieldOpen(true);
   };
 
   const saveAll = () => {
-    if (refEditingConfig) {
-      if (props.contentType === 'metadata') {
-        refEditingConfig.selection.metadata = editingContent;
-      } else {
-        (refEditingConfig.selection as TargetConfig).parameters = editingContent;
+    if (parentNestedSelection && parentNestedSelection.id) {
+      let ref = findParameter(parentNestedSelection.id, parentConfig, 'config');
+      if (!ref) return;
+      console.log('on parent:', ref);
+      ref.selection.parameters = editingContent;
+    } else {
+      if (refEditingConfig) {
+        if (props.contentType === 'metadata') {
+          refEditingConfig.selection.metadata = editingContent;
+        } else {
+          (refEditingConfig.selection as TargetConfig).parameters = editingContent;
+        }
       }
-      saveParentConfig(configId, rootMachineConfig).then(() => {});
-      router.refresh();
     }
+    saveParentConfig(configId, parentConfig).then(() => {});
+    router.refresh();
   };
 
   useEffect(() => {
@@ -148,8 +163,11 @@ export default function Content(props: MachineDataViewProps) {
       firstRenderEditing.current = false;
       return;
     }
-    saveAll();
-  }, [editingContent]);
+    if (updating) {
+      saveAll();
+      setUpdating(false);
+    }
+  }, [updating]);
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
@@ -172,6 +190,7 @@ export default function Content(props: MachineDataViewProps) {
       delete copyContent[editingKey];
       copyContent[paramKey] = { ...copyParam };
       setEditingContent(copyContent);
+      setUpdating(true);
     }
   };
 
@@ -185,8 +204,17 @@ export default function Content(props: MachineDataViewProps) {
         valuesFromModal.unit,
       );
       let copyContent = { ...editingContent };
-      copyContent[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      console.log(parentNestedSelection, parentNestedSelection && parentNestedSelection.id);
+      if (parentNestedSelection && parentNestedSelection.id) {
+        let ref = findParameter(parentNestedSelection.id, copyContent.parameters, 'parameter');
+        console.log(copyContent, parentNestedSelection.id);
+        if (!ref) return Promise.resolve();
+        ref.selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      } else {
+        copyContent[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+      }
       setEditingContent(copyContent);
+      setUpdating(true);
     }
     setCreateFieldOpen(false);
     return Promise.resolve();
@@ -208,6 +236,7 @@ export default function Content(props: MachineDataViewProps) {
       let copyContent = { ...editingContent };
       copyContent[key].linkedParameters = paramIdList;
       setEditingContent(copyContent);
+      setUpdating(true);
     }
   };
 
@@ -245,7 +274,7 @@ export default function Content(props: MachineDataViewProps) {
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               editingEnabled={editable}
-              parentConfig={rootMachineConfig}
+              parentConfig={parentConfig}
               selectedConfig={refEditingConfig}
               field={field}
               onDelete={onContentDelete}
@@ -303,7 +332,11 @@ export default function Content(props: MachineDataViewProps) {
                   <Col span={20} className="gutter-row">
                     {getNestedParameters(key, field)}
                     {editable && (
-                      <Space>{getAddButton('Add Parameter', undefined, () => {})}</Space>
+                      <Space>
+                        {getAddButton('Add Parameter', undefined, (_: any) =>
+                          onClickAddField(field, 'nested'),
+                        )}
+                      </Space>
                     )}
                   </Col>
                   {/* <Col span={1} className="gutter-row">
@@ -336,7 +369,7 @@ export default function Content(props: MachineDataViewProps) {
             Internal ID
           </Col>
           <Col span={20} className="gutter-row">
-            <Input value={editingMachineConfig.id} disabled prefix={<KeyOutlined />} />
+            <Input value={editingConfig.id} disabled prefix={<KeyOutlined />} />
           </Col>
           <Col span={1}>
             <Tooltip title="Hide Internal ID">
@@ -353,14 +386,16 @@ export default function Content(props: MachineDataViewProps) {
           </Col>
         </Row>
       )}
-      {Object.entries(editingContent).map(([key, val], idx: number) => {
+      {Object.entries(editingContent).map(([key, val]) => {
         return getCustomField(key, val);
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           {/* <Col span={3} className="gutter-row" /> */}
           <Col span={21} className="gutter-row">
-            {getAddButton(addButtonTitle, undefined, onClickAddField)}
+            {getAddButton(addButtonTitle, undefined, () =>
+              onClickAddField(editingConfig as TargetConfig, 'main'),
+            )}
           </Col>
         </Row>
       )}

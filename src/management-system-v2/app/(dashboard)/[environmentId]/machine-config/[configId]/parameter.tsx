@@ -63,8 +63,14 @@ export default function Param(props: MachineDataViewProps) {
     if (firstRender.current) {
       firstRender.current = false;
       return;
-    } else {
+    }
+    if (created || deleted) {
+      if (deleted) {
+        props.onDelete(parameterField);
+        setDeleted(false);
+      }
       saveParameter();
+      setCreated(false);
     }
   }, [deleted, created]);
 
@@ -79,8 +85,7 @@ export default function Param(props: MachineDataViewProps) {
     let parameterCopy = { ...parameterField };
     parameterCopy.content = copyParameterContent;
     setParameterField(parameterCopy);
-    setDeleted(!deleted);
-    props.onDelete(parameterField);
+    setDeleted(true);
   };
 
   const saveParameter = () => {

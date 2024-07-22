@@ -34,10 +34,6 @@ export default function ConfigContent(props: VariablesEditorProps) {
   const saveConfig = props.backendSaveParentConfig;
   const [parentConfig, setParentConfig] = useState<ParentConfig>(props.originalParentConfig);
 
-  useEffect(() => {
-    setSelectedConfig({ parent: parentConfig, selection: parentConfig });
-  }, [parentConfig]);
-
   const onSelectConfig = (relation: TreeFindStruct | TreeFindParameterStruct) => {
     setSelectedConfig(relation);
   };

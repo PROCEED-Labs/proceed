@@ -194,7 +194,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             customConfig={machineConfigData}
             configId={configId}
             selectedMachineConfig={undefined}
-            rootMachineConfig={parentConfig}
+            parentConfig={parentConfig}
           />,
         ],
         style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
@@ -215,7 +215,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             customConfig={machineConfigData}
             configId={configId}
             selectedMachineConfig={undefined}
-            rootMachineConfig={parentConfig}
+            parentConfig={parentConfig}
           />,
         ],
         style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3

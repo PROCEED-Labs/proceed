@@ -38,7 +38,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       createParentConfig(
         {
           metadata: {
-            description: defaultParameter('description', values[0].description),
+            description: defaultParameter('description', values[0].description ?? ''),
           },
           name: values[0].name,
           folderId: folderId,

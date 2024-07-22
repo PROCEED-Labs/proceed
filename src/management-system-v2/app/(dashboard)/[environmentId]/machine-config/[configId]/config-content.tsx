@@ -46,6 +46,8 @@ import Param from './parameter';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import Paragraph from 'antd/es/typography/Paragraph';
 
+type FieldType = 'main' | 'nested';
+
 type MachineDataViewProps = {
   configId: string;
   selectedMachineConfig: TreeFindStruct;
@@ -132,7 +134,7 @@ export default function Content(props: MachineDataViewProps) {
     );
   };
 
-  const onClickAddField = (parent: Parameter | undefined, type: 'nested' | 'main') => {
+  const onClickAddField = (parent: Parameter | undefined, type: FieldType) => {
     if (type === 'nested') {
       // setEditingContent({ ...parent.parameters });
       setParentNestedSelection(parent);
@@ -160,30 +162,55 @@ export default function Content(props: MachineDataViewProps) {
     if (updating) {
       saveAll();
       setUpdating(false);
+      setParentNestedSelection(undefined);
     }
   }, [updating]);
 
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
 
-  const [paramKey, setParamKey] = useState<string | undefined>('');
-  const [oldParamKey, setOldParamKey] = useState<string | undefined>('');
+  let paramKey = '';
+  const setParamKey = (e: string) => {
+    paramKey = e;
+  };
 
-  const pushKey = () => {
-    setOldParamKey(paramKey);
+  const pushKey = (key: string, field: Parameter, fieldType: FieldType) => {
+    if (fieldType === 'nested') {
+      setParentNestedSelection(field);
+    }
   };
 
   const restoreKey = () => {
-    setParamKey(oldParamKey);
+    setParentNestedSelection(undefined);
+    paramKey = '';
   };
 
-  const saveKey = (editingKey: string) => {
-    if (paramKey) {
+  const saveKey = (key: string) => {
+    if (paramKey !== '') {
       let copyContent = { ...editingContent };
-      let copyParam = { ...copyContent[editingKey] };
-      delete copyContent[editingKey];
-      copyContent[paramKey] = { ...copyParam };
+      if (parentNestedSelection && parentNestedSelection.id) {
+        let ref: TreeFindParameterStruct = undefined;
+        for (let prop in copyContent) {
+          if (copyContent[prop].id === parentNestedSelection.id) {
+            ref = { selection: copyContent[prop], parent: copyContent[prop], type: 'parameter' };
+          } else {
+            ref = findParameter(parentNestedSelection.id, copyContent[prop], 'parameter');
+          }
+          if (ref) {
+            break;
+          }
+        }
+        if (!ref) return Promise.resolve();
+        let copyParam = { ...(ref.parent as Parameter).parameters[key] };
+        delete (ref.parent as Parameter).parameters[key];
+        (ref.parent as Parameter).parameters[paramKey] = copyParam;
+      } else {
+        let copyParam = { ...copyContent[key] };
+        delete copyContent[key];
+        copyContent[paramKey] = copyParam;
+      }
       setEditingContent(copyContent);
+      paramKey = '';
       setUpdating(true);
     }
   };
@@ -227,16 +254,38 @@ export default function Content(props: MachineDataViewProps) {
       <>
         {field.parameters &&
           Object.entries(field.parameters).map(([subFieldKey, subField]) => {
-            return getCustomField(subFieldKey, subField);
+            return getCustomField(subFieldKey, subField, 'nested');
           })}
       </>
     );
   };
 
-  const linkedParametersChange = (key: string, paramIdList: string[]) => {
+  const linkedParametersChange = (
+    key: string,
+    paramIdList: string[],
+    field: Parameter,
+    type: FieldType,
+  ) => {
     if (refEditingConfig) {
       let copyContent = { ...editingContent };
-      copyContent[key].linkedParameters = paramIdList;
+      if (type === 'nested' && field.id) {
+        let ref: TreeFindParameterStruct = undefined;
+        for (let prop in copyContent) {
+          if (copyContent[prop].id === field.id) {
+            ref = { selection: copyContent[prop], parent: editingConfig, type: 'parameter' };
+          } else {
+            ref = findParameter(field.id, copyContent[prop], 'parameter');
+          }
+          if (ref) {
+            break;
+          }
+        }
+        if (!ref) return Promise.resolve();
+        console.log(ref);
+        ref.selection.linkedParameters = paramIdList;
+      } else {
+        copyContent[key].linkedParameters = paramIdList;
+      }
       setEditingContent(copyContent);
       setUpdating(true);
     }
@@ -249,7 +298,7 @@ export default function Content(props: MachineDataViewProps) {
     margin: '10px 0 0 0',
   };
 
-  const getCustomField = (key: string, field: Parameter) => {
+  const getCustomField = (key: string, field: Parameter, fieldType: FieldType) => {
     return (
       <>
         <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0' }}>
@@ -260,8 +309,8 @@ export default function Content(props: MachineDataViewProps) {
                 editable && {
                   icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
                   tooltip: 'Edit Parameter Key',
-                  onStart: pushKey,
-                  onCancel: restoreKey,
+                  onStart: () => pushKey(key, field, fieldType),
+                  onCancel: () => restoreKey,
                   onChange: setParamKey,
                   onEnd: () => saveKey(key),
                   enterIcon: <CheckOutlined />,
@@ -298,7 +347,9 @@ export default function Content(props: MachineDataViewProps) {
                           style={{ minWidth: 250 }}
                           placeholder="Select to Add"
                           value={field.linkedParameters}
-                          onChange={(idList: string[]) => linkedParametersChange(key, idList)}
+                          onChange={(idList: string[]) =>
+                            linkedParametersChange(key, idList, field, fieldType)
+                          }
                           options={parametersList}
                         />
                       </Space>
@@ -389,7 +440,7 @@ export default function Content(props: MachineDataViewProps) {
         </Row>
       )}
       {Object.entries(editingContent).map(([key, val]) => {
-        return getCustomField(key, val);
+        return getCustomField(key, val, 'main');
       })}
       {editable && (
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>

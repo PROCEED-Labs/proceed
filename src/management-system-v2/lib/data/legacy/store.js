@@ -57,6 +57,7 @@ if (!global.stores) {
   stores.folders = { store: getStore('folders') };
   stores.machineConfig = { store: getStore('machineConfig') };
   stores.systemAdmins = { store: getStore('systemAdmins') };
+  stores.verificationTokens = { store: getStore('verificationTokens') };
 }
 
 /**

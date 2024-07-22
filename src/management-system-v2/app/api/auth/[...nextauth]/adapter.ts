@@ -6,10 +6,13 @@ import {
   addOauthAccount,
   getOauthAccountByProviderId,
 } from '@/lib/data/legacy/iam/users';
+import {
+  saveVerificationToken,
+  deleteVerificationToken,
+  getVerificationToken,
+} from '@/lib/data/legacy/verification-tokens';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
-
-const invitationTokens = new Map<string, VerificationToken>();
 
 const Adapter = {
   createUser: async (
@@ -31,15 +34,14 @@ const Adapter = {
     return getUserByEmail(email) ?? null;
   },
   createVerificationToken: async (token: VerificationToken) => {
-    invitationTokens.set(token.identifier, token);
-    return token;
+    return saveVerificationToken(token);
   },
-  useVerificationToken: async ({ identifier }: { identifier: string; token: string }) => {
+  useVerificationToken: async (params: { identifier: string; token: string }) => {
     // next-auth checks if the token is expired
-    const storedToken = invitationTokens.get(identifier);
-    invitationTokens.delete(identifier);
+    const token = getVerificationToken(params);
+    if (token) deleteVerificationToken(params);
 
-    return storedToken ?? null;
+    return token ?? null;
   },
   linkAccount: async (account: AdapterAccount) => {
     return addOauthAccount({

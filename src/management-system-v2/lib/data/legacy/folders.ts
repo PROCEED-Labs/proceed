@@ -168,7 +168,6 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
     }
 
     const combinedResults = [...folder.childrenFolder, ...folder.processes];
-
     return combinedResults;
   }
   const folderData = foldersMetaObject.folders[folderId];

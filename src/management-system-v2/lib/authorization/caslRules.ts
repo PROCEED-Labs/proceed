@@ -301,7 +301,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
         action: actions,
         conditions: {
           conditions: {
-            $: { $not_expired_value: role.expiration ?? null },
+            $: { $not_expired_value: role.expiration?.toISOString() ?? null },
             ...(role.parentId && FolderScopedResources.includes(resource as any)
               ? { $1: { $property_has_to_be_child_of: role.parentId } }
               : {}),

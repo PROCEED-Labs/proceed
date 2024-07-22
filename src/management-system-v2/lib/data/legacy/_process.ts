@@ -33,6 +33,7 @@ import { enableUseDB, enableUseFileManager } from 'FeatureFlags';
 import db from '@/lib/data';
 import { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { v4 } from 'uuid';
+import { ProcessType } from '@prisma/client';
 import { saveFile } from '../file-manager';
 
 let firstInit = false;
@@ -145,6 +146,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
 
     const convertedProcess = {
       ...process,
+      type: process.type.toLowerCase(),
       versions: convertedVersions,
       shareTimestamp:
         typeof process.shareTimestamp === 'bigint'
@@ -228,6 +230,12 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
       throw new Error(`Process with id ${processDefinitionsId} already exists!`);
     }
 
+    const processTypeEnum: ProcessType = {
+      process: 'Process',
+      project: 'Project',
+      template: 'Template',
+    }[metadata.type.toLowerCase()] as ProcessType;
+
     // save process info
     try {
       await db.process.create({
@@ -238,7 +246,7 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
           description: metadata.description,
           createdOn: new Date().toISOString(),
           lastEditedOn: new Date().toISOString(),
-          type: metadata.type,
+          type: processTypeEnum,
           processIds: { set: metadata.processIds },
           folderId: metadata.folderId,
           sharedAs: metadata.sharedAs,
@@ -411,6 +419,7 @@ export async function moveProcess({
   ability?: Ability;
 }) {
   if (enableUseDB) {
+    console.log('move process');
     try {
       const process = await getProcess(processDefinitionsId);
       if (!process) {

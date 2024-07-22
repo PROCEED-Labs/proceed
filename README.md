@@ -1,56 +1,46 @@
-# PROCEED dBPMS
+# PROCEED
 
 [![CI/CD](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml/badge.svg)](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml)
 
-PROCEED is a decentralized Business Process Management System (dBPMS) specialized on the creation, execution and monitoring of individual IoT processes.
-The execution is done decentralized without a controlling instance.
-Instead there are multiple machines that cooperate with each other to achieve the designed process goal.
-Thereby, all machines communicate their capabilities to the vicinity and the process is taking the best fitting one for its next execution step.
+PROCEED is an open-source Business Process Management System (BPMS) specialized on the intelligent and user-friendly creation, execution and monitoring of processes.
+Using built-in AI features and the industry-standard BPMN (Business Process Model and Notation), PROCEED's intuitive interface lets anyone visually design workflows, fosters collaboration and empowers employees to act autonomously.
 
-There are two main components in PROCEED:
+PROCEED can also intelligently automate tasks, streamline approvals, and help to continuously optimize the operations. PROCEED enables the digitalization of companies and allows teams to focus on higher-value activities.
 
-1. the _Management System_ (MS): here you can create IoT processes and monitor the execution. This is a web application optimized for all major desktop and mobile browsers.
-2. the _Distributed Process Engine_ (DPE, or just Engine): this components accepts process steps and executes them. Moreover, it manages the underlying Machine, interacts with other Engines and communicates the Machine's capabilities. The DPE is available for many platforms and can easily be ported to missing architectures with our platform-independent framework.
+<p float="left">
+    <img src="./pictures/Screenshot-PROCEED-Process-List-with-Folders.png" width="200" /> 
+    <img src="./pictures/Screenshot-PROCEED-Process-Editor-with-Property-Panel.png" width="200" />
+    <img src="./pictures/Screenshot-PROCEED-Share-Dialog.png" width="200" /> 
+    <img src="./pictures/Screenshot-PROCEED-Process-Documentation-1.png" width="200" />
+    <img src="./pictures/Screenshot-PROCEED-BPMN-XML-Editor.png" width="200" /> 
+</p>
 
-For more information, have a look at the documentation: https://docs.proceed-labs.org/ .
-There, you can also [download nightly builds](https://docs.proceed-labs.org/downloads/).
+> You can test the PROCEED BPMS on: https://app.proceed-labs.org  
+> The documentation is available at: https://docs.proceed-labs.org  
+> (The latest developments and some special features of PROCEED for specific application areas are not available in the publicly hosted version.)
 
-# Progress, Contributions and Organization
+The following explains how you can start the code of the open-source project PROCEED locally. Contributions, further developments or bug reports are very welcome. The best way to do this is to contact us directly or create a new issue. The development is coordinated by [PROCEED Labs GmbH.](https://www.proceed-labs.org/).
 
-We started with a small developer team based on a research project.
-The requirements are still driven by research projects, but we are also very open for community feedback and contributions.
+# Running the Source Code of PROCEED:
 
-Currently, we mainly organize our development tasks with [Issues](https://github.com/orgs/PROCEED-Labs/projects/1).
-If you have ideas or find bugs, please create a an [Issue](https://github.com/PROCEED-Labs/proceed/issues).
-We are very open for help and project contributions.
-Regularly there are on-boarding development workshops and, if you are interested, we have weekly video calls on Monday with all developers.
+PROCEED mainly consists of two systems that have to be started separately:
 
-We've created [many Wiki pages](https://github.com/PROCEED-Labs/proceed/wiki) for a better understanding of the internals.
-For development you should start with looking at the [Hints for Installation and Configuration with our preferred tools](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and afterwards read the [Contribution information](https://github.com/PROCEED-Labs/proceed/wiki/Contribution)
+1. the _Management System_ (MS): here you can create, manage, automate and monitor processes and business objects. The MS is a web application optimized for all major desktop and mobile browsers.
+2. the _Process Engine_ (PE, or just Engine): this components receives process descriptions and executes them. The PE is available for many platforms and can easily be ported to missing architectures with our platform-independent framework.
 
-For further information, just contact us: proceed@snet.tu-berlin.de
+**Install Code Execution Environment**
 
-# Coding
+To run the latest code from this PROCEED repository, you only need to have `Node.js`, `Yarn` and `Docker` installed on your system. To know the recommended versions, please [check our wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development). (There you will also find instructions for installing additional software recommendations if you want to extend PROCEED.)
 
-This project is organized as a Mono-Repo and contains multiple software project developed by PROCEED:
+After that, you must install the platform compiler `node-gyp` globally using Yarn:
 
-- the PROCEED Engine (DPE) for Win, Linux, Mac, Android, iOS, Browser, MCUs
-- the Management System (MS) as a NextJS Web App
-- Machine Capabilities
-- supporting libraries/modules
+`yarn global add node-gyp`
 
-## Install Development Software
+**Retrieving PROCEED's Dependencies**
 
-To develop for PROCEED you need to [install yarn](https://yarnpkg.com/en/docs/install), and also install Node > v20.11.0.
-
-For further information about installation and configuration of our favorite development environment, [see the Wiki page](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and [the debugging configuration](https://github.com/PROCEED-Labs/proceed/wiki/Debugging).
-
-## Install PROCEED Dependencies
-
-After cloning the repository, you need to install the PROCEED project dependencies and all third-party libraries. Run the following command in the root directory of the repo:
+After cloning/retrieving the code, you need to install the software dependencies. Run the following command in the root directory of the repo:
 
 ```
-yarn global add node-gyp
 yarn install --ignore-engines
 ```
 
@@ -58,183 +48,45 @@ This will install all modules and their dependencies inside `node_modules/`
 
 > Note: On macOS catalina there might be an error message popping up during the install step involving node-gyp. If it says "no xcode or clt version detected" then follow the steps from [this page of the node-gyp repo](https://github.com/nodejs/node-gyp/blob/master/macOS_Catalina.md) to resolve this problem.
 
-For the Engine and the Management System there are _development_ and _build_ commands configured in the `package.json` file.
+### Starting the Development Code
 
-**Docker Installation**
-Make sure Docker is installed on your system. If not, you can download and install Docker from the official website: (https://docs.docker.com)
+> Please note that you need access to the private Environment Configurations repository, if you want to run the authentication & authorization subsystem.
 
-Ensure the Docker daemon is running on your system.
+You can start the development code by running the following commands
 
-## Development
-
-> Please note that you need access to the private Environment Configurations repository, if you want to develop with Authentication & Authorization!
-
-You can start the development modes by running the following commands
-
-**Engine:**
+**Management System (with hot reloading):**
 
 ```
-// Node.js
-yarn dev
-
-// Browser version
-yarn dev-engine-web
-```
-
-**Management System:**
-
-```
-// NextJS frontend
 yarn dev-ms
 ```
 
-**Old Vue Management System:**
-
-```
-// Old Vue Management System
-yarn dev-ms-old-iam
-
-// Old Vue Management System without Authentication & Authorization
-yarn dev-ms-old
-```
-
-_Server version:_ If successful, this automatically starts a Chrome/Chromium browser, and afterwards the MS frontend inside the Browser (hot-reloading) on the URL: https://localhost:33083/ For more information, see [the architecture description in the Wiki](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App#ms-server-architecture).
-
-> Beware: We are using HTTPS with a self-signed certificate for development. This will most likely lead to your browser warning you upon the first start of the frontend. You have to accept that warning and create an exception to continue to the site. The self-signed certificate will also lead to errors when the frontend [tries to connect to the other HTTPS endpoints (WebSocket and Puppeteer)](https://github.com/PROCEED-Labs/proceed/wiki/Architecture-Server-and-Desktop-App). The easiest way to solve this, is to open all endpoints directly inside the browser and add an exception for every enpoint-certificate combination. For the development this is https://localhost:33080 and https://localhost:33081.
-> This should allow the frontend to connect to the other endpoints in subsequent tries.
-
-**Authentication & Authorization**
-
-When you start the new MS with `yarn dev-ms`, you can log in with two default users just by typing their name in the 'Sign in with Development Users' section:
-
-- Admin: With the username `admin`.
-- John Doe: With the username `johndoe`.
-
-Additionaly, if you have set up the environments folder in `src/management-system/src/backend/server/environment-configurations/` and `useAuth0` is set to `true` these two default users are created in the development Auth0 environment.
-
-- Admin: With the username `admin` and the password `ProceedAdm1n!`.
-- John Doe: With the username `johndoe` and the password `JohnDoe1!`.
-
-> :warning: To use `yarn dev-ms-api-auth0` you need access to the private environments repository.
-
-## Testing
-
-Before committing a new version, a linting check is automatically done.  
-Before pushing a new version into the repository, the Engine and MS tests are automatically executed.
+You can then open the frontend at the following URL: http://localhost:3000/
 
 **Engine:**
 
 ```
-yarn test
-
-// E2E test with a started Engine
-yarn test-e2e
+yarn dev
 ```
 
-**Management System:**
+**Working with PROCEED's development version: Authentication & Authorization**
 
-```
-yarn test-ms
-```
+When you have started the development code of the Management System, the first interface is a login UI. You can either continue as _Guest_ with "Create a Process" or you can log in with a pre-configured development user by typing the username in the 'Continue with Development User' input field:
 
-## Building
+- `admin`: a user with admin privileges.
+- `johndoe`: a user with some restricted privileges.
 
-To build the bundled and minified JavaScript files run the following commands
+Both users actually have the same privileges by default, but the first one logging in can see the _System Dashboard_ and becomes the _System Admin_.
 
-**Engine:**
+# Contributions
 
-```
-// Node.js
-yarn build
+If you are interested in developing PROCEED further, we are very open for help and project contributions. Regularly there are on-boarding development workshops and, if you are interested, we have weekly video calls with all developers.
+The following options for contribution are mainly available:
 
-// Browser version
-yarn build-engine-web
-```
+- If you have ideas or find bugs, please create a new [Issue](https://github.com/PROCEED-Labs/proceed/issues).
+- Extend the documentation with the help of pull requests for the [documentation repository.](https://github.com/PROCEED-Labs/docs)
+- Write your own source code to fix bugs or extend the system. Please discuss the content additions in an issue beforehand or simply [contact us](mailto:dev@proceed-labs.org).
 
-The results will be generated inside the `/build/engine/` folder.
+To help you understand the internal structure of PROCEED, we have prepared several [wiki entries](https://github.com/PROCEED-Labs/proceed/wiki).
+For development you should start with looking at the [Hints for Installation and Configuration with our Preferred Dev Tools](https://github.com/PROCEED-Labs/proceed/wiki/Installation-and-Configuration-for-Development) and afterwards read the [Contribution Guide](https://github.com/PROCEED-Labs/proceed/wiki/Contribution).
 
-**Management System:**
-
-```
-// NextJS standalone build
-yarn build-ms
-```
-
-The results will be generated inside the `/src/management-system-v2/.next/*` folder.
-
-## Generate JSDoc API
-
-To generate the JSDoc API, use `yarn jsdoc`. Afterwards the generated HTML files can be found in `./jsdoc/output_html`. You can open the `index.html` to see the JSDoc documentation.
-
-To configure JSDoc change the `jsdoc.config.json` file and see here: [JSDoc README](./jsdoc/README.md).
-
-## Docker
-
-The Engine can also be started from a Docker image.
-To run a Docker container, execute the following (automatically fetched from Docker Hub):
-
-**Engine (only on Linux useful because of the possible `--network host` parameter in Docker):**
-
-```
-yarn docker:run
-```
-
-To stop a running Docker container, execute the following:
-
-```
-yarn docker:stop
-```
-
-**MS Server:**
-
-> Note: To enable our monorepo setup and avoid lengthy install times, we reuse the MS build inside the MS docker image. This means you first have to build the MS with `yarn build-ms` and then run these commands:
-
-```
-yarn docker:build-ms
-```
-
-And to start the server:
-
-```
-yarn docker:run-ms
-```
-
-> That command will use the `.env.development` file inside the MS-v2 folder. You can change the script there to use different environment variables.
-
-For the exact docker commands look into the Dockerfiles for the Engine and the Server.
-There are multiple options and possibilities explained to start and configure the Docker container.
-
-## Linux Systemd Service
-
-If you want to have the engine automatically started at OS start, you can use a systemd service on most current Linux systems.
-
-You find a template service file inside the build folder (e.g. /build/engine) called `proceed-engine.service`. Copy the file to `/etc/systemd/system/`.
-
-Next, replace the keywords `<user>`, `<dir-where-proceed-engine-is-installed>` and `<path-to-node-binary>` with the respective values (without '<' and '>').
-
-Now, advertise the new file to the system with `sudo systemctl daemon-reload`.
-Afterwards, you can control the PROCEED engine with:
-
-```
-sudo systemctl start|stop|restart proceed-engine.service
-```
-
-Use
-
-```
-systemctl status proceed-engine.service
-```
-
-and
-
-```
-journalctl -ef --unit proceed-engine.service
-```
-
-to see the status and log entries.
-
-If you want to (not) load the PROCEED Engine at startup, just type
-
-```
-sudo systemctl enable|disable proceed-engine.service
-```
+For further information, just contact us: dev@proceed-labs.org

@@ -161,6 +161,11 @@ export class ProcessListPage {
 
   async removeAllProcessesAndFolders() {
     const { page } = this;
+    // await page.waitForTimeout(5_000);
+
+    const getNumberOfVisibleRows = async () => {
+      return await page.locator('tbody tr').count();
+    };
 
     if (this.processDefinitionIds.length) {
       if (!page.url().endsWith('processes')) {
@@ -180,33 +185,44 @@ export class ProcessListPage {
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
 
-      while (this.processDefinitionIds.length > 0 || this.folderIds.length > 0) {
+      // await page.waitForTimeout(5_000);
+      let c = 0;
+      while (
+        /* this.processDefinitionIds.length > 0 || this.folderIds.length > 0 */ (await getNumberOfVisibleRows()) >
+          0 &&
+        c < 10
+      ) {
+        c++;
         /* Get all currently visible processes */
-        const processRows = await page.locator('tr[data-row-key]').all();
-        const visibleIds = await asyncMap(processRows, async (el) =>
-          el.getAttribute('data-row-key'),
-        );
+        // const processRows = await page.locator('tr[data-row-key]').all();
+        // const visibleIds = await asyncMap(processRows, async (el) =>
+        //   el.getAttribute('data-row-key'),
+        // );
 
         // remove all processes
         await page.getByLabel('Select all').check();
-        const modal = await openModal(this.page, () =>
-          page.getByRole('button', { name: 'delete' }).first().click(),
-        );
-        await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
-        const before = this.processDefinitionIds.length;
-        /* Remove entries from the process list */
-        this.processDefinitionIds = this.processDefinitionIds.filter(
-          (entry) => !visibleIds.includes(entry),
-        );
-        /* Remove entries from folder list */
-        this.folderIds = this.folderIds.filter((entry) => !visibleIds.includes(entry));
+        // const modal = await openModal(this.page, () => {
+        //   console.log('clicking delete');
+        //   return page.getByRole('button', { name: 'delete' }).first().click();
+        // });
+        // console.log('modal opened');
+        // await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
+        // /* Remove entries from the process list */
+        // this.processDefinitionIds = this.processDefinitionIds.filter(
+        //   (entry) => !visibleIds.includes(entry),
+        // );
+        // /* Remove entries from folder list */
+        // this.folderIds = this.folderIds.filter((entry) => !visibleIds.includes(entry));
 
         // Note: If used in a test, there should be a check for the empty list to
         // avoid double navigations next.
         // this.processDefinitionIds = [];
       }
     }
+    // console.log('________________________________________________________');
+    // await page.waitForTimeout(5_000);
+    // console.log('________________________________________________________');
   }
 
   async createFolder({

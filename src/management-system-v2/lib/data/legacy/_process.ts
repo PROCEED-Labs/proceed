@@ -49,18 +49,16 @@ export function getProcessMetaObjects() {
 }
 
 /** Returns all processes for a user */
-export async function getProcesses(ability: Ability, includeBPMN = false) {
+export async function getProcesses(ability?: Ability, includeBPMN = false) {
   const processes = Object.values(processMetaObjects);
 
-  const userProcesses = await Promise.all(
-    ability
-      .filter('view', 'Process', processes)
-      .map(async (process) =>
-        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
-      ),
-  );
+  const userProcesses = ability ? ability.filter('view', 'Process', processes) : processes;
 
-  return userProcesses;
+  return await Promise.all(
+    userProcesses.map(async (process) =>
+      !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
+    ),
+  );
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {

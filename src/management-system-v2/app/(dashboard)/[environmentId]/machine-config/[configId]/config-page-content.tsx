@@ -13,8 +13,8 @@ import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
 import './ConfigContent.css';
 
-const initialWidth = 300; 
-const collapsedWidth = 70; 
+const initialWidth = 300;
+const collapsedWidth = 70;
 
 type VariablesEditorProps = {
   configId: string;

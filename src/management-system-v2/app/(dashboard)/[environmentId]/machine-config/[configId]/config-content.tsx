@@ -170,6 +170,16 @@ export default function Content(props: MachineDataViewProps) {
     }
   }, [updating]);
 
+  useEffect(() => {
+    setEditingContent(
+      props.contentType === 'metadata'
+        ? editingConfig.metadata
+        : 'parameters' in editingConfig
+          ? (editingConfig as TargetConfig).parameters
+          : {},
+    );
+  });
+
   const showMobileView = useMobileModeler();
   const editable = props.editingEnabled;
 
@@ -314,7 +324,6 @@ export default function Content(props: MachineDataViewProps) {
         let removedIds: (string | undefined)[] = ref.selection.linkedParameters.map((item) => {
           if (paramIdList.indexOf(item) === -1) return item ?? '';
         });
-        console.log(paramIdList, removedIds);
         linkedParamsTwoWay(removedIds, field, 'remove');
         ref.selection.linkedParameters = paramIdList;
       } else {

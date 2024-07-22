@@ -1,7 +1,7 @@
 'use client';
 
 import { ParentConfig } from '@/lib/data/machine-config-schema';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import {
   PlusOutlined,
@@ -111,7 +111,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     }
   };
 
-  const [editable, setEditable] = useState(false);
+  const [editable, setEditable] = useState(query.has('edit'));
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -126,10 +126,10 @@ const ConfigEditor = (props: MachineDataViewProps) => {
 
   const showMobileView = useMobileModeler();
 
-  const [position, setPosition] = useState('view');
+  const [position, setPosition] = useState(query.has('edit') ? 'edit' : 'view');
   const onModeChange = (e: any) => {
     setPosition(e.target.value);
-    setEditable(e.target.value === 'edit'); //alternative: !editable
+    setEditable(!editable);
     router.refresh();
   };
 
@@ -215,6 +215,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     //border: string;
   }) => {
     let panels = [];
+    console.log(editingConfig);
     panels.push({
       key: '1',
       label: 'Meta Data',
@@ -224,7 +225,8 @@ const ConfigEditor = (props: MachineDataViewProps) => {
           backendSaveParentConfig={saveParentConfig}
           configId={configId}
           parentConfig={parentConfig}
-          selectedMachineConfig={props.selectedConfig}
+          selectedMachineConfig={undefined}
+          customConfig={editingConfig}
           editingEnabled={editable}
         />
       ),
@@ -287,6 +289,23 @@ const ConfigEditor = (props: MachineDataViewProps) => {
           style: { ...panelStyle, border: '1px solid #d6e4ff' }, //geekblue-2
         });
       }
+    } else if (editingConfig.type === 'target-config' || editingConfig.type === 'machine-config') {
+      panels.push({
+        key: 'param',
+        label: 'Parameters',
+        children: [
+          <Content_
+            contentType="parameters"
+            editingEnabled={editable}
+            backendSaveParentConfig={saveParentConfig}
+            customConfig={editingConfig}
+            configId={configId}
+            selectedMachineConfig={undefined}
+            parentConfig={parentConfig}
+          />,
+        ],
+        style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
+      });
     }
     setCollapseItems(panels);
   };

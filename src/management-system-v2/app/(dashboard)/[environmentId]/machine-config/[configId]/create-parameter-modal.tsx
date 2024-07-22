@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Form,
@@ -45,12 +45,13 @@ const CreateParameterModal = <T extends CreateParameterModalReturnType>({
   initialData,
   showKey,
 }: CreateParameterModalProps<T>) => {
+  const formRef = useRef(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && formRef.current) {
       // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
       form.setFieldsValue(initialData);
@@ -114,6 +115,7 @@ const CreateParameterModal = <T extends CreateParameterModalReturnType>({
       onOk={onOk}
     >
       <Form
+        ref={formRef}
         form={form}
         layout="vertical"
         name="create_parameter_form"

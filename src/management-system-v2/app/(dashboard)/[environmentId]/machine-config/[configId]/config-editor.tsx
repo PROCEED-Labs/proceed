@@ -44,6 +44,7 @@ import VersionCreationButton from '@/components/version-creation-button';
 import getAddButton from './add-button';
 import getTooltips from './tooltips';
 import MachineConfigModal from '@/components/machine-config-modal';
+import { copyParentConfig } from '@/lib/data/legacy/machine-config';
 
 type MachineDataViewProps = {
   configId: string;
@@ -91,7 +92,13 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     versionName: string;
     versionDescription: string;
   }) => {
-    console.log(values.versionName, values.versionDescription);
+    editingConfig.versions.push({
+      version: editingConfig.versions.length + 1,
+      name: values.versionName,
+      description: values.versionDescription,
+      versionBasedOn: editingConfig.versions.length,
+    });
+    saveParentConfig(configId, parentConfig).then(() => {});
     router.refresh();
   };
 
@@ -185,19 +192,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
   };
 
   const exportCurrentConfig = () => {
-    const dataToExport = {
-      id: editingConfig.id,
-      name: editingConfig.name,
-      type: editingConfig.type,
-      lastEdited: editingConfig.lastEdited,
-      createdOn: editingConfig.createdOn,
-      versions: editingConfig.versions,
-      metadata: editingConfig.metadata,
-      machineConfigs: editingConfig.machineConfigs || [],
-      targetConfig: editingConfig.targetConfig || null,
-    };
-
-    const blob = new Blob([JSON.stringify([dataToExport], null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify([editingConfig], null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';

@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -25,11 +25,12 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   initialData,
 }: MachineConfigModalProps<T>) => {
   const [form] = Form.useForm();
+  const formRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && formRef.current) {
       // form.resetFields is not working, because initialData has not been
       // updated in the internal form store, eventhough the prop has.
       form.setFieldsValue(initialData);
@@ -96,6 +97,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
     >
       <Form
         form={form}
+        ref={formRef}
         layout="vertical"
         name="machine_config_form"
         initialValues={initialData}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ParentConfig, AbstractConfig } from '@/lib/data/machine-config-schema';
+import { ParentConfig, AbstractConfig, TargetConfig } from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
@@ -9,9 +9,11 @@ import ConfigEditor from './config-editor';
 import ConfigurationTreeView from './config-tree-view';
 import { useRouter } from 'next/navigation';
 import { TreeFindParameterStruct, TreeFindStruct } from '../configuration-helper';
+// @ts-ignore
 import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
 import './ConfigContent.css';
+import Content from './config-content';
 
 const initialWidth = 300;
 const collapsedWidth = 70;
@@ -170,7 +172,15 @@ export default function ConfigContent(props: VariablesEditorProps) {
           selectedConfig={selectedConfig as TreeFindStruct}
         />
       ) : (
-        <div></div>
+        <Content
+          backendSaveParentConfig={saveConfig}
+          configId={configId}
+          contentType="parameters"
+          editingEnabled={editable}
+          parentConfig={parentConfig}
+          selectedMachineConfig={undefined}
+          customConfig={selectedConfig?.selection as TargetConfig}
+        />
       )}
     </Layout>
   );

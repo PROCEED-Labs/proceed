@@ -52,9 +52,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
-import { v4 } from 'uuid';
 import { defaultParameter } from './configuration-helper';
-import { count } from 'console';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -145,16 +143,9 @@ const ParentConfigList = ({
   useAddControlCallback('machineconfig-list', 'del', () => setOpenDeleteModal(true));
 
   const exportItems = (items: ParentConfigListConfigs[]) => {
-    const dataToExport = items.map((item) => ({
-      id: item.id,
-      name: item.name.value,
-      type: item.type,
-      lastEdited: item.lastEdited,
-      createdOn: item.createdOn,
-      versions: item.versions,
-      metadata: item.metadata,
-      machineConfigs: item.machineConfigs,
-      targetConfig: item.targetConfig,
+    const dataToExport: ParentConfig[] = items.map((item) => ({
+      ...item,
+      name: item.name.value ?? '',
     }));
 
     const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -276,18 +267,7 @@ const ParentConfigList = ({
       const importedData: ParentConfig[] = JSON.parse(text);
 
       for (const item of importedData) {
-        const config: AbstractConfigInput = {
-          id: v4(),
-          name: item.name,
-          metadata: item.metadata,
-          machineConfigs: item.machineConfigs || [],
-          targetConfig: item.targetConfig || null,
-          type: item.type,
-          createdOn: item.createdOn,
-          lastEdited: item.lastEdited,
-          versions: item.versions,
-        };
-        await createParentConfig(config, space.spaceId);
+        createParentConfig(item, space.spaceId, item).then(() => {});
       }
       message.success('Import successful');
       router.refresh();
@@ -338,7 +318,7 @@ const ParentConfigList = ({
     },
     {
       title: 'Description',
-      dataIndex: 'description',
+      dataIndex: 'metadata.description',
       key: 'description',
       sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => (
@@ -367,24 +347,6 @@ const ParentConfigList = ({
       render: (date: Date) => generateDateString(date, true),
       sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       responsive: ['md'],
-    },
-    {
-      title: 'Config Type',
-      dataIndex: 'ConfigType',
-      key: 'Config Type',
-      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
-      render: (_, record) => <>{record.type}</>,
-      responsive: ['sm'],
-    },
-    {
-      title: 'Machine ',
-      dataIndex: 'Machine',
-      key: 'Machine',
-      render: (_, record) => <>{record.type}</>,
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      ),
-      responsive: ['sm'],
     },
   ];
 
@@ -498,7 +460,7 @@ const ParentConfigList = ({
             addPreferences({ 'process-list-columns-desktop': cols });
           },
           selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],
-          allColumnTitles: ['Description', 'LastEdited', 'Type', 'Machine'],
+          allColumnTitles: ['Description', 'LastEdited'],
           columnProps: {
             width: 'fit-content',
             responsive: ['xl'],

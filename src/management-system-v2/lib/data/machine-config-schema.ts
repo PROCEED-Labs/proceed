@@ -21,15 +21,8 @@ const ParameterZod = z.object({
 export const AbstractConfigInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  type: z.string().optional(),
-  description: z.string().optional(),
-  lastEdited: z.string().optional(),
-  createdOn: z.string().optional(),
-  versions: z.array(z.any()).optional(),
   metadata: z.record(z.string(), ParameterZod),
   folderId: z.string().optional(),
-  machineConfigs: z.array(z.any()).optional(),
-  targetConfig: z.any().optional(),
 });
 
 export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;

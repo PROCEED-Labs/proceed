@@ -180,6 +180,7 @@ function defaultParameter(key: string, val: string): Parameter {
 export async function createParentConfig(
   machineConfigInput: AbstractConfigInput,
   environmentId: string,
+  base?: ParentConfig,
 ) {
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
@@ -208,7 +209,9 @@ export async function createParentConfig(
         environmentId: environmentId,
       } as ParentConfig),
       ...parentConfigData,
+      ...(base ? base : {}),
     };
+    metadata.id = v4();
     if (!metadata.folderId) {
       metadata.folderId = getRootFolder(metadata.environmentId).id;
     }

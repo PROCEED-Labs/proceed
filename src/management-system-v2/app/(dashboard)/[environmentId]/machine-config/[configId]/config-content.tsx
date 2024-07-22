@@ -32,6 +32,7 @@ import {
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
 import {
+  TreeFindParameterStruct,
   TreeFindStruct,
   defaultConfiguration,
   defaultParameter,
@@ -131,7 +132,7 @@ export default function Content(props: MachineDataViewProps) {
     );
   };
 
-  const onClickAddField = (parent: Parameter, type: 'nested' | 'main') => {
+  const onClickAddField = (parent: Parameter | undefined, type: 'nested' | 'main') => {
     if (type === 'nested') {
       // setEditingContent({ ...parent.parameters });
       setParentNestedSelection(parent);
@@ -140,18 +141,11 @@ export default function Content(props: MachineDataViewProps) {
   };
 
   const saveAll = () => {
-    if (parentNestedSelection && parentNestedSelection.id) {
-      let ref = findParameter(parentNestedSelection.id, parentConfig, 'config');
-      if (!ref) return;
-      console.log('on parent:', ref);
-      ref.selection.parameters = editingContent;
-    } else {
-      if (refEditingConfig) {
-        if (props.contentType === 'metadata') {
-          refEditingConfig.selection.metadata = editingContent;
-        } else {
-          (refEditingConfig.selection as TargetConfig).parameters = editingContent;
-        }
+    if (refEditingConfig) {
+      if (props.contentType === 'metadata') {
+        refEditingConfig.selection.metadata = editingContent;
+      } else {
+        (refEditingConfig.selection as TargetConfig).parameters = editingContent;
       }
     }
     saveParentConfig(configId, parentConfig).then(() => {});
@@ -204,10 +198,18 @@ export default function Content(props: MachineDataViewProps) {
         valuesFromModal.unit,
       );
       let copyContent = { ...editingContent };
-      console.log(parentNestedSelection, parentNestedSelection && parentNestedSelection.id);
       if (parentNestedSelection && parentNestedSelection.id) {
-        let ref = findParameter(parentNestedSelection.id, copyContent.parameters, 'parameter');
-        console.log(copyContent, parentNestedSelection.id);
+        let ref: TreeFindParameterStruct = undefined;
+        for (let prop in copyContent) {
+          if (copyContent[prop].id === parentNestedSelection.id) {
+            ref = { selection: copyContent[prop], parent: editingConfig, type: 'parameter' };
+          } else {
+            ref = findParameter(parentNestedSelection.id, copyContent[prop], 'parameter');
+          }
+          if (ref) {
+            break;
+          }
+        }
         if (!ref) return Promise.resolve();
         ref.selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] = field;
       } else {
@@ -393,9 +395,7 @@ export default function Content(props: MachineDataViewProps) {
         <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
           {/* <Col span={3} className="gutter-row" /> */}
           <Col span={21} className="gutter-row">
-            {getAddButton(addButtonTitle, undefined, () =>
-              onClickAddField(editingConfig as TargetConfig, 'main'),
-            )}
+            {getAddButton(addButtonTitle, undefined, () => onClickAddField(undefined, 'main'))}
           </Col>
         </Row>
       )}

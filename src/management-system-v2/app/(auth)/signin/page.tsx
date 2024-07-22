@@ -15,8 +15,6 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
 
   let providers = getProviders();
 
-  providers = providers.filter((provider) => !isGuest || 'development-users' !== provider.id);
-
   providers = providers.toSorted((a, b) => {
     if (a.id === 'guest-signin') return 1;
     if (b.id === 'guest-signin') return -1;
@@ -33,11 +31,7 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
     return 0;
   });
 
-  let userType;
-  if (!session) userType = 'none' as const;
-  else userType = isGuest ? ('guest' as const) : ('user' as const);
-
-  return <SignIn providers={providers} userType={userType} />;
+  return <SignIn providers={providers} user={session?.user} />;
 };
 
 export default SignInPage;

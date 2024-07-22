@@ -13,8 +13,8 @@ import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
 import './ConfigContent.css';
 
-const initialWidth = 300; // Initial width
-const collapsedWidth = 70; // Width when collapsed
+const initialWidth = 300; 
+const collapsedWidth = 70; 
 
 type VariablesEditorProps = {
   configId: string;
@@ -33,7 +33,11 @@ export default function ConfigContent(props: VariablesEditorProps) {
   const configId = props.configId;
   const saveConfig = props.backendSaveParentConfig;
   const [parentConfig, setParentConfig] = useState<ParentConfig>(props.originalParentConfig);
+  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   const onSelectConfig = (relation: TreeFindStruct | TreeFindParameterStruct) => {
     setSelectedConfig(relation);
   };
@@ -50,9 +54,9 @@ export default function ConfigContent(props: VariablesEditorProps) {
   const [width, setWidth] = useState(initialWidth);
 
   const handleResize = (delta: number) => {
-    setWidth((prevWidth: number) => {
+    setWidth((prevWidth) => {
       const newWidth = prevWidth + delta;
-      const maxWidth = window.innerWidth / 2;
+      const maxWidth = isClient ? window.innerWidth / 2 : initialWidth;
       const minWidth = 200;
       if (newWidth > collapsedWidth) {
         setCollapsed(false);
@@ -69,7 +73,9 @@ export default function ConfigContent(props: VariablesEditorProps) {
     }
     setCollapsed(!collapsed);
   };
-
+  if (!isClient) {
+    return null;
+  }
   return (
     <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'row' }}>
       <ResizableBox

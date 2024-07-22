@@ -252,7 +252,9 @@ export default function Content(props: MachineDataViewProps) {
           }
         }
         if (!ref) return Promise.resolve();
-        ref.selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] = field;
+        (ref.selection as Parameter).parameters[
+          valuesFromModal.key ?? valuesFromModal.displayName
+        ] = field;
       } else {
         copyContent[valuesFromModal.key ?? valuesFromModal.displayName] = field;
       }

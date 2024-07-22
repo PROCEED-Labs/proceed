@@ -37,7 +37,7 @@ export function defaultConfiguration(): AbstractConfig {
     type: 'config',
     environmentId: '',
     metadata: {},
-    name: 'Default Machine Configuration',
+    name: 'Default Configuration',
     variables: [],
     departments: [],
     inEditingBy: [],
@@ -141,7 +141,6 @@ export function deleteLinks(param: Parameter, parentConfig: ParentConfig) {
     obj.value.linkedParameters = obj.value.linkedParameters.filter((item) => {
       return idList.indexOf(item) === -1;
     });
-    console.log('Deleting:', obj, param);
   }
 }
 

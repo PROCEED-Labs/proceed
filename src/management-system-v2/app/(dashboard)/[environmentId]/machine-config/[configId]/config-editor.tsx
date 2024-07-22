@@ -23,6 +23,7 @@ import {
   Select,
   Radio,
   Collapse,
+  Typography,
 } from 'antd';
 
 import useMobileModeler from '@/lib/useMobileModeler';
@@ -210,7 +211,6 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     //border: string;
   }) => {
     let panels = [];
-    console.log(editingConfig);
     panels.push({
       key: '1',
       label: 'Meta Data',
@@ -252,7 +252,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
         const label = (
           <Space.Compact size="small">
             <Space align="center">
-              <text>Machine Configurations</text>
+              <Typography.Text>Machine Configurations</Typography.Text>
               {editable && (
                 <Tooltip title="Add Machine Configuration">
                   <Button

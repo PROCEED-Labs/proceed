@@ -126,7 +126,7 @@ const ParentConfigList = ({
   if (ability && ability.can('create', 'MachineConfig'))
     defaultDropdownItems.push({
       key: 'create-machine-config',
-      label: <MachineConfigCreationButton wrapperElement="Create Machine Configuration" />,
+      label: <MachineConfigCreationButton wrapperElement="Create Configuration" />,
       icon: <FileOutlined />,
     });
 
@@ -228,7 +228,7 @@ const ParentConfigList = ({
         ...editingItem,
         metadata: {
           ...editingItem.metadata,
-          description: defaultParameter('description', valuesFromModal.description),
+          description: defaultParameter('description', valuesFromModal.description ?? ''),
         },
         name: valuesFromModal.name,
       }).then(() => {});
@@ -248,7 +248,7 @@ const ParentConfigList = ({
         {
           name: valueFromModal.name,
           metadata: {
-            description: defaultParameter('description', valueFromModal.description),
+            description: defaultParameter('description', valueFromModal.description ?? ''),
           },
         },
         space.spaceId,
@@ -318,8 +318,6 @@ const ParentConfigList = ({
     },
     {
       title: 'Description',
-      dataIndex: 'metadata.description',
-      key: 'description',
       sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => (
         <SpaceLink
@@ -345,7 +343,7 @@ const ParentConfigList = ({
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
+      sorter: (a, b) => (a.lastEdited || '').localeCompare(b.lastEdited || ''),
       responsive: ['md'],
     },
   ];
@@ -397,14 +395,6 @@ const ParentConfigList = ({
                     onClick={() => copyItem(selectedRowElements)}
                   />
                 </Tooltip>
-
-                {/* <Tooltip placement="top" title={'Edit'}>
-                  <EditOutlined
-                    style={{ margin: '0 8px' }}
-                    onClick={() => editItem(selectedRowElements[0])}
-                    disabled={count !== 1}
-                  />
-                </Tooltip> */}
                 <Tooltip placement="top" title={'Delete'}>
                   <ConfirmationButton
                     title="Delete Configuration"
@@ -420,23 +410,6 @@ const ParentConfigList = ({
                 </Tooltip>
               </SelectionActions>
             </span>
-
-            {/*<span>
-                <Space.Compact className={breakpoint.xs ? styles.MobileToggleView : undefined}>
-                  <Button
-                    style={!iconView ? { color: '#3e93de', borderColor: '#3e93de' } : {}}
-                    onClick={() => addPreferences({ 'icon-view-in-process-list': false })}
-                  >
-                    <UnorderedListOutlined />
-                  </Button>
-                  <Button
-                    style={!iconView ? {} : { color: '#3e93de', borderColor: '#3e93de' }}
-                    onClick={() => addPreferences({ 'icon-view-in-process-list': true })}
-                  >
-                    <AppstoreOutlined />
-                  </Button>
-                </Space.Compact>
-              </span>*/}
           </span>
         }
         searchProps={{
@@ -456,7 +429,6 @@ const ParentConfigList = ({
           setColumnTitles: (cols) => {
             if (typeof cols === 'function')
               cols = cols(selectedColumns.map((col: any) => col.name) as string[]);
-
             addPreferences({ 'process-list-columns-desktop': cols });
           },
           selectedColumnTitles: selectedColumns.map((col: any) => col.name) as string[],

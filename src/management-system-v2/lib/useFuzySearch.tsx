@@ -13,16 +13,7 @@ function highlightText<TObj>(
   dataIndexElement: keyof TObj,
   color: string = '#3e93de',
 ) {
-  let value;
-  if (typeof fuseElement.item[dataIndexElement] === 'string')
-    value = (fuseElement.item[dataIndexElement] as string) || '';
-  else {
-    // if it is a ConfigField
-    if ('content' in (fuseElement.item[dataIndexElement] as object))
-      value =
-        (fuseElement.item[dataIndexElement] as { content: [{ value: string }] }).content[0].value ||
-        '';
-  }
+  const value = (fuseElement.item[dataIndexElement] as string) || '';
   const matches = fuseElement.matches?.find((match) => match.key === dataIndexElement);
 
   if (!matches || !value) return { highlighted: <span>{value}</span>, value };

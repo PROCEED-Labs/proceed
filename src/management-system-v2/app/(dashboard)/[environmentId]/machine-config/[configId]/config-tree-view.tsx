@@ -399,7 +399,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     const defaultParameter: Parameter = {
       id: v4(),
       linkedParameters: [],
-      parameters: [],
+      parameters: {},
       type: 'https://schema.org/' + valuesFromModal.key ?? valuesFromModal.displayName,
       content: [
         {

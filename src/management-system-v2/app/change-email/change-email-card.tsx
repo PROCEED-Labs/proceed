@@ -46,36 +46,30 @@ export default function ChangeEmailCard({
   }
 
   return (
-    <Content title="Change Email Address">
-      <Card
-        title="Are you sure you want to change your email?"
-        style={{ width: '90%', maxWidth: '80ch', margin: 'auto' }}
-      >
-        {previousEmail ? (
-          <>
-            <Typography.Text code>{previousEmail}</Typography.Text>
-            <ArrowRightOutlined style={{ margin: '0 1rem' }} />
-            <Typography.Text code>{newEmail}</Typography.Text>
-          </>
-        ) : (
-          <>
-            Your email will now be <Typography.Text code>{newEmail}</Typography.Text>
-          </>
-        )}
-        <br />
-        <Space style={{ marginTop: '1rem' }}>
-          <Button
-            type="default"
-            onClick={() => changeEmail(true)}
-            loading={loading === 'cancelling'}
-          >
-            Cancel
-          </Button>
-          <Button type="primary" onClick={() => changeEmail()} loading={loading === 'changing'}>
-            Confirm
-          </Button>
-        </Space>
-      </Card>
-    </Content>
+    <Card
+      title="Are you sure you want to change your email?"
+      style={{ width: '90%', maxWidth: '80ch', margin: 'auto' }}
+    >
+      {previousEmail ? (
+        <>
+          <Typography.Text code>{previousEmail}</Typography.Text>
+          <ArrowRightOutlined style={{ margin: '0 1rem' }} />
+          <Typography.Text code>{newEmail}</Typography.Text>
+        </>
+      ) : (
+        <>
+          Your email will now be <Typography.Text code>{newEmail}</Typography.Text>
+        </>
+      )}
+      <br />
+      <Space style={{ marginTop: '1rem' }}>
+        <Button type="default" onClick={() => changeEmail(true)} loading={loading === 'cancelling'}>
+          Cancel
+        </Button>
+        <Button type="primary" onClick={() => changeEmail()} loading={loading === 'changing'}>
+          Confirm
+        </Button>
+      </Space>
+    </Card>
   );
 }

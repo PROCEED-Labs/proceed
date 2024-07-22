@@ -21,6 +21,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
+import { User } from '@/lib/data/user-schema';
 
 const verticalGap = '1rem';
 
@@ -57,11 +58,19 @@ const signInTitle = (
 
 const SignIn: FC<{
   providers: ExtractedProvider[];
-  userType: 'guest' | 'user' | 'none';
-}> = ({ providers, userType }) => {
+  user?: User;
+}> = ({ providers, user }) => {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
+  let callbackUrl = searchParams.get('callbackUrl') ?? undefined;
+  if (user?.guest) {
+    callbackUrl =
+      `/transfer-processes?guestId=${user.id}` + (callbackUrl ? `&callbackUrl=${callbackUrl}` : '');
+  }
   const authError = searchParams.get('error');
+
+  let userType: 'none' | 'guest' | 'user';
+  if (!user) userType = 'none';
+  else userType = user.guest ? 'guest' : 'user';
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');

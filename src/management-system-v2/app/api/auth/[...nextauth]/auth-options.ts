@@ -69,14 +69,20 @@ const nextAuthOptions: AuthOptions = {
 
       if (
         sessionUser?.guest &&
-        account?.provider !== 'guest-loguin' &&
+        account?.provider !== 'guest-signin' &&
         !email?.verificationRequest
       ) {
-        const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = getUserById(sessionUser.id);
+        // Check if the user's cookie is correct
+        const sessionUserInDb = getUserById(sessionUser.id);
+        if (!sessionUserInDb || !sessionUserInDb.guest) throw new Error('Something went wrong');
 
-        if (guestUser.guest) {
-          updateUser(guestUser.id, {
+        const user = _user as Partial<AuthenticatedUser>;
+        const userSigningIn = getUserById(_user.id);
+
+        if (userSigningIn) {
+          updateUser(sessionUser.id, { guest: true, signedInWithUserId: userSigningIn.id });
+        } else {
+          updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,

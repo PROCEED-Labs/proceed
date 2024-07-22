@@ -58,35 +58,35 @@ export const resources = [
       },
     ],
   },
-  {
-    name: 'Templates',
-    title: 'Templates',
-    description: 'Templates',
-    path: '/api/process',
-    type: 'Template',
-    actions: [
-      {
-        name: 'view',
-        title: 'View templates',
-        description: 'Allows a user to view her or his templates. (Enables the Templates view.)',
-      },
-      {
-        name: 'manage',
-        title: 'Manage templates',
-        description: 'Allows a user to create, modify and delete templates in the Templates view.',
-      },
-      {
-        name: 'share',
-        title: 'Share templates',
-        description: 'Allows a user to share templates with different users and groups.',
-      },
-      {
-        name: 'admin',
-        title: 'Administrate templates',
-        description: 'Allows a user to create, modify, delete and share all PROCEED templates.',
-      },
-    ],
-  },
+  // {
+  //   name: 'Templates',
+  //   title: 'Templates',
+  //   description: 'Templates',
+  //   path: '/api/process',
+  //   type: 'Template',
+  //   actions: [
+  //     {
+  //       name: 'view',
+  //       title: 'View templates',
+  //       description: 'Allows a user to view her or his templates. (Enables the Templates view.)',
+  //     },
+  //     {
+  //       name: 'manage',
+  //       title: 'Manage templates',
+  //       description: 'Allows a user to create, modify and delete templates in the Templates view.',
+  //     },
+  //     {
+  //       name: 'share',
+  //       title: 'Share templates',
+  //       description: 'Allows a user to share templates with different users and groups.',
+  //     },
+  //     {
+  //       name: 'admin',
+  //       title: 'Administrate templates',
+  //       description: 'Allows a user to create, modify, delete and share all PROCEED templates.',
+  //     },
+  //   ],
+  // },
   {
     name: 'Tasks',
     title: 'Tasks',

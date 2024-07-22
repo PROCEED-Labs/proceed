@@ -93,7 +93,7 @@ export async function wrapServerCall<Return>(args: {
 
     if (args.onError === false) return;
 
-    let message: ReactNode = args.onError ?? 'An error occurred';
+    let message: ReactNode = args.onError ?? 'Something went wrong';
     if (isUserError(error)) message = error.message;
 
     if (args?.errorDisplay === 'notification') args.app!.notification.error({ message });

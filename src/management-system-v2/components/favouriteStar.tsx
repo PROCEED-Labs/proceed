@@ -19,7 +19,7 @@ const FavouriteStar: FC<StarType> = ({ id, className }) => {
       if (await ServerActionIsUserGuest()) {
         message.info({
           content:
-            'To save Processes / Folder as your favourites permanantly, you need to Sign In.',
+            'To save Processes / Folder as your favourites permanently, you need to Sign In.',
           duration: 5,
         });
       } else {

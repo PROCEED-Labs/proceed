@@ -37,6 +37,15 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
 
   return (
     <>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        name={variable}
+        checked={checked}
+        onClick={onChange}
+        onChange={onChange}
+      />
       <EditableText
         value={label}
         tagName="label"
@@ -46,15 +55,6 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
           e.preventDefault();
           e.stopPropagation();
         }}
-      />
-      <input
-        id={id}
-        type={type}
-        value={value}
-        name={variable}
-        checked={checked}
-        onClick={onChange}
-        onChange={onChange}
       />
     </>
   );
@@ -136,7 +136,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 style={{
                   position: 'absolute',
                   right: '0',
-                  transform: 'translate(100%,0)',
+                  transform: 'translate(110%,0)',
                 }}
                 title={`Add ${type === 'checkbox' ? 'Checkbox' : 'Radio Button'} Below`}
                 onClick={() => handleAddButton(index)}
@@ -149,7 +149,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 style={{
                   position: 'absolute',
                   right: '0',
-                  transform: 'translate(220%,0)',
+                  transform: 'translate(230%,0)',
                 }}
                 title={`Remove ${type === 'checkbox' ? 'Checkbox' : 'Radio Button'}`}
                 onClick={() => handleRemoveButton(index)}

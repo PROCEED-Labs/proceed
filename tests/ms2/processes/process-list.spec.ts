@@ -1342,22 +1342,26 @@ test.describe('Selecting Processes', () => {
     const { page } = processListPage;
     /* TODO: The number of processes necessary to cause second page depends on viewport height */
     /* Create 10 processes + XYZ Process ( =11) */
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 3; i++) {
       await processListPage.createProcess({
         processName: `Process ${i}`,
         returnToProcessList: true,
       });
     }
-    /* Copy + Paste */
+
     await page.getByRole('main').press('Control+a');
-    await page.getByRole('main').press('Control+c');
-    const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
-    await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+
+    /* Copy + Paste until multiple pages */
+    while ((await page.locator('.ant-pagination-next').getAttribute('aria-disabled')) === 'true') {
+      await page.getByRole('main').press('Control+c');
+      const modal = await openModal(page, () => page.getByRole('main').press('Control+v'));
+      await closeModal(modal, () => page.getByRole('main').press('Control+Enter'));
+    }
 
     /* Add Copys to processListPage.processDefinitionIds */
     /* Search for '(Copy)' */
-    const inputSearch = await page.locator('.ant-input-affix-wrapper');
-    await inputSearch.getByPlaceholder(/search/i).fill('(Copy)');
+    const inputSearch = await page.locator('.ant-input-affix-wrapper').getByPlaceholder(/search/i);
+    await inputSearch.fill('(Copy)');
 
     /* Get their ids */
     const processRows = await page.locator('tr[data-row-key]').all();
@@ -1365,7 +1369,8 @@ test.describe('Selecting Processes', () => {
     processListPage.processDefinitionIds.push(...visibleIds);
 
     /* Clear Search */
-    await inputSearch.getByPlaceholder(/search/i).fill('');
+    await inputSearch.focus();
+    await inputSearch.fill('');
     await page.getByRole('main').press('Escape');
 
     /* Deselect */
@@ -1394,13 +1399,17 @@ test.describe('Selecting Processes', () => {
     const firstRow = await page.locator(`tr[data-row-key="${processIDs[0]}"]`);
     await firstRow.locator(`input[name="${processIDs[0]}"]`).click();
     const indicator = await page.getByRole('note');
+    const xyzProcessId = processIDs[processIDs.length - 1];
 
     /* Check if selected */
     await expect(firstRow, 'Could not select first process').toHaveClass(/ant-table-row-selected/);
     await expect(indicator).toContainText('1');
 
+    const nextButton = await page.getByRole('button', { name: 'right' }),
+      prevButton = await page.getByRole('button', { name: 'left', exact: true });
+
     /* Change page */
-    await page.getByRole('button', { name: 'right' }).click();
+    await nextButton.click();
 
     /* Check if selection persists */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);
@@ -1427,15 +1436,18 @@ test.describe('Selecting Processes', () => {
     /* Search for 'XYZ' (last process) */
     await inputSearch.getByPlaceholder(/search/i).fill('XYZ');
 
+    /* Make sure to be on the first page */
+    await prevButton.click();
+
     /* Select the process (that should be visible now) element in table */
-    await page.locator(`input[name="${processIDs[10]}"]`).check();
+    await page.locator(`input[name="${xyzProcessId}"]`).check();
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(1);
     await expect(indicator).toContainText('2');
 
     /* Deselect the XYZ Process */
-    await page.locator(`input[name="${processIDs[10]}"]`).uncheck();
+    await page.locator(`input[name="${xyzProcessId}"]`).uncheck();
 
     /* Check */
     await expect(page.locator('.ant-table-row-selected')).toHaveCount(0);

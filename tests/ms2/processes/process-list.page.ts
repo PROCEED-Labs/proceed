@@ -172,21 +172,23 @@ export class ProcessListPage {
       await page.locator('body').focus();
       await page.locator('body').press('Escape');
       /* Ensure that the search input is cleared */
-      const inputSearch = await page.locator('.ant-input-affix-wrapper');
+      const inputSearch = await page
+        .locator('.ant-input-affix-wrapper')
+        .getByPlaceholder(/search/i);
       /* Filling an empty string causes 'del' keydown event */
       /* Therefore ensure search area is focused (not trigger shortcut) */
-      await inputSearch.getByPlaceholder(/search/i).focus();
-      await inputSearch.getByPlaceholder(/search/i).fill('');
+      await inputSearch.focus();
+      await inputSearch.fill('');
       /* Ensure it is the list and not the icon view */
       await page.getByRole('button', { name: 'unordered-list' }).click();
 
       // make sure that the list is fully loaded otherwise clicking the select all checkbox will not work as expected
       await page.getByRole('columnheader', { name: 'Name' }).waitFor({ state: 'visible' });
 
-      // await page.waitForTimeout(5_000);
       while (
         /* this.processDefinitionIds.length > 0 || this.folderIds.length > 0 */
-        (await page.locator('tbody tr').count()) > 0
+        /* If the list is empty the placeholder is rendered */
+        !(await page.locator('tbody tr.ant-table-placeholder').isVisible())
       ) {
         /* Get all currently visible processes */
         const processRows = await page.locator('tr[data-row-key]').all();
@@ -197,11 +199,9 @@ export class ProcessListPage {
         // remove all processes
         await page.getByLabel('Select all').check();
 
-        const modal = await openModal(this.page, () => {
-          console.log('clicking delete');
-          return page.getByRole('button', { name: 'delete' }).first().click();
-        });
-        console.log('modal opened');
+        const modal = await openModal(this.page, () =>
+          page.getByRole('button', { name: 'delete' }).first().click(),
+        );
         await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
         /* Remove entries from the process list */
         this.processDefinitionIds = this.processDefinitionIds.filter(
@@ -213,6 +213,10 @@ export class ProcessListPage {
         // Note: If used in a test, there should be a check for the empty list to
         // avoid double navigations next.
         // this.processDefinitionIds = [];
+
+        /* Rendereing potential placeholder element can take longer */
+        /* -> ensure new rows are rendered */
+        await this.goto();
       }
     }
   }

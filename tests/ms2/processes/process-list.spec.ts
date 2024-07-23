@@ -500,7 +500,7 @@ test('sorting process list columns', async ({ processListPage }) => {
   }
 
   async function getColumnValues(col: number) {
-    const tableRows = await page.locator('tbody tr').all();
+    const tableRows = await page.locator('tbody tr.ant-table-row').all();
     const rowNames: { text: string; ariaLabel: string }[] = [];
     for (const row of tableRows) {
       const icon = row.locator('td').nth(2).locator('span').first();
@@ -798,7 +798,7 @@ test.describe('shortcuts in process-list', () => {
 
     /* Check if Process has been added */
     await expect(
-      page.locator('tbody>tr'),
+      page.locator('tbody>tr.ant-table-row'),
       'Could not find copied process in Process-List',
     ).toHaveCount(2);
     /* Check with name */
@@ -829,7 +829,7 @@ test.describe('shortcuts in process-list', () => {
     }
 
     /* Check if Process has been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(3);
+    await expect(page.locator('tbody>tr.ant-table-row')).toHaveCount(3);
     /* Check with name */
     await expect(page.locator('tbody')).toContainText(processName + ' - Meta');
   });
@@ -887,7 +887,7 @@ test.describe('shortcuts in process-list', () => {
     await page.waitForTimeout(1_000); /* Ensure that animation is over */
 
     /* Check if Processes have been added */
-    await expect(page.locator('tbody>tr')).toHaveCount(4);
+    await expect(page.locator('tbody>tr.ant-table-row')).toHaveCount(4);
 
     /* Check with names */
     for (const name of names) {

@@ -33,7 +33,7 @@ test('import a process', async ({ processListPage }) => {
   const { definitionId } = await processListPage.importProcess('process1.bpmn');
 
   // open the new process in the modeler
-  await page.locator(`tr[data-row-key="${definitionId}"]`).dblclick();
+  await page.locator(`tr[data-row-key="${definitionId}"]>td:nth-child(3)`).click();
   await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
 
   // check if the process in the modeler is the one that we tried to import
@@ -448,7 +448,8 @@ test('create a new folder and process, move process to folder and then delete bo
   await expect(processLocator).not.toBeVisible();
 
   // go to folder page
-  await folderRow.click({ clickCount: 2 });
+  const nameCell = folderRow.locator(`td:has-text("${folderId}")`);
+  await nameCell.click({ clickCount: 1 });
   await page.waitForURL(/\/processes\/folder\/([a-zA-Z0-9-_]+)/);
 
   // check for process and delete it

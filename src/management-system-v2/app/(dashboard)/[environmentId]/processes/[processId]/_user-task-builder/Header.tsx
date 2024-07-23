@@ -34,37 +34,7 @@ const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me'
 };
 
 export const HeaderSettings = () => {
-  const {
-    actions: { setProp },
-    type,
-  } = useNode((node) => ({
-    type: node.data.props.type,
-  }));
-
-  return (
-    <>
-      <Setting
-        label="Type"
-        control={
-          <Select
-            options={[
-              { value: 1, label: '1' },
-              { value: 2, label: '2' },
-              { value: 3, label: '3' },
-              { value: 4, label: '4' },
-              { value: 5, label: '5' },
-            ]}
-            value={type}
-            onChange={(val) =>
-              setProp((props: HeaderProps) => {
-                props.type = val;
-              })
-            }
-          />
-        }
-      />
-    </>
-  );
+  return <div style={{ textAlign: 'center' }}>Double click the text to edit it.</div>;
 };
 
 Header.craft = {

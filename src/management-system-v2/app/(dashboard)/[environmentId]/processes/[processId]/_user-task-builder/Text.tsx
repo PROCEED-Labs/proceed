@@ -6,10 +6,9 @@ import { EditableText, Setting } from './utils';
 
 type TextProps = {
   text: string;
-  fontSize?: string | number;
 };
 
-const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
+const Text: UserComponent<TextProps> = ({ text }) => {
   const {
     connectors: { connect },
     actions: { setProp },
@@ -23,8 +22,8 @@ const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
     >
       <EditableText
         value={text}
-        tagName="p"
-        style={{ fontSize, whiteSpace: 'pre-line' }}
+        tagName="div"
+        style={{ margin: '14px 0', whiteSpace: 'pre-line' }}
         onChange={(newText) => setProp((props: TextProps) => (props.text = newText))}
       />
     </div>
@@ -32,27 +31,7 @@ const Text: UserComponent<TextProps> = ({ text, fontSize }) => {
 };
 
 export const TextSettings = () => {
-  const {
-    actions: { setProp },
-    fontSize,
-  } = useNode((node) => ({
-    fontSize: node.data.props.fontSize,
-  }));
-
-  return (
-    <>
-      <Setting
-        label="Font Size"
-        control={
-          <InputNumber
-            value={fontSize}
-            addonAfter="pt"
-            onChange={(val) => setProp((props: TextProps) => (props.fontSize = val))}
-          />
-        }
-      />
-    </>
-  );
+  return <div style={{ textAlign: 'center' }}>Double click the text to edit it.</div>;
 };
 
 Text.craft = {
@@ -64,7 +43,6 @@ Text.craft = {
   },
   props: {
     text: 'Hi',
-    fontSize: 14,
   },
 };
 

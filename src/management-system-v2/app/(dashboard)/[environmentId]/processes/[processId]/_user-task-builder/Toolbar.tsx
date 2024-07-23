@@ -67,14 +67,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   useAddControlCallback('user-task-editor', 'redo', () => {
     if (query.history.canRedo()) actions.history.redo();
   });
-  useAddControlCallback(
-    'user-task-editor',
-    'delete',
-    () => {
-      onDelete?.();
-    },
-    { dependencies: [onDelete] },
-  );
+  // useAddControlCallback(
+  //   'user-task-editor',
+  //   'delete',
+  //   () => {
+  //     onDelete?.();
+  //   },
+  //   { dependencies: [onDelete] },
+  // );
 
   return (
     <Row className={styles.EditorHeader}>

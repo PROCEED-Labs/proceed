@@ -1,5 +1,6 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
+import { name } from 'proceed-management-system/jest.config';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;
@@ -1332,3 +1333,78 @@ test.describe('Favourites', () => {
   //   });
   // });
 });
+
+// test('Resizing columns', async ({ processListPage }) => {
+//   const { page } = processListPage;
+
+//   /**
+//    * Columns that are resizeable:
+//    * Name         - visible
+//    * Description  - visible
+//    * Last Edited  - visible
+//    * Created On
+//    * File Size
+//    * Owner
+//    */
+
+//   const selectableCols = ['Description', 'Last Edited', 'Created On', 'File Size', 'Owner'];
+//   const getColumnwidth = (column: string) => {
+//     return page
+//       .getByRole('columnheader', { name: column })
+//       .boundingBox()
+//       .then((box) => box.width);
+//   };
+
+//   /* Select only Name */
+//   await page
+//     .getByRole('columnheader', { name: 'more' })
+//     .getByRole('button', { name: 'more' })
+//     .click();
+
+//   for (const column of selectableCols) {
+//     const checkbox = page.getByRole('checkbox', { name: column });
+
+//     if (await checkbox.isChecked()) await checkbox.uncheck();
+//     await expect(page.getByRole('columnheader', { name: column })).not.toBeVisible();
+//   }
+
+//   /* Resize Name */
+//   const nameColumn = await page.getByRole('columnheader', { name: 'Name' });
+//   const nameColumnHandle = await nameColumn.locator('span').last();
+
+//   await expect(nameColumnHandle, `Could not find handle for 'Name' column`).toHaveClass(
+//     /react-resizable-handle/i,
+//   );
+
+//   /* Get width of the column */
+//   const nameColumnWidth = await getColumnwidth('Name');
+//   console.log('Name Column Width:', await getColumnwidth('Name'));
+
+//   const emptyCol = await page.locator('div.PROCEED-RESIZE-COLUMN');
+
+//   /* Resize the column */
+//   // await nameColumnHandle.dragTo(emptyCol, {
+//   //   sourcePosition: {
+//   //     x: -20,
+//   //     y: 2,
+//   //   },
+//   //   targetPosition: {
+//   //     x: 50,
+//   //     y: 1,
+//   //   },
+
+//   //   // force: true,
+//   // });
+//   let x, y;
+//   await nameColumnHandle.boundingBox().then((box) => {
+//     x = box.x + box.width * 0.5;
+//     y = box.y + box.height * 0.5;
+//   });
+//   // await nameColumnHandle.hover();
+//   await page.mouse.move(x, y);
+//   await page.mouse.down();
+//   await page.mouse.move(x + 50, y, { steps: 10 });
+//   await page.mouse.up();
+
+//   await console.log('Name Column Width:', await getColumnwidth('Name'));
+// });

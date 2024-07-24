@@ -181,7 +181,7 @@ export const useResizeableColumnWidth = (
     width: 'fit-content',
     dataIndex: 'id',
     key: 'auto-sizer',
-    title: '',
+    title: <div className="PROCEED-RESIZE-COLUMN" style={{ width: '100%', height: '2px' }} />,
     render: (id, record) => '',
     responsive: ['xl'],
   });

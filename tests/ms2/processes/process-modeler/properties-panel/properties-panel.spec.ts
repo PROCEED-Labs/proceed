@@ -250,8 +250,14 @@ test('open properties panel for element and fill property values', async ({
   await propertiesPanelPage.page.locator('.ant-color-picker-trigger').first().click(); // click button to change background color
   await expect(propertiesPanelPage.page.locator('.ant-popover-content')).toBeVisible(); // popover for color picker should be visible
 
+  /* I dont know why this changed, but this does not work anymore - probably some change in antdesign */
+  // await propertiesPanelPage.page
+  //   .getByRole('tooltip', { name: 'HEX # right Recommended right' })
+  //   .getByRole('textbox')
+  //   .fill('#FF00AA');
+
   await propertiesPanelPage.page
-    .getByRole('tooltip', { name: 'HEX # right Recommended right' })
+    .getByRole('tooltip', { name: 'HEX     # ffffff right' })
     .getByRole('textbox')
     .fill('#FF00AA');
 
@@ -268,8 +274,10 @@ test('open properties panel for element and fill property values', async ({
   await expect(propertiesPanelPage.page.locator('.ant-popover-content').nth(1)).toBeVisible(); // popover for color picker should be visible
 
   await propertiesPanelPage.page
-    .getByRole('tooltip', { name: 'HEX # right Recommended right' })
-    .locator('input[value="000000"]:visible')
+    // .getByRole('tooltip', { name: 'HEX # right Recommended right' })
+    .getByRole('tooltip', { name: 'HEX     # 000000 right' })
+    // .locator('input[value="000000"]:visible')
+    .getByRole('textbox')
     .fill('#FF00AA');
 
   const strokeColor = await startEvent.evaluate((element) => {

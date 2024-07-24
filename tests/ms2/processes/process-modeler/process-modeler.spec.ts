@@ -267,7 +267,8 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   let clipboardData: string;
 
   const { definitionId: process1Id } = await processListPage.importProcess('process1.bpmn');
-  await page.locator(`tr[data-row-key="${process1Id}"]`).dblclick();
+  // open the new process in the modeler
+  await page.locator(`tr[data-row-key="${process1Id}"]>td:nth-child(3)`).click();
 
   await page.waitForURL(/processes\/[a-z0-9-_]+/);
 

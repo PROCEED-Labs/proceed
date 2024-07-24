@@ -214,11 +214,12 @@ export const ResizeableTitle: FC<ResizeableTitleProps> = ({ onResize, width, ...
           onClick={(e) => {
             e.stopPropagation();
           }}
+
           // style={{ backgroundColor: 'red' }} /* Uncomment to see Handles */
         />
       }
       onResize={onResize}
-      draggableOpts={{ enableUserSelectHack: false }}
+      // draggableOpts={{ onMouseDown: console.log }}
     >
       <th {...restProps} />
     </Resizable>

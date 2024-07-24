@@ -438,7 +438,7 @@ test('create a new folder and process, move process to folder and then delete bo
   await expect(processLocator).toBeVisible();
 
   // drag process to folder
-  await processLocator.dragTo(folderRow);
+  // await processLocator.dragTo(folderRow); /* What does this do? */
   await processLocator.hover();
   await page.mouse.down();
   await page.mouse.move(100, 100, { steps: 10 }); // needed to "start dragging" the element
@@ -1383,28 +1383,38 @@ test.describe('Favourites', () => {
 //   const emptyCol = await page.locator('div.PROCEED-RESIZE-COLUMN');
 
 //   /* Resize the column */
+//   /* ________________________________________________________ */
 //   // await nameColumnHandle.dragTo(emptyCol, {
-//   //   sourcePosition: {
-//   //     x: -20,
-//   //     y: 2,
-//   //   },
-//   //   targetPosition: {
-//   //     x: 50,
-//   //     y: 1,
-//   //   },
-
+//   //   // sourcePosition: {
+//   //   //   x: -20,
+//   //   //   y: 2,
+//   //   // },
+//   //   // targetPosition: {
+//   //   //   x: 50,
+//   //   //   y: 1,
+//   //   // },
 //   //   // force: true,
 //   // });
+//   /* ________________________________________________________ */
+
 //   let x, y;
 //   await nameColumnHandle.boundingBox().then((box) => {
 //     x = box.x + box.width * 0.5;
 //     y = box.y + box.height * 0.5;
 //   });
-//   // await nameColumnHandle.hover();
-//   await page.mouse.move(x, y);
+
+//   await nameColumnHandle.hover();
 //   await page.mouse.down();
-//   await page.mouse.move(x + 50, y, { steps: 10 });
+//   await page.mouse.move(x + 100, y), { steps: 10 };
 //   await page.mouse.up();
+
+//   /* ________________________________________________________ */
+
+//   // // await nameColumnHandle.hover();
+//   // await page.mouse.move(x, y);
+//   // await page.mouse.down();
+//   // await page.mouse.move(x + 50, y, { steps: 10 });
+//   // await page.mouse.up();
 
 //   await console.log('Name Column Width:', await getColumnwidth('Name'));
 // });

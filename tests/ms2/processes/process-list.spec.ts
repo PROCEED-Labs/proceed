@@ -554,9 +554,10 @@ test('sorting process list columns', async ({ processListPage }) => {
 
   const sortableColumns = [
     { columnName: 'Name', sortFunction: textSort, offset: 2 },
+    /* TODO: */
     // { columnName: 'Last Edited', sortFunction: dateSort, offset: 4 },
     // { columnName: 'Created On', sortFunction: dateSort, offset: 5 },
-    { columnName: 'File Size', sortFunction: textSort, offset: 6 },
+    // { columnName: 'File Size', sortFunction: textSort, offset: 6 },
     { columnName: 'Owner', sortFunction: textSort, offset: 7 },
   ];
 

@@ -375,7 +375,7 @@ const ParentConfigList = ({
                 }}
               >
                 <Tooltip placement="top" title={'Import'}>
-                  <Button type="default" style={{ margin: '0 10px' }}>
+                  <Button type="primary" style={{ margin: '0 10px' }}>
                     Import
                   </Button>
                 </Tooltip>

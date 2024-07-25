@@ -1,15 +1,16 @@
 'use client';
 
 import { getFolderChildren } from '@/lib/data/folders';
-import { Tree, TreeProps } from 'antd';
+import { Spin, Tree, TreeProps } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
-import { ProcessListItemName } from './process-list';
+import { ProcessListItemIcon } from './process-list';
+import { ProcessListProcess } from './processes';
 
 type FolderChildren = {
   id: string;
   name: string;
-  type: string;
+  type: ProcessListProcess['type'];
 };
 
 type TreeNode = NonNullable<TreeProps['treeData']>[number] & { element: FolderChildren };
@@ -21,7 +22,19 @@ function generateNode(element: FolderChildren): TreeNode {
 
   return {
     key: element.id,
-    title: <ProcessListItemName item={{ type: element.type, name: element.name }} />,
+    title: (
+      <span
+        style={{
+          color: 'inherit' /* or any color you want */,
+          textDecoration: 'none' /* removes underline */,
+          display: 'block',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        <ProcessListItemIcon item={element} /> {element.name}
+      </span>
+    ),
     isLeaf,
     element,
   };

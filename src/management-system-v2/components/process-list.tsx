@@ -1,16 +1,7 @@
 'use client';
 
 import { Button, Grid, Row, TableColumnType, TableColumnsType, Tooltip } from 'antd';
-import {
-  useCallback,
-  FC,
-  PropsWithChildren,
-  Key,
-  Dispatch,
-  SetStateAction,
-  HTMLAttributes,
-  ReactNode,
-} from 'react';
+import { useCallback, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -54,35 +45,8 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
-export function ProcessListItemName({
-  item,
-  divProps = {},
-}: {
-  item: { type: string; name: ReactNode };
-  divProps?: HTMLAttributes<HTMLDivElement>;
-}) {
-  const breakpoint = Grid.useBreakpoint();
-
-  return (
-    <div
-      className={
-        breakpoint.xs
-          ? styles.MobileTitleTruncation
-          : breakpoint.xl
-            ? styles.TitleTruncation
-            : styles.TabletTitleTruncation
-      }
-      {...divProps}
-      style={{
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-        ...divProps.style,
-      }}
-    >
-      {item.type === 'folder' ? <FolderFilled /> : <FileFilled />} {item.name}
-    </div>
-  );
+export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
+  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
 }
 
 type ProcessListProps = PropsWithChildren<{
@@ -206,17 +170,30 @@ const ProcessList: FC<ProcessListProps> = ({
           style={{
             color: 'inherit' /* or any color you want */,
             textDecoration: 'none' /* removes underline */,
+            display: 'block',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
           }}
         >
-          <ProcessListItemName
-            item={{ type: record.type, name: record.name.highlighted }}
-            divProps={{
-              style: {
-                color: record.id === folder.parentId ? 'grey' : undefined,
-                fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-              },
+          <div
+            className={
+              breakpoint.xs
+                ? styles.MobileTitleTruncation
+                : breakpoint.xl
+                  ? styles.TitleTruncation
+                  : styles.TabletTitleTruncation
+            }
+            style={{
+              // overflow: 'hidden',
+              // whiteSpace: 'nowrap',
+              // textOverflow: 'ellipsis',
+              // TODO: color
+              color: record.id === folder.parentId ? 'grey' : undefined,
+              fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
-          />
+          >
+            <ProcessListItemIcon item={record} /> {record.name.highlighted}
+          </div>
         </SpaceLink>
       ),
       responsive: ['xs', 'sm'],
@@ -286,8 +263,8 @@ const ProcessList: FC<ProcessListProps> = ({
       key: 'Owner',
       render: (_, item) => (item.type === 'folder' ? item.createdBy : item.owner),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy || '' : a.owner).localeCompare(
-          b.type === 'folder' ? b.createdBy || '' : b.owner,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.owner).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.owner,
         ),
       ),
       responsive: ['md'],

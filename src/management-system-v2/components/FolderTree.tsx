@@ -92,11 +92,24 @@ export const FolderTree = ({
     }
   };
 
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (!rootNodes) {
-      loadData();
+    if (rootNodes) return;
+
+    async function loadRoot() {
+      setLoading(true);
+      try {
+        await loadData();
+      } catch (e) {}
+      setLoading(false);
     }
+
+    loadRoot();
   }, [rootNodes]);
 
-  return <Tree showIcon={true} {...treeProps} treeData={tree} loadData={loadData} />;
+  return (
+    <Spin spinning={loading}>
+      <Tree showIcon={true} {...treeProps} treeData={tree} loadData={loadData} />
+    </Spin>
+  );
 };

@@ -10,7 +10,6 @@ import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers'
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
@@ -48,13 +47,11 @@ const nextAuthOptions: AuthOptions = {
 
       if (trigger === 'update') user = getUserById(token.user.id);
 
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
-
       if (user) token.user = user;
 
       return token;
     },
-    session({ session, token, trigger }) {
+    session({ session, token }) {
       if (token.user) session.user = token.user;
       if (token.csrfToken) session.csrfToken = token.csrfToken;
 

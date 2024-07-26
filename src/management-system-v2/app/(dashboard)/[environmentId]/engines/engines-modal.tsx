@@ -14,15 +14,9 @@ const EnginesModal = ({
   title: string;
   initialData?: { address: string; ownName: string };
 }) => {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<{ address: string; ownName: string }>();
 
-  useEffect(() => {
-    if (initialData) {
-      // form.resetFields is not working, because initialData has not been
-      // updated in the internal form store, eventhough the prop has.
-      form.setFieldsValue(initialData);
-    }
-  }, [form, initialData]);
+  const values = Form.useWatch([], form);
 
   return (
     <Modal
@@ -31,16 +25,18 @@ const EnginesModal = ({
       onCancel={() => close()}
       title={title}
       onOk={() => {
-        close({ ownName: form.getFieldValue('ownName'), address: form.getFieldValue('address') });
-        form.resetFields();
+        close({ ownName: values.ownName, address: values.address });
       }}
+      destroyOnClose={true}
     >
       <Form
         layout="vertical"
+        initialValues={initialData}
         form={form}
         name="versioning"
         wrapperCol={{ span: 24 }}
         autoComplete="off"
+        preserve={false}
       >
         <Form.Item
           name="address"

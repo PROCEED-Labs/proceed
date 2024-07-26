@@ -91,7 +91,7 @@ const EnginesView = ({
           setEditData(undefined);
           setModalIsOpen(false);
         }}
-        initialData={editData}
+        initialData={editData && { address: editData.address, ownName: editData.ownName }}
       ></EnginesModal>
     </div>
   );

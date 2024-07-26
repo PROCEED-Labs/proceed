@@ -81,7 +81,7 @@ const EnginesList = ({
       key: 'Hostname',
       sorter: (a, b) => (a.hostname ? a.hostname.localeCompare(b.hostname || '') : -1),
       render: (_, record) => <span>{record.hostname}</span>,
-      responsive: ['sm'],
+      responsive: ['xl'],
     },
     {
       title: 'Address',
@@ -104,7 +104,7 @@ const EnginesList = ({
       key: 'ID',
       sorter: (a, b) => (a.id ? a.id.localeCompare(b.id || '') : -1),
       render: (_, record) => <span>{record.id}</span>,
-      responsive: ['md'],
+      responsive: ['xl'],
     },
   ];
 
@@ -118,7 +118,7 @@ const EnginesList = ({
           (b as DiscoveredEngine).discoveryTechnology,
         ),
       render: (_, record) => <span>{(record as DiscoveredEngine).discoveryTechnology}</span>,
-      responsive: ['md'],
+      responsive: ['xl'],
     });
   } else {
     columns.push({
@@ -127,55 +127,50 @@ const EnginesList = ({
       key: 'Own Name',
       sorter: (a, b) => (a.ownName ? a.ownName.localeCompare(b.ownName || '') : -1),
       render: (_, record) => <span>{record.ownName}</span>,
-      responsive: ['md'],
+      responsive: ['xl'],
     });
   }
 
-  columns.push({
-    title: 'Description',
-    dataIndex: 'description',
-    key: 'Description',
-    sorter: (a, b) => (a.description ? a.description.localeCompare(b.description || '') : -1),
-    render: (_, record) => <span>{record.description}</span>,
-    responsive: ['md'],
-  });
-
-  const mobileColumnKeys = ['Name', 'Address', 'Description', 'Meta Data Button'];
-  const mobileColumns: TableColumnsType<Engine> = columns.filter((c) =>
-    mobileColumnKeys.includes(c.key as string),
+  columns.push(
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'Description',
+      sorter: (a, b) => (a.description ? a.description.localeCompare(b.description || '') : -1),
+      render: (_, record) => <span>{record.description}</span>,
+      responsive: ['md'],
+    },
+    {
+      fixed: 'right',
+      width: 100,
+      dataIndex: 'id',
+      key: 'Meta Data Button',
+      title: '',
+      render: (_, record) => {
+        return isDiscoveredMode ? (
+          <Button
+            style={{ float: 'right' }}
+            type="text"
+            onClick={() => onAction(ActionType.SAVE, record.id)}
+          >
+            <FaRegSave></FaRegSave>
+          </Button>
+        ) : (
+          <div style={{ float: 'right', display: 'flex', flexDirection: 'row' }}>
+            <Button type="text" onClick={() => onAction(ActionType.EDIT, record.id)}>
+              <EditOutlined />
+            </Button>
+            <Button type="text" onClick={() => onAction(ActionType.DELETE, record.id)}>
+              <DeleteOutlined />
+            </Button>
+          </div>
+        );
+      },
+      responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
+    },
   );
 
-  mobileColumns.push({
-    fixed: 'right',
-    width: 100,
-    dataIndex: 'id',
-    key: 'Meta Data Button',
-    title: '',
-    render: (_, record) => {
-      return isDiscoveredMode ? (
-        <Button
-          style={{ float: 'right' }}
-          type="text"
-          onClick={() => onAction(ActionType.SAVE, record.id)}
-        >
-          <FaRegSave></FaRegSave>
-        </Button>
-      ) : (
-        <div style={{ float: 'right', display: 'flex', flexDirection: 'row' }}>
-          <Button type="text" onClick={() => onAction(ActionType.EDIT, record.id)}>
-            <EditOutlined />
-          </Button>
-          <Button type="text" onClick={() => onAction(ActionType.DELETE, record.id)}>
-            <DeleteOutlined />
-          </Button>
-        </div>
-      );
-    },
-    responsive: ['xs', 'sm'],
-  });
-
   const allColumnTitles = ['Name', 'Hostname', 'ID', 'Address', 'Description'];
-
   if (isDiscoveredMode) {
     allColumnTitles.push('Discovery Technology');
   } else {
@@ -192,7 +187,11 @@ const EnginesList = ({
           pagination: { pageSize: 10, position: ['bottomCenter'] },
         }}
         data={engines}
-        columns={breakpoint.xl ? selectedColumns : mobileColumns}
+        columns={
+          breakpoint.xl
+            ? selectedColumns.filter((c) => c.key !== 'Meta Data Button')
+            : selectedColumns
+        }
         selectableColumns={{
           setColumnTitles: (cols) => {
             if (typeof cols === 'function') {

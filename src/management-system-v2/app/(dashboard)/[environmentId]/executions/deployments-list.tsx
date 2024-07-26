@@ -66,10 +66,6 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
       sorter: (a, b) => (a < b ? -1 : 1),
       responsive: ['md'],
     },
-  ];
-
-  const mobileColumns: TableColumnsType<DeployedProcessListProcess> = [
-    ...columns,
     {
       fixed: 'right',
       width: 160,
@@ -93,7 +89,11 @@ const DeploymentsList = ({ processes }: { processes: DeployedProcessListProcess[
     <>
       <ElementList
         data={processes}
-        columns={breakpoint.xl ? selectedColumns : mobileColumns}
+        columns={
+          breakpoint.xl
+            ? selectedColumns.filter((c) => c.key !== 'Meta Data Button')
+            : selectedColumns
+        }
         selectableColumns={{
           setColumnTitles: (cols) => {
             if (typeof cols === 'function') {

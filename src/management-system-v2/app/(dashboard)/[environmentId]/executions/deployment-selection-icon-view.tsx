@@ -2,11 +2,8 @@ import ScrollBar from '@/components/scrollbar';
 import ElementIconView, { ItemIconViewProps } from '@/components/item-icon-view';
 import { ProcessListProcess } from './deployments-modal';
 import { Button, Card } from 'antd';
-import { DraggableElementGenerator } from '@/components/processes/draggable-element';
 import Viewer from '@/components/bpmn-viewer';
 import { FolderOutlined } from '@ant-design/icons';
-
-const DraggableDiv = DraggableElementGenerator('div', 'itemId');
 
 const ProcessIconView = ({
   data: filteredData,
@@ -41,7 +38,6 @@ const ProcessIconView = ({
     );
 
     return {
-      Wrapper: DraggableDiv,
       cardProps: {
         onDoubleClick: () => {
           openFolder(item.id);

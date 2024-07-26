@@ -77,11 +77,7 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
           <Input name="Name" addonBefore="Name" placeholder="Custom Name" />
         </Form.Item>
 
-        <Form.Item
-          name="value"
-          rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
-          style={{ margin: 0, width: '100%' }}
-        >
+        <Form.Item name="value" style={{ margin: 0, width: '100%' }}>
           <Input addonBefore="Value" placeholder="Custom Value" />
         </Form.Item>
       </Space>

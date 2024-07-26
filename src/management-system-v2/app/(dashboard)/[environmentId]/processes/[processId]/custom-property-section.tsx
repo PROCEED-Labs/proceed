@@ -20,26 +20,32 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
 }) => {
   const [form] = Form.useForm<{ name: string; value: any }>();
 
+  const [submittable, setSubmittable] = useState(false);
   const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout>>();
   const values = Form.useWatch([], form);
+
+  const changeValues = () => {
+    if (initialValues.name !== values.name) {
+      // replace custom property with a new name
+      onChange(values.name, values.value, initialValues.name);
+    } else {
+      onChange(values.name, values.value);
+    }
+  };
 
   React.useEffect(() => {
     form.validateFields({ validateOnly: true }).then(
       () => {
+        setSubmittable(true);
         clearTimeout(timeoutId);
+        // Update values with debounce
         if (values.value !== initialValues.value || values.name !== initialValues.name) {
-          const id = setTimeout(() => {
-            if (initialValues.name !== values.name) {
-              // replace custom property with a new name
-              onChange(values.name, values.value, initialValues.name);
-            } else {
-              onChange(values.name, values.value);
-            }
-          }, 2000);
+          const id = setTimeout(() => changeValues(), 2000);
           setTimeoutId(id);
         }
       },
       () => {
+        setSubmittable(false);
         clearTimeout(timeoutId);
       },
     );
@@ -74,11 +80,32 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
           rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
           style={{ margin: 0, flexGrow: 1 }}
         >
-          <Input name="Name" addonBefore="Name" placeholder="Custom Name" />
+          <Input
+            name="Name"
+            addonBefore="Name"
+            placeholder="Custom Name"
+            onBlur={() => {
+              // Skip debounce and change value immediately
+              if (submittable) {
+                clearTimeout(timeoutId);
+                changeValues();
+              }
+            }}
+          />
         </Form.Item>
 
-        <Form.Item name="value" style={{ margin: 0, width: '100%' }}>
-          <Input addonBefore="Value" placeholder="Custom Value" />
+        <Form.Item name="value" rules={[{ required: true }]} style={{ margin: 0, width: '100%' }}>
+          <Input
+            addonBefore="Value"
+            placeholder="Custom Value"
+            onBlur={() => {
+              // Skip debounce and change value immediately
+              if (submittable) {
+                clearTimeout(timeoutId);
+                changeValues();
+              }
+            }}
+          />
         </Form.Item>
       </Space>
       <Form.Item style={{ marginRight: 0, marginLeft: '1rem' }}>

@@ -35,13 +35,11 @@ const ExecutionsPage = async ({ params }: { params: { environmentId: string } })
 
   return (
     <Content title="Executions">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <DeploymentsView
-          processes={folderContents}
-          folder={folder}
-          favourites={favs as string[]}
-        ></DeploymentsView>
-      </Space>
+      <DeploymentsView
+        processes={folderContents}
+        folder={folder}
+        favourites={favs as string[]}
+      ></DeploymentsView>
     </Content>
   );
 };

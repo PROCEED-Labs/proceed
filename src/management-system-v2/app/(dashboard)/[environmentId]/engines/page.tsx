@@ -44,12 +44,10 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
 
   return (
     <Content title="Engines">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <EnginesView
-          discoveredEngines={engines.discoveredEngines}
-          savedEngines={engines.savedEngines}
-        ></EnginesView>
-      </Space>
+      <EnginesView
+        discoveredEngines={engines.discoveredEngines}
+        savedEngines={engines.savedEngines}
+      ></EnginesView>
     </Content>
   );
 };

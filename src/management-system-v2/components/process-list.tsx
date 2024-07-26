@@ -51,7 +51,7 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
-type ProcessListProps = PropsWithChildren<{
+type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
   elementSelection?: {
@@ -67,7 +67,7 @@ type ProcessListProps = PropsWithChildren<{
   };
 }>;
 
-const ProcessList: FC<ProcessListProps> = ({
+const BaseProcessList: FC<BaseProcessListProps> = ({
   data,
   folder,
   elementSelection,
@@ -375,7 +375,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
 
   return (
-    <ProcessList
+    <BaseProcessList
       data={data}
       folder={folder}
       elementSelection={{ selectedElements, setSelectionElements }}
@@ -405,7 +405,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
           },
         },
       }}
-    ></ProcessList>
+    ></BaseProcessList>
   );
 };
 
@@ -425,7 +425,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
   const breakpoint = Grid.useBreakpoint();
 
   return (
-    <ProcessList
+    <BaseProcessList
       data={data}
       folder={folder}
       columnCustomRenderer={{
@@ -490,7 +490,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
           );
         },
       }}
-    ></ProcessList>
+    ></BaseProcessList>
   );
 };
 

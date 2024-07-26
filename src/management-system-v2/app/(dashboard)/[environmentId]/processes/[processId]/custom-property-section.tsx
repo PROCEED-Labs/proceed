@@ -135,7 +135,6 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   const [customProperties, setCustomProperties] = useState<{ name: string; value: string }[]>([]);
 
   useEffect(() => {
-    console.log('metadata changhed', metaData);
     const customMetaDataEntries = Object.entries(customMetaData);
 
     const newCustomProperties =
@@ -179,7 +178,6 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
             customMetaData={customMetaData}
             initialValues={{ name: element.name, value: element.value }}
             onChange={(name, value, oldName) => {
-              console.log('onchange', name, value);
               if (!value) {
                 deleteProperty(name);
               } else {

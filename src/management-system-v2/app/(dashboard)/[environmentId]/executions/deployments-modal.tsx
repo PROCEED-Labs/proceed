@@ -127,16 +127,16 @@ const DeploymentsModal = ({
     data: processes ?? [],
     keys: ['name', 'description'],
     highlightedKeys: ['name', 'description'],
-    transformData: (matches) => matches.map((match) => match.item),
-  });
+    transformData: (matches) =>
+      matches
+        .map((match) => match.item)
+        .sort((a, b) => {
+          if (a.type === 'folder' && b.type == 'folder') return 0;
+          if (a.type === 'folder') return -1;
+          if (b.type === 'folder') return 1;
 
-  // Folders on top
-  filteredData.sort((a, b) => {
-    if (a.type === 'folder' && b.type == 'folder') return 0;
-    if (a.type === 'folder') return -1;
-    if (b.type === 'folder') return 1;
-
-    return 0;
+          return 0;
+        }),
   });
 
   const openFolder = async (id: string) => {

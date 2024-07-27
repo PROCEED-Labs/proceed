@@ -7,6 +7,7 @@ import {
   createFolder as _createFolder,
   getFolderById,
   getFolderChildren as _getFolderChildren,
+  getFolderContent as _getFolderContent,
   getRootFolder,
   moveFolder,
   updateFolderMetaData,
@@ -64,17 +65,17 @@ export async function getFolder(folderId: string) {
   return folder;
 }
 
-export async function getFolderChildren(folderId: string) {
-  const folder = getFolderById(folderId);
-  if (!folder) return userError('Folder not found');
+export async function getFolderContents(folderId: string, environmentId: string) {
+  const { ability } = await getCurrentEnvironment(environmentId);
 
-  const folderChildren = _getFolderChildren(folderId);
+  try {
+    return _getFolderContent(folderId, ability);
+  } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError('Permission denied', UserErrorType.PermissionError);
 
-  const { ability } = await getCurrentEnvironment(folder.environmentId);
-
-  if (!ability.can('view', toCaslResource('Folder', folder))) return userError('Permission denied');
-
-  return folderChildren;
+    return userError('Something went wrong');
+  }
 }
 
 /** This is only for updating a folder's metadata, to move a folder use moveIntoFolder */

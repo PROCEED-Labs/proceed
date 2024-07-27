@@ -1,6 +1,6 @@
 'use client';
 
-import { UserOutlined, WarningOutlined } from '@ant-design/icons';
+import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   Alert,
   Avatar,
@@ -25,6 +25,7 @@ import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -59,6 +60,7 @@ const HeaderActions: FC = () => {
       key: 'profile',
       title: 'Account Settings',
       label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+      icon: <FaUserEdit />,
     },
   ];
 
@@ -109,20 +111,21 @@ const HeaderActions: FC = () => {
       );
     }
 
-    avatarDropdownItems.push(
-      {
-        key: 'environments',
-        title: 'My Spaces',
-        label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
-      },
-      {
-        key: 'signout',
-        title: 'Sign out',
-        label: 'Sign out',
-        onClick: () => signOut(),
-      },
-    );
+    avatarDropdownItems.push({
+      key: 'environments',
+      title: 'My Spaces',
+      label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+      icon: <AppstoreOutlined />,
+    });
   }
+
+  avatarDropdownItems.push({
+    key: 'signout',
+    title: 'Sign out',
+    label: 'Sign out',
+    onClick: () => signOut(),
+    icon: <FaSignOutAlt />,
+  });
 
   return (
     <>

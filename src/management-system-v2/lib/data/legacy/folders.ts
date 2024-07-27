@@ -117,7 +117,7 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
   return folderData.children;
 }
 
-export async function getFolderContent(folderId: string, ability?: Ability) {
+export async function getFolderContents(folderId: string, ability?: Ability) {
   const folderChildren = getFolderChildren(folderId, ability);
   const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
 

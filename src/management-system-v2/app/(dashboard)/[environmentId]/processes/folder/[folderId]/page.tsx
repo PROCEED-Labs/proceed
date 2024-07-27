@@ -1,4 +1,4 @@
-import { getRootFolder, getFolderById, getFolderContent } from '@/lib/data/legacy/folders';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
@@ -33,7 +33,7 @@ const ProcessesPage = async ({
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = await getFolderContent(folder.id, ability);
+  const folderContents = await getFolderContents(folder.id, ability);
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;

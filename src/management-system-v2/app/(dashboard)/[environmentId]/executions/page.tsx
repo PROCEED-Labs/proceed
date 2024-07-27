@@ -2,7 +2,7 @@ import Content from '@/components/content';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import DeploymentsView from './deployments-view';
-import { getRootFolder, getFolderById, getFolderContent } from '@/lib/data/legacy/folders';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
 import { getUsersFavourites } from '@/lib/data/users';
 
 const ExecutionsPage = async ({ params }: { params: { environmentId: string } }) => {
@@ -18,7 +18,7 @@ const ExecutionsPage = async ({ params }: { params: { environmentId: string } })
 
   const folder = getFolderById(rootFolder.id);
 
-  const folderContents = await getFolderContent(folder.id, ability);
+  const folderContents = await getFolderContents(folder.id, ability);
 
   return (
     <Content title="Executions">

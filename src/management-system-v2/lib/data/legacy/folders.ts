@@ -125,7 +125,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
     try {
       const child = folderChildren[i];
 
-      if ('type' in child && child.type === 'process') {
+      if (child.type !== 'folder') {
         const process = await getProcess(child.id);
         // NOTE: this check should probably done inside inside getprocess
         if (ability && !ability.can('view', toCaslResource('Process', process))) continue;

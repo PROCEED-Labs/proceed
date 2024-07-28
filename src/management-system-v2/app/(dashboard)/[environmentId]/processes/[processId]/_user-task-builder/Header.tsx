@@ -1,7 +1,6 @@
 import React from 'react';
-import { Select } from 'antd';
 
-import { EditableText, Setting } from './utils';
+import { EditableText } from './utils';
 
 import { UserComponent, useNode } from '@craftjs/core';
 

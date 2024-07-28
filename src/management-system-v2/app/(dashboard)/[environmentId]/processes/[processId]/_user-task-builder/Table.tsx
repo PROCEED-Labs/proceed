@@ -53,6 +53,8 @@ const TableRow: React.FC<{
   removeRow,
   onUpdateContent,
 }) => {
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
+
   return (
     <tr>
       {tableData[rowIndex].map((col, colIndex) => (
@@ -63,23 +65,26 @@ const TableRow: React.FC<{
           onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
         >
           {/* remove a column (cannot remove if there is only a single row) */}
-          {isHovered && rowIndex === tableData.length - 1 && tableData.length > 1 && (
-            <Button
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                transform: 'translate(-50%,50%)',
-              }}
-              title="Remove Column"
-              onClick={() => removeColumn(colIndex)}
-            >
-              -
-            </Button>
-          )}
+          {editingEnabled &&
+            isHovered &&
+            rowIndex === tableData.length - 1 &&
+            tableData.length > 1 && (
+              <Button
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: '50%',
+                  transform: 'translate(-50%,50%)',
+                }}
+                title="Remove Column"
+                onClick={() => removeColumn(colIndex)}
+              >
+                -
+              </Button>
+            )}
 
           {/* add a column at the start or between two other columns */}
-          {isHovered && !rowIndex && (
+          {editingEnabled && isHovered && !rowIndex && (
             <Button
               style={{
                 position: 'absolute',
@@ -95,7 +100,7 @@ const TableRow: React.FC<{
           )}
 
           {/* add a column at the end */}
-          {isHovered && !rowIndex && colIndex === tableData[0].length - 1 && (
+          {editingEnabled && isHovered && !rowIndex && colIndex === tableData[0].length - 1 && (
             <Button
               style={{
                 position: 'absolute',
@@ -111,7 +116,7 @@ const TableRow: React.FC<{
           )}
 
           {/* remove a row (the header row cannot be removed) */}
-          {isHovered && !!rowIndex && !colIndex && (
+          {editingEnabled && isHovered && !!rowIndex && !colIndex && (
             <Button
               style={{
                 position: 'absolute',
@@ -127,7 +132,7 @@ const TableRow: React.FC<{
           )}
 
           {/* add a new row (cannot add a row before the header row) */}
-          {isHovered && colIndex === tableData[0].length - 1 && (
+          {editingEnabled && isHovered && colIndex === tableData[0].length - 1 && (
             // TODO: Seems not to work if the button is clicked outside of the borders of the table
             <Button
               style={{
@@ -142,19 +147,6 @@ const TableRow: React.FC<{
               +
             </Button>
           )}
-
-          {/* {rowIndex === cellEditing.row && colIndex === cellEditing.col ? (
-              <Input
-                autoFocus
-                value={cellEditing.value}
-                onChange={(e) => setCellEditing({ ...cellEditing, value: e.target.value })}
-                onBlur={handleCellEditSave}
-                onPressEnter={handleCellEditSave}
-                onMouseDownCapture={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <>{col}</>
-            )} */}
         </TableCell>
       ))}
     </tr>
@@ -167,7 +159,9 @@ const Table: UserComponent<TableProps> = ({
     ['Double Click Me', 'Double Click Me'],
   ],
 }) => {
-  const { query } = useEditor();
+  const { query, editingEnabled } = useEditor((state) => ({
+    editingEnabled: state.options.enabled,
+  }));
 
   const {
     connectors: { connect },
@@ -180,6 +174,7 @@ const Table: UserComponent<TableProps> = ({
   });
 
   const addRow = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: TableProps) => {
       props.tableData = [
         ...tableData.slice(0, index),
@@ -189,12 +184,14 @@ const Table: UserComponent<TableProps> = ({
     });
   };
   const removeRow = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: TableProps) => {
       props.tableData = [...tableData.slice(0, index), ...tableData.slice(index + 1, undefined)];
     });
   };
 
   const addColumn = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: TableProps) => {
       props.tableData = tableData.map((row) => [
         ...row.slice(0, index),
@@ -204,6 +201,7 @@ const Table: UserComponent<TableProps> = ({
     });
   };
   const removeColumn = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: TableProps) => {
       props.tableData = tableData.map((row) => [
         ...row.slice(0, index),
@@ -213,6 +211,7 @@ const Table: UserComponent<TableProps> = ({
   };
 
   const handleCellEdit = (newContent: string, rowIndex: number, colIndex: number) => {
+    if (!editingEnabled) return;
     const newRow = [
       ...tableData[rowIndex].slice(0, colIndex),
       newContent,

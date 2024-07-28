@@ -31,11 +31,14 @@ type CreationButtonProps = React.PropsWithChildren<{
 }>;
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const { connectors, actions } = useEditor();
+  const { connectors, actions, editingEnabled } = useEditor((state) => {
+    return { editingEnabled: state.options.enabled };
+  });
 
   return (
     <AntButton
       className={styles.CreationButton}
+      disabled={!editingEnabled}
       ref={(r) => {
         r &&
           connectors.create(r, <Column>{children}</Column>, {

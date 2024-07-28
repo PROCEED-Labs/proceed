@@ -32,6 +32,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
 
     return { isHovered: !!parent && parent.events.hovered };
   });
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const params = useParams();
   const environment = useEnvironment();
@@ -43,6 +44,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
         r && connect(r);
       }}
       onMouseMove={(e) => {
+        if (!editingEnabled) return;
         const resizeBorder = e.currentTarget.getBoundingClientRect().bottom - 4;
         if (src && e.clientY > resizeBorder && !showResize) {
           setShowResize(true);
@@ -54,7 +56,7 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
         style={{ width: width && `${width}%` }}
         src={src ? `${src}?${reloadParam}` : fallbackImage}
       />
-      {isHovered && (
+      {editingEnabled && isHovered && (
         <ImageUpload
           reloadParam={reloadParam || 0}
           imageFileName={src ? src.split('/').pop() : undefined}
@@ -148,6 +150,7 @@ export const ImageSettings = () => {
     width: node.data.props.width,
     dom: node.dom,
   }));
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const [currentWidth, setCurrentWidth] = useState<number | null>(null);
 
@@ -176,7 +179,7 @@ export const ImageSettings = () => {
         label="Width"
         control={
           <InputNumber
-            disabled={!src}
+            disabled={!editingEnabled || !src}
             value={currentWidth}
             min={1}
             max={100}

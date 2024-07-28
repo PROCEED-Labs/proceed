@@ -65,7 +65,9 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   variable = 'test',
   data = [{ label: 'Double-Click Me', value: '', checked: false }],
 }) => {
-  const { query } = useEditor();
+  const { query, editingEnabled } = useEditor((state) => ({
+    editingEnabled: state.options.enabled,
+  }));
 
   const {
     connectors: { connect },
@@ -77,6 +79,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   });
 
   const handleLabelEdit = (index: number, text: string) => {
+    if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = data.map((entry, entryIndex) => {
         let newLabel = entry.label;
@@ -89,6 +92,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   };
 
   const handleClick = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = data.map((entry, entryIndex) => {
         if (entryIndex === index) return { ...entry, checked: !entry.checked };
@@ -98,6 +102,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   };
 
   const handleAddButton = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [
         ...data.slice(0, index + 1),
@@ -108,6 +113,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   };
 
   const handleRemoveButton = (index: number) => {
+    if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [...data.slice(0, index), ...data.slice(index + 1)];
     });
@@ -131,7 +137,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               onChange={() => handleClick(index)}
               onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
             />
-            {isHovered && (
+            {editingEnabled && isHovered && (
               <Button
                 style={{
                   position: 'absolute',
@@ -144,7 +150,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 +
               </Button>
             )}
-            {isHovered && data.length > 1 && (
+            {editingEnabled && isHovered && data.length > 1 && (
               <Button
                 style={{
                   position: 'absolute',
@@ -171,6 +177,7 @@ export const CheckBoxOrRadioGroupSettings = () => {
   } = useNode((node) => ({
     variable: node.data.props.variable,
   }));
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   return (
     <>
@@ -184,6 +191,7 @@ export const CheckBoxOrRadioGroupSettings = () => {
               { value: 'var3', label: 'Var3' },
             ]}
             value={variable}
+            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: CheckBoxOrRadioGroupProps) => {
                 props.variable = val;

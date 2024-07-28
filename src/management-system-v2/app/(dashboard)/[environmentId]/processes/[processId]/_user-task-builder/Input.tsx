@@ -1,7 +1,7 @@
-import { Select } from 'antd';
-
-import { UserComponent, useNode } from '@craftjs/core';
 import { useId, useState } from 'react';
+
+import { Select } from 'antd';
+import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { EditableText, Setting } from './utils';
 
@@ -16,6 +16,7 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue =
     connectors: { connect },
     actions: { setProp },
   } = useNode();
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   const [defaultEditable, setDefaultEditable] = useState(false);
 
@@ -44,6 +45,7 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue =
         value={defaultValue}
         onMouseDownCapture={(e) => defaultEditable && e.stopPropagation()}
         onDoubleClick={(e) => {
+          if (!editingEnabled) return;
           e.currentTarget.focus();
           setDefaultEditable(true);
         }}
@@ -67,6 +69,7 @@ export const InputSettings = () => {
   } = useNode((node) => ({
     type: node.data.props.type,
   }));
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   return (
     <>
@@ -80,6 +83,7 @@ export const InputSettings = () => {
               { value: 'email', label: 'E-Mail' },
             ]}
             value={type}
+            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: InputProps) => {
                 props.type = val;

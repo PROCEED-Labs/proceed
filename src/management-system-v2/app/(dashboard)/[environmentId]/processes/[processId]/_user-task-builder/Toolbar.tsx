@@ -28,73 +28,73 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   iframeLayout,
   onLayoutChange,
 }) => {
-  const { query, actions, canUndo, canRedo, onDelete } = useEditor((state, query) => {
-    const currentColumn = Array.from(state.events.selected)
-      .map((id) => state.nodes[id])
-      .find((node) => node && node.data.name === 'Column');
+  const { query, actions, canUndo, canRedo, onDelete, editingEnabled } = useEditor(
+    (state, query) => {
+      const currentColumn = Array.from(state.events.selected)
+        .map((id) => state.nodes[id])
+        .find((node) => node && node.data.name === 'Column');
 
-    let onDelete;
+      let onDelete;
 
-    if (currentColumn) {
-      const parentRow = currentColumn.data.parent && state.nodes[currentColumn.data.parent];
-      let deleteId = currentColumn.id;
+      if (currentColumn) {
+        const parentRow = currentColumn.data.parent && state.nodes[currentColumn.data.parent];
+        let deleteId = currentColumn.id;
 
-      if (parentRow && parentRow.data.nodes.length === 1) {
-        deleteId = parentRow.id;
+        if (parentRow && parentRow.data.nodes.length === 1) {
+          deleteId = parentRow.id;
+        }
+
+        const childNodeId = currentColumn.data.nodes[0];
+        const childNode = state.nodes[childNodeId];
+
+        onDelete = async () => {
+          if (childNode.data.custom.onDelete) {
+            await (childNode.data.custom.onDelete as (node: Node) => Promise<void>)(childNode);
+          }
+          actions.delete(deleteId!);
+        };
       }
 
-      const childNodeId = currentColumn.data.nodes[0];
-      const childNode = state.nodes[childNodeId];
-
-      onDelete = async () => {
-        if (childNode.data.custom.onDelete) {
-          await (childNode.data.custom.onDelete as (node: Node) => Promise<void>)(childNode);
-        }
-        actions.delete(deleteId!);
+      return {
+        onDelete,
+        canUndo: query.history.canUndo(),
+        canRedo: query.history.canRedo(),
+        editingEnabled: state.options.enabled,
       };
-    }
-
-    return {
-      onDelete,
-      canUndo: query.history.canUndo(),
-      canRedo: query.history.canRedo(),
-    };
-  });
+    },
+  );
 
   useAddControlCallback('user-task-editor', 'undo', () => {
-    if (query.history.canUndo()) actions.history.undo();
+    if (query.history.canUndo() && query.getOptions().enabled) actions.history.undo();
   });
   useAddControlCallback('user-task-editor', 'redo', () => {
-    if (query.history.canRedo()) actions.history.redo();
+    if (query.history.canRedo() && query.getOptions().enabled) actions.history.redo();
   });
-  // useAddControlCallback(
-  //   'user-task-editor',
-  //   'delete',
-  //   () => {
-  //     onDelete?.();
-  //   },
-  //   { dependencies: [onDelete] },
-  // );
+  // useAddControlCallback('user-task-editor', 'delete', () => editingEnabled && onDelete?.(), {
+  //   dependencies: [onDelete, editingEnabled],
+  // });
 
   return (
     <Row className={styles.EditorHeader}>
       <Col span={4}></Col>
       <Col span={20}>
         <Space.Compact size="large" style={{ width: '100%', justifyContent: 'center' }}>
-          <>
-            <Button
-              type="text"
-              icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
-              disabled={!canUndo}
-              onClick={() => actions.history.undo()}
-            />
-            <Button
-              type="text"
-              icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
-              disabled={!canRedo}
-              onClick={() => actions.history.redo()}
-            />
-          </>
+          {editingEnabled && (
+            <>
+              <Button
+                type="text"
+                icon={<UndoOutlined style={{ color: canUndo ? 'blue' : undefined }} />}
+                disabled={!canUndo}
+                onClick={() => actions.history.undo()}
+              />
+              <Button
+                type="text"
+                icon={<RedoOutlined style={{ color: canRedo ? 'blue' : undefined }} />}
+                disabled={!canRedo}
+                onClick={() => actions.history.redo()}
+              />
+            </>
+          )}
           <>
             <Divider type="vertical" />
             <Button
@@ -116,18 +116,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             />
           </>
 
-          <>
-            <Divider type="vertical" />
-            <Button
-              danger
-              disabled={!onDelete}
-              type="text"
-              icon={<DeleteOutlined />}
-              onClick={async () => {
-                await onDelete!();
-              }}
-            />
-          </>
+          {editingEnabled && (
+            <>
+              <Divider type="vertical" />
+              <Button
+                danger
+                disabled={!onDelete}
+                type="text"
+                icon={<DeleteOutlined />}
+                onClick={async () => {
+                  await onDelete!();
+                }}
+              />
+            </>
+          )}
         </Space.Compact>
       </Col>
     </Row>

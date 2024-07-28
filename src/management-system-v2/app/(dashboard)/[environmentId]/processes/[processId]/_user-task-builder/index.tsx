@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col } from 'antd';
+import { Modal, Grid, Row as AntRow, Col, Switch } from 'antd';
 
 import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
 
@@ -51,7 +51,9 @@ const EditorModal: React.FC<BuilderProps> = ({
   onSave,
   onInit,
 }) => {
-  const { query, actions } = useEditor();
+  const { query, actions, editingEnabled } = useEditor((state) => {
+    return { editingEnabled: state.options.enabled };
+  });
 
   const environment = useEnvironment();
 
@@ -128,11 +130,19 @@ const EditorModal: React.FC<BuilderProps> = ({
       width={isMobile ? '100vw' : '90vw'}
       styles={{ body: { height: '85vh' } }}
       open={open}
-      title="Edit User Task"
+      title={
+        <>
+          <>Edit User Task</>
+          <Switch
+            value={editingEnabled}
+            onChange={(checked) => actions.setOptions((options) => (options.enabled = checked))}
+          ></Switch>
+        </>
+      }
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={onClose}
-      okButtonProps={{ disabled: isMobile }}
+      okButtonProps={{ disabled: !editingEnabled }}
       onOk={handleSave}
     >
       <div className={styles.BuilderUI}>

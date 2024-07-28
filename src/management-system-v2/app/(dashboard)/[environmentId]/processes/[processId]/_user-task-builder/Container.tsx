@@ -2,7 +2,7 @@ import React from 'react';
 
 import { InputNumber, ColorPicker, Empty } from 'antd';
 
-import { UserComponent, useNode } from '@craftjs/core';
+import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { Setting } from './utils';
 
@@ -52,6 +52,7 @@ export const ContainerSettings = () => {
     borderThickness: node.data.props.borderThickness,
     borderColor: node.data.props.borderColor,
   }));
+  const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
   return (
     <>
@@ -62,6 +63,7 @@ export const ContainerSettings = () => {
             min={0}
             addonAfter="px"
             value={padding}
+            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: ContainerProps) => {
                 props.padding = val;
@@ -75,6 +77,7 @@ export const ContainerSettings = () => {
         control={
           <ColorPicker
             value={background}
+            disabled={!editingEnabled}
             onChange={(_, val) =>
               setProp((props: ContainerProps) => {
                 props.background = val;
@@ -90,6 +93,7 @@ export const ContainerSettings = () => {
             min={0}
             addonAfter="px"
             value={borderThickness}
+            disabled={!editingEnabled}
             onChange={(val) =>
               setProp((props: ContainerProps) => {
                 props.borderThickness = val;
@@ -103,6 +107,7 @@ export const ContainerSettings = () => {
         control={
           <ColorPicker
             value={borderColor}
+            disabled={!editingEnabled}
             onChange={(_, val) =>
               setProp((props: ContainerProps) => {
                 props.borderColor = val;

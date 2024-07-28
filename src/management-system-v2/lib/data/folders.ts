@@ -54,7 +54,7 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
 }
 
 export async function getFolder(folderId: string) {
-  const folder = getFolderById(folderId);
+  const folder = await getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
   const { ability } = await getCurrentEnvironment(folder.environmentId);
@@ -65,10 +65,10 @@ export async function getFolder(folderId: string) {
 }
 
 export async function getFolderChildren(folderId: string) {
-  const folder = getFolderById(folderId);
+  const folder = await getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
-  const folderChildren = _getFolderChildren(folderId);
+  const folderChildren = await _getFolderChildren(folderId);
 
   const { ability } = await getCurrentEnvironment(folder.environmentId);
 

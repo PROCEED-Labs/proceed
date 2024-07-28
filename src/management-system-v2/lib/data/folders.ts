@@ -6,7 +6,6 @@ import {
   FolderChildren,
   createFolder as _createFolder,
   getFolderById,
-  getFolderChildren as _getFolderChildren,
   getFolderContents as _getFolderContent,
   getRootFolder,
   moveFolder,

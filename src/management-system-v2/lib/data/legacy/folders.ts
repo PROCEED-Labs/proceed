@@ -97,6 +97,7 @@ export function getRootFolder(environmentId: string, ability?: Ability) {
   return rootFolderData.folder;
 }
 
+// NOTE: this doesn't check the permissions for the children
 export function getFolderById(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');

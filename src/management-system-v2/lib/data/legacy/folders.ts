@@ -82,7 +82,7 @@ export function init() {
   }
 }
 init();
-import { removeProcess } from './_process';
+import { getProcess, removeProcess } from './_process';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -97,6 +97,7 @@ export function getRootFolder(environmentId: string, ability?: Ability) {
   return rootFolderData.folder;
 }
 
+// NOTE: this doesn't check the permissions for the children
 export function getFolderById(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
@@ -115,6 +116,28 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
     throw new Error('Permission denied');
 
   return folderData.children;
+}
+
+export async function getFolderContents(folderId: string, ability?: Ability) {
+  const folderChildren = getFolderChildren(folderId, ability);
+  const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
+
+  for (let i = 0; i < folderChildren.length; i++) {
+    try {
+      const child = folderChildren[i];
+
+      if (child.type !== 'folder') {
+        const process = await getProcess(child.id);
+        // NOTE: this check should probably done inside inside getprocess
+        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        folderContent.push(process);
+      } else {
+        folderContent.push({ ...getFolderById(child.id, ability), type: 'folder' });
+      }
+    } catch (e) {}
+  }
+
+  return folderContent;
 }
 
 export function createFolder(folderInput: FolderInput, ability?: Ability) {

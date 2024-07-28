@@ -1,8 +1,7 @@
-import { getFolderChildren, getRootFolder, getFolderById } from '@/lib/data/legacy/folders';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
-import { getProcess } from '@/lib/data/legacy/process';
 import { getCurrentEnvironment } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
@@ -10,7 +9,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 // import.
 import '@/lib/data/processes';
 import { getUsersFavourites } from '@/lib/data/users';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import Link from 'next/link';
@@ -35,16 +33,7 @@ const ProcessesPage = async ({
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
-    if (item.type === 'folder') {
-      return {
-        ...getFolderById(item.id),
-        type: 'folder' as const,
-      };
-    } else {
-      return await getProcess(item.id);
-    }
-  })) satisfies ListItem[];
+  const folderContents = await getFolderContents(folder.id, ability);
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder = folder;

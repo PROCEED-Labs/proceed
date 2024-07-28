@@ -16,9 +16,11 @@ export class ProcessListPage {
   }
 
   async goto() {
-    await this.page.goto('/processes');
-    await this.page.waitForURL('**/processes');
-    await waitForHydration(this.page);
+    if (!this.page.url().endsWith('processes')) {
+      await this.page.goto('/processes');
+      await this.page.waitForURL('**/processes');
+      await waitForHydration(this.page);
+    }
   }
 
   /**
@@ -28,13 +30,20 @@ export class ProcessListPage {
    * @param definitionId will be used to identify the process in the MS (two imports with the same id will clash)
    * @returns meta data about the imported process (id and name)
    */
-  async importProcess(filename: string, definitionId = `_${v4()}`) {
+  async importProcess(
+    filename: string,
+    definitionId = `_${v4()}`,
+    transformBpmn?: (bpmn: string) => Promise<string>,
+  ) {
     const { page } = this;
 
     const importFilePath = path.join(__dirname, 'fixtures', filename);
     let bpmn = fs.readFileSync(importFilePath, 'utf-8');
     bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
     bpmn = (await setTargetNamespace(bpmn, definitionId)) as string;
+
+    if (transformBpmn) bpmn = await transformBpmn(bpmn);
+
     const { name } = await getDefinitionsInfos(bpmn);
 
     // import the test process
@@ -153,6 +162,8 @@ export class ProcessListPage {
       await waitForHydration(this.page);
     }
 
+    this.processDefinitionIds.push(id);
+
     return id;
   }
 
@@ -160,10 +171,7 @@ export class ProcessListPage {
     const { page } = this;
 
     if (this.processDefinitionIds.length) {
-      if (!page.url().endsWith('processes')) {
-        await this.goto();
-        await page.waitForURL('**/processes');
-      }
+      await this.goto();
 
       /* Ensure it is the list and not the icon view */
       await page.getByRole('button', { name: 'unordered-list' }).click();

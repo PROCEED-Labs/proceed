@@ -58,18 +58,17 @@ const ProcessesPage = async ({
   const folderContents = await getFolderContents(folder.id, ability);
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
-  let currentFolder = folder;
-  while (currentFolder.parentId) {
+  let currentFolder: Folder | null = folder;
+  do {
     pathToFolder.push({
-      title: currentFolder.name,
-      href: spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`),
+      title: (
+        <Link href={spaceURL(activeEnvironment, `/processes/folder/${currentFolder.id}`)}>
+          {currentFolder.parentId ? currentFolder.name : 'Processes'}
+        </Link>
+      ),
     });
-    currentFolder = await getFolderById(currentFolder.parentId);
-  }
-  pathToFolder.push({
-    title: 'Processes',
-    href: spaceURL(activeEnvironment, `/processes/folder/${rootFolder.id}`),
-  });
+    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
+  } while (currentFolder);
   pathToFolder.reverse();
 
   return (

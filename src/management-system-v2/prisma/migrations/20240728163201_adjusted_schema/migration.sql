@@ -92,7 +92,6 @@ CREATE TABLE "Folder" (
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "parentId" TEXT,
-    "type" TEXT NOT NULL DEFAULT 'folder',
     "createdBy" TEXT,
     "environmentId" TEXT NOT NULL,
     "lastEditedOn" TIMESTAMP(3) NOT NULL,

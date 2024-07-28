@@ -114,7 +114,6 @@ model Folder {
   description    String
   parentFolder   Folder?   @relation("folderChildren", fields: [parentId], references: [id],onDelete: Cascade)
   parentId       String?
-  type           String    @default("folder")
   owner           User?    @relation(fields: [createdBy], references: [id])
   createdBy      String?
   space          Space     @relation(fields: [environmentId], references: [id], onDelete:Cascade)

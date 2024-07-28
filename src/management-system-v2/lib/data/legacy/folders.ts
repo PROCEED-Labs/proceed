@@ -85,6 +85,7 @@ export function init() {
 init();
 import { removeProcess } from './_process';
 import { enableUseDB } from 'FeatureFlags';
+import { ProcessType } from '@prisma/client';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   if (enableUseDB) {
@@ -167,7 +168,10 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
       throw new Error('Permission denied');
     }
 
-    const combinedResults = [...folder.childrenFolder, ...folder.processes];
+    const combinedResults = [
+      ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
+      ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
+    ];
     return combinedResults;
   }
   const folderData = foldersMetaObject.folders[folderId];

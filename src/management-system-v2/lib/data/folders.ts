@@ -64,8 +64,10 @@ export async function getFolder(folderId: string) {
   return folder;
 }
 
-export async function getFolderContents(environmentId: string, folderId: string) {
+export async function getFolderContents(environmentId: string, folderId?: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
+
+  if (!folderId) folderId = getRootFolder(environmentId).id;
 
   try {
     return _getFolderContent(folderId, ability);

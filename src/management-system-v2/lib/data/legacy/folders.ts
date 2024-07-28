@@ -167,7 +167,10 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
       throw new Error('Permission denied');
     }
 
-    const combinedResults = [...folder.childrenFolder, ...folder.processes];
+    const combinedResults = [
+      ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
+      ...folder.processes,
+    ];
     return combinedResults;
   }
   const folderData = foldersMetaObject.folders[folderId];

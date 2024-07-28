@@ -82,7 +82,7 @@ export function init() {
   }
 }
 init();
-import { getProcess, removeProcess } from './_process';
+import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -121,6 +121,8 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
 export async function getFolderContents(folderId: string, ability?: Ability) {
   const folderChildren = getFolderChildren(folderId, ability);
   const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
+
+  await initProcesses();
 
   for (let i = 0; i < folderChildren.length; i++) {
     try {

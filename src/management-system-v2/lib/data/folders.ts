@@ -9,28 +9,13 @@ import {
   getFolderChildren as _getFolderChildren,
   getRootFolder,
   moveFolder,
-  getFolderChildren as _getFolderChildren,
   updateFolderMetaData,
   deleteFolder as _deleteFolder,
 } from './legacy/folders';
 import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
-import { getProcess, moveProcess } from './legacy/_process';
+import { moveProcess } from './legacy/_process';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { asyncMap } from '../helpers/javascriptHelpers';
-
-export async function getFolder(folderId: string, spaceId: string) {
-  try {
-    const { ability } = await getCurrentEnvironment(spaceId);
-
-    const folder = getFolderById(folderId, ability);
-    if (!folder) throw new Error();
-
-    return folder;
-  } catch (e) {
-    return userError('Something went wrong');
-  }
-}
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {
@@ -125,32 +110,5 @@ export async function deleteFolder(folderIds: string[], spaceId: string) {
       return userError('Permission denied', UserErrorType.PermissionError);
 
     return userError("Couldn't create folder");
-  }
-}
-
-export async function getFolderChildren(spaceId: string, folderId?: string) {
-  try {
-    const { ability } = await getCurrentEnvironment(spaceId);
-
-    folderId = folderId || getRootFolder(spaceId).id;
-
-    const children = _getFolderChildren(folderId, ability);
-    if (!children) throw new Error();
-
-    const folderContents = await asyncMap(children, async (item) => {
-      if (item.type === 'folder') {
-        return {
-          ...getFolderById(item.id),
-          type: 'folder' as const,
-        };
-      } else {
-        return await getProcess(item.id);
-      }
-    });
-
-    return folderContents;
-  } catch (e) {
-    console.error(e);
-    return userError('Something went wrong');
   }
 }

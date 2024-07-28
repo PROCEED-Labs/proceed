@@ -89,7 +89,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
     if (selectedElement.type === 'bpmn:Process') {
       const definitions = selectedElement.businessObject.$parent;
       const bpmn = await modeler!.getXML();
-      const newBpmn = await setDefinitionsName(bpmn!, event.target.value);
+      const newBpmn = (await setDefinitionsName(bpmn!, event.target.value)) as string;
 
       await updateProcess(
         definitions.id,
@@ -99,7 +99,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         event.target.value,
         true,
       );
-      router.refresh();
+      await modeler!.loadBPMN(newBpmn);
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
     }

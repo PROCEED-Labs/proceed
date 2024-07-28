@@ -1,6 +1,6 @@
 'use client';
 
-import { getFolderChildren } from '@/lib/data/folders';
+import { getFolderContents } from '@/lib/data/folders';
 import { Spin, Tree, TreeProps } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEnvironment } from './auth-can';
@@ -71,7 +71,8 @@ export const FolderTree = ({
   const loadData = async (node?: TreeNode) => {
     const nodeId = node?.element.id;
 
-    const children = await getFolderChildren(spaceId, nodeId);
+    const children = await getFolderContents(spaceId, nodeId);
+    console.log(children);
     if ('error' in children) return;
 
     let childrenNodes = children.map(generateNode);

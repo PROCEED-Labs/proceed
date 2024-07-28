@@ -142,7 +142,7 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder');
     }
 
-    const folderContents = await getFolderContents(folder.id, environment.spaceId);
+    const folderContents = await getFolderContents(environment.spaceId, folder.id);
     if ('error' in folderContents) {
       throw new Error('Failed to fetch folder children');
     }

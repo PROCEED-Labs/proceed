@@ -64,7 +64,7 @@ export async function getFolder(folderId: string) {
   return folder;
 }
 
-export async function getFolderContents(folderId: string, environmentId: string) {
+export async function getFolderContents(environmentId: string, folderId: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
   try {

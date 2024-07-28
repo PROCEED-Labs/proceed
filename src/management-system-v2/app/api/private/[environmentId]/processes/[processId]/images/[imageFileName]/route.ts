@@ -191,7 +191,11 @@ export async function DELETE(
   }
 
   if (enableUseFileManager) {
-    await deleteFile(environmentId, userId, 'image', imageFileName, processId);
+    try {
+      await deleteFile(environmentId, userId, 'image', imageFileName, processId);
+    } catch (error) {
+      console.error('Error deleting image: ', error);
+    }
   } else await deleteProcessImage(processId, imageFileName);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });

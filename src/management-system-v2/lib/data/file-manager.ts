@@ -71,6 +71,7 @@ function getFilePath(
  * @param fileContent - The content of the file as a Buffer.
  * @param processId - Optional process identifier.
  * @returns A promise that resolves when the file has been saved.
+ * @throws An error if the save operation fails.
  */
 export async function saveFile(
   spaceId: string,
@@ -82,17 +83,21 @@ export async function saveFile(
 ): Promise<void> {
   const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
 
-  if (DEPLOYMENT_ENV === 'cloud') {
-    const file = bucket.file(filePath);
-    await file.save(fileContent);
-  } else {
-    const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
-    await fse.ensureDir(path.dirname(fullPath));
-    await fse.writeFile(fullPath, fileContent);
-  }
+  try {
+    if (DEPLOYMENT_ENV === 'cloud') {
+      const file = bucket.file(filePath);
+      await file.save(fileContent);
+    } else {
+      const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
+      await fse.ensureDir(path.dirname(fullPath));
+      await fse.writeFile(fullPath, fileContent);
+    }
 
-  if (cache.has(filePath)) {
-    cache.delete(filePath)!;
+    if (cache.has(filePath)) {
+      cache.delete(filePath);
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to save file: ${error.message}`);
   }
 }
 
@@ -104,7 +109,7 @@ export async function saveFile(
  * @param fileName - The name of the file.
  * @param processId - Optional process identifier.
  * @returns A promise that resolves with the file content as a Buffer.
- * @throws An error if the file does not exist.
+ * @throws An error if the file does not exist or retrieval fails.
  */
 export async function retrieveFile(
   spaceId: string,
@@ -115,57 +120,32 @@ export async function retrieveFile(
 ): Promise<Buffer> {
   const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
 
-  // Check cache first
-  if (cache.has(filePath)) {
-    console.log('Cache hit: ', filePath);
-    return cache.get(filePath)!;
-  }
-
-  let fileContent: Buffer;
-
-  if (DEPLOYMENT_ENV === 'cloud') {
-    const file = bucket.file(filePath);
-    [fileContent] = await file.download();
-  } else {
-    const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
-    if (await fse.pathExists(fullPath)) {
-      fileContent = await fse.readFile(fullPath);
-    } else {
-      throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
+  try {
+    // Check cache first
+    if (cache.has(filePath)) {
+      console.log('Cache hit: ', filePath);
+      return cache.get(filePath)!;
     }
-  }
 
-  cache.set(filePath, fileContent);
+    let fileContent: Buffer;
 
-  return fileContent;
-}
-
-/**
- * Lists files of a specific artifact type for a given user and process.
- * @param spaceId - The space identifier.
- * @param userId - The user identifier.
- * @param processId - The process identifier.
- * @param artifactType - The type of artifact.
- * @returns A promise that resolves with an array of file names.
- */
-export async function listFiles(
-  spaceId: string,
-  userId: string,
-  processId: string,
-  artifactType: ArtifactType,
-): Promise<string[]> {
-  const dirPath = getFilePath(spaceId, userId, artifactType, '', processId);
-
-  if (DEPLOYMENT_ENV === 'cloud') {
-    const [files] = await bucket.getFiles({ prefix: dirPath });
-    return files.map((file: { name: string }) => path.basename(file.name));
-  } else {
-    const fullPath = path.join(LOCAL_STORAGE_BASE, dirPath);
-    if (await fse.pathExists(fullPath)) {
-      return fse.readdir(fullPath);
+    if (DEPLOYMENT_ENV === 'cloud') {
+      const file = bucket.file(filePath);
+      [fileContent] = await file.download();
     } else {
-      return [];
+      const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
+      if (await fse.pathExists(fullPath)) {
+        fileContent = await fse.readFile(fullPath);
+      } else {
+        throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
+      }
     }
+
+    cache.set(filePath, fileContent);
+
+    return fileContent;
+  } catch (error: any) {
+    throw new Error(`Failed to retrieve file: ${error.message}`);
   }
 }
 
@@ -177,7 +157,7 @@ export async function listFiles(
  * @param fileName - The name of the file.
  * @param processId - Optional process identifier.
  * @returns A promise that resolves when the file has been deleted.
- * @throws An error if the file does not exist.
+ * @throws An error if the file does not exist or deletion fails.
  */
 export async function deleteFile(
   spaceId: string,
@@ -188,19 +168,30 @@ export async function deleteFile(
 ): Promise<void> {
   const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
 
-  if (DEPLOYMENT_ENV === 'cloud') {
-    const file = bucket.file(filePath);
-    await file.delete();
-  } else {
-    const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
-    if (await fse.pathExists(fullPath)) {
-      await fse.unlink(fullPath);
-    } else {
-      throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
-    }
-  }
+  try {
+    if (DEPLOYMENT_ENV === 'cloud') {
+      const file = bucket.file(filePath);
+      const fileMetadata = await file.getMetadata();
 
-  if (cache.has(filePath)) {
-    cache.delete(filePath)!;
+      // generation number check to avoid race conditions
+      const deleteOptions = {
+        ifGenerationMatch: fileMetadata[0].generation,
+      };
+
+      await file.delete(deleteOptions);
+    } else {
+      const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
+      if (await fse.pathExists(fullPath)) {
+        await fse.unlink(fullPath);
+      } else {
+        throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
+      }
+    }
+
+    if (cache.has(filePath)) {
+      cache.delete(filePath);
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to delete file: ${error.message}`);
   }
 }

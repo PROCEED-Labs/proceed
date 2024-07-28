@@ -67,7 +67,7 @@ const ProcessesPage = async ({
         </Link>
       ),
     });
-    currentFolder = currentFolder.parentId ? getFolderById(currentFolder.parentId) : null;
+    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
   } while (currentFolder);
   pathToFolder.reverse();
 

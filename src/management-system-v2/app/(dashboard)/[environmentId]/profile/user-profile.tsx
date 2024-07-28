@@ -32,8 +32,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
-  const firstName = userData.guest ? 'Guest' : userData.firstName || '';
-  const lastName = userData.guest ? '' : userData.lastName || '';
+  const firstName = userData.isGuest ? 'Guest' : userData.firstName || '';
+  const lastName = userData.isGuest ? '' : userData.lastName || '';
 
   return (
     <>
@@ -94,19 +94,21 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${firstName} ${lastName}`,
+                value: `${!userData.isGuest ? userData.firstName : 'Guest'} ${
+                  !userData.isGuest ? userData.lastName : ''
+                }`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 key: 'username',
                 title: 'Username',
-                value: !userData.guest ? userData.username : 'Guest',
+                value: !userData.isGuest ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 key: 'email',
                 title: 'Email',
-                value: !userData.guest ? userData.email : 'Guest',
+                value: !userData.isGuest ? userData.email : 'Guest',
               },
             ]}
             columns={[

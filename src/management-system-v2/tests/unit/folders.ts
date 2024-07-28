@@ -355,8 +355,8 @@ function _printFolders(
   }
 }
 
-const ids = (folders: ReturnType<typeof getFolderChildren>) =>
-  folders
+const ids = async (folders: ReturnType<typeof getFolderChildren>) =>
+  (await folders)
     .filter((item) => item.type === 'folder')
     .map((folder) => folder.id)
     .sort();
@@ -386,10 +386,10 @@ function environmentFoldersUnchanged(environmentId: string) {
 // Tests
 
 describe('Get Folders', () => {
-  test('getRootFolder', () => {
-    expect(getRootFolder('1')?.id).toEqual(rootId1);
+  test('getRootFolder', async () => {
+    expect((await getRootFolder('1'))?.id).toEqual(rootId1);
 
-    expect(getRootFolder('2')?.id).toEqual(rootId2);
+    expect((await getRootFolder('2'))?.id).toEqual(rootId2);
   });
 
   test('getFolderChildren: environment 1', () => {
@@ -420,8 +420,8 @@ describe('Get Folders', () => {
 });
 
 describe('Create Folders', () => {
-  test('Create subfolder', () => {
-    const newFolder = createFolder({
+  test('Create subfolder', async () => {
+    const newFolder = await createFolder({
       name: 'new-folder',
       environmentId: '1',
       parentId: rootId1,
@@ -536,30 +536,32 @@ describe('Delete Folders', () => {
 });
 
 describe('Move Folders', () => {
-  test('Environment 1: move folder to root', () => {
+  test('Environment 1: move folder to root', async () => {
     moveFolder('1-5', rootId1);
     const expectedAtRoot = ['1-1', '1-2', '1-3', '1-4', '1-5'];
 
-    const movedFolder = getFolderById('1-5');
+    const movedFolder = await getFolderById('1-5');
     expect(movedFolder?.parentId).toBe(rootId1);
 
-    expect(ids(foldersMetaObject.folders[rootId1]?.children ?? [])).toEqual(expectedAtRoot.sort());
+    expect(await ids(getFolderChildren(rootId1))).toEqual(expectedAtRoot.sort());
 
-    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId1);
+    for (const folderId of expectedAtRoot)
+      expect((await getFolderById(folderId))?.parentId).toBe(rootId1);
 
     expect(environmentFoldersUnchanged('2')).toBe(true);
   });
 
-  test('Environment 2: move folder to root', () => {
+  test('Environment 2: move folder to root', async () => {
     moveFolder('2-10', rootId2);
     const expectedAtRoot = ['2-1', '2-2', '2-3', '2-10'];
 
-    const movedFolder = getFolderById('2-10');
+    const movedFolder = await getFolderById('2-10');
     expect(movedFolder?.parentId).toBe(rootId2);
 
-    expect(ids(foldersMetaObject.folders[rootId2]?.children ?? [])).toEqual(expectedAtRoot.sort());
+    expect(await ids(getFolderChildren(rootId2))).toEqual(expectedAtRoot.sort());
 
-    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId2);
+    for (const folderId of expectedAtRoot)
+      expect((await getFolderById(folderId))?.parentId).toBe(rootId2);
 
     expect(environmentFoldersUnchanged('1')).toBe(true);
   });
@@ -651,30 +653,32 @@ describe('Delete Folders', () => {
 });
 
 describe('Move Folders', () => {
-  test('Environment 1: move folder to root', () => {
+  test('Environment 1: move folder to root', async () => {
     moveFolder('1-5', rootId1);
     const expectedAtRoot = ['1-1', '1-2', '1-3', '1-4', '1-5'];
 
-    const movedFolder = getFolderById('1-5');
+    const movedFolder = await getFolderById('1-5');
     expect(movedFolder?.parentId).toBe(rootId1);
 
-    expect(ids(foldersMetaObject.folders[rootId1]?.children ?? [])).toEqual(expectedAtRoot.sort());
+    expect(await ids(getFolderChildren(rootId1))).toEqual(expectedAtRoot.sort());
 
-    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId1);
+    for (const folderId of expectedAtRoot)
+      expect((await getFolderById(folderId))?.parentId).toBe(rootId1);
 
     expect(environmentFoldersUnchanged('2')).toBe(true);
   });
 
-  test('Environment 2: move folder to root', () => {
+  test('Environment 2: move folder to root', async () => {
     moveFolder('2-10', rootId2);
     const expectedAtRoot = ['2-1', '2-2', '2-3', '2-10'];
 
-    const movedFolder = getFolderById('2-10');
+    const movedFolder = await getFolderById('2-10');
     expect(movedFolder?.parentId).toBe(rootId2);
 
-    expect(ids(foldersMetaObject.folders[rootId2]?.children ?? [])).toEqual(expectedAtRoot.sort());
+    expect(await ids(getFolderChildren(rootId2))).toEqual(expectedAtRoot.sort());
 
-    for (const folderId of expectedAtRoot) expect(getFolderById(folderId)?.parentId).toBe(rootId2);
+    for (const folderId of expectedAtRoot)
+      expect((await getFolderById(folderId))?.parentId).toBe(rootId2);
 
     expect(environmentFoldersUnchanged('1')).toBe(true);
   });

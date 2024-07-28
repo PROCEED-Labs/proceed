@@ -7,7 +7,7 @@ type UserAvatarProps = {
   user?: {
     id: string;
     image?: string | null;
-    guest?: boolean | null;
+    isGuest?: boolean | null;
     firstName?: string | null;
     lastName?: string | null;
   };
@@ -17,7 +17,7 @@ type UserAvatarProps = {
 const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps }, ref) => {
   if (!user) return <AntDesignAvatar />;
 
-  if (user.guest) return <AntDesignAvatar icon={<UserOutlined />} />;
+  if (user.isGuest) return <AntDesignAvatar icon={<UserOutlined />} />;
 
   const icon = user.image ? (
     <img src={user.image} alt="avatar" />

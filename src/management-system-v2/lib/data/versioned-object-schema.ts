@@ -13,7 +13,7 @@ import { Prettify, WithRequired } from '../typescript-utils';
 
 export const VersionedObjectInput = VersionedObjectInputSchema.extend({
   environmentId: z.string(),
-  owner: z.string(),
+  ownerId: z.string(),
 });
 export type VersionedObjectServerInput = z.infer<typeof VersionedObjectInput>;
 
@@ -30,8 +30,8 @@ export type VersionedObjectMetadata<T> = Prettify<
       id: string;
       task?: string;
     }[];
-    createdOn: string;
-    lastEdited: string;
+    createdOn: Date;
+    lastEditedOn: Date;
     sharedAs: 'public' | 'protected';
     shareTimestamp: number;
     allowIframeTimestamp: number;

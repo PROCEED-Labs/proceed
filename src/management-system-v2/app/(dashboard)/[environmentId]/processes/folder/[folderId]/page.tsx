@@ -29,22 +29,33 @@ const ProcessesPage = async ({
 
   const favs = await getUsersFavourites();
 
-  const rootFolder = getRootFolder(activeEnvironment.spaceId, ability);
+  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = getFolderById(
+  const folder = await getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
 
-  const folderContents = (await asyncMap(getFolderChildren(folder.id, ability), async (item) => {
+  const getFolderItemDetails = async (item: any): Promise<ListItem> => {
     if (item.type === 'folder') {
+      const folderDetails = await getFolderById(item.id);
       return {
-        ...getFolderById(item.id),
+        ...folderDetails,
         type: 'folder' as const,
       };
     } else {
-      return await getProcess(item.id);
+      const process = await getProcess(item.id);
+      return process as ListItem;
     }
-  })) satisfies ListItem[];
+  };
+
+  const getFolderContents = async (folderId: string, ability: any): Promise<ListItem[]> => {
+    const children = await getFolderChildren(folderId, ability);
+    const folderContents = await asyncMap(children, getFolderItemDetails);
+
+    return folderContents satisfies ListItem[];
+  };
+
+  const folderContents = await getFolderContents(folder.id, ability);
 
   const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
   let currentFolder: Folder | null = folder;
@@ -56,7 +67,7 @@ const ProcessesPage = async ({
         </Link>
       ),
     });
-    currentFolder = currentFolder.parentId ? getFolderById(currentFolder.parentId) : null;
+    currentFolder = currentFolder.parentId ? await getFolderById(currentFolder.parentId) : null;
   } while (currentFolder);
   pathToFolder.reverse();
 

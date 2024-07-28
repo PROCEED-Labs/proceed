@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
 
-  const adminData = getSystemAdminByUserId(user.userId);
+  const adminData = await getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
   // NOTE: this should be replaced to a more efficient count query

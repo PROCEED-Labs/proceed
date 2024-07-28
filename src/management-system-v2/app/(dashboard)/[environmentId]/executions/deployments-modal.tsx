@@ -19,6 +19,7 @@ import { getProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderChildren } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
+import { FolderChildren } from '@/lib/data/legacy/folders';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -103,9 +104,9 @@ const DeploymentsModal = ({
         parentId: null,
         type: 'folder',
         id: initialFolder.parentId,
-        createdOn: '',
+        createdOn: new Date(),
         createdBy: '',
-        lastEdited: '',
+        lastEditedOn: new Date(),
         environmentId: '',
       },
       ...initialProcesses,
@@ -146,7 +147,7 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder');
     }
 
-    const folderChildren = await getFolderChildren(folder.id);
+    const folderChildren = (await getFolderChildren(folder.id)) as FolderChildren[];
     if ('error' in folderChildren) {
       throw new Error('Failed to fetch folder children');
     }
@@ -177,9 +178,9 @@ const DeploymentsModal = ({
           parentId: null,
           type: 'folder',
           id: folder.parentId,
-          createdOn: '',
+          createdOn: new Date(),
           createdBy: '',
-          lastEdited: '',
+          lastEditedOn: new Date(),
           environmentId: '',
         },
         ...folderContents,

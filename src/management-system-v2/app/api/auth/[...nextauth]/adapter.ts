@@ -18,7 +18,8 @@ const Adapter = {
     return addUser({
       image: null,
       ...user,
-      guest: false,
+      isGuest: false,
+      emailVerifiedOn: null,
     });
   },
   getUser: async (id: string) => {
@@ -50,7 +51,10 @@ const Adapter = {
     });
   },
   getUserByAccount: async (account: AdapterAccount) => {
-    const userAccount = getOauthAccountByProviderId(account.provider, account.providerAccountId);
+    const userAccount = await getOauthAccountByProviderId(
+      account.provider,
+      account.providerAccountId,
+    );
 
     if (!userAccount) return null;
 

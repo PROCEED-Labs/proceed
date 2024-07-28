@@ -14,7 +14,7 @@ import {
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
-  const systemAdmin = getSystemAdminByUserId(userId);
+  const systemAdmin = await getSystemAdminByUserId(userId);
 
   return { session, userId, systemAdmin };
 });
@@ -55,7 +55,7 @@ export const getCurrentEnvironment = cache(
       };
     }
 
-    if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
+    if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           throw new Error('User does not have access to this environment');

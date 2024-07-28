@@ -1,4 +1,4 @@
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import {
   getProcessImageFileNames,
@@ -10,6 +10,9 @@ import { v4 } from 'uuid';
 import stream from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { fileTypeFromBuffer } from 'file-type';
+import { getProcess } from '@/lib/data/processes';
+import { enableUseFileManager } from 'FeatureFlags';
+import { saveFile } from '@/lib/data/file-manager';
 
 export async function GET(
   request: NextRequest,
@@ -66,9 +69,9 @@ export async function POST(
   }
 
   const { ability } = await getCurrentEnvironment(environmentId);
+  const { userId } = await getCurrentUser();
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, environmentId);
 
   if (!process) {
     return new NextResponse(null, {
@@ -117,8 +120,9 @@ export async function POST(
   }
 
   const imageFileName = `_image${v4()}.${fileType.ext}`;
-
-  await saveProcessImage(processId, imageFileName, imageBuffer);
+  if (enableUseFileManager) {
+    await saveFile(environmentId, userId, 'image', imageFileName, imageBuffer, processId);
+  } else await saveProcessImage(processId, imageFileName, imageBuffer);
 
   return new NextResponse(imageFileName, { status: 201, statusText: 'Created' });
 }

@@ -12,7 +12,6 @@ import Content from '@/components/content';
 import { getSpaceRepresentation, getUserName } from './space-representation';
 import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import { getUserById } from '@/lib/data/legacy/iam/users';
-import { Environment } from '@/lib/data/environment-schema';
 import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
 import { LeftOutlined } from '@ant-design/icons';

@@ -47,6 +47,7 @@ module.exports = {
 
   //feature to switch to prisma from fs
   enableUseDB: false,
+  enableUseFileManager: false,
 
   // -----------------------------------------------------------------------------
   // Chopping Block

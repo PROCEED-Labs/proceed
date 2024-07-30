@@ -50,6 +50,7 @@ const nextConfig = {
       'processes',
       'environments',
       'executions',
+      'engines',
       'tasklist',
       'general-settings',
       'iam',

@@ -13,11 +13,8 @@ import { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 import ScrollBar from '@/components/scrollbar';
 import ProcessIconView from './deployment-selection-icon-view';
 import { useState } from 'react';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { ListItem } from '../processes/folder/[folderId]/page';
-import { getProcess } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { getFolder, getFolderChildren } from '@/lib/data/folders';
+import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
 import { FolderChildren } from '@/lib/data/legacy/folders';
 
@@ -142,34 +139,14 @@ const DeploymentsModal = ({
 
   const openFolder = async (id: string) => {
     const folder = await getFolder(id);
-
     if ('error' in folder) {
       throw new Error('Failed to fetch folder');
     }
 
-    const folderChildren = (await getFolderChildren(folder.id)) as FolderChildren[];
-    if ('error' in folderChildren) {
+    const folderContents = await getFolderContents(environment.spaceId, folder.id);
+    if ('error' in folderContents) {
       throw new Error('Failed to fetch folder children');
     }
-
-    const folderContents = (await asyncMap(folderChildren, async (item) => {
-      if (item.type === 'folder') {
-        const folder = await getFolder(item.id);
-        if ('error' in folder) {
-          throw new Error('Failed to fetch folder');
-        }
-        return {
-          ...folder,
-          type: 'folder' as const,
-        };
-      } else {
-        const res = await getProcess(item.id, environment.spaceId);
-        if ('error' in res) {
-          throw new Error('Failed to fetch process');
-        }
-        return res;
-      }
-    })) satisfies ListItem[];
 
     if (folder.parentId) {
       setProcesses([

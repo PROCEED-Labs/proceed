@@ -1,8 +1,7 @@
-import { getFolderChildren, getRootFolder, getFolderById } from '@/lib/data/legacy/folders';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
-import { getProcess } from '@/lib/data/legacy/process';
 import { getCurrentEnvironment } from '@/components/auth';
 // This is a workaround to enable the Server Actions in that file to return any
 // client components. This is not possible with the current nextjs compiler
@@ -10,7 +9,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 // import.
 import '@/lib/data/processes';
 import { getUsersFavourites } from '@/lib/data/users';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import Link from 'next/link';
@@ -34,26 +32,6 @@ const ProcessesPage = async ({
   const folder = await getFolderById(
     params.folderId ? decodeURIComponent(params.folderId) : rootFolder.id,
   );
-
-  const getFolderItemDetails = async (item: any): Promise<ListItem> => {
-    if (item.type === 'folder') {
-      const folderDetails = await getFolderById(item.id);
-      return {
-        ...folderDetails,
-        type: 'folder' as const,
-      };
-    } else {
-      const process = await getProcess(item.id);
-      return process as ListItem;
-    }
-  };
-
-  const getFolderContents = async (folderId: string, ability: any): Promise<ListItem[]> => {
-    const children = await getFolderChildren(folderId, ability);
-    const folderContents = await asyncMap(children, getFolderItemDetails);
-
-    return folderContents satisfies ListItem[];
-  };
 
   const folderContents = await getFolderContents(folder.id, ability);
 

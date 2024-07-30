@@ -198,7 +198,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
         if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
         folderContent.push(process);
       } else {
-        folderContent.push({ ...getFolderById(child.id, ability), type: 'folder' });
+        folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
       }
     } catch (e) {}
   }

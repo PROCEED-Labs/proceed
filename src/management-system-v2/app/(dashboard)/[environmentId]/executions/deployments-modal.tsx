@@ -16,7 +16,6 @@ import { useState } from 'react';
 import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
-import { FolderChildren } from '@/lib/data/legacy/folders';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;

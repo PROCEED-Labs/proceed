@@ -58,7 +58,7 @@ const Toolbox = () => {
   return (
     <div className={styles.Toolbox}>
       <CreationButton title="Header" icon={<MdTitle />}>
-        <Header text="Double Click Me" />
+        <Text text="<h1>Double Click Me</h1>" />
       </CreationButton>
       <CreationButton title="Text" icon={<LuText />}>
         <Text text="Double Click Me" />

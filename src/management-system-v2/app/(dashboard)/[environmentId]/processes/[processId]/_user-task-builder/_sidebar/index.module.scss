@@ -2,10 +2,12 @@
   :global(.ant-divider:first-of-type) {
     margin-top: 0;
   }
+  padding-right: 24px;
 
   .Toolbox {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
 
     .CreationButton {
       // width: 100px;
@@ -30,6 +32,9 @@
   }
 
   .Settings {
+    width: 90%;
+    margin: auto;
+
     & > div {
       padding-top: 5px;
     }

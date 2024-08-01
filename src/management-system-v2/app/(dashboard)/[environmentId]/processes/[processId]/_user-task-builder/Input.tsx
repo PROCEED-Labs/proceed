@@ -3,7 +3,8 @@ import { useId, useState } from 'react';
 import { Select } from 'antd';
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
-import { EditableText, Setting } from './utils';
+import { Setting } from './utils';
+import { EditableText } from './_utils/EditableText';
 
 type InputProps = {
   label: string;

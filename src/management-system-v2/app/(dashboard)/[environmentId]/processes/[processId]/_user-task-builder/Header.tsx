@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { EditableText } from './utils';
+import { EditableText } from './_utils/EditableText';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
@@ -9,7 +9,7 @@ type HeaderProps = {
   text?: string;
 };
 
-const Header: UserComponent<HeaderProps> = ({ type = 1, text = 'Double Click Me' }) => {
+const Header: UserComponent<HeaderProps> = ({ type = 1, text = '<h1>Double Click Me</h1>' }) => {
   const {
     connectors: { connect },
     actions: { setProp },

@@ -1,8 +1,6 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, ReactNode, useEffect, useId, useRef, useState } from 'react';
+import React, { ReactElement, useId } from 'react';
 import ReactDOMServer from 'react-dom/server';
-
-import ContentEditable from 'react-contenteditable';
 
 import SubmitButton from './SubmitButton';
 import Text from './Text';
@@ -14,7 +12,6 @@ import Input from './Input';
 import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
 import Image from './Image';
-import { createPortal } from 'react-dom';
 
 const styles = `
 body {
@@ -120,6 +117,18 @@ body {
 
 p, h1, h2, h3, h4, h5, th, td {
   cursor: default;
+}
+
+.text-style-bold {
+  font-weight: 700;
+}
+
+.text-style-italic {
+  font-style: italic;
+}
+
+.text-style-underline {
+  text-decoration: underline;
 }
 
 `;
@@ -234,130 +243,6 @@ export const defaultForm = `
   }
 }
 `;
-
-const getIframe = () => document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
-const getSelection = () => getIframe()?.contentWindow!.getSelection();
-
-type ContextMenuProps = React.PropsWithChildren<{
-  canOpen?: (openEvent: React.MouseEvent<HTMLElement, MouseEvent>) => boolean;
-  menu: ReactNode;
-}>;
-
-export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, menu }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    const handleClick = () => setShowMenu(false);
-    window.addEventListener('click', handleClick);
-
-    getIframe()?.contentWindow?.addEventListener('click', handleClick);
-    return () => {
-      window.removeEventListener('click', handleClick);
-      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
-      setShowMenu(false);
-    };
-  }, []);
-
-  return (
-    <>
-      {showMenu &&
-        createPortal(
-          <div
-            style={{
-              zIndex: 1000,
-              position: 'absolute',
-              ...menuPosition,
-            }}
-          >
-            {menu}
-          </div>,
-          document.body,
-        )}
-      <div
-        onContextMenu={(e) => {
-          if (canOpen && !canOpen(e)) return;
-          const iframe = getIframe();
-          if (!iframe) return;
-          const { top, left } = iframe.getBoundingClientRect();
-          e.preventDefault();
-          e.stopPropagation();
-          setShowMenu(true);
-          setMenuPosition({ left: left + e.clientX + 5, top: top + e.clientY + 5 });
-        }}
-      >
-        {children}
-      </div>
-    </>
-  );
-};
-
-type ContentEditableProps = ConstructorParameters<typeof ContentEditable>[0];
-
-type EditableTextProps = Omit<
-  ContentEditableProps,
-  'html' | 'disabled' | 'onDoubleClick' | 'onChange' | 'tagName' | 'ref'
-> & {
-  value: string;
-  onChange: (newText: string) => void;
-  tagName: string;
-  htmlFor?: string;
-};
-
-export const EditableText: React.FC<EditableTextProps> = ({
-  value,
-  onChange,
-  tagName,
-  ...props
-}) => {
-  const ref = useRef<HTMLElement>(null);
-
-  const [editable, setEditable] = useState(false);
-
-  useEffect(() => {
-    if (editable && ref.current) {
-      ref.current.focus();
-      const sel = getSelection();
-      if (sel) {
-        sel.selectAllChildren(ref.current);
-        sel.collapseToEnd();
-      }
-    } else {
-      const selection = ref.current?.ownerDocument.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-      }
-    }
-  }, [editable]);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      setEditable(false);
-      console.log(e);
-    };
-    getIframe()?.contentWindow?.addEventListener('click', handleClick);
-    return () => {
-      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
-    };
-  }, []);
-
-  return (
-    <ContentEditable
-      innerRef={ref}
-      html={value}
-      tagName={tagName}
-      disabled={!editable}
-      onDoubleClick={() => setEditable(true)}
-      onMouseDownCapture={(e) => editable && e.stopPropagation()}
-      onClick={(e) => {
-        editable && e.stopPropagation();
-      }}
-      onKeyDown={(e) => !e.shiftKey && e.key === 'Enter' && setEditable(false)}
-      onChange={(e) => onChange(e.target.value)}
-      {...props}
-    />
-  );
-};
 
 export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ label, control }) => {
   const id = useId();

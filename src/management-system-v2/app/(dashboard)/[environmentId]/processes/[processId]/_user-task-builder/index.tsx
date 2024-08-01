@@ -33,6 +33,7 @@ import useModelerStateStore from '../use-modeler-state-store';
 
 import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
 import { useEnvironment } from '@/components/auth-can';
+import useBuilderStateStore from './use-builder-state-store';
 
 type BuilderProps = {
   processId: string;
@@ -60,8 +61,6 @@ const EditorModal: React.FC<BuilderProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
-  const [iframeWasMounted, setIframeWasMounted] = useState(false);
-
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
 
   const { width: iframeMaxWidth } = useBoundingClientRect(iframeContainerRef, ['width']);
@@ -69,6 +68,8 @@ const EditorModal: React.FC<BuilderProps> = ({
   const breakpoint = Grid.useBreakpoint();
 
   const isMobile = breakpoint.xs;
+
+  const setIframe = useBuilderStateStore((state) => state.setIframe);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -130,15 +131,7 @@ const EditorModal: React.FC<BuilderProps> = ({
       width={isMobile ? '100vw' : '90vw'}
       styles={{ body: { height: '85vh' } }}
       open={open}
-      title={
-        <>
-          <>Edit User Task</>
-          <Switch
-            value={editingEnabled}
-            onChange={(checked) => actions.setOptions((options) => (options.enabled = checked))}
-          ></Switch>
-        </>
-      }
+      title="Edit User Task"
       okText="Save"
       cancelText={hasUnsavedChanges ? 'Cancel' : 'Close'}
       onCancel={onClose}
@@ -154,16 +147,12 @@ const EditorModal: React.FC<BuilderProps> = ({
           />
         )}
         <AntRow className={styles.EditorBody}>
-          {!isMobile && iframeWasMounted && (
+          {!isMobile && (
             <Col span={4}>
-              <Sidebar iframeRef={iframeRef} />
+              <Sidebar />
             </Col>
           )}
-          <Col
-            ref={iframeContainerRef}
-            className={styles.HtmlEditor}
-            span={isMobile || !iframeWasMounted ? 24 : 20}
-          >
+          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
             <IFrame
               id="user-task-builder-iframe"
               ref={iframeRef}
@@ -173,11 +162,7 @@ const EditorModal: React.FC<BuilderProps> = ({
               initialContent={iframeDocument}
               mountTarget="#mountHere"
               contentDidMount={() => {
-                setIframeWasMounted(true);
-                // will prevent that we focus the iframe when clicking into the empty space of its body which would prevent button clicks like Delete to register on the main document body
-                iframeRef.current?.contentDocument?.body.addEventListener('mousedown', (e) =>
-                  e.preventDefault(),
-                );
+                setIframe(iframeRef.current);
               }}
             >
               <Frame />

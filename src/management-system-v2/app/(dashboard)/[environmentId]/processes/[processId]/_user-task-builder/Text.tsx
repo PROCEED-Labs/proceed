@@ -1,6 +1,6 @@
 import { useNode, UserComponent } from '@craftjs/core';
 
-import { EditableText } from './utils';
+import { EditableText } from './_utils/EditableText';
 
 type TextProps = {
   text: string;
@@ -21,7 +21,7 @@ const Text: UserComponent<TextProps> = ({ text }) => {
       <EditableText
         value={text}
         tagName="div"
-        style={{ margin: '14px 0', whiteSpace: 'pre-line' }}
+        style={{ margin: '14px 0' }}
         onChange={(newText) => setProp((props: TextProps) => (props.text = newText))}
       />
     </div>

@@ -8,9 +8,10 @@ import { App } from 'antd';
 type StarType = {
   id: string;
   className?: string;
+  viewOnly?: boolean;
 };
 
-const FavouriteStar: FC<StarType> = ({ id, className }) => {
+const FavouriteStar: FC<StarType> = ({ id, className, viewOnly = false }) => {
   const { favourites: favs, updateFavouriteProcesses } = useFavouriteProcesses();
   const { message } = App.useApp();
 
@@ -34,10 +35,14 @@ const FavouriteStar: FC<StarType> = ({ id, className }) => {
         style={{
           color: favs?.includes(id) ? '#FFD700' : undefined,
         }}
-        onClick={(e) => {
-          e.stopPropagation();
-          updateFavs(id);
-        }}
+        onClick={
+          viewOnly
+            ? undefined
+            : (e) => {
+                e.stopPropagation();
+                updateFavs(id);
+              }
+        }
         className={favs?.includes(id) ? undefined : className}
       />
     </>

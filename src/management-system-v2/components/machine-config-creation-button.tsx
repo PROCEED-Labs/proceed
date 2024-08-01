@@ -4,12 +4,12 @@ import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 import MachineConfigModal from './machine-config-modal'; //TODO
-import { createMachineConfig } from '@/lib/data/legacy/machine-config'; //TODO
+import { createParentConfig } from '@/lib/data/legacy/machine-config'; //TODO
 import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { getCurrentEnvironment } from './auth';
+import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -35,9 +35,16 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
     values: { name: string; description: string }[], //TODO - I don't REALLY know why this is an array
   ) => {
     const machineConfig = await (customAction?.(values[0]) ??
-      createMachineConfig({ ...values[0], folderId: folderId }, environment.spaceId).then((res) =>
-        Array.isArray(res) ? res[0] : res,
-      ));
+      createParentConfig(
+        {
+          metadata: {
+            description: defaultParameter('description', values[0].description ?? ''),
+          },
+          name: values[0].name,
+          folderId: folderId,
+        },
+        environment.spaceId,
+      ).then((res) => (Array.isArray(res) ? res[0] : res)));
     if (machineConfig && 'error' in machineConfig) {
       return machineConfig;
     }
@@ -83,7 +90,7 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
       )}
       <MachineConfigModal
         open={isMachineConfigModalOpen}
-        title="Create Machine Configuration"
+        title="Create Configuration"
         okText="Create"
         onCancel={() => setIsMachineConfigModalOpen(false)}
         onSubmit={createNewMachineConfig}

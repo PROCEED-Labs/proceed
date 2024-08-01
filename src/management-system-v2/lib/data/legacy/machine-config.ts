@@ -2,25 +2,27 @@
 
 import store from './store.js';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import {
-  MachineConfig,
-  MachineConfigInput,
-  MachineConfigInputSchema,
-  MachineConfigMetadata,
+  ParentConfig,
+  AbstractConfigInputSchema,
+  ParentConfigMetadata,
+  AbstractConfigInput,
+  Parameter,
 } from '../machine-config-schema';
 import { foldersMetaObject, getRootFolder } from './folders';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { LocalizationName } from '../locale';
 
 // @ts-ignore
-let firstInit = !global.machineConfigMetaObjects;
+let firstInit = !global.parentConfigMetaObjects;
 
-let machineConfigMetaObjects: Record<string, MachineConfig> =
+let parentConfigMetaObjects: Record<string, ParentConfig> =
   // @ts-ignore
-  global.machineConfigMetaObjects || (global.machineConfigMetaObjects = {});
+  global.parentConfigMetaObjects || (global.parentConfigMetaObjects = {});
 
 /**
  * initializes the machineConfig meta information objects
@@ -29,10 +31,10 @@ export async function init() {
   if (!firstInit) return;
 
   // get machineConfig that were persistently stored
-  const storedMachineConfig = store.get('machineConfig') as MachineConfig[];
+  const storedMachineConfig = store.get('machineConfig') as ParentConfig[];
 
   // set machineConfig store cache for quick access
-  storedMachineConfig.forEach((config) => (machineConfigMetaObjects[config.id] = config));
+  storedMachineConfig.forEach((config) => (parentConfigMetaObjects[config.id] = config));
 }
 await init();
 
@@ -43,7 +45,7 @@ const checkValidity = async (
 ) => {
   const { ability } = await getCurrentEnvironment(spaceId);
 
-  const machineConfig = machineConfigMetaObjects[definitionId];
+  const machineConfig = parentConfigMetaObjects[definitionId];
 
   if (!machineConfig) {
     return userError(
@@ -71,20 +73,15 @@ const checkValidity = async (
   }
 };
 
-export async function getMachineConfigs() {
-  const machineConfigs = Object.values(machineConfigMetaObjects);
-  return machineConfigs;
-}
-
 /** Returns all machineConfigs in form of an array */
-export async function getMachineConfig(environmentId: string, ability?: Ability) {
-  const machineConfig = Object.values(machineConfigMetaObjects).filter(
+export async function getConfigurations(environmentId: string, ability?: Ability) {
+  const parentConfig = Object.values(parentConfigMetaObjects).filter(
     (config) => config.environmentId === environmentId,
   );
 
   return ability
-    ? machineConfig /*ability.filter('view', 'MachineConfig', machineConfig)*/
-    : machineConfig;
+    ? parentConfig /*ability.filter('view', 'MachineConfig', machineConfig)*/
+    : parentConfig;
 }
 
 /**
@@ -92,37 +89,112 @@ export async function getMachineConfig(environmentId: string, ability?: Ability)
  *
  * @throws {UnauthorizedError}
  */
-export async function getMachineConfigById(machineConfigId: string, ability?: Ability) {
-  const machineConfig = machineConfigMetaObjects[machineConfigId];
-  if (!ability) return machineConfig;
+export async function getConfigurationById(
+  machineConfigId: string,
+  ability?: Ability,
+): Promise<ParentConfig> {
+  const parentConfig = parentConfigMetaObjects[machineConfigId];
+  if (!ability) return parentConfig;
 
   if (
-    machineConfig &&
+    parentConfig &&
     false /*!ability.can('view', toCaslResource('MachineConfig', machineConfig))*/
   )
     throw new UnauthorizedError();
 
-  return machineConfig;
+  return parentConfig;
 }
 
-export async function createMachineConfig(
-  machineConfigInput: MachineConfigInput,
+export async function copyParentConfig(
+  originalId: string,
+  machineConfigInput: AbstractConfigInput,
   environmentId: string,
 ) {
   try {
-    const machineConfigData = MachineConfigInputSchema.parse(machineConfigInput);
+    let originalConfig = parentConfigMetaObjects[originalId];
+    if (!originalConfig) {
+      return;
+    }
 
-    // create meta info object
+    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
     const date = new Date().toUTCString();
-    const metadata = {
+    const metadata: ParentConfig = {
+      ...originalConfig,
+    };
+
+    metadata.id = v4();
+    metadata.name = parentConfigData.name ?? '';
+    metadata.metadata = {
+      description: defaultParameter(
+        'description',
+        parentConfigData.metadata.description.content[0].value,
+      ),
+    };
+    metadata.createdOn = date;
+    metadata.lastEditedOn = date;
+    metadata.createdBy = environmentId;
+    metadata.lastEditedBy = environmentId;
+
+    if (!metadata.folderId) {
+      metadata.folderId = getRootFolder(metadata.environmentId).id;
+    }
+
+    const folderData = foldersMetaObject.folders[metadata.folderId];
+    if (!folderData) throw new Error('Folder not found');
+    const { id: definitionId } = metadata;
+    if (parentConfigMetaObjects[definitionId]) {
+      throw new Error(`A parent configuration with the id ${definitionId} already exists!`);
+    }
+
+    parentConfigMetaObjects[definitionId] = metadata;
+    store.add('machineConfig', removeExcessiveInformation(metadata));
+
+    eventHandler.dispatch('machineConfigCopied', {
+      configOriginal: originalConfig,
+      configCopy: metadata,
+    });
+
+    return machineConfigInput;
+  } catch (e) {
+    return userError("Couldn't save Machine Config");
+  }
+}
+
+function defaultParameter(key: string, val: string): Parameter {
+  return {
+    id: v4(),
+    type: 'https://schema.org/' + key,
+    content: [
+      {
+        displayName: key[0].toUpperCase() + key.slice(1),
+        value: val,
+        language: 'en',
+        unit: '',
+      },
+    ],
+    linkedParameters: [],
+    parameters: {},
+  };
+}
+
+export async function createParentConfig(
+  machineConfigInput: AbstractConfigInput,
+  environmentId: string,
+  base?: ParentConfig,
+) {
+  try {
+    const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
+    const date = new Date().toUTCString();
+    const metadata: ParentConfig = {
       ...({
         id: v4(),
-        type: 'machine-config',
-        environmentId: environmentId,
-        name: 'Default Machine Configuration',
-        description: '',
-        owner: '',
+        type: 'config',
+        name: 'Default Parent Configuration',
         variables: [],
+        createdBy: environmentId,
+        lastEditedBy: environmentId,
+        lastEditedOn: date,
+        metadata: {},
         departments: [],
         inEditingBy: [],
         createdOn: date,
@@ -132,9 +204,14 @@ export async function createMachineConfig(
         allowIframeTimestamp: 0,
         versions: [],
         folderId: '',
-      } as MachineConfig),
-      ...machineConfigData,
+        targetConfig: undefined,
+        machineConfigs: [],
+        environmentId: environmentId,
+      } as ParentConfig),
+      ...parentConfigData,
+      ...(base ? base : {}),
     };
+    metadata.id = v4();
     if (!metadata.folderId) {
       metadata.folderId = getRootFolder(metadata.environmentId).id;
     }
@@ -142,11 +219,11 @@ export async function createMachineConfig(
     const folderData = foldersMetaObject.folders[metadata.folderId];
     if (!folderData) throw new Error('Folder not found');
     const { id: definitionId } = metadata;
-    if (machineConfigMetaObjects[definitionId]) {
-      throw new Error(`A machine configuration with the id ${definitionId} already exists!`);
+    if (parentConfigMetaObjects[definitionId]) {
+      throw new Error(`A parent configuration with the id ${definitionId} already exists!`);
     }
 
-    machineConfigMetaObjects[definitionId] = metadata;
+    parentConfigMetaObjects[definitionId] = metadata;
     store.add('machineConfig', removeExcessiveInformation(metadata));
 
     eventHandler.dispatch('machineConfigAdded', { machineConfig: metadata });
@@ -157,14 +234,14 @@ export async function createMachineConfig(
   }
 }
 
-export async function saveMachineConfig(id: string, machineConfigInput: MachineConfig) {
+export async function saveParentConfig(id: string, machineConfigInput: ParentConfig) {
   try {
-    let machineConfig = machineConfigMetaObjects[id];
+    let machineConfig = parentConfigMetaObjects[id];
     if (!machineConfig) {
       return;
     }
 
-    machineConfigMetaObjects[id] = machineConfigInput;
+    parentConfigMetaObjects[id] = machineConfigInput;
     store.update('machineConfig', id, removeExcessiveInformation(machineConfigInput));
 
     eventHandler.dispatch('machineConfigSaved', { machineConfig: machineConfigInput });
@@ -175,37 +252,37 @@ export async function saveMachineConfig(id: string, machineConfigInput: MachineC
   }
 }
 
-function removeExcessiveInformation(machineConfigInfo: MachineConfigMetadata) {
-  const newInfo = { ...machineConfigInfo };
+function removeExcessiveInformation(parentConfigInfo: ParentConfigMetadata) {
+  const newInfo = { ...parentConfigInfo };
   delete newInfo.inEditingBy;
   return newInfo;
 }
 
 /** Removes an existing machine config */
-export async function removeMachineConfig(machineConfigDefinitionsId: string) {
-  const machineConfig = machineConfigMetaObjects[machineConfigDefinitionsId];
+export async function removeParentConfiguration(parentConfigDefinitionsId: string) {
+  const parentConfig = parentConfigMetaObjects[parentConfigDefinitionsId];
 
-  if (!machineConfig) {
+  if (!parentConfig) {
     return;
   }
 
-  // remove machineConfig from frolder
-  foldersMetaObject.folders[machineConfig.folderId]!.children = foldersMetaObject.folders[
-    machineConfig.folderId
-  ]!.children.filter((folder) => folder.id !== machineConfigDefinitionsId);
+  // remove parentConfig from frolder
+  foldersMetaObject.folders[parentConfig.folderId]!.children = foldersMetaObject.folders[
+    parentConfig.folderId
+  ]!.children.filter((folder) => folder.id !== parentConfigDefinitionsId);
 
   // remove from store
-  store.remove('machineConfig', machineConfigDefinitionsId);
-  delete machineConfigMetaObjects[machineConfigDefinitionsId];
-  eventHandler.dispatch('machineConfigRemoved', { machineConfigDefinitionsId });
+  store.remove('machineConfig', parentConfigDefinitionsId);
+  delete parentConfigMetaObjects[parentConfigDefinitionsId];
+  eventHandler.dispatch('configurationRemoved', { parentConfigDefinitionsId });
 }
 
-export const deleteMachineConfigs = async (definitionIds: string[], spaceId: string) => {
+export const deleteParentConfigurations = async (definitionIds: string[], spaceId: string) => {
   for (const definitionId of definitionIds) {
     const error = await checkValidity(definitionId, 'delete', spaceId);
 
     if (error) return error;
 
-    await removeMachineConfig(definitionId);
+    await removeParentConfiguration(definitionId);
   }
 };

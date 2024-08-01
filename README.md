@@ -50,8 +50,6 @@ This will install all modules and their dependencies inside `node_modules/`
 
 ### Starting the Development Code
 
-> Please note that you need access to the private Environment Configurations repository, if you want to run the authentication & authorization subsystem.
-
 You can start the development code by running the following commands
 
 **Management System (with hot reloading):**
@@ -72,8 +70,8 @@ yarn dev
 
 When you have started the development code of the Management System, the first interface is a login UI. You can either continue as _Guest_ with "Create a Process" or you can log in with a pre-configured development user by typing the username in the 'Continue with Development User' input field:
 
-- `admin`: a user with admin privileges.
-- `johndoe`: a user with some restricted privileges.
+- `admin`
+- `johndoe`
 
 Both users actually have the same privileges by default, but the first one logging in can see the _System Dashboard_ and becomes the _System Admin_.
 

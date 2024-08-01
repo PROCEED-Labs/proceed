@@ -8,6 +8,7 @@ import {
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
+  PlusOutlined,
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';

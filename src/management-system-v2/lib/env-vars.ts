@@ -36,7 +36,7 @@ const environmentVariables = {
     TWITTER_CLIENT_ID: z.string(),
     TWITTER_CLIENT_SECRET: z.string(),
 
-    SHARING_ENCRYPTION_SECRET: z.string(),
+    JWT_SHARE_SECRET: z.string(),
   },
   development: {},
   test: {},

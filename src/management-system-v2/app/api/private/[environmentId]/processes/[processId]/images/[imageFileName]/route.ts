@@ -42,7 +42,7 @@ export async function GET(
   // if the user is not an owner check if they have access if a share token is provided in the query data of the url
   const shareToken = request.nextUrl.searchParams.get('shareToken');
   if (!canAccess && shareToken) {
-    const key = process.env.SHARING_ENCRYPTION_SECRET!;
+    const key = process.env.JWT_SHARE_SECRET!;
     const {
       processId: shareProcessId,
       embeddedMode,

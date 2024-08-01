@@ -42,8 +42,11 @@ if (!global.stores) {
   stores.instances = { store: getStore('instances', {}) };
   stores.machines = { store: getStore('machines') };
   resetMachines();
+  stores.environmentProfiles = { store: getStore('environmentProfiles') };
   stores.environmentConfig = { store: getStore('environmentConfig', { environmentConfig: {} }) };
   stores.config = { store: getStore('config', {}, 'Config') }; // true => store directly in app/root dir
+  stores.userPreferences = { store: getStore('userPreferences', {}) };
+  stores.resources = { store: getStore('resources') };
   stores.shares = { store: getStore('shares') };
   stores.roles = { store: getStore('roles') };
   stores.roleMappings = { store: getStore('roleMappings') };

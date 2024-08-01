@@ -1,15 +1,7 @@
 'use client';
 
-import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
-import {
-  useCallback,
-  FC,
-  PropsWithChildren,
-  Dispatch,
-  SetStateAction,
-  Key,
-  ReactElement,
-} from 'react';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, Tooltip } from 'antd';
+import { useCallback, FC, PropsWithChildren, Key, Dispatch, SetStateAction } from 'react';
 import {
   CopyOutlined,
   ExportOutlined,
@@ -28,12 +20,14 @@ import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
 import { useColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
-import { contextMenuStore } from './processes/context-menu';
-import { DraggableElementGenerator } from './processes/draggable-element';
+
+const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -51,35 +45,26 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
-type BaseProcessListProps = PropsWithChildren<{
+type ProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
-  elementSelection?: {
-    selectedElements: ProcessListProcess[];
-    setSelectionElements: (action: SetStateAction<ProcessListProcess[]>) => void;
-  };
-  setShowMobileMetaData?: Dispatch<SetStateAction<boolean>>;
-  onExportProcess?: (process: ProcessListProcess) => void;
-  tableProps?: TableProps<ProcessListProcess>;
-  processActions?: ProcessActions;
-  columnCustomRenderer?: {
-    [columnKey: string]: (id: any, record: ProcessListProcess, index: number) => JSX.Element;
-  };
+  selection: Key[];
+  selectedElements: ProcessListProcess[];
+  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
+  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
+  onExportProcess: (process: ProcessListProcess) => void;
+  processActions: ProcessActions;
 }>;
 
-const BaseProcessList: FC<BaseProcessListProps> = ({
+const ProcessList: FC<ProcessListProps> = ({
   data,
   folder,
-  elementSelection,
-  onExportProcess = () => {},
-  tableProps,
-  processActions: { deleteItems, editItem, copyItem } = {
-    deleteItems: () => {},
-    editItem: () => {},
-    copyItem: () => {},
-  },
+  selection,
+  selectedElements,
+  setSelectionElements,
+  onExportProcess,
+  processActions: { deleteItems, editItem, copyItem },
   setShowMobileMetaData,
-  columnCustomRenderer = {},
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -88,8 +73,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   const addPreferences = useUserPreferences.use.addPreferences();
   const { favourites: favProcesses } = useFavouriteProcesses();
 
+  const setContextMenuItem = contextMenuStore((store) => store.setSelected);
+
   const showMobileMetaData = () => {
-    setShowMobileMetaData?.(true);
+    setShowMobileMetaData(true);
   };
 
   const processListColumnsMobile = [
@@ -149,7 +136,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     [copyItem, deleteItems, editItem, onExportProcess],
   );
 
-  let columns: TableColumnsType<ProcessListProcess> = [
+  const columns: TableColumnsType<ProcessListProcess> = [
     {
       title: <StarOutlined />,
       dataIndex: 'id',
@@ -284,7 +271,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: (id, record, index) =>
+      render: (id) =>
         id !== folder.parentId && (
           <Button style={{ float: 'right' }} type="text" onClick={showMobileMetaData}>
             <InfoCircleOutlined />
@@ -293,11 +280,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
   ];
-
-  columns = columns.map((column) => ({
-    ...column,
-    render: columnCustomRenderer[column.key as string] || column.render,
-  }));
 
   let columnsFiltered = breakpoint.xl
     ? columns.filter((c) => selectedColumns.map((col: any) => col.name).includes(c?.key as string))
@@ -312,7 +294,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
     <ElementList
       data={data}
       columns={columnsFiltered}
-      elementSelection={elementSelection}
+      elementSelection={{
+        selectedElements,
+        setSelectionElements: setSelectionElements,
+      }}
       selectableColumns={{
         setColumnTitles: (cols) => {
           if (typeof cols === 'function')
@@ -334,54 +319,14 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         columnProps: {
           width: 'fit-content',
           responsive: ['xl'],
-          render: (id, record, index) =>
-            columnCustomRenderer['customProps']
-              ? columnCustomRenderer['customProps'](id, record, index)
-              : id !== folder.parentId && (
-                  <Row justify="space-evenly" className={styles.HoverableTableCell}>
-                    {actionBarGenerator(record)}
-                  </Row>
-                ),
+          render: (id, record) =>
+            id !== folder.parentId && (
+              <Row justify="space-evenly" className={styles.HoverableTableCell}>
+                {actionBarGenerator(record)}
+              </Row>
+            ),
         },
       }}
-      tableProps={tableProps}
-    />
-  );
-};
-
-const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
-
-type ProcessManagementListProps = PropsWithChildren<{
-  data: ProcessListProcess[];
-  folder: Folder;
-  selection: Key[];
-  selectedElements: ProcessListProcess[];
-  setSelectionElements: Dispatch<SetStateAction<ProcessListProcess[]>>;
-  setShowMobileMetaData: Dispatch<SetStateAction<boolean>>;
-  onExportProcess: (process: ProcessListProcess) => void;
-  processActions: ProcessActions;
-}>;
-
-const ProcessManagementList: FC<ProcessManagementListProps> = ({
-  data,
-  folder,
-  selection,
-  selectedElements,
-  setSelectionElements,
-  onExportProcess,
-  processActions,
-  setShowMobileMetaData,
-}) => {
-  const setContextMenuItem = contextMenuStore((store) => store.setSelected);
-
-  return (
-    <BaseProcessList
-      data={data}
-      folder={folder}
-      elementSelection={{ selectedElements, setSelectionElements }}
-      setShowMobileMetaData={setShowMobileMetaData}
-      onExportProcess={onExportProcess}
-      processActions={processActions}
       tableProps={{
         onRow: (item) => ({
           // onDoubleClick: () =>
@@ -405,95 +350,8 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
           },
         },
       }}
-    ></BaseProcessList>
+    />
   );
 };
 
-type ProcessDeploymentListProps = PropsWithChildren<{
-  data: ProcessListProcess[];
-  folder: Folder;
-  openFolder: (id: string) => void;
-  deploymentButtons: (additionalProps: { processId: string }) => ReactElement;
-}>;
-
-const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
-  data,
-  folder,
-  openFolder,
-  deploymentButtons,
-}) => {
-  const breakpoint = Grid.useBreakpoint();
-
-  return (
-    <BaseProcessList
-      data={data}
-      folder={folder}
-      columnCustomRenderer={{
-        ['Favorites']: (id) => {
-          return id !== folder.parentId ? (
-            <FavouriteStar viewOnly id={id} className={styles.HoverableTableCell} />
-          ) : (
-            <></>
-          );
-        },
-        ['Name']: (_, record) => {
-          return (
-            <div
-              className={
-                breakpoint.xs
-                  ? styles.MobileTitleTruncation
-                  : breakpoint.xl
-                    ? styles.TitleTruncation
-                    : styles.TabletTitleTruncation
-              }
-              style={{
-                color: record.id === folder.parentId ? 'grey' : undefined,
-                fontStyle: record.id === folder.parentId ? 'italic' : undefined,
-                cursor: record.type === 'folder' ? 'pointer' : undefined,
-              }}
-              onClick={
-                record.type === 'folder'
-                  ? () => {
-                      openFolder(record.id);
-                    }
-                  : undefined
-              }
-            >
-              {record.type === 'folder' ? <FolderFilled /> : <FileFilled />}{' '}
-              {record.name.highlighted}
-            </div>
-          );
-        },
-        ['Description']: (_, record) => {
-          return (
-            <div>
-              {(record.description.value ?? '').length == 0 ? (
-                <>&emsp;</>
-              ) : (
-                record.description.highlighted
-              )}
-            </div>
-          );
-        },
-        ['Meta Data Button']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
-        },
-        ['customProps']: (_, record) => {
-          return record.type !== 'folder' ? (
-            <>{deploymentButtons({ processId: record.id })}</>
-          ) : (
-            <></>
-          );
-        },
-      }}
-    ></BaseProcessList>
-  );
-};
-
-export { ProcessManagementList, ProcessDeploymentList };
-
-export default ProcessManagementList;
+export default ProcessList;

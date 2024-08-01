@@ -6,7 +6,6 @@ import {
   FolderChildren,
   createFolder as _createFolder,
   getFolderById,
-  getFolderContents as _getFolderContent,
   getRootFolder,
   moveFolder,
   updateFolderMetaData,
@@ -50,32 +49,6 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
     } else if (item.type === 'folder') {
       moveFolder(item.id, folderId, ability);
     }
-  }
-}
-
-export async function getFolder(folderId: string) {
-  const folder = getFolderById(folderId);
-  if (!folder) return userError('Folder not found');
-
-  const { ability } = await getCurrentEnvironment(folder.environmentId);
-
-  if (!ability.can('view', toCaslResource('Folder', folder))) return userError('Permission denied');
-
-  return folder;
-}
-
-export async function getFolderContents(environmentId: string, folderId?: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
-
-  if (!folderId) folderId = getRootFolder(environmentId).id;
-
-  try {
-    return _getFolderContent(folderId, ability);
-  } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-
-    return userError('Something went wrong');
   }
 }
 

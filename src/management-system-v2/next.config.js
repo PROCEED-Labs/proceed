@@ -28,8 +28,8 @@ const nextConfig = {
       ? {
           NEXTAUTH_SECRET:
             process.env.NEXTAUTH_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
-          JWT_SHARE_SECRET:
-            process.env.JWT_SHARE_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
+          SHARING_ENCRYPTION_SECRET:
+            process.env.SHARING_ENCRYPTION_SECRET ?? 'T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ=',
         }
       : {}),
   },

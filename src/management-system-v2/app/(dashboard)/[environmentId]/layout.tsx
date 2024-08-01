@@ -16,10 +16,12 @@ import Link from 'next/link';
 import { getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
+import { MdOutlineComputer } from 'react-icons/md';
+import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
+import { RemoveReadOnly } from '@/lib/typescript-utils';
 
 const DashboardLayout = async ({
   children,
@@ -38,7 +40,7 @@ const DashboardLayout = async ({
   );
 
   const userRules = systemAdmin
-    ? adminRules
+    ? (adminRules as RemoveReadOnly<typeof adminRules>)
     : await getUserRules(userId, activeEnvironment.spaceId);
 
   const layoutMenuItems: MenuProps['items'] = [];
@@ -86,13 +88,25 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (enableNewMSExecution) {
+  if (process.env.ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
       key: 'executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
+    });
+
+    children.push({
+      key: 'engines',
+      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Engines</Link>,
+      icon: <MdOutlineComputer />,
+    });
+
+    children.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Tasklist</Link>,
+      icon: <FaList />,
     });
 
     layoutMenuItems.push({

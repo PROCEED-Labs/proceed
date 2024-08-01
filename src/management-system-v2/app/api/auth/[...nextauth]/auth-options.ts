@@ -2,13 +2,14 @@ import { AuthOptions, getServerSession } from 'next-auth';
 import Auth0Provider from 'next-auth/providers/auth0';
 import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
+import DiscordProvider from 'next-auth/providers/discord';
+import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from './signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
@@ -46,13 +47,11 @@ const nextAuthOptions: AuthOptions = {
 
       if (trigger === 'update') user = getUserById(token.user.id);
 
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
-
       if (user) token.user = user;
 
       return token;
     },
-    session({ session, token, trigger }) {
+    session({ session, token }) {
       if (token.user) session.user = token.user;
       if (token.csrfToken) session.csrfToken = token.csrfToken;
 
@@ -86,7 +85,7 @@ const nextAuthOptions: AuthOptions = {
   },
 };
 
-if (process.env.USE_AUTH0) {
+if (process.env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     Auth0Provider({
       clientId: process.env.AUTH0_CLIENT_ID as string,
@@ -119,6 +118,36 @@ if (process.env.USE_AUTH0) {
           lastName: profile.family_name,
           email: profile.email,
           image: profile.picture,
+        };
+      },
+    }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      profile(profile) {
+        const image = profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+          : null;
+
+        return { ...profile, image };
+      },
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_CLIENT_ID as string,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET as string,
+      version: '2.0',
+      profile({ data, email }) {
+        const nameParts = data.name.split(' ');
+        const fistName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+
+        return {
+          email,
+          username: data.username,
+          id: data.id,
+          image: data.profile_image_url,
+          firstName: fistName.length > 0 ? fistName : undefined,
+          lastName: lastName.length > 0 ? lastName : undefined,
         };
       },
     }),

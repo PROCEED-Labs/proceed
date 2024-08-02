@@ -104,12 +104,15 @@ export class ProcessListPage {
     return this.processDefinitionIds;
   }
 
+  processLocatorByDefinitionId(definitionId: string) {
+    return this.page.locator(`tr[data-row-key="${definitionId}"]`);
+  }
+
   async removeProcess(definitionId: string) {
     const { page } = this;
 
     const modal = await openModal(page, () =>
-      page
-        .locator(`tr[data-row-key="${definitionId}"]`)
+      this.processLocatorByDefinitionId(definitionId)
         .getByRole('button', { name: 'delete' })
         .click(),
     );
@@ -142,7 +145,7 @@ export class ProcessListPage {
       .fill(processName ?? 'My Process');
     await modal.getByLabel('Process Description').fill(description ?? 'Process Description');
     await modal.getByRole('button', { name: 'Create' }).click();
-    await page.waitForURL(/processes\/([a-zA-Z0-9-_]+)/);
+    await page.waitForURL(/processes\/(?!folder)([a-zA-Z0-9-_]+)/);
 
     const id = page.url().split('processes/').pop();
 
@@ -185,6 +188,10 @@ export class ProcessListPage {
     }
   }
 
+  folderLocatorByName(folderName: string) {
+    return this.page.locator(`tr:has(span:text-is("${folderName}"))`);
+  }
+
   async createFolder({
     folderName,
     folderDescription,
@@ -204,7 +211,7 @@ export class ProcessListPage {
     if (folderDescription) await modal.getByLabel('Description').fill(folderDescription);
     await closeModal(modal, () => page.getByRole('button', { name: 'OK' }).click());
     // NOTE: this could break if there is another folder with the same name
-    const folderRow = page.locator(`tr:has(span:text-is("${folderName}"))`);
+    const folderRow = this.folderLocatorByName(folderName);
     await expect(folderRow).toBeVisible();
 
     return folderRow.getAttribute('data-row-key');

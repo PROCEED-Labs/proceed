@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
-import { AreaChartOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { AreaChartOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/icons';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
 
@@ -11,6 +11,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       loggedIn={true}
       userEnvironments={[]}
       layoutMenuItems={[
+        {
+          type: 'group',
+          label: 'PROCEED',
+          children: [
+            {
+              key: 'back-to-proceed',
+              label: <Link href="/">Processes</Link>,
+              icon: <FileOutlined />,
+            },
+          ],
+        },
         {
           type: 'group',
           label: 'System Admin views',

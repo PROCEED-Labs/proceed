@@ -92,7 +92,7 @@ export async function closeModal(modal: Locator, triggerFunction: () => Promise<
  */
 export async function waitForHydration(page: Page) {
   // this button should be in the header on every page
-  const accountButton = await page.getByRole('link', { name: 'user' });
+  const accountButton = page.locator('a[href$="/profile"].ant-dropdown-trigger');
   // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
   await accountButton.hover();
   await page

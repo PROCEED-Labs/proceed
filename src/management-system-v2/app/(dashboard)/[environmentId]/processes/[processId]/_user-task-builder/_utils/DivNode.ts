@@ -8,21 +8,21 @@ import type {
 } from 'lexical';
 import { ElementNode } from 'lexical';
 
-export class SpanNode extends ElementNode {
+export class DivNode extends ElementNode {
   constructor(key?: NodeKey) {
     super(key);
   }
 
   static getType(): string {
-    return 'span';
+    return 'div';
   }
 
-  static clone(node: SpanNode): SpanNode {
-    return new SpanNode(node.__key);
+  static clone(node: DivNode): DivNode {
+    return new DivNode(node.__key);
   }
 
   createDOM(_config: EditorConfig, _editor: LexicalEditor): HTMLElement {
-    const element = document.createElement('span');
+    const element = document.createElement('div');
     element.className = 'root-text-wrapper';
     return element;
   }
@@ -42,8 +42,8 @@ export class SpanNode extends ElementNode {
     };
   }
 
-  static importJSON(): SpanNode {
-    return $createSpanNode();
+  static importJSON(): DivNode {
+    return $createDivNode();
   }
 
   exportJSON(): SerializedElementNode {
@@ -54,10 +54,10 @@ export class SpanNode extends ElementNode {
   }
 }
 
-export function $createSpanNode(): SpanNode {
-  return new SpanNode();
+export function $createDivNode(): DivNode {
+  return new DivNode();
 }
 
-export function $isSpanNode(node: LexicalNode): node is SpanNode {
-  return node instanceof SpanNode;
+export function $isDivNode(node: LexicalNode): node is DivNode {
+  return node instanceof DivNode;
 }

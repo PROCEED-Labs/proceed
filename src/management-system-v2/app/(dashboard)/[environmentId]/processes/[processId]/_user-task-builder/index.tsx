@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.module.scss';
 
-import { Modal, Grid, Row as AntRow, Col, Switch } from 'antd';
+import { Modal, Grid, Row as AntRow, Col } from 'antd';
 
-import { Editor, Frame, Element, useEditor, EditorStore } from '@craftjs/core';
+import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
@@ -15,7 +15,6 @@ import Row from './Row';
 import Column from './Column';
 import Sidebar from './_sidebar';
 import { Toolbar, EditorLayout } from './Toolbar';
-import Header from './Header';
 import Input from './Input';
 import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
@@ -33,7 +32,6 @@ import useModelerStateStore from '../use-modeler-state-store';
 
 import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
 import { useEnvironment } from '@/components/auth-can';
-import useBuilderStateStore from './use-builder-state-store';
 
 type BuilderProps = {
   processId: string;
@@ -58,7 +56,6 @@ const EditorModal: React.FC<BuilderProps> = ({
 
   const environment = useEnvironment();
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
@@ -68,8 +65,6 @@ const EditorModal: React.FC<BuilderProps> = ({
   const breakpoint = Grid.useBreakpoint();
 
   const isMobile = breakpoint.xs;
-
-  const setIframe = useBuilderStateStore((state) => state.setIframe);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
@@ -155,15 +150,11 @@ const EditorModal: React.FC<BuilderProps> = ({
           <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
             <IFrame
               id="user-task-builder-iframe"
-              ref={iframeRef}
               width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
               height="100%"
               style={{ border: 0, margin: 'auto' }}
               initialContent={iframeDocument}
               mountTarget="#mountHere"
-              contentDidMount={() => {
-                setIframe(iframeRef.current);
-              }}
             >
               <Frame />
             </IFrame>
@@ -201,7 +192,6 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
     <>
       <Editor
         resolver={{
-          Header,
           Text,
           SubmitButton,
           Container,
@@ -223,8 +213,6 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
         onNodesChange={() => {
           setHasUnsavedChanges(true);
         }}
-        // TODO: maybe we can replace the automatic row creation and cleanup in the custom drag logic
-        // onBeforeMoveEnd={()}
       >
         <AddUserControls
           name="user-task-editor"

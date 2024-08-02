@@ -7,7 +7,6 @@ import Text from './Text';
 import Container from './Container';
 import Row from './Row';
 import Column from './Column';
-import Header from './Header';
 import Input from './Input';
 import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
 import Table from './Table';
@@ -142,7 +141,6 @@ export function toHtml(json: string) {
         Text,
         Container,
         Row,
-        Header,
         Input,
         CheckboxOrRadioGroup,
         Column,

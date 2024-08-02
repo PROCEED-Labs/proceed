@@ -4,7 +4,7 @@ import { Select, Button } from 'antd';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
-import { EditableText } from './_utils/EditableText';
+import EditableText from './_utils/EditableText';
 import { Setting } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 

@@ -12,7 +12,6 @@ import Text from '../Text';
 import Container from '../Container';
 import Input from '../Input';
 import CheckboxOrRadioGroup from '../CheckboxOrRadioGroup';
-import Header from '../Header';
 import Column from '../Column';
 import Table from '../Table';
 import Image from '../Image';

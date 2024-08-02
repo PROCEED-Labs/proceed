@@ -1,12 +1,19 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState, forwardRef } from 'react';
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 
-type CustomContentEditableProps = {
-  tagName: string;
+export type CustomContentEditableProps = {
+  EditableElement: ReturnType<
+    typeof forwardRef<
+      HTMLElement,
+      {
+        contentEditable: boolean;
+      }
+    >
+  >;
 };
 
-const CustomContentEditable: React.FC<CustomContentEditableProps> = ({ tagName }) => {
+const CustomContentEditable: React.FC<CustomContentEditableProps> = ({ EditableElement }) => {
   const [editor] = useLexicalComposerContext();
 
   const [isEditable, setIsEditable] = useState(editor.isEditable());
@@ -39,10 +46,7 @@ const CustomContentEditable: React.FC<CustomContentEditableProps> = ({ tagName }
     }
   }, [editor, isEditable]);
 
-  return React.createElement(tagName, {
-    contentEditable: isEditable,
-    ref: makeEditorRoot,
-  });
+  return <EditableElement contentEditable={isEditable} ref={makeEditorRoot} />;
 };
 
 export default CustomContentEditable;

@@ -55,7 +55,7 @@ export const mockClipboardAPI = async (page: Page) =>
  *
  * @returns a locator that can be used to get the newly opened modal
  */
-export async function openModal(page: Page, triggerFunction: () => Promise<void>) {
+export async function openModal(page: Page, triggerFunction: () => Promise<any>) {
   const alreadyOpenCount = await page
     .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
     .and(page.locator(`div[aria-modal="true"]:visible`))

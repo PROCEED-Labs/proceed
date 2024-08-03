@@ -141,7 +141,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   let isOwner = false;
 
-  const key = process.env.JWT_SHARE_SECRET!;
+  const key = process.env.SHARING_ENCRYPTION_SECRET!;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;

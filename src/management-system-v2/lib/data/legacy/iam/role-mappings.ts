@@ -33,11 +33,13 @@ export let roleMappingsMetaObjects: {
   //@ts-ignore
   global.roleMappingsMetaObjects || (global.roleMappingsMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the role mappings meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get role mappings that were persistently stored
   const storedRoleMappings = store.get('roleMappings');

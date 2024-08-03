@@ -18,11 +18,13 @@ export let roleMetaObjects: Record<string, Role> =
   // @ts-ignore
   global.roleMetaObjects || (global.roleMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the roles meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get roles that were persistently stored
   const storedRoles = store.get('roles') as Role[];

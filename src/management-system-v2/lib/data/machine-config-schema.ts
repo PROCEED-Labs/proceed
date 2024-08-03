@@ -16,7 +16,7 @@ import { Prettify, WithRequired } from '../typescript-utils';
 
 export const MachineConfigServerInputSchema = MachineConfigInputSchema.extend({
   environmentId: z.string(),
-  owner: z.string(),
+  ownerId: z.string(),
 });
 export type MachineConfigServerInput = z.infer<typeof MachineConfigServerInputSchema>;
 

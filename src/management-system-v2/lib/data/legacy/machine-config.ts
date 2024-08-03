@@ -115,7 +115,7 @@ export async function createMachineConfig(
     const machineConfigData = MachineConfigInputSchema.parse(machineConfigInput);
 
     // create meta info object
-    const date = new Date().toUTCString();
+    const date = new Date();
     const metadata = {
       ...({
         id: v4(),
@@ -123,12 +123,12 @@ export async function createMachineConfig(
         environmentId: environmentId,
         name: 'Default Machine Configuration',
         description: '',
-        owner: '',
+        ownerId: '',
         variables: [],
         departments: [],
         inEditingBy: [],
         createdOn: date,
-        lastEdited: date,
+        lastEditedOn: date,
         sharedAs: 'protected',
         shareTimestamp: 0,
         allowIframeTimestamp: 0,
@@ -138,7 +138,7 @@ export async function createMachineConfig(
       ...machineConfigData,
     };
     if (!metadata.folderId) {
-      metadata.folderId = getRootFolder(metadata.environmentId).id;
+      metadata.folderId = (await getRootFolder(metadata.environmentId)).id;
     }
 
     const folderData = foldersMetaObject.folders[metadata.folderId];

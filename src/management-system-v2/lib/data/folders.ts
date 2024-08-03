@@ -23,7 +23,7 @@ export async function createFolder(folderInput: FolderUserInput) {
     const { ability } = await getCurrentEnvironment(folder.environmentId);
     const { userId } = await getCurrentUser();
 
-    if (!folder.parentId) folder.parentId = getRootFolder(folder.environmentId).id;
+    if (!folder.parentId) folder.parentId = (await getRootFolder(folder.environmentId)).id;
 
     _createFolder({ ...folder, createdBy: userId }, ability);
   } catch (e) {
@@ -32,7 +32,7 @@ export async function createFolder(folderInput: FolderUserInput) {
 }
 
 export async function moveIntoFolder(items: FolderChildren[], folderId: string) {
-  const folder = getFolderById(folderId);
+  const folder = await getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
   const { ability } = await getCurrentEnvironment(folder.environmentId);
@@ -54,7 +54,7 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
 }
 
 export async function getFolder(folderId: string) {
-  const folder = getFolderById(folderId);
+  const folder = await getFolderById(folderId);
   if (!folder) return userError('Folder not found');
 
   const { ability } = await getCurrentEnvironment(folder.environmentId);
@@ -67,7 +67,7 @@ export async function getFolder(folderId: string) {
 export async function getFolderContents(environmentId: string, folderId?: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  if (!folderId) folderId = getRootFolder(environmentId).id;
+  if (!folderId) folderId = (await getRootFolder(environmentId)).id;
 
   try {
     return _getFolderContent(folderId, ability);
@@ -85,7 +85,7 @@ export async function updateFolder(
   folderId: string,
 ) {
   try {
-    const folder = getFolderById(folderId);
+    const folder = await getFolderById(folderId);
     if (!folder) return userError('Folder not found');
 
     const { ability } = await getCurrentEnvironment(folder.environmentId);

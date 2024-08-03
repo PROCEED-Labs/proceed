@@ -1,4 +1,4 @@
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
@@ -18,16 +18,17 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   //console.log('query', searchParams);
   const selectedVersionId = searchParams.version ? +searchParams.version : undefined;
   const { ability } = await getCurrentEnvironment(environmentId);
+  const { userId } = await getCurrentUser();
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
-  const processes = await getProcesses(ability);
+  const processes = await getProcesses(userId, ability);
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new Error('Forbidden.');
   }
 
   const selectedVersionBpmn = selectedVersionId
-    ? getProcessVersionBpmn(processId, selectedVersionId)
+    ? await getProcessVersionBpmn(processId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
     ? process.versions.find((version) => version.version === selectedVersionId)
@@ -45,7 +46,6 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
           versionName={selectedVersion?.name}
         />
       </Wrapper>
-
       <AddUserControls name={'modeler'} />
     </>
   );

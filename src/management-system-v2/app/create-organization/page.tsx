@@ -8,9 +8,9 @@ import { userError } from '@/lib/user-error';
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
   const user = await getCurrentUser();
-  if (user.session?.user && !user.session?.user.guest)
+  if (user.session?.user && !user.session?.user.isGuest)
     return userError('This function is only for guest users and users that are not signed in');
-  return addEnvironment({ ...data, organization: true, active: false });
+  return addEnvironment({ ...data, isOrganization: true, isActive: false });
 }
 
 export type createInactiveEnvironment = typeof createInactiveEnvironment;
@@ -19,7 +19,7 @@ const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
   const { session } = await getCurrentUser();
-  const needsToAuthenticate = !session?.user || session?.user.guest;
+  const needsToAuthenticate = !session?.user || session?.user.isGuest;
 
   let providers = getProviders();
 

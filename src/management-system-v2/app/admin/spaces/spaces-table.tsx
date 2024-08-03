@@ -10,7 +10,6 @@ import ElementList from '@/components/item-list-view';
 import styles from '@/components/item-list-view.module.scss';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import SelectionActions from '@/components/selection-actions';
 

@@ -14,9 +14,9 @@ const ExecutionsPage = async ({ params }: { params: { environmentId: string } })
 
   const favs = await getUsersFavourites();
 
-  const rootFolder = getRootFolder(activeEnvironment.spaceId, ability);
+  const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
 
-  const folder = getFolderById(rootFolder.id);
+  const folder = await getFolderById(rootFolder.id);
 
   const folderContents = await getFolderContents(folder.id, ability);
 

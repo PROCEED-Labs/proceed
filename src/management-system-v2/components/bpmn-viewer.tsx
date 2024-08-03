@@ -33,7 +33,7 @@ const BPMNViewer: FC<BPMNViewerProps> = ({ definitionId, reduceLogo, fitOnResize
       if (typeof res === 'object' && 'error' in res) {
         throw res.error;
       }
-      return res;
+      return res as string;
     },
   });
 

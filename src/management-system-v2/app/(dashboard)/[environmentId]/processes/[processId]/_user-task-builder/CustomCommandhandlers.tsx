@@ -55,6 +55,8 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         el: HTMLElement,
         userElement: React.ReactElement | (() => NodeTree | React.ReactElement),
       ) => {
+        return () => {};
+
         const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
           const iframeDocument = (
             document.getElementById('user-task-builder-iframe') as HTMLIFrameElement
@@ -96,6 +98,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         return () => {};
       },
       drag: (el: HTMLElement, id: NodeId) => {
+        return () => {};
         if (!query.node(id)?.isDraggable()) return () => {};
 
         let initDragTimeout: ReturnType<typeof setTimeout> | null = null;

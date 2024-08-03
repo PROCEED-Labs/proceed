@@ -33,6 +33,8 @@ import useModelerStateStore from '../use-modeler-state-store';
 import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
 import { useEnvironment } from '@/components/auth-can';
 
+import DragAndDropHandler from './DragAndDropHandler';
+
 type BuilderProps = {
   processId: string;
   open: boolean;
@@ -156,7 +158,9 @@ const EditorModal: React.FC<BuilderProps> = ({
               initialContent={iframeDocument}
               mountTarget="#mountHere"
             >
-              <Frame />
+              <DragAndDropHandler>
+                <Frame />
+              </DragAndDropHandler>
             </IFrame>
           </Col>
         </AntRow>

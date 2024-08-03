@@ -4,6 +4,9 @@ import { InputNumber, ColorPicker, Empty } from 'antd';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+
 import { Setting } from './utils';
 
 export type ContainerProps = React.PropsWithChildren & {
@@ -22,17 +25,27 @@ const Container: UserComponent<ContainerProps> = ({
 }) => {
   const {
     connectors: { connect },
-  } = useNode();
+    nodeId,
+    nodeChildren,
+  } = useNode((node) => {
+    return { nodeId: node.id, nodeChildren: node.data.nodes };
+  });
+
+  const { setNodeRef } = useDroppable({ id: nodeId });
 
   return (
     <div
+      id={nodeId}
       ref={(r) => {
         r && connect(r);
+        setNodeRef(r);
       }}
       className="user-task-form-container"
       style={{ padding, background, border: `${borderThickness}px solid ${borderColor}` }}
     >
-      {children || (
+      {children ? (
+        <SortableContext items={nodeChildren}>{children}</SortableContext>
+      ) : (
         <Empty style={{ textAlign: 'center', height: '100%' }} description="Drop elements here" />
       )}
     </div>

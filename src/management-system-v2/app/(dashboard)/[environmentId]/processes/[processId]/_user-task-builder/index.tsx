@@ -33,7 +33,7 @@ import useModelerStateStore from '../use-modeler-state-store';
 import { generateUserTaskFileName, getUserTaskImplementationString } from '@proceed/bpmn-helper';
 import { useEnvironment } from '@/components/auth-can';
 
-import DragAndDropHandler from './DragAndDropHandler';
+import EditorDnDHandler from './DragAndDropHandler';
 
 type BuilderProps = {
   processId: string;
@@ -58,6 +58,8 @@ const EditorModal: React.FC<BuilderProps> = ({
 
   const environment = useEnvironment();
 
+  const [iframeMounted, setIframeMounted] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
   const [iframeLayout, setIframeLayout] = useState<EditorLayout>('computer');
@@ -135,36 +137,38 @@ const EditorModal: React.FC<BuilderProps> = ({
       okButtonProps={{ disabled: !editingEnabled }}
       onOk={handleSave}
     >
-      <div className={styles.BuilderUI}>
-        {!isMobile && (
-          <Toolbar
-            iframeMaxWidth={iframeMaxWidth}
-            iframeLayout={iframeLayout}
-            onLayoutChange={setIframeLayout}
-          />
-        )}
-        <AntRow className={styles.EditorBody}>
+      <EditorDnDHandler iframeRef={iframeRef} disabled={!iframeMounted}>
+        <div className={styles.BuilderUI}>
           {!isMobile && (
-            <Col span={4}>
-              <Sidebar />
-            </Col>
+            <Toolbar
+              iframeMaxWidth={iframeMaxWidth}
+              iframeLayout={iframeLayout}
+              onLayoutChange={setIframeLayout}
+            />
           )}
-          <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
-            <IFrame
-              id="user-task-builder-iframe"
-              width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
-              height="100%"
-              style={{ border: 0, margin: 'auto' }}
-              initialContent={iframeDocument}
-              mountTarget="#mountHere"
-            >
-              <DragAndDropHandler>
+          <AntRow className={styles.EditorBody}>
+            {!isMobile && (
+              <Col span={4}>
+                <Sidebar />
+              </Col>
+            )}
+            <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
+              <IFrame
+                id="user-task-builder-iframe"
+                ref={iframeRef}
+                width={iframeLayout === 'computer' || iframeMaxWidth <= 600 ? '100%' : '600px'}
+                height="100%"
+                style={{ border: 0, margin: 'auto' }}
+                initialContent={iframeDocument}
+                mountTarget="#mountHere"
+                contentDidMount={() => setIframeMounted(true)}
+              >
                 <Frame />
-              </DragAndDropHandler>
-            </IFrame>
-          </Col>
-        </AntRow>
-      </div>
+              </IFrame>
+            </Col>
+          </AntRow>
+        </div>
+      </EditorDnDHandler>
     </Modal>
   );
 };

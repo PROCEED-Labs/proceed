@@ -40,3 +40,21 @@
     }
   }
 }
+
+.DraggedCreationButton {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  margin: 2px;
+
+  :global(.ant-btn-icon) {
+    font-size: 2em;
+
+    margin: 0 0 10px 0 !important;
+    margin-right: 0;
+  }
+}

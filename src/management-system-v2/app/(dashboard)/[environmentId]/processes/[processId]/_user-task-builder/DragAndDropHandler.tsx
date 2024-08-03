@@ -21,6 +21,8 @@ import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Coordinates } from '@dnd-kit/utilities';
 import { useCallback, useState } from 'react';
 import Row from './Row';
+import { createPortal } from 'react-dom';
+import useBuilderStateStore from './use-builder-state-store';
 
 type CollisionFuncType = {
   collisionRect: ClientRect;
@@ -30,10 +32,15 @@ type CollisionFuncType = {
   active: Active | null;
 };
 
+type EditorDnDHandlerProps = React.PropsWithChildren & {
+  disabled: boolean;
+  iframeRef: React.RefObject<HTMLIFrameElement>;
+};
+
 // handler for the drag and drop handling of existing editor elements
-const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => {
+const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children, disabled }) => {
   const { query, actions } = useEditor();
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
@@ -137,7 +144,33 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
       active,
     }: CollisionFuncType) => {
       const collisions: Collision[] = [];
-      if (!active || !pointerCoordinates) return [];
+      if (!active?.id || !pointerCoordinates) return [];
+
+      const iframe = iframeRef.current;
+
+      let { x: pointerX, y: pointerY } = pointerCoordinates;
+
+      // if we are creating a new element we fall back to collision detection using the cursor
+      if (/^create-.*-button$/.test(active.id.toString())) {
+        // it seems as if dnd-kit calculates the pointer position based on where the drag event started
+        if (!iframe) return [];
+        const { left: iframeLeft, top: iframeTop } = iframe.getBoundingClientRect();
+        // transform the coordinates to the iframe context
+        pointerX -= iframeLeft;
+        pointerY -= iframeTop;
+
+        const res = pointerWithin({
+          active,
+          collisionRect,
+          droppableContainers,
+          droppableRects,
+          pointerCoordinates: { x: pointerX, y: pointerY },
+        });
+        return res.map((collision) => {
+          (collision.data as any).cursor = { x: pointerX, y: pointerY };
+          return collision;
+        });
+      }
 
       for (const droppableContainer of droppableContainers) {
         const { id } = droppableContainer;
@@ -147,49 +180,58 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
         if (!rect) continue;
 
         // early exit when an element is being checked against one of its children or itself
-        let ancestor: Node | undefined = undefined;
-        if (droppableNode.data.parent) ancestor = query.node(droppableNode.data.parent).get();
+        let dropNodeAncestor: Node | undefined = undefined;
+        if (droppableNode.data.parent)
+          dropNodeAncestor = query.node(droppableNode.data.parent).get();
 
         // dragging should not affect containers and the content of containers that the mouse is not inside of
+        // (with a small boundary inside the element that is also considered to be outside)
         if (droppableNode.data.name === 'Container') {
-          if (pointerCoordinates.x < rect.left + 20 || pointerCoordinates.x > rect.right - 20)
+          const leaveBoundarySize = droppableNode.id === ROOT_NODE ? 0 : 20;
+          if (pointerX < rect.left + leaveBoundarySize || pointerX > rect.right - leaveBoundarySize)
             continue;
-        } else if (ancestor) {
-          const ancestorContainer = query.node(ancestor.data.parent).get();
+        } else if (dropNodeAncestor) {
+          const ancestorContainer = query.node(dropNodeAncestor.data.parent!).get();
           const ancestorContainerRect = ancestorContainer.dom?.getBoundingClientRect();
+          console.log(pointerX, ancestorContainerRect);
           if (
             ancestorContainerRect &&
-            (pointerCoordinates.x < ancestorContainerRect.left + 20 ||
-              pointerCoordinates.x > ancestorContainerRect.right - 20)
+            (pointerX < ancestorContainerRect.left + 20 ||
+              pointerX > ancestorContainerRect.right - 20)
           ) {
-            console.log(ancestorContainer);
             continue;
           }
         }
 
+        const draggedNode = query.node(active.id.toString()).get();
+
         let draggedIntoItself = false;
-        while (ancestor) {
-          if (ancestor.id === active.id.toString()) {
+        while (dropNodeAncestor) {
+          if (dropNodeAncestor.id === draggedNode.id) {
             draggedIntoItself = true;
             break;
           }
 
-          if (ancestor.data.parent) ancestor = query.node(ancestor.data.parent).get();
-          else ancestor = undefined;
+          if (dropNodeAncestor.data.parent)
+            dropNodeAncestor = query.node(dropNodeAncestor.data.parent).get();
+          else dropNodeAncestor = undefined;
         }
         if (draggedIntoItself) continue;
 
-        const activeNode = query.node(active.id.toString()).get();
-        if (rect && pointerCoordinates && activeNode.dom) {
-          const activeRect = activeNode.dom.getBoundingClientRect();
+        if (rect) {
+          let offset = 0;
 
-          const offset = getTargetOffsetAfterMove(
-            active.id.toString(),
-            id.toString(),
-            collisionRect,
-            activeRect,
-            rect,
-          );
+          if (draggedNode?.dom) {
+            const activeRect = draggedNode.dom.getBoundingClientRect();
+
+            offset = getTargetOffsetAfterMove(
+              active.id.toString(),
+              id.toString(),
+              collisionRect,
+              activeRect,
+              rect,
+            );
+          }
 
           if (collisionRect.top > rect.top - offset) {
             collisions.push({
@@ -197,7 +239,7 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
               data: {
                 droppableContainer,
                 value: collisionRect.top - rect.top,
-                cursor: pointerCoordinates,
+                cursor: { x: pointerX, y: pointerY },
               },
             });
           }
@@ -211,20 +253,26 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
         // we could place into elements that are next to each other and have the same top value
         const aRect = droppableRects.get(a.id);
         const bRect = droppableRects.get(b.id);
-        const iframeEl = document.getElementById('user-task-builder-iframe');
-        if (iframeEl && pointerCoordinates && aRect && bRect) {
+
+        if (aRect && bRect) {
           // tiebreak through smaller mouse pointer distance from both rects
 
           let aPointerDist: number;
           let bPointerDist: number;
 
-          let { x } = pointerCoordinates;
+          if (pointerX > aRect.left && pointerX < aRect.right) aPointerDist = 0;
+          else
+            aPointerDist = Math.min(
+              Math.abs(pointerX - aRect.left),
+              Math.abs(pointerX - aRect.right),
+            );
 
-          if (x > aRect.left && x < aRect.right) aPointerDist = 0;
-          else aPointerDist = Math.min(Math.abs(x - aRect.left), Math.abs(x - aRect.right));
-
-          if (x > bRect.left && x < bRect.right) bPointerDist = 0;
-          else bPointerDist = Math.min(Math.abs(x - bRect.left), Math.abs(x - bRect.right));
+          if (pointerX > bRect.left && pointerX < bRect.right) bPointerDist = 0;
+          else
+            bPointerDist = Math.min(
+              Math.abs(pointerX - bRect.left),
+              Math.abs(pointerX - bRect.right),
+            );
 
           return aPointerDist - bPointerDist;
         }
@@ -235,19 +283,95 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
     [query],
   );
 
+  const isCreating = /^create-.*-button$/.test(active);
+
+  if (disabled) return <>{children}</>;
+
+  const overlay = (
+    <DragOverlay>
+      {active ? (
+        <div
+          id="dnd-drag-overlay"
+          style={{
+            overflow: 'visible',
+            backgroundColor: 'white',
+            border: !isCreating ? '2px solid lightgrey' : undefined,
+          }}
+        ></div>
+      ) : null}
+    </DragOverlay>
+  );
+
   return (
     <DndContext
       collisionDetection={customCollision}
       sensors={sensors}
-      onDragStart={() => setActive(true)}
-      onDragEnd={() => setActive(false)}
+      onDragStart={(event) => {
+        setActive(event.active.id.toString());
+        if (isCreating) iframeRef.current!.style.pointerEvents = 'none';
+      }}
+      onDragEnd={(event) => {
+        const { active, over } = event;
+        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        setActive('');
+
+        if (!over) return;
+
+        if (/^create-.*-button$/.test(active.id.toString())) {
+          if (event.active.data.current) {
+            const tree = query.parseReactElement(event.active.data.current.element).toNodeTree();
+
+            const overNode = query.node(over.id.toString()).get();
+            let targetParent = overNode;
+            let targetIndex = 0;
+
+            const { x, y } = (event.collisions![0].data as any).cursor as { x: number; y: number };
+
+            if (targetParent.data.name === 'Column') {
+              targetParent = query.node(overNode.data.parent!).get();
+
+              const overIndexInRow = targetParent.data.nodes.findIndex((id) => id === overNode.id);
+              const overRect = overNode.dom?.getBoundingClientRect();
+              if (!overRect) return;
+
+              const behind = x > overRect.left + overRect.width / 2;
+              targetIndex = overIndexInRow + (behind ? 1 : 0);
+            } else {
+              for (let childId of overNode.data.nodes) {
+                const childNode = query.node(childId).get();
+                const childRect = childNode.dom?.getBoundingClientRect();
+                if (childRect && y < childRect.top) {
+                  break;
+                }
+
+                ++targetIndex;
+              }
+
+              actions.addNodeTree(
+                query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
+                targetParent.id,
+                targetIndex,
+              );
+              const updatedContainer = query.node(overNode.id).get();
+              targetParent = query.node(updatedContainer.data.nodes[targetIndex]).get();
+              targetIndex = 0;
+            }
+
+            actions.addNodeTree(tree, targetParent.id, targetIndex);
+          }
+
+          return;
+        }
+      }}
       onDragMove={(event) => {
         const { active, over } = event;
 
         if (!over || !event.collisions?.length) return;
 
-        const overNode = query.node(over.id.toString()).get();
+        if (/^create-.*-button$/.test(active.id.toString())) return;
+
         const dragNode = query.node(active.id.toString()).get();
+        const overNode = query.node(over.id.toString()).get();
         const currentParentRow = query.node(dragNode.data.parent!).get();
         const currentIndex = currentParentRow.data.nodes.findIndex((id) => id === dragNode.id);
 
@@ -268,7 +392,7 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
         } else {
           // we are targeting a column (either the one we are dragging or some other one)
 
-          const cursor = event.collisions![0].data.cursor as { x: number; y: number };
+          const cursor = (event.collisions![0].data as any).cursor as { x: number; y: number };
           const overParentRow = query.node(overNode.data.parent!).get();
           if (active.id === over.id) {
             // we are targeting the dragged node
@@ -323,11 +447,10 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
             newParent = query.node(updatedContainer.data.nodes[newIndex]).get();
             newIndex = 0;
           }
-          console.log('AAA');
+
           actions.move(dragNode.id, newParent.id, newIndex);
           if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
         } else {
-          console.log(newParent);
           if (newIndex !== currentIndex) {
             actions.move(dragNode.id, currentParentRow.id, newIndex);
           }
@@ -335,16 +458,10 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
       }}
     >
       {children}
-      <DragOverlay>
-        {active ? (
-          <div
-            id="dnd-drag-overlay"
-            style={{ overflow: 'visible', backgroundColor: 'white' }}
-          ></div>
-        ) : null}
-      </DragOverlay>
+      {!!active &&
+        (isCreating ? overlay : createPortal(overlay, iframeRef.current?.contentDocument!.body!))}
     </DndContext>
   );
 };
 
-export default DragAndDropHandler;
+export default EditorDnDHandler;

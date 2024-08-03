@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
+import useBuilderStateStore from './use-builder-state-store';
 
 const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   children,
@@ -23,12 +24,14 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
     isSelected: node.events.selected,
   }));
 
+  const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
+
   const ref = useRef<HTMLDivElement>();
   const frame = useFrame();
 
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: nodeId,
-    disabled: fixed,
+    disabled: fixed || isTextEditing,
   });
 
   return (

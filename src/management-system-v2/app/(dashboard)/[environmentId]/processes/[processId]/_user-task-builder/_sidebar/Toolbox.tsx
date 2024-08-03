@@ -6,6 +6,8 @@ import { LuFormInput, LuImage, LuTable, LuText } from 'react-icons/lu';
 import { MdCheckBox, MdRadioButtonChecked, MdTitle } from 'react-icons/md';
 import { RxGroup } from 'react-icons/rx';
 
+import { useDraggable } from '@dnd-kit/core';
+
 import styles from './index.module.scss';
 
 import Text from '../Text';
@@ -15,6 +17,7 @@ import CheckboxOrRadioGroup from '../CheckboxOrRadioGroup';
 import Column from '../Column';
 import Table from '../Table';
 import Image from '../Image';
+import { createPortal } from 'react-dom';
 
 function selectOnCreation(nodeTree: NodeTree, actions: WithoutPrivateActions<null>) {
   const newNode = Object.values(nodeTree.nodes || {}).find((el) => el.data.name !== 'Row');
@@ -34,22 +37,37 @@ const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }
     return { editingEnabled: state.options.enabled };
   });
 
+  const id = `create-${title}-button`;
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id,
+    data: {
+      element: <Column>{children}</Column>,
+    },
+  });
+
   return (
-    <AntButton
-      className={styles.CreationButton}
-      disabled={!editingEnabled}
-      ref={(r) => {
-        r &&
-          connectors.create(r, <Column>{children}</Column>, {
-            onCreate: (nodeTree) => {
-              selectOnCreation(nodeTree, actions);
-            },
-          });
-      }}
-      icon={icon}
-    >
-      {title}
-    </AntButton>
+    <>
+      <AntButton
+        id={id}
+        className={styles.CreationButton}
+        disabled={!editingEnabled}
+        ref={setNodeRef}
+        icon={icon}
+        {...attributes}
+        {...listeners}
+      >
+        {title}
+      </AntButton>
+      {isDragging &&
+        document.getElementById('dnd-drag-overlay') &&
+        createPortal(
+          <AntButton className={styles.DraggedCreationButton} icon={icon}>
+            {title}
+          </AntButton>,
+          document.getElementById('dnd-drag-overlay')!,
+        )}
+    </>
   );
 };
 

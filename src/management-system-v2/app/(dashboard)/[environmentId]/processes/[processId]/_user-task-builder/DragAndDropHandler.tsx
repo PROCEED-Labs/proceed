@@ -11,6 +11,10 @@ import {
   DragOverlay,
   ClientRect,
   Collision,
+  MeasuringFrequency,
+  MeasuringStrategy,
+  MeasuringConfiguration,
+  getClientRect,
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -137,12 +141,12 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
 
       for (const droppableContainer of droppableContainers) {
         const { id } = droppableContainer;
-        const rect = droppableRects.get(id);
+        const droppableNode = query.node(id.toString()).get();
+        const rect = droppableNode.dom?.getBoundingClientRect();
 
         if (!rect) continue;
 
         // early exit when an element is being checked against one of its children or itself
-        const droppableNode = query.node(id.toString()).get();
         let ancestor: Node | undefined = undefined;
         if (droppableNode.data.parent) ancestor = query.node(droppableNode.data.parent).get();
 
@@ -233,6 +237,11 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
     <DndContext
       collisionDetection={customCollision}
       sensors={sensors}
+      measuring={
+        {
+          droppable: { strategy: MeasuringStrategy.BeforeDragging },
+        } as MeasuringConfiguration
+      }
       onDragStart={() => setActive(true)}
       onDragEnd={() => setActive(false)}
       onDragMove={(event) => {
@@ -301,12 +310,12 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
               );
               const { x } = cursor;
 
-              if (x - parentRowRect.left < 20) {
+              if (x - parentRowRect.left < 10) {
                 newParent = containerParentRow;
                 newIndex = containerIndexInRow;
                 // actions.move(dragNode.id, containerParentRow.id, containerIndexInRow);
                 // if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
-              } else if (parentRowRect.right - x < 20) {
+              } else if (parentRowRect.right - x < 10) {
                 newParent = containerParentRow;
                 newIndex = containerIndexInRow + 1;
                 // actions.move(dragNode.id, containerParentRow.id, containerIndexInRow + 1);

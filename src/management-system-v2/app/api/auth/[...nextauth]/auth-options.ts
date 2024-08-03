@@ -11,6 +11,11 @@ import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from './signin-link-email';
+import { verifyJwt } from '@/app/confluence/helpers';
+import { getConfluenceClientInfos } from '@/lib/data/legacy/fileHandling';
+import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
+import { getRoleByName } from '@/lib/data/legacy/iam/roles';
+import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
 
 const nextAuthOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -25,6 +30,63 @@ const nextAuthOptions: AuthOptions = {
       credentials: {},
       async authorize() {
         return addUser({ guest: true });
+      },
+    }),
+    CredentialsProvider({
+      name: 'Atlassian Connect JWT',
+      id: 'confluence-signin',
+      credentials: {
+        token: { label: 'JWT Token', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (credentials) {
+          let decodedToken;
+          try {
+            decodedToken = await verifyJwt(credentials.token);
+          } catch (err) {
+            throw new Error('Confluence Sign In failed because JWT is not verified.');
+          }
+
+          const confluenceClientInfos = await getConfluenceClientInfos(decodedToken.iss);
+
+          let confluenceUser = getUserById(decodedToken.sub as string);
+
+          if (!confluenceUser) {
+            // add User if not existing already (=> Sign Up)
+            confluenceUser = addUser({
+              id: decodedToken.sub as string,
+              username: `Confluence_User_${decodedToken.sub}`,
+              confluence: true,
+              guest: false,
+            });
+          }
+
+          if (
+            confluenceClientInfos.proceedSpace &&
+            !isMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id)
+          ) {
+            // Add Confluence User to configured proceed space to gain access to shared processes
+            addMember(confluenceClientInfos.proceedSpace.id, confluenceUser.id);
+
+            const adminRole = getRoleByName(confluenceClientInfos.proceedSpace.id, '@admin');
+            if (!adminRole) {
+              throw new Error(
+                `Consistency error: admin role of ${confluenceClientInfos.proceedSpace.id} not found`,
+              );
+            }
+
+            addRoleMappings([
+              {
+                environmentId: confluenceClientInfos.proceedSpace.id,
+                roleId: adminRole.id,
+                userId: confluenceUser.id,
+              },
+            ]);
+          }
+
+          return confluenceUser;
+        }
+        return null;
       },
     }),
     EmailProvider({
@@ -78,6 +140,63 @@ const nextAuthOptions: AuthOptions = {
       }
 
       return true;
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+      },
+    },
+    pkceCodeVerifier: {
+      name: `next-auth.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 900,
+      },
+    },
+    state: {
+      name: `next-auth.state`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 900,
+      },
+    },
+    nonce: {
+      name: `next-auth.nonce`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+      },
     },
   },
   pages: {

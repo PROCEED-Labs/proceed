@@ -4,7 +4,7 @@ import { getUserById } from '@/lib/data/legacy/iam/users';
 import { User } from '@/lib/data/user-schema';
 
 export function getUserName(user: User) {
-  if (user.guest) return 'Guest';
+  if (user.guest || 'confluence' in user) return 'Guest';
   if (user.username) return user.username;
   if (user.firstName || user.lastName)
     return `${user.firstName ?? '<no first name>'} ${user.lastName ?? '<no last name>'}`;

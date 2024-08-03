@@ -135,13 +135,24 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
     };
 
     userMappings.push(newRoleMapping);
-    role.members.push({
-      userId: userId,
-      username: user.username ?? '',
-      firstName: user.firstName ?? '',
-      lastName: user.lastName ?? '',
-      email: user.email ?? '',
-    });
+
+    if ('confluence' in user) {
+      role.members.push({
+        userId: userId,
+        username: user.username ?? '',
+        firstName: '',
+        lastName: '',
+        email: '',
+      });
+    } else {
+      role.members.push({
+        userId: userId,
+        username: user.username ?? '',
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        email: user.email ?? '',
+      });
+    }
 
     // persist new role mapping in file system
     store.setDictElement('roleMappings', roleMappingsMetaObjects);

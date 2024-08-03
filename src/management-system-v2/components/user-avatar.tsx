@@ -17,7 +17,7 @@ type UserAvatarProps = {
 const UserAvatar = forwardRef<HTMLElement, UserAvatarProps>(({ user, avatarProps }, ref) => {
   if (!user) return <AntDesignAvatar />;
 
-  if (user.guest) return <AntDesignAvatar icon={<UserOutlined />} />;
+  if (user.guest || 'confluence' in user) return <AntDesignAvatar icon={<UserOutlined />} />;
 
   const icon = user.image ? (
     <img src={user.image} alt="avatar" />

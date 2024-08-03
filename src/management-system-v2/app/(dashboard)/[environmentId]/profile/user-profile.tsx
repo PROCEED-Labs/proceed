@@ -32,8 +32,8 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
     }
   }
 
-  const firstName = userData.guest ? 'Guest' : userData.firstName || '';
-  const lastName = userData.guest ? '' : userData.lastName || '';
+  const firstName = userData.guest || 'confluence' in userData ? 'Guest' : userData.firstName || '';
+  const lastName = userData.guest || 'confluence' in userData ? '' : userData.lastName || '';
 
   return (
     <>
@@ -100,13 +100,13 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'username',
                 title: 'Username',
-                value: !userData.guest ? userData.username : 'Guest',
+                value: !userData.guest && !('confluence' in userData) ? userData.username : 'Guest',
                 action: () => setChangeNameModalOpen(true),
               },
               {
                 key: 'email',
                 title: 'Email',
-                value: !userData.guest ? userData.email : 'Guest',
+                value: !userData.guest && !('confluence' in userData) ? userData.email : 'Guest',
               },
             ]}
             columns={[

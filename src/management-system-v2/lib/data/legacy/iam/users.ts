@@ -39,7 +39,9 @@ export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
 }
 
 export function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {
-  const user = Object.values(usersMetaObject).find((user) => !user.guest && email === user.email);
+  const user = Object.values(usersMetaObject).find(
+    (user) => !user.guest && !('confluence' in user) && email === user.email,
+  );
 
   if (!user && opts?.throwIfNotFound) throw new Error('User not found');
 
@@ -59,7 +61,7 @@ export function getUserByUsername(username: string, opts?: { throwIfNotFound?: b
 export function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
-  if (!user.guest) {
+  if (!user.guest && !('confluence' in user)) {
     if (user.username && getUserByUsername(user.username))
       throw new Error('User with this username already exists');
 

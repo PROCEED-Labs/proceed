@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
 
-const unallowedProviders = ['guest-signin', 'development-users'];
+const unallowedProviders = ['guest-signin', 'development-users', 'confluence-signin'];
 
 // take in search query
 const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {

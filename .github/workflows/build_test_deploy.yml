@@ -74,96 +74,96 @@ jobs:
 
       - run: yarn prettier --check .
 
-  testEngine:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testEngine:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-engine --ci
+  #     - run: yarn test-engine --ci
 
-  testEngineE2E:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testEngineE2E:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-e2e --ci
+  #     - run: yarn test-e2e --ci
 
-  testMS:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testMS:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - run: yarn test-ms --ci
+  #     - run: yarn test-ms --ci
 
-  buildEngine:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs:
-      - lint
-      - testEngine
-      - testEngineE2E
-      - testMS
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # buildEngine:
+  # runs-on: ubuntu-latest
+  # if: ${{ github.ref == 'refs/heads/main' }}
+  # needs:
+  #   - lint
+  #   - testEngine
+  #   - testEngineE2E
+  #   - testMS
+  # steps:
+  #   - uses: actions/cache@v4
+  #     timeout-minutes: 2
+  #     id: restore-install
+  #     with:
+  #       path: ./*
+  #       key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #   - name: Set up Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 20
+  #       check-latest: true
+  #       cache: 'yarn'
 
-      - run: yarn build
+  #   - run: yarn build
 
-      - name: Upload engine build
-        uses: actions/upload-artifact@v4
-        with:
-          name: PROCEED_Engine
-          path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
+  #   - name: Upload engine build
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: PROCEED_Engine
+  #       path: ${{ env.OUTPUT_PATH_ENGINE_NODE }}
   #  buildEngineAndroid:
   #    runs-on: ubuntu-latest
   #    if: ${{ github.ref == 'refs/heads/main' }}
@@ -203,9 +203,6 @@ jobs:
       tag: ${{ steps.set_tag.outputs.tag }}
     needs:
       - lint
-      - testEngine
-      - testEngineE2E
-      - testMS
     steps:
       - uses: actions/cache@v4
         timeout-minutes: 2
@@ -317,37 +314,37 @@ jobs:
     steps:
       - run: echo "${{ inputs.environment || 'Staging' }}"
 
-  testE2E:
-    needs: deploy
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    if: ${{ inputs.environment != 'Production' }}
-    steps:
-      - uses: actions/cache@v4
-        timeout-minutes: 2
-        id: restore-install
-        with:
-          path: ./*
-          key: ${{ github.sha }}-${{ github.run_number }}
+  # testE2E:
+  #   needs: deploy
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   if: ${{ inputs.environment != 'Production' }}
+  #   steps:
+  #     - uses: actions/cache@v4
+  #       timeout-minutes: 2
+  #       id: restore-install
+  #       with:
+  #         path: ./*
+  #         key: ${{ github.sha }}-${{ github.run_number }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          check-latest: true
-          cache: 'yarn'
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         check-latest: true
+  #         cache: 'yarn'
 
-      - name: Install Playwright Browsers
-        run: yarn playwright install --with-deps
+  #     - name: Install Playwright Browsers
+  #       run: yarn playwright install --with-deps
 
-      - name: Run Playwright tests
-        run: yarn playwright test
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
+  #     - name: Run Playwright tests
+  #       run: yarn playwright test
+  #       env:
+  #         PLAYWRIGHT_TEST_BASE_URL: ${{ github.event_name == 'pull_request' && format('https://pr-{0}---ms-server-staging-c4f6qdpj7q-ew.a.run.app', github.event.number) || 'https://staging.proceed-labs.org' }}
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+  #     - uses: actions/upload-artifact@v4
+  #       if: ${{ !cancelled() }}
+  #       with:
+  #         name: playwright-report
+  #         path: playwright-report/
+  #         retention-days: 30

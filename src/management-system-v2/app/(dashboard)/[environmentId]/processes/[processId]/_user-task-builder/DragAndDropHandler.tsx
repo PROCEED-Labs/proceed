@@ -152,17 +152,19 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
 
         // dragging should not affect containers and the content of containers that the mouse is not inside of
         if (droppableNode.data.name === 'Container') {
-          if (pointerCoordinates.x < rect.left || pointerCoordinates.x > rect.right) continue;
+          if (pointerCoordinates.x < rect.left + 20 || pointerCoordinates.x > rect.right - 20)
+            continue;
         } else if (ancestor) {
-          const ancestorContainer = query.node(ancestor.data.parent!).get();
+          const ancestorContainer = query.node(ancestor.data.parent).get();
           const ancestorContainerRect = ancestorContainer.dom?.getBoundingClientRect();
-          console.log(pointerCoordinates.x, ancestorContainerRect);
           if (
             ancestorContainerRect &&
-            (pointerCoordinates.x < ancestorContainerRect.left ||
-              pointerCoordinates.x > ancestorContainerRect.right)
-          )
+            (pointerCoordinates.x < ancestorContainerRect.left + 20 ||
+              pointerCoordinates.x > ancestorContainerRect.right - 20)
+          ) {
+            console.log(ancestorContainer);
             continue;
+          }
         }
 
         let draggedIntoItself = false;
@@ -237,11 +239,6 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
     <DndContext
       collisionDetection={customCollision}
       sensors={sensors}
-      measuring={
-        {
-          droppable: { strategy: MeasuringStrategy.BeforeDragging },
-        } as MeasuringConfiguration
-      }
       onDragStart={() => setActive(true)}
       onDragEnd={() => setActive(false)}
       onDragMove={(event) => {
@@ -267,14 +264,6 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
           ) {
             newParent = overNode;
             newIndex = 0;
-            // actions.addNodeTree(
-            //   query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
-            //   over.id.toString(),
-            //   0,
-            // );
-            // const newNode = query.node(query.node(over.id.toString()).get().data.nodes[0]).get();
-            // actions.move(dragNode.id, newNode.id, 0);
-            // if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
           }
         } else {
           // we are targeting a column (either the one we are dragging or some other one)
@@ -301,26 +290,6 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
                 newParent = grandparentContainer;
                 newIndex = targetIndex;
               }
-            } else if (parentRowRect && grandparentContainer.id !== ROOT_NODE) {
-              //check if we might want to drage the node besides its current container element (not possible if the container is the root node)
-              const containerParentColumn = query.node(grandparentContainer.data.parent!).get();
-              const containerParentRow = query.node(containerParentColumn.data.parent!).get();
-              const containerIndexInRow = containerParentRow.data.nodes.findIndex(
-                (id) => id === containerParentColumn.id,
-              );
-              const { x } = cursor;
-
-              if (x - parentRowRect.left < 10) {
-                newParent = containerParentRow;
-                newIndex = containerIndexInRow;
-                // actions.move(dragNode.id, containerParentRow.id, containerIndexInRow);
-                // if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
-              } else if (parentRowRect.right - x < 10) {
-                newParent = containerParentRow;
-                newIndex = containerIndexInRow + 1;
-                // actions.move(dragNode.id, containerParentRow.id, containerIndexInRow + 1);
-                // if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
-              }
             }
           } else {
             // we are targeting another column so we are moving into another row or inside the current row
@@ -333,19 +302,14 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
               // we are moving inside the same row
               const isBefore = currentIndex < overIndex;
               newIndex = overIndex + (isBefore ? 1 : 0);
-              // actions.move(dragNode.id, overParentRow.id, overIndex + (isBefore ? 1 : 0));
             } else {
               // we are moving to another row
               const moveBehind = cursor.y > over.rect.left + over.rect.width / 2;
               newParent = overParentRow;
               newIndex = overIndex + (moveBehind ? 1 : 0);
-
-              // actions.move(dragNode.id, overParentRow.id, overIndex + (moveBehind ? 1 : 0));
-              // if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
             }
           }
         }
-        // console.log(dragNode, newParent, currentParentRow, newIndex, currentIndex);
 
         // check if the positioning has changed
         if (newParent.id !== currentParentRow.id) {
@@ -353,15 +317,17 @@ const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => 
             actions.addNodeTree(
               query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
               newParent.id,
-              0,
+              newIndex,
             );
-            newParent = query.node(query.node(over.id.toString()).get().data.nodes[0]).get();
+            const updatedContainer = query.node(newParent.id).get();
+            newParent = query.node(updatedContainer.data.nodes[newIndex]).get();
             newIndex = 0;
           }
+          console.log('AAA');
           actions.move(dragNode.id, newParent.id, newIndex);
-
           if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
         } else {
+          console.log(newParent);
           if (newIndex !== currentIndex) {
             actions.move(dragNode.id, currentParentRow.id, newIndex);
           }

@@ -26,6 +26,7 @@ type CollisionFuncType = {
   active: Active | null;
 };
 
+// handler for the drag and drop handling of existing editor elements
 const DragAndDropHandler: React.FC<React.PropsWithChildren> = ({ children }) => {
   const { query, actions } = useEditor();
   const [active, setActive] = useState(false);

@@ -1,11 +1,8 @@
 import { DefaultEventHandlers, NodeId, NodeTree, ROOT_NODE } from '@craftjs/core';
 
-import CustomPositioner from './CustomPositioner';
 import React from 'react';
 
 export default class CustomEventhandlers extends DefaultEventHandlers {
-  customPositioner: CustomPositioner | null = null;
-
   handlers() {
     const defaultEventHandlers = super.handlers();
     const {
@@ -51,108 +48,19 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
           unbindClick();
         };
       },
+      // disable the built in drag and drop logic of craft js
       create: (
         el: HTMLElement,
         userElement: React.ReactElement | (() => NodeTree | React.ReactElement),
       ) => {
         return () => {};
-
-        const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
-          const iframeDocument = (
-            document.getElementById('user-task-builder-iframe') as HTMLIFrameElement
-          ).contentDocument;
-
-          if (!iframeDocument) return;
-
-          document.addEventListener('mouseup', this.onMouseup);
-
-          e.craft.stopPropagation();
-          let tree;
-          if (typeof userElement === 'function') {
-            const result = userElement();
-            if (React.isValidElement(result)) {
-              tree = query.parseReactElement(result).toNodeTree();
-            } else {
-              tree = result as NodeTree;
-            }
-          } else {
-            tree = query.parseReactElement(userElement).toNodeTree();
-          }
-
-          this.customPositioner = new CustomPositioner(
-            iframeDocument,
-            this.options.store,
-            {
-              type: 'new',
-              tree,
-            },
-            e,
-          );
-        });
-
-        return () => {
-          unbindDragStart();
-        };
       },
       drop: () => {
         return () => {};
       },
       drag: (el: HTMLElement, id: NodeId) => {
         return () => {};
-        if (!query.node(id)?.isDraggable()) return () => {};
-
-        let initDragTimeout: ReturnType<typeof setTimeout> | null = null;
-
-        const unbindDragStart = this.addCraftEventListener(el, 'mousedown', (e) => {
-          if (e.button !== 0) return;
-
-          e.craft.stopPropagation();
-          e.preventDefault();
-
-          // start dragging after a short timeout, otherwise clicks aimed at elements inside a column are blocked by the pointer being locked
-          initDragTimeout = setTimeout(() => {
-            const iframeDocument = (
-              document.getElementById('user-task-builder-iframe') as HTMLIFrameElement
-            ).contentDocument;
-
-            if (!iframeDocument) return;
-
-            actions.setNodeEvent('selected', [id]);
-            actions.setNodeEvent('dragged', [id]);
-
-            this.customPositioner = new CustomPositioner(
-              iframeDocument,
-              this.options.store,
-              {
-                type: 'existing',
-                nodes: [id],
-              },
-              e,
-            );
-            initDragTimeout = null;
-          }, 100);
-        });
-
-        const unbindDragCancel = this.addCraftEventListener(el, 'mouseup', () => {
-          if (initDragTimeout) {
-            clearTimeout(initDragTimeout);
-            initDragTimeout = null;
-          }
-        });
-
-        return () => {
-          unbindDragStart();
-          unbindDragCancel();
-        };
       },
     };
   }
-
-  onMouseup = () => {
-    if (this.customPositioner) {
-      this.customPositioner.cleanup();
-      this.customPositioner = null;
-    }
-    document.removeEventListener('mouseup', this.onMouseup);
-  };
 }

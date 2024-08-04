@@ -10,8 +10,6 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
-  FullscreenOutlined,
   FilePdfOutlined,
   FormOutlined,
 } from '@ant-design/icons';
@@ -22,7 +20,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
+import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
@@ -31,6 +29,8 @@ import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import UserTaskBuilder from './_user-task-builder';
+
+import { enableUserTaskEditor } from 'FeatureFlags';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -258,7 +258,7 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              ((bpmnIs(selectedElement, 'bpmn:UserTask') && (
+              ((enableUserTaskEditor && bpmnIs(selectedElement, 'bpmn:UserTask') && (
                 <Tooltip title="Edit User Task Form">
                   <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
                 </Tooltip>
@@ -336,11 +336,13 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
-      <UserTaskBuilder
-        processId={processId}
-        open={showUserTaskEditor}
-        onClose={() => setShowUserTaskEditor(false)}
-      />
+      {enableUserTaskEditor && (
+        <UserTaskBuilder
+          processId={processId}
+          open={showUserTaskEditor}
+          onClose={() => setShowUserTaskEditor(false)}
+        />
+      )}
     </>
   );
 };

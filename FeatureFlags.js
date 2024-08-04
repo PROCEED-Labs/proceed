@@ -45,6 +45,9 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
+  // A graphical drag and drop editor for user tasks in the new MS
+  enableUserTaskEditor: false,
+
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

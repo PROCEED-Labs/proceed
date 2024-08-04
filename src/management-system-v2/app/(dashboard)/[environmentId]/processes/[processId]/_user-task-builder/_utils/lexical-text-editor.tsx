@@ -9,22 +9,19 @@ import React, {
 
 import { createPortal } from 'react-dom';
 
-import { useFrame } from 'react-frame-component';
-
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { $getRoot, $isElementNode, ElementNode } from 'lexical';
+import { $getRoot, $isElementNode, ElementNode, $createParagraphNode } from 'lexical';
 import { HeadingNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { LinkNode } from '@lexical/link';
 import ToolbarPlugin from './ToolbarPlugin';
 
 import CustomContentEditable, { CustomContentEditableProps } from './ContentEditable';
-import { $createDivNode, DivNode } from './DivNode';
 import CustomLinkPlugin from './CustomLinkPlugin';
 import useBuilderStateStore from '../use-builder-state-store';
 
@@ -55,7 +52,7 @@ const ImportIntoEditorPlugin: React.FC<{ value: string }> = ({ value }) => {
         $getRoot().clear();
         let root: ElementNode;
         if (nodes.some((node) => !$isElementNode(node))) {
-          root = $createDivNode();
+          root = $createParagraphNode();
           $getRoot().append(root);
         } else root = $getRoot();
 
@@ -90,6 +87,17 @@ const ImperativeHandlePlugin = forwardRef<TextEditorRef, {}>((_, ref) => {
 });
 
 const theme = {
+  // disabling some default stylings for elements; otherwise it would not be possible to change these styles (e.g bold header and underlined links)
+  paragraph: 'text-style-paragraph',
+  heading: {
+    h1: 'text-style-heading',
+    h2: 'text-style-heading',
+    h3: 'text-style-heading',
+    h4: 'text-style-heading',
+    h5: 'text-style-heading',
+    h6: 'text-style-heading',
+  },
+  link: 'text-style-link',
   text: {
     bold: 'text-style-bold',
     italic: 'text-style-italic',
@@ -121,7 +129,7 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
           throw err;
         },
         editable: !disabled,
-        nodes: [HeadingNode, LinkNode, DivNode],
+        nodes: [HeadingNode, LinkNode],
         theme,
       };
     }, []);

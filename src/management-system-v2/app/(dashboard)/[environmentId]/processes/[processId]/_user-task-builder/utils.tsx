@@ -122,6 +122,18 @@ p, h1, h2, h3, h4, h5, th, td {
   text-decoration: underline;
 }
 
+.text-style-paragraph {
+  margin: 0;
+}
+
+.text-style-heading {
+  font-weight: normal;
+}
+
+.text-style-link {
+  text-decoration: none;
+}
+
 `;
 
 export function toHtml(json: string) {

@@ -25,7 +25,7 @@ const TableCell: React.FC<
           {children}
         </td>
       ) : (
-        <th className="user-task-form-table-cell">
+        <th style={{ fontWeight: 'normal' }} className="user-task-form-table-cell">
           <EditableText value={content} tagName="span" onChange={onChange} />
           {children}
         </th>
@@ -273,7 +273,11 @@ Table.craft = {
   },
   props: {
     tableData: [
-      ['Double Click Me', 'Double Click Me'],
+      [
+        // setting the th elements font weight to normal and giving lexical this as the default to enable changing the font weight in the editor
+        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b>',
+        '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b>',
+      ],
       ['Double Click Me', 'Double Click Me'],
     ],
   },

@@ -34,15 +34,20 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         const node = query.node(id)?.get();
         if (node?.data.name !== 'Column' && node?.id !== ROOT_NODE) return () => {};
 
-        const unbindClick = this.addCraftEventListener(el, 'click', (e) => {
-          e.craft.stopPropagation();
+        const unbindClick = this.addCraftEventListener(
+          el,
+          'pointerdown',
+          (e) => {
+            e.craft.stopPropagation();
 
-          const currentNode = query.node(id)?.get();
-          if (currentNode) {
-            if (currentNode.id === ROOT_NODE) actions.setNodeEvent('selected', []);
-            else actions.setNodeEvent('selected', [id]);
-          }
-        });
+            const currentNode = query.node(id)?.get();
+            if (currentNode) {
+              if (currentNode.id === ROOT_NODE) actions.setNodeEvent('selected', []);
+              else actions.setNodeEvent('selected', [id]);
+            }
+          },
+          true,
+        );
 
         return () => {
           unbindClick();

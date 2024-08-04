@@ -1,8 +1,6 @@
 import { useEditor, Node, ROOT_NODE, Element } from '@craftjs/core';
 import {
   DndContext,
-  closestCenter,
-  closestCorners,
   pointerWithin,
   useSensor,
   useSensors,
@@ -11,18 +9,12 @@ import {
   DragOverlay,
   ClientRect,
   Collision,
-  MeasuringFrequency,
-  MeasuringStrategy,
-  MeasuringConfiguration,
-  getClientRect,
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
-import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Coordinates } from '@dnd-kit/utilities';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Row from './Row';
 import { createPortal } from 'react-dom';
-import useBuilderStateStore from './use-builder-state-store';
 
 type CollisionFuncType = {
   collisionRect: ClientRect;
@@ -35,35 +27,49 @@ type CollisionFuncType = {
 type EditorDnDHandlerProps = React.PropsWithChildren & {
   disabled: boolean;
   iframeRef: React.RefObject<HTMLIFrameElement>;
+  mobileView: boolean;
 };
 
 // handler for the drag and drop handling of existing editor elements
-const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children, disabled }) => {
+const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
+  iframeRef,
+  children,
+  disabled,
+  mobileView,
+}) => {
   const { query, actions } = useEditor();
   const [active, setActive] = useState('');
+  // craft js allows us to bundle multiple events together so when we do undo after dragging with
+  // multiple repositions we return to the initial position
+  const needNewHistoryBundle = useRef(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(PointerSensor, { activationConstraint: { delay: 50, tolerance: 10 } }),
+    useSensor(KeyboardSensor),
   );
 
+  /**
+   * This function is used to calculate the most likely changes to a target elements bounding box if the dragged element would be removed from its current position
+   */
   const getTargetOffsetAfterMove = useCallback(
     (
       draggedNodeId: string,
       targetNodeId: string,
-      dragShadowRect: ClientRect,
       draggedNodeRect: ClientRect,
       targetNodeRect: ClientRect,
     ) => {
-      // if we move up following elements should not be affected
-      if (dragShadowRect.top < draggedNodeRect.top) return 0;
+      const offset = { top: 0, bottom: 0 };
 
-      // if the target element is above the current position of the dragged element moving the dragged element down should not change the current targets position vertically
-      if (targetNodeRect.top <= draggedNodeRect.top) return 0;
+      // the root node should be unaffected by the node being moved
+      if (targetNodeId === ROOT_NODE) return offset;
+
+      // if the target element ends above the current position of the dragged element it should not be affected by the element being removed from its current position
+      if (targetNodeRect.bottom <= draggedNodeRect.top) return offset;
 
       const draggedNode = query.node(draggedNodeId).get();
+      const targetNode = query.node(targetNodeId).get();
 
-      // get all elements from the element itself to the root
+      // get the ancestry path from the element to the root
       let ancestors = [];
       let curr: Node | undefined = draggedNode;
       while (curr) {
@@ -74,15 +80,13 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
         } else curr = undefined;
       }
 
-      const targetNode = query.node(targetNodeId).get();
       if (targetNode.data.parent) curr = query.node(targetNode.data.parent).get();
-      // we try to find the first child in the common ancestor that contains the dragged node and which might shrink due to the dragged node being removed
       let shrinkNodeIndex = 0;
       while (curr) {
         const indexInAncestors = ancestors.findIndex((ancestor) => ancestor.id === curr!.id);
-
         if (indexInAncestors > -1) {
-          // we want the first non common ancestor of the dragged node since that should be the on affecting the target node on shrink
+          // we want the first container of the dragged node that also is a sibling of the target node since that should be the on affecting the target node on shrink
+          // this might be the target node itself if it contains the dragged node
           shrinkNodeIndex = indexInAncestors - 1;
           break;
         }
@@ -92,13 +96,14 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
         } else curr = undefined;
       }
 
-      let offset = 0;
+      // we calculate the amount the previously found node will shrink when the dragged node is being removed
+      let shrinkAmount = 0;
       for (let i = 0; i < shrinkNodeIndex; ++i) {
         const shrinkNode = ancestors[i];
+
+        // find the sibling of the node that might shrink that has the biggest height
         let highestSiblingHeight = 0;
-
         const shrinkNodeParent = query.node(shrinkNode.data.parent!).get();
-
         shrinkNodeParent.data.nodes
           .map((id) => query.node(id).get())
           .forEach((sibling) => {
@@ -111,29 +116,38 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
             }
           });
 
-        if (!shrinkNode.dom) return 0;
+        if (!shrinkNode.dom) return offset;
 
-        // if one of the sibling is higher than the node then removing/shrinking the node is inconsequential for nodes that follow vertically
-        if (shrinkNode.dom.getBoundingClientRect().height < highestSiblingHeight) return 0;
+        // if one of the siblings is higher than the node then removing/shrinking the node is inconsequential for nodes that follow vertically or for any containing elements
+        if (shrinkNode.dom.getBoundingClientRect().height < highestSiblingHeight) return offset;
 
         if (shrinkNode.id === draggedNode.id)
-          offset =
-            draggedNodeRect.height > highestSiblingHeight
-              ? draggedNodeRect.height - highestSiblingHeight
-              : 0;
+          // for the content of the node containing our dragged node we can shrink to the size of the largest sibling
+          shrinkAmount = draggedNodeRect.height - highestSiblingHeight;
+        // for all nodes containing the dragged node we can only shrink as mush as we did in the contained or less if there is a sibling with less of a height difference
         else
-          offset = Math.min(
-            offset,
+          shrinkAmount = Math.min(
+            shrinkAmount,
             shrinkNode.dom.getBoundingClientRect().height - highestSiblingHeight,
           );
 
-        if (!offset) break;
+        if (!shrinkAmount) break;
+      }
+
+      // if we are looking at a container that wraps the element the offset only affects the bottom border
+      offset.bottom = shrinkAmount;
+
+      if (targetNodeRect.top > draggedNodeRect.top) {
+        // otherwise the offset also affects the elements upper border
+        offset.top = shrinkAmount;
       }
 
       return offset;
     },
     [query],
   );
+
+  const isCreating = /^create-.*-button$/.test(active);
 
   const customCollision = useCallback(
     ({
@@ -143,150 +157,189 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
       pointerCoordinates,
       active,
     }: CollisionFuncType) => {
-      const collisions: Collision[] = [];
+      let collisions: Collision[] = [];
       if (!active?.id || !pointerCoordinates) return [];
 
-      const iframe = iframeRef.current;
+      let draggedNode: Node | null = null;
+      if (!isCreating) {
+        draggedNode = query.node(active.id.toString()).get();
+      }
+
+      // treat rows as if they extend to their parents border
+      droppableRects.forEach((val, key) => {
+        const node = query.node(key.toString()).get();
+        if (node && node.data.name === 'Row') {
+          const parentContainer = query.node(node.data.parent!).get();
+          const parentContainerRect = parentContainer.dom?.getBoundingClientRect();
+          if (parentContainerRect) {
+            droppableRects.set(key, {
+              ...val,
+              left: parentContainerRect.left,
+              right: parentContainerRect.right,
+              width: parentContainerRect.width,
+            });
+          }
+        }
+      });
 
       let { x: pointerX, y: pointerY } = pointerCoordinates;
-
-      // if we are creating a new element we fall back to collision detection using the cursor
-      if (/^create-.*-button$/.test(active.id.toString())) {
-        // it seems as if dnd-kit calculates the pointer position based on where the drag event started
-        if (!iframe) return [];
-        const { left: iframeLeft, top: iframeTop } = iframe.getBoundingClientRect();
-        // transform the coordinates to the iframe context
+      // it seems as if dnd-kit calculates the pointer position based on the context where the drag event started
+      const iframe = iframeRef.current;
+      if (!iframe) return [];
+      const { left: iframeLeft, top: iframeTop } = iframe.getBoundingClientRect();
+      if (isCreating) {
+        // transform the coordinates to the iframe context if we are creating a new element (dragging started outside the iframe)
         pointerX -= iframeLeft;
         pointerY -= iframeTop;
 
-        const res = pointerWithin({
+        // we are not moving anything so we can use the current bounding rects
+        collisions = pointerWithin({
           active,
           collisionRect,
           droppableContainers,
           droppableRects,
           pointerCoordinates: { x: pointerX, y: pointerY },
         });
-        return res.map((collision) => {
-          (collision.data as any).cursor = { x: pointerX, y: pointerY };
-          return collision;
-        });
-      }
+      } else {
+        // if we are dragging an existing element we want to use the upper border of the element for vertical intersection tests
+        pointerY = collisionRect.top;
 
-      for (const droppableContainer of droppableContainers) {
-        const { id } = droppableContainer;
-        const droppableNode = query.node(id.toString()).get();
-        const rect = droppableNode.dom?.getBoundingClientRect();
+        if (!draggedNode) return [];
 
-        if (!rect) continue;
+        const draggedNodeRect = draggedNode.dom?.getBoundingClientRect();
+        if (!draggedNodeRect) return [];
 
-        // early exit when an element is being checked against one of its children or itself
-        let dropNodeAncestor: Node | undefined = undefined;
-        if (droppableNode.data.parent)
-          dropNodeAncestor = query.node(droppableNode.data.parent).get();
+        // if we are moving upwards we can just use the current bounding rects since we dont interact with vertically following elements or with bottom borders of elements containing the dragged node
+        if (collisionRect.top < draggedNodeRect.top) {
+          collisions = pointerWithin({
+            active,
+            collisionRect,
+            droppableContainers,
+            droppableRects,
+            pointerCoordinates: { x: pointerX, y: pointerY },
+          });
+        } else {
+          // otherwise we compute bounding boxes as they would be if the element was removed (or at least shrunk to the size of it smallest sibling)
+          // this is to prevent jumps when an element that is substantially larger than its siblings is moved out of its container row
+          let offsetRects: typeof droppableRects = new Map();
 
-        // dragging should not affect containers and the content of containers that the mouse is not inside of
-        // (with a small boundary inside the element that is also considered to be outside)
-        if (droppableNode.data.name === 'Container') {
-          const leaveBoundarySize = droppableNode.id === ROOT_NODE ? 0 : 20;
-          if (pointerX < rect.left + leaveBoundarySize || pointerX > rect.right - leaveBoundarySize)
-            continue;
-        } else if (dropNodeAncestor) {
-          const ancestorContainer = query.node(dropNodeAncestor.data.parent!).get();
-          const ancestorContainerRect = ancestorContainer.dom?.getBoundingClientRect();
-          console.log(pointerX, ancestorContainerRect);
-          if (
-            ancestorContainerRect &&
-            (pointerX < ancestorContainerRect.left + 20 ||
-              pointerX > ancestorContainerRect.right - 20)
-          ) {
-            continue;
-          }
-        }
+          droppableRects.forEach((val, key) => {
+            const targetId = key.toString();
 
-        const draggedNode = query.node(active.id.toString()).get();
-
-        let draggedIntoItself = false;
-        while (dropNodeAncestor) {
-          if (dropNodeAncestor.id === draggedNode.id) {
-            draggedIntoItself = true;
-            break;
-          }
-
-          if (dropNodeAncestor.data.parent)
-            dropNodeAncestor = query.node(dropNodeAncestor.data.parent).get();
-          else dropNodeAncestor = undefined;
-        }
-        if (draggedIntoItself) continue;
-
-        if (rect) {
-          let offset = 0;
-
-          if (draggedNode?.dom) {
-            const activeRect = draggedNode.dom.getBoundingClientRect();
-
-            offset = getTargetOffsetAfterMove(
-              active.id.toString(),
-              id.toString(),
-              collisionRect,
-              activeRect,
-              rect,
+            const targetNode = query.node(targetId).get();
+            if (!targetNode) return;
+            const targetNodeRect = targetNode.dom?.getBoundingClientRect();
+            if (!targetNodeRect) return;
+            let offset = getTargetOffsetAfterMove(
+              draggedNode.id,
+              targetId,
+              draggedNodeRect,
+              targetNodeRect,
             );
-          }
 
-          if (collisionRect.top > rect.top - offset) {
-            collisions.push({
-              id,
-              data: {
-                droppableContainer,
-                value: collisionRect.top - rect.top,
-                cursor: { x: pointerX, y: pointerY },
-              },
-            });
-          }
+            const offsetRect = {
+              ...val,
+              height: val.height - offset.bottom,
+              top: val.top - offset.top,
+              bottom: val.bottom - offset.bottom,
+            };
+
+            offsetRects.set(key, offsetRect);
+          });
+
+          collisions = pointerWithin({
+            active,
+            collisionRect,
+            droppableRects: offsetRects,
+            droppableContainers,
+            pointerCoordinates: { x: pointerX, y: pointerY },
+          });
         }
       }
 
-      return collisions.sort((a, b) => {
-        const diff = a.data!.value - b.data!.value;
-
-        if (diff) return diff;
-        // we could place into elements that are next to each other and have the same top value
-        const aRect = droppableRects.get(a.id);
-        const bRect = droppableRects.get(b.id);
-
-        if (aRect && bRect) {
-          // tiebreak through smaller mouse pointer distance from both rects
-
-          let aPointerDist: number;
-          let bPointerDist: number;
-
-          if (pointerX > aRect.left && pointerX < aRect.right) aPointerDist = 0;
-          else
-            aPointerDist = Math.min(
-              Math.abs(pointerX - aRect.left),
-              Math.abs(pointerX - aRect.right),
-            );
-
-          if (pointerX > bRect.left && pointerX < bRect.right) bPointerDist = 0;
-          else
-            bPointerDist = Math.min(
-              Math.abs(pointerX - bRect.left),
-              Math.abs(pointerX - bRect.right),
-            );
-
-          return aPointerDist - bPointerDist;
-        }
-
-        return 0;
-      });
+      return collisions.map((collision) => ({
+        ...collision,
+        data: { ...collision.data, pointer: { x: pointerX, y: pointerY } },
+      }));
     },
-    [query],
+    [query, isCreating],
   );
 
-  const isCreating = /^create-.*-button$/.test(active);
+  const getNewPosition = useCallback(
+    (draggedNode: Node | null, targetNode: Node, position: { x: number; y: number }) => {
+      let index = 0;
+
+      // helper function to iterate over all chilren of a node
+      function targetIndexInNode(targetNode: Node, comp: (rect: ClientRect) => boolean) {
+        let index = 0;
+
+        targetNode.data.nodes.forEach((childId, i) => {
+          const childNode = query.node(childId).get();
+          const childNodeRect = childNode.dom?.getBoundingClientRect();
+
+          if (childNodeRect && comp(childNodeRect)) index = i + 1;
+        });
+
+        return index;
+      }
+
+      if (targetNode.data.name === 'Row') {
+        const isNewParentRow = !draggedNode || draggedNode.data.parent !== targetNode.id;
+
+        // we are either creating an element or moving to another row
+        if (isNewParentRow) {
+          if (mobileView) {
+            index = targetIndexInNode(
+              targetNode,
+              (newSiblingRect) => position.y > newSiblingRect.top + newSiblingRect.height / 2,
+            );
+          } else {
+            index = targetIndexInNode(
+              targetNode,
+              (newSiblingRect) => position.x > newSiblingRect.left + newSiblingRect.width / 2,
+            );
+          }
+        } else {
+          // we are sorting the elements in a row
+          const draggedNodeParentRow = query.node(draggedNode.data.parent!).get();
+          const currentIndex = draggedNodeParentRow.data.nodes.findIndex(
+            (id) => id === draggedNode.id,
+          );
+
+          if (mobileView) {
+            index = targetIndexInNode(targetNode, (siblingRect) => position.y > siblingRect.top);
+          } else {
+            index = targetIndexInNode(targetNode, (siblingRect) => position.x > siblingRect.left);
+            // TODO: this will not work when the columns can have different sizes (which is the reason this is not used for the mobile view)
+            if (index > 0) index--;
+            const isBefore = currentIndex < index;
+            if (isBefore) index++;
+          }
+        }
+      } else {
+        // targeting a container => find the last row that is above the "cursor"
+        index = targetIndexInNode(targetNode, (rowRect) => position.y > rowRect.top);
+      }
+
+      return { newParent: targetNode, index };
+    },
+    [mobileView],
+  );
+
+  const getActionHandler = useCallback(() => {
+    if (needNewHistoryBundle.current) {
+      // if this is the first action (element creation/initial position change) create a new entry on the history stack
+      needNewHistoryBundle.current = false;
+      return actions;
+    }
+
+    // ensure that all (position) changes done in a single drag are handled as one by undo and redo
+    return actions.history.merge();
+  }, []);
 
   if (disabled) return <>{children}</>;
 
+  // this is the target for the image we see on the cursor when dragging
   const overlay = (
     <DragOverlay>
       {active ? (
@@ -307,138 +360,76 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
       collisionDetection={customCollision}
       sensors={sensors}
       onDragStart={(event) => {
+        needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
         if (isCreating) iframeRef.current!.style.pointerEvents = 'none';
       }}
-      onDragEnd={(event) => {
-        const { active, over } = event;
+      onDragCancel={() => {
         if (isCreating) iframeRef.current!.style.pointerEvents = '';
         setActive('');
+      }}
+      onDragEnd={(event) => {
+        const { active, collisions } = event;
+        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        else return;
+        setActive('');
 
-        if (!over) return;
+        if (!active.data.current || !collisions?.length) return;
 
-        if (/^create-.*-button$/.test(active.id.toString())) {
-          if (event.active.data.current) {
-            const tree = query.parseReactElement(event.active.data.current.element).toNodeTree();
+        const [collision] = collisions;
+        const { data } = collision;
+        if (!data) return;
 
-            const overNode = query.node(over.id.toString()).get();
-            let targetParent = overNode;
-            let targetIndex = 0;
+        const pointer = data.pointer as { x: number; y: number };
 
-            const { x, y } = (event.collisions![0].data as any).cursor as { x: number; y: number };
+        const dropNodeId = collision.id.toString();
+        let dropNode = query.node(dropNodeId).get();
 
-            if (targetParent.data.name === 'Column') {
-              targetParent = query.node(overNode.data.parent!).get();
+        if (!dropNode) return;
 
-              const overIndexInRow = targetParent.data.nodes.findIndex((id) => id === overNode.id);
-              const overRect = overNode.dom?.getBoundingClientRect();
-              if (!overRect) return;
+        let { newParent, index } = getNewPosition(null, dropNode, pointer);
 
-              const behind = x > overRect.left + overRect.width / 2;
-              targetIndex = overIndexInRow + (behind ? 1 : 0);
-            } else {
-              for (let childId of overNode.data.nodes) {
-                const childNode = query.node(childId).get();
-                const childRect = childNode.dom?.getBoundingClientRect();
-                if (childRect && y < childRect.top) {
-                  break;
-                }
+        if (newParent.data.name === 'Container') {
+          // when moving into a container we need to create a new row that is the actual target of drop
+          getActionHandler().addNodeTree(
+            query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
+            newParent.id,
+            index,
+          );
 
-                ++targetIndex;
-              }
-
-              actions.addNodeTree(
-                query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
-                targetParent.id,
-                targetIndex,
-              );
-              const updatedContainer = query.node(overNode.id).get();
-              targetParent = query.node(updatedContainer.data.nodes[targetIndex]).get();
-              targetIndex = 0;
-            }
-
-            actions.addNodeTree(tree, targetParent.id, targetIndex);
-          }
-
-          return;
+          const updatedContainer = query.node(newParent.id).get();
+          newParent = query.node(updatedContainer.data.nodes[index]).get();
+          index = 0;
         }
+
+        // create the craft js data structure for the element and add it to the editor
+        const tree = query.parseReactElement(active.data.current.element).toNodeTree();
+        getActionHandler().addNodeTree(tree, newParent.id, index);
       }}
       onDragMove={(event) => {
-        const { active, over } = event;
+        const { active, over, collisions } = event;
 
-        if (!over || !event.collisions?.length) return;
+        if (isCreating || !over || !collisions?.length) return;
 
-        if (/^create-.*-button$/.test(active.id.toString())) return;
+        const [collision] = collisions;
+        const { data } = collision;
+        if (!data) return;
+
+        const pointer = data.pointer as { x: number; y: number };
 
         const dragNode = query.node(active.id.toString()).get();
         const overNode = query.node(over.id.toString()).get();
+        if (!overNode) return;
         const currentParentRow = query.node(dragNode.data.parent!).get();
         const currentIndex = currentParentRow.data.nodes.findIndex((id) => id === dragNode.id);
 
-        let newParent = currentParentRow;
-        let newIndex = currentParentRow.data.nodes.findIndex((id) => id === dragNode.id);
-
-        // we are dragging a node to the first position in a container (otherwise another node would be returned by our collision detection)
-        if (overNode.data.name === 'Container') {
-          // we should allow dragging if the dragged element is not currently in the first row in the container or if there are multiple elements in the row
-
-          if (
-            overNode.data.nodes.findIndex((id) => id === currentParentRow.id) ||
-            currentParentRow.data.nodes.length > 1
-          ) {
-            newParent = overNode;
-            newIndex = 0;
-          }
-        } else {
-          // we are targeting a column (either the one we are dragging or some other one)
-
-          const cursor = (event.collisions![0].data as any).cursor as { x: number; y: number };
-          const overParentRow = query.node(overNode.data.parent!).get();
-          if (active.id === over.id) {
-            // we are targeting the dragged node
-            const overParentRowBottom = overParentRow.dom?.getBoundingClientRect().bottom;
-            const activeRect = active.rect.current.initial;
-            const grandparentContainer = query.node(currentParentRow.data.parent!).get();
-            const parentRowRect = currentParentRow.dom?.getBoundingClientRect();
-
-            if (overParentRowBottom && activeRect && overParentRowBottom < activeRect.top) {
-              // the top of the drag shadow is still below of the bottom border of the targeted column
-              const targetIndex =
-                grandparentContainer.data.nodes.findIndex((id) => id === overParentRow.id) + 1;
-
-              if (
-                overParentRow.data.parent !== grandparentContainer.id ||
-                currentParentRow.data.nodes.length > 1
-              ) {
-                // we should move the dragged column below the targeted columns parent row since we are moving out of some container or because we want to move it to its own row
-                newParent = grandparentContainer;
-                newIndex = targetIndex;
-              }
-            }
-          } else {
-            // we are targeting another column so we are moving into another row or inside the current row
-            const currentIndex = currentParentRow.data.nodes.findIndex(
-              (id) => active.id.toString() === id,
-            );
-            const overIndex = overParentRow.data.nodes.findIndex((id) => id === overNode.id);
-
-            if (currentParentRow.id === overParentRow.id) {
-              // we are moving inside the same row
-              const isBefore = currentIndex < overIndex;
-              newIndex = overIndex + (isBefore ? 1 : 0);
-            } else {
-              // we are moving to another row
-              const moveBehind = cursor.y > over.rect.left + over.rect.width / 2;
-              newParent = overParentRow;
-              newIndex = overIndex + (moveBehind ? 1 : 0);
-            }
-          }
-        }
+        let { newParent, index: newIndex } = getNewPosition(dragNode, overNode, pointer);
 
         // check if the positioning has changed
         if (newParent.id !== currentParentRow.id) {
           if (newParent.data.name === 'Container') {
-            actions.addNodeTree(
+            // when moving into a container we need to create a new row that is the actual target of move since we require columns to be inside rows
+            getActionHandler().addNodeTree(
               query.parseReactElement(<Element is={Row} canvas />).toNodeTree(),
               newParent.id,
               newIndex,
@@ -448,11 +439,15 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({ iframeRef, children
             newIndex = 0;
           }
 
-          actions.move(dragNode.id, newParent.id, newIndex);
-          if (currentParentRow.data.nodes.length === 1) actions.delete(currentParentRow.id);
+          // move the node to the new row
+          getActionHandler().move(dragNode.id, newParent.id, newIndex);
+          // if the row we move out of would be empty after the move then remove that row
+          if (currentParentRow.data.nodes.length === 1)
+            getActionHandler().delete(currentParentRow.id);
         } else {
           if (newIndex !== currentIndex) {
-            actions.move(dragNode.id, currentParentRow.id, newIndex);
+            // reposition inside the same row
+            getActionHandler().move(dragNode.id, currentParentRow.id, newIndex);
           }
         }
       }}

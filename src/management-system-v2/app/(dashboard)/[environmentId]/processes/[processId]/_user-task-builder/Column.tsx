@@ -1,7 +1,5 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDraggable } from '@dnd-kit/core';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
@@ -14,7 +12,6 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   const {
     connectors: { connect, drag },
     nodeId,
-    isDragged,
     isHovered,
     isSelected,
   } = useNode((node) => ({
@@ -29,7 +26,12 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   const ref = useRef<HTMLDivElement>();
   const frame = useFrame();
 
-  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragNodeRef,
+    isDragging,
+  } = useDraggable({
     id: nodeId,
     disabled: fixed || isTextEditing,
   });
@@ -41,10 +43,11 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
         ref={(r) => {
           ref.current = r || undefined;
           r && connect(r);
-          setNodeRef(r);
+          setDragNodeRef(r);
         }}
         className="user-task-form-column"
         style={{
+          opacity: isDragging ? 0.25 : undefined,
           border: isSelected ? '2px solid #66f' : isHovered ? '2px dashed #66f' : undefined,
         }}
         {...attributes}

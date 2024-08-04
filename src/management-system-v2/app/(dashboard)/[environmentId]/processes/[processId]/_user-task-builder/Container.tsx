@@ -5,7 +5,6 @@ import { InputNumber, ColorPicker, Empty } from 'antd';
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 import { Setting } from './utils';
 
@@ -44,7 +43,7 @@ const Container: UserComponent<ContainerProps> = ({
       style={{ padding, background, border: `${borderThickness}px solid ${borderColor}` }}
     >
       {children ? (
-        <SortableContext items={nodeChildren}>{children}</SortableContext>
+        <>{children}</>
       ) : (
         <Empty style={{ textAlign: 'center', height: '100%' }} description="Drop elements here" />
       )}

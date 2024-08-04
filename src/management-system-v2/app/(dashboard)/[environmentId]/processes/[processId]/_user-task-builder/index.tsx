@@ -137,7 +137,11 @@ const EditorModal: React.FC<BuilderProps> = ({
       okButtonProps={{ disabled: !editingEnabled }}
       onOk={handleSave}
     >
-      <EditorDnDHandler iframeRef={iframeRef} disabled={!iframeMounted}>
+      <EditorDnDHandler
+        iframeRef={iframeRef}
+        disabled={!iframeMounted}
+        mobileView={iframeLayout === 'mobile'}
+      >
         <div className={styles.BuilderUI}>
           {!isMobile && (
             <Toolbar

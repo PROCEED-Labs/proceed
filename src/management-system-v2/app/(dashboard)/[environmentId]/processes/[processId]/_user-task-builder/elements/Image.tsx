@@ -4,10 +4,10 @@ import { InputNumber } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { fallbackImage, ImageUpload } from '../image-selection-section';
+import { fallbackImage, ImageUpload } from '../../image-selection-section';
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
-import { Setting } from './utils';
+import { Setting } from '../utils';
 
 type ImageProps = {
   src?: string;

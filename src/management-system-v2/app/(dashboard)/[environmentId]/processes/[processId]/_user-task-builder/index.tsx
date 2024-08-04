@@ -8,17 +8,10 @@ import { Editor, Frame, useEditor, EditorStore } from '@craftjs/core';
 
 import IFrame from 'react-frame-component';
 
-import SubmitButton from './SubmitButton';
-import Text from './Text';
-import Container from './Container';
-import Row from './Row';
-import Column from './Column';
-import Sidebar from './_sidebar';
 import { Toolbar, EditorLayout } from './Toolbar';
-import Input from './Input';
-import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
-import Table from './Table';
-import Image from './Image';
+import Sidebar from './_sidebar';
+
+import * as Elements from './elements';
 
 import { iframeDocument, defaultForm } from './utils';
 
@@ -204,15 +197,7 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
     <>
       <Editor
         resolver={{
-          Text,
-          SubmitButton,
-          Container,
-          Row,
-          Column,
-          Input,
-          CheckboxOrRadioGroup,
-          Table,
-          Image,
+          ...Elements,
         }}
         enabled={!isMobile}
         handlers={(store: EditorStore) =>

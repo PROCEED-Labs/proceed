@@ -2,15 +2,7 @@ import { Editor, Frame } from '@craftjs/core';
 import React, { ReactElement, useId } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import SubmitButton from './SubmitButton';
-import Text from './Text';
-import Container from './Container';
-import Row from './Row';
-import Column from './Column';
-import Input from './Input';
-import CheckboxOrRadioGroup from './CheckboxOrRadioGroup';
-import Table from './Table';
-import Image from './Image';
+import * as Elements from './elements';
 
 const styles = `
 body {
@@ -137,15 +129,7 @@ export function toHtml(json: string) {
     <Editor
       enabled={false}
       resolver={{
-        SubmitButton,
-        Text,
-        Container,
-        Row,
-        Input,
-        CheckboxOrRadioGroup,
-        Column,
-        Table,
-        Image,
+        ...Elements,
       }}
     >
       <Frame data={json} />

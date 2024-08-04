@@ -1,6 +1,6 @@
 import { useNode, UserComponent } from '@craftjs/core';
 
-import EditableText from './_utils/EditableText';
+import EditableText from '../_utils/EditableText';
 
 type TextProps = {
   text: string;

@@ -3,7 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
-import useBuilderStateStore from './use-builder-state-store';
+import useBuilderStateStore from '../use-builder-state-store';
 
 const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   children,

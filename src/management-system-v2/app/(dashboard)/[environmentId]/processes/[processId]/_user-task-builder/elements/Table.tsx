@@ -2,7 +2,7 @@ import { useNode, UserComponent, useEditor } from '@craftjs/core';
 
 import { Button, Dropdown, MenuProps } from 'antd';
 
-import EditableText from './_utils/EditableText';
+import EditableText from '../_utils/EditableText';
 
 type TableProps = {
   tableData?: string[][];

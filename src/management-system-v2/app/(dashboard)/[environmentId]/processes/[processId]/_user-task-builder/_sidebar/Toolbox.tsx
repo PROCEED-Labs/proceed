@@ -10,13 +10,8 @@ import { useDraggable } from '@dnd-kit/core';
 
 import styles from './index.module.scss';
 
-import Text from '../Text';
-import Container from '../Container';
-import Input from '../Input';
-import CheckboxOrRadioGroup from '../CheckboxOrRadioGroup';
-import Column from '../Column';
-import Table from '../Table';
-import Image from '../Image';
+import { Text, Container, Input, CheckBoxOrRadioGroup, Column, Table, Image } from '../elements';
+
 import { createPortal } from 'react-dom';
 
 function selectOnCreation(nodeTree: NodeTree, actions: WithoutPrivateActions<null>) {
@@ -84,10 +79,10 @@ const Toolbox = () => {
         <Input type="text" label="Double Click Me" />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>
-        <CheckboxOrRadioGroup type="radio" />
+        <CheckBoxOrRadioGroup type="radio" />
       </CreationButton>
       <CreationButton title="Checkbox" icon={<MdCheckBox />}>
-        <CheckboxOrRadioGroup type="checkbox" />
+        <CheckBoxOrRadioGroup type="checkbox" />
       </CreationButton>
       <CreationButton title="Table" icon={<LuTable />}>
         <Table />

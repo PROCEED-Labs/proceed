@@ -1,6 +1,11 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDroppable } from '@dnd-kit/core';
 
+/**
+ * This component encapsulates column component
+ *
+ * Every column needs to be inside a row and the can be multiple columns next to each other in a row
+ */
 const Row: UserComponent<React.PropsWithChildren> = ({ children }) => {
   const {
     connectors: { connect },

@@ -74,6 +74,8 @@ const Image: UserComponent<ImageProps> = ({ src, reloadParam, width }) => {
           }}
         />
       )}
+      {/* Allows resizing  */}
+      {/* TODO: maybe use some react library for this */}
       {showResize && (
         <div
           style={{

@@ -15,8 +15,6 @@ import * as Elements from './elements';
 
 import { iframeDocument, defaultForm } from './utils';
 
-import AddUserControls from '@/components/add-user-controls';
-
 import CustomEventhandlers from './CustomCommandhandlers';
 import useBoundingClientRect from '@/lib/useBoundingClientRect';
 
@@ -148,7 +146,7 @@ const EditorModal: React.FC<BuilderModalProps> = ({
           )}
           <AntRow className={styles.EditorBody}>
             {!isMobile && (
-              <Col span={4}>
+              <Col style={{ height: '100%', overflow: 'auto' }} span={4}>
                 <Sidebar />
               </Col>
             )}
@@ -214,14 +212,6 @@ const UserTaskBuilder: React.FC<BuilderProps> = ({ processId, open, onClose }) =
           setHasUnsavedChanges(true);
         }}
       >
-        <AddUserControls
-          name="user-task-editor"
-          checker={{
-            undo: (e) => e.ctrlKey && e.key === 'z',
-            redo: (e) => e.ctrlKey && e.shiftKey && e.key === 'Z',
-            delete: (e) => e.key === 'Delete',
-          }}
-        />
         <EditorModal
           processId={processId}
           open={open}

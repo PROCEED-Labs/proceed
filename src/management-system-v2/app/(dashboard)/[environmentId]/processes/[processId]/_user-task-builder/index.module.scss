@@ -27,6 +27,7 @@
       }
     }
     .EditorBody {
+      min-height: 0;
       flex-grow: 1;
 
       .HtmlEditor {

@@ -37,6 +37,7 @@ const ToggleEditablePlugin: React.FC<{
   return null;
 };
 
+// import the initial value into the editor; afterwards the editor will handle the value itself and it will not be reimported on change
 const ImportIntoEditorPlugin: React.FC<{ value: string }> = ({ value }) => {
   const [editor] = useLexicalComposerContext();
 
@@ -69,7 +70,7 @@ const ImportIntoEditorPlugin: React.FC<{ value: string }> = ({ value }) => {
 export interface TextEditorRef {
   getCurrentValue: () => Promise<string>;
 }
-
+// exposing functionality of the editor to the parent component
 const ImperativeHandlePlugin = forwardRef<TextEditorRef, {}>((_, ref) => {
   const [editor] = useLexicalComposerContext();
 
@@ -98,6 +99,7 @@ const theme = {
     h6: 'text-style-heading',
   },
   link: 'text-style-link',
+  // adding our styling
   text: {
     bold: 'text-style-bold',
     italic: 'text-style-italic',
@@ -115,9 +117,11 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
     const setIsTextEditing = useBuilderStateStore((state) => state.setIsTextEditing);
 
     useEffect(() => {
+      // signal that we started editing text on mount
       setIsTextEditing(true);
 
       return () => {
+        // signal the end of text editing on unmount
         setIsTextEditing(false);
       };
     }, []);
@@ -134,6 +138,7 @@ const LexicalTextEditor = forwardRef<TextEditorRef, EditorProps>(
       };
     }, []);
 
+    // the toolbar is supposed to be rendered into the sidebar that is outside the enclosing iframe
     const toolbarTarget = document.getElementById('text-editable-toolbar');
 
     return (

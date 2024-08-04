@@ -13,7 +13,6 @@ import {
 import styles from './index.module.scss';
 
 import { useEditor, Node } from '@craftjs/core';
-import { useAddControlCallback } from '@/lib/controls-store';
 
 export type EditorLayout = 'computer' | 'mobile';
 
@@ -63,16 +62,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       };
     },
   );
-
-  useAddControlCallback('user-task-editor', 'undo', () => {
-    if (query.history.canUndo() && query.getOptions().enabled) actions.history.undo();
-  });
-  useAddControlCallback('user-task-editor', 'redo', () => {
-    if (query.history.canRedo() && query.getOptions().enabled) actions.history.redo();
-  });
-  // useAddControlCallback('user-task-editor', 'delete', () => editingEnabled && onDelete?.(), {
-  //   dependencies: [onDelete, editingEnabled],
-  // });
 
   return (
     <Row className={styles.EditorHeader}>

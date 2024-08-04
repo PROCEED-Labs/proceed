@@ -14,21 +14,13 @@ import { Text, Container, Input, CheckBoxOrRadioGroup, Column, Table, Image } fr
 
 import { createPortal } from 'react-dom';
 
-function selectOnCreation(nodeTree: NodeTree, actions: WithoutPrivateActions<null>) {
-  const newNode = Object.values(nodeTree.nodes || {}).find((el) => el.data.name !== 'Row');
-
-  if (newNode) {
-    actions.selectNode(newNode.id);
-  }
-}
-
 type CreationButtonProps = React.PropsWithChildren<{
   title: string;
   icon: ReactNode;
 }>;
 
 const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }) => {
-  const { connectors, actions, editingEnabled } = useEditor((state) => {
+  const { editingEnabled } = useEditor((state) => {
     return { editingEnabled: state.options.enabled };
   });
 
@@ -55,6 +47,7 @@ const CreationButton: React.FC<CreationButtonProps> = ({ children, title, icon }
         {title}
       </AntButton>
       {isDragging &&
+        /** We want to render the indicator into the overlay that is set up in the CustomDnD component */
         document.getElementById('dnd-drag-overlay') &&
         createPortal(
           <AntButton className={styles.DraggedCreationButton} icon={icon}>

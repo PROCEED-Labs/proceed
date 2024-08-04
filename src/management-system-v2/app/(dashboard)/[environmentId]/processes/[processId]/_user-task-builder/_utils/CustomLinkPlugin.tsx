@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister, objectKlassEquals } from '@lexical/utils';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
-import { TOGGLE_LINK_COMMAND, $toggleLink, $isLinkNode, LinkNode } from '@lexical/link';
+import { $isLinkNode } from '@lexical/link';
 import {
   COMMAND_PRIORITY_HIGH,
   PASTE_COMMAND,
@@ -12,15 +12,10 @@ import {
   $isElementNode,
   LexicalNode,
   ElementNode,
-  $createRangeSelection,
-  $createNodeSelection,
-  $setSelection,
   TextNode,
-  $hasAncestor,
   $copyNode,
   $createPoint,
   PointType,
-  $selectAll,
   NodeKey,
   $getNodeByKey,
 } from 'lexical';
@@ -47,6 +42,11 @@ const CustomLinkPlugin: React.FC = () => {
         (event) => {
           const selection = $getSelection();
 
+          // attempt at extending the logic of the default link plugin
+          // handling links pasted over or inside other links by extracting the selected text from the other link
+          // and inserting it in the new one to prevent link nesting
+          // TODO: currently this always extends to the left border of a partially selected link
+
           if (
             !$isRangeSelection(selection) ||
             selection.isCollapsed() ||
@@ -61,12 +61,7 @@ const CustomLinkPlugin: React.FC = () => {
 
           if (!validateUrl(clipboardText)) return false;
 
-          // Einfügen eines Links in einen anderen funktioniert noch nicht
-
           if (!selection.isCollapsed()) {
-            const anchorNode = selection.anchor.getNode()!;
-            const focusNode = selection.focus.getNode()!;
-
             let content = selection.extract();
 
             if (content) {
@@ -234,47 +229,6 @@ function $unwrapRange(node: LexicalNode, start: PointType, end: PointType) {
     extract.remove();
     return children;
   }
-
-  // nodeParent;
-
-  // if ($isElementNode(focusNode)) {
-  //   $splitNode(focusNode, focus.offset);
-  // } else {
-  //   const [...newTexts] = focusNode.splitText(focus.offset);
-  //   console.log(newTexts);
-  // }
-
-  // const anchorAncestorInNode = $getAncestor(anchor.getNode(), (n) => {
-  //   const parent = n.getParent();
-  //   return !!parent && parent === node;
-  // });
-
-  // if (!anchorAncestorInNode) return;
-
-  // const ancestorIndexInNode = anchorAncestorInNode.getIndexWithinParent();
-
-  // const content = selection.extract();
-  // selection.removeText();
-
-  // const [] = $splitNode(node, ancestorIndexInNode + 1);
-
-  // const slicedAncestor = node.getChildAtIndex(ancestorIndexInNode)!;
-  // let prev = slicedAncestor;
-  // content.forEach((el) => {
-  //   prev.insertAfter(el);
-  //   prev = el;
-  // });
-
-  // const newSelection = selection.clone();
-  // newSelection.anchor.set(content[0].__key, 0, $isElementNode(content[0]) ? 'element' : 'text');
-  // const end = content[content.length - 1];
-  // if ($isElementNode(end)) {
-  //   newSelection.focus.set(end.__key, end.getChildrenSize(), 'element');
-  // } else if (end.getType() === 'text') {
-  //   newSelection.focus.set(end.__key, (end as TextNode).getTextContentSize(), 'text');
-  // }
-
-  // $setSelection(newSelection);
 }
 
 export default CustomLinkPlugin;

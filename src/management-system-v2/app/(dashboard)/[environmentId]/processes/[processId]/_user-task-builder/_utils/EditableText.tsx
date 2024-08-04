@@ -6,6 +6,7 @@ import { useFrame } from 'react-frame-component';
 
 import LexicalTextEditor, { TextEditorRef } from './lexical-text-editor';
 
+// using this type to deduce the correct props that are valid based on which tagname was given (e.g. htmlFor for labels or href for links)
 type EditableTextProps<T extends keyof JSX.IntrinsicElements> = Omit<
   JSX.IntrinsicElements[T],
   'onChange' | 'value'
@@ -29,6 +30,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
 
   const frame = useFrame();
 
+  // if the editor is disabled make sure that this is also disabled
   useEffect(() => {
     if (!editingEnabled) {
       setActive(false);
@@ -64,6 +66,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
             return React.createElement(tagName, {
               contentEditable,
               ref: editableRef,
+              // we need to capture to prevent a new line being added when pressing enter without shift
               onKeyDownCapture: async (e: KeyboardEvent) => {
                 if (!e.shiftKey && e.key === 'Enter') {
                   if (editorRef.current) {
@@ -74,7 +77,7 @@ function EditableText<T extends keyof JSX.IntrinsicElements>({
                   e.preventDefault();
                 }
               },
-              onMouseDownCapture: (e: MouseEvent) => {
+              onMouseDown: (e: MouseEvent) => {
                 e.stopPropagation();
                 selectingText.current = true;
               },

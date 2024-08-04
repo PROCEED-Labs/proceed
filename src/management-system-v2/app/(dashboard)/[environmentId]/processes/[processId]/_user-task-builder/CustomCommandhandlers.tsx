@@ -11,6 +11,7 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
 
     return {
       ...defaultEventHandlers,
+      // these two are needed to prevent that children of a column block the mouse events
       hover: (el: HTMLElement, id: NodeId) => {
         if (query.node(id)?.get()?.data.name !== 'Column') return () => {};
 
@@ -34,20 +35,15 @@ export default class CustomEventhandlers extends DefaultEventHandlers {
         const node = query.node(id)?.get();
         if (node?.data.name !== 'Column' && node?.id !== ROOT_NODE) return () => {};
 
-        const unbindClick = this.addCraftEventListener(
-          el,
-          'pointerdown',
-          (e) => {
-            e.craft.stopPropagation();
+        const unbindClick = this.addCraftEventListener(el, 'pointerdown', (e) => {
+          e.craft.stopPropagation();
 
-            const currentNode = query.node(id)?.get();
-            if (currentNode) {
-              if (currentNode.id === ROOT_NODE) actions.setNodeEvent('selected', []);
-              else actions.setNodeEvent('selected', [id]);
-            }
-          },
-          true,
-        );
+          const currentNode = query.node(id)?.get();
+          if (currentNode) {
+            if (currentNode.id === ROOT_NODE) actions.setNodeEvent('selected', []);
+            else actions.setNodeEvent('selected', [id]);
+          }
+        });
 
         return () => {
           unbindClick();

@@ -30,6 +30,7 @@ export const Settings: React.FC = () => {
 
   return (
     <div className={styles.Settings}>
+      {/* this id is targeted by a react portal to render the text editor interface when a user start text editing */}
       <div id="text-editable-toolbar"></div>
       {!isTextEditing &&
         (selectedNodeId ? (

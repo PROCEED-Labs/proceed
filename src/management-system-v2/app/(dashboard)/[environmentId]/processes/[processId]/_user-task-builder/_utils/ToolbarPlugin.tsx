@@ -1,28 +1,11 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
+// Adapted from: https://github.com/facebook/lexical/blob/main/packages/lexical-playground/src/plugins/ToolbarPlugin/index.tsx
 
-import {
-  Button,
-  ButtonProps,
-  Divider,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Tooltip,
-  notification,
-} from 'antd';
+import { Button, Divider } from 'antd';
 import {
   UndoOutlined,
   RedoOutlined,
   BoldOutlined,
   ItalicOutlined,
-  LinkOutlined,
   UnderlineOutlined,
   AlignLeftOutlined,
   AlignRightOutlined,
@@ -47,12 +30,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const LowPriority = 1;
-
-// TODO https://lexical.dev/docs/getting-started/quick-start
-// https://lexical.dev/docs/getting-started/theming
-// https://lexical.dev/docs/concepts/node-replacement
-// https://lexical.dev/docs/concepts/transforms
-// There is an example of styled text https://lexical.dev/docs/concepts/serialization#handling-extended-html-styling
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -173,15 +150,6 @@ export default function ToolbarPlugin() {
         icon={<AlignRightOutlined />}
         onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')}
       />
-      {/* <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify');
-        }}
-        className="toolbar-item"
-        aria-label="Justify Align"
-      >
-        <i className="format justify-align" />
-      </button> */}
     </div>
   );
 }

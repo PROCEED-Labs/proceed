@@ -44,7 +44,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   const needNewHistoryBundle = useRef(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 50, tolerance: 10 } }),
+    useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -360,6 +360,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       collisionDetection={customCollision}
       sensors={sensors}
       onDragStart={(event) => {
+        console.log('Start dragging');
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
         if (isCreating) iframeRef.current!.style.pointerEvents = 'none';

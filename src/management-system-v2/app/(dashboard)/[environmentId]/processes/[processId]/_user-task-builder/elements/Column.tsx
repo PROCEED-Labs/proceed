@@ -4,13 +4,15 @@ import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
 import useBuilderStateStore from '../use-builder-state-store';
-
+/**
+ * This component wraps every editor element provides drag handling and some styling
+ */
 const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
   children,
   fixed,
 }) => {
   const {
-    connectors: { connect, drag },
+    connectors: { connect },
     nodeId,
     isHovered,
     isSelected,
@@ -55,6 +57,7 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
       >
         {children}
       </div>
+      {/* We need to render the drag shadow of this element into the drag overlay that is portaled into the iframe by our CustomDnD component */}
       {isDragging &&
         frame.document?.getElementById('dnd-drag-overlay') &&
         createPortal(<div>{children}</div>, frame.document?.getElementById('dnd-drag-overlay')!)}

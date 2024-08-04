@@ -31,13 +31,16 @@ import EditorDnDHandler from './DragAndDropHandler';
 type BuilderProps = {
   processId: string;
   open: boolean;
-  hasUnsavedChanges: boolean;
   onClose: () => void;
+};
+
+type BuilderModalProps = BuilderProps & {
   onSave: () => void;
+  hasUnsavedChanges: boolean;
   onInit: () => void;
 };
 
-const EditorModal: React.FC<BuilderProps> = ({
+const EditorModal: React.FC<BuilderModalProps> = ({
   processId,
   open,
   hasUnsavedChanges,

@@ -11,6 +11,8 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
 import db from '@/lib/data';
+import { enableUseDB } from 'FeatureFlags';
+import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 // @ts-ignore
 let firstInit = !global.foldersMetaObject;
@@ -28,9 +30,11 @@ export let foldersMetaObject: {
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
 
+let inited = false;
 /** initializes the folders meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   foldersMetaObject.folders = {};
   foldersMetaObject.rootFolders = {};
@@ -83,9 +87,6 @@ export function init() {
   }
 }
 init();
-import { removeProcess } from './_process';
-import { enableUseDB } from 'FeatureFlags';
-import { ProcessType } from '@prisma/client';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   if (enableUseDB) {
@@ -145,7 +146,7 @@ export async function getFolderById(folderId: string, ability?: Ability) {
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
     throw new Error('Permission denied');
 
-  return folderData.folder;
+  return folderData.folder as Folder;
 }
 
 export async function getFolderChildren(folderId: string, ability?: Ability) {
@@ -181,6 +182,30 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
     throw new Error('Permission denied');
 
   return folderData.children;
+}
+
+export async function getFolderContents(folderId: string, ability?: Ability) {
+  const folderChildren = await getFolderChildren(folderId, ability);
+  const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
+
+  if (!enableUseDB) await initProcesses();
+
+  for (let i = 0; i < folderChildren.length; i++) {
+    try {
+      const child = folderChildren[i];
+
+      if (child.type !== 'folder') {
+        const process = (await getProcess(child.id)) as Process;
+        // NOTE: this check should probably done inside inside getprocess
+        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        folderContent.push(process);
+      } else {
+        folderContent.push({ ...(await getFolderById(child.id, ability)), type: 'folder' });
+      }
+    } catch (e) {}
+  }
+
+  return folderContent;
 }
 
 export async function createFolder(folderInput: FolderInput, ability?: Ability) {

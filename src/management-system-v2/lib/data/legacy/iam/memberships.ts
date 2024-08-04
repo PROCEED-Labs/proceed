@@ -30,9 +30,11 @@ export let membershipMetaObject: {
   // @ts-ignore
   global.membershipMetaObject || (global.membershipMetaObject = {});
 
+let inited = false;
 /** initializes the membership meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get roles that were persistently stored
   const storedMemberships = store.get('environmentMemberships') as Membership[];

@@ -27,9 +27,11 @@ export let foldersMetaObject: {
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
 
+let inited = false;
 /** initializes the folders meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   foldersMetaObject.folders = {};
   foldersMetaObject.rootFolders = {};

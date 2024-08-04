@@ -9,7 +9,6 @@ type BuilderStateStore = {
 
 const useBuilderStateStore = create<BuilderStateStore>()(
   immer((set) => ({
-    iframe: null,
     isTextEditing: false,
 
     setIsTextEditing: (editing) => {

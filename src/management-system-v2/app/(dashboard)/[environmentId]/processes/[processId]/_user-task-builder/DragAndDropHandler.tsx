@@ -428,7 +428,8 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
         const dragNode = query.node(active.id.toString()).get();
         const overNode = query.node(over.id.toString()).get();
-        if (!overNode) return;
+        if (!overNode || !dragNode) return;
+
         const currentParentRow = query.node(dragNode.data.parent!).get();
         const currentIndex = currentParentRow.data.nodes.findIndex((id) => id === dragNode.id);
 
@@ -436,6 +437,13 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
         // check if the positioning has changed
         if (newParent.id !== currentParentRow.id) {
+          // prevent that we try to position an element inside of itself
+          let ancestor = newParent;
+          while (ancestor.data.parent) {
+            if (ancestor.data.parent === dragNode.id) return;
+            ancestor = query.node(ancestor.data.parent).get();
+          }
+
           if (newParent.data.name === 'Container') {
             // when moving into a container we need to create a new row that is the actual target of move since we require columns to be inside rows
             getActionHandler().addNodeTree(
@@ -447,7 +455,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
             newParent = query.node(updatedContainer.data.nodes[newIndex]).get();
             newIndex = 0;
           }
-
           // move the node to the new row
           getActionHandler().move(dragNode.id, newParent.id, newIndex);
           // if the row we move out of would be empty after the move then remove that row

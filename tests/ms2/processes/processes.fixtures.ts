@@ -24,7 +24,7 @@ export const test = base.extend<MyFixtures>({
     const processListPage = new ProcessListPage(page);
     await processListPage.goto();
     await use(processListPage);
-    await processListPage.removeAllProcesses();
+    await processListPage.removeAllProcessesAndFolders();
   },
   processModelerPage: async ({ page, processListPage }, use) => {
     const processModelerPage = new ProcessModelerPage(page);

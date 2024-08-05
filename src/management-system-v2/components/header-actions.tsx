@@ -1,9 +1,22 @@
 'use client';
 
-import { UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Dropdown, MenuProps, Select, Space, Tooltip, Typography } from 'antd';
+import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Avatar,
+  Button,
+  ConfigProvider,
+  Dropdown,
+  MenuProps,
+  Modal,
+  Select,
+  Space,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC, useContext } from 'react';
+import { FC, useContext, useState } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
@@ -12,11 +25,14 @@ import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();
   const isGuest = session.data?.user.guest;
   const loggedIn = session.status === 'authenticated';
+  const token = theme.useToken();
+  const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
 
@@ -28,7 +44,7 @@ const HeaderActions: FC = () => {
     return (
       <Space style={{ float: 'right', padding: '16px' }}>
         <Button type="text" onClick={() => signIn()}>
-          <u>Log in</u>
+          <u>Sign in</u>
         </Button>
 
         <Tooltip title="Log in">
@@ -44,14 +60,25 @@ const HeaderActions: FC = () => {
       key: 'profile',
       title: 'Account Settings',
       label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+      icon: <FaUserEdit />,
     },
   ];
 
   if (isGuest) {
     actionButton = (
-      <Button type="text" onClick={() => signIn()}>
-        <u>Sign In</u>
-      </Button>
+      <>
+        <Button
+          style={{
+            color: token.token.colorWarning,
+          }}
+          icon={<WarningOutlined />}
+          type="text"
+          onClick={() => setGuestWarningOpen(true)}
+        />
+        <Button type="text" onClick={() => signIn()}>
+          <u>Sign In</u>
+        </Button>
+      </>
     );
   } else {
     // userSpaces is null when the component is outside of the UserSpaces provider
@@ -84,35 +111,55 @@ const HeaderActions: FC = () => {
       );
     }
 
-    avatarDropdownItems.push(
-      {
-        key: 'environments',
-        title: 'My Spaces',
-        label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
-      },
-      {
-        key: 'signout',
-        title: 'Sign out',
-        label: 'Sign out',
-        onClick: () => signOut(),
-      },
-    );
+    avatarDropdownItems.push({
+      key: 'environments',
+      title: 'My Spaces',
+      label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+      icon: <AppstoreOutlined />,
+    });
   }
 
+  avatarDropdownItems.push({
+    key: 'signout',
+    title: 'Sign out',
+    label: 'Sign out',
+    onClick: () => signOut(),
+    icon: <FaSignOutAlt />,
+  });
+
   return (
-    <Space style={{ float: 'right', padding: '16px' }}>
-      {enableChatbot && <Assistant />}
-      {actionButton}
-      <Dropdown
-        menu={{
-          items: avatarDropdownItems,
+    <>
+      <Modal
+        open={guestWarningOpen}
+        title="You're signed in as a guest"
+        closeIcon={null}
+        onCancel={() => setGuestWarningOpen(false)}
+        okButtonProps={{
+          children: 'Continue as guest',
         }}
+        okText="Sign in"
+        onOk={() => signIn()}
       >
-        <SpaceLink href={`/profile`}>
-          <UserAvatar user={session.data.user} />
-        </SpaceLink>
-      </Dropdown>
-    </Space>
+        <Alert
+          message="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
+          type="warning"
+          style={{ marginBottom: '1rem' }}
+        />
+      </Modal>
+      <Space style={{ float: 'right', padding: '16px' }}>
+        {enableChatbot && <Assistant />}
+        {actionButton}
+        <Dropdown
+          menu={{
+            items: avatarDropdownItems,
+          }}
+        >
+          <SpaceLink href={`/profile`}>
+            <UserAvatar user={session.data.user} />
+          </SpaceLink>
+        </Dropdown>
+      </Space>
+    </>
   );
 };
 

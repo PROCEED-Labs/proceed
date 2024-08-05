@@ -79,7 +79,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               afterClose={() => setErrorMessage(null)}
             />
           )}
-          <Typography.Title level={3}>Account Information</Typography.Title>
+          <Typography.Title level={3}>Profile data</Typography.Title>
 
           <UserAvatar
             user={userData}

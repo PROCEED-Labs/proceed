@@ -48,6 +48,8 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   // we only need to recompute the bounding boxed when dragging starts and when a node is repositioned
   const cachedDroppableRects = useRef<Map<string, ClientRect> | null>(null);
 
+  const pointerPosition = useRef({ x: 0, y: 0 });
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
     useSensor(KeyboardSensor),
@@ -166,7 +168,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       let droppableRects = cachedDroppableRects.current;
 
       if (!droppableRects) {
-        console.log('Recalculating');
         droppableRects = new Map<string, ClientRect>();
 
         for (const { id } of droppableContainers) {
@@ -426,6 +427,12 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
         const pointer = data.pointer as { x: number; y: number };
 
+        const delta = {
+          x: pointer.x - pointerPosition.current.x,
+          y: pointer.y - pointerPosition.current.y,
+        };
+        pointerPosition.current = pointer;
+
         const dragNode = query.node(active.id.toString()).get();
         const overNode = query.node(over.id.toString()).get();
         if (!overNode || !dragNode) return;
@@ -434,6 +441,38 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         const currentIndex = currentParentRow.data.nodes.findIndex((id) => id === dragNode.id);
 
         let { newParent, index: newIndex } = getNewPosition(dragNode, overNode, pointer);
+
+        // prevent that an element is moved opposite to the direction it is dragged in
+        // this fixes a situation where an element is dragged out of or into a container element (row/container)
+        // resulting in a resize which would then reposition the element back in/out of the containing element
+        // which will then oszillate between the two states until the element is in a position that puts it clearly inside or outside event after the resize
+        const dragNodeRect = dragNode.dom?.getBoundingClientRect();
+        if (dragNodeRect) {
+          let { top } = dragNodeRect;
+          let offset = 0;
+
+          const newParentRect = newParent.dom?.getBoundingClientRect();
+          if (newParentRect) {
+            if (newParent.data.name === 'Row') {
+              offset = newParentRect.top - top;
+            } else {
+              // targeting a container
+              if (!newParent.data.nodes.length) {
+                offset = newParentRect.top - top;
+              } else if (newParent.data.nodes.length > newIndex) {
+                const rowAtPosition = query.node(newParent.data.nodes[newIndex]).get();
+                const rowRect = rowAtPosition.dom?.getBoundingClientRect();
+                if (rowRect) {
+                  offset = rowRect.top - top;
+                }
+              } else {
+                offset = newParentRect.bottom - top;
+              }
+            }
+
+            if (!(delta.y * offset > 0)) return;
+          }
+        }
 
         // check if the positioning has changed
         if (newParent.id !== currentParentRow.id) {

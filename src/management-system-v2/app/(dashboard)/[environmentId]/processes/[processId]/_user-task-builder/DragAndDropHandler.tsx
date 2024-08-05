@@ -470,7 +470,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
               }
             }
 
-            if (!(delta.y * offset > 0)) return;
+            if (!(delta.y * offset >= 0)) return;
           }
         }
 

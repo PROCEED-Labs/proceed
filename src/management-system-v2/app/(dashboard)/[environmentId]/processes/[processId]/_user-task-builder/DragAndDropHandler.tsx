@@ -319,6 +319,25 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       } else {
         // targeting a container => find the last row that is above the "cursor"
         index = targetIndexInNode(targetNode, (rowRect) => position.y > rowRect.top);
+
+        // check if this new position actually changes the visible state of the editor
+        if (draggedNode) {
+          const draggedNodeParentRow = query.node(draggedNode.data.parent!).get();
+
+          // if the current parent row is already at the target position in the target node
+          // and there are also no sibling nodes that the dragged node could be separated from, do nothing
+          const parentRowIndexInTargetContainer = targetNode.data.nodes.findIndex(
+            (id) => id === draggedNodeParentRow.id,
+          );
+          if (
+            draggedNodeParentRow.data.nodes.length === 1 &&
+            (parentRowIndexInTargetContainer === index ||
+              parentRowIndexInTargetContainer === index - 1)
+          ) {
+            targetNode = draggedNodeParentRow;
+            index = 0;
+          }
+        }
       }
 
       return { newParent: targetNode, index };
@@ -360,7 +379,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       collisionDetection={customCollision}
       sensors={sensors}
       onDragStart={(event) => {
-        console.log('Start dragging');
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
         if (isCreating) iframeRef.current!.style.pointerEvents = 'none';

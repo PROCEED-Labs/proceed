@@ -18,11 +18,13 @@ export let systemAdminsMetaObjects: {
   // @ts-ignore
   global.systemAdminsMetaObjects || (global.systemAdminsMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the system admins meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = false;
 
   const storedAdmins = store.get('systemAdmins') as SystemAdmin[];
   storedAdmins.forEach((admin) => (systemAdminsMetaObjects[admin.id] = admin));

@@ -9,6 +9,8 @@ import {
   DragOverlay,
   ClientRect,
   Collision,
+  getClientRect,
+  UniqueIdentifier,
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
@@ -42,6 +44,9 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   // craft js allows us to bundle multiple events together so when we do undo after dragging with
   // multiple repositions we return to the initial position
   const needNewHistoryBundle = useRef(false);
+
+  // we only need to recompute the bounding boxed when dragging starts and when a node is repositioned
+  const cachedDroppableRects = useRef<Map<string, ClientRect> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
@@ -150,14 +155,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   const isCreating = /^create-.*-button$/.test(active);
 
   const customCollision = useCallback(
-    ({
-      collisionRect,
-      droppableRects,
-      droppableContainers,
-      pointerCoordinates,
-      active,
-    }: CollisionFuncType) => {
-      let collisions: Collision[] = [];
+    ({ collisionRect, droppableContainers, pointerCoordinates, active }: CollisionFuncType) => {
       if (!active?.id || !pointerCoordinates) return [];
 
       let draggedNode: Node | null = null;
@@ -165,22 +163,58 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         draggedNode = query.node(active.id.toString()).get();
       }
 
-      // treat rows as if they extend to their parents border
-      droppableRects.forEach((val, key) => {
-        const node = query.node(key.toString()).get();
-        if (node && node.data.name === 'Row') {
-          const parentContainer = query.node(node.data.parent!).get();
-          const parentContainerRect = parentContainer.dom?.getBoundingClientRect();
-          if (parentContainerRect) {
-            droppableRects.set(key, {
-              ...val,
-              left: parentContainerRect.left,
-              right: parentContainerRect.right,
-              width: parentContainerRect.width,
-            });
+      let droppableRects = cachedDroppableRects.current;
+
+      if (!droppableRects) {
+        console.log('Recalculating');
+        droppableRects = new Map<string, ClientRect>();
+
+        for (const { id } of droppableContainers) {
+          // writing our own bounding box calculation that uses the correct offsets when moving elements and caching it so the values are only recomputed when necessary
+          const dropNodeId = id.toString();
+          const dropNode = query.node(dropNodeId).get();
+          let dropNodeDom = dropNode?.dom;
+          // we need to wait until the node is available throught craft js and the dom element is available as well
+          if (!dropNodeDom) return [];
+
+          let rect = getClientRect(dropNodeDom);
+
+          // treat rows as if they extend to their parents border
+          if (dropNode.data.name === 'Row') {
+            const parentContainer = query.node(dropNode.data.parent!).get();
+            const parentContainerRect = parentContainer.dom?.getBoundingClientRect();
+            if (parentContainerRect) {
+              rect.left = parentContainerRect.left;
+              rect.right = parentContainerRect.right;
+              rect.width = parentContainerRect.width;
+            }
           }
+
+          // when we are dragging an element calculate the bounding boxes as they would be without the dragged element
+          if (!isCreating) {
+            if (!draggedNode) return [];
+            const draggedNodeRect = draggedNode.dom?.getBoundingClientRect();
+
+            if (draggedNodeRect) {
+              let offset = getTargetOffsetAfterMove(
+                draggedNode.id,
+                dropNodeId,
+                draggedNodeRect,
+                rect,
+              );
+
+              rect = {
+                ...rect,
+                height: rect.height - offset.bottom,
+                top: rect.top - offset.top,
+                bottom: rect.bottom - offset.bottom,
+              };
+            }
+          }
+          droppableRects.set(dropNodeId, rect);
+          cachedDroppableRects.current = droppableRects;
         }
-      });
+      }
 
       let { x: pointerX, y: pointerY } = pointerCoordinates;
       // it seems as if dnd-kit calculates the pointer position based on the context where the drag event started
@@ -191,71 +225,18 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         // transform the coordinates to the iframe context if we are creating a new element (dragging started outside the iframe)
         pointerX -= iframeLeft;
         pointerY -= iframeTop;
-
-        // we are not moving anything so we can use the current bounding rects
-        collisions = pointerWithin({
-          active,
-          collisionRect,
-          droppableContainers,
-          droppableRects,
-          pointerCoordinates: { x: pointerX, y: pointerY },
-        });
       } else {
         // if we are dragging an existing element we want to use the upper border of the element for vertical intersection tests
         pointerY = collisionRect.top;
-
-        if (!draggedNode) return [];
-
-        const draggedNodeRect = draggedNode.dom?.getBoundingClientRect();
-        if (!draggedNodeRect) return [];
-
-        // if we are moving upwards we can just use the current bounding rects since we dont interact with vertically following elements or with bottom borders of elements containing the dragged node
-        if (collisionRect.top < draggedNodeRect.top) {
-          collisions = pointerWithin({
-            active,
-            collisionRect,
-            droppableContainers,
-            droppableRects,
-            pointerCoordinates: { x: pointerX, y: pointerY },
-          });
-        } else {
-          // otherwise we compute bounding boxes as they would be if the element was removed (or at least shrunk to the size of it smallest sibling)
-          // this is to prevent jumps when an element that is substantially larger than its siblings is moved out of its container row
-          let offsetRects: typeof droppableRects = new Map();
-
-          droppableRects.forEach((val, key) => {
-            const targetId = key.toString();
-
-            const targetNode = query.node(targetId).get();
-            if (!targetNode) return;
-            const targetNodeRect = targetNode.dom?.getBoundingClientRect();
-            if (!targetNodeRect) return;
-            let offset = getTargetOffsetAfterMove(
-              draggedNode.id,
-              targetId,
-              draggedNodeRect,
-              targetNodeRect,
-            );
-
-            const offsetRect = {
-              ...val,
-              height: val.height - offset.bottom,
-              top: val.top - offset.top,
-              bottom: val.bottom - offset.bottom,
-            };
-
-            offsetRects.set(key, offsetRect);
-          });
-
-          collisions = pointerWithin({
-            active,
-            collisionRect,
-            droppableRects: offsetRects,
-            droppableContainers,
-            pointerCoordinates: { x: pointerX, y: pointerY },
-          });
-        }
       }
+
+      const collisions = pointerWithin({
+        active,
+        collisionRect,
+        droppableContainers,
+        droppableRects,
+        pointerCoordinates: { x: pointerX, y: pointerY },
+      });
 
       return collisions.map((collision) => ({
         ...collision,
@@ -378,7 +359,16 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
     <DndContext
       collisionDetection={customCollision}
       sensors={sensors}
+      measuring={{
+        droppable: {
+          measure: (element) => {
+            // deactivating the default measuring since it sometimes runs before the required data is ready in craft js
+            return { top: 0, bottom: 0, left: 0, right: 0, height: 0, width: 0 };
+          },
+        },
+      }}
       onDragStart={(event) => {
+        cachedDroppableRects.current = null;
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
         if (isCreating) iframeRef.current!.style.pointerEvents = 'none';
@@ -463,10 +453,16 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
           // if the row we move out of would be empty after the move then remove that row
           if (currentParentRow.data.nodes.length === 1)
             getActionHandler().delete(currentParentRow.id);
+          // invalidate the cache
+          // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied)
+          setTimeout(() => (cachedDroppableRects.current = null), 50);
         } else {
           if (newIndex !== currentIndex) {
             // reposition inside the same row
             getActionHandler().move(dragNode.id, currentParentRow.id, newIndex);
+            // invalidate the cache
+            // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied)
+            setTimeout(() => (cachedDroppableRects.current = null), 50);
           }
         }
       }}

@@ -11,6 +11,7 @@ import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
@@ -89,46 +90,81 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
             }}
           />
 
-          <Table
-            dataSource={[
-              {
-                key: 'name',
-                title: 'Name',
-                value: `${firstName} ${lastName}`,
-                action: () => setChangeNameModalOpen(true),
-              },
-              {
-                key: 'username',
-                title: 'Username',
-                value: !userData.guest ? userData.username : 'Guest',
-                action: () => setChangeNameModalOpen(true),
-              },
-              {
-                key: 'email',
-                title: 'Email',
-                value: !userData.guest ? userData.email : 'Guest',
-              },
-            ]}
-            columns={[
-              { dataIndex: 'title' },
-              { dataIndex: 'value' },
-              {
-                key: 'action',
-                render: (_, row) => row.action && <RightOutlined />,
-              },
-            ]}
-            onRow={(row) =>
-              row.action
-                ? {
-                    onClick: row.action,
+          <div
+            style={{
+              //blur
+              position: 'relative',
+            }}
+          >
+            {userData.guest && (
+              <div
+                style={{
+                  zIndex: 100,
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Alert
+                  message={
+                    <>
+                      To change your profile data <Link href="/signin">Sign in</Link>
+                    </>
                   }
-                : {}
-            }
-            showHeader={false}
-            pagination={false}
-            className={styles.Table}
-            style={{ marginBottom: 16 }}
-          />
+                  type="info"
+                />
+              </div>
+            )}
+            <Table
+              dataSource={[
+                {
+                  key: 'name',
+                  title: 'Name',
+                  value: `${firstName} ${lastName}`,
+                  action: () => setChangeNameModalOpen(true),
+                },
+                {
+                  key: 'username',
+                  title: 'Username',
+                  value: !userData.guest ? userData.username : 'Guest',
+                  action: () => setChangeNameModalOpen(true),
+                },
+                {
+                  key: 'email',
+                  title: 'Email',
+                  value: !userData.guest ? userData.email : 'Guest',
+                },
+              ]}
+              columns={[
+                { dataIndex: 'title' },
+                { dataIndex: 'value' },
+                {
+                  key: 'action',
+                  render: (_, row) => row.action && <RightOutlined />,
+                },
+              ]}
+              onRow={(row) =>
+                row.action
+                  ? {
+                      onClick: row.action,
+                    }
+                  : {}
+              }
+              showHeader={false}
+              pagination={false}
+              className={styles.Table}
+              style={{
+                marginBottom: 16,
+                ...(userData.guest && { filter: 'blur(7px)', pointerEvents: 'none' }),
+              }}
+            />
+          </div>
+
           <Space direction="vertical">
             <ConfirmationButton
               title="Delete Account"
@@ -139,7 +175,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               }}
               buttonProps={{ danger: true }}
             >
-              Delete Account
+              {userData.guest ? 'Delete Data' : 'Delete Account'}
             </ConfirmationButton>
           </Space>
         </Card>

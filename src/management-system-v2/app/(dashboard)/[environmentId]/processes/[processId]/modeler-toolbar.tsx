@@ -30,8 +30,6 @@ import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import UserTaskBuilder from './_user-task-builder';
 
-import { enableUserTaskEditor } from 'FeatureFlags';
-
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
@@ -258,11 +256,12 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              ((enableUserTaskEditor && bpmnIs(selectedElement, 'bpmn:UserTask') && (
-                <Tooltip title="Edit User Task Form">
-                  <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
-                </Tooltip>
-              )) ||
+              ((process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                  <Tooltip title="Edit User Task Form">
+                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                  </Tooltip>
+                )) ||
                 (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
                   <Tooltip title="Open Subprocess">
                     <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
@@ -336,7 +335,7 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
-      {enableUserTaskEditor && (
+      {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
         <UserTaskBuilder
           processId={processId}
           open={showUserTaskEditor}

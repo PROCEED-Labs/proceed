@@ -69,12 +69,12 @@ const DashboardLayout = async ({
         icon: <FileOutlined />,
       });
 
-    if (can('view', 'Template'))
-      children.push({
-        key: 'templates',
-        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-        icon: <ProfileOutlined />,
-      });
+    // if (can('view', 'Template'))
+    //   children.push({
+    //     key: 'templates',
+    //     label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+    //     icon: <ProfileOutlined />,
+    //   });
 
     layoutMenuItems.push({
       key: 'processes-group',

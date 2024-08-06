@@ -99,9 +99,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
         event.target.value,
         true,
       );
-      // modeling.updateModdleProperties(null, definitions, { name: event.target.value });
       definitions.name = event.target.value;
-      // await modeler!.loadBPMN(newBpmn);
     } else {
       modeling.updateProperties(selectedElement as any, { name: event.target.value });
     }

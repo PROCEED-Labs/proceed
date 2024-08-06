@@ -582,14 +582,15 @@ function removeAdaptationProcesses(processes: ProcessMetadata[]) {
   return processes.filter((p) => p.type !== 'process-instance');
 }
 
+let inited = false;
 /**
  * initializes the process meta information objects
  */
 export async function init() {
   // Avoids recreating the processMetaObjects in server actions' module scope if they already exist.
-  if (!firstInit) {
-    return;
-  }
+  if (!firstInit || inited) return;
+
+  inited = true;
 
   // folder init can change processes, so it has to be called first
   initFolders();

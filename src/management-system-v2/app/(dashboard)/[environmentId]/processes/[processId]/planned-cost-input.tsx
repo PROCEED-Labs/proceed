@@ -49,18 +49,8 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
           dropdownStyle={{ width: '7rem' }}
         ></Select>
       }
-      readOnly={!isEditing}
       placeholder="Planned Cost"
-      suffix={
-        isEditing ? null : (
-          <EditOutlined
-            onClick={() => {
-              setIsEditing(true);
-            }}
-            data-testid="plannedCostInputEdit"
-          ></EditOutlined>
-        )
-      }
+      onFocus={() => setIsEditing(true)}
       onChange={(val) => {
         setCostsPlanned({
           value: parseInt(val.target.value) || undefined,

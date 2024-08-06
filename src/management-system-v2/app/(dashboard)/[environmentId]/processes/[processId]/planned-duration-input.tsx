@@ -153,14 +153,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
         readOnly
         value={durationString}
         placeholder="Planned Duration"
-        suffix={
-          <EditOutlined
-            onClick={() => {
-              setIsPlannedDurationModalOpen(true);
-            }}
-            data-testid="plannedDurationInputEdit"
-          ></EditOutlined>
-        }
+        onClick={() => setIsPlannedDurationModalOpen(true)}
       />
       <PlannedDurationModal
         durationValues={durationValues}

@@ -10,13 +10,14 @@ import {
   BreadcrumbProps,
   Button,
   Divider,
+  Input,
   Select,
   SelectProps,
   Space,
   theme,
   Typography,
 } from 'antd';
-import { PlusOutlined, LeftOutlined } from '@ant-design/icons';
+import { PlusOutlined, LeftOutlined, EditOutlined } from '@ant-design/icons';
 import useModelerStateStore from './use-modeler-state-store';
 import useMobileModeler from '@/lib/useMobileModeler';
 import ProcessCreationButton from '@/components/process-creation-button';
@@ -28,6 +29,7 @@ import { isExpanded } from 'bpmn-js/lib/util/DiUtil';
 import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { spaceURL } from '@/lib/utils';
+import { updateProcess } from '@/lib/data/processes';
 
 type SubprocessInfo = {
   id?: string;
@@ -43,12 +45,14 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
+  const { spaceId } = useEnvironment();
   const pathname = usePathname();
   const environment = useEnvironment();
   const [closed, setClosed] = useState(false);
   const router = useRouter();
   const modeler = useModelerStateStore((state) => state.modeler);
   const rootElement = useModelerStateStore((state) => state.rootElement);
+  const [editingName, setEditingName] = useState<null | string>(null);
 
   const {
     token: { fontSizeHeading1 },
@@ -206,6 +210,14 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
 
   const currentSubprocess = subprocessChain.slice(-1)[0];
 
+  const handleNameChange = async () => {
+    if (editingName) {
+      await updateProcess(processId as string, spaceId, undefined, undefined, editingName);
+      setEditingName(null);
+      router.refresh();
+    }
+  };
+
   const handleBackButtonClick = () => {
     if (!modeler) {
       return;
@@ -246,9 +258,32 @@ const Wrapper = ({ children, processName, processes }: WrapperProps) => {
         </div>
       }
       headerCenter={
-        <Typography.Text strong style={{ flex: 1, padding: '0 5px' }}>
-          {currentLayerName}
-        </Typography.Text>
+        <div style={{ flex: 1, padding: '0 5px' }}>
+          {editingName ? (
+            <>
+              <Input
+                autoFocus
+                variant="borderless"
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onBlur={() => handleNameChange()}
+                onPressEnter={() => handleNameChange()}
+              ></Input>
+            </>
+          ) : (
+            <span
+              className={styles.Name}
+              onClick={() => {
+                setEditingName(currentLayerName);
+              }}
+            >
+              <Typography.Text strong style={{ marginRight: '0.25rem' }}>
+                {currentLayerName}
+              </Typography.Text>
+              <EditOutlined></EditOutlined>
+            </span>
+          )}
+        </div>
       }
       compact
       wrapperClass={cn(styles.Wrapper, { [styles.minimized]: minimized })}

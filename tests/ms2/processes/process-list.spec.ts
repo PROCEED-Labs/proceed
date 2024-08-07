@@ -11,10 +11,11 @@ test('create a new process and remove it again', async ({ processListPage }) => 
 
   await processListPage.goto();
 
-  await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).toBeVisible();
+  const processLocator = processListPage.processLocatorByDefinitionId(processDefinitionID);
+  await expect(processLocator).toBeVisible();
 
   const modal = await openModal(page, () =>
-    page
+    processLocator
       .locator(`tr[data-row-key="${processDefinitionID}"]`)
       .getByRole('button', { name: 'delete' })
       .click(),
@@ -22,7 +23,7 @@ test('create a new process and remove it again', async ({ processListPage }) => 
 
   await closeModal(modal, () => modal.getByRole('button', { name: 'OK' }).click());
 
-  await expect(page.locator(`tr[data-row-key="${processDefinitionID}"]`)).not.toBeVisible();
+  await expect(processLocator).not.toBeVisible();
 
   processListPage.getDefinitionIds().splice(0, 1);
 });

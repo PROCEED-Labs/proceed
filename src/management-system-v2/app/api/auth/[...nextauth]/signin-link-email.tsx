@@ -15,8 +15,9 @@ import {
   render,
 } from '@react-email/components';
 import * as React from 'react';
+import { env } from '@/lib/env-vars';
 
-const baseUrl = process.env.NEXTAUTH_URL ?? '';
+const baseUrl = env.NEXTAUTH_URL;
 
 function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: Date }) {
   const expiresIn = expires.getTime() - Date.now();

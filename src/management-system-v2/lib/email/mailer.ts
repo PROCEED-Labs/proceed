@@ -1,15 +1,16 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
+import { env } from '../env-vars';
 
 let transport: nodemailer.Transporter;
-if (process.env.NODE_ENV === 'production')
+if (env.NODE_ENV === 'production')
   transport = nodemailer.createTransport({
-    host: process.env.SMTP_MAIL_HOST as string,
+    host: env.SMTP_MAIL_HOST,
     secure: true,
-    port: Number(process.env.SMTP_MAIL_PORT),
+    port: env.SMTP_MAIL_PORT,
     auth: {
-      user: process.env.SMTP_MAIL_USER,
-      pass: process.env.SMTP_MAIL_PASSWORD,
+      user: env.SMTP_MAIL_USER,
+      pass: env.SMTP_MAIL_PASSWORD,
     },
   });
 
@@ -24,13 +25,13 @@ export function sendEmail({
   html: string;
   text: string;
 }) {
-  if (process.env.NODE_ENV === 'development') {
+  if (env.NODE_ENV === 'development') {
     console.log(`Email sent to ${to} with subject: ${subject} and text: ${text}`);
     return;
   }
 
   transport.sendMail({
-    from: process.env.SMTP_MAIL_USER,
+    from: env.SMTP_MAIL_USER,
     to,
     subject,
     html,

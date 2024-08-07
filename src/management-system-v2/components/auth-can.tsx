@@ -88,8 +88,6 @@ export const AuthCan: FC<PropsWithChildren<AuthCanProps>> = (props) => {
     }
   }, [allow, fallbackRedirect, router, loadingState]);
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) return children;
-
   if (status === 'unauthenticated' && notLoggedIn) return notLoggedIn;
   if (loadingState) return loadingAuth || null;
   if (allow) return children;

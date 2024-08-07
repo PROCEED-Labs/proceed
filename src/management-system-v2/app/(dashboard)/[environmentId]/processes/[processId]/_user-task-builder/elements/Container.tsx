@@ -146,7 +146,7 @@ Container.craft = {
   props: {
     padding: 0,
     background: '#fff',
-    borderThickness: 2,
+    borderThickness: 1,
     borderColor: '#d3d3d3',
   },
 };

@@ -13,7 +13,8 @@ body {
   flex: 1 0 0;
   box-sizing: border-box;
   height: fit-content;
-  border: 2px solid lightgrey;
+  border: 2px solid white;
+  padding: 0 10px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -26,7 +27,7 @@ body {
   box-sizing: border-box;
   width: 100%;
   padding: 5px;
-  margin: 10px 0;
+  margin: 5px 0;
   display: flex;
   flex-wrap: wrap;
 }
@@ -87,13 +88,13 @@ body {
 .user-task-form-input-group input[type="radio"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-input-group input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  margin: 3px;
+  margin: 3px 3px 6px 0;
 }
 
 .user-task-form-image {

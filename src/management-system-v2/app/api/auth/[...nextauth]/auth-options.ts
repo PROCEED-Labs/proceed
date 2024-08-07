@@ -218,6 +218,28 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
+// only add the test user in preview deployments
+const url = process.env.NEXTAUTH_URL;
+if (url && url.endsWith('app.run') && url.startsWith('https://pr-')) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      id: 'test-user',
+      name: 'Continue With Test User',
+      credentials: {},
+      async authorize() {
+        return addUser({
+          guest: false,
+          email: `test-user-${crypto.randomUUID()}@proceed-labs.org`,
+          firstName: 'Test',
+          lastName: 'Test',
+          username: 'test-user',
+          emailVerified: new Date(),
+        });
+      },
+    }),
+  );
+}
+
 export type ExtractedProvider =
   | {
       id: string;

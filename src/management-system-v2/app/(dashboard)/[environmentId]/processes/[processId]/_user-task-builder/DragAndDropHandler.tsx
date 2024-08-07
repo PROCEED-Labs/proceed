@@ -51,7 +51,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   const pointerPosition = useRef({ x: 0, y: 0 });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 100, tolerance: 10 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 20 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -372,15 +372,21 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         cachedDroppableRects.current = null;
         needNewHistoryBundle.current = true;
         setActive(event.active.id.toString());
-        if (isCreating) iframeRef.current!.style.pointerEvents = 'none';
+        const isCreating = /^create-.*-button$/.test(event.active.id.toString());
+        if (isCreating && iframeRef.current) {
+          console.log('Test');
+          iframeRef.current.style.pointerEvents = 'none';
+        }
       }}
       onDragCancel={() => {
-        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        if (isCreating && iframeRef.current?.contentDocument?.body)
+          iframeRef.current.style.pointerEvents = '';
         setActive('');
       }}
       onDragEnd={(event) => {
         const { active, collisions } = event;
-        if (isCreating) iframeRef.current!.style.pointerEvents = '';
+        if (isCreating && iframeRef.current?.contentDocument?.body)
+          iframeRef.current.style.pointerEvents = '';
         else return;
         setActive('');
 

@@ -14,7 +14,8 @@ import {
   updateProcess as _updateProcess,
   getProcessVersionBpmn,
   addProcessVersion,
-  getProcessUserTaskHtml as _getProcessUserTaskHtml,
+  getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  saveProcessUserTask as _saveProcessUserTask,
   getProcessImage as _getProcessImage,
   updateProcessMetaData,
 } from './legacy/_process';
@@ -345,7 +346,7 @@ export const createVersion = async (
   // send final process version bpmn to the backend
   addProcessVersion(processId, versionedBpmn);
 
-  await updateProcessVersionBasedOn(process, epochTime);
+  await updateProcessVersionBasedOn({ ...process, bpmn }, epochTime);
 
   return epochTime;
 };
@@ -364,7 +365,7 @@ export const getFavouritesProcessIds = async () => {
   return favs ?? [];
 };
 
-export const getProcessUserTaskHTML = async (
+export const getProcessUserTaskData = async (
   definitionId: string,
   taskFileName: string,
   spaceId: string,
@@ -373,7 +374,30 @@ export const getProcessUserTaskHTML = async (
 
   if (error) return error;
 
-  return _getProcessUserTaskHtml(definitionId, taskFileName);
+  try {
+    return await _getProcessUserTaskJSON(definitionId, taskFileName);
+  } catch (err) {
+    return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
+  }
+};
+
+export const saveProcessUserTask = async (
+  definitionId: string,
+  taskFileName: string,
+  json: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'update', spaceId);
+
+  if (error) return error;
+
+  if (/-\d+$/.test(taskFileName))
+    return userError(
+      'Illegal attempt to overwrite a user task version!',
+      UserErrorType.ConstraintError,
+    );
+
+  await _saveProcessUserTask(definitionId, taskFileName, json);
 };
 
 export const getProcessImage = async (

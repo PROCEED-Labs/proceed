@@ -51,12 +51,14 @@ async function bpmnExport(
     // export the user tasks of the process
     if (processData.userTasks.length) {
       const userTaskFolder = zipFolder.folder('user-tasks');
-      for (const { filename, html } of processData.userTasks) {
+      for (const { filename, json, html } of processData.userTasks) {
+        const jsonBlob = new Blob([json], { type: 'application/json' });
+        userTaskFolder?.file(filename + '.json', jsonBlob);
         const htmlBlob = new Blob([html], { type: 'application/html' });
-        userTaskFolder?.file(filename, htmlBlob);
+        userTaskFolder?.file(filename + '.html', htmlBlob);
       }
     }
-    // export the images used either for flow elements or inside user task html
+    // export the images used either for flow elements or inside user tasks
     if (processData.images.length) {
       const imageFolder = zipFolder.folder('images');
       for (const { filename, data: imageData } of processData.images) {

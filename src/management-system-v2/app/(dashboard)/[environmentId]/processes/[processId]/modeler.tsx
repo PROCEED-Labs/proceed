@@ -255,7 +255,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     setXmlEditorBpmn(undefined);
   };
 
-  const handleXmlEditorSave = async (bpmn: string) => {
+  const handleXmlSave = async (bpmn: string) => {
     if (modeler.current) {
       await modeler.current.loadBPMN(bpmn);
       // If the bpmn contains unexpected content (text content for an element
@@ -285,6 +285,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               versions={versions}
               canRedo={canRedo}
               canUndo={canUndo}
+              modeler={modeler.current}
             />
           )}
           {selectedVersionId && !showMobileView && <VersionToolbar processId={process.id} />}
@@ -294,7 +295,7 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
               bpmn={xmlEditorBpmn}
               canSave={!selectedVersionId}
               onClose={handleCloseXmlEditor}
-              onSaveXml={handleXmlEditorSave}
+              onSaveXml={handleXmlSave}
               process={process}
               versionName={versionName}
             />

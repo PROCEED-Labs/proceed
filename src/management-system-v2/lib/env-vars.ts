@@ -82,7 +82,8 @@ if (!parsingResult.success && !onBuild) {
   for (const [variable, error] of Object.entries(parsingResult.error.flatten().fieldErrors))
     msg += `${variable}: ${JSON.stringify(error)}\n`;
 
-  throw new Error(`❌ Error parsing environment variables\n${msg}`);
+  console.error(`❌ Error parsing environment variables\n${msg}`);
+  process.exit(1);
 }
 
 const data = parsingResult.success && !onBuild ? parsingResult.data : {};

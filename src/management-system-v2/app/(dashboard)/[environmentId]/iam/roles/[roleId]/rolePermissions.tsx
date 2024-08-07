@@ -93,32 +93,32 @@ const basePermissionOptions: PermissionCategory[] = [
       },
     ],
   },
-  {
-    key: 'templates',
-    title: 'TEMPLATES',
-    resource: 'Template',
-    permissions: [
-      {
-        key: 'View templates',
-        title: 'View templates',
-        description: 'A,llows a user to view her or his templates. (Enables the Templates view.)',
-        permission: 'view',
-      },
+  // {
+  //   key: 'templates',
+  //   title: 'TEMPLATES',
+  //   resource: 'Template',
+  //   permissions: [
+  //     {
+  //       key: 'View templates',
+  //       title: 'View templates',
+  //       description: 'A,llows a user to view her or his templates. (Enables the Templates view.)',
+  //       permission: 'view',
+  //     },
 
-      {
-        key: 'Manage templates',
-        title: 'Manage templates',
-        description: 'A,llows a user to create, modify and delete templates in the Templates view.',
-        permission: 'manage',
-      },
-      {
-        key: 'Administrate templates',
-        title: 'Administrate templates',
-        description: 'A,llows a user to create, modify, delete and share all PROCEED templates.',
-        permission: 'admin',
-      },
-    ],
-  },
+  //     {
+  //       key: 'Manage templates',
+  //       title: 'Manage templates',
+  //       description: 'A,llows a user to create, modify and delete templates in the Templates view.',
+  //       permission: 'manage',
+  //     },
+  //     {
+  //       key: 'Administrate templates',
+  //       title: 'Administrate templates',
+  //       description: 'A,llows a user to create, modify, delete and share all PROCEED templates.',
+  //       permission: 'admin',
+  //     },
+  //   ],
+  // },
   {
     key: 'tasks',
     title: 'TASKS',

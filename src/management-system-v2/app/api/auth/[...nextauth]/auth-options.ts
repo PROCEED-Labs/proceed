@@ -21,7 +21,7 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Continue as a Guest',
+      name: 'Continue as Guest',
       id: 'guest-signin',
       credentials: {},
       async authorize() {
@@ -182,7 +182,7 @@ if (env.NODE_ENV === 'development') {
   nextAuthOptions.providers.push(
     CredentialsProvider({
       id: 'development-users',
-      name: 'Continue with Development Users',
+      name: 'Continue with Development User',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },

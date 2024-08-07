@@ -6,7 +6,7 @@ import { DiscoveredEngine, SavedEngine } from './engines-list';
 import { v4 } from 'uuid';
 
 const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!process.env.ENABLE_EXECUTION) {
+  if (!process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

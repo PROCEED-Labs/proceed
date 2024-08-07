@@ -9,7 +9,7 @@ const environmentVariables = {
   all: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
-    ENABLE_EXECUTION: z.string().optional(),
+    NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
   },
   production: {

@@ -6,7 +6,7 @@ import Tasklist from './tasklist';
 import { env } from '@/lib/env-vars';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!env.ENABLE_EXECUTION) {
+  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

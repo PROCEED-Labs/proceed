@@ -89,7 +89,7 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (env.ENABLE_EXECUTION) {
+  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({

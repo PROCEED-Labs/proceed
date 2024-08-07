@@ -7,7 +7,7 @@ import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/lega
 import { getUsersFavourites } from '@/lib/data/users';
 
 const ExecutionsPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!env.ENABLE_EXECUTION) {
+  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

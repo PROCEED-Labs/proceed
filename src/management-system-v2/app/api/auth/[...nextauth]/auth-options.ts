@@ -218,9 +218,13 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
-// only add the test user in preview deployments
+// add the test user in preview deployments and dev
+// dev is for local testing
 const url = process.env.NEXTAUTH_URL;
-if (url && url.endsWith('app.run') && url.startsWith('https://pr-')) {
+if (
+  (url && url.endsWith('app.run') && url.startsWith('https://pr-')) ||
+  process.env.NODE_ENV === 'development'
+) {
   nextAuthOptions.providers.push(
     CredentialsProvider({
       id: 'test-user',

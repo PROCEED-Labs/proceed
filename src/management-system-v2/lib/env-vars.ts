@@ -90,7 +90,7 @@ const data = parsingResult.success && !onBuild ? parsingResult.data : {};
 export const env = new Proxy(data as Extract<typeof parsingResult, { success: true }>['data'], {
   get(target, prop) {
     if (typeof prop !== 'string') return undefined;
-    if (!isServer && !(prop in schemaOptions) && prop.startsWith('NEXT_PUBLIC_'))
+    if (!isServer && !(prop in schemaOptions) && !prop.startsWith('NEXT_PUBLIC_'))
       throw new Error('Attempted to access a server-side environment variable on the client');
 
     return Reflect.get(target, prop);

@@ -51,7 +51,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
   const pointerPosition = useRef({ x: 0, y: 0 });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 20 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -189,6 +189,17 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
               rect.right = parentContainerRect.right;
               rect.width = parentContainerRect.width;
             }
+          } else if (dropNode.data.name === 'Container' && dropNode.data.parent) {
+            // if the node is a container we want to ensure that it is targeted instead of its parent row when an item is dragged inside
+            const parentColumn = query.node(dropNode.data.parent).get();
+            const parentRow = query.node(parentColumn.data.parent!).get();
+            const parentRowRect = parentRow.dom?.getBoundingClientRect();
+
+            if (parentRowRect) {
+              rect.top = parentRowRect.top;
+              rect.bottom = parentRowRect.bottom;
+              rect.height = parentRowRect.height;
+            }
           }
 
           // when we are dragging an element calculate the bounding boxes as they would be without the dragged element
@@ -311,8 +322,10 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
           const parentRowIndexInTargetContainer = targetNode.data.nodes.findIndex(
             (id) => id === draggedNodeParentRow.id,
           );
+
           if (
             draggedNodeParentRow.data.nodes.length === 1 &&
+            parentRowIndexInTargetContainer >= 0 &&
             (parentRowIndexInTargetContainer === index ||
               parentRowIndexInTargetContainer === index - 1)
           ) {
@@ -374,7 +387,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         setActive(event.active.id.toString());
         const isCreating = /^create-.*-button$/.test(event.active.id.toString());
         if (isCreating && iframeRef.current) {
-          console.log('Test');
           iframeRef.current.style.pointerEvents = 'none';
         }
       }}
@@ -506,14 +518,14 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
           if (currentParentRow.data.nodes.length === 1)
             getActionHandler().delete(currentParentRow.id);
           // invalidate the cache
-          // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied)
+          // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied when done without the timeout)
           setTimeout(() => (cachedDroppableRects.current = null), 50);
         } else {
           if (newIndex !== currentIndex) {
             // reposition inside the same row
             getActionHandler().move(dragNode.id, currentParentRow.id, newIndex);
             // invalidate the cache
-            // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied)
+            // TODO: do this in some smarter way (currently the recomputation seems to occasionally run before the changes are applied when done without the timeout)
             setTimeout(() => (cachedDroppableRects.current = null), 50);
           }
         }

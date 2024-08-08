@@ -104,3 +104,76 @@ export async function waitForHydration(page: Page) {
   await page.mouse.move(0, 0);
   await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
 }
+
+export async function useMailInbox<T>(use: (client: any) => Promise<T>) {
+  const { ImapFlow } = require('imapflow');
+
+  const client = new ImapFlow({
+    host: process.env.TEST_EMAIL_HOST,
+    port: 993,
+    secure: true,
+    auth: {
+      user: process.env.TEST_EMAIL,
+      pass: process.env.TEST_EMAIL_PASSWORD,
+    },
+    logger: false,
+  });
+  let lock: any;
+  let response: T;
+
+  try {
+    await client.connect();
+
+    lock = await client.getMailboxLock('INBOX');
+
+    return await use(client);
+  } finally {
+    if (lock) lock.release();
+    await client.logout();
+  }
+}
+
+/**
+ * get signin link from email inbox
+ *
+ * NOTE: this function deletes all emails from no-reply until it finds a match that respects the
+ * sentDate, thus it should not be used concurrently
+ * */
+export async function getSigninLink(sentDate: Date) {
+  return await useMailInbox(async (client) => {
+    const sender = 'no-reply@proceed-labs.org';
+    let foundLink: string | undefined | null;
+
+    // for timing
+    const start = Date.now();
+    const waitForEmailTimeout = 20_000;
+    const receivedDateError = 10_000;
+    const coolDown = 2000;
+
+    while (Date.now() - start < waitForEmailTimeout && !foundLink) {
+      const seenMails: string[] = [];
+
+      for await (let message of client.fetch(
+        { from: sender },
+        { bodyParts: ['TEXT'], envelope: true },
+      )) {
+        seenMails.push(message.seq);
+        const text: string = message.bodyParts.get('text').toString().replace(/=\r\n/g, '');
+        const afterSentDate =
+          message.envelope.date.getTime() >= sentDate.getTime() - receivedDateError;
+        //
+        let signinLink = text.match(/\n(https:\/\/.*callback\/email.*)/)?.[1];
+        signinLink = signinLink?.replace(/=3D/g, '=');
+
+        if (signinLink && afterSentDate) foundLink = signinLink;
+      }
+
+      // you can't delete emails whilst reading them
+      for (const seq of seenMails) await client.messageDelete(seq);
+
+      await new Promise((res) => setTimeout(res, coolDown));
+    }
+
+    return foundLink;
+  });
+}

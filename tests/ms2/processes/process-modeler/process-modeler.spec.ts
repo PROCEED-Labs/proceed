@@ -348,7 +348,7 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
   await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
 
-  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
+  await newPage.getByRole('button', { name: 'Continue as Guest' }).click();
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();

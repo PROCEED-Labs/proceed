@@ -13,7 +13,7 @@ export class MS2Page {
     const modal = await openModal(this.page, async () => {
       this.page.goto('/');
     });
-    await modal.getByRole('button', { name: 'Continue as a Guest' }).click();
+    await modal.getByRole('button', { name: 'Continue as Guest' }).click();
     await this.page.waitForURL('**/processes');
   }
 

@@ -90,30 +90,38 @@ const ModelerShareModalOptionPublicLink = ({
     const isChecked = e.target.checked;
 
     if (isChecked) {
-      const timestamp = Date.now();
-      // generate an url containing a token with the newly generated timestamp
-      const url = await generateSharedViewerUrl(
-        { processId: processId, timestamp },
-        // if there is a specific process version open in the modeler then link to that version (otherwise latest will be shown)
-        selectedVersionId || undefined,
-      );
-      setShareLink(url);
-      // activate sharing for that specific timestamp
-      await updateProcessGuestAccessRights(
-        processId,
-        {
-          sharedAs: 'public',
-          shareTimestamp: timestamp,
-        },
-        environment.spaceId,
-      );
-      message.success('Process shared');
+      try {
+        const timestamp = Date.now();
+        // generate an url containing a token with the newly generated timestamp
+        const url = await generateSharedViewerUrl(
+          { processId: processId, timestamp },
+          // if there is a specific process version open in the modeler then link to that version (otherwise latest will be shown)
+          selectedVersionId || undefined,
+        );
+        setShareLink(url);
+        // activate sharing for that specific timestamp
+        await updateProcessGuestAccessRights(
+          processId,
+          {
+            sharedAs: 'public',
+            shareTimestamp: timestamp,
+          },
+          environment.spaceId,
+        );
+        message.success('Process shared');
+      } catch (err) {
+        message.error('Failed to share the process.');
+      }
     } else {
       // deactivate sharing
-      await updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId);
-      setRegisteredUsersonlyChecked(false);
-      setShareLink('');
-      message.success('Process unshared');
+      try {
+        await updateProcessGuestAccessRights(processId, { shareTimestamp: 0 }, environment.spaceId);
+        setRegisteredUsersonlyChecked(false);
+        setShareLink('');
+        message.success('Process unshared');
+      } catch (err) {
+        message.error('Encountered an error while trying to stop sharing the process.');
+      }
     }
     refresh();
   };
@@ -162,13 +170,17 @@ const ModelerShareModalOptionPublicLink = ({
 
   const handleOpenSharedPage = async () => {
     if (shareTimestamp) {
-      const url = await generateSharedViewerUrl(
-        { processId, timestamp: shareTimestamp },
-        selectedVersionId || undefined,
-      );
+      try {
+        const url = await generateSharedViewerUrl(
+          { processId, timestamp: shareTimestamp },
+          selectedVersionId || undefined,
+        );
 
-      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-      window.open(url, `${processId}-${selectedVersionId}-tab`);
+        // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+        window.open(url, `${processId}-${selectedVersionId}-tab`);
+      } catch (err) {
+        message.error('Failed to open the documentation page.');
+      }
     }
   };
 

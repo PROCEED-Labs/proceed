@@ -1,8 +1,7 @@
 'use client';
 
-import { generateDateString } from '@/lib/utils';
-import { Divider } from 'antd';
-import React, { FC } from 'react';
+import { Divider, Spin } from 'antd';
+import React, { FC, Suspense } from 'react';
 import Viewer from './bpmn-viewer';
 import { ProcessListProcess } from './processes';
 import { useUserPreferences } from '@/lib/user-preferences';
@@ -28,7 +27,16 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
         <>
           {selectedElement.type !== 'folder' && (
             <>
-              <Viewer definitionId={selectedElement.id} reduceLogo={true} fitOnResize />
+              <Suspense
+                fallback={
+                  <Spin size="large" tip="Loading Preview">
+                    <div style={{ padding: 50 }} />
+                  </Spin>
+                }
+              >
+                <Viewer definitionId={selectedElement.id} reduceLogo={true} fitOnResize />
+              </Suspense>
+
               <Divider style={{ width: '100%', marginLeft: '-20%' }} />
             </>
           )}

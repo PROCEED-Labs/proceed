@@ -3,24 +3,26 @@
 import { create } from 'zustand';
 import { PackRule, packRules } from '@casl/ability/extra';
 import Ability from './ability/abilityHelper';
-import { AbilityRule } from './ability/caslAbility';
+import { AbilityRule, TreeMap } from './ability/caslAbility';
 import { useEffect } from 'react';
 
 type AbilityStoreType = {
   ability: Ability;
   abilityFetched: boolean;
-  setAbility: (rules: PackRule<AbilityRule>[], environmentId: string) => void;
+  setAbility: (rules: PackRule<AbilityRule>[], environmentId: string, treeMap?: TreeMap) => void;
 };
 
 export const SetAbility = ({
   rules,
   environmentId,
+  treeMap,
 }: {
   rules: PackRule<AbilityRule>[];
   environmentId: string;
+  treeMap?: TreeMap;
 }) => {
   useEffect(() => {
-    useAbilityStore.getState().setAbility(rules, environmentId);
+    useAbilityStore.getState().setAbility(rules, environmentId, treeMap);
   }, [rules, environmentId]);
 
   return null;
@@ -29,7 +31,7 @@ export const SetAbility = ({
 export const useAbilityStore = create<AbilityStoreType>((set) => ({
   ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[]), ''),
   abilityFetched: false,
-  setAbility(rules, environmentId) {
-    set({ ability: new Ability(rules, environmentId), abilityFetched: true });
+  setAbility(rules, environmentId, treeMap) {
+    set({ ability: new Ability(rules, environmentId, treeMap), abilityFetched: true });
   },
 }));

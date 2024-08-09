@@ -110,6 +110,15 @@ export function getFolderById(folderId: string, ability?: Ability) {
   return folderData.folder;
 }
 
+export function getFolders(spaceId?: string) {
+  const folders = Object.values(foldersMetaObject.folders);
+  const selection = spaceId
+    ? folders.filter((folder) => folder?.folder.environmentId === spaceId)
+    : folders;
+
+  return selection.map((folder) => folder!.folder);
+}
+
 export function getFolderChildren(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');

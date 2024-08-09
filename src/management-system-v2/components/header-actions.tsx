@@ -42,8 +42,8 @@ const HeaderActions: FC = () => {
   const avatarDropdownItems: MenuProps['items'] = [
     {
       key: 'profile',
-      title: 'Account Settings',
-      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+      title: 'Profile Settings',
+      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
     },
   ];
 

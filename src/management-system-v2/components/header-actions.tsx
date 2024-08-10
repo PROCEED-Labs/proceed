@@ -1,9 +1,22 @@
 'use client';
 
-import { UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Dropdown, MenuProps, Select, Space, Tooltip, Typography } from 'antd';
+import { UserOutlined, WarningOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Avatar,
+  Button,
+  ConfigProvider,
+  Dropdown,
+  MenuProps,
+  Modal,
+  Select,
+  Space,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FC, useContext } from 'react';
+import { FC, useContext, useState } from 'react';
 import Assistant from '@/components/assistant';
 import UserAvatar from './user-avatar';
 import SpaceLink from './space-link';
@@ -17,6 +30,8 @@ const HeaderActions: FC = () => {
   const session = useSession();
   const isGuest = session.data?.user.isGuest;
   const loggedIn = session.status === 'authenticated';
+  const token = theme.useToken();
+  const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
 
@@ -28,7 +43,7 @@ const HeaderActions: FC = () => {
     return (
       <Space style={{ float: 'right', padding: '16px' }}>
         <Button type="text" onClick={() => signIn()}>
-          <u>Log in</u>
+          <u>Sign in</u>
         </Button>
 
         <Tooltip title="Log in">
@@ -42,16 +57,26 @@ const HeaderActions: FC = () => {
   const avatarDropdownItems: MenuProps['items'] = [
     {
       key: 'profile',
-      title: 'Account Settings',
-      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+      title: 'Profile Settings',
+      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
     },
   ];
 
   if (isGuest) {
     actionButton = (
-      <Button type="text" onClick={() => signIn()}>
-        <u>Sign In</u>
-      </Button>
+      <>
+        <Button
+          style={{
+            color: token.token.colorWarning,
+          }}
+          icon={<WarningOutlined />}
+          type="text"
+          onClick={() => setGuestWarningOpen(true)}
+        />
+        <Button type="text" onClick={() => signIn()}>
+          <u>Sign In</u>
+        </Button>
+      </>
     );
   } else {
     actionButton = (
@@ -92,19 +117,38 @@ const HeaderActions: FC = () => {
   }
 
   return (
-    <Space style={{ float: 'right', padding: '16px' }}>
-      {enableChatbot && <Assistant />}
-      {actionButton}
-      <Dropdown
-        menu={{
-          items: avatarDropdownItems,
+    <>
+      <Modal
+        open={guestWarningOpen}
+        title="You're signed in as a guest"
+        closeIcon={null}
+        onCancel={() => setGuestWarningOpen(false)}
+        okButtonProps={{
+          children: 'Continue as guest',
         }}
+        okText="Sign in"
+        onOk={() => signIn()}
       >
-        <SpaceLink href={`/profile`}>
-          <UserAvatar user={session.data.user} />
-        </SpaceLink>
-      </Dropdown>
-    </Space>
+        <Alert
+          message="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
+          type="warning"
+          style={{ marginBottom: '1rem' }}
+        />
+      </Modal>
+      <Space style={{ float: 'right', padding: '16px' }}>
+        {enableChatbot && <Assistant />}
+        {actionButton}
+        <Dropdown
+          menu={{
+            items: avatarDropdownItems,
+          }}
+        >
+          <SpaceLink href={`/profile`}>
+            <UserAvatar user={session.data.user} />
+          </SpaceLink>
+        </Dropdown>
+      </Space>
+    </>
   );
 };
 

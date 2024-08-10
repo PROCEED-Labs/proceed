@@ -7,8 +7,8 @@ import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import {
   addUser,
+  deleteUser,
   getUserById,
-  getUserByUsername,
   updateUser,
   usersMetaObject,
 } from '@/lib/data/legacy/iam/users';
@@ -27,7 +27,7 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Continue as a Guest',
+      name: 'Continue as Guest',
       id: 'guest-signin',
       credentials: {},
       async authorize() {
@@ -85,6 +85,19 @@ const nextAuthOptions: AuthOptions = {
       }
 
       return true;
+    },
+  },
+  events: {
+    signOut({ token }) {
+      if (!token.user.guest) return;
+
+      const user = getUserById(token.user.id);
+      if (!user.guest) {
+        console.warn('User with invalid session');
+        return;
+      }
+
+      deleteUser(user.id);
     },
   },
   pages: {
@@ -188,7 +201,7 @@ if (process.env.NODE_ENV === 'development') {
   nextAuthOptions.providers.push(
     CredentialsProvider({
       id: 'development-users',
-      name: 'Continue with Development Users',
+      name: 'Continue with Development User',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },

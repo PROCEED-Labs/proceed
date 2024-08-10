@@ -5,8 +5,9 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-
-type ArtifactType = 'image' | 'html' | 'script' | 'pdf';
+import { getFileCategory } from '../helpers/fileUploadHelpers';
+import { v4 } from 'uuid';
+import { checkIfProcessExists } from './legacy/_process';
 
 // In-memory LRU cache setup
 const cache = new LRUCache<string, Buffer>({
@@ -17,7 +18,9 @@ const cache = new LRUCache<string, Buffer>({
   },
 });
 
-const DEPLOYMENT_ENV = process.env.DEPLOYMENT_ENV as 'cloud' | 'local';
+const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB
+
+const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as 'cloud' | 'local';
 const BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET_NAME || '';
 
 function getLocalStorageBasePath(): string {
@@ -36,160 +39,134 @@ const LOCAL_STORAGE_BASE = path.join(getLocalStorageBasePath(), 'storage');
 let bucket: any;
 let storage: any;
 
+const setCors = async (bucket: any) => {
+  bucket.setCorsConfiguration([
+    {
+      maxAgeSeconds: 3600,
+      method: ['GET', 'PUT'],
+      origin: ['*'], // TODO: adjust trusted origin list
+      responseHeader: ['content-type', 'x-goog-content-length-range'],
+    },
+  ]);
+};
+
 if (DEPLOYMENT_ENV === 'cloud') {
   storage = new Storage({ keyFilename: process.env.GCP_KEY_PATH });
   bucket = storage.bucket(BUCKET_NAME);
+  setCors(bucket);
 }
 
-/**
- * Constructs the file path based on the provided parameters.
- * @param spaceId - The space identifier.
- * @param userId - The user identifier.
- * @param artifactType - The type of artifact ('image', 'html', 'script', 'pdf').
- * @param fileName - The name of the file.
- * @param processId - Optional process identifier.
- * @returns The constructed file path.
- */
-function getFilePath(
-  spaceId: string,
-  userId: string,
-  artifactType: ArtifactType,
-  fileName: string,
-  processId?: string,
-): string {
-  return !processId
-    ? `spaces/${spaceId}/user/${userId}/artifacts/${artifactType}/${fileName}`
-    : `spaces/${spaceId}/user/${userId}/processes/${processId}/artifacts/${artifactType}/${fileName}`;
+function getFilePath(fileName: string, processId: string, mimeType?: string): string {
+  const artifactType = getFileCategory(fileName, mimeType);
+  return `processes/${processId}/${artifactType}/${fileName}`;
 }
 
-/**
- * Saves a file to either cloud storage or local storage.
- * @param spaceId - The space identifier.
- * @param userId - The user identifier.
- * @param artifactType - The type of artifact.
- * @param fileName - The name of the file.
- * @param fileContent - The content of the file as a Buffer.
- * @param processId - Optional process identifier.
- * @returns A promise that resolves when the file has been saved.
- * @throws An error if the save operation fails.
- */
+function getNewFileName(fileName: string): string {
+  return `${v4()}_${fileName}`;
+}
+
+function hasUuidBeforeUnderscore(filename: string): boolean {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_.+/i;
+  const res = uuidPattern.test(filename);
+  return res;
+}
+
 export async function saveFile(
-  spaceId: string,
-  userId: string,
-  artifactType: ArtifactType,
   fileName: string,
-  fileContent: Buffer,
-  processId?: string,
-): Promise<void> {
-  const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
+  mimeType: string,
+  processId: string,
+  fileContent?: Buffer | Uint8Array | Blob | string,
+): Promise<{ presignedUrl: string | null; fileName: string }> {
+  const newFileName = !hasUuidBeforeUnderscore(fileName) ? getNewFileName(fileName) : fileName;
 
+  const filePath = mimeType
+    ? getFilePath(newFileName, processId, mimeType)
+    : getFilePath(newFileName, processId);
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
+      await checkIfProcessExists(processId);
+
       const file = bucket.file(filePath);
-      await file.save(fileContent);
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        contentType: `${mimeType}`,
+        extensionHeaders: {
+          'x-goog-content-length-range': `${0},${MAX_CONTENT_LENGTH}`,
+        },
+      });
+
+      // Return the signed URL for upload
+      return { presignedUrl: url, fileName: newFileName };
     } else {
+      if (!fileContent) {
+        throw new Error('File is required to upload');
+      }
       const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
       await fse.ensureDir(path.dirname(fullPath));
-      await fse.writeFile(fullPath, fileContent);
-    }
+      const decodedContent = Buffer.from(fileContent as string, 'base64');
+      await fse.writeFile(fullPath, decodedContent);
 
-    if (cache.has(filePath)) {
-      cache.delete(filePath);
+      if (cache.has(filePath)) cache.delete(filePath);
+
+      return { presignedUrl: null, fileName: newFileName };
     }
   } catch (error: any) {
     throw new Error(`Failed to save file: ${error.message}`);
   }
 }
 
-/**
- * Retrieves a file from either cloud storage or local storage.
- * @param spaceId - The space identifier.
- * @param userId - The user identifier.
- * @param artifactType - The type of artifact.
- * @param fileName - The name of the file.
- * @param processId - Optional process identifier.
- * @returns A promise that resolves with the file content as a Buffer.
- * @throws An error if the file does not exist or retrieval fails.
- */
-export async function retrieveFile(
-  spaceId: string,
-  userId: string,
-  artifactType: ArtifactType,
-  fileName: string,
-  processId?: string,
-): Promise<Buffer> {
-  const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
-
+export async function retrieveFile(fileName: string, processId: string): Promise<Buffer | string> {
+  const filePath = getFilePath(fileName, processId);
   try {
-    // Check cache first
-    if (cache.has(filePath)) {
-      console.log('Cache hit: ', filePath);
-      return cache.get(filePath)!;
-    }
-
-    let fileContent: Buffer;
-
     if (DEPLOYMENT_ENV === 'cloud') {
+      await checkIfProcessExists(processId);
+
       const file = bucket.file(filePath);
-      [fileContent] = await file.download();
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+      });
+      return url;
     } else {
+      if (cache.has(filePath)) {
+        const fileContent = cache.get(filePath);
+        console.log('Cache Hit');
+        return fileContent!;
+      }
       const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
       if (await fse.pathExists(fullPath)) {
-        fileContent = await fse.readFile(fullPath);
+        const fileContent = await fse.readFile(fullPath);
+        cache.set(filePath, fileContent);
+        return fileContent;
       } else {
         throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
       }
     }
-
-    cache.set(filePath, fileContent);
-
-    return fileContent;
   } catch (error: any) {
     throw new Error(`Failed to retrieve file: ${error.message}`);
   }
 }
 
-/**
- * Deletes a file from either cloud storage or local storage.
- * @param spaceId - The space identifier.
- * @param userId - The user identifier.
- * @param artifactType - The type of artifact.
- * @param fileName - The name of the file.
- * @param processId - Optional process identifier.
- * @returns A promise that resolves when the file has been deleted.
- * @throws An error if the file does not exist or deletion fails.
- */
-export async function deleteFile(
-  spaceId: string,
-  userId: string,
-  artifactType: ArtifactType,
-  fileName: string,
-  processId?: string,
-): Promise<void> {
-  const filePath = getFilePath(spaceId, userId, artifactType, fileName, processId);
+export async function deleteFile(fileName: string, processId: string): Promise<boolean> {
+  const filePath = getFilePath(fileName, processId);
 
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
       const file = bucket.file(filePath);
-      const fileMetadata = await file.getMetadata();
-
-      // generation number check to avoid race conditions
-      const deleteOptions = {
-        ifGenerationMatch: fileMetadata[0].generation,
-      };
-
-      await file.delete(deleteOptions);
+      await file.delete();
+      return true;
     } else {
       const fullPath = path.join(LOCAL_STORAGE_BASE, filePath);
       if (await fse.pathExists(fullPath)) {
         await fse.unlink(fullPath);
+        if (cache.has(filePath)) cache.delete(filePath);
       } else {
         throw new Error(`File ${fileName} does not exist at path ${fullPath}`);
       }
-    }
-
-    if (cache.has(filePath)) {
-      cache.delete(filePath);
+      return true;
     }
   } catch (error: any) {
     throw new Error(`Failed to delete file: ${error.message}`);

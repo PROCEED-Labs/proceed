@@ -9,6 +9,7 @@ import {
   addUser,
   deleteUser,
   getUserById,
+  getUserByUsername,
   updateUser,
   usersMetaObject,
 } from '@/lib/data/legacy/iam/users';
@@ -88,16 +89,18 @@ const nextAuthOptions: AuthOptions = {
     },
   },
   events: {
-    signOut({ token }) {
-      if (!token.user.guest) return;
+    async signOut({ token }) {
+      if (!token.user.isGuest) return;
 
-      const user = getUserById(token.user.id);
-      if (!user.guest) {
-        console.warn('User with invalid session');
-        return;
+      const user = await getUserById(token.user.id);
+      if (user) {
+        if (!user.isGuest) {
+          console.warn('User with invalid session');
+          return;
+        }
+
+        deleteUser(user.id);
       }
-
-      deleteUser(user.id);
     },
   },
   pages: {

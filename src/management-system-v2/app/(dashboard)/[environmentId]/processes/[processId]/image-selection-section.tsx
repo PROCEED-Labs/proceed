@@ -29,6 +29,8 @@ export const ImageUpload: React.FC<
   const { processId } = useParams();
   const environment = useEnvironment();
 
+  const { upload, remove } = useFileManager();
+
   let imageURL =
     imageFileName &&
     `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}?${reloadParam}`;
@@ -36,6 +38,7 @@ export const ImageUpload: React.FC<
   return (
     <div>
       <Upload
+        accept="image/png, image/jpeg, image/webp, image/svg+xml, image/jpg, image/gif"
         style={{ color: 'white' }}
         showUploadList={false}
         beforeUpload={() => false} // needed for custom upload of file
@@ -51,13 +54,18 @@ export const ImageUpload: React.FC<
             if (imageFileName) {
               // Update existing image
               try {
-                const response = await fetch(
-                  `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}`,
-                  {
-                    method: 'PUT',
-                    body: image,
-                  },
-                );
+                let response;
+                if (enableUseFileManager) {
+                  response = await upload(image, processId as string, imageFileName);
+                } else {
+                  response = await fetch(
+                    `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}`,
+                    {
+                      method: 'PUT',
+                      body: image,
+                    },
+                  );
+                }
 
                 if (!response.ok) {
                   onUploadFail?.();
@@ -70,17 +78,24 @@ export const ImageUpload: React.FC<
             } else {
               // Add new Image
               try {
-                const response = await fetch(
-                  `/api/private/${environment.spaceId}/processes/${processId as string}/images/`,
-                  {
-                    method: 'POST',
-                    body: image,
-                  },
-                );
+                let response;
+                let newImageFileName;
+                if (enableUseFileManager) {
+                  response = await upload(image, processId as string);
+                  newImageFileName = response.fileName;
+                } else {
+                  response = await fetch(
+                    `/api/private/${environment.spaceId}/processes/${processId as string}/images/`,
+                    {
+                      method: 'POST',
+                      body: image,
+                    },
+                  );
+                  newImageFileName = await response.text();
+                }
                 if (!response.ok) {
                   onUploadFail?.();
                 } else {
-                  const newImageFileName = await response.text();
                   onImageUpdate(newImageFileName);
                 }
               } catch (err) {
@@ -98,12 +113,16 @@ export const ImageUpload: React.FC<
         <DeleteOutlined
           style={{ marginLeft: '0.5rem' }}
           onClick={async () => {
-            await fetch(
-              `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}`,
-              {
-                method: 'DELETE',
-              },
-            );
+            if (!enableUseFileManager) {
+              await fetch(
+                `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}`,
+                {
+                  method: 'DELETE',
+                },
+              );
+            } else {
+              remove(processId as string, imageFileName!);
+            }
             onImageUpdate();
           }}
         ></DeleteOutlined>
@@ -124,6 +143,10 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
 
   const [api, contextHolder] = notification.useNotification();
 
+  const [fmImageUrl, setFmImageUrl] = useState<string | null>(null);
+
+  const { download, reset, isLoading, downloadUrl } = useFileManager();
+
   const showImageUploadFailMessage = () => {
     api.info({
       message: `Image upload failed`,
@@ -136,34 +159,51 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
     imageFileName &&
     `/api/private/${environment.spaceId}/processes/${processId as string}/images/${imageFileName}?${reloadParam}`;
 
+  useEffect(() => {
+    if (enableUseFileManager && imageFileName) {
+      download(processId as string, imageFileName);
+    }
+    return () => reset();
+  }, [imageFileName]);
+
+  useEffect(() => {
+    if (enableUseFileManager) {
+      setFmImageUrl(downloadUrl);
+    }
+  });
+
   return (
     <>
       {contextHolder}
-      <Image
-        src={imageURL || fallbackImage}
-        alt="Image"
-        fallback={fallbackImage}
-        style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '6px',
-          border: '1px solid #d9d9d9',
-        }}
-        preview={{
-          visible: false,
-          mask: (
-            <ImageUpload
-              reloadParam={reloadParam}
-              imageFileName={imageFileName}
-              onReload={() => setReloadParam(Date.now())}
-              onImageUpdate={onImageUpdate}
-              onUploadFail={() => showImageUploadFailMessage()}
-            />
-          ),
-        }}
-        role="group"
-        aria-label="image-section"
-      ></Image>
+      {isLoading ? (
+        <Spin size="large" />
+      ) : (
+        <Image
+          src={(enableUseFileManager ? fmImageUrl : imageURL) || fallbackImage}
+          alt="Image"
+          fallback={fallbackImage}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '6px',
+            border: '1px solid #d9d9d9',
+          }}
+          preview={{
+            visible: false,
+            mask: (
+              <ImageUpload
+                reloadParam={reloadParam}
+                imageFileName={imageFileName}
+                onReload={() => setReloadParam(Date.now())}
+                onImageUpdate={onImageUpdate}
+                onUploadFail={() => showImageUploadFailMessage()}
+              />
+            ),
+          }}
+          role="group"
+          aria-label="image-section"
+        ></Image>
+      )}
     </>
   );
 };

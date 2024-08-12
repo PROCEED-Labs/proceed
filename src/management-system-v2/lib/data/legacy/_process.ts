@@ -49,18 +49,16 @@ export function getProcessMetaObjects() {
 }
 
 /** Returns all processes for a user */
-export async function getProcesses(ability: Ability, includeBPMN = false) {
+export async function getProcesses(ability?: Ability, includeBPMN = false) {
   const processes = Object.values(processMetaObjects);
 
-  const userProcesses = await Promise.all(
-    ability
-      .filter('view', 'Process', processes)
-      .map(async (process) =>
-        !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
-      ),
-  );
+  const userProcesses = ability ? ability.filter('view', 'Process', processes) : processes;
 
-  return userProcesses;
+  return await Promise.all(
+    userProcesses.map(async (process) =>
+      !includeBPMN ? process : { ...process, bpmn: getProcessBpmn(process.id) },
+    ),
+  );
 }
 
 export async function getProcess(processDefinitionsId: string, includeBPMN = false) {
@@ -204,7 +202,7 @@ export function moveProcess({
 
   if (!dontUpdateOldFolder) {
     const oldFolder = foldersMetaObject.folders[process.folderId];
-    if (!oldFolder) throw new Error("Consistensy Error: Process' folder not found");
+    if (!oldFolder) throw new Error("Consistency Error: Process' folder not found");
     const processOldFolderIdx = oldFolder.children.findIndex(
       (item) => 'type' in item && item.type === 'process' && item.id === processDefinitionsId,
     );
@@ -301,7 +299,7 @@ export async function addProcessVersion(processDefinitionsId: string, bpmn: stri
 
   await saveProcessVersion(processDefinitionsId, versionInformation.version || 0, bpmn);
 
-  // add information about the new version to the meta information and inform others about its existance
+  // add information about the new version to the meta information and inform others about its existence
   const newVersions = existingProcess.versions ? [...existingProcess.versions] : [];
 
   //@ts-ignore

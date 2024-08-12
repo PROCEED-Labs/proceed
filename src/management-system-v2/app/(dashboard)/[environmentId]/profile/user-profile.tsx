@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, ReactNode, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert } from 'antd';
+import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
@@ -17,7 +17,11 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
-  const { message: messageApi } = App.useApp();
+  const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
+  const [errors, parseEmail] = useParseZodErrors(z.object({ email: z.string().email() }));
+  const [changeEmailForm] = Form.useForm();
+
+  const { message: messageApi, notification } = App.useApp();
 
   async function deleteUser() {
     try {
@@ -30,6 +34,26 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
       //@ts-ignore
       if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
       else messageApi.error({ content: 'An error ocurred' });
+    }
+  }
+
+  async function requestEmailChange(values: unknown) {
+    try {
+      const data = parseEmail(values);
+      if (!data) return;
+
+      const response = await serverRequestEmailChange(data.email);
+      if (response && 'error' in response) throw response;
+
+      setChangeEmailModalOpen(false);
+      notification.success({
+        message: 'Email change request successful',
+        description: 'Check your Email for the verification link',
+      });
+    } catch (e: unknown) {
+      //@ts-ignore
+      const content = (e?.error?.message as ReactNode) ? e.error.message : 'An error ocurred';
+      messageApi.error({ content });
     }
   }
 
@@ -64,6 +88,31 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           ],
         }}
       />
+
+      <Modal
+        title="Change your email"
+        open={changeEmailModalOpen}
+        closeIcon={null}
+        onCancel={() => setChangeEmailModalOpen(false)}
+        onOk={changeEmailForm.submit}
+        destroyOnClose
+      >
+        <Alert
+          type="warning"
+          message="We'll send a sign in link to your new email, if you don't open it in this browser your email won't be changed"
+          style={{ marginBottom: '1rem' }}
+        />
+        <Form
+          initialValues={userData}
+          form={changeEmailForm}
+          layout="vertical"
+          onFinish={requestEmailChange}
+        >
+          <Form.Item label="Email" name="email" required {...antDesignInputProps(errors, 'email')}>
+            <Input type="email" />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>

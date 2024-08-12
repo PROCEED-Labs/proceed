@@ -58,7 +58,7 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
-    _updateUser(userId, newUserData);
+    _updateUser(userId, { ...newUserData, guest: false });
   } catch (_) {
     return userError('Error updating user');
   }

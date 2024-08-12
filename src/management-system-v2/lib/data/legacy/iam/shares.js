@@ -1,8 +1,9 @@
 import { v4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import store from '../store.js';
-import { TYPE_USER, TYPE_LINK } from '../iam-constants.js';
-import { config } from './config.js';
+
+const TYPE_USER = 0;
+const TYPE_LINK = 2;
 
 export let sharesMetaObjects = {};
 
@@ -125,7 +126,7 @@ export async function addShare(share) {
     share.password = share.password ? await bcrypt.hash(share.password, saltRounds) : null;
     share.token = getRandomString(15);
     share.sharedWith = share.token;
-    share.url = config.MS_URL;
+    // share.url = config.MS_URL;
   }
 
   // set creation date

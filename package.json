@@ -16,33 +16,29 @@
     ]
   },
   "author": {
-    "name": "PROCEED Project",
-    "email": "proceed@snet.tu-berlin.de",
-    "url": "https://proceed.snet.tu-berlin.de/"
+    "name": "PROCEED Labs GmbH",
+    "email": "dev@proceed-labs.org",
+    "url": "https://www.proceed-labs.org/"
   },
-  "homepage": "https://proceed.snet.tu-berlin.de/",
+  "homepage": "https://app.proceed-labs.org",
   "bugs": "https://github.com/PROCEED-Labs/proceed/issues",
-  "description": "The PROCEED project aims to create a new kind of process execution engine with distributed and decentralized features.",
+  "description": "PROCEED is a Business Process Management System for documenting, analyzing, and automating BPMN-based processes.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PROCEED-Labs/proceed.git",
-    "directory": "src/management-system"
+    "url": "https://github.com/PROCEED-Labs/proceed.git"
   },
   "engines": {
-    "node": ">=12.0.0",
-    "yarn": ">=1.0.0"
+    "node": ">=20.11.0",
+    "yarn": ">=1.22.22"
   },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610",
   "prettier": {
     "singleQuote": true
   },
   "scripts": {
     "dev": "ts-node src/engine/native/node/index.ts --trace-warnings",
-    "dev-ms-no-iam": "cd src/management-system-v2 && yarn dev",
-    "dev-ms": "cd src/management-system-v2 && cross-env USE_AUTHORIZATION=true yarn dev",
-    "dev-ms-api-no-iam": "cd src/management-system && cross-env process.env.API_ONLY=true USE_AUTHORIZATION=false yarn web:dev-start-backend",
-    "dev-ms-api": "cd src/management-system && cross-env process.env.API_ONLY=true yarn web:dev-iam",
-    "dev-ms-api-auth0": "cd src/management-system && cross-env process.env.API_ONLY=true process.env.USE_AUTH0=true yarn web:dev-iam",
+    "dev-ms": "cd src/management-system-v2 && yarn dev",
     "dev-ms-old": "cd src/management-system && yarn web:dev",
     "dev-ms-old-iam": "cd src/management-system && yarn web:dev-iam",
     "dev-web": "yarn build && cd src/engine/native/web/server && yarn serve",
@@ -63,14 +59,14 @@
     "android-prepare": "cd src/engine/universal && webpack --output-path ../native/android/app/src/main/assets --config webpack.universal.config.js",
     "build-android": "yarn android-prepare && cd src/engine/native/android && ./gradlew assembleDebug"
   },
+  "lint-staged": {
+    "*": "prettier --check --ignore-path .eslintignore"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
       "pre-push": "yarn test-engine && yarn test-ms"
     }
-  },
-  "lint-staged": {
-    "*": "prettier --check --ignore-path .eslintignore"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",

@@ -127,7 +127,6 @@ const CreateOrganizationPage = ({
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                paddingBottom: '15px',
               }}
               href={'/'}
             >

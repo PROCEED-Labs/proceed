@@ -69,12 +69,12 @@ const DashboardLayout = async ({
         icon: <FileOutlined />,
       });
 
-    if (can('view', 'Template'))
-      children.push({
-        key: 'templates',
-        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-        icon: <ProfileOutlined />,
-      });
+    // if (can('view', 'Template'))
+    //   children.push({
+    //     key: 'templates',
+    //     label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+    //     icon: <ProfileOutlined />,
+    //   });
 
     layoutMenuItems.push({
       key: 'processes-group',
@@ -88,7 +88,7 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (process.env.ENABLE_EXECUTION) {
+  if (process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({

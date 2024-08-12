@@ -19,6 +19,6 @@ namespace NodeJS {
     TWITTER_CLIENT_SECRET?: string;
 
     ENABLE_MACHINE_CONFIG?: string;
-    ENABLE_EXECUTION?: string;
+    NEXT_PUBLIC_ENABLE_EXECUTION?: string;
   }
 }

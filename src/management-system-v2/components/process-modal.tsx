@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Typography, ModalProps } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
 
@@ -9,9 +9,10 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
-  onCancel: () => void;
+  onCancel: NonNullable<ModalProps['onCancel']>;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  modalProps?: ModalProps;
 };
 
 const ProcessModal = <T extends { name: string; description: string }>({
@@ -21,6 +22,7 @@ const ProcessModal = <T extends { name: string; description: string }>({
   onCancel,
   onSubmit,
   initialData,
+  modalProps,
 }: ProcessModalProps<T>) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -111,16 +113,21 @@ const ProcessModal = <T extends { name: string; description: string }>({
       open={open}
       width={600}
       centered
-      onCancel={() => {
-        onCancel();
-      }}
       // IMPORTANT: This prevents a modal being stored for every row in the
       // table.
       destroyOnClose
       okButtonProps={{ loading: submitting }}
       okText={okText}
       wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}
-      onOk={onOk}
+      {...modalProps}
+      onCancel={(e) => {
+        modalProps?.onCancel?.(e);
+        onCancel(e);
+      }}
+      onOk={(e) => {
+        modalProps?.onOk?.(e);
+        onOk();
+      }}
     >
       <Form
         form={form}

@@ -57,8 +57,8 @@ const HeaderActions: FC = () => {
   const avatarDropdownItems: MenuProps['items'] = [
     {
       key: 'profile',
-      title: 'Account Settings',
-      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
+      title: 'Profile Settings',
+      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
     },
   ];
 
@@ -138,7 +138,7 @@ const HeaderActions: FC = () => {
         onOk={() => signIn()}
       >
         <Alert
-          message="Beware: If you continue as a guest, the processes your create will not be accessible on other devicces and all your data will be automatically deleted after a few days. To save your data you have to sign in"
+          message="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
           type="warning"
           style={{ marginBottom: '1rem' }}
         />

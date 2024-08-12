@@ -48,7 +48,7 @@ module.exports = {
   //feature to switch to prisma from fs
   enableUseDB: false,
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
-  enableUseFileManager: true,
+  enableUseFileManager: false,
   // -----------------------------------------------------------------------------
   // Chopping Block
   //

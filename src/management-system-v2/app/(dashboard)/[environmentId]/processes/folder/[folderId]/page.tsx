@@ -16,7 +16,6 @@ import { LeftOutlined } from '@ant-design/icons';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({

@@ -6,7 +6,6 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
-  ProfileOutlined,
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
@@ -18,6 +17,7 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
+import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
@@ -180,7 +180,7 @@ const DashboardLayout = async ({
             Organization Settings
           </Link>
         ),
-        icon: <SettingOutlined />,
+        icon: <GoOrganization />,
       });
 
     if (can('view', 'Setting'))

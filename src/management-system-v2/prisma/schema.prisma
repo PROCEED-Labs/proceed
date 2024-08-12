@@ -98,7 +98,7 @@ model Space {
   description        String?
   contactPhoneNumber String?
   logo               String?
-  owner              User         @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User?         @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]
   folders            Folder[]

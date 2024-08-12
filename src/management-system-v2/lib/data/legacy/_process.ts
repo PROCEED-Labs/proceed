@@ -34,7 +34,7 @@ import db from '@/lib/data';
 import { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { v4 } from 'uuid';
 import { ProcessType } from '@prisma/client';
-import { saveFile } from '../file-manager';
+import { deleteFile, saveFile } from '../file-manager';
 
 let firstInit = false;
 // @ts-ignore
@@ -582,36 +582,44 @@ export async function removeProcess(processDefinitionsId: string) {
   if (enableUseDB) {
     const process = await db.process.findUnique({
       where: { id: processDefinitionsId },
-      include: { folder: true },
+      select: { id: true, processArtifacts: true },
     });
 
     if (!process) {
       return;
     }
 
-    // Remove from database
+    // Delete all artifacts
+    const deletionPromises = process.processArtifacts.map((artifact) =>
+      deleteFile(artifact.filePath, process.id, true),
+    );
+
+    // Wait for all deletions to complete
+    await Promise.all(deletionPromises);
+
+    //Remove process now
     await db.process.delete({ where: { id: processDefinitionsId } });
 
     eventHandler.dispatch('processRemoved', { processDefinitionsId });
+  } else {
+    const process = processMetaObjects[processDefinitionsId];
+
+    if (!process) {
+      return;
+    }
+
+    // remove process from frolder
+    foldersMetaObject.folders[process.folderId]!.children = foldersMetaObject.folders[
+      process.folderId
+    ]!.children.filter((folder) => folder.id !== processDefinitionsId);
+    // remove process directory
+    deleteProcess(processDefinitionsId);
+
+    // remove from store
+    store.remove('processes', processDefinitionsId);
+    delete processMetaObjects[processDefinitionsId];
+    eventHandler.dispatch('processRemoved', { processDefinitionsId });
   }
-
-  const process = processMetaObjects[processDefinitionsId];
-
-  if (!process) {
-    return;
-  }
-
-  // remove process from frolder
-  foldersMetaObject.folders[process.folderId]!.children = foldersMetaObject.folders[
-    process.folderId
-  ]!.children.filter((folder) => folder.id !== processDefinitionsId);
-  // remove process directory
-  deleteProcess(processDefinitionsId);
-
-  // remove from store
-  store.remove('processes', processDefinitionsId);
-  delete processMetaObjects[processDefinitionsId];
-  eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }
 
 /** Stores a new version of an existing process */

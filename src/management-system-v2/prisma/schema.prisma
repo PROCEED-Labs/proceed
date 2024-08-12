@@ -14,11 +14,11 @@ datasource db {
 }
 
 model SystemAdmin  {
-  id            String @id @default(uuid())
-  role          String @default("admin")
-  user          User @relation(name: "systemAdmin",fields: [userId],references: [id])
-  userId        String @unique
-  createdOn     DateTime @default(now())
+  id            String    @id @default(uuid())
+  role          String    @default("admin")
+  user          User      @relation(name: "systemAdmin",fields: [userId],references: [id])
+  userId        String    @unique
+  createdOn     DateTime  @default(now())
   lastEditedOn  DateTime
 }
 
@@ -76,10 +76,18 @@ model Process {
   environmentId        String
   versions             Version[]
   bpmn                 String   @db.Xml
-  owner                User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner                User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId              String
   departments          String[] @default([])
   variables            Json[]   @default([])
+  processArtifacts     ProcessArtifacts[]
+}
+
+model ProcessArtifacts {
+  id            String  @id @default(uuid())
+  filePath      String  @unique
+  process       Process @relation(fields: [processId], references: [id])
+  processId     String
 }
 
 model Space {
@@ -90,7 +98,7 @@ model Space {
   description        String?
   contactPhoneNumber String?
   logo               String?
-  owner              User?         @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User         @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String
   members            Membership[]
   folders            Folder[]

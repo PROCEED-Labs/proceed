@@ -5,7 +5,13 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  updateUser,
+  usersMetaObject,
+} from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
@@ -78,6 +84,19 @@ const nextAuthOptions: AuthOptions = {
       }
 
       return true;
+    },
+  },
+  events: {
+    signOut({ token }) {
+      if (!token.user.guest) return;
+
+      const user = getUserById(token.user.id);
+      if (!user.guest) {
+        console.warn('User with invalid session');
+        return;
+      }
+
+      deleteUser(user.id);
     },
   },
   pages: {

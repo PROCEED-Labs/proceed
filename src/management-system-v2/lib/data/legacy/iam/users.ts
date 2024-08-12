@@ -200,11 +200,13 @@ export function getOauthAccountByProviderId(provider: string, providerAccountId:
   }
 }
 
+let inited = false;
 /**
  * initializes the environments meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   const storedUsers = store.get('users');
 

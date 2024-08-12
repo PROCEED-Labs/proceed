@@ -5,12 +5,17 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { addUser, getUserById, updateUser, usersMetaObject } from '@/lib/data/legacy/iam/users';
+import {
+  addUser,
+  deleteUser,
+  getUserById,
+  updateUser,
+  usersMetaObject,
+} from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import { randomUUID } from 'crypto';
 import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 
 const nextAuthOptions: AuthOptions = {
@@ -21,7 +26,7 @@ const nextAuthOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Continue as a Guest',
+      name: 'Continue as Guest',
       id: 'guest-signin',
       credentials: {},
       async authorize() {
@@ -51,13 +56,11 @@ const nextAuthOptions: AuthOptions = {
 
       if (trigger === 'update') user = getUserById(token.user.id);
 
-      if (trigger === 'signIn') token.csrfToken = randomUUID();
-
       if (user) token.user = user;
 
       return token;
     },
-    session({ session, token, trigger }) {
+    session({ session, token }) {
       if (token.user) session.user = token.user;
       if (token.csrfToken) session.csrfToken = token.csrfToken;
 
@@ -84,6 +87,19 @@ const nextAuthOptions: AuthOptions = {
       }
 
       return true;
+    },
+  },
+  events: {
+    signOut({ token }) {
+      if (!token.user.guest) return;
+
+      const user = getUserById(token.user.id);
+      if (!user.guest) {
+        console.warn('User with invalid session');
+        return;
+      }
+
+      deleteUser(user.id);
     },
   },
   pages: {
@@ -187,7 +203,7 @@ if (process.env.NODE_ENV === 'development') {
   nextAuthOptions.providers.push(
     CredentialsProvider({
       id: 'development-users',
-      name: 'Continue with Development Users',
+      name: 'Continue with Development User',
       credentials: {
         username: { label: 'Username', type: 'text', placeholder: 'johndoe | admin' },
       },

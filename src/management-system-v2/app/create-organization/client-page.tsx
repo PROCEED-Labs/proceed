@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
 import PhoneInput from '@/components/phone-input';
 import Link from 'next/link';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 
 type CreateOrganizationPageProps = {
   needsToAuthenticate: boolean;
@@ -92,6 +93,11 @@ const CreateOrganizationPage = ({
       }}
     >
       <Content
+        headerLeft={
+          <Button type="primary" icon={<ArrowLeftOutlined />} onClick={router.back}>
+            Back
+          </Button>
+        }
         headerCenter={
           breakpoint.xs ? undefined : (
             <Link
@@ -99,7 +105,6 @@ const CreateOrganizationPage = ({
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                paddingBottom: '15px',
               }}
               href={'/'}
             >

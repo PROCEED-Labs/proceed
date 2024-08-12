@@ -3,8 +3,9 @@ namespace NodeJS {
     NEXTAUTH_SECRET: string;
     NEXT_PUBLIC_USE_AUTH: string;
 
+    SHARING_ENCRYPTION_SECRET: string;
+
     USE_AUTH0?: string;
-    JWT_SHARE_SECRET: string;
     AUTH0_CLIENT_ID?: string;
     AUTH0_CLIENT_SECRET?: string;
     AUTH0_clientCredentialScope?: string;
@@ -18,5 +19,6 @@ namespace NodeJS {
     TWITTER_CLIENT_SECRET?: string;
 
     ENABLE_MACHINE_CONFIG?: string;
+    NEXT_PUBLIC_ENABLE_EXECUTION?: string;
   }
 }

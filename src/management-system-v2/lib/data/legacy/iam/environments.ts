@@ -153,35 +153,13 @@ export function deleteEnvironment(environmentId: string, ability?: Ability) {
   store.remove('environments', environmentId);
 }
 
-export function updateOrganization(
-  environmentId: string,
-  environmentInput: Partial<UserOrganizationEnvironmentInput>,
-  ability?: Ability,
-) {
-  const environment = getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
-
-  if (
-    ability &&
-    !ability.can('update', toCaslResource('Environment', environment), { environmentId })
-  )
-    throw new UnauthorizedError();
-
-  if (!environment.organization) throw new Error('Environment is not an organization');
-
-  const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
-  const newEnvironmentData: Environment = { ...environment, ...update };
-
-  environmentsMetaObject[environmentId] = newEnvironmentData;
-  store.update('environments', environmentId, newEnvironmentData);
-
-  return newEnvironmentData;
-}
-
+let inited = false;
 /**
  * initializes the environments meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   const storedEnvironemnts = store.get('environments') as any[];
 

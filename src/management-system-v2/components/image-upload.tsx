@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Upload } from 'antd';
+import { Button, Space, Upload } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
@@ -17,7 +17,7 @@ const ImageUpload: React.FC<{
   };
 }> = ({ imageExists, onImageUpdate, onUploadFail, onReload, endpoints }) => {
   return (
-    <div>
+    <Space>
       <Upload
         style={{ color: 'white' }}
         showUploadList={false}
@@ -67,21 +67,26 @@ const ImageUpload: React.FC<{
           }
         }}
       >
-        <span style={{ color: 'white' }}>{imageExists ? <EditOutlined /> : 'Add Image'}</span>
+        <Button type="default" ghost>
+          {imageExists ? <EditOutlined /> : 'Add Image'}
+        </Button>
       </Upload>
 
       {imageExists && endpoints.deleteEndpoint && (
-        <DeleteOutlined
-          style={{ marginLeft: '0.5rem' }}
+        <Button
           onClick={async () => {
             await fetch(endpoints.deleteEndpoint as string, {
               method: 'DELETE',
             });
             onImageUpdate();
           }}
-        />
+          type="default"
+          ghost
+        >
+          <DeleteOutlined />
+        </Button>
       )}
-    </div>
+    </Space>
   );
 };
 

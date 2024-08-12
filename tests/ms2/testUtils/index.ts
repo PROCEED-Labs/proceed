@@ -78,7 +78,7 @@ export async function openModal(page: Page, triggerFunction: () => Promise<any>)
  * Will close a modal with the given function and wait for it to be closed before returning
  *
  * @param modal a locator to the modal to be closed
- * @param triggerFunction the funtion that triggers the modal to close
+ * @param triggerFunction the function that triggers the modal to close
  */
 export async function closeModal(modal: Locator, triggerFunction: () => Promise<void>) {
   await triggerFunction();
@@ -98,7 +98,7 @@ export async function waitForHydration(page: Page) {
   await page
     .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
     .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
-    .getByRole('menuitem', { name: 'Account Settings' })
+    .getByRole('menuitem', { name: 'Profile Settings' })
     .waitFor({ state: 'visible' });
   // move the mouse away from the button to close the menu and go into a "clean" state for further testing
   await page.mouse.move(0, 0);

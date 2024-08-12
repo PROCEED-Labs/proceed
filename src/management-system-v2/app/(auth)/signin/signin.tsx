@@ -21,7 +21,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { type ExtractedProvider } from '@/app/api/auth/[...nextauth]/auth-options';
-import { User } from '@/lib/data/user-schema';
 
 const verticalGap = '1rem';
 
@@ -58,19 +57,11 @@ const signInTitle = (
 
 const SignIn: FC<{
   providers: ExtractedProvider[];
-  user?: User;
-}> = ({ providers, user }) => {
+  userType: 'guest' | 'user' | 'none';
+}> = ({ providers, userType }) => {
   const searchParams = useSearchParams();
-  let callbackUrl = searchParams.get('callbackUrl') ?? undefined;
-  if (user?.guest) {
-    callbackUrl =
-      `/transfer-processes?guestId=${user.id}` + (callbackUrl ? `&callbackUrl=${callbackUrl}` : '');
-  }
+  const callbackUrl = searchParams.get('callbackUrl') ?? undefined;
   const authError = searchParams.get('error');
-
-  let userType: 'none' | 'guest' | 'user';
-  if (!user) userType = 'none';
-  else userType = user.guest ? 'guest' : 'user';
 
   const oauthProviders = providers.filter((provider) => provider.type === 'oauth');
   const guestProvider = providers.find((provider) => provider.id === 'guest-signin');
@@ -230,20 +221,14 @@ const SignIn: FC<{
         {userType === 'guest' && guestProvider && (
           <>
             {divider}
-            <Form
-              onFinish={(values) => signIn(guestProvider.id, { ...values, callbackUrl })}
-              key={guestProvider.id}
-              layout="vertical"
-            >
-              <Button htmlType="submit" style={{ marginBottom: verticalGap }}>
-                Continue as Guest
-              </Button>
+            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+              Continue as Guest
+            </Button>
 
-              <Alert
-                message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
-                type="info"
-              />
-            </Form>
+            <Alert
+              message='Note: if you select "Continue as Guest", the PROCEED Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              type="info"
+            />
           </>
         )}
 

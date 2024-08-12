@@ -17,6 +17,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
+let inited = false;
 
 let machineConfigMetaObjects: Record<string, MachineConfig> =
   // @ts-ignore
@@ -26,7 +27,8 @@ let machineConfigMetaObjects: Record<string, MachineConfig> =
  * initializes the machineConfig meta information objects
  */
 export async function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get machineConfig that were persistently stored
   const storedMachineConfig = store.get('machineConfig') as MachineConfig[];

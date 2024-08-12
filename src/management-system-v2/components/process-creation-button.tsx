@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
-import type { ButtonProps } from 'antd';
+import type { ButtonProps, ModalProps } from 'antd';
 import ProcessModal from './process-modal';
 import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
@@ -15,6 +15,7 @@ type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
   defaultOpen?: boolean;
+  modalProps?: ModalProps;
 };
 
 /**
@@ -25,6 +26,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   wrapperElement,
   customAction,
   defaultOpen = false,
+  modalProps,
   ...props
 }) => {
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(defaultOpen);
@@ -89,6 +91,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
         okText="Create"
         onCancel={() => setIsProcessModalOpen(false)}
         onSubmit={createNewProcess}
+        modalProps={modalProps}
       />
     </>
   );

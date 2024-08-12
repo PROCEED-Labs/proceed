@@ -8,7 +8,6 @@ import {
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  PlusOutlined,
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';
@@ -170,17 +169,7 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
-  const createProcessButton = (
-    <ProcessCreationButton
-      wrapperElement="Create Process"
-      defaultOpen={
-        typeof window !== 'undefined' &&
-        new URLSearchParams(document.location.search).has('createprocess')
-      }
-    />
-  );
-
-  useEffect(() => {
+  function deleteCreateProcessSearchParams() {
     const searchParams = new URLSearchParams(document.location.search);
     if (searchParams.has('createprocess')) {
       searchParams.delete('createprocess');
@@ -188,7 +177,20 @@ const Processes = ({
         window.location.origin + window.location.pathname + '?' + searchParams.toString(),
       );
     }
-  }, []);
+  }
+  const createProcessButton = (
+    <ProcessCreationButton
+      wrapperElement="Create Process"
+      defaultOpen={
+        typeof window !== 'undefined' &&
+        new URLSearchParams(document.location.search).has('createprocess')
+      }
+      modalProps={{
+        onCancel: deleteCreateProcessSearchParams,
+        onOk: deleteCreateProcessSearchParams,
+      }}
+    />
+  );
 
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))

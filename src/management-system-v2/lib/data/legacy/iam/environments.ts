@@ -144,11 +144,13 @@ export function deleteEnvironment(environmentId: string, ability?: Ability) {
   store.remove('environments', environmentId);
 }
 
+let inited = false;
 /**
  * initializes the environments meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   const storedEnvironemnts = store.get('environments') as any[];
 

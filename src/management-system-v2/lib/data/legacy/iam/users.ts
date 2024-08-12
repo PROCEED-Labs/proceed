@@ -7,6 +7,8 @@ import {
   OauthAccount,
   AuthenticatedUser,
   AuthenticatedUserSchema,
+  GuestUser,
+  GuestUserSchema,
 } from '../../user-schema';
 import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
@@ -133,7 +135,12 @@ export function deleteUser(userId: string) {
   return user;
 }
 
-export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+export function updateUser(
+  userId: string,
+  inputUser:
+    | (Partial<AuthenticatedUser> & { guest: false })
+    | (Partial<GuestUser> & { guest: true }),
+) {
   const user = getUserById(userId, { throwIfNotFound: true });
 
   const isGoingToBeGuest = inputUser.guest !== undefined ? inputUser.guest : user.guest;
@@ -142,7 +149,8 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
   if (isGoingToBeGuest) {
     updatedUser = {
       id: user.id,
-      guest: true,
+      signedInWithUserId: user.guest ? user.signedInWithUserId : undefined,
+      ...GuestUserSchema.parse(inputUser),
     };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);

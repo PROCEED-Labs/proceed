@@ -35,7 +35,10 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
 
         sendEmail({
           to: params.identifier,
@@ -63,16 +66,26 @@ const nextAuthOptions: AuthOptions = {
 
       return session;
     },
-    signIn: async ({ account, user: _user }) => {
+    signIn: async ({ account, user: _user, email }) => {
       const session = await getServerSession(nextAuthOptions);
       const sessionUser = session?.user;
 
-      if (sessionUser?.guest && account?.provider !== 'guest-loguin') {
-        const user = _user as Partial<AuthenticatedUser>;
-        const guestUser = getUserById(sessionUser.id);
+      if (
+        sessionUser?.guest &&
+        account?.provider !== 'guest-signin' &&
+        !email?.verificationRequest
+      ) {
+        // Check if the user's cookie is correct
+        const sessionUserInDb = getUserById(sessionUser.id);
+        if (!sessionUserInDb || !sessionUserInDb.guest) throw new Error('Something went wrong');
 
-        if (guestUser.guest) {
-          updateUser(guestUser.id, {
+        const user = _user as Partial<AuthenticatedUser>;
+        const userSigningIn = getUserById(_user.id);
+
+        if (userSigningIn) {
+          updateUser(sessionUser.id, { guest: true, signedInWithUserId: userSigningIn.id });
+        } else {
+          updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
             lastName: user.lastName ?? undefined,
             username: user.username ?? undefined,
@@ -216,6 +229,32 @@ if (process.env.NODE_ENV === 'development') {
         if (!user) user = addUser(userTemplate);
 
         return user;
+      },
+    }),
+  );
+}
+
+// add the test user in preview deployments and dev
+// dev is for local testing
+const url = process.env.NEXTAUTH_URL;
+if (
+  (url && url.endsWith('app.run') && url.startsWith('https://pr-')) ||
+  process.env.NODE_ENV === 'development'
+) {
+  nextAuthOptions.providers.push(
+    CredentialsProvider({
+      id: 'test-user',
+      name: 'Continue With Test User',
+      credentials: {},
+      async authorize() {
+        return addUser({
+          guest: false,
+          email: `test-user-${crypto.randomUUID()}@proceed-labs.org`,
+          firstName: 'Test',
+          lastName: 'Test',
+          username: 'test-user',
+          emailVerified: new Date(),
+        });
       },
     }),
   );

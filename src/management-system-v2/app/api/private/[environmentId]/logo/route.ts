@@ -1,12 +1,5 @@
 import { getCurrentEnvironment } from '@/components/auth';
-import { toCaslResource } from '@/lib/ability/caslAbility';
-import {
-  getProcessImageFileNames,
-  getProcessMetaObjects,
-  saveProcessImage,
-} from '@/lib/data/legacy/_process';
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 } from 'uuid';
 import { invalidRequest, readImage } from '../image-helpers';
 import {
   deleteOrganizationLogo,
@@ -15,10 +8,9 @@ import {
 } from '@/lib/data/legacy/iam/environments';
 import { fileTypeFromBuffer } from 'file-type';
 import { saveLogo } from '@/lib/data/legacy/fileHandling';
-import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 
 export async function GET(
-  request: NextRequest,
+  _: NextRequest,
   { params: { environmentId } }: { params: { environmentId: string } },
 ) {
   const organization = getEnvironmentById(environmentId);
@@ -55,6 +47,7 @@ export async function GET(
     });
 
   const fileType = await fileTypeFromBuffer(imageBuffer);
+  console.log(fileType);
 
   if (!fileType) {
     return new NextResponse(null, {
@@ -102,7 +95,7 @@ async function updateOrgLogo(
 export { updateOrgLogo as POST, updateOrgLogo as PUT };
 
 export async function DELETE(
-  request: NextRequest,
+  _: NextRequest,
   { params: { environmentId } }: { params: { environmentId: string } },
 ) {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);

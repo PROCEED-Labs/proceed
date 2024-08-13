@@ -53,8 +53,6 @@ const SpaceSettings = ({
   const [organizationLogo, setOrganizationLogo] = useState(
     organization.hasLogo ? logoUrl : undefined,
   );
-  console.log(organizationLogo);
-  console.log('holaaaaaaaaaaaaaa');
 
   return (
     <Form form={form} initialValues={organization} onFinish={updateOrganization}>

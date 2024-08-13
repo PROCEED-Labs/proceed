@@ -5,17 +5,30 @@ import { packRules } from '@casl/ability/extra';
 import { AbilityRule, ResourceType, resourceAction, resources } from '../ability/caslAbility';
 import { env } from '../env-vars';
 
-const realResources = resources.filter((resource) => resource !== 'All');
-export const MSEnabledResources = env.MS_ENABLED_RESOURCES ?? resources;
+// NOTE: move this to the feature store once it exists
+export const BuyableResources = Object.freeze([] satisfies ResourceType[]);
+export type BuyableResource = (typeof BuyableResources)[number];
 
-function getRulesForTargetResources(targetResources: readonly ResourceType[]) {
-  const enabledResources = targetResources.filter((resource) =>
-    MSEnabledResources.includes(resource),
+/**
+ * These resources are the ones hat are always allowed for admins, regardless of what additional features where
+ * bought for the space.
+ */
+export const AllowedResourcesForAdmins = Object.freeze(
+  env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.filter(
+    (resource) => !BuyableResources.includes(resource as BuyableResource),
+  ),
+);
+
+/**
+ * Returns a list of inverted rules for all MS enabled resources, that aren't in targetResources
+ */
+function getRulesForTargetResources(allowedResources: readonly ResourceType[]) {
+  // filter out resources that aren't currently enabled
+  allowedResources = allowedResources.filter((resource) =>
+    env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource),
   );
 
-  const disabledResources = realResources.filter(
-    (resource) => !enabledResources.includes(resource),
-  );
+  const disabledResources = resources.filter((resource) => !allowedResources.includes(resource));
   return [
     {
       inverted: true,
@@ -25,11 +38,17 @@ function getRulesForTargetResources(targetResources: readonly ResourceType[]) {
   ] satisfies AbilityRule[];
 }
 
-export const globalOrganizationRules = getRulesForTargetResources(MSEnabledResources);
-export const packedGlobalOrganizationRules = packRules<AbilityRule>(globalOrganizationRules);
+export const globalOrganizationRules = Object.freeze(
+  getRulesForTargetResources(env.NEXT_PUBLIC_MS_ENABLED_RESOURCES),
+);
+export const packedGlobalOrganizationRules = Object.freeze(
+  packRules<AbilityRule>([...globalOrganizationRules]),
+);
 
-export const globalPersonalSpaceRules = getRulesForTargetResources([
-  'Process',
-  'Folder',
-] satisfies ResourceType[]);
-export const packedGlobalUserRules = packRules<AbilityRule>(globalPersonalSpaceRules);
+export const globalPersonalSpaceRules = Object.freeze(
+  getRulesForTargetResources(['Process', 'Folder']),
+);
+
+export const packedGlobalUserRules = Object.freeze(
+  packRules<AbilityRule>([...globalPersonalSpaceRules]),
+);

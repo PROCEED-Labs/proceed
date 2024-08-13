@@ -6,6 +6,7 @@ import {
   buildAbility,
   toCaslResource,
 } from './caslAbility';
+import { AllowedResourcesForAdmins } from '../authorization/globalRules';
 
 type CanParams = Parameters<CaslAbility['can']>;
 
@@ -85,7 +86,7 @@ export class UnauthorizedError extends Error {
 export const adminRules = Object.freeze(
   packRules([
     {
-      subject: 'All',
+      subject: AllowedResourcesForAdmins,
       action: 'admin',
     },
   ] as AbilityRule[]),

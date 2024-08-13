@@ -23,6 +23,8 @@ export const resources = [
   'Environment',
   'Folder',
   'MachineConfig',
+  // NOTE: All is just supposed to be used for storing permissions in roles
+  // what All contains can change with env.NEXT_PUBLIC_MS_ENABLED_RESOURCES
   'All',
 ] as const;
 export type ResourceType = (typeof resources)[number];

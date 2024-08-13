@@ -13,7 +13,12 @@ import {
 import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
-import { globalOrganizationRules, globalUserRules } from './globalRules';
+import {
+  AllowedResourcesForAdmins,
+  globalOrganizationRules,
+  globalPersonalSpaceRules,
+} from './globalRules';
+import { env } from '../env-vars';
 
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
 
@@ -95,7 +100,7 @@ function rulesForRoles(ability: CaslAbility, userId: string) {
     },
   });
 
-  if (ability.cannot('admin', 'All')) {
+  if (AllowedResourcesForAdmins.some((resource) => !ability.can('admin', resource))) {
     rules.push({
       inverted: true,
       subject: 'Role',
@@ -241,7 +246,7 @@ function rulesForAlteringShares(ability: CaslAbility) {
 const disallowOutsideOfEnvRule = (environmentId: string) =>
   ({
     inverted: true,
-    subject: 'All',
+    subject: [...resources],
     action: [...resourceAction],
     conditions: {
       conditions: {
@@ -258,20 +263,30 @@ export async function computeRulesForUser(userId: string, environmentId: string)
   if (!userId || !environmentId) return { rules: [] };
 
   const environment = getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
-
   if (!environment.organization) {
     if (userId !== environmentId) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
       {
-        subject: 'All',
+        // NOTE: using AllowedResourcesForAdmins makes it so that personal spaces will not be able
+        // to have any of the buyable resources
+        subject: AllowedResourcesForAdmins,
         action: 'admin',
       },
       disallowOutsideOfEnvRule(userId),
     ] as AbilityRule[];
 
-    return { rules: packRules(personalEnvironmentRules.concat(globalUserRules)) };
+    return { rules: packRules(personalEnvironmentRules.concat(globalPersonalSpaceRules)) };
   }
+
+  // TODO: get bough features from db
+  const getPurhasedFeatures = (_: string) => [];
+
+  const BoughtResources = getPurhasedFeatures(environmentId).filter((resource) =>
+    env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource as any),
+  );
+
+  const AllowedResourcesForOrganization = AllowedResourcesForAdmins.concat(BoughtResources as any);
 
   const roles = getAppliedRolesForUser(userId, environmentId); // throws error if user isn't a member
   let firstExpiration: null | Date = null;
@@ -290,14 +305,12 @@ export async function computeRulesForUser(userId: string, environmentId: string)
     )
       firstExpiration = new Date(role.expiration);
 
-    for (const resource of resources) {
-      if (!(resource in role.permissions)) continue;
-
-      const actionsNumber = role.permissions[resource]!;
+    for (const [resource, actionsNumber] of Object.entries(role.permissions)) {
       const actions = permissionNumberToIdentifiers(actionsNumber);
 
       translatedRules.push({
-        subject: resource,
+        subject:
+          resource === 'All' ? [...AllowedResourcesForOrganization] : (resource as ResourceType),
         action: actions,
         conditions: {
           conditions: {

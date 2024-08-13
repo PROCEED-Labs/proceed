@@ -1,5 +1,6 @@
 'use client';
 
+import ImageUpload from '@/components/image-upload';
 import PhoneInput from '@/components/phone-input';
 import {
   OrganizationEnvironment,
@@ -7,16 +8,23 @@ import {
 } from '@/lib/data/environment-schema';
 import { updateOrganization as serverUpdateOrganization } from '@/lib/data/environments';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
-import { App, Button, Form, Table, Input } from 'antd';
+import { App, Button, Form, Table, Input, Image, theme, Space, Modal } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { fallbackImage } from '../processes/[processId]/image-selection-section';
+import ConfirmationButton from '@/components/confirmation-button';
 
-const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment }) => {
+const SpaceSettings = ({
+  organization,
+}: {
+  organization: OrganizationEnvironment & { hasLogo: boolean };
+}) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const router = useRouter();
   const [errors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
-
+  const { colorWarning } = theme.useToken().token;
   const [updating, startUpdating] = useTransition();
   function updateOrganization(input: unknown) {
     const data = parseInput(input);
@@ -40,6 +48,13 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
       }
     });
   }
+
+  const logoUrl = `/api/private/${organization.id}/logo`;
+  const [organizationLogo, setOrganizationLogo] = useState(
+    organization.hasLogo ? logoUrl : undefined,
+  );
+  console.log(organizationLogo);
+  console.log('holaaaaaaaaaaaaaa');
 
   return (
     <Form form={form} initialValues={organization} onFinish={updateOrganization}>
@@ -83,6 +98,69 @@ const SpaceSettings = ({ organization }: { organization: OrganizationEnvironment
               >
                 <PhoneInput />
               </Form.Item>
+            ),
+          },
+          {
+            key: 'Organization Logo',
+            title: 'Organization Logo',
+            value: (
+              <Space>
+                <Image
+                  src={organizationLogo || fallbackImage}
+                  alt={organization.name}
+                  style={{
+                    width: '100%',
+                    maxHeight: '7.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d9d9d9',
+                  }}
+                  preview={{
+                    visible: false,
+                    mask: (
+                      <ImageUpload
+                        imageExists={!!organizationLogo}
+                        onReload={() => {
+                          setOrganizationLogo(`${logoUrl}?${Date.now}`);
+                          message.success('Logo updated');
+                          router.refresh();
+                        }}
+                        onImageUpdate={(name) => {
+                          const deleted = typeof name === 'undefined';
+                          setOrganizationLogo(deleted ? undefined : `${logoUrl}?${Date.now}`);
+                          if (deleted) message.success('Logo deleted');
+                          else message.success('Logo uploaded');
+                          router.refresh();
+                        }}
+                        onUploadFail={() => message.error('Error uploading image')}
+                        endpoints={{
+                          postEndpoint: logoUrl,
+                          deleteEndpoint: logoUrl,
+                          putEndpoint: logoUrl,
+                        }}
+                      />
+                    ),
+                  }}
+                  role="group"
+                  aria-label="image-section"
+                />
+
+                <Button
+                  onClick={() =>
+                    Modal.confirm({
+                      content:
+                        'Logo changes may take some time to appear everywhere. This is normal and should resolve itself shortly',
+                      footer: (_, { OkBtn }) => <OkBtn />,
+                      maskClosable: true,
+                    })
+                  }
+                  style={{
+                    color: colorWarning,
+                  }}
+                  type="text"
+                >
+                  <ExclamationCircleOutlined />
+                </Button>
+              </Space>
             ),
           },
         ]}

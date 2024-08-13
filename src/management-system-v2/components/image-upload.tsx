@@ -32,7 +32,7 @@ const ImageUpload: React.FC<{
               ? await scaleDownImage(uploadFile.originFileObj, 1500)
               : uploadFile.originFileObj;
 
-          if (endpoints.putEndpoint) {
+          if (imageExists && endpoints.putEndpoint) {
             // Update existing image
             try {
               const response = await fetch(endpoints.putEndpoint, {
@@ -55,6 +55,7 @@ const ImageUpload: React.FC<{
                 method: 'POST',
                 body: image,
               });
+
               if (!response.ok) {
                 onUploadFail?.();
               } else {

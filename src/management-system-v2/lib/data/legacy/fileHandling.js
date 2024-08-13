@@ -618,3 +618,13 @@ export function getLogo(organizationId) {
   const imagePath = path.join(organizationLogosDir, `${organizationId}`);
   return fse.readFileSync(imagePath);
 }
+
+/**
+ * Deletes organizations logo
+ *
+ * @param {String} organizationId the id of the organization
+ */
+export function deleteLogo(organizationId) {
+  const imagePath = path.join(organizationLogosDir, `${organizationId}`);
+  fse.removeSync(imagePath);
+}

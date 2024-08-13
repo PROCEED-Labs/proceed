@@ -8,9 +8,14 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 } from 'uuid';
 import { invalidRequest, readImage } from '../image-helpers';
-import { getEnvironmentById, getOrganizationLogo } from '@/lib/data/legacy/iam/environments';
+import {
+  deleteOrganizationLogo,
+  getEnvironmentById,
+  getOrganizationLogo,
+} from '@/lib/data/legacy/iam/environments';
 import { fileTypeFromBuffer } from 'file-type';
 import { saveLogo } from '@/lib/data/legacy/fileHandling';
+import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 
 export async function GET(
   request: NextRequest,
@@ -95,3 +100,35 @@ async function updateOrgLogo(
 }
 
 export { updateOrgLogo as POST, updateOrgLogo as PUT };
+
+export async function DELETE(
+  request: NextRequest,
+  { params: { environmentId } }: { params: { environmentId: string } },
+) {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+
+  if (!activeEnvironment.isOrganization)
+    return new NextResponse(null, {
+      status: 405,
+      statusText: "Personal spaces don't support logos",
+    });
+
+  if (!ability.can('update', 'Environment', { environmentId: activeEnvironment.spaceId })) {
+    return new NextResponse(null, {
+      status: 403,
+      statusText: 'Not allowed to change the logo from an organization',
+    });
+  }
+
+  try {
+    deleteOrganizationLogo(activeEnvironment.spaceId);
+  } catch (e) {
+    // We assume the organization didn't have a logo
+    return new NextResponse(null, {
+      status: 405,
+      statusText: 'Something went wrong',
+    });
+  }
+
+  return new NextResponse(activeEnvironment.spaceId, { status: 200, statusText: 'Created' });
+}

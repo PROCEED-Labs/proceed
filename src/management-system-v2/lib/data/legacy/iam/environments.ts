@@ -14,7 +14,7 @@ import {
 } from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
 import { createFolder } from '../folders';
-import { getLogo, saveLogo } from '../fileHandling.js';
+import { deleteLogo, getLogo, hasLogo, saveLogo } from '../fileHandling.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 
 // @ts-ignore
@@ -170,7 +170,7 @@ export function saveOrganizationLogo(organizationId: string, image: Buffer, abil
 }
 
 export function getOrganizationLogo(organizationId: string) {
-  const organization = getEnvironmentById(organizationId);
+  const organization = getEnvironmentById(organizationId, undefined, { throwOnNotFound: true });
   if (!organization.organization) throw new Error("Personal spaces don' support logos");
 
   try {
@@ -178,6 +178,22 @@ export function getOrganizationLogo(organizationId: string) {
   } catch (err) {
     return undefined;
   }
+}
+
+export function organizationHasLogo(organizationId: string) {
+  const organization = getEnvironmentById(organizationId, undefined, { throwOnNotFound: true });
+  if (!organization.organization) throw new Error("Personal spaces don' support logos");
+
+  return hasLogo(organizationId);
+}
+
+export function deleteOrganizationLogo(organizationId: string) {
+  const organization = getEnvironmentById(organizationId, undefined, { throwOnNotFound: true });
+  if (!organization.organization) throw new Error("Personal spaces don' support logos");
+
+  if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
+
+  deleteLogo(organizationId);
 }
 
 export function updateOrganization(

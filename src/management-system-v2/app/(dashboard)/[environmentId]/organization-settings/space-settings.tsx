@@ -105,6 +105,7 @@ const SpaceSettings = ({
               <Space>
                 <Image
                   src={organizationLogo || fallbackImage}
+                  fallback={fallbackImage}
                   alt={organization.name}
                   style={{
                     width: '100%',
@@ -118,7 +119,7 @@ const SpaceSettings = ({
                       <ImageUpload
                         imageExists={!!organizationLogo}
                         onReload={() => {
-                          setOrganizationLogo(`${logoUrl}?${Date.now}`);
+                          setOrganizationLogo(`${logoUrl}?${Date.now()}`);
                           message.success('Logo updated');
                           router.refresh();
                         }}

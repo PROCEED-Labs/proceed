@@ -13,7 +13,7 @@ import {
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { getUserRules } from '@/lib/authorization/authorization';
+import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
@@ -188,7 +188,11 @@ const DashboardLayout = async ({
 
   return (
     <>
-      <SetAbility rules={userRules} environmentId={activeEnvironment.spaceId} />
+      <SetAbility
+        rules={userRules}
+        environmentId={activeEnvironment.spaceId}
+        treeMap={getSpaceFolderTree(activeEnvironment.spaceId)}
+      />
       <Layout
         loggedIn={!!userId}
         userEnvironments={userEnvironments}

@@ -53,6 +53,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { defaultParameter } from './configuration-helper';
+import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -221,29 +222,30 @@ const ParentConfigList = ({
     setOpenEditModal(true);
   }
 
-  function handleEdit(values: { id: string; name: string; description: string }[]): Promise<void> {
+  async function handleEdit(
+    values: { id: string; name: string; description: string }[],
+  ): Promise<void> {
     const valuesFromModal = values[0];
     if (editingItem) {
-      saveParentConfig(valuesFromModal.id, {
+      await saveParentConfig(valuesFromModal.id, {
         ...editingItem,
         metadata: {
           ...editingItem.metadata,
           description: defaultParameter('description', valuesFromModal.description ?? ''),
         },
         name: valuesFromModal.name,
-      }).then(() => {});
+      });
       setOpenEditModal(false);
       router.refresh();
     }
-    return Promise.resolve();
   }
 
   // copy multiple items
-  function handleCopy(
+  async function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
-    const promises = values.map((valueFromModal) => {
-      return copyParentConfig(
+    await asyncForEach(values, async (valueFromModal) => {
+      copyParentConfig(
         valueFromModal.originalId,
         {
           name: valueFromModal.name,
@@ -254,11 +256,8 @@ const ParentConfigList = ({
         space.spaceId,
       );
     });
-    Promise.all(promises).then(() => {
-      setOpenCopyModal(false);
-      router.refresh();
-    });
-    return Promise.resolve();
+    setOpenCopyModal(false);
+    router.refresh();
   }
 
   const importItems = async (file: File) => {
@@ -266,9 +265,9 @@ const ParentConfigList = ({
       const text = await file.text();
       const importedData: ParentConfig[] = JSON.parse(text);
 
-      for (const item of importedData) {
-        createParentConfig(item, space.spaceId, item).then(() => {});
-      }
+      await asyncForEach(importedData, async (item) => {
+        await createParentConfig(item, space.spaceId, item);
+      });
       message.success('Import successful');
       router.refresh();
     } catch (error) {

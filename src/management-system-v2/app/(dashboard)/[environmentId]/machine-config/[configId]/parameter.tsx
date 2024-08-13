@@ -1,18 +1,10 @@
 'use client';
 
-import {
-  ParentConfig,
-  AbstractConfig,
-  Parameter,
-  ParameterContent,
-} from '@/lib/data/machine-config-schema';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
-import { PlusOutlined, DeleteOutlined, CaretRightOutlined, ClearOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, ClearOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Space, Col, Row, Tag, Tooltip, Collapse, theme, Flex, Select } from 'antd';
-import useMobileModeler from '@/lib/useMobileModeler';
-import { useEnvironment } from '@/components/auth-can';
+import { Button, Input, Space, Col, Row, Tooltip, Collapse, theme, Flex, Select } from 'antd';
 import {
   TreeFindStruct,
   defaultConfiguration,
@@ -20,44 +12,72 @@ import {
   findParameter,
 } from '../configuration-helper';
 import Text from 'antd/es/typography/Text';
-import getAddButton from './add-button';
-import getTooltips from './tooltips';
+import AddButton from './add-button';
+import ActionButtons from './action-buttons';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import { Localization, languageItemsSelect } from '@/lib/data/locale';
+
+import { ParentConfig, Parameter, ParameterContent } from '@/lib/data/machine-config-schema';
+
+const ParameterItemHeader: React.FC<{
+  parameterContent: ParameterContent;
+  editable: boolean;
+  onDelete: () => void;
+}> = ({ parameterContent, editable, onDelete }) => (
+  <Space.Compact block size="small">
+    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      <Space>
+        <Text>{parameterContent.displayName}: </Text>
+        <Text>{parameterContent.value}</Text>
+        <Text>{parameterContent.unit}</Text>
+        {parameterContent.language && <Text type="secondary">({parameterContent.language})</Text>}
+      </Space>
+      <ActionButtons
+        editable={editable}
+        options={[/* 'copy', 'edit',  //TODO */ 'delete']}
+        actions={{
+          delete: onDelete,
+        }}
+      />
+    </Flex>
+  </Space.Compact>
+);
 
 type MachineDataViewProps = {
   configId: string;
   selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
-  customConfig?: AbstractConfig;
   editingEnabled: boolean;
   field: Parameter;
   onDelete: Function;
   label?: string;
 };
 
-export default function Param(props: MachineDataViewProps) {
+const Param: React.FC<MachineDataViewProps> = ({
+  configId,
+  selectedConfig,
+  parentConfig,
+  backendSaveParentConfig,
+  editingEnabled,
+  field,
+  onDelete,
+  label,
+}) => {
   const router = useRouter();
-  const environment = useEnvironment();
-  const query = useSearchParams();
 
   const firstRender = useRef(true);
-  const parentConfig = { ...props.parentConfig };
-  const editingConfig = props.selectedConfig
-    ? { ...props.selectedConfig.selection }
-    : defaultConfiguration();
+  const editingConfig = selectedConfig ? { ...selectedConfig.selection } : defaultConfiguration();
   let refEditingConfig = findConfig(editingConfig.id, parentConfig);
-  const saveParentConfig = props.backendSaveParentConfig;
-  const configId = props.configId;
+  const saveParentConfig = backendSaveParentConfig;
   const { token } = theme.useToken();
 
   const [deleted, setDeleted] = useState<boolean>(false);
   const [created, setCreated] = useState<boolean>(false);
   const [openCreateParameterModal, setOpenCreateParameterModal] = useState<boolean>(false);
-  const [parameterField, setParameterField] = useState<Parameter>(props.field);
+  const [parameterField, setParameterField] = useState<Parameter>(field);
 
-  const editable = props.editingEnabled;
+  const editable = editingEnabled;
 
   useEffect(() => {
     if (firstRender.current) {
@@ -66,17 +86,13 @@ export default function Param(props: MachineDataViewProps) {
     }
     if (created || deleted) {
       if (deleted) {
-        props.onDelete(parameterField);
+        onDelete(parameterField);
         setDeleted(false);
       }
       saveParameter();
       setCreated(false);
     }
   }, [deleted, created]);
-
-  useEffect(() => {}, [parameterField]);
-
-  const showMobileView = useMobileModeler();
 
   const deleteContent = (parameterItem: ParameterContent) => {
     let copyParameterContent = parameterField.content.filter((item: ParameterContent) => {
@@ -88,14 +104,14 @@ export default function Param(props: MachineDataViewProps) {
     setDeleted(true);
   };
 
-  const saveParameter = () => {
+  const saveParameter = async () => {
     if (refEditingConfig && parameterField.id) {
       let paramRef = findParameter(parameterField.id, parentConfig, 'config');
       if (paramRef) {
         paramRef.selection.linkedParameters = parameterField.linkedParameters;
         paramRef.selection.parameters = parameterField.parameters;
         paramRef.selection.content = parameterField.content;
-        saveParentConfig(configId, parentConfig).then(() => {});
+        await saveParentConfig(configId, parentConfig);
         router.refresh();
       }
     }
@@ -120,24 +136,6 @@ export default function Param(props: MachineDataViewProps) {
     setParameterField(parameterCopy);
   };
 
-  const parameterItemHeader = (parameterContent: ParameterContent) => (
-    <Space.Compact block size="small">
-      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-        <Space>
-          <Text>{parameterContent.displayName}: </Text>
-          <Text>{parameterContent.value}</Text>
-          <Text>{parameterContent.unit}</Text>
-          {parameterContent.language && <Text type="secondary">({parameterContent.language})</Text>}
-        </Space>
-        {getTooltips(editable, [/* 'copy', 'edit',  //TODO */ 'delete'], {
-          delete: () => {
-            deleteContent(parameterContent);
-          },
-        })}
-      </Flex>
-    </Space.Compact>
-  );
-
   const panelStyle = {
     margin: '0 0 10px 0',
     background: token.colorFillAlter,
@@ -151,8 +149,7 @@ export default function Param(props: MachineDataViewProps) {
         <>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
-              {' '}
-              Display Name{' '}
+              Display Name
             </Col>
             <Col span={20} className="gutter-row">
               <Input
@@ -166,8 +163,7 @@ export default function Param(props: MachineDataViewProps) {
           </Row>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
-              {' '}
-              Value{' '}
+              Value
             </Col>
             <Col span={20} className="gutter-row">
               <Input
@@ -197,8 +193,7 @@ export default function Param(props: MachineDataViewProps) {
           </Row>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
-              {' '}
-              Unit{' '}
+              Unit
             </Col>
             <Col span={20} className="gutter-row">
               <Input
@@ -228,8 +223,7 @@ export default function Param(props: MachineDataViewProps) {
           </Row>
           <Row gutter={[24, 24]} align="middle" style={{ margin: '10px 0' }}>
             <Col span={3} className="gutter-row">
-              {' '}
-              Language{' '}
+              Language
             </Col>
             <Col span={20} className="gutter-row">
               <Select
@@ -268,19 +262,12 @@ export default function Param(props: MachineDataViewProps) {
     </div>
   );
 
-  const createContent = (values: CreateParameterModalReturnType[]): Promise<void> => {
+  const createContent = async (values: CreateParameterModalReturnType[]) => {
     let parameterCopy = { ...parameterField };
-    const valuesFromModal = values[0];
-    parameterCopy.content.push({
-      displayName: valuesFromModal.displayName,
-      language: valuesFromModal.language,
-      unit: valuesFromModal.unit,
-      value: valuesFromModal.value,
-    });
+    parameterCopy.content.push(values[0]);
     setParameterField(parameterCopy);
     setCreated(true);
     setOpenCreateParameterModal(false);
-    return Promise.resolve();
   };
 
   const getParameterItems = (): any => {
@@ -289,7 +276,13 @@ export default function Param(props: MachineDataViewProps) {
       for (let parameterItem of parameterField.content) {
         list.push({
           key: parameterField.content.indexOf(parameterItem),
-          label: parameterItemHeader(parameterItem),
+          label: (
+            <ParameterItemHeader
+              editable={editable}
+              parameterContent={parameterItem}
+              onDelete={() => deleteContent(parameterItem)}
+            />
+          ),
           children: [parameterContent(parameterItem)],
           style: panelStyle,
         });
@@ -298,7 +291,7 @@ export default function Param(props: MachineDataViewProps) {
     return list;
   };
   const parameterItems = getParameterItems();
-  const addButtonTitle = 'Add ' + props.label + ' Entry';
+  const addButtonTitle = 'Add ' + label + ' Entry';
   return (
     <>
       {(editable || parameterItems.length > 0) && (
@@ -316,15 +309,17 @@ export default function Param(props: MachineDataViewProps) {
           />
           {editable && (
             <Space>
-              {getAddButton(addButtonTitle, undefined, () => {
-                setOpenCreateParameterModal(true);
-              })}
+              <AddButton
+                label={addButtonTitle}
+                items={undefined}
+                onClick={() => setOpenCreateParameterModal(true)}
+              />
             </Space>
           )}
         </>
       )}
       <CreateParameterModal
-        title={'Create ' + props.label + ' Entry'}
+        title={'Create ' + label + ' Entry'}
         open={openCreateParameterModal}
         onCancel={() => setOpenCreateParameterModal(false)}
         onSubmit={createContent}
@@ -333,4 +328,6 @@ export default function Param(props: MachineDataViewProps) {
       />
     </>
   );
-}
+};
+
+export default Param;

@@ -1,51 +1,24 @@
 'use client';
 
 import { ParentConfig } from '@/lib/data/machine-config-schema';
-import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Collapse, theme } from 'antd';
 import { CaretRightOutlined } from '@ant-design/icons';
-import { useEffect, useRef, useState } from 'react';
-import useMobileModeler from '@/lib/useMobileModeler';
-import { useEnvironment } from '@/components/auth-can';
-import { TreeFindStruct, defaultConfiguration, findConfig } from '../configuration-helper';
 import Content from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
   editingEnabled: boolean;
 };
 
-export default function TargetConfiguration(props: MachineDataViewProps) {
-  const router = useRouter();
-  const environment = useEnvironment();
-  const query = useSearchParams();
-
-  const firstRender = useRef(true);
-
-  const parentConfig = { ...props.parentConfig };
-  const editingConfig = props.parentConfig.targetConfig
-    ? { ...props.parentConfig.targetConfig }
-    : defaultConfiguration();
-  let refEditingConfig = findConfig(editingConfig.id, parentConfig);
-  const saveParentConfig = props.backendSaveParentConfig;
-  const configId = props.configId;
-  const selectedVersionId = query.get('version');
-
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-  }, [props.selectedConfig]);
-
-  const showMobileView = useMobileModeler();
-
-  const editable = props.editingEnabled;
-
+const TargetConfiguration: React.FC<MachineDataViewProps> = ({
+  configId,
+  parentConfig,
+  backendSaveParentConfig: saveParentConfig,
+  editingEnabled,
+}) => {
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 20,
@@ -63,7 +36,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
     const contentItems = [];
     if (
       parentConfig.targetConfig &&
-      (editable ||
+      (editingEnabled ||
         (parentConfig.targetConfig.metadata &&
           Object.keys(parentConfig.targetConfig.metadata).length > 0))
     ) {
@@ -73,7 +46,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         children: [
           <Content
             contentType="metadata"
-            editingEnabled={editable}
+            editingEnabled={editingEnabled}
             backendSaveParentConfig={saveParentConfig}
             customConfig={parentConfig.targetConfig}
             configId={configId}
@@ -86,7 +59,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
     }
     if (
       parentConfig.targetConfig &&
-      (editable ||
+      (editingEnabled ||
         (parentConfig.targetConfig.parameters &&
           Object.keys(parentConfig.targetConfig.parameters).length > 0))
     ) {
@@ -96,7 +69,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
         children: [
           <Content
             contentType="parameters"
-            editingEnabled={editable}
+            editingEnabled={editingEnabled}
             backendSaveParentConfig={saveParentConfig}
             customConfig={parentConfig.targetConfig}
             configId={configId}
@@ -113,7 +86,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   const activeKeys = [];
   if (
     parentConfig.targetConfig &&
-    (editable ||
+    (editingEnabled ||
       (parentConfig.targetConfig.metadata &&
         Object.keys(parentConfig.targetConfig.metadata).length > 0))
   ) {
@@ -121,7 +94,7 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
   }
   if (
     parentConfig.targetConfig &&
-    (editable ||
+    (editingEnabled ||
       (parentConfig.targetConfig.parameters &&
         Object.keys(parentConfig.targetConfig.parameters).length > 0))
   ) {
@@ -139,4 +112,6 @@ export default function TargetConfiguration(props: MachineDataViewProps) {
       items={getContentItems(panelStyle)}
     />
   );
-}
+};
+
+export default TargetConfiguration;

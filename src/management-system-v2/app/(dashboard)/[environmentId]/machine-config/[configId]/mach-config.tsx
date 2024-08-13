@@ -1,57 +1,35 @@
 'use client';
 
 import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
-import { CaretRightOutlined, CopyOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useEffect, useRef, useState } from 'react';
-import { Collapse, theme, Tooltip, Modal, Form, Input, message } from 'antd';
-import useMobileModeler from '@/lib/useMobileModeler';
-import { useEnvironment } from '@/components/auth-can';
+import { CaretRightOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Collapse, theme, Modal, Form, Input, message } from 'antd';
 import {
-  TreeFindStruct,
-  defaultConfiguration,
-  findConfig,
   createMachineConfigInParent,
   generateUniqueId,
   deleteMachineConfigInParent,
 } from '../configuration-helper';
-import getTooltips from './tooltips';
+import ActionButtons from './action-buttons';
 import Content from './config-content';
 
 type MachineDataViewProps = {
   configId: string;
-  selectedConfig: TreeFindStruct;
   parentConfig: ParentConfig;
   backendSaveParentConfig: Function;
   editingEnabled: boolean;
 };
 
-const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
-
-export default function MachineConfigurations(props: MachineDataViewProps) {
+const MachineConfigurations: React.FC<MachineDataViewProps> = ({
+  configId,
+  parentConfig: originalParentConfig,
+  backendSaveParentConfig: saveParentConfig,
+  editingEnabled,
+}) => {
   const router = useRouter();
-  const environment = useEnvironment();
-  const query = useSearchParams();
+  const [parentConfig, setParentConfig] = useState<ParentConfig>(originalParentConfig);
 
-  const firstRender = useRef(true);
-  const [parentConfig, setParentConfig] = useState<ParentConfig>({ ...props.parentConfig });
-  const saveParentConfig = props.backendSaveParentConfig;
-  const configId = props.configId;
-  const editingConfig = props.selectedConfig
-    ? { ...props.selectedConfig.selection }
-    : defaultConfiguration();
-
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-  }, [props.selectedConfig]);
-
-  const showMobileView = useMobileModeler();
-
-  const editable = props.editingEnabled;
   const [copyModalVisible, setCopyModalVisible] = useState(false);
   const [configToCopy, setConfigToCopy] = useState<MachineConfig | null>(null);
 
@@ -73,7 +51,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     setConfigToCopy(null);
   };
 
-  const handleCopyModalCreate = (values: { name: string; description: string }) => {
+  const handleCopyModalCreate = async (values: { name: string; description: string }) => {
     if (configToCopy) {
       const newConfig = {
         ...configToCopy,
@@ -98,10 +76,9 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         newConfig.name,
         newConfig.metadata.description.content[0].value,
       );
-      saveParentConfig(configId, parentConfig).then(() => {
-        setParentConfig({ ...parentConfig });
-        router.refresh();
-      });
+      await saveParentConfig(configId, parentConfig);
+      setParentConfig({ ...parentConfig });
+      router.refresh();
     }
     setCopyModalVisible(false);
   };
@@ -180,7 +157,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
   ): any => {
     const contentItems = [];
     if (
-      editable ||
+      editingEnabled ||
       (machineConfigData.metadata && Object.keys(machineConfigData.metadata).length > 0)
     ) {
       contentItems.push({
@@ -189,7 +166,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         children: [
           <Content
             contentType="metadata"
-            editingEnabled={editable}
+            editingEnabled={editingEnabled}
             backendSaveParentConfig={saveParentConfig}
             customConfig={machineConfigData}
             configId={configId}
@@ -201,7 +178,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       });
     }
     if (
-      editable ||
+      editingEnabled ||
       (machineConfigData.parameters && Object.keys(machineConfigData.parameters).length > 0)
     ) {
       contentItems.push({
@@ -210,7 +187,7 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
         children: [
           <Content
             contentType="parameters"
-            editingEnabled={editable}
+            editingEnabled={editingEnabled}
             backendSaveParentConfig={saveParentConfig}
             customConfig={machineConfigData}
             configId={configId}
@@ -233,11 +210,14 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
     let list = [];
     for (let machineConfig of parentConfig.machineConfigs) {
       const activeKeys = [];
-      if (editable || (machineConfig.metadata && Object.keys(machineConfig.metadata).length > 0)) {
+      if (
+        editingEnabled ||
+        (machineConfig.metadata && Object.keys(machineConfig.metadata).length > 0)
+      ) {
         activeKeys.push('meta');
       }
       if (
-        editable ||
+        editingEnabled ||
         (machineConfig.parameters && Object.keys(machineConfig.parameters).length > 0)
       ) {
         activeKeys.push('param');
@@ -256,14 +236,21 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
             items={getContentItems(machineConfig, panelStyle)}
           />,
         ],
-        extra: getTooltips(editable, ['copy', 'delete'], {
-          copy: () => {
-            handleCopy(machineConfig);
-          },
-          delete: () => {
-            handleDelete(machineConfig.id);
-          },
-        }),
+        extra: (
+          <ActionButtons
+            editable={editingEnabled}
+            options={['copy', 'delete']}
+            actions={{
+              copy: () => {
+                handleCopy(machineConfig);
+              },
+              delete: () => {
+                handleDelete(machineConfig.id);
+              },
+            }}
+          />
+        ),
+
         style: { ...panelStyle, border: '1px solid #adc6ff' }, //geekblue-3
       });
     }
@@ -287,4 +274,6 @@ export default function MachineConfigurations(props: MachineDataViewProps) {
       />
     </>
   );
-}
+};
+
+export default MachineConfigurations;

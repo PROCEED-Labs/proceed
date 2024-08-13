@@ -1,7 +1,7 @@
 'use client';
 
 import { ParentConfig } from '@/lib/data/machine-config-schema';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   PlusOutlined,
@@ -42,11 +42,8 @@ import { Content, Header } from 'antd/es/layout/layout';
 import Title from 'antd/es/typography/Title';
 import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
-import getAddButton from './add-button';
-import getTooltips from './tooltips';
+import AddButton from './add-button';
 import MachineConfigModal from '@/components/machine-config-modal';
-import { copyParentConfig } from '@/lib/data/legacy/machine-config';
-
 type MachineDataViewProps = {
   configId: string;
   selectedConfig: TreeFindStruct;
@@ -57,7 +54,13 @@ type MachineDataViewProps = {
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
-const ConfigEditor = (props: MachineDataViewProps) => {
+const ConfigEditor: React.FC<MachineDataViewProps> = ({
+  configId,
+  selectedConfig,
+  parentConfig,
+  backendSaveParentConfig: saveParentConfig,
+  onChangeMode,
+}) => {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -69,13 +72,9 @@ const ConfigEditor = (props: MachineDataViewProps) => {
   const [openCreateConfigModal, setOpenCreateConfigModal] = useState(false);
   const [createConfigType, setCreateConfigType] = useState<string>('');
 
-  const parentConfig: ParentConfig = { ...props.parentConfig };
-  const editingConfig = props.selectedConfig
-    ? { ...props.selectedConfig.selection }
-    : defaultConfiguration();
+  const editingConfig = selectedConfig ? { ...selectedConfig.selection } : defaultConfiguration();
   let refEditingConfig = findConfig(editingConfig.id, parentConfig);
-  const saveParentConfig = props.backendSaveParentConfig;
-  const configId = props.configId;
+
   const selectedVersionId = query.get('version');
 
   const {
@@ -99,22 +98,20 @@ const ConfigEditor = (props: MachineDataViewProps) => {
       description: values.versionDescription,
       versionBasedOn: editingConfig.versions.length,
     });
-    saveParentConfig(configId, parentConfig).then(() => {});
+    await saveParentConfig(configId, parentConfig);
     router.refresh();
   };
 
   const pushName = () => {
     setOldName(name);
   };
-
   const restoreName = () => {
     setName(oldName);
   };
-
-  const saveName = () => {
+  const saveName = async () => {
     if (refEditingConfig) {
       refEditingConfig.selection.name = name ? name : '';
-      saveParentConfig(configId, parentConfig).then(() => {});
+      await saveParentConfig(configId, parentConfig);
       router.refresh();
     }
   };
@@ -127,9 +124,9 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     }
     setName(editingConfig.name);
     updateItems(panelStyle);
-  }, [editable, props.selectedConfig]);
+  }, [editable, selectedConfig]);
   useEffect(() => {
-    props.onChangeMode(editable);
+    onChangeMode(editable);
   }, [editable]);
 
   const showMobileView = useMobileModeler();
@@ -174,7 +171,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     setOpenCreateConfigModal(true);
   };
 
-  const handleCreateConfig = (
+  const handleCreateConfig = async (
     values: {
       name: string;
       description: string;
@@ -186,10 +183,9 @@ const ConfigEditor = (props: MachineDataViewProps) => {
     } else {
       createMachineConfigInParent(parentConfig, valueFromModal.name, valueFromModal.description);
     }
-    saveParentConfig(configId, parentConfig).then(() => {});
+    await saveParentConfig(configId, parentConfig);
     setOpenCreateConfigModal(false);
     router.refresh();
-    return Promise.resolve();
   };
 
   const exportCurrentConfig = () => {
@@ -225,7 +221,7 @@ const ConfigEditor = (props: MachineDataViewProps) => {
           editingEnabled={editable}
         />
       ),
-      /* extra: getTooltips(editable, ['copy', 'edit']), */ ///TODO
+      /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
       style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
     });
     if (editingConfig.type === 'config') {
@@ -240,11 +236,10 @@ const ConfigEditor = (props: MachineDataViewProps) => {
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               parentConfig={parentConfig}
-              selectedConfig={props.selectedConfig}
               editingEnabled={editable}
             />
           ),
-          /* extra: getTooltips(editable, ['copy', 'edit', 'delete']), */ //TODO
+          /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
           style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
         });
       }
@@ -277,7 +272,6 @@ const ConfigEditor = (props: MachineDataViewProps) => {
               backendSaveParentConfig={saveParentConfig}
               configId={configId}
               parentConfig={parentConfig}
-              selectedConfig={props.selectedConfig}
               editingEnabled={editable}
             />
           ),
@@ -390,12 +384,13 @@ const ConfigEditor = (props: MachineDataViewProps) => {
               </Space.Compact>
             </Space>
             <Space>
-              {editable &&
-                getAddButton(
-                  'Add Child Configuration',
-                  configHeaderDropdownItems(),
-                  onClickAddMachineButton,
-                )}
+              {editable && (
+                <AddButton
+                  label="Add Child Configuration"
+                  items={configHeaderDropdownItems()}
+                  onClick={onClickAddMachineButton}
+                />
+              )}
             </Space>
             <Space>
               <Radio.Group value={position} onChange={onModeChange}>

@@ -15,7 +15,6 @@ import { UserErrorType, userError } from '@/lib/user-error';
 import { v4 } from 'uuid';
 import eventHandler from './eventHandler.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { LocalizationName } from '../locale';
 
 // @ts-ignore
 let firstInit = !global.machineConfigMetaObjects;
@@ -242,7 +241,6 @@ export async function saveParentConfig(id: string, machineConfigInput: ParentCon
     if (!machineConfig) {
       return;
     }
-
     parentConfigMetaObjects[id] = machineConfigInput;
     store.update('machineConfig', id, removeExcessiveInformation(machineConfigInput));
 

@@ -1,9 +1,18 @@
-import { Button, Dropdown, Space } from 'antd';
+import { Button, Dropdown, Space, ButtonProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-const getButton = (label: string, onClickHandle: any) => {
+type PlusButtonProps = {
+  label: string;
+  onClick: any;
+};
+
+const PlusButton: React.FC<ButtonProps & PlusButtonProps> = ({
+  label,
+  onClick,
+  ...buttonProps
+}) => {
   return (
-    <Button onClick={onClickHandle}>
+    <Button onClick={onClick} {...buttonProps}>
       <Space>
         {label.length > 0 && label}
         <PlusOutlined
@@ -16,31 +25,26 @@ const getButton = (label: string, onClickHandle: any) => {
   );
 };
 
-const getDropdown = (
-  label: string,
-  items: {
+type PlusDropDownProps = PlusButtonProps & {
+  items?: {
     key: string;
     label: string;
-  }[],
-  onClickHandle: any,
-) => {
+  }[];
+};
+
+const PlusDropDown: React.FC<PlusDropDownProps> = ({ label, onClick, items }) => {
   return (
-    <Dropdown menu={{ items, onClick: onClickHandle }}>{getButton(label, onClickHandle)}</Dropdown>
+    <Dropdown menu={{ items, onClick: onClick }}>
+      <PlusButton label={label} onClick={onClick} />
+    </Dropdown>
   );
 };
 
-const getAddButton = (
-  label: string,
-  items: {
-    key: string;
-    label: string;
-  }[] = [],
-  onClickHandle: any,
-) => {
+const AddButton: React.FC<PlusDropDownProps> = ({ label, onClick, items = [] }) => {
   if (items.length > 0) {
-    return getDropdown(label, items, onClickHandle);
+    return <PlusDropDown label={label} onClick={onClick} items={items} />;
   }
-  return getButton(label, onClickHandle);
+  return <PlusButton label={label} onClick={onClick} />;
 };
 
-export default getAddButton;
+export default AddButton;

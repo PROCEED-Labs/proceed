@@ -7,23 +7,11 @@ import {
   TargetConfig,
   MachineConfig,
 } from '@/lib/data/machine-config-schema';
-import {
-  Dropdown,
-  Input,
-  MenuProps,
-  Modal,
-  Space,
-  Tag,
-  Tooltip,
-  Tree,
-  Button,
-  TreeDataNode,
-} from 'antd';
+import { Dropdown, MenuProps, Modal, Space, Tag, Tooltip, Tree, Button, TreeDataNode } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useRef, useState } from 'react';
 import { v4 } from 'uuid';
-import { useEnvironment } from '@/components/auth-can';
 import {
   TreeFindParameterStruct,
   TreeFindStruct,
@@ -46,12 +34,15 @@ type ConfigurationTreeViewProps = {
   onUpdate: Function;
 };
 
-export default function ConfigurationTreeView(props: ConfigurationTreeViewProps) {
+const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
+  configId,
+  parentConfig,
+  backendSaveParentConfig: saveParentConfig,
+  editable,
+  onSelectConfig,
+  onUpdate,
+}) => {
   const router = useRouter();
-  const environment = useEnvironment();
-  const parentConfig = { ...props.parentConfig };
-  const saveParentConfig = props.backendSaveParentConfig;
-  const configId = props.configId;
 
   const firstRender = useRef(true);
   const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
@@ -151,11 +142,11 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
     }
   }, []);
 
-  const saveAndUpdateElements = () => {
-    saveParentConfig(configId, parentConfig).then(() => {});
+  const saveAndUpdateElements = async () => {
+    await saveParentConfig(configId, parentConfig);
     mountTreeData();
+    await onUpdate(parentConfig);
     router.refresh();
-    props.onUpdate(parentConfig);
   };
 
   const onSelectTreeNode = (
@@ -186,7 +177,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       }
     }
     setSelectedMachineConfig(foundMachine);
-    props.onSelectConfig(foundMachine);
+    onSelectConfig(foundMachine);
   };
   const onRightClickTreeNode = (info: {
     event: React.MouseEvent;
@@ -443,7 +434,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         label: 'Create Target Configuration',
         key: 'create-target',
         onClick: showCreateMachineModal,
-        disabled: !props.editable,
+        disabled: !editable,
       });
     }
     const parentConfigContextMenu = [
@@ -452,7 +443,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         label: 'Create Machine Configuration',
         key: 'create-machine',
         onClick: showCreateMachineModal,
-        disabled: !props.editable,
+        disabled: !editable,
       },
       {
         label: 'Create Metadata',
@@ -460,7 +451,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
         onClick: () => {
           setCreateMetadataOpen(true);
         },
-        disabled: !props.editable,
+        disabled: !editable,
       },
       {
         label: 'Update',
@@ -484,7 +475,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           onClick: () => {
             setCreateMetadataOpen(true);
           },
-          disabled: !props.editable,
+          disabled: !editable,
         });
       }
       return [
@@ -493,7 +484,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Create Parameter',
           key: 'add_parameter',
           onClick: showCreateParameterModal,
-          disabled: !props.editable,
+          disabled: !editable,
         },
         {
           label: 'Update',
@@ -504,7 +495,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Delete',
           key: 'delete',
           onClick: showDeleteConfirmModal,
-          disabled: !props.editable,
+          disabled: !editable,
         },
       ];
     } else if (_configType === 'config') {
@@ -520,7 +511,7 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
           label: 'Delete',
           key: 'delete',
           onClick: showDeleteConfirmModal,
-          disabled: !props.editable,
+          disabled: !editable,
         },
       ];
     }
@@ -618,4 +609,6 @@ export default function ConfigurationTreeView(props: ConfigurationTreeViewProps)
       />
     </>
   );
-}
+};
+
+export default ConfigurationTreeView;

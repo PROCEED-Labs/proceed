@@ -1,20 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Modal,
-  Form,
-  Input,
-  App,
-  Collapse,
-  CollapseProps,
-  Dropdown,
-  Typography,
-  Space,
-  MenuProps,
-  Select,
-} from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { Localization, languageItemsSelect } from '@/lib/data/locale';
 

@@ -1,21 +1,14 @@
 import Content from '@/components/content';
 //import styles from './page.module.scss';
-import {
-  createParentConfig,
-  getConfigurationById,
-  saveParentConfig,
-} from '@/lib/data/legacy/machine-config';
+import { getConfigurationById, saveParentConfig } from '@/lib/data/legacy/machine-config';
 import ConfigPage from './config-page-content';
 
 type MachineConfigProps = {
-  params: { configId: string; environmentId: string };
+  params: { configId: string };
   searchParams: { version?: string };
 };
 
-export default async function MachineConfigView({
-  params: { configId, environmentId },
-  searchParams,
-}: MachineConfigProps) {
+const MachineConfigView: React.FC<MachineConfigProps> = async ({ params: { configId } }) => {
   let machineConfig = await getConfigurationById(configId);
 
   //replace ConfigContent <-> MachineConfigEditor as needed
@@ -28,4 +21,6 @@ export default async function MachineConfigView({
       />
     </Content>
   );
-}
+};
+
+export default MachineConfigView;

@@ -2,11 +2,9 @@
 
 import React, { useState } from 'react';
 
-import { Upload, Image, notification } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Image, notification } from 'antd';
 
 import { useParams } from 'next/navigation';
-import { scaleDownImage } from '@/lib/helpers/imageHelpers';
 import { useEnvironment } from '@/components/auth-can';
 import ImageUpload from '@/components/image-upload';
 

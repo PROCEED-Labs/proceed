@@ -22,6 +22,7 @@ import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
+import { env } from '@/lib/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -88,7 +89,7 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (process.env.NEXT_PUBLIC_ENABLE_EXECUTION) {
+  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
@@ -122,7 +123,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (process.env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,

@@ -57,7 +57,7 @@ export async function getFolder(environmentId: string, folderId?: string) {
   const folder = folderId ? getFolderById(folderId) : getRootFolder(environmentId);
   if (!folder) return userError('Folder not found');
 
-  const { ability } = await getCurrentEnvironment(folder.environmentId);
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', toCaslResource('Folder', folder))) return userError('Permission denied');
 

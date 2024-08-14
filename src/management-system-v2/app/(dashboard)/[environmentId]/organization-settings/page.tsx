@@ -20,10 +20,12 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   return (
     <Content title="Organization Settings">
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Card style={{ margin: 'auto', maxWidth: '45rem' }}>
-          <Title level={3}>Organization Profile</Title>
-          <SpaceSettings organization={organization} />
-        </Card>
+        <AuthCan update Environment>
+          <Card style={{ margin: 'auto', maxWidth: '45rem' }}>
+            <Title level={3}>Organization Profile</Title>
+            <SpaceSettings organization={organization} />
+          </Card>
+        </AuthCan>
 
         <AuthCan delete Environment>
           <Card style={{ margin: 'auto', maxWidth: '45rem' }}>

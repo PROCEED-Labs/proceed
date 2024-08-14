@@ -172,7 +172,7 @@ const DashboardLayout = async ({
   if (can('view', 'Setting') || can('manage', 'Environment')) {
     const children: MenuProps['items'] = [];
 
-    if (can('manage', 'Environment'))
+    if (can('update', 'Environment') || can('delete', 'Environment'))
       children.push({
         key: 'organization-settings',
         label: (

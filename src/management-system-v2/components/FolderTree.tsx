@@ -132,6 +132,7 @@ export const FolderTree = ({
     <Spin spinning={loading}>
       <Tree
         showIcon={true}
+        style={{ minHeight: '1.2rem' }}
         {...treeProps}
         treeData={tree}
         loadData={loadData}

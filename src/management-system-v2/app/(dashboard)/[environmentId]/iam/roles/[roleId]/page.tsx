@@ -12,6 +12,7 @@ import RolePermissions from './rolePermissions';
 import RoleMembers from './role-members';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
+import { getFolderById } from '@/lib/data/legacy/folders';
 
 const Page = async ({
   params: { roleId, environmentId },
@@ -40,6 +41,8 @@ const Page = async ({
     .filter(({ userId }) => !roleUserSet.has(userId))
     .map((user) => getUserById(user.userId)) as AuthenticatedUser[];
 
+  const roleParentFolder = role.parentId ? getFolderById(role.parentId, ability) : undefined;
+
   return (
     <Content
       title={
@@ -60,7 +63,7 @@ const Page = async ({
               {
                 key: 'generalData',
                 label: 'General Data',
-                children: <RoleGeneralData role={role} />,
+                children: <RoleGeneralData role={role} roleParentFolder={roleParentFolder} />,
               },
               {
                 key: 'permissions',

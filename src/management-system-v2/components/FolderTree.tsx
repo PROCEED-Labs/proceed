@@ -48,7 +48,7 @@ export const FolderTree = ({
   rootNodes?: FolderChildren[];
   /** The return value is used to update the tree */
   newChildrenHook?: (nodes: TreeNode[], parent?: TreeNode) => TreeNode[];
-  treeProps?: TreeProps;
+  treeProps?: TreeProps<TreeNode>;
 }) => {
   const spaceId = useEnvironment().spaceId;
 

@@ -1,13 +1,17 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
-import { Result } from 'antd';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import RoleId from './role-id-page';
 import { getMemebers } from '@/lib/data/legacy/iam/memberships';
 import { getUserById } from '@/lib/data/legacy/iam/users';
+import { Button, Card, Space, Tabs } from 'antd';
+import { LeftOutlined } from '@ant-design/icons';
+import RoleGeneralData from './roleGeneralData';
+import RolePermissions from './rolePermissions';
+import RoleMembers from './role-members';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
+import SpaceLink from '@/components/space-link';
 
 const Page = async ({
   params: { roleId, environmentId },
@@ -24,6 +28,8 @@ const Page = async ({
       </Content>
     );
 
+  if (!ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
+
   const usersInRole = role.members.map((member) =>
     getUserById(member.userId),
   ) as AuthenticatedUser[];
@@ -34,9 +40,50 @@ const Page = async ({
     .filter(({ userId }) => !roleUserSet.has(userId))
     .map((user) => getUserById(user.userId)) as AuthenticatedUser[];
 
-  if (!ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
-
-  return <RoleId role={role} usersNotInRole={usersNotInRole} usersInRole={usersInRole} />;
+  return (
+    <Content
+      title={
+        <Space>
+          <SpaceLink href={`/iam/roles`}>
+            <Button icon={<LeftOutlined />} type="text">
+              Roles
+            </Button>
+          </SpaceLink>
+          {role?.name}
+        </Space>
+      }
+    >
+      <div style={{ maxWidth: '800px', margin: 'auto' }}>
+        <Card>
+          <Tabs
+            items={[
+              {
+                key: 'generalData',
+                label: 'General Data',
+                children: <RoleGeneralData role={role} />,
+              },
+              {
+                key: 'permissions',
+                label: 'Permissions',
+                children: <RolePermissions role={role} />,
+              },
+              {
+                key: 'members',
+                label: 'Manage Members',
+                children: (
+                  <RoleMembers
+                    role={role}
+                    usersNotInRole={usersNotInRole}
+                    usersInRole={usersInRole}
+                  />
+                ),
+              },
+            ]}
+          />
+        </Card>
+      </div>
+    </Content>
+  );
 };
 
 export default Page;

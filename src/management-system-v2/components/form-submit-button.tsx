@@ -21,7 +21,7 @@ const FormSubmitButton = <TData = any,>({
   const form = _form ?? hookForm;
 
   // Watch all values
-  const values = Form.useWatch([], form);
+  const values = Form.useWatch([], _form);
 
   React.useEffect(() => {
     if (isValidData) {

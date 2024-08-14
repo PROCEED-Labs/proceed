@@ -23,17 +23,9 @@ function generateNode(element: FolderChildren): TreeNode {
   return {
     key: element.id,
     title: (
-      <span
-        style={{
-          color: 'inherit' /* or any color you want */,
-          textDecoration: 'none' /* removes underline */,
-          display: 'block',
-          whiteSpace: 'nowrap',
-          textOverflow: 'ellipsis',
-        }}
-      >
+      <>
         <ProcessListItemIcon item={element} /> {element.name}
-      </span>
+      </>
     ),
     isLeaf,
     element,
@@ -132,7 +124,12 @@ export const FolderTree = ({
     <Spin spinning={loading}>
       <Tree
         showIcon={true}
-        style={{ minHeight: '1.2rem' }}
+        style={{
+          minHeight: '1.2rem',
+          overflow: 'hidden',
+          textWrap: 'nowrap',
+          whiteSpace: 'nowrap',
+        }}
         {...treeProps}
         treeData={tree}
         loadData={loadData}

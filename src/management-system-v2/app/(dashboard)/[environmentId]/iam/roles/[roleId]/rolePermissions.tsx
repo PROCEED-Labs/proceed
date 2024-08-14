@@ -1,9 +1,9 @@
 'use client';
 
 import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
-import { SaveOutlined, LoadingOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { ResourceActionType } from '@/lib/ability/caslAbility';
-import { FC, Fragment, useEffect, useState } from 'react';
+import { FC, Fragment, useState } from 'react';
 import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
@@ -14,7 +14,7 @@ import { UserErrorType } from '@/lib/user-error';
 type PermissionCategory = {
   key: string;
   title: string;
-  resource: keyof Role['permissions'];
+  resource: keyof Role['permissions'] | (keyof Role['permissions'])[];
   permissions: {
     key: string;
     title: string;
@@ -25,20 +25,21 @@ type PermissionCategory = {
 
 const basePermissionOptions: PermissionCategory[] = [
   {
-    key: 'environment',
-    title: 'ENVIRONMENT',
+    key: 'organization',
+    title: 'ORGANIZATION',
     resource: 'Environment',
     permissions: [
       {
-        key: 'Update Environment Information',
-        title: 'Update Environment Information',
-        description: 'Allows a user to update the environment information.',
+        key: 'Update Organization Data',
+        title: 'Update Organization Data',
+        description: 'Allows a user to update the Organization information.',
         permission: 'update',
       },
       {
-        key: 'Manage Environment',
-        title: 'Manage Environment',
-        description: 'Allows a user to update and delete the Environment.',
+        key: 'Administrate Organization',
+        title: 'Administrate Organization',
+        description:
+          'Allows a user to update the Organization information and to delete the Organization.',
         permission: 'manage',
       },
     ],
@@ -51,7 +52,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'process_view',
         title: 'View processes',
-        description: 'Allows a user to view her or his processes. (Enables the Processes view.)',
+        description: 'Allows a user to view processes. (Enables the Processes view.)',
         permission: 'view',
       },
       {
@@ -63,7 +64,32 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'process_admin',
         title: 'Administrate processes',
-        description: 'Allows a user to create, modify, delete and share all PROCEED processes.',
+        description: 'Allows a user to perform any action on processes.',
+        permission: 'admin',
+      },
+    ],
+  },
+  {
+    key: 'folder',
+    title: 'Folders',
+    resource: 'Folder',
+    permissions: [
+      {
+        key: 'folder_view',
+        title: 'View folders',
+        description: 'Allows a user to folders.',
+        permission: 'view',
+      },
+      {
+        key: 'folder_manage',
+        title: 'Manage folders',
+        description: 'Allows a user to create, modify and delete folders.',
+        permission: 'manage',
+      },
+      {
+        key: 'folder_admin',
+        title: 'Administrate folders',
+        description: 'Allows a user to perform any action on processes.',
         permission: 'admin',
       },
     ],
@@ -76,7 +102,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'View projects',
         title: 'View projects',
-        description: 'Allows a user to view her or his projects. (Enables the Projects view.)',
+        description: 'Allows a user to view projects. (Enables the Projects view.)',
         permission: 'view',
       },
       {
@@ -88,7 +114,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'Administrate projects',
         title: 'Administrate projects',
-        description: 'Allows a user to create, modify, delete and share all PROCEED projects.',
+        description: 'Allows a user to perform any action on projects.',
         permission: 'admin',
       },
     ],
@@ -127,7 +153,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'View tasks',
         title: 'View tasks',
-        description: 'A,llows a user to view her or his tasks. (Enables the Tasklist view.)',
+        description: 'Allows a user to view tasks. (Enables the Tasklist view.)',
         permission: 'view',
       },
     ],
@@ -168,7 +194,7 @@ const basePermissionOptions: PermissionCategory[] = [
   {
     key: 'roles',
     title: 'ROLES',
-    resource: 'Role',
+    resource: ['Role', 'RoleMapping'],
     permissions: [
       {
         key: 'Manage roles',
@@ -180,54 +206,31 @@ const basePermissionOptions: PermissionCategory[] = [
   },
   {
     key: 'users',
-    title: 'Users',
+    title: 'USERS',
     resource: 'User',
     permissions: [
       {
         key: 'Manage users',
         title: 'Manage users',
-        description:
-          'Allows a user to create,, delete and enable/disable users. (Enables the IAM view.)',
-        permission: 'manage',
-      },
-
-      {
-        key: 'Manage roles of users',
-        title: 'Manage roles of users',
-        description:
-          'Allows a user to assign roles to a user and to remove roles from a user. (Enables the IAM view.)',
+        description: 'Allows a user to add or remove users from the Organization.',
         permission: 'manage',
       },
     ],
   },
-  {
-    key: 'settings',
-    title: 'SETTINGS',
-    resource: 'Setting',
-    permissions: [
-      {
-        key: 'Administrate settings',
-        title: 'Administrate settings',
-        description:
-          'Allows a user to administrate the settings of the Management System and the Engine. (Enables the Settings view.)',
-        permission: 'admin',
-      },
-    ],
-  },
-  {
-    key: 'environment_configurations',
-    title: 'Environment Configurations',
-    resource: 'EnvConfig',
-    permissions: [
-      {
-        key: 'Administrate environment configuration',
-        title: 'Administrate environment configuration',
-        description:
-          'Allows a user to administrate the environment configuration of the Management System. (Enables the Environment Configuration view.)',
-        permission: 'admin',
-      },
-    ],
-  },
+  // {
+  //   key: 'settings',
+  //   title: 'SETTINGS',
+  //   resource: 'Setting',
+  //   permissions: [
+  //     {
+  //       key: 'Administrate settings',
+  //       title: 'Administrate settings',
+  //       description:
+  //         'Allows a user to administrate the settings of the Management System and the Engine. (Enables the Settings view.)',
+  //       permission: 'admin',
+  //     },
+  //   ],
+  // },
   {
     key: 'all',
     title: 'ALL',
@@ -236,8 +239,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'Administrator Permissions',
         title: 'Administrator Permissions',
-        description:
-          'Grants a user full administrator permissions for the PROCEED Management System.',
+        description: 'Grants a user full administrator permissions for the Organization.',
         permission: 'admin',
       },
     ],

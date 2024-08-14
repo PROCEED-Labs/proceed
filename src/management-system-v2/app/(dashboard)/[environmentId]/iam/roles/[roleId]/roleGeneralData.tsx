@@ -1,15 +1,19 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, DatePicker, Form, Input } from 'antd';
-import { FC, useEffect, useState } from 'react';
+import { Alert, App, DatePicker, Form, Input } from 'antd';
+import { FC } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
-import { Role } from '@/lib/data/role-schema';
+import { Role, RoleInputSchema } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
+import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
+import FormSubmitButton from '@/components/form-submit-button';
+
+const InputSchema = RoleInputSchema.omit({ environmentId: true, permissions: true });
 
 const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const { message } = App.useApp();
@@ -18,24 +22,12 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
   const router = useRouter();
   const environment = useEnvironment();
 
-  const [submittable, setSubmittable] = useState(false);
-  const values = Form.useWatch('name', form);
-
-  useEffect(() => {
-    form.validateFields({ validateOnly: true }).then(
-      () => {
-        setSubmittable(true);
-      },
-      () => {
-        setSubmittable(false);
-      },
-    );
-  }, [form, values]);
+  const [errors, parseInput] = useParseZodErrors(InputSchema);
 
   const role = toCaslResource('Role', _role);
 
   async function submitChanges(values: Record<string, any>) {
-    if (typeof values.expirationDayJs === 'object') {
+    if (typeof values?.expirationDayJs === 'object') {
       values.expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
       delete values.expirationDayJs;
     }
@@ -59,19 +51,18 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
         </>
       )}
 
-      <Form.Item
-        label="Name"
-        name="name"
-        rules={[{ required: true, message: 'this field is required' }]}
-        required
-      >
+      <Form.Item label="Name" name="name" {...antDesignInputProps(errors, 'name')} required>
         <Input
           placeholder="input placeholder"
           disabled={!ability.can('update', role, { field: 'name' })}
         />
       </Form.Item>
 
-      <Form.Item label="Description" name="description">
+      <Form.Item
+        label="Description"
+        name="description"
+        {...antDesignInputProps(errors, 'description')}
+      >
         <Input.TextArea
           placeholder="input placeholder"
           disabled={!ability.can('update', role, { field: 'description' })}
@@ -89,9 +80,7 @@ const RoleGeneralData: FC<{ role: Role }> = ({ role: _role }) => {
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" htmlType="submit" disabled={!submittable}>
-          Update Role
-        </Button>
+        <FormSubmitButton submitText="Update Role" isValidData={(values) => !!parseInput(values)} />
       </Form.Item>
     </Form>
   );

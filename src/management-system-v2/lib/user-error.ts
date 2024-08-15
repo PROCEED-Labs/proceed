@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { useAppProps } from 'antd/es/app/context';
+import { notification, message } from '@/components/app';
 
 export enum UserErrorType {
   /** ID already exists, illegal input, malformed input, etc. (default) */
@@ -53,21 +53,11 @@ export function isUserErrorResponse(value: any): value is { error: UserError } {
 
 export async function wrapServerCall<Return>(args: {
   fn: () => Promise<Return>;
-  app?: useAppProps;
   onSuccess?: string | ((ret: Exclude<Return, ReturnType<typeof userError>>) => void) | false;
   successDisplay?: 'message' | 'notification';
   onError?: string | ((error: Error | UserError) => void) | false;
   errorDisplay?: 'message' | 'notification';
 }) {
-  if (
-    !args.app &&
-    (typeof args.onSuccess !== 'function' ||
-      typeof args.onError !== 'function' ||
-      typeof args.onSuccess !== 'boolean' ||
-      typeof args.onError !== 'boolean')
-  )
-    throw new Error('You must provide either an app instance or onSuccess and onError');
-
   try {
     const response = await args.fn();
 
@@ -82,9 +72,9 @@ export async function wrapServerCall<Return>(args: {
 
     if (args.onSuccess === false) return;
 
-    const message = args.onSuccess ?? 'Success';
-    if (args?.successDisplay === 'notification') args.app!.notification.success({ message });
-    else args.app!.message.success(message);
+    const content = args.onSuccess ?? 'Success';
+    if (args?.successDisplay === 'notification') notification.success({ message: content });
+    else message.success(content);
   } catch (error) {
     if (typeof args.onError === 'function') {
       args.onError(error as UserError | Error);
@@ -93,10 +83,10 @@ export async function wrapServerCall<Return>(args: {
 
     if (args.onError === false) return;
 
-    let message: ReactNode = args.onError ?? 'Something went wrong';
-    if (isUserError(error)) message = error.message;
+    let content: ReactNode = args.onError ?? 'Something went wrong';
+    if (isUserError(error)) content = error.message;
 
-    if (args?.errorDisplay === 'notification') args.app!.notification.error({ message });
-    else args.app!.message.error(message);
+    if (args?.errorDisplay === 'notification') notification.error({ message: content });
+    else message.error(content);
   }
 }

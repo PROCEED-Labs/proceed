@@ -1,10 +1,16 @@
 'use client';
 
-import { AbstractConfig, ParentConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  MachineConfig,
+  Parameter,
+  ParentConfig,
+  TargetConfig,
+} from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Col, Layout, Row } from 'antd';
+import { Button, Col, Layout, Row, Space, Tag, Tooltip, TreeDataNode } from 'antd';
 import ConfigEditor from './config-editor';
 import ConfigurationTreeView from './config-tree-view';
 import { findConfig, findParameter } from '../configuration-helper';
@@ -15,14 +21,59 @@ import React from 'react';
 import styles from './page.module.scss';
 import CustomField from './custom-field';
 import { useUserPreferences } from '@/lib/user-preferences';
+import { FaFolderTree } from 'react-icons/fa6';
 
 const collapsedWidth = 70;
 
 type VariablesEditorProps = {
-  originalParentConfig: ParentConfig;
+  parentConfig: ParentConfig;
 };
 
-const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig }) => {
+const ParameterTreeNode: React.FC<{
+  keyId: string;
+  parameter: Parameter;
+  type: 'parameter' | 'metadata';
+}> = ({ keyId, parameter, type }) => {
+  const colorMap = { parameter: 'green', metadata: 'cyan' };
+  let node = (
+    <>
+      <Tag color={colorMap[type]}>P</Tag>
+      {keyId}
+    </>
+  );
+
+  if (parameter.content && parameter.content.length > 0) {
+    const { displayName, value, unit, language } = parameter.content[0];
+    node = (
+      <Tooltip
+        placement="top"
+        title={
+          <Space size={3}>
+            {displayName}:{value} {unit}({language})
+          </Space>
+        }
+      >
+        {node}
+      </Tooltip>
+    );
+  }
+
+  return node;
+};
+
+const ConfigTreeNode: React.FC<{ config: AbstractConfig }> = ({ config }) => {
+  const colorMap = { config: 'purple', 'machine-config': 'geekblue', 'target-config': 'blue' };
+  const charMap = { config: 'C', 'machine-config': 'M', 'target-config': 'T' };
+
+  return (
+    <>
+      <Tag color={colorMap[config.type]}>{charMap[config.type]}</Tag>
+      {config.name}
+    </>
+  );
+};
+
+const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
   const [selectionId, setSelectionId] = useState('');
   const [selectionType, setSelectionType] = useState<AbstractConfig['type'] | 'parameter'>(
     'config',
@@ -46,19 +97,98 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
   };
 
   const selectedNode = useMemo(() => {
-    if (!selectionId || selectionType === 'config') return originalParentConfig;
+    if (!selectionId || selectionType === 'config') return parentConfig;
 
     let node;
     if (selectionType === 'parameter') {
-      const ref = findParameter(selectionId, originalParentConfig, 'config');
+      const ref = findParameter(selectionId, parentConfig, 'config');
       if (ref) node = ref.selection;
     } else {
-      const ref = findConfig(selectionId, originalParentConfig);
+      const ref = findConfig(selectionId, parentConfig);
       if (ref) node = ref.selection;
     }
 
-    return node || originalParentConfig;
-  }, [selectionId, selectionType, originalParentConfig]);
+    return node || parentConfig;
+  }, [selectionId, selectionType, parentConfig]);
+
+  const setUserPreferences = useUserPreferences.use.addPreferences();
+  const openTreeItemsInConfigs = useUserPreferences.use['tech-data-open-tree-items']();
+  const configOpenItems = openTreeItemsInConfigs.find(({ id }) => id === parentConfig.id);
+
+  const expandedKeys = configOpenItems ? configOpenItems.open : [];
+
+  const treeData = useMemo(() => {
+    function parameterToTree(
+      key: string,
+      parameter: Parameter,
+      type: 'parameter' | 'metadata',
+    ): TreeDataNode {
+      let children: TreeDataNode[] = Object.entries(parameter.parameters).map(
+        ([key, childParameter]) => parameterToTree(key, childParameter, 'parameter'),
+      );
+      return {
+        title: <ParameterTreeNode keyId={key} parameter={parameter} type={type} />,
+        key: parameter.id + '|parameter',
+        children,
+      };
+    }
+
+    function configToTree(config: AbstractConfig): TreeDataNode {
+      let children: TreeDataNode[] = Object.entries(config.metadata).map(([key, parameter]) =>
+        parameterToTree(key, parameter, 'metadata'),
+      );
+
+      if (config.type !== 'config') {
+        children = children.concat(
+          Object.entries((config as TargetConfig | MachineConfig).parameters).map(
+            ([key, parameter]) => parameterToTree(key, parameter, 'parameter'),
+          ),
+        );
+      } else {
+        const parentConfig = config as ParentConfig;
+        if (parentConfig.targetConfig) children.push(configToTree(parentConfig.targetConfig));
+        children = children.concat(
+          parentConfig.machineConfigs.map((machineConfig) => configToTree(machineConfig)),
+        );
+      }
+
+      return {
+        title: <ConfigTreeNode config={config} />,
+        key: config.id + '|' + config.type,
+        children,
+      };
+    }
+
+    return [configToTree(parentConfig)];
+  }, [parentConfig]);
+
+  const getAllKeys = (data: TreeDataNode[]): React.Key[] => {
+    let keys: React.Key[] = [];
+    data.forEach((item) => {
+      keys.push(item.key);
+      if (item.children) {
+        keys = keys.concat(getAllKeys(item.children));
+      }
+    });
+    return keys;
+  };
+
+  const expandAllNodes = () => {
+    setUserPreferences({
+      'tech-data-open-tree-items': [
+        ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
+        { id: parentConfig.id, open: getAllKeys(treeData).map((key) => key.toString()) },
+      ],
+    });
+  };
+
+  const collapseAllNodes = () => {
+    setUserPreferences({
+      'tech-data-open-tree-items': openTreeItemsInConfigs.filter(
+        ({ id }) => id !== parentConfig.id,
+      ),
+    });
+  };
 
   if (!isClient) {
     return null;
@@ -84,36 +214,59 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
           background: siderOpen ? '#fff' : undefined,
         }}
       >
-        <Button
-          className={styles.CustomBoxButton}
-          type="default"
-          onClick={handleCollapse}
-          style={{
-            right: 10,
-          }}
-        >
-          {!siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-        </Button>
+        <div className={styles.SiderActions}>
+          {siderOpen && (
+            <Button
+              type="default"
+              className={styles.CustomBoxButton}
+              onClick={() => {
+                if (expandedKeys.length === 0) {
+                  expandAllNodes();
+                } else {
+                  collapseAllNodes();
+                }
+              }}
+            >
+              <FaFolderTree />
+            </Button>
+          )}
+
+          <Button className={styles.CustomBoxButton} type="default" onClick={handleCollapse}>
+            {!siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </Button>
+        </div>
+
         {siderOpen && (
           <div className={styles.CustomBoxContentWrapper}>
             <ConfigurationTreeView
               editable={editable}
+              treeData={treeData}
+              expandedKeys={expandedKeys}
+              onExpandedChange={(newExpanded) => {
+                console.log(newExpanded);
+                setUserPreferences({
+                  'tech-data-open-tree-items': [
+                    ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
+                    { id: parentConfig.id, open: newExpanded },
+                  ],
+                });
+              }}
               onChangeSelection={(selection) => {
                 setSelectionId(selection ? selection.id : '');
                 setSelectionType(selection ? selection.type : 'config');
               }}
-              parentConfig={originalParentConfig}
+              parentConfig={parentConfig}
             />
           </div>
         )}
       </ResizableBox>
       <Row style={{ flexGrow: 1, flexShrink: 1 }}>
-        <Col style={{ width: '100%' }}>
+        <Col style={{ width: '100%', height: '100%' }}>
           {'content' in selectedNode ? (
             <>
               {Object.entries(selectedNode.parameters).map(([key, val]) => (
                 <CustomField
-                  parentConfig={originalParentConfig}
+                  parentConfig={parentConfig}
                   key={key}
                   keyId={key}
                   parameter={val}
@@ -125,7 +278,7 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
             <ConfigEditor
               editable={editable}
               onChangeEditable={setEditable}
-              parentConfig={originalParentConfig}
+              parentConfig={parentConfig}
               selectedConfig={selectedNode as AbstractConfig}
             />
           )}

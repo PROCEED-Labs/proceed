@@ -269,7 +269,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
 
   return (
     <>
-      <Layout>
+      <Layout style={{ height: '100%' }}>
         <Header
           style={{
             background: '#fff',
@@ -397,6 +397,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             borderRadius: borderRadiusLG,
             minHeight: 'auto',
             height: 'auto',
+            overflow: 'auto',
           }}
         >
           <Collapse

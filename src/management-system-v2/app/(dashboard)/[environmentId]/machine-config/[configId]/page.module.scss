@@ -1,5 +1,6 @@
 .ConfigEditor {
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: row;
 
@@ -11,10 +12,14 @@
     position: relative;
     overflow: auto;
 
-    .CustomBoxButton {
-      position: absolute;
-      top: 10px;
-      z-index: 2;
+    .SiderActions {
+      display: flex;
+      justify-content: end;
+      padding: 10px 15px;
+      .CustomBoxButton {
+        margin-left: 10px;
+        z-index: 2;
+      }
     }
 
     .CustomBoxContentWrapper {

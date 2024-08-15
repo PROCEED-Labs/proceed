@@ -3,12 +3,11 @@
 import {
   ParentConfig,
   AbstractConfig,
-  Parameter,
   StoredParameter,
   MachineConfig,
   TargetConfig,
 } from '@/lib/data/machine-config-schema';
-import { Dropdown, MenuProps, Modal, Space, Tag, Tooltip, Tree, Button, TreeDataNode } from 'antd';
+import { Dropdown, MenuProps, Modal, Tree, Button, TreeDataNode } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useMemo, useState } from 'react';
@@ -20,7 +19,6 @@ import {
 } from '../configuration-helper';
 import MachineConfigModal from '@/components/machine-config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
-import { FaFolderTree } from 'react-icons/fa6';
 
 import {
   addMachineConfig,
@@ -30,11 +28,13 @@ import {
   removeParameter,
   removeTargetConfig,
 } from '@/lib/data/legacy/machine-config';
-import { useUserPreferences } from '@/lib/user-preferences';
 
 type ConfigurationTreeViewProps = {
   parentConfig: ParentConfig;
   editable: boolean;
+  treeData: TreeDataNode[];
+  expandedKeys: string[];
+  onExpandedChange: (newExpanded: string[]) => void;
   onChangeSelection: (selection?: {
     id: string;
     type: AbstractConfig['type'] | 'parameter';
@@ -43,53 +43,12 @@ type ConfigurationTreeViewProps = {
 
 type ModalType = '' | AbstractConfig['type'] | 'parameter' | 'metadata' | 'delete';
 
-const ConfigTreeNode: React.FC<{ config: AbstractConfig }> = ({ config }) => {
-  const colorMap = { config: 'purple', 'machine-config': 'geekblue', 'target-config': 'blue' };
-  const charMap = { config: 'C', 'machine-config': 'M', 'target-config': 'T' };
-
-  return (
-    <>
-      <Tag color={colorMap[config.type]}>{charMap[config.type]}</Tag>
-      {config.name}
-    </>
-  );
-};
-
-const ParameterTreeNode: React.FC<{
-  keyId: string;
-  parameter: Parameter;
-  type: 'parameter' | 'metadata';
-}> = ({ keyId, parameter, type }) => {
-  const colorMap = { parameter: 'green', metadata: 'cyan' };
-  let node = (
-    <>
-      <Tag color={colorMap[type]}>P</Tag>
-      {keyId}
-    </>
-  );
-
-  if (parameter.content && parameter.content.length > 0) {
-    const { displayName, value, unit, language } = parameter.content[0];
-    node = (
-      <Tooltip
-        placement="top"
-        title={
-          <Space size={3}>
-            {displayName}:{value} {unit}({language})
-          </Space>
-        }
-      >
-        {node}
-      </Tooltip>
-    );
-  }
-
-  return node;
-};
-
 const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   parentConfig,
   editable,
+  treeData,
+  expandedKeys,
+  onExpandedChange,
   onChangeSelection,
 }) => {
   const router = useRouter();
@@ -116,40 +75,6 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
 
     return node || parentConfig;
   }, [rightClickedId, rightClickedType, parentConfig]);
-
-  const setUserPreferences = useUserPreferences.use.addPreferences();
-  const openTreeItemsInConfigs = useUserPreferences.use['tech-data-open-tree-items']();
-  const configOpenItems = openTreeItemsInConfigs.find(({ id }) => id === parentConfig.id);
-
-  const expandedKeys = configOpenItems ? configOpenItems.open : [];
-
-  const getAllKeys = (data: TreeDataNode[]): React.Key[] => {
-    let keys: React.Key[] = [];
-    data.forEach((item) => {
-      keys.push(item.key);
-      if (item.children) {
-        keys = keys.concat(getAllKeys(item.children));
-      }
-    });
-    return keys;
-  };
-
-  const expandAllNodes = () => {
-    setUserPreferences({
-      'tech-data-open-tree-items': [
-        ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
-        { id: parentConfig.id, open: getAllKeys(treeData).map((key) => key.toString()) },
-      ],
-    });
-  };
-
-  const collapseAllNodes = () => {
-    setUserPreferences({
-      'tech-data-open-tree-items': openTreeItemsInConfigs.filter(
-        ({ id }) => id !== parentConfig.id,
-      ),
-    });
-  };
 
   const closeModal = () => setOpenModal('');
 
@@ -233,51 +158,6 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     setSelectedOnTree([info.node.key]);
   };
 
-  const treeData = useMemo(() => {
-    function parameterToTree(
-      key: string,
-      parameter: Parameter,
-      type: 'parameter' | 'metadata',
-    ): TreeDataNode {
-      let children: TreeDataNode[] = Object.entries(parameter.parameters).map(
-        ([key, childParameter]) => parameterToTree(key, childParameter, 'parameter'),
-      );
-      return {
-        title: <ParameterTreeNode keyId={key} parameter={parameter} type={type} />,
-        key: parameter.id + '|parameter',
-        children,
-      };
-    }
-
-    function configToTree(config: AbstractConfig): TreeDataNode {
-      let children: TreeDataNode[] = Object.entries(config.metadata).map(([key, parameter]) =>
-        parameterToTree(key, parameter, 'metadata'),
-      );
-
-      if (config.type !== 'config') {
-        children = children.concat(
-          Object.entries((config as TargetConfig | MachineConfig).parameters).map(
-            ([key, parameter]) => parameterToTree(key, parameter, 'parameter'),
-          ),
-        );
-      } else {
-        const parentConfig = config as ParentConfig;
-        if (parentConfig.targetConfig) children.push(configToTree(parentConfig.targetConfig));
-        children = children.concat(
-          parentConfig.machineConfigs.map((machineConfig) => configToTree(machineConfig)),
-        );
-      }
-
-      return {
-        title: <ConfigTreeNode config={config} />,
-        key: config.id + '|' + config.type,
-        children,
-      };
-    }
-
-    return [configToTree(parentConfig)];
-  }, [parentConfig]);
-
   const contextMenuItems: MenuProps['items'] = useMemo(() => {
     let items: MenuProps['items'] = [];
     if (rightClickedType === 'config') {
@@ -337,47 +217,14 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
 
   return (
     <>
-      <div style={{ position: 'relative', padding: '8px' }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            position: 'absolute',
-            top: 10,
-            right: 60,
-            zIndex: 2,
-          }}
-        >
-          <Button
-            type="default"
-            onClick={() => {
-              if (expandedKeys.length === 0) {
-                expandAllNodes();
-              } else {
-                collapseAllNodes();
-              }
-            }}
-          >
-            <FaFolderTree />
-          </Button>
-        </div>
-      </div>
-      <br />
       <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']}>
         <Tree
           selectedKeys={selectedOnTree}
           onRightClick={onRightClickTreeNode}
           onSelect={onSelectTreeNode}
           treeData={treeData}
-          expandedKeys={expandedKeys as string[]}
-          onExpand={(keys: React.Key[]) =>
-            setUserPreferences({
-              'tech-data-open-tree-items': [
-                ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
-                { id: parentConfig.id, open: keys.map((key) => key.toString()) },
-              ],
-            })
-          }
+          expandedKeys={expandedKeys}
+          onExpand={(keys: React.Key[]) => onExpandedChange(keys.map((key) => key.toString()))}
         />
       </Dropdown>
       <Modal

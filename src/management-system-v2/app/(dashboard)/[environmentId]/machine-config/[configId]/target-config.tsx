@@ -7,18 +7,11 @@ import { CaretRightOutlined } from '@ant-design/icons';
 import Content from './config-content';
 
 type MachineDataViewProps = {
-  configId: string;
   parentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
   editingEnabled: boolean;
 };
 
-const TargetConfiguration: React.FC<MachineDataViewProps> = ({
-  configId,
-  parentConfig,
-  backendSaveParentConfig: saveParentConfig,
-  editingEnabled,
-}) => {
+const TargetConfiguration: React.FC<MachineDataViewProps> = ({ parentConfig, editingEnabled }) => {
   const { token } = theme.useToken();
   const panelStyle = {
     marginBottom: 20,
@@ -27,18 +20,18 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({
     //border: 'none',
   };
 
+  const { targetConfig } = parentConfig;
+
   const getContentItems = (panelStyle: {
     marginBottom: number;
     background: string;
     borderRadius: number;
     //border: string;
-  }): any => {
+  }) => {
     const contentItems = [];
     if (
-      parentConfig.targetConfig &&
-      (editingEnabled ||
-        (parentConfig.targetConfig.metadata &&
-          Object.keys(parentConfig.targetConfig.metadata).length > 0))
+      targetConfig &&
+      (editingEnabled || (targetConfig.metadata && Object.keys(targetConfig.metadata).length > 0))
     ) {
       contentItems.push({
         key: 'meta',
@@ -47,10 +40,9 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({
           <Content
             contentType="metadata"
             editingEnabled={editingEnabled}
-            backendSaveParentConfig={saveParentConfig}
-            customConfig={parentConfig.targetConfig}
-            configId={configId}
-            selectedMachineConfig={undefined}
+            configId={targetConfig.id}
+            configType="target-config"
+            data={targetConfig.metadata}
             parentConfig={parentConfig}
           />,
         ],
@@ -58,10 +50,9 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({
       });
     }
     if (
-      parentConfig.targetConfig &&
+      targetConfig &&
       (editingEnabled ||
-        (parentConfig.targetConfig.parameters &&
-          Object.keys(parentConfig.targetConfig.parameters).length > 0))
+        (targetConfig.parameters && Object.keys(targetConfig.parameters).length > 0))
     ) {
       contentItems.push({
         key: 'param',
@@ -70,10 +61,9 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({
           <Content
             contentType="parameters"
             editingEnabled={editingEnabled}
-            backendSaveParentConfig={saveParentConfig}
-            customConfig={parentConfig.targetConfig}
-            configId={configId}
-            selectedMachineConfig={undefined}
+            configId={targetConfig.id}
+            configType="target-config"
+            data={targetConfig.parameters}
             parentConfig={parentConfig}
           />,
         ],
@@ -85,18 +75,14 @@ const TargetConfiguration: React.FC<MachineDataViewProps> = ({
 
   const activeKeys = [];
   if (
-    parentConfig.targetConfig &&
-    (editingEnabled ||
-      (parentConfig.targetConfig.metadata &&
-        Object.keys(parentConfig.targetConfig.metadata).length > 0))
+    targetConfig &&
+    (editingEnabled || (targetConfig.metadata && Object.keys(targetConfig.metadata).length > 0))
   ) {
     activeKeys.push('meta');
   }
   if (
-    parentConfig.targetConfig &&
-    (editingEnabled ||
-      (parentConfig.targetConfig.parameters &&
-        Object.keys(parentConfig.targetConfig.parameters).length > 0))
+    targetConfig &&
+    (editingEnabled || (targetConfig.parameters && Object.keys(targetConfig.parameters).length > 0))
   ) {
     activeKeys.push('param');
   }

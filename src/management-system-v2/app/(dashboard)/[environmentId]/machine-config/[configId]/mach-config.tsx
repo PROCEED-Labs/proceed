@@ -1,37 +1,84 @@
 'use client';
 
-import { MachineConfig, ParentConfig } from '@/lib/data/machine-config-schema';
+import { MachineConfig, ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
 import { useRouter } from 'next/navigation';
 
 import { CaretRightOutlined } from '@ant-design/icons';
-import { useState } from 'react';
-import { Collapse, theme, Modal, Form, Input, message } from 'antd';
-import {
-  createMachineConfigInParent,
-  generateUniqueId,
-  deleteMachineConfigInParent,
-} from '../configuration-helper';
+import { useMemo, useState } from 'react';
+import { Collapse, theme, Modal, Form, Input, MenuProps } from 'antd';
 import ActionButtons from './action-buttons';
 import Content from './config-content';
+import {
+  addParameter,
+  copyConfig,
+  removeMachineConfig,
+  updateMachineConfig,
+  updateParameter,
+  updateParentConfig,
+} from '@/lib/data/legacy/machine-config';
+import { defaultParameter } from '../configuration-helper';
+
+const CopyMachineConfigModal: React.FC<{
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: (name: string, description: string) => Promise<void>;
+}> = ({ open, onConfirm, onCancel }) => {
+  const [form] = Form.useForm();
+
+  // TODO: on open prefill with current values
+  const [currentName, setCurrentName] = useState('');
+  const [currentDescription, setCurrentDescription] = useState('');
+
+  return (
+    <Modal
+      open={open}
+      title="Copy Machine Configuration"
+      okText="Ok"
+      cancelText="Cancel"
+      onCancel={onCancel}
+      onOk={async () => {
+        await form.validateFields();
+        await onConfirm(currentName, currentDescription);
+        setCurrentName('');
+        setCurrentDescription('');
+      }}
+    >
+      <Form form={form} layout="vertical" name="form_in_modal">
+        <Form.Item
+          name="name"
+          label="Name"
+          rules={[
+            { required: true, message: 'Please input the name of the machine configuration!' },
+          ]}
+        >
+          <Input value={currentName} onChange={(e) => setCurrentName(e.target.value)} />
+        </Form.Item>
+        <Form.Item name="description" label="Description">
+          <Input.TextArea
+            showCount
+            rows={4}
+            maxLength={150}
+            value={currentDescription}
+            onChange={(e) => setCurrentDescription(e.target.value)}
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
 
 type MachineDataViewProps = {
-  configId: string;
   parentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
   editingEnabled: boolean;
 };
 
 const MachineConfigurations: React.FC<MachineDataViewProps> = ({
-  configId,
-  parentConfig: originalParentConfig,
-  backendSaveParentConfig: saveParentConfig,
+  parentConfig,
   editingEnabled,
 }) => {
   const router = useRouter();
-  const [parentConfig, setParentConfig] = useState<ParentConfig>(originalParentConfig);
 
-  const [copyModalVisible, setCopyModalVisible] = useState(false);
-  const [configToCopy, setConfigToCopy] = useState<MachineConfig | null>(null);
+  const [configToCopy, setConfigToCopy] = useState('');
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -41,185 +88,77 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
     //border: 'none',
   };
 
-  const handleCopy = (machineConfig: MachineConfig) => {
-    setConfigToCopy(machineConfig);
-    setCopyModalVisible(true);
-  };
+  const handleCopy = async (name: string, description: string) => {
+    const machineConfig = parentConfig.machineConfigs.find(({ id }) => id === configToCopy);
+    if (!machineConfig) return;
 
-  const handleCopyModalCancel = () => {
-    setCopyModalVisible(false);
-    setConfigToCopy(null);
-  };
+    const id = await copyConfig(configToCopy, 'machine-config');
 
-  const handleCopyModalCreate = async (values: { name: string; description: string }) => {
-    if (configToCopy) {
-      const newConfig = {
-        ...configToCopy,
-        id: generateUniqueId(),
-        name: values.name,
-        metadata: {
-          description: {
-            content: [
-              {
-                value: values.description,
-                displayName: 'Description',
-                language: 'en',
-              },
-            ],
-          },
-        },
-        createdOn: new Date().toISOString(),
-        lastEditedOn: new Date().toISOString(),
-      };
-      createMachineConfigInParent(
-        parentConfig,
-        newConfig.name,
-        newConfig.metadata.description.content[0].value,
-      );
-      await saveParentConfig(configId, parentConfig);
-      setParentConfig({ ...parentConfig });
-      router.refresh();
-    }
-    setCopyModalVisible(false);
-  };
+    // TODO: update the copy with the correct name and description
+    // the description update should be handled in the backend (its not just a field but a content entry of a metadata entry)
+    updateMachineConfig(id, { name });
 
-  const handleDelete = (machineConfigId: string) => {
-    deleteMachineConfigInParent(parentConfig, machineConfigId);
-    setParentConfig({
-      ...parentConfig,
-      machineConfigs: parentConfig.machineConfigs.filter((config) => config.id !== machineConfigId),
+    // add the machine config to the parent config
+    await updateParentConfig(parentConfig.id, {
+      machineConfigs: [...parentConfig.machineConfigs.map(({ id }) => id), id],
     });
-    saveParentConfig(configId, parentConfig).then(() => {
-      message.success('Configuration deleted successfully');
-    });
+    router.refresh();
+    setConfigToCopy('');
   };
 
-  const CopyMachineConfigModal = ({
-    visible,
-    onCreate,
-    onCancel,
-  }: {
-    visible: boolean;
-    onCreate: (values: { name: string; description: string }) => void;
-    onCancel: () => void;
-  }) => {
-    const [form] = Form.useForm();
-    return (
-      <Modal
-        open={visible}
-        title="Copy Machine Configuration"
-        okText="Ok"
-        cancelText="Cancel"
-        onCancel={onCancel}
-        onOk={() => {
-          form
-            .validateFields()
-            .then((values) => {
-              form.resetFields();
-              onCreate(values);
-            })
-            .catch((info) => {
-              console.log('Validate Failed:', info);
-            });
-        }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          name="form_in_modal"
-          initialValues={{ modifier: 'public' }}
-        >
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[
-              { required: true, message: 'Please input the name of the machine configuration!' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea showCount rows={4} maxLength={150} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    );
+  const handleDelete = async (machineConfigId: string) => {
+    await removeMachineConfig(machineConfigId);
+    router.refresh();
   };
 
-  const getContentItems = (
-    machineConfigData: MachineConfig,
-    panelStyle: {
-      marginBottom: number;
-      background: string;
-      borderRadius: number;
-      //border: string;
-    },
-  ): any => {
-    const contentItems = [];
-    if (
-      editingEnabled ||
-      (machineConfigData.metadata && Object.keys(machineConfigData.metadata).length > 0)
-    ) {
-      contentItems.push({
-        key: 'meta',
-        label: 'Meta Data',
-        children: [
-          <Content
-            contentType="metadata"
-            editingEnabled={editingEnabled}
-            backendSaveParentConfig={saveParentConfig}
-            customConfig={machineConfigData}
-            configId={configId}
-            selectedMachineConfig={undefined}
-            parentConfig={parentConfig}
-          />,
-        ],
-        style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
-      });
-    }
-    if (
-      editingEnabled ||
-      (machineConfigData.parameters && Object.keys(machineConfigData.parameters).length > 0)
-    ) {
-      contentItems.push({
-        key: 'param',
-        label: 'Parameters',
-        children: [
-          <Content
-            contentType="parameters"
-            editingEnabled={editingEnabled}
-            backendSaveParentConfig={saveParentConfig}
-            customConfig={machineConfigData}
-            configId={configId}
-            selectedMachineConfig={undefined}
-            parentConfig={parentConfig}
-          />,
-        ],
-        style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
-      });
-    }
-    return contentItems;
-  };
-
-  const getItems = (panelStyle: {
-    marginBottom: number;
-    background: string;
-    borderRadius: number;
-    //border: string;
-  }): any => {
+  const items = useMemo(() => {
     let list = [];
+
+    const getMachineConfigContent = (config: MachineConfig) => {
+      const contentItems = [];
+      if (editingEnabled || Object.keys(config.metadata).length > 0) {
+        contentItems.push({
+          key: 'meta',
+          label: 'Meta Data',
+          children: [
+            <Content
+              contentType="metadata"
+              editingEnabled={editingEnabled}
+              data={config.metadata}
+              configId={config.id}
+              configType="machine-config"
+              parentConfig={parentConfig}
+            />,
+          ],
+          style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
+        });
+      }
+      if (editingEnabled || (config.parameters && Object.keys(config.parameters).length > 0)) {
+        contentItems.push({
+          key: 'param',
+          label: 'Parameters',
+          children: [
+            <Content
+              contentType="parameters"
+              editingEnabled={editingEnabled}
+              configId={config.id}
+              configType="machine-config"
+              data={config.parameters}
+              parentConfig={parentConfig}
+            />,
+          ],
+          style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
+        });
+      }
+      return contentItems;
+    };
+
     for (let machineConfig of parentConfig.machineConfigs) {
       const activeKeys = [];
-      if (
-        editingEnabled ||
-        (machineConfig.metadata && Object.keys(machineConfig.metadata).length > 0)
-      ) {
+      if (editingEnabled || Object.keys(machineConfig.metadata).length > 0) {
         activeKeys.push('meta');
       }
-      if (
-        editingEnabled ||
-        (machineConfig.parameters && Object.keys(machineConfig.parameters).length > 0)
-      ) {
+      if (editingEnabled || Object.keys(machineConfig.parameters).length > 0) {
         activeKeys.push('param');
       }
       list.push({
@@ -233,7 +172,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
             style={{
               background: 'none',
             }}
-            items={getContentItems(machineConfig, panelStyle)}
+            items={getMachineConfigContent(machineConfig)}
           />,
         ],
         extra: (
@@ -242,7 +181,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
             options={['copy', 'delete']}
             actions={{
               copy: () => {
-                handleCopy(machineConfig);
+                setConfigToCopy(machineConfig.id);
               },
               delete: () => {
                 handleDelete(machineConfig.id);
@@ -255,7 +194,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
       });
     }
     return list;
-  };
+  }, [parentConfig, editingEnabled, panelStyle]);
 
   return (
     <>
@@ -265,12 +204,12 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
         style={{
           background: 'none',
         }}
-        items={getItems(panelStyle)}
+        items={items}
       />
       <CopyMachineConfigModal
-        visible={copyModalVisible}
-        onCreate={handleCopyModalCreate}
-        onCancel={handleCopyModalCancel}
+        open={!!configToCopy}
+        onConfirm={handleCopy}
+        onCancel={() => setConfigToCopy('')}
       />
     </>
   );

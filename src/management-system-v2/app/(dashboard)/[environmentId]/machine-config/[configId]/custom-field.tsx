@@ -3,24 +3,18 @@ import { EditOutlined, CheckOutlined } from '@ant-design/icons';
 
 const { Paragraph } = Typography;
 
-import {
-  AbstractConfig,
-  Parameter,
-  ParentConfig,
-  TargetConfig,
-} from '@/lib/data/machine-config-schema';
+import { Parameter, ParentConfig } from '@/lib/data/machine-config-schema';
 import Param from './parameter';
 import AddButton from './add-button';
-import {
-  defaultConfiguration,
-  findParameter,
-  getAllParameters,
-  TreeFindParameterStruct,
-  TreeFindStruct,
-} from '../configuration-helper';
-import { useMemo } from 'react';
+import { defaultParameter, findParameter, getAllParameters } from '../configuration-helper';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 
-type FieldType = 'main' | 'nested';
+import {
+  addParameter as backendAddParameter,
+  updateParameter,
+} from '@/lib/data/legacy/machine-config';
+import { useRouter } from 'next/navigation';
 
 type TagRender = SelectProps['tagRender'];
 
@@ -44,92 +38,50 @@ const linkedParametersTagRender: TagRender = ({ label, closable, onClose }) => {
 
 type CustomFieldProps = {
   keyId: string;
-  field: Parameter;
-  fieldType: FieldType;
+  parameter: Parameter;
   editable: boolean;
-  customConfig?: AbstractConfig;
-  selectedMachineConfig: TreeFindStruct;
-  configId: string;
   parentConfig: ParentConfig;
-  parentNestedSelection?: Parameter;
-  onNestedSelectionChange: (field?: Parameter) => void;
-  onContentDelete: (param: Parameter) => void;
-  editingContent?: TargetConfig['parameters'];
-  backendSaveParentConfig: Function;
-  onEditingContentChange: (content: TargetConfig['parameters']) => void;
-  onClickAddField: (parent: Parameter | undefined, type: FieldType) => void;
-  refEditingConfig: TreeFindStruct;
 };
 
-const CustomField: React.FC<CustomFieldProps> = ({
-  configId,
-  keyId,
-  field,
-  selectedMachineConfig,
-  fieldType,
-  editable,
-  customConfig,
-  parentConfig,
-  parentNestedSelection,
-  onNestedSelectionChange,
-  onContentDelete,
-  editingContent,
-  backendSaveParentConfig: saveParentConfig,
-  onEditingContentChange,
-  onClickAddField,
-  refEditingConfig,
-}) => {
+const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, parentConfig }) => {
+  const router = useRouter();
   const { token } = theme.useToken();
 
-  const editingConfig = selectedMachineConfig
-    ? { ...selectedMachineConfig.selection }
-    : customConfig
-      ? { ...customConfig }
-      : defaultConfiguration();
+  const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
 
-  let paramKey = '';
-  const setParamKey = (e: string) => {
-    paramKey = e;
-  };
-
-  const pushKey = (key: string, field: Parameter, fieldType: FieldType) => {
-    if (fieldType === 'nested') {
-      onNestedSelectionChange(field);
-    }
-  };
-
+  // TODO: check if this actually works when given the newest data after refresh
+  const currentKeyRef = useRef(keyId);
+  useEffect(() => {
+    if (keyId !== currentKeyRef.current) currentKeyRef.current = keyId;
+  }, [keyId]);
   const restoreKey = () => {
-    onNestedSelectionChange(undefined);
-    paramKey = '';
+    currentKeyRef.current = keyId;
+  };
+  const saveKey = async () => {
+    if (!currentKeyRef.current) return;
+    await updateParameter(parameter.id!, { key: currentKeyRef.current });
+    router.refresh();
   };
 
-  const saveKey = (key: string) => {
-    if (paramKey !== '') {
-      let copyContent = { ...editingContent };
-      if (parentNestedSelection && parentNestedSelection.id) {
-        let ref: TreeFindParameterStruct = undefined;
-        for (let prop in copyContent) {
-          if (copyContent[prop].id === parentNestedSelection.id) {
-            ref = { selection: copyContent[prop], parent: copyContent[prop], type: 'parameter' };
-          } else {
-            ref = findParameter(parentNestedSelection.id, copyContent[prop], 'parameter');
-          }
-          if (ref) {
-            break;
-          }
-        }
-        if (!ref) return Promise.resolve();
-        let copyParam = { ...(ref.parent as Parameter).parameters[key] };
-        delete (ref.parent as Parameter).parameters[key];
-        (ref.parent as Parameter).parameters[paramKey] = copyParam;
-      } else {
-        let copyParam = { ...copyContent[key] };
-        delete copyContent[key];
-        copyContent[paramKey] = copyParam;
-      }
-      onEditingContentChange(copyContent);
-      paramKey = '';
-    }
+  const addParameter = async (values: CreateParameterModalReturnType[]) => {
+    const valuesFromModal = values[0];
+    const newParameter = defaultParameter(
+      valuesFromModal.displayName,
+      valuesFromModal.value,
+      valuesFromModal.language,
+      valuesFromModal.unit,
+    );
+
+    await backendAddParameter(
+      parameter.id!,
+      'parameter',
+      'parameters',
+      valuesFromModal.key || '',
+      newParameter,
+    );
+
+    setCreateFieldOpen(false);
+    router.refresh();
   };
 
   const cardStyle = {
@@ -152,7 +104,7 @@ const CustomField: React.FC<CustomFieldProps> = ({
     return [parametersList, paramIdToName];
   }, [parentConfig]);
 
-  const linkedParamsTwoWay = (
+  const updateBacklinks = async (
     idListFilter: (string | undefined)[],
     field: Parameter,
     operation: 'remove' | 'add',
@@ -160,89 +112,65 @@ const CustomField: React.FC<CustomFieldProps> = ({
     if (!field.id) return;
     for (let id of idListFilter) {
       if (id) {
+        // TODO: simplify the return value of findParameter to be the parameter or undefined
         let ref = findParameter(id, parentConfig, 'config');
         if (ref) {
           if (operation === 'remove') {
-            ref.selection.linkedParameters = ref.selection.linkedParameters.filter((item) => {
-              return item !== field.id;
+            await updateParameter(ref.selection.id!, {
+              linkedParameters: ref.selection.linkedParameters.filter((item) => {
+                return item !== field.id;
+              }),
             });
           } else {
-            if (ref.selection.linkedParameters.indexOf(field.id) === -1)
-              ref.selection.linkedParameters.push(field.id);
+            if (!ref.selection.linkedParameters.includes(field.id))
+              await updateParameter(ref.selection.id!, {
+                linkedParameters: [...ref.selection.linkedParameters, field.id],
+              });
           }
         }
       }
     }
   };
 
-  const linkedParametersChange = (
-    key: string,
-    paramIdList: string[],
-    field: Parameter,
-    type: FieldType,
-  ) => {
-    if (refEditingConfig) {
-      let copyContent = { ...editingContent };
-      // Fix links in a two way method
-      linkedParamsTwoWay(paramIdList, field, 'add');
-      if (type === 'nested' && field.id) {
-        let ref: TreeFindParameterStruct = undefined;
-        for (let prop in copyContent) {
-          if (copyContent[prop].id === field.id) {
-            ref = { selection: copyContent[prop], parent: editingConfig, type: 'parameter' };
-          } else {
-            ref = findParameter(field.id, copyContent[prop], 'parameter');
-          }
-          if (ref) {
-            break;
-          }
-        }
-        if (!ref) return Promise.resolve();
-        // Get removed Ids and make them two way again
-        let removedIds: (string | undefined)[] = ref.selection.linkedParameters.map((item) => {
-          if (paramIdList.indexOf(item) === -1) return item ?? '';
-        });
-        linkedParamsTwoWay(removedIds, field, 'remove');
-        ref.selection.linkedParameters = paramIdList;
-      } else {
-        copyContent[key].linkedParameters = paramIdList;
-      }
-      onEditingContentChange(copyContent);
-    }
+  const linkedParametersChange = async (paramIdList: string[], field: Parameter) => {
+    // make sure to set backlinks
+    await updateBacklinks(paramIdList, field, 'add');
+
+    // make sure to remove backlinks from unlinked parameters
+    const removedIds = field.linkedParameters.filter((id) => !paramIdList.includes(id));
+    await updateBacklinks(removedIds, field, 'remove');
+
+    // save the updated linked parameters
+    await updateParameter(parameter.id!, { linkedParameters: paramIdList });
+
+    router.refresh();
   };
 
   return (
-    <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0' }}>
+    <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
       <Col span={3} className="gutter-row">
         <Paragraph
-          onBlur={() => saveKey(keyId)}
           editable={
             editable && {
               icon: <EditOutlined style={{ color: 'rgba(0, 0, 0, 0.88)', margin: '0 10px' }} />,
               tooltip: 'Edit Parameter Key',
-              onStart: () => pushKey(keyId, field, fieldType),
-              onCancel: () => restoreKey,
-              onChange: setParamKey,
-              onEnd: () => saveKey(keyId),
+              onCancel: restoreKey,
+              onChange: (newValue) => (currentKeyRef.current = newValue),
+              onEnd: saveKey,
               enterIcon: <CheckOutlined />,
             }
           }
         >
-          {keyId[0].toUpperCase() + keyId.slice(1) /*TODO */}
+          {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
         </Paragraph>
       </Col>
       <Col span={21} className="gutter-row">
         <Param
-          backendSaveParentConfig={saveParentConfig}
-          configId={configId}
           editingEnabled={editable}
-          parentConfig={parentConfig}
-          selectedConfig={refEditingConfig}
-          field={field}
-          onDelete={onContentDelete}
+          field={parameter}
           label={keyId[0].toUpperCase() + keyId.slice(1)}
         />
-        {(editable || (field.linkedParameters && field.linkedParameters.length > 0)) && (
+        {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
           <Card style={cardStyle} size="small">
             <Row gutter={[24, 24]} align="middle">
               <Col span={4} className="gutter-row">
@@ -257,16 +185,14 @@ const CustomField: React.FC<CustomFieldProps> = ({
                       tagRender={linkedParametersTagRender}
                       style={{ minWidth: 250 }}
                       placeholder="Select to Add"
-                      value={field.linkedParameters}
-                      onChange={(idList: string[]) =>
-                        linkedParametersChange(keyId, idList, field, fieldType)
-                      }
+                      value={parameter.linkedParameters}
+                      onChange={(idList: string[]) => linkedParametersChange(idList, parameter)}
                       options={parametersList}
                     />
                   </Space>
                 )}
                 {!editable &&
-                  field.linkedParameters.map((paramId: string) => (
+                  parameter.linkedParameters.map((paramId: string) => (
                     <Space key={paramId}>
                       <Tag color="purple">{paramIdToName[paramId]}</Tag>
                     </Space>
@@ -285,40 +211,26 @@ const CustomField: React.FC<CustomFieldProps> = ({
             </Row>
           </Card>
         )}
-        {(editable || (field.parameters && Object.keys(field.parameters).length > 0)) && (
+        {(editable || (parameter.parameters && Object.keys(parameter.parameters).length > 0)) && (
           <Card style={cardStyle} size="small">
             <Row gutter={[24, 24]} align="middle">
               <Col span={4} className="gutter-row">
                 Nested Parameters
               </Col>
               <Col span={20} className="gutter-row">
-                {field.parameters &&
-                  Object.entries(field.parameters).map(([subFieldKey, subField]) => (
+                {parameter.parameters &&
+                  Object.entries(parameter.parameters).map(([subFieldKey, subField]) => (
                     <CustomField
-                      configId={configId}
                       parentConfig={parentConfig}
                       key={subFieldKey}
                       keyId={subFieldKey}
-                      field={subField}
-                      fieldType="nested"
+                      parameter={subField}
                       editable={editable}
-                      selectedMachineConfig={selectedMachineConfig}
-                      backendSaveParentConfig={saveParentConfig}
-                      onClickAddField={onClickAddField}
-                      onContentDelete={onContentDelete}
-                      refEditingConfig={refEditingConfig}
-                      editingContent={editingContent}
-                      onNestedSelectionChange={onNestedSelectionChange}
-                      onEditingContentChange={onEditingContentChange}
                     />
                   ))}
                 {editable && (
                   <Space>
-                    <AddButton
-                      label="Add Parameter"
-                      items={undefined}
-                      onClick={(_: any) => onClickAddField(field, 'nested')}
-                    />
+                    <AddButton label="Add Parameter" onClick={() => setCreateFieldOpen(true)} />
                   </Space>
                 )}
               </Col>
@@ -336,6 +248,14 @@ const CustomField: React.FC<CustomFieldProps> = ({
           </Card>
         )}
       </Col>
+      <CreateParameterModal
+        title="Create Parameter"
+        open={createFieldOpen}
+        onCancel={() => setCreateFieldOpen(false)}
+        onSubmit={addParameter}
+        okText="Create"
+        showKey
+      />
     </Row>
   );
 };

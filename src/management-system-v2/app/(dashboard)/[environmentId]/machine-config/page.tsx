@@ -4,7 +4,7 @@ import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import { getConfigurations } from '@/lib/data/legacy/machine-config';
+import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
 import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import ParentConfigList from './parent-config-list';
 export type ListItem = ParentConfigMetadata;
@@ -19,7 +19,7 @@ const MachineConfigPage = async ({
   }
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const folderContents = (await getConfigurations(
+  const folderContents = (await getParentConfigurations(
     activeEnvironment.spaceId,
     ability,
   )) satisfies ListItem[];
@@ -29,12 +29,7 @@ const MachineConfigPage = async ({
     <>
       <Content title={<Space></Space>}>
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-          <ParentConfigList
-            params={{
-              environmentId: params.environmentId,
-            }}
-            data={folderContents}
-          />
+          <ParentConfigList data={folderContents} />
         </Space>
       </Content>
     </>

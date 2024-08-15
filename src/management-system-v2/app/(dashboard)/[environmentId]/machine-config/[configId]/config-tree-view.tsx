@@ -4,20 +4,17 @@ import {
   ParentConfig,
   AbstractConfig,
   Parameter,
-  TargetConfig,
+  StoredParameter,
   MachineConfig,
+  TargetConfig,
 } from '@/lib/data/machine-config-schema';
 import { Dropdown, MenuProps, Modal, Space, Tag, Tooltip, Tree, Button, TreeDataNode } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
-import { Key, useEffect, useRef, useState } from 'react';
-import { v4 } from 'uuid';
+import { Key, useMemo, useState } from 'react';
 import {
-  TreeFindParameterStruct,
-  TreeFindStruct,
-  createMachineConfigInParent,
-  createTargetConfigInParent,
-  deleteParameter,
+  defaultMachineConfiguration,
+  defaultParameter,
   findConfig,
   findParameter,
 } from '../configuration-helper';
@@ -25,36 +22,100 @@ import MachineConfigModal from '@/components/machine-config-modal';
 import CreateParameterModal, { CreateParameterModalReturnType } from './create-parameter-modal';
 import { FaFolderTree } from 'react-icons/fa6';
 
+import {
+  addMachineConfig,
+  addTargetConfig,
+  addParameter as backendAddParameter,
+  removeMachineConfig,
+  removeParameter,
+  removeTargetConfig,
+} from '@/lib/data/legacy/machine-config';
+
 type ConfigurationTreeViewProps = {
-  configId: string;
   parentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
   editable: boolean;
-  onSelectConfig: Function;
-  onUpdate: Function;
+  onChangeSelection: (selection?: {
+    id: string;
+    type: AbstractConfig['type'] | 'parameter';
+  }) => void;
+};
+
+type ModalType = '' | AbstractConfig['type'] | 'parameter' | 'metadata' | 'delete';
+
+const ConfigTreeNode: React.FC<{ config: AbstractConfig }> = ({ config }) => {
+  const colorMap = { config: 'purple', 'machine-config': 'geekblue', 'target-config': 'blue' };
+  const charMap = { config: 'C', 'machine-config': 'M', 'target-config': 'T' };
+
+  return (
+    <>
+      <Tag color={colorMap[config.type]}>{charMap[config.type]}</Tag>
+      {config.name}
+    </>
+  );
+};
+
+const ParameterTreeNode: React.FC<{
+  keyId: string;
+  parameter: Parameter;
+  type: 'parameter' | 'metadata';
+}> = ({ keyId, parameter, type }) => {
+  const colorMap = { parameter: 'green', metadata: 'cyan' };
+  let node = (
+    <>
+      <Tag color={colorMap[type]}>P</Tag>
+      {keyId}
+    </>
+  );
+
+  if (parameter.content && parameter.content.length > 0) {
+    const { displayName, value, unit, language } = parameter.content[0];
+    node = (
+      <Tooltip
+        placement="top"
+        title={
+          <Space size={3}>
+            {displayName}:{value} {unit}({language})
+          </Space>
+        }
+      >
+        {node}
+      </Tooltip>
+    );
+  }
+
+  return node;
 };
 
 const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
-  configId,
   parentConfig,
-  backendSaveParentConfig: saveParentConfig,
   editable,
-  onSelectConfig,
-  onUpdate,
+  onChangeSelection,
 }) => {
   const router = useRouter();
 
-  const firstRender = useRef(true);
-  const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
   const [selectedOnTree, setSelectedOnTree] = useState<Key[]>([]);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [createMachineOpen, setCreateMachineOpen] = useState(false);
-  const [createMetadataOpen, setCreateMetadataOpen] = useState(false);
-  const [createParameterOpen, setCreateParameterOpen] = useState(false);
-  const [machineType, setMachineType] = useState<AbstractConfig['type']>('target-config');
-  const [selectedMachineConfig, setSelectedMachineConfig] = useState<
-    TreeFindStruct | TreeFindParameterStruct
-  >(undefined);
+  const [openModal, setOpenModal] = useState<ModalType>('');
+
+  const [rightClickedId, setRightClickedId] = useState('');
+  const [rightClickedType, setRightClickedType] = useState<AbstractConfig['type'] | 'parameter'>(
+    'config',
+  );
+
+  const rightClickedNode = useMemo(() => {
+    if (!rightClickedId || rightClickedType === 'config') return parentConfig;
+
+    let node;
+    if (rightClickedType === 'parameter') {
+      const ref = findParameter(rightClickedId, parentConfig, 'config');
+      if (ref) node = ref.selection;
+    } else {
+      const ref = findConfig(rightClickedId, parentConfig);
+      if (ref) node = ref.selection;
+    }
+
+    return node || parentConfig;
+  }, [rightClickedId, rightClickedType, parentConfig]);
+
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   const getAllKeys = (data: TreeDataNode[]): React.Key[] => {
@@ -75,447 +136,190 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   const collapseAllNodes = () => {
     setExpandedKeys([]);
   };
-  const showDeleteConfirmModal = () => {
-    setDeleteConfirmOpen(true);
-  };
 
-  const showCreateMachineModal = (e: any) => {
-    let type = e.key.replace('create-', '');
-    if (type === 'target') {
-      setMachineType('target-config');
-    } else {
-      setMachineType('machine-config');
-    }
-    setCreateMachineOpen(true);
-  };
+  const closeModal = () => setOpenModal('');
 
-  const showCreateParameterModal = (_: any) => {
-    setCreateParameterOpen(true);
-  };
-
-  const handleCreateMachineOk = (
+  const handleCreateMachineOk = async (
     values: {
       name: string;
       description: string;
     }[],
-  ): Promise<void> => {
-    if (machineType === 'machine-config') {
-      createMachine(values[0]);
-    } else {
-      createTarget(values[0]);
-    }
-    setCreateMachineOpen(false);
-    return Promise.resolve();
+  ) => {
+    if (openModal !== 'target-config' && openModal !== 'machine-config') return;
+    const { name, description } = values[0];
+    const newConfig = {
+      ...defaultMachineConfiguration(name, description),
+      type: openModal,
+      environmentId: parentConfig.environmentId,
+    };
+
+    if (openModal === 'machine-config')
+      await addMachineConfig(parentConfig.id, newConfig as MachineConfig);
+    else if (openModal === 'target-config')
+      await addTargetConfig(parentConfig.id, newConfig as TargetConfig);
+
+    router.refresh();
+    closeModal();
   };
 
-  const handleCreateParameterOk = (values: CreateParameterModalReturnType[]): Promise<void> => {
-    addParameter(values[0], 'parameter');
-    setCreateParameterOpen(false);
-    return Promise.resolve();
-  };
+  const addParameter = async (
+    valuesFromModal: CreateParameterModalReturnType,
+    addType: 'parameters' | 'metadata',
+  ) => {
+    const { key, displayName, value, language, unit } = valuesFromModal;
+    const newParameter = defaultParameter(key || displayName, value, language, unit);
+    let type: StoredParameter['parentType'] =
+      rightClickedType === 'config' ? 'parent-config' : rightClickedType;
+    await backendAddParameter(rightClickedId, type, addType, key || displayName, newParameter);
 
-  const handleCreateMetadataOk = (values: CreateParameterModalReturnType[]): Promise<void> => {
-    addParameter(values[0], 'metadata');
-    setCreateMetadataOpen(false);
-    return Promise.resolve();
-  };
-
-  const handleCreateParameterCancel = () => {
-    setCreateParameterOpen(false);
-  };
-
-  const handleDeleteConfirm = () => {
-    deleteItem();
-    setDeleteConfirmOpen(false);
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-  };
-
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      mountTreeData();
-      setSelectedMachineConfig({ parent: parentConfig, selection: parentConfig });
-      return;
-    }
-  }, []);
-
-  const saveAndUpdateElements = async () => {
-    await saveParentConfig(configId, parentConfig);
-    mountTreeData();
-    await onUpdate(parentConfig);
     router.refresh();
   };
 
-  const onSelectTreeNode = (
-    selectedKeys: Key[],
-    info: {
-      event: 'select';
-      selected: boolean;
-      node: EventDataNode<TreeDataNode>;
-      selectedNodes: TreeDataNode[];
-      nativeEvent: MouseEvent;
-    },
-  ) => {
-    setSelectedOnTree(selectedKeys);
-    let foundMachine: TreeFindStruct | TreeFindParameterStruct = {
-      parent: parentConfig,
-      selection: parentConfig,
-    };
-    // Check if it is not the parent config
-    if (selectedKeys.length !== 0 && selectedKeys.indexOf(parentConfig.id) === -1) {
-      const [_configId, _configType] = selectedKeys[0].toString().split('|', 2);
-      //Then search the right one
-      let ref = findConfig(_configId, parentConfig);
-      if (ref !== undefined) foundMachine = ref;
-      else {
-        // try to find parameter
-        let ref2 = findParameter(_configId, parentConfig, 'config');
-        if (ref2 !== undefined) foundMachine = ref2;
-      }
-    }
-    setSelectedMachineConfig(foundMachine);
-    onSelectConfig(foundMachine);
+  const handleCreateParameterOk = async (values: CreateParameterModalReturnType[]) => {
+    await addParameter(values[0], 'parameters');
+    closeModal();
   };
-  const onRightClickTreeNode = (info: {
-    event: React.MouseEvent;
-    node: EventDataNode<TreeDataNode>;
-  }) => {
+
+  const handleCreateMetadataOk = async (values: CreateParameterModalReturnType[]) => {
+    await addParameter(values[0], 'metadata');
+    closeModal();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (rightClickedType === 'parameter') await removeParameter(rightClickedId);
+    else if (rightClickedType === 'machine-config') await removeMachineConfig(rightClickedId);
+    else if (rightClickedType === 'target-config') await removeTargetConfig(rightClickedId);
+
+    router.refresh();
+    closeModal();
+  };
+
+  const onSelectTreeNode = (selectedKeys: Key[]) => {
+    if (selectedKeys.length) {
+      const [id, type] = selectedKeys[0].toString().split('|') as [
+        string,
+        AbstractConfig['type'] | 'parameter',
+      ];
+      onChangeSelection({ id, type });
+      setRightClickedId(id);
+      setRightClickedType(type);
+    } else {
+      onChangeSelection(undefined);
+      setRightClickedId('');
+      setRightClickedType('config');
+    }
+
+    setSelectedOnTree(selectedKeys);
+  };
+  const onRightClickTreeNode = (info: { node: EventDataNode<TreeDataNode> }) => {
     // Lets fix to only one selection for now
     const [_configId, _configType] = info.node.key.toString().split('|', 2);
+    setRightClickedId(_configId);
+    setRightClickedType(_configType as AbstractConfig['type'] | 'parameter');
     setSelectedOnTree([info.node.key]);
-    let foundMachine: TreeFindStruct | TreeFindParameterStruct = {
-      parent: parentConfig,
-      selection: parentConfig,
-    };
-    let ref = findConfig(_configId, parentConfig);
-    if (ref !== undefined) foundMachine = ref;
-    else {
-      // try to find parameter
-      let ref2 = findParameter(_configId, parentConfig, 'config');
-      if (ref2 !== undefined) foundMachine = ref2;
-    }
-    setSelectedMachineConfig(foundMachine);
   };
 
-  const configToTreeElement = (_config: AbstractConfig) => {
-    let tagByType = (
-      <>
-        <Tag color="purple">T</Tag>
-        {_config.name}
-      </>
-    );
-    if (_config.type === 'machine-config') {
-      tagByType = (
-        <>
-          <Tag color="geekblue">M</Tag>
-          {_config.name}
-        </>
+  const treeData = useMemo(() => {
+    function parameterToTree(
+      key: string,
+      parameter: Parameter,
+      type: 'parameter' | 'metadata',
+    ): TreeDataNode {
+      let children: TreeDataNode[] = Object.entries(parameter.parameters).map(
+        ([key, childParameter]) => parameterToTree(key, childParameter, 'parameter'),
       );
-    } else if (_config.type === 'target-config') {
-      tagByType = (
-        <>
-          <Tag color="blue">T</Tag>
-          {_config.name}
-        </>
+      return {
+        title: <ParameterTreeNode keyId={key} parameter={parameter} type={type} />,
+        key: parameter.id + '|parameter',
+        children,
+      };
+    }
+
+    function configToTree(config: AbstractConfig): TreeDataNode {
+      let children: TreeDataNode[] = Object.entries(config.metadata).map(([key, parameter]) =>
+        parameterToTree(key, parameter, 'metadata'),
       );
-    } else {
-      tagByType = (
-        <>
-          <Tag color="purple">C</Tag>
-          {_config.name}
-        </>
-      );
-    }
-    return {
-      title: tagByType,
-      key: _config.id + '|' + _config.type,
-      ref: _config,
-      children: [],
-    };
-  };
 
-  const configParameterToTreeElement = (
-    key: string,
-    _parameter: Parameter,
-    type: 'metadata' | 'parameter',
-  ): TreeDataNode & { ref: Parameter } => {
-    let tagByType = (
-      <>
-        {_parameter.content && _parameter.content.length > 0 ? (
-          <Tooltip
-            placement="top"
-            title={
-              <Space size={3}>
-                {_parameter.content[0].displayName}:{_parameter.content[0].value}
-                {_parameter.content[0].unit}({_parameter.content[0].language})
-              </Space>
-            }
-          >
-            {type === 'parameter' && <Tag color="green">P</Tag>}
-            {type === 'metadata' && <Tag color="cyan">P</Tag>}
-            {key}
-          </Tooltip>
-        ) : (
-          <div>
-            {type === 'parameter' && <Tag color="green">P</Tag>}
-            {type === 'metadata' && <Tag color="cyan">P</Tag>}
-            {key}
-          </div>
-        )}
-      </>
-    );
-
-    return {
-      title: tagByType,
-      key: _parameter.id + '|parameter',
-      ref: _parameter,
-      children: [],
-    };
-  };
-
-  const parameterSearch = (
-    key: string,
-    _parentParameter: Parameter,
-    type: 'metadata' | 'parameter',
-  ): TreeDataNode => {
-    let node: TreeDataNode = configParameterToTreeElement(key, _parentParameter, type);
-    node.children = [];
-    for (let prop in _parentParameter.parameters) {
-      let nestedParameter = _parentParameter.parameters[prop];
-      node.children.push(parameterSearch(prop, nestedParameter, 'parameter'));
-    }
-    return node;
-  };
-
-  const loopTreeData = (_machineConfig: ParentConfig) => {
-    const list: TreeDataNode[] = [];
-    const parentConfig = _machineConfig as ParentConfig;
-    if (parentConfig.targetConfig) {
-      let childNode: TreeDataNode = configToTreeElement(parentConfig.targetConfig);
-      childNode.children = [];
-      for (let prop in parentConfig.targetConfig.metadata) {
-        let parameter = parentConfig.targetConfig.metadata[prop];
-        childNode.children.push(parameterSearch(prop, parameter, 'metadata'));
-      }
-      for (let prop in parentConfig.targetConfig.parameters) {
-        let parameter = parentConfig.targetConfig.parameters[prop];
-        childNode.children.push(parameterSearch(prop, parameter, 'parameter'));
-      }
-      list.push(childNode);
-    }
-    const machineConfigs = Array.isArray(_machineConfig.machineConfigs)
-      ? _machineConfig.machineConfigs
-      : [];
-    for (let childrenConfig of machineConfigs) {
-      let childNode: TreeDataNode = configToTreeElement(childrenConfig);
-      childNode.children = [];
-      for (let prop in childrenConfig.metadata) {
-        let parameter = childrenConfig.metadata[prop];
-        childNode.children.push(parameterSearch(prop, parameter, 'metadata'));
-      }
-      for (let prop in childrenConfig.parameters) {
-        let parameter = childrenConfig.parameters[prop];
-        childNode.children.push(parameterSearch(prop, parameter, 'parameter'));
-      }
-      list.push(childNode);
-    }
-    return list;
-  };
-
-  const mountTreeData = () => {
-    let configArray: TreeDataNode[] = [configToTreeElement(parentConfig)];
-    configArray[0].children = [];
-    for (let prop in parentConfig.metadata) {
-      let parameter = parentConfig.metadata[prop];
-      configArray[0].children.push(parameterSearch(prop, parameter, 'metadata'));
-    }
-    configArray[0].children = configArray[0].children.concat(loopTreeData(parentConfig));
-    setTreeData(configArray);
-  };
-
-  const createTarget = (values: { name: string; description: string }) => {
-    createTargetConfigInParent(parentConfig, values.name, values.description);
-    saveAndUpdateElements();
-  };
-
-  const createMachine = (values: { name: string; description: string }) => {
-    createMachineConfigInParent(parentConfig, values.name, values.description);
-    saveAndUpdateElements();
-  };
-
-  const onLoadData = (treeNode: TreeDataNode) =>
-    new Promise((resolve) => {
-      if (treeNode.children) {
-        resolve(treeNode);
-        return;
-      }
-    });
-
-  const deleteItem = () => {
-    if (selectedOnTree.length < 1) return;
-    let childrenMachineConfigList = Array.isArray(parentConfig.machineConfigs)
-      ? parentConfig.machineConfigs
-      : [];
-    childrenMachineConfigList = childrenMachineConfigList.filter(
-      (node: MachineConfig | TargetConfig, _: number) => {
-        return selectedOnTree.indexOf(node.id + '|' + node.type) === -1;
-      },
-    );
-    if (
-      parentConfig.targetConfig &&
-      selectedOnTree.indexOf(
-        parentConfig.targetConfig.id + '|' + parentConfig.targetConfig.type,
-      ) !== -1
-    ) {
-      parentConfig.targetConfig = undefined;
-    }
-    parentConfig.machineConfigs = childrenMachineConfigList;
-    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
-    deleteParameter(_configId, parentConfig);
-    saveAndUpdateElements();
-  };
-
-  const updateTree = () => {
-    mountTreeData();
-  };
-
-  const addParameter = (
-    valuesFromModal: CreateParameterModalReturnType,
-    addType: 'parameter' | 'metadata',
-  ) => {
-    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
-    const defaultParameter: Parameter = {
-      id: v4(),
-      linkedParameters: [],
-      parameters: {},
-      type: 'https://schema.org/' + valuesFromModal.key ?? valuesFromModal.displayName,
-      content: [
-        {
-          displayName:
-            valuesFromModal.displayName[0].toUpperCase() + valuesFromModal.displayName.slice(1),
-          language: valuesFromModal.language,
-          value: valuesFromModal.value,
-          unit: valuesFromModal.unit,
-        },
-      ],
-    };
-    if (_configType === 'parameter') {
-      let ref = findParameter(_configId.toString(), parentConfig, 'config');
-      if (ref === undefined) return;
-      ref.selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] =
-        defaultParameter;
-    } else {
-      let ref = findConfig(_configId.toString(), parentConfig);
-      if (ref === undefined) return;
-      if (_configType !== 'config') {
-        let _selection = ref.selection as MachineConfig | TargetConfig;
-        if (addType === 'metadata') {
-          _selection.metadata[valuesFromModal.key ?? valuesFromModal.displayName] =
-            defaultParameter;
-        } else {
-          _selection.parameters[valuesFromModal.key ?? valuesFromModal.displayName] =
-            defaultParameter;
-        }
+      if (config.type !== 'config') {
+        children = children.concat(
+          Object.entries((config as TargetConfig | MachineConfig).parameters).map(
+            ([key, parameter]) => parameterToTree(key, parameter, 'parameter'),
+          ),
+        );
       } else {
-        let _selection = ref.selection as ParentConfig;
-        _selection.metadata[valuesFromModal.key ?? valuesFromModal.displayName] = defaultParameter;
+        const parentConfig = config as ParentConfig;
+        if (parentConfig.targetConfig) children.push(configToTree(parentConfig.targetConfig));
+        children = children.concat(
+          parentConfig.machineConfigs.map((machineConfig) => configToTree(machineConfig)),
+        );
       }
-    }
-    saveAndUpdateElements();
-  };
 
-  const mountContextMenu = (): MenuProps['items'] => {
-    let append = [];
-    if (parentConfig.targetConfig === undefined) {
-      append.push({
-        label: 'Create Target Configuration',
-        key: 'create-target',
-        onClick: showCreateMachineModal,
-        disabled: !editable,
-      });
+      return {
+        title: <ConfigTreeNode config={config} />,
+        key: config.id + '|' + config.type,
+        children,
+      };
     }
-    const parentConfigContextMenu = [
-      ...append,
-      {
-        label: 'Create Machine Configuration',
-        key: 'create-machine',
-        onClick: showCreateMachineModal,
-        disabled: !editable,
-      },
-      {
+
+    return [configToTree(parentConfig)];
+  }, [parentConfig]);
+
+  const contextMenuItems: MenuProps['items'] = useMemo(() => {
+    let items: MenuProps['items'] = [];
+    if (rightClickedType === 'config') {
+      items.push(
+        {
+          label: 'Create Target Configuration',
+          key: 'create-target',
+          onClick: () => setOpenModal('target-config'),
+          disabled: !editable || !!(rightClickedNode as ParentConfig).targetConfig,
+        },
+        {
+          label: 'Create Machine Configuration',
+          key: 'create-machine',
+          onClick: () => setOpenModal('machine-config'),
+          disabled: !editable,
+        },
+      );
+    }
+
+    if (rightClickedType !== 'parameter') {
+      items.push({
         label: 'Create Metadata',
         key: 'add_metadata',
         onClick: () => {
-          setCreateMetadataOpen(true);
+          setOpenModal('metadata');
         },
         disabled: !editable,
-      },
-      {
-        label: 'Update',
-        key: 'update',
-        onClick: updateTree,
-      },
-    ];
-    if (selectedOnTree.length <= 0) return parentConfigContextMenu;
-    const [_configId, _configType] = selectedOnTree[0].toString().split('|', 2);
-    // if the selected item is the target configuration
-    if (
-      _configType === 'target-config' ||
-      _configType === 'machine-config' ||
-      _configType === 'parameter'
-    ) {
-      let items = [];
-      if (_configType !== 'parameter') {
-        items.push({
-          label: 'Create Metadata',
-          key: 'add_metadata',
-          onClick: () => {
-            setCreateMetadataOpen(true);
-          },
-          disabled: !editable,
-        });
-      }
-      return [
-        ...items,
+      });
+    }
+
+    if (rightClickedType !== 'config') {
+      items.push(
         {
           label: 'Create Parameter',
           key: 'add_parameter',
-          onClick: showCreateParameterModal,
+          onClick: () => setOpenModal('parameter'),
           disabled: !editable,
-        },
-        {
-          label: 'Update',
-          key: 'update',
-          onClick: updateTree,
         },
         {
           label: 'Delete',
           key: 'delete',
-          onClick: showDeleteConfirmModal,
+          onClick: () => setOpenModal('delete'),
           disabled: !editable,
         },
-      ];
-    } else if (_configType === 'config') {
-      return parentConfigContextMenu;
-    } else {
-      return [
-        {
-          label: 'Update',
-          key: 'update',
-          onClick: updateTree,
-        },
-        {
-          label: 'Delete',
-          key: 'delete',
-          onClick: showDeleteConfirmModal,
-          disabled: !editable,
-        },
-      ];
+      );
     }
-  };
+
+    return items;
+  }, [rightClickedNode, rightClickedType, editable]);
+
+  const selectionName =
+    'name' in rightClickedNode
+      ? rightClickedNode.name
+      : rightClickedNode.content.length > 0
+        ? rightClickedNode.content[0].displayName
+        : '';
 
   return (
     <>
@@ -545,64 +349,45 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
         </div>
       </div>
       <br />
-      <Dropdown menu={{ items: mountContextMenu() }} trigger={['contextMenu']}>
+      <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']}>
         <Tree
           selectedKeys={selectedOnTree}
           onRightClick={onRightClickTreeNode}
           onSelect={onSelectTreeNode}
-          loadData={onLoadData}
           treeData={treeData}
           expandedKeys={expandedKeys}
           onExpand={(keys: React.Key[]) => setExpandedKeys(keys)}
         />
       </Dropdown>
       <Modal
-        open={deleteConfirmOpen}
-        title={
-          'Deleting ' +
-          (selectedMachineConfig
-            ? 'name' in selectedMachineConfig.selection
-              ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.content.length > 0
-                ? selectedMachineConfig.selection.content[0].displayName
-                : ''
-            : '')
-        }
+        open={openModal === 'delete'}
+        title={'Deleting ' + selectionName}
         onOk={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
+        onCancel={closeModal}
       >
         <p>
-          Are you sure you want to delete the configuration{' '}
-          {selectedMachineConfig
-            ? 'name' in selectedMachineConfig.selection
-              ? selectedMachineConfig.selection.name
-              : selectedMachineConfig.selection.content.length > 0
-                ? selectedMachineConfig.selection.content[0].displayName
-                : ''
-            : ''}{' '}
-          with id {selectedMachineConfig?.selection.id}?
+          Are you sure you want to delete the configuration {selectionName} with id{' '}
+          {rightClickedNode.id}?
         </p>
       </Modal>
       <MachineConfigModal
-        open={createMachineOpen}
-        title={`Creating ${machineType === 'target-config' ? 'target' : 'machine'} configuration`}
-        onCancel={() => {
-          setCreateMachineOpen(false);
-        }}
+        open={openModal === 'machine-config' || openModal === 'target-config'}
+        title={`Creating ${openModal === 'target-config' ? 'target' : 'machine'} configuration`}
+        onCancel={closeModal}
         onSubmit={handleCreateMachineOk}
       />
       <CreateParameterModal
         title="Create Metadata"
-        open={createMetadataOpen}
-        onCancel={() => setCreateMetadataOpen(false)}
+        open={openModal === 'metadata'}
+        onCancel={closeModal}
         onSubmit={handleCreateMetadataOk}
         okText="Create"
         showKey
       />
       <CreateParameterModal
         title="Create Parameter"
-        open={createParameterOpen}
-        onCancel={handleCreateParameterCancel}
+        open={openModal === 'parameter'}
+        onCancel={closeModal}
         onSubmit={handleCreateParameterOk}
         okText="Create"
         showKey

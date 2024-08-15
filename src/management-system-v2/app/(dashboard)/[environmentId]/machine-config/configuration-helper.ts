@@ -67,19 +67,37 @@ export const deleteMachineConfigInParent = (
   );
 };
 
+export const defaultMachineConfiguration = (name: string, description: string): MachineConfig => {
+  return {
+    ...defaultConfiguration(),
+    name,
+    metadata: {
+      description: defaultParameter('description', description),
+    },
+    type: 'machine-config',
+    parameters: {},
+  };
+};
+
+export const defaultTargetConfiguration = (name: string, description: string): TargetConfig => {
+  return {
+    ...defaultConfiguration(),
+    name,
+    metadata: {
+      description: defaultParameter('description', description),
+    },
+    type: 'target-config',
+    parameters: {},
+  };
+};
+
 export const createMachineConfigInParent = (
   parentConfig: ParentConfig,
   nameValue: string,
   descriptionValue: string,
 ) => {
   parentConfig.machineConfigs.push({
-    ...defaultConfiguration(),
-    name: nameValue,
-    metadata: {
-      description: defaultParameter('description', descriptionValue),
-    },
-    type: 'machine-config',
-    parameters: {},
+    ...defaultMachineConfiguration(nameValue, descriptionValue),
     environmentId: parentConfig.environmentId,
   });
 };
@@ -93,13 +111,7 @@ export const createTargetConfigInParent = (
   if (parentConfig.targetConfig) return;
   let foundMachine = parentConfig;
   foundMachine.targetConfig = {
-    ...defaultConfiguration(),
-    name: nameValue,
-    metadata: {
-      description: defaultParameter('description', descriptionValue),
-    },
-    type: 'target-config',
-    parameters: {},
+    ...defaultTargetConfiguration(nameValue, descriptionValue),
     environmentId: foundMachine.environmentId,
   };
 };

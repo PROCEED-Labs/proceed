@@ -17,12 +17,8 @@ import { AiOutlinePlus } from 'react-icons/ai';
 import { useAbilityStore } from '@/lib/abilityStore';
 import Bar from '@/components/bar';
 import SelectionActions from '@/components/selection-actions';
-import { useCallback, useState, useEffect } from 'react';
-import {
-  AbstractConfigInput,
-  ParentConfig,
-  ParentConfigMetadata,
-} from '@/lib/data/machine-config-schema';
+import { useCallback, useState } from 'react';
+import { ParameterContent, ParentConfig } from '@/lib/data/machine-config-schema';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { useRouter } from 'next/navigation';
@@ -35,15 +31,15 @@ import {
   ExportOutlined,
   DeleteOutlined,
   EditOutlined,
-  FolderOutlined as FolderFilled,
   FileOutlined as FileFilled,
 } from '@ant-design/icons';
 import {
   deleteParentConfigurations,
-  createParentConfig,
-  saveParentConfig,
-  getConfigurationById,
+  addParentConfig,
   copyParentConfig,
+  updateParentConfig,
+  updateParameter,
+  addParameter,
 } from '@/lib/data/legacy/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
@@ -53,30 +49,16 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { defaultParameter } from './configuration-helper';
-import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
-function folderAwareSort(
-  sortFunction: (a: ParentConfigListConfigs, b: ParentConfigListConfigs) => number,
-) {
-  const sorter: TableColumnType<ParentConfigListConfigs>['sorter'] = (a, b, sortOrder) => {
-    const factor = sortOrder === 'ascend' ? 1 : -1;
-    return sortFunction(a, b);
-  };
-  return sorter;
-}
-
-const ParentConfigList = ({
-  data,
-  params,
-}: {
+type ConfigListProps = {
   data: InputItem[];
-  params: {
-    environmentId: string;
-  };
-}) => {
+};
+
+const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   const originalConfigs = data;
   const router = useRouter();
   const space = useEnvironment();
@@ -222,22 +204,11 @@ const ParentConfigList = ({
     setOpenEditModal(true);
   }
 
-  async function handleEdit(
-    values: { id: string; name: string; description: string }[],
-  ): Promise<void> {
-    const valuesFromModal = values[0];
-    if (editingItem) {
-      await saveParentConfig(valuesFromModal.id, {
-        ...editingItem,
-        metadata: {
-          ...editingItem.metadata,
-          description: defaultParameter('description', valuesFromModal.description ?? ''),
-        },
-        name: valuesFromModal.name,
-      });
-      setOpenEditModal(false);
-      router.refresh();
-    }
+  async function handleEdit(values: { id: string; name: string; description: string }[]) {
+    const { id, name } = values[0];
+    // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
+    await updateParentConfig(id, { name });
+    router.refresh();
   }
 
   // copy multiple items
@@ -266,7 +237,7 @@ const ParentConfigList = ({
       const importedData: ParentConfig[] = JSON.parse(text);
 
       await asyncForEach(importedData, async (item) => {
-        await createParentConfig(item, space.spaceId, item);
+        await addParentConfig(item, space.spaceId, item);
       });
       message.success('Import successful');
       router.refresh();

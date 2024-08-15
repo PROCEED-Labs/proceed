@@ -25,13 +25,29 @@ export const AbstractConfigInputSchema = z.object({
   folderId: z.string().optional(),
 });
 
-export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
-
-export const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
-  environmentId: z.string(),
+export const StoredParameterZod = ParameterZod.extend({
+  parameters: z.array(z.string()),
+  key: z.string(),
+  parentId: z.string(),
+  // TODO: change parent-config type to config
+  parentType: z.enum(['parameter', 'machine-config', 'target-config', 'parent-config']),
+});
+const StoredAbstractConfigInputSchema = AbstractConfigInputSchema.extend({
+  metadata: z.array(z.string()),
 });
 
+export type AbstractConfigInput = z.infer<typeof AbstractConfigInputSchema>;
+export type StoredAbstractConfigInput = z.infer<typeof StoredAbstractConfigInputSchema>;
+
+const AbstractConfigServerInputSchema = AbstractConfigInputSchema.extend({
+  environmentId: z.string(),
+});
 export type AbstractConfigServerInput = z.infer<typeof AbstractConfigServerInputSchema>;
+
+const StoredAbstractConfigServerInputSchema = StoredAbstractConfigInputSchema.extend({
+  environmentId: z.string(),
+});
+export type StoredAbstractConfigServerInput = z.infer<typeof StoredAbstractConfigServerInputSchema>;
 
 export type Metadata = {
   createdOn: string;
@@ -43,43 +59,76 @@ export type Metadata = {
 export type ParameterContent = z.infer<typeof ParameterContentZod>;
 
 export type Parameter = z.infer<typeof ParameterZod>;
+export type StoredParameter = z.infer<typeof StoredParameterZod>;
 
 export type AbstractConfigMetadata = Prettify<
   WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
     Metadata &
     VersionedObject<'config' | 'target-config' | 'machine-config'>
 >;
+export type StoredAbstractConfigMetaData = WithRequired<
+  StoredAbstractConfigServerInput,
+  'id' | 'name' | 'folderId'
+> &
+  Metadata &
+  VersionedObject<'config' | 'target-config' | 'machine-config'>;
+
+type WithParameters = {
+  parameters: {
+    [key: string]: Parameter;
+  };
+};
+
+type WithParameterReferences = {
+  parameters: string[];
+};
+
+type WithParentReference = {
+  parentId: string;
+};
 
 export type MachineConfigMetadata = Prettify<
-  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
-    AbstractConfigMetadata & {
-      parameters: {
-        [key: string]: Parameter;
-      };
-    } & VersionedObject<'machine-config'>
+  AbstractConfigMetadata & WithParameters & VersionedObject<'machine-config'>
+>;
+export type StoredMachineConfigdata = Prettify<
+  StoredAbstractConfigMetaData &
+    WithParameterReferences &
+    WithParentReference &
+    VersionedObject<'machine-config'>
 >;
 
 export type TargetConfigMetadata = Prettify<
-  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
-    AbstractConfigMetadata & {
-      parameters: {
-        [key: string]: Parameter;
-      };
-    } & VersionedObject<'target-config'>
+  AbstractConfigMetadata & WithParameters & VersionedObject<'target-config'>
+>;
+export type StoredTargetConfigMetadata = Prettify<
+  StoredAbstractConfigMetaData &
+    WithParameterReferences &
+    WithParentReference &
+    VersionedObject<'target-config'>
 >;
 
 export type ParentConfigMetadata = Prettify<
-  WithRequired<AbstractConfigServerInput, 'id' | 'name' | 'folderId'> &
-    AbstractConfigMetadata & {
-      targetConfig: TargetConfigMetadata | undefined;
-      machineConfigs: MachineConfigMetadata[];
-    } & VersionedObject<'config'>
+  AbstractConfigMetadata & {
+    targetConfig: TargetConfigMetadata | undefined;
+    machineConfigs: MachineConfigMetadata[];
+  } & VersionedObject<'config'>
+>;
+export type StoredParentConfigMetadata = Prettify<
+  StoredAbstractConfigMetaData & {
+    targetConfig: string | undefined;
+    machineConfigs: string[];
+  } & VersionedObject<'config'>
 >;
 
-export type ParentConfig = Prettify<ParentConfigMetadata>;
 export type AbstractConfig = Prettify<AbstractConfigMetadata>;
-export type TargetConfig = Prettify<TargetConfigMetadata>;
-export type MachineConfig = Prettify<MachineConfigMetadata>;
+export type MachineConfig = MachineConfigMetadata;
+export type TargetConfig = TargetConfigMetadata;
+export type ParentConfig = Prettify<ParentConfigMetadata>;
+
+export type StoredAbstractConfig = Prettify<StoredAbstractConfigMetaData>;
+export type StoredMachineConfig = Prettify<StoredMachineConfigdata>;
+export type StoredTargetConfig = Prettify<StoredTargetConfigMetadata>;
+export type StoredParentConfig = Prettify<StoredParentConfigMetadata>;
 
 //Ideal Schema (actual Metadata is missing)
 /*

@@ -1,67 +1,44 @@
 'use client';
 
-import { ParentConfig, TargetConfig } from '@/lib/data/machine-config-schema';
+import { AbstractConfig, ParentConfig } from '@/lib/data/machine-config-schema';
 
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
-import { Button, Layout } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Col, Layout, Row } from 'antd';
 import ConfigEditor from './config-editor';
 import ConfigurationTreeView from './config-tree-view';
 import { useRouter } from 'next/navigation';
-import { TreeFindParameterStruct, TreeFindStruct } from '../configuration-helper';
+import { findConfig, findParameter } from '../configuration-helper';
 // TODO
 // @ts-ignore
 import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
-import Content from './config-content';
 import styles from './page.module.scss';
+import CustomField from './custom-field';
 
 const initialWidth = 300;
 const collapsedWidth = 70;
 
 type VariablesEditorProps = {
-  configId: string;
   originalParentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
 };
 
-const ConfigContent: React.FC<VariablesEditorProps> = ({
-  configId,
-  originalParentConfig,
-  backendSaveParentConfig,
-}) => {
+const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const router = useRouter();
 
-  const [selectedConfig, setSelectedConfig] = useState<TreeFindStruct | TreeFindParameterStruct>({
-    selection: originalParentConfig,
-    parent: originalParentConfig,
-  });
+  const [selectionId, setSelectionId] = useState('');
+  const [selectionType, setSelectionType] = useState<AbstractConfig['type'] | 'parameter'>(
+    'config',
+  );
 
-  const [parentConfig, setParentConfig] = useState<ParentConfig>(originalParentConfig);
   const [isClient, setIsClient] = useState(false);
-
-  const save = async (...args: any[]) => {
-    await backendSaveParentConfig(...args);
-    router.refresh();
-  };
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-  const onSelectConfig = (relation: TreeFindStruct | TreeFindParameterStruct) => {
-    setSelectedConfig(relation);
-  };
 
-  const treeOnUpdate = (editedConfig: ParentConfig) => {
-    router.refresh();
-    setParentConfig(editedConfig);
-  };
   const [editable, setEditable] = useState(false);
 
-  const onChangeMode = (_editable: boolean) => {
-    setEditable(_editable);
-  };
   const [width, setWidth] = useState(initialWidth);
 
   const handleCollapse = () => {
@@ -72,6 +49,22 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({
     }
     setCollapsed(!collapsed);
   };
+
+  const selectedNode = useMemo(() => {
+    if (!selectionId || selectionType === 'config') return originalParentConfig;
+
+    let node;
+    if (selectionType === 'parameter') {
+      const ref = findParameter(selectionId, originalParentConfig, 'config');
+      if (ref) node = ref.selection;
+    } else {
+      const ref = findConfig(selectionId, originalParentConfig);
+      if (ref) node = ref.selection;
+    }
+
+    return node || originalParentConfig;
+  }, [selectionId, selectionType, originalParentConfig]);
+
   if (!isClient) {
     return null;
   }
@@ -85,13 +78,10 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({
         maxConstraints={[window.innerWidth / 2, Infinity]}
         resizeHandles={['e']}
         handle={!collapsed && <div className={styles.CustomHandle} />}
-        onResizeStop={(event: ResizeEvent, { size }: ResizeCallbackData) => {
+        onResizeStop={(_: ResizeEvent, { size }: ResizeCallbackData) => {
           setWidth(size.width);
-          if (size.width <= collapsedWidth) {
-            setCollapsed(true); // Collapse when the width is less than or equal to collapsedWidth
-          } else {
-            setCollapsed(false); // Ensure tree is visible when expanded via handle
-          }
+          // Collapse when the width is less than or equal to collapsedWidth
+          setCollapsed(size.width <= collapsedWidth);
         }}
         style={{
           border: !collapsed ? '1px solid #ddd' : undefined,
@@ -112,34 +102,39 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({
           <div className={styles.CustomBoxContentWrapper}>
             <ConfigurationTreeView
               editable={editable}
-              onUpdate={treeOnUpdate}
-              onSelectConfig={onSelectConfig}
-              backendSaveParentConfig={save}
-              configId={configId}
-              parentConfig={parentConfig}
+              onChangeSelection={(selection) => {
+                setSelectionId(selection ? selection.id : '');
+                setSelectionType(selection ? selection.type : 'config');
+              }}
+              parentConfig={originalParentConfig}
             />
           </div>
         )}
       </ResizableBox>
-      {selectedConfig?.selection && !('content' in selectedConfig?.selection) ? (
-        <ConfigEditor
-          onChangeMode={onChangeMode}
-          backendSaveParentConfig={save}
-          configId={configId}
-          parentConfig={parentConfig}
-          selectedConfig={selectedConfig as TreeFindStruct}
-        />
-      ) : (
-        <Content
-          backendSaveParentConfig={save}
-          configId={configId}
-          contentType="parameters"
-          editingEnabled={editable}
-          parentConfig={parentConfig}
-          selectedMachineConfig={undefined}
-          customConfig={selectedConfig?.selection as TargetConfig}
-        />
-      )}
+      <Row style={{ flexGrow: 1, flexShrink: 1 }}>
+        <Col style={{ width: '100%' }}>
+          {'content' in selectedNode ? (
+            <>
+              {Object.entries(selectedNode.parameters).map(([key, val]) => (
+                <CustomField
+                  parentConfig={originalParentConfig}
+                  key={key}
+                  keyId={key}
+                  parameter={val}
+                  editable={editable}
+                />
+              ))}
+            </>
+          ) : (
+            <ConfigEditor
+              editable={editable}
+              onChangeEditable={setEditable}
+              parentConfig={originalParentConfig}
+              selectedConfig={selectedNode as AbstractConfig}
+            />
+          )}
+        </Col>
+      </Row>
     </Layout>
   );
 };

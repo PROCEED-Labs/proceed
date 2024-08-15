@@ -1,6 +1,11 @@
 'use client';
 
-import { ParentConfig } from '@/lib/data/machine-config-schema';
+import {
+  AbstractConfig,
+  MachineConfig,
+  ParentConfig,
+  TargetConfig,
+} from '@/lib/data/machine-config-schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
@@ -11,7 +16,7 @@ import {
   ExportOutlined,
   CaretRightOutlined,
 } from '@ant-design/icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Space,
@@ -28,13 +33,7 @@ import {
 
 import useMobileModeler from '@/lib/useMobileModeler';
 import { useEnvironment } from '@/components/auth-can';
-import {
-  TreeFindStruct,
-  createMachineConfigInParent,
-  createTargetConfigInParent,
-  defaultConfiguration,
-  findConfig,
-} from '../configuration-helper';
+import { defaultMachineConfiguration, defaultTargetConfiguration } from '../configuration-helper';
 import MachineConfigurations from './mach-config';
 import TargetConfiguration from './target-config';
 import Content_ from './config-content';
@@ -44,36 +43,55 @@ import { spaceURL } from '@/lib/utils';
 import VersionCreationButton from '@/components/version-creation-button';
 import AddButton from './add-button';
 import MachineConfigModal from '@/components/machine-config-modal';
+import {
+  addMachineConfig,
+  addTargetConfig,
+  updateMachineConfig,
+  updateParentConfig,
+  updateTargetConfig,
+} from '@/lib/data/legacy/machine-config';
 type MachineDataViewProps = {
-  configId: string;
-  selectedConfig: TreeFindStruct;
+  selectedConfig: AbstractConfig;
   parentConfig: ParentConfig;
-  backendSaveParentConfig: Function;
-  onChangeMode: Function;
+  editable: boolean;
+  onChangeEditable: (isEditable: boolean) => void;
 };
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
 const ConfigEditor: React.FC<MachineDataViewProps> = ({
-  configId,
   selectedConfig,
   parentConfig,
-  backendSaveParentConfig: saveParentConfig,
-  onChangeMode,
+  editable,
+  onChangeEditable,
 }) => {
   const router = useRouter();
   const environment = useEnvironment();
   const query = useSearchParams();
 
-  const firstRender = useRef(true);
-  const [collapseItems, setCollapseItems] = useState<any[]>([]);
-  const [name, setName] = useState<string | undefined>('');
-  const [oldName, setOldName] = useState<string | undefined>('');
-  const [openCreateConfigModal, setOpenCreateConfigModal] = useState(false);
-  const [createConfigType, setCreateConfigType] = useState<string>('');
+  const currentNameRef = useRef(selectedConfig.name);
 
-  const editingConfig = selectedConfig ? { ...selectedConfig.selection } : defaultConfiguration();
-  let refEditingConfig = findConfig(editingConfig.id, parentConfig);
+  useEffect(() => {
+    console.log(selectedConfig.name, currentNameRef.current);
+    if (selectedConfig.name !== currentNameRef.current)
+      currentNameRef.current = selectedConfig.name;
+  }, [selectedConfig]);
+  const restoreName = () => {
+    currentNameRef.current = selectedConfig.name;
+  };
+  const saveName = async () => {
+    if (!currentNameRef.current) return;
+    if (selectedConfig.type === 'config') {
+      await updateParentConfig(selectedConfig.id, { name: currentNameRef.current });
+    } else if (selectedConfig.type === 'machine-config') {
+      await updateMachineConfig(selectedConfig.id, { name: currentNameRef.current });
+    } else {
+      await updateTargetConfig(selectedConfig.id, { name: currentNameRef.current });
+    }
+    router.refresh();
+  };
+
+  const [createConfigType, setCreateConfigType] = useState<string>('');
 
   const selectedVersionId = query.get('version');
 
@@ -82,61 +100,27 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   } = theme.useToken();
 
   const selectedVersion =
-    editingConfig.versions.find(
+    selectedConfig.versions.find(
       (version: any) => version.version === parseInt(selectedVersionId ?? '-1'),
     ) ?? LATEST_VERSION;
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  const createConfigVersion = async (values: {
-    versionName: string;
-    versionDescription: string;
-  }) => {
-    editingConfig.versions.push({
-      version: editingConfig.versions.length + 1,
-      name: values.versionName,
-      description: values.versionDescription,
-      versionBasedOn: editingConfig.versions.length,
-    });
-    await saveParentConfig(configId, parentConfig);
-    router.refresh();
-  };
-
-  const pushName = () => {
-    setOldName(name);
-  };
-  const restoreName = () => {
-    setName(oldName);
-  };
-  const saveName = async () => {
-    if (refEditingConfig) {
-      refEditingConfig.selection.name = name ? name : '';
-      await saveParentConfig(configId, parentConfig);
-      router.refresh();
-    }
-  };
-
-  const [editable, setEditable] = useState(query.has('edit'));
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    setName(editingConfig.name);
-    updateItems(panelStyle);
-  }, [editable, selectedConfig]);
-  useEffect(() => {
-    onChangeMode(editable);
-  }, [editable]);
+  // const createConfigVersion = async (values: {
+  //   versionName: string;
+  //   versionDescription: string;
+  // }) => {
+  //   selectedConfig.versions.push({
+  //     version: selectedConfig.versions.length + 1,
+  //     name: values.versionName,
+  //     description: values.versionDescription,
+  //     versionBasedOn: selectedConfig.versions.length,
+  //   });
+  //   await saveParentConfig(configId, parentConfig);
+  //   router.refresh();
+  // };
 
   const showMobileView = useMobileModeler();
-
-  const [position, setPosition] = useState(query.has('edit') ? 'edit' : 'view');
-  const onModeChange = (e: any) => {
-    setPosition(e.target.value);
-    setEditable(!editable);
-    router.refresh();
-  };
 
   const { token } = theme.useToken();
   const panelStyle = {
@@ -146,7 +130,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     //border: 'none',
   };
 
-  const configHeaderDropdownItems = () => {
+  const configHeaderDropdownItems = useMemo(() => {
     const menu = [];
     if (parentConfig.targetConfig === undefined) {
       menu.push({
@@ -159,16 +143,15 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       label: 'Machine Configuration',
     });
     return menu;
-  };
+  }, [parentConfig]);
 
-  const onClickAddMachineButton = (e: any) => {
+  const onClickAddConfigButton = (e: any) => {
     if (!e.key) return;
     if (e.key === 'target-config') {
       setCreateConfigType('target');
     } else if (e.key === 'machine-config') {
       setCreateConfigType('machine');
     }
-    setOpenCreateConfigModal(true);
   };
 
   const handleCreateConfig = async (
@@ -176,36 +159,32 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       name: string;
       description: string;
     }[],
-  ): Promise<void> => {
-    const valueFromModal = values[0];
+  ) => {
+    const { name, description } = values[0];
     if (createConfigType === 'target') {
-      createTargetConfigInParent(parentConfig, valueFromModal.name, valueFromModal.description);
+      await addTargetConfig(parentConfig.id, defaultTargetConfiguration(name, description));
     } else {
-      createMachineConfigInParent(parentConfig, valueFromModal.name, valueFromModal.description);
+      await addMachineConfig(parentConfig.id, defaultMachineConfiguration(name, description));
     }
-    await saveParentConfig(configId, parentConfig);
-    setOpenCreateConfigModal(false);
+    setCreateConfigType('');
     router.refresh();
   };
 
   const exportCurrentConfig = () => {
-    const blob = new Blob([JSON.stringify([editingConfig], null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify([selectedConfig], null, 2)], {
+      type: 'application/json',
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = `${editingConfig.name}_export.json`;
+    a.download = `${selectedConfig.name}_export.json`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  const updateItems = (panelStyle: {
-    marginBottom: number;
-    background: string;
-    borderRadius: number;
-    //border: string;
-  }) => {
+  const collapseItems = useMemo(() => {
     let panels = [];
     panels.push({
       key: '1',
@@ -213,37 +192,29 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
       children: (
         <Content_
           contentType="metadata"
-          backendSaveParentConfig={saveParentConfig}
-          configId={configId}
+          configId={selectedConfig.id}
+          configType={selectedConfig.type === 'config' ? 'parent-config' : selectedConfig.type}
           parentConfig={parentConfig}
-          selectedMachineConfig={undefined}
-          customConfig={editingConfig}
+          data={selectedConfig.metadata}
           editingEnabled={editable}
         />
       ),
       /* extra: <Tooltip editable={editable} options={['copy', 'edit']} actions={...}/>, */ ///TODO
       style: { ...panelStyle, border: '1px solid #87e8de' }, //cyan-3
     });
-    if (editingConfig.type === 'config') {
-      const currentConfig = editingConfig as ParentConfig;
+    if (selectedConfig.type === 'config') {
+      const currentConfig = selectedConfig as ParentConfig;
       if (currentConfig.targetConfig) {
         let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
           label: title,
-          children: (
-            <TargetConfiguration
-              backendSaveParentConfig={saveParentConfig}
-              configId={configId}
-              parentConfig={parentConfig}
-              editingEnabled={editable}
-            />
-          ),
+          children: <TargetConfiguration parentConfig={parentConfig} editingEnabled={editable} />,
           /* extra:  <Tooltip editable={editable} options={['copy', 'edit', 'delete']} actions={...}/> */ //TODO
           style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
         });
       }
-      if (currentConfig.machineConfigs && currentConfig.machineConfigs.length > 0) {
+      if (currentConfig.machineConfigs.length > 0) {
         const label = (
           <Space.Compact size="small">
             <Space align="center">
@@ -253,7 +224,6 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   <Button
                     onClick={() => {
                       setCreateConfigType('machine');
-                      setOpenCreateConfigModal(true);
                     }}
                     icon={<PlusOutlined />}
                     type="text"
@@ -267,18 +237,15 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         panels.push({
           key: '3',
           label: label,
-          children: (
-            <MachineConfigurations
-              backendSaveParentConfig={saveParentConfig}
-              configId={configId}
-              parentConfig={parentConfig}
-              editingEnabled={editable}
-            />
-          ),
+          children: <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />,
           style: { ...panelStyle, border: '1px solid #d6e4ff' }, //geekblue-2
         });
       }
-    } else if (editingConfig.type === 'target-config' || editingConfig.type === 'machine-config') {
+    } else if (
+      selectedConfig.type === 'target-config' ||
+      selectedConfig.type === 'machine-config'
+    ) {
+      const currentConfig = selectedConfig as TargetConfig | MachineConfig;
       panels.push({
         key: 'param',
         label: 'Parameters',
@@ -286,18 +253,17 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           <Content_
             contentType="parameters"
             editingEnabled={editable}
-            backendSaveParentConfig={saveParentConfig}
-            customConfig={editingConfig}
-            configId={configId}
-            selectedMachineConfig={undefined}
+            configId={currentConfig.id}
+            configType={currentConfig.type}
+            data={currentConfig.parameters}
             parentConfig={parentConfig}
           />,
         ],
         style: { ...panelStyle, border: '1px solid #b7eb8f' }, //green-3
       });
     }
-    setCollapseItems(panels);
-  };
+    return panels;
+  }, [editable, selectedConfig]);
 
   const machineConfigModalTitle =
     createConfigType === 'target' ? 'Create Target Configuration' : 'Create Machine Configuration';
@@ -327,9 +293,8 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                         />
                       ),
                       tooltip: 'Edit Configuration Name',
-                      onStart: pushName,
                       onCancel: restoreName,
-                      onChange: setName,
+                      onChange: (newValue) => (currentNameRef.current = newValue),
                       onEnd: saveName,
                       enterIcon: <CheckOutlined />,
                     }
@@ -337,10 +302,10 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                   level={5}
                   style={{ margin: '0' }}
                 >
-                  {name}
+                  {selectedConfig.name}
                 </Title>
               </div>
-              <Space.Compact style={{ margin: '0 0 0 10px' }}>
+              {/* <Space.Compact style={{ margin: '0 0 0 10px' }}>
                 <Select
                   popupMatchSelectWidth={false}
                   placeholder="Select Version"
@@ -365,7 +330,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                     );
                   }}
                   options={[LATEST_VERSION]
-                    .concat(editingConfig.versions ?? [])
+                    .concat(selectedConfig.versions ?? [])
                     .map(({ version, name }) => ({
                       value: version,
                       label: name,
@@ -381,19 +346,22 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
                     </Tooltip>
                   </>
                 )}
-              </Space.Compact>
+              </Space.Compact> */}
             </Space>
             <Space>
               {editable && (
                 <AddButton
                   label="Add Child Configuration"
-                  items={configHeaderDropdownItems()}
-                  onClick={onClickAddMachineButton}
+                  items={configHeaderDropdownItems}
+                  onClick={onClickAddConfigButton}
                 />
               )}
             </Space>
             <Space>
-              <Radio.Group value={position} onChange={onModeChange}>
+              <Radio.Group
+                value={editable ? 'edit' : 'view'}
+                onChange={(e) => onChangeEditable(e.target.value === 'edit')}
+              >
                 <Radio.Button value="view">
                   View{' '}
                   <EyeOutlined
@@ -444,9 +412,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         </Content>
       </Layout>
       <MachineConfigModal
-        open={openCreateConfigModal}
+        open={!!createConfigType}
         title={machineConfigModalTitle}
-        onCancel={() => setOpenCreateConfigModal(false)}
+        onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
       />
     </>

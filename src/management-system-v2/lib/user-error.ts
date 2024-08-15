@@ -51,11 +51,39 @@ export function isUserErrorResponse(value: any): value is { error: UserError } {
   return value && typeof value === 'object' && 'error' in value && isUserError(value.error);
 }
 
+/**
+ * Wraps a server call function to provide success and error handling with optional display mechanisms.
+ * */
 export async function wrapServerCall<Return>(args: {
+  /** The server call */
   fn: () => Promise<Return>;
+  /**
+   * If the server call succeeds:
+   *
+   * - undefined: the wrapper displays a default success message
+   * - string: the wrapper displays the string as a success message
+   * - function: the wrapper calls the function with the return of the server call
+   * */
   onSuccess?: string | ((ret: Exclude<Return, ReturnType<typeof userError>>) => void) | false;
+  /**
+   * Choose which one of antDesign's data displays to use. This only does something,
+   * when `onSuccess` is either undefined or a string
+   * */
   successDisplay?: 'message' | 'notification';
+  /**
+   * If the server call fails or an error happens:
+   *
+   * - undefined: in the case that the server call returns a user error, the wrapper displays the
+   *   user error's message. If there is no error message or a error was thrown, the wrapper displays
+   *   a default message
+   * - string: the wrapper displays the string as an error message
+   * - function: the wrapper calls the function with either a userError or an Error
+   * */
   onError?: string | ((error: Error | UserError) => void) | false;
+  /**
+   * Choose which one of antDesign's data displays to use. This only does something,
+   * when `onError` is either undefined or a string
+   * */
   errorDisplay?: 'message' | 'notification';
 }) {
   try {

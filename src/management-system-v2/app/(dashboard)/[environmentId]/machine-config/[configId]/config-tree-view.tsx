@@ -30,6 +30,7 @@ import {
   removeParameter,
   removeTargetConfig,
 } from '@/lib/data/legacy/machine-config';
+import { useUserPreferences } from '@/lib/user-preferences';
 
 type ConfigurationTreeViewProps = {
   parentConfig: ParentConfig;
@@ -116,7 +117,11 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     return node || parentConfig;
   }, [rightClickedId, rightClickedType, parentConfig]);
 
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const setUserPreferences = useUserPreferences.use.addPreferences();
+  const openTreeItemsInConfigs = useUserPreferences.use['tech-data-open-tree-items']();
+  const configOpenItems = openTreeItemsInConfigs.find(({ id }) => id === parentConfig.id);
+
+  const expandedKeys = configOpenItems ? configOpenItems.open : [];
 
   const getAllKeys = (data: TreeDataNode[]): React.Key[] => {
     let keys: React.Key[] = [];
@@ -130,11 +135,20 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   };
 
   const expandAllNodes = () => {
-    setExpandedKeys(getAllKeys(treeData));
+    setUserPreferences({
+      'tech-data-open-tree-items': [
+        ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
+        { id: parentConfig.id, open: getAllKeys(treeData).map((key) => key.toString()) },
+      ],
+    });
   };
 
   const collapseAllNodes = () => {
-    setExpandedKeys([]);
+    setUserPreferences({
+      'tech-data-open-tree-items': openTreeItemsInConfigs.filter(
+        ({ id }) => id !== parentConfig.id,
+      ),
+    });
   };
 
   const closeModal = () => setOpenModal('');
@@ -355,8 +369,15 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           onRightClick={onRightClickTreeNode}
           onSelect={onSelectTreeNode}
           treeData={treeData}
-          expandedKeys={expandedKeys}
-          onExpand={(keys: React.Key[]) => setExpandedKeys(keys)}
+          expandedKeys={expandedKeys as string[]}
+          onExpand={(keys: React.Key[]) =>
+            setUserPreferences({
+              'tech-data-open-tree-items': [
+                ...openTreeItemsInConfigs.filter(({ id }) => id !== parentConfig.id),
+                { id: parentConfig.id, open: keys.map((key) => key.toString()) },
+              ],
+            })
+          }
         />
       </Dropdown>
       <Modal

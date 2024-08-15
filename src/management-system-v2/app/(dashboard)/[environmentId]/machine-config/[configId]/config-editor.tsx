@@ -72,7 +72,6 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   const currentNameRef = useRef(selectedConfig.name);
 
   useEffect(() => {
-    console.log(selectedConfig.name, currentNameRef.current);
     if (selectedConfig.name !== currentNameRef.current)
       currentNameRef.current = selectedConfig.name;
   }, [selectedConfig]);

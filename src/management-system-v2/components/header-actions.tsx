@@ -1,6 +1,6 @@
 'use client';
 
-import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { UserOutlined, WarningOutlined } from '@ant-design/icons';
 import {
   Alert,
   Avatar,
@@ -37,10 +37,6 @@ const HeaderActions: FC = () => {
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
 
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) {
-    return null;
-  }
-
   if (!loggedIn) {
     return (
       <Space style={{ float: 'right', padding: '16px' }}>
@@ -59,9 +55,8 @@ const HeaderActions: FC = () => {
   const avatarDropdownItems: MenuProps['items'] = [
     {
       key: 'profile',
-      title: 'Account Settings',
-      label: <SpaceLink href={`/profile`}>Account Settings</SpaceLink>,
-      icon: <FaUserEdit />,
+      title: 'Profile Settings',
+      label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
     },
   ];
 

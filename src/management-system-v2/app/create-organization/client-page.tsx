@@ -15,6 +15,7 @@ import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
 import Link from 'next/link';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 
 const getCountryOption = (country: CountryCode) => {
   const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
@@ -114,6 +115,11 @@ const CreateOrganizationPage = ({
       }}
     >
       <Content
+        headerLeft={
+          <Button type="primary" icon={<ArrowLeftOutlined />} onClick={router.back}>
+            Back
+          </Button>
+        }
         headerCenter={
           breakpoint.xs ? undefined : (
             <Link

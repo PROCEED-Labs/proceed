@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { updateUser } from './data/users';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { wrapServerCall } from './user-error';
 
 type FavouritesStore = {
   favourites: string[];
@@ -31,11 +32,12 @@ const useFavouritesStore = create<FavouritesStore>()(
           newFavourites = [...oldFavourites, id];
         }
       });
-
-      updateUser({ favourites: newFavourites }).then(() => {
-        set((state) => {
-          state.favourites = newFavourites;
-        });
+      wrapServerCall({
+        fn: () => updateUser({ favourites: newFavourites }),
+        onSuccess: () =>
+          set((state) => {
+            state.favourites = newFavourites;
+          }),
       });
     },
     removeIfPresent: (id) => {

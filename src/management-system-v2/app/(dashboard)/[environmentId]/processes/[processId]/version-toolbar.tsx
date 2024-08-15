@@ -8,6 +8,7 @@ import { AuthCan, useEnvironment } from '@/components/auth-can';
 import ConfirmationButton from '@/components/confirmation-button';
 import { copyProcesses, setVersionAsLatest } from '@/lib/data/processes';
 import { spaceURL } from '@/lib/utils';
+import { wrapServerCall } from '@/lib/user-error';
 
 type VersionToolbarProps = { processId: string };
 
@@ -58,10 +59,13 @@ const VersionToolbar = ({ processId }: VersionToolbarProps) => {
           title="Are you sure you want to continue editing with this Version?"
           description="Any changes that are not stored in another version are irrecoverably lost!"
           tooltip="Set as latest Version and enable editing"
-          onConfirm={async () => {
-            await setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId);
-            router.push(spaceURL(environment, `/processes/${processId}`));
-          }}
+          onConfirm={() =>
+            wrapServerCall({
+              fn: () =>
+                setVersionAsLatest(processId, Number(selectedVersionId), environment.spaceId),
+              onSuccess: () => router.push(spaceURL(environment, `/processes/${processId}`)),
+            })
+          }
           modalProps={{
             okText: 'Set as latest Version',
             okButtonProps: {

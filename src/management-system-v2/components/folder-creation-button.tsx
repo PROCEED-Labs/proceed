@@ -9,6 +9,7 @@ import { FolderUserInput, FolderUserInputSchema } from '@/lib/data/folder-schema
 import { createFolder as serverCreateFolder } from '@/lib/data/folders';
 import FolderModal from './folder-modal';
 import useParseZodErrors from '@/lib/useParseZodErrors';
+import { wrapServerCall } from '@/lib/user-error';
 
 type FolderCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;
@@ -25,19 +26,19 @@ const FolderCreationButton: FC<FolderCreationButtonProps> = ({ wrapperElement, .
 
   const createFolder = (values: FolderUserInput) => {
     startTransition(async () => {
-      try {
-        const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
-        if (!folderInput) throw new Error();
+      await wrapServerCall({
+        fn: () => {
+          const folderInput = parseInput({ ...values, parentId: folderId, environmentId: spaceId });
+          if (!folderInput) throw new Error();
 
-        const response = await serverCreateFolder(folderInput);
-        if (response && 'error' in response) throw new Error();
-
-        router.refresh();
-        message.open({ type: 'success', content: 'Folder Created' });
-        setModalOpen(false);
-      } catch (e) {
-        message.open({ type: 'error', content: 'Something went wrong' });
-      }
+          return serverCreateFolder(folderInput);
+        },
+        onSuccess: () => {
+          router.refresh();
+          message.open({ type: 'success', content: 'Folder Created' });
+          setModalOpen(false);
+        },
+      });
     });
   };
 

@@ -7,6 +7,7 @@ import { User, AuthenticatedUserData, AuthenticatedUserDataSchema } from '@/lib/
 import { useRouter } from 'next/navigation';
 import useParseZodErrors from '@/lib/useParseZodErrors';
 import { useSession } from 'next-auth/react';
+import { UserError, wrapServerCall } from '@/lib/user-error';
 
 type modalInputField = {
   userDataField: keyof AuthenticatedUserData;
@@ -45,20 +46,17 @@ const AuthenticatedUserDataModal: FC<{
 
   const submitData = async (values: any) => {
     startTransition(async () => {
-      try {
-        const data = parseInput(values);
-        if (!data) return;
+      const data = parseInput(values);
+      if (!data) return;
 
-        const result = await updateUser(values as AuthenticatedUserData);
-        if (result && 'error' in result) throw new Error();
-        session.update();
-
-        message.success({ content: 'Profile updated' });
-        router.refresh();
-        close();
-      } catch (e) {
-        message.error({ content: 'An error ocurred' });
-      }
+      await wrapServerCall({
+        fn: () => updateUser(values as AuthenticatedUserData),
+        onSuccess: () => {
+          message.success({ content: 'Profile updated' });
+          session.update();
+          close();
+        },
+      });
     });
   };
 

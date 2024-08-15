@@ -8,7 +8,7 @@ import {
   AppstoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Space, Button, Table, App, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
+import { Space, Button, Table, Breakpoint, Grid, FloatButton, Tooltip } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -29,11 +29,11 @@ import cn from 'classnames';
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 import { spaceURL } from '@/lib/utils';
+import { wrapServerCall } from '@/lib/user-error';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
 const RolesPage = ({ roles }: { roles: Role[] }) => {
-  const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
   const environment = useEnvironment();
@@ -67,16 +67,14 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
   );
 
   async function deleteRoles(roleIds: string[]) {
-    try {
-      const result = await serverDeleteRoles(environment.spaceId, roleIds);
-      if (result && 'error' in result) throw new Error();
-
-      setSelectedRowKeys([]);
-      setSelectedRows([]);
-      router.refresh();
-    } catch (e) {
-      messageApi.error({ content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () => serverDeleteRoles(environment.spaceId, roleIds),
+      onSuccess: () => {
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        router.refresh();
+      },
+    });
   }
 
   const columns = [

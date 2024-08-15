@@ -39,6 +39,7 @@ import {
 } from './documentation-page-utils';
 import { getAllUserWorkspaces } from '@/lib/sharing/process-sharing';
 import { Environment } from '@/lib/data/environment-schema';
+import { wrapServerCall } from '@/lib/user-error';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -116,7 +117,7 @@ const BPMNSharedViewer = ({
     async function transform(
       bpmnViewer: ViewerType,
       el: any, // the element to transform
-      definitions: any, // the defintitions element at the root of the process tree
+      definitions: any, // the definitions element at the root of the process tree
       currentRootId?: string, // the layer the current element is in (e.g. the root process/collaboration or a collapsed sub-process)
     ): Promise<ElementInfo> {
       let svg;
@@ -227,18 +228,17 @@ const BPMNSharedViewer = ({
       },
     ];
 
-    const copiedProcesses = await copyProcesses(processesToCopy, workspace.id);
-
-    if ('error' in copiedProcesses) {
-      message.error(copiedProcesses.error.message);
-    } else {
-      message.success('Diagram has been successfully copied to your workspace');
-      if (copiedProcesses.length === 1) {
-        router.push(
-          `${workspace.organization ? workspace.id : ''}/processes/${copiedProcesses[0].id}`,
-        );
-      }
-    }
+    await wrapServerCall({
+      fn: () => copyProcesses(processesToCopy, workspace.id),
+      onSuccess: (copiedProcesses) => {
+        message.success('Diagram has been successfully copied to your workspace');
+        if (copiedProcesses.length === 1) {
+          router.push(
+            `${workspace.organization ? workspace.id : ''}/processes/${copiedProcesses[0].id}`,
+          );
+        }
+      },
+    });
   };
 
   const userWorkspaces = workspaces.map((workspace, index) => ({

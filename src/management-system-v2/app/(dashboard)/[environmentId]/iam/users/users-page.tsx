@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/user-error';
 
 const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
@@ -26,12 +27,10 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
     startTransition(async () => {
       unsetIds();
 
-      const result = await removeUsersFromEnvironment(environment.spaceId, ids);
-
-      if (result && 'error' in result)
-        messageApi.open({ type: 'error', content: 'Something went wrong' });
-
-      router.refresh();
+      await wrapServerCall({
+        fn: () => removeUsersFromEnvironment(environment.spaceId, ids),
+        onSuccess: router.refresh,
+      });
     });
   }
 

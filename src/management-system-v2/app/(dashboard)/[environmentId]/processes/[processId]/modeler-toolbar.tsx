@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
+import { Tooltip, Button, Space, Select, SelectProps, App } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -10,8 +10,6 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
-  FullscreenOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
@@ -21,7 +19,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
+import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
@@ -29,6 +27,7 @@ import { useAddControlCallback } from '@/lib/controls-store';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -48,6 +47,7 @@ const ModelerToolbar = ({
 }: ModelerToolbarProps) => {
   const router = useRouter();
   const environment = useEnvironment();
+  const { message } = App.useApp();
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
@@ -72,18 +72,29 @@ const ModelerToolbar = ({
     versionName: string;
     versionDescription: string;
   }) => {
-    // Ensure latest BPMN on server.
-    const xml = (await modeler?.getXML()) as string;
-    await updateProcess(processId, environment.spaceId, xml);
+    try {
+      // Ensure latest BPMN on server.
+      const xml = (await modeler?.getXML()) as string;
+      if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
+        throw new Error();
 
-    await createVersion(
-      values.versionName,
-      values.versionDescription,
-      processId,
-      environment.spaceId,
-    );
-    // TODO: navigate to new version?
-    router.refresh();
+      if (
+        isUserErrorResponse(
+          await createVersion(
+            values.versionName,
+            values.versionDescription,
+            processId,
+            environment.spaceId,
+          ),
+        )
+      )
+        throw new Error();
+
+      // TODO: navigate to new version?
+      router.refresh();
+    } catch (_) {
+      message.error('Something went wrong');
+    }
   };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);

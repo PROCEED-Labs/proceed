@@ -1,12 +1,13 @@
 'use client';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, DatePicker } from 'antd';
+import { Button, Form, Input, Modal, DatePicker } from 'antd';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import germanLocale from 'antd/es/date-picker/locale/de_DE';
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { addRole as serverAddRoles } from '@/lib/data/roles';
+import { wrapServerCall } from '@/lib/user-error';
 
 type PostRoleKeys = 'name' | 'description' | 'expiration';
 
@@ -15,7 +16,6 @@ const CreateRoleModal: FC<{
   close: () => void;
 }> = ({ modalOpen, close }) => {
   const [form] = Form.useForm();
-  const { message: messageApi } = App.useApp();
   type ErrorsObject = { [field in PostRoleKeys]?: ReactNode[] };
   const [formatError, setFormatError] = useState<ErrorsObject>({});
   const environment = useEnvironment();
@@ -44,16 +44,15 @@ const CreateRoleModal: FC<{
     if (typeof values.expirationDayJs === 'object')
       expiration = (values.expirationDayJs as dayjs.Dayjs).toISOString();
 
-    try {
-      const result = await serverAddRoles(environment.spaceId, {
-        ...values,
-        permissions: {},
-        environmentId: environment.spaceId,
-      });
-      if (result && 'error' in result) throw new Error();
-    } catch (e) {
-      messageApi.error({ content: 'Something went wrong' });
-    }
+    await wrapServerCall({
+      fn: () =>
+        serverAddRoles(environment.spaceId, {
+          ...values,
+          permissions: {},
+          environmentId: environment.spaceId,
+        }),
+      onSuccess: false,
+    });
   };
 
   return (

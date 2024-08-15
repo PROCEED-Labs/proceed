@@ -3,7 +3,7 @@
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import { App, Button, Space, Typography } from 'antd';
-import { FC, useState, useTransition } from 'react';
+import { FC, useState } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import EnvironmentSidePanel from './environments-side-panel';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -14,6 +14,7 @@ import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
 import SelectionActions from '@/components/selection-actions';
 import ElementList from '@/components/item-list-view';
 import styles from '@/components/item-list-view.module.scss';
+import { wrapServerCall } from '@/lib/user-error';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -42,22 +43,14 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
   const userId = session.data?.user?.id || '';
 
   async function deleteEnvironments(environmentIds: string[]) {
-    try {
-      const result = await deleteOrganizationEnvironments(environmentIds);
-      if (result && 'error' in result) throw result.error;
-
-      setSelectedRows([]);
-      router.refresh();
-      message.open({
-        content: `Environment${environmentIds.length > 1 ? 's' : ''} deleted`,
-        type: 'success',
-      });
-    } catch (e) {
-      console.log(e);
-      //@ts-ignore
-      const content = (e && e?.message) || 'Something went wrong';
-      message.open({ content, type: 'error' });
-    }
+    await wrapServerCall({
+      fn: () => deleteOrganizationEnvironments(environmentIds),
+      onSuccess: () => {
+        setSelectedRows([]);
+        router.refresh();
+        message.success(`Environment${environmentIds.length > 1 ? 's' : ''} deleted`);
+      },
+    });
   }
 
   return (

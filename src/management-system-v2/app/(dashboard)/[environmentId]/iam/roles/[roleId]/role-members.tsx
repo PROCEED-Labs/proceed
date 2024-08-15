@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Role } from '@/lib/data/role-schema';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
+import { wrapServerCall } from '@/lib/user-error';
 
 const AddUserModal: FC<{
   role: Role;
@@ -25,15 +26,19 @@ const AddUserModal: FC<{
 
   const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     startTransition(async () => {
-      if (clearIds) clearIds();
-      await addRoleMappings(
-        environment.spaceId,
-        users.map((user) => ({
-          userId: user.id,
-          roleId: role.id,
-        })),
-      );
-      router.refresh();
+      clearIds?.();
+
+      await wrapServerCall({
+        fn: () =>
+          addRoleMappings(
+            environment.spaceId,
+            users.map((user) => ({
+              userId: user.id,
+              roleId: role.id,
+            })),
+          ),
+        onSuccess: router.refresh,
+      });
     });
   };
 
@@ -92,18 +97,22 @@ const RoleMembers: FC<{
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
     clearIds();
+
     setLoading(true);
 
-    await deleteRoleMappings(
-      environment.spaceId,
-      userIds.map((userId) => ({
-        roleId: role.id,
-        userId: userId,
-      })),
-    );
+    await wrapServerCall({
+      fn: () =>
+        deleteRoleMappings(
+          environment.spaceId,
+          userIds.map((userId) => ({
+            roleId: role.id,
+            userId: userId,
+          })),
+        ),
+      onSuccess: router.refresh,
+    });
 
     setLoading(false);
-    router.refresh();
   }
 
   return (

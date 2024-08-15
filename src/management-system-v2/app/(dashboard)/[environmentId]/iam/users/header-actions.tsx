@@ -2,6 +2,7 @@
 
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
+import { wrapServerCall } from '@/lib/user-error';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { Button, Form, App, Input, Modal, Space, Grid } from 'antd';
 import { useRouter } from 'next/navigation';
@@ -43,16 +44,15 @@ const AddUsersModal: FC<{
       try {
         form.validateFields();
 
-        const result = inviteUsersToEnvironment(environment.spaceId, values.users);
-
-        if (result && 'error' in result) throw new Error();
-
-        messageApi.success({ content: 'User Added' });
-        router.refresh();
+        await wrapServerCall({
+          fn: () => inviteUsersToEnvironment(environment.spaceId, values.users),
+          onSuccess: () => {
+            messageApi.success({ content: 'User Added' });
+            router.refresh();
+          },
+        });
         close();
-      } catch (e) {
-        messageApi.error({ content: 'An error ocurred' });
-      }
+      } catch (_) {}
     });
   };
 

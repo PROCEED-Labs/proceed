@@ -1,11 +1,10 @@
 'use client';
 
-import { UserOutlined, WarningOutlined } from '@ant-design/icons';
+import { UserOutlined, WarningOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   Alert,
   Avatar,
   Button,
-  ConfigProvider,
   Dropdown,
   MenuProps,
   Modal,
@@ -25,8 +24,7 @@ import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
-import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
-import ConfirmationButton from './confirmation-button';
+import { FaSignOutAlt } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();

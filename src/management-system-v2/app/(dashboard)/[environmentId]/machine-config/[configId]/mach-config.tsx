@@ -163,7 +163,7 @@ const MachineConfigurations: React.FC<MachineDataViewProps> = ({
       }
       list.push({
         key: machineConfig.id,
-        label: machineConfig.name,
+        label: `Machine Tech Data Set: ${machineConfig.name}`,
         children: [
           <Collapse
             bordered={false}

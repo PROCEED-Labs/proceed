@@ -213,33 +213,6 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
           style: { ...panelStyle, border: '1px solid #91caff' }, //blue-3
         });
       }
-      if (currentConfig.machineConfigs.length > 0) {
-        const label = (
-          <Space.Compact size="small">
-            <Space align="center">
-              <Typography.Text>Machine Tech Data Sets</Typography.Text>
-              {editable && (
-                <Tooltip title="Add Machine Tech Data Set">
-                  <Button
-                    onClick={() => {
-                      setCreateConfigType('machine');
-                    }}
-                    icon={<PlusOutlined />}
-                    type="text"
-                    style={{ margin: '0 10px 0 10px' }}
-                  />
-                </Tooltip>
-              )}
-            </Space>
-          </Space.Compact>
-        );
-        panels.push({
-          key: '3',
-          label: label,
-          children: <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />,
-          style: { ...panelStyle, border: '1px solid #d6e4ff' }, //geekblue-2
-        });
-      }
     } else if (
       selectedConfig.type === 'target-config' ||
       selectedConfig.type === 'machine-config'
@@ -409,6 +382,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             }}
             items={collapseItems}
           />
+          {selectedConfig.type === 'config' && (
+            <MachineConfigurations parentConfig={parentConfig} editingEnabled={editable} />
+          )}
         </Content>
       </Layout>
       <MachineConfigModal

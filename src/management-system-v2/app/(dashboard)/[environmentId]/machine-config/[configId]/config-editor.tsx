@@ -134,12 +134,12 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     if (parentConfig.targetConfig === undefined) {
       menu.push({
         key: 'target-config',
-        label: 'Target Configuration',
+        label: 'Target Tech Data Set',
       });
     }
     menu.push({
       key: 'machine-config',
-      label: 'Machine Configuration',
+      label: 'Machine Tech Data Set',
     });
     return menu;
   }, [parentConfig]);
@@ -204,7 +204,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     if (selectedConfig.type === 'config') {
       const currentConfig = selectedConfig as ParentConfig;
       if (currentConfig.targetConfig) {
-        let title = 'Target Configuration: ' + currentConfig.targetConfig.name;
+        let title = 'Target Tech Data Set: ' + currentConfig.targetConfig.name;
         panels.push({
           key: '2',
           label: title,
@@ -217,9 +217,9 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         const label = (
           <Space.Compact size="small">
             <Space align="center">
-              <Typography.Text>Machine Configurations</Typography.Text>
+              <Typography.Text>Machine Tech Data Sets</Typography.Text>
               {editable && (
-                <Tooltip title="Add Machine Configuration">
+                <Tooltip title="Add Machine Tech Data Set">
                   <Button
                     onClick={() => {
                       setCreateConfigType('machine');
@@ -265,7 +265,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
   }, [editable, selectedConfig]);
 
   const machineConfigModalTitle =
-    createConfigType === 'target' ? 'Create Target Configuration' : 'Create Machine Configuration';
+    createConfigType === 'target' ? 'Create Target Tech Data Set' : 'Create Machine Tech Data Set';
 
   return (
     <>
@@ -350,7 +350,7 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
             <Space>
               {editable && (
                 <AddButton
-                  label="Add Child Configuration"
+                  label="Add Tech Data Set"
                   items={configHeaderDropdownItems}
                   onClick={onClickAddConfigButton}
                 />

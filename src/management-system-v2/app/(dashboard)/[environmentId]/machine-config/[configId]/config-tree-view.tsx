@@ -283,13 +283,13 @@ const ConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     if (rightClickedType === 'config') {
       items.push(
         {
-          label: 'Create Target Configuration',
+          label: 'Create Target Tech Data Set',
           key: 'create-target',
           onClick: () => setOpenModal('target-config'),
           disabled: !editable || !!(rightClickedNode as ParentConfig).targetConfig,
         },
         {
-          label: 'Create Machine Configuration',
+          label: 'Create Machine Tech Data Set',
           key: 'create-machine',
           onClick: () => setOpenModal('machine-config'),
           disabled: !editable,

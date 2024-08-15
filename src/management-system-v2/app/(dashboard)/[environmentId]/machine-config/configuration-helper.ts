@@ -1,4 +1,4 @@
-import { Localization, LocalizationName } from '@/lib/data/locale';
+import { Localization } from '@/lib/data/locale';
 import {
   AbstractConfig,
   MachineConfig,
@@ -30,14 +30,14 @@ export function defaultParameter(
   };
 }
 
-export function defaultConfiguration(): AbstractConfig {
+export function defaultConfiguration(name?: string, description?: string): AbstractConfig {
   const date = new Date().toUTCString();
-  return {
+  const config = {
     id: v4(),
     type: 'config',
     environmentId: '',
     metadata: {},
-    name: 'Default Configuration',
+    name: name || 'Default Configuration',
     variables: [],
     departments: [],
     inEditingBy: [],
@@ -52,28 +52,21 @@ export function defaultConfiguration(): AbstractConfig {
     lastEditedBy: '',
     lastEditedOn: '',
   } as AbstractConfig;
+
+  if (description) {
+    config.metadata['description'] = defaultParameter('description', description);
+  }
+
+  return config;
 }
 
 export const generateUniqueId = (): string => {
   return '_' + Math.random().toString(36).substr(2, 9);
 };
 
-export const deleteMachineConfigInParent = (
-  parentConfig: ParentConfig,
-  machineConfigId: string,
-): void => {
-  parentConfig.machineConfigs = parentConfig.machineConfigs.filter(
-    (config) => config.id !== machineConfigId,
-  );
-};
-
 export const defaultMachineConfiguration = (name: string, description: string): MachineConfig => {
   return {
-    ...defaultConfiguration(),
-    name,
-    metadata: {
-      description: defaultParameter('description', description),
-    },
+    ...defaultConfiguration(name, description),
     type: 'machine-config',
     parameters: {},
   };
@@ -81,38 +74,9 @@ export const defaultMachineConfiguration = (name: string, description: string): 
 
 export const defaultTargetConfiguration = (name: string, description: string): TargetConfig => {
   return {
-    ...defaultConfiguration(),
-    name,
-    metadata: {
-      description: defaultParameter('description', description),
-    },
+    ...defaultConfiguration(name, description),
     type: 'target-config',
     parameters: {},
-  };
-};
-
-export const createMachineConfigInParent = (
-  parentConfig: ParentConfig,
-  nameValue: string,
-  descriptionValue: string,
-) => {
-  parentConfig.machineConfigs.push({
-    ...defaultMachineConfiguration(nameValue, descriptionValue),
-    environmentId: parentConfig.environmentId,
-  });
-};
-
-export const createTargetConfigInParent = (
-  parentConfig: ParentConfig,
-  nameValue: string,
-  descriptionValue: string,
-) => {
-  // We can only have one target configuration
-  if (parentConfig.targetConfig) return;
-  let foundMachine = parentConfig;
-  foundMachine.targetConfig = {
-    ...defaultTargetConfiguration(nameValue, descriptionValue),
-    environmentId: foundMachine.environmentId,
   };
 };
 
@@ -140,64 +104,6 @@ export function findConfig(id: string, _parent: ParentConfig): TreeFindStruct {
     }
   }
   return undefined;
-}
-
-export function deleteLinks(param: Parameter, parentConfig: ParentConfig) {
-  let params = getAllParameters(parentConfig, 'config', '');
-  let paramsToBeDeleted = getAllParameters(param, 'parameter', 'p.');
-  let idList: string[] = paramsToBeDeleted.map((item) => {
-    return item.value.id ?? '';
-  });
-  idList.push(param.id ?? '');
-  for (let obj of params) {
-    obj.value.linkedParameters = obj.value.linkedParameters.filter((item) => {
-      return idList.indexOf(item) === -1;
-    });
-  }
-}
-
-export function deleteParameter(id: string, parentConfig: ParentConfig): boolean {
-  let deleted = false;
-  let p = findParameter(id, parentConfig, 'config');
-  if (!p) return false;
-  let parent;
-  if (p.type === 'parameter') {
-    parent = p.parent as Parameter;
-    for (let prop in parent.parameters) {
-      if (parent.parameters[prop].id === id) {
-        delete parent.parameters[prop];
-        deleted = true;
-      }
-      if (deleted) break;
-    }
-  } else if (p.type === 'config') {
-    parent = p.parent as ParentConfig;
-    for (let prop in parent.metadata) {
-      if (parent.metadata[prop].id === id) {
-        delete parent.metadata[prop];
-        deleted = true;
-      }
-      if (deleted) break;
-    }
-  } else {
-    parent = p.parent as TargetConfig | MachineConfig;
-    for (let prop in parent.metadata) {
-      if (parent.metadata[prop].id === id) {
-        delete parent.metadata[prop];
-        deleted = true;
-      }
-      if (deleted) break;
-    }
-    if (deleted) return true;
-    for (let prop in parent.parameters) {
-      if (parent.parameters[prop].id === id) {
-        delete parent.parameters[prop];
-        deleted = true;
-      }
-      if (deleted) break;
-    }
-  }
-  return deleted;
 }
 
 export function findParameter(

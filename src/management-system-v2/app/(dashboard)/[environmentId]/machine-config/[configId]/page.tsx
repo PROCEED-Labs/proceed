@@ -13,7 +13,7 @@ const MachineConfigView: React.FC<MachineConfigProps> = async ({ params: { confi
 
   //replace ConfigContent <-> MachineConfigEditor as needed
   return (
-    <Content title="Machine Configuration">
+    <Content title={`Tech Data Set: ${machineConfig.name}`}>
       <ConfigPage originalParentConfig={machineConfig} />
     </Content>
   );

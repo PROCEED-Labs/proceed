@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button, Col, Layout, Row } from 'antd';
 import ConfigEditor from './config-editor';
 import ConfigurationTreeView from './config-tree-view';
-import { useRouter } from 'next/navigation';
 import { findConfig, findParameter } from '../configuration-helper';
 // TODO
 // @ts-ignore
@@ -15,8 +14,8 @@ import { ResizableBox, ResizeEvent, ResizeCallbackData } from 'react-resizable';
 import React from 'react';
 import styles from './page.module.scss';
 import CustomField from './custom-field';
+import { useUserPreferences } from '@/lib/user-preferences';
 
-const initialWidth = 300;
 const collapsedWidth = 70;
 
 type VariablesEditorProps = {
@@ -24,8 +23,6 @@ type VariablesEditorProps = {
 };
 
 const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig }) => {
-  const [collapsed, setCollapsed] = useState(false);
-
   const [selectionId, setSelectionId] = useState('');
   const [selectionType, setSelectionType] = useState<AbstractConfig['type'] | 'parameter'>(
     'config',
@@ -39,15 +36,13 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
 
   const [editable, setEditable] = useState(false);
 
-  const [width, setWidth] = useState(initialWidth);
+  const setPreferences = useUserPreferences.use.addPreferences();
+  const { siderOpen, siderWidth } = useUserPreferences.use['tech-data-editor']();
 
   const handleCollapse = () => {
-    if (collapsed) {
-      setWidth(initialWidth);
-    } else {
-      setWidth(collapsedWidth);
-    }
-    setCollapsed(!collapsed);
+    setPreferences({
+      'tech-data-editor': { siderOpen: !siderOpen, siderWidth: !siderOpen ? 300 : collapsedWidth },
+    });
   };
 
   const selectedNode = useMemo(() => {
@@ -72,20 +67,21 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
     <Layout className={styles.ConfigEditor}>
       <ResizableBox
         className={styles.CustomBox}
-        width={collapsed ? collapsedWidth : width}
+        width={!siderOpen ? collapsedWidth : siderWidth}
         axis="x"
         minConstraints={[collapsedWidth, 0]}
         maxConstraints={[window.innerWidth / 2, Infinity]}
         resizeHandles={['e']}
-        handle={!collapsed && <div className={styles.CustomHandle} />}
+        handle={siderOpen && <div className={styles.CustomHandle} />}
         onResizeStop={(_: ResizeEvent, { size }: ResizeCallbackData) => {
-          setWidth(size.width);
           // Collapse when the width is less than or equal to collapsedWidth
-          setCollapsed(size.width <= collapsedWidth);
+          setPreferences({
+            'tech-data-editor': { siderOpen: size.width > collapsedWidth, siderWidth: size.width },
+          });
         }}
         style={{
-          border: !collapsed ? '1px solid #ddd' : undefined,
-          background: !collapsed ? '#fff' : undefined,
+          border: siderOpen ? '1px solid #ddd' : undefined,
+          background: siderOpen ? '#fff' : undefined,
         }}
       >
         <Button
@@ -96,9 +92,9 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ originalParentConfig })
             right: 10,
           }}
         >
-          {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          {!siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         </Button>
-        {!collapsed && (
+        {siderOpen && (
           <div className={styles.CustomBoxContentWrapper}>
             <ConfigurationTreeView
               editable={editable}

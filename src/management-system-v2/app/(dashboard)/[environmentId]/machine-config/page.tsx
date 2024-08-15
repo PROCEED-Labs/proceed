@@ -27,7 +27,7 @@ const MachineConfigPage = async ({
 
   return (
     <>
-      <Content title={<Space></Space>}>
+      <Content title={<Space>Tech Data Sets</Space>}>
         <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <ParentConfigList data={folderContents} />
         </Space>

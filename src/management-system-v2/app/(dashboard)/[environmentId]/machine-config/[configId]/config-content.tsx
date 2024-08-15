@@ -33,7 +33,7 @@ const Content: React.FC<MachineDataViewProps> = ({
   const router = useRouter();
 
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
-  const [idVisible, setIdVisible] = useState<boolean>(true);
+  const [idVisible, setIdVisible] = useState<boolean>(false);
 
   const addParameter = async (values: CreateParameterModalReturnType[]) => {
     const valuesFromModal = values[0];

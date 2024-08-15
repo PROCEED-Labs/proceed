@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { Tooltip, Button, Space, Select, SelectProps, App } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -11,6 +11,7 @@ import Icon, {
   RedoOutlined,
   ArrowUpOutlined,
   FilePdfOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -28,6 +29,7 @@ import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
+import UserTaskBuilder from './_user-task-builder';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -51,6 +53,7 @@ const ModelerToolbar = ({
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
+  const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -67,6 +70,15 @@ const ModelerToolbar = ({
       return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
   }, [modeler, selectedElementId, subprocessId]);
+
+  useEffect(() => {
+    if (modeler && (showProcessExportModal || showUserTaskEditor)) {
+      // TODO: maybe  do this without an effect
+      modeler.deactivateKeyboard();
+    } else if (modeler) {
+      modeler.activateKeyboard();
+    }
+  }, [modeler, showProcessExportModal, showUserTaskEditor]);
 
   const createProcessVersion = async (values: {
     versionName: string;
@@ -170,7 +182,7 @@ const ModelerToolbar = ({
   };
 
   const handleOpenDocumentation = async () => {
-    // the timestamp does not matter here since it is overriden by the user being an owner of the process
+    // the timestamp does not matter here since it is overridden by the user being an owner of the process
     const url = await generateSharedViewerUrl(
       { processId, timestamp: 0 },
       selectedVersionId || undefined,
@@ -257,14 +269,19 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              bpmnIs(selectedElement, 'bpmn:SubProcess') &&
-              selectedElement.collapsed && (
-                <Tooltip title="Open Subprocess">
-                  <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
-                    Open Subprocess
-                  </Button>
-                </Tooltip>
-              )}
+              ((process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                  <Tooltip title="Edit User Task Form">
+                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                  </Tooltip>
+                )) ||
+                (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
+                  <Tooltip title="Open Subprocess">
+                    <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+                      Open Subprocess
+                    </Button>
+                  </Tooltip>
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -331,6 +348,13 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
+      {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
+        <UserTaskBuilder
+          processId={processId}
+          open={showUserTaskEditor}
+          onClose={() => setShowUserTaskEditor(false)}
+        />
+      )}
     </>
   );
 };

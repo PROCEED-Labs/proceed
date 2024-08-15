@@ -13,14 +13,16 @@ import {
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { getUserRules } from '@/lib/authorization/authorization';
+import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
+import { MdOutlineComputer } from 'react-icons/md';
+import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
+import { env } from '@/lib/env-vars';
 
 const DashboardLayout = async ({
   children,
@@ -68,12 +70,12 @@ const DashboardLayout = async ({
         icon: <FileOutlined />,
       });
 
-    if (can('view', 'Template'))
-      children.push({
-        key: 'templates',
-        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-        icon: <ProfileOutlined />,
-      });
+    // if (can('view', 'Template'))
+    //   children.push({
+    //     key: 'templates',
+    //     label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+    //     icon: <ProfileOutlined />,
+    //   });
 
     layoutMenuItems.push({
       key: 'processes-group',
@@ -87,13 +89,25 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (enableNewMSExecution) {
+  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
       key: 'executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
+    });
+
+    children.push({
+      key: 'engines',
+      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Engines</Link>,
+      icon: <MdOutlineComputer />,
+    });
+
+    children.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Tasklist</Link>,
+      icon: <FaList />,
     });
 
     layoutMenuItems.push({
@@ -109,7 +123,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (process.env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
@@ -175,7 +189,11 @@ const DashboardLayout = async ({
 
   return (
     <>
-      <SetAbility rules={userRules} environmentId={activeEnvironment.spaceId} />
+      <SetAbility
+        rules={userRules}
+        environmentId={activeEnvironment.spaceId}
+        treeMap={getSpaceFolderTree(activeEnvironment.spaceId)}
+      />
       <Layout
         loggedIn={!!userId}
         userEnvironments={userEnvironments}

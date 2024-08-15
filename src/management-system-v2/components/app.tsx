@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntDesignApp } from 'antd';
 import { SessionProvider } from 'next-auth/react';
-import { SetCsrfToken } from '@/lib/csrfTokenStore';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { ModalStaticFunctions } from 'antd/es/modal/confirm';
 import type { NotificationInstance } from 'antd/es/notification/interface';
@@ -32,7 +31,6 @@ const App: FC<PropsWithChildren> = ({ children }) => {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
-        <SetCsrfToken />
         <AntDesignApp>
           <>
             <SetFeedbackFunctions />

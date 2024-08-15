@@ -87,6 +87,8 @@ export interface BPMNCanvasRef {
   getModeling: () => Modeling;
   getFactory: () => BpmnFactory;
   loadBPMN: (bpmn: string) => Promise<void>;
+  activateKeyboard: () => void;
+  deactivateKeyboard: () => void;
 }
 
 const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
@@ -164,6 +166,12 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         // to the same process. Like a user modeling reguraly with the UI.
         await modeler.current!.importXML(bpmn);
         fitViewport(modeler.current!);
+      },
+      activateKeyboard: () => {
+        modeler.current!.get<Keyboard>('keyboard').bind(document);
+      },
+      deactivateKeyboard: () => {
+        modeler.current!.get<Keyboard>('keyboard').unbind();
       },
     }));
 

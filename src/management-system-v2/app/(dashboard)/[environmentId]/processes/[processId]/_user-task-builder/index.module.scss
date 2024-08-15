@@ -1,0 +1,39 @@
+.BuilderModal {
+  :global(.ant-modal-header) {
+    margin: 0;
+    :global(.ant-modal-title) {
+      font-size: 24px;
+    }
+  }
+
+  .BuilderUI {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .EditorHeader {
+      padding: 5px;
+      display: flex;
+      align-items: baseline;
+
+      :global(.ant-btn-lg) {
+        height: auto;
+      }
+
+      :global(.ant-input-number-group) {
+        :global(.ant-input-number) {
+          width: 5.625rem;
+        }
+      }
+    }
+    .EditorBody {
+      min-height: 0;
+      flex-grow: 1;
+
+      .HtmlEditor {
+        display: flex;
+        justify-content: center;
+      }
+    }
+  }
+}

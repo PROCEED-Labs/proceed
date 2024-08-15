@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { getMachineConfigs } from '@/lib/data/legacy/machine-config';
 import MachineConfigList from './machine-config-list';
 import { MachineConfigMetadata } from '@/lib/data/machine-config-schema';
+import { env } from '@/lib/env-vars';
 export type ListItem = MachineConfigMetadata;
 
 const MachineConfigPage = async ({
@@ -14,7 +15,7 @@ const MachineConfigPage = async ({
 }: {
   params: { environmentId: string; folderId?: string };
 }) => {
-  if (!process.env.ENABLE_MACHINE_CONFIG) {
+  if (!env.ENABLE_MACHINE_CONFIG) {
     return notFound();
   }
 

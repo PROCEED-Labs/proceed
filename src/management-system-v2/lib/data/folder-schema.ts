@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Prettify } from '../typescript-utils';
 
 export const FolderUserInputSchema = z.object({
-  name: z.string().min(4),
+  name: z.string(),
   description: z.string().optional(),
   parentId: z.string().nullable(),
   environmentId: z.string(),

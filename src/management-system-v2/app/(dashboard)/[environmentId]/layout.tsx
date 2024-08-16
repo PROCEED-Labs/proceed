@@ -6,7 +6,6 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
-  ProfileOutlined,
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
@@ -18,6 +17,7 @@ import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
+import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
@@ -170,20 +170,34 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Setting')) {
+  if (can('view', 'Setting') || can('manage', 'Environment')) {
+    const children: MenuProps['items'] = [];
+
+    if (can('update', 'Environment') || can('delete', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
+            Organization Settings
+          </Link>
+        ),
+        icon: <GoOrganization />,
+      });
+
+    if (can('view', 'Setting'))
+      children.push({
+        key: 'general-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',
       type: 'group',
-      children: [
-        {
-          key: 'general-settings',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
+      children,
     });
   }
 

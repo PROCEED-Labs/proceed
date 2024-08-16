@@ -40,6 +40,7 @@ import {
   updateParentConfig,
   updateParameter,
   addParameter,
+  removeParentConfiguration,
 } from '@/lib/data/legacy/machine-config';
 
 import AddUserControls from '@/components/add-user-controls';
@@ -49,7 +50,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import MachineConfigModal from '@/components/machine-config-modal';
 import { defaultParameter } from './configuration-helper';
-import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 type InputItem = ParentConfig;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -86,19 +87,22 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
   const defaultDropdownItems = [];
 
   async function deleteItems(items: ParentConfigListConfigs[]) {
-    const promises = [];
-    const parentConfigIds = items.map((item) => item.id);
-    const parentConfigPromise = deleteParentConfigurations(parentConfigIds, space.spaceId);
-    if (parentConfigPromise) promises.push(parentConfigPromise);
+    const failed = (
+      await asyncMap(items, async ({ id }) => {
+        try {
+          await removeParentConfiguration(id);
+        } catch (err) {
+          return data.find(({ id: pId }) => pId === id);
+        }
+      })
+    )
+      .filter((res) => !!res)
+      .map(({ name }) => name);
 
-    await Promise.allSettled(promises);
-
-    const parentConfigsResult = await parentConfigPromise;
-
-    if (parentConfigsResult && 'error' in parentConfigsResult) {
-      return message.open({
+    if (failed.length) {
+      message.open({
         type: 'error',
-        content: 'Something went wrong',
+        content: `Something went wrong while deleting ${failed.join(', ')}.`,
       });
     }
 

@@ -82,7 +82,7 @@ async function updateOrgLogo(
   }
 
   const isInvalidRequest = invalidRequest(request);
-  if (isInvalidRequest) return invalidRequest;
+  if (isInvalidRequest) return isInvalidRequest;
 
   const readImageResult = await readImage(request);
   if (readImageResult.error) return readImageResult.error;

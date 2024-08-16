@@ -46,7 +46,7 @@ export async function POST(
   }: { params: { environmentId: string; processId: string } },
 ) {
   const isInvalidRequest = invalidRequest(request);
-  if (isInvalidRequest) return invalidRequest;
+  if (isInvalidRequest) return isInvalidRequest;
 
   const { ability } = await getCurrentEnvironment(environmentId);
 

@@ -97,7 +97,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       })
     )
       .filter((res) => !!res)
-      .map(({ name }) => name);
+      .map((res) => (res as ParentConfig).name);
 
     if (failed.length) {
       message.open({

@@ -219,7 +219,7 @@ function nestedMachineConfigsFromStorage(machineConfigIds: string[]): MachineCon
     .map((machineConfigId) => {
       return nestedConfigFromStorage('machine-config', machineConfigId);
     })
-    .filter((config) => !!config);
+    .filter((config): config is MachineConfig => !!config);
 }
 
 /**

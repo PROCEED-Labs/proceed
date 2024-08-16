@@ -9,7 +9,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import {
+  defaultConfiguration,
+  defaultParameter,
+} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 type MachineConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
@@ -37,11 +40,11 @@ const MachineConfigCreationButton: React.FC<MachineConfigCreationButtonProps> = 
     const machineConfig = await (customAction?.(values[0]) ??
       addParentConfig(
         {
-          metadata: {
-            description: defaultParameter('description', values[0].description ?? ''),
-          },
-          name: values[0].name,
-          folderId: folderId,
+          ...defaultConfiguration(values[0].name, values[0].description),
+          type: 'config',
+          folderId,
+          targetConfig: undefined,
+          machineConfigs: [],
         },
         environment.spaceId,
       ).then((res) => (Array.isArray(res) ? res[0] : res)));

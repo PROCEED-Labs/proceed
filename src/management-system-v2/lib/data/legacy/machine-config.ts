@@ -734,8 +734,6 @@ export async function removeParentConfiguration(parentConfigId: string) {
 
   // remove from store
   store.set('techData', 'parentConfigs', storedData.parentConfigs);
-
-  throw new Error('Test');
 }
 
 export const deleteParentConfigurations = async (definitionIds: string[], spaceId: string) => {

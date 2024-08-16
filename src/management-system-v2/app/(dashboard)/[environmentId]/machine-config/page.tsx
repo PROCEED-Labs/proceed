@@ -5,8 +5,9 @@ import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
-import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import ParentConfigList from './parent-config-list';
+import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import { env } from '@/lib/env-vars';
 export type ListItem = ParentConfigMetadata;
 
 const MachineConfigPage = async ({
@@ -14,7 +15,7 @@ const MachineConfigPage = async ({
 }: {
   params: { environmentId: string; folderId?: string };
 }) => {
-  if (!process.env.ENABLE_MACHINE_CONFIG) {
+  if (!env.ENABLE_MACHINE_CONFIG) {
     return notFound();
   }
 

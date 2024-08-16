@@ -13,7 +13,6 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
-import ConfirmationButton from '@/components/confirmation-button';
 
 const SpaceSettings = ({
   organization,
@@ -25,6 +24,7 @@ const SpaceSettings = ({
   const router = useRouter();
   const [errors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
   const { colorWarning } = theme.useToken().token;
+
   const [updating, startUpdating] = useTransition();
   function updateOrganization(input: unknown) {
     const data = parseInput(input);

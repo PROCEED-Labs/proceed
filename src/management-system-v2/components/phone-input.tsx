@@ -8,7 +8,7 @@ import {
   parsePhoneNumberFromString,
 } from 'libphonenumber-js';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const getCountryOption = (country: CountryCode) => {
   const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
@@ -42,18 +42,6 @@ export default function PhoneInput(
     return parsePhoneNumberFromString(props.value)?.nationalNumber || '';
   });
 
-  useEffect(() => {
-    if (props.onChange) {
-      const code = getCountryCallingCode(country);
-      const phoneNumber = `+${code} ${value}`;
-      const changeEvent = {
-        target: { value: phoneNumber },
-      } as React.ChangeEvent<HTMLInputElement>;
-
-      props.onChange(changeEvent);
-    }
-  }, [country, props.onChange]);
-
   return (
     <Input
       {...props}
@@ -66,14 +54,24 @@ export default function PhoneInput(
           }
           style={{ minWidth: '8rem' }}
           value={country}
-          onChange={setCountry}
+          onChange={(country) => {
+            setCountry(country);
+
+            const code = getCountryCallingCode(country);
+            const phoneNumber = `+${code} ${value}`;
+            const changeEvent = {
+              target: { value: phoneNumber },
+            } as React.ChangeEvent<HTMLInputElement>;
+            props.onChange?.(changeEvent);
+          }}
           {...props.selectProps}
         />
       }
       onChange={(e) => {
-        const code = getCountryCallingCode(country);
         const number = e.target.value;
         setValue(number);
+
+        const code = getCountryCallingCode(country);
         e.target.value = `+${code} ${number}`;
         props.onChange?.(e);
       }}

@@ -51,6 +51,10 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
+export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
+  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
+}
+
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
@@ -201,7 +205,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
-            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+            <ProcessListItemIcon item={record} /> {record.name.highlighted}
           </div>
         </SpaceLink>
       ),
@@ -459,8 +463,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
                   : undefined
               }
             >
-              {record.type === 'folder' ? <FolderFilled /> : <FileFilled />}{' '}
-              {record.name.highlighted}
+              <ProcessListItemIcon item={record} /> {record.name.highlighted}
             </div>
           );
         },

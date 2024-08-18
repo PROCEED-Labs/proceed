@@ -3,9 +3,10 @@ import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
+import { env } from '@/lib/env-vars';
 
 const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!process.env.ENABLE_EXECUTION) {
+  if (!env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     return notFound();
   }
 

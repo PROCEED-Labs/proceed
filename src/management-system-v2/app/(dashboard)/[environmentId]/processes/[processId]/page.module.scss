@@ -27,6 +27,19 @@
     height: 100%;
     width: 100%;
   }
+
+  .Name {
+    cursor: pointer;
+    :global(.anticon-edit) {
+      display: none;
+    }
+  }
+
+  .Name:hover {
+    :global(.anticon-edit) {
+      display: inline-flex;
+    }
+  }
 }
 
 .HF {

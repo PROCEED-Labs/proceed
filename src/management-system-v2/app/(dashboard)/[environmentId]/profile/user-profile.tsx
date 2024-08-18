@@ -79,7 +79,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               afterClose={() => setErrorMessage(null)}
             />
           )}
-          <Typography.Title level={3}>Account Information</Typography.Title>
+          <Typography.Title level={3}>Profile data</Typography.Title>
 
           <UserAvatar
             user={userData}
@@ -94,9 +94,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               {
                 key: 'name',
                 title: 'Name',
-                value: `${!userData.isGuest ? userData.firstName : 'Guest'} ${
-                  !userData.isGuest ? userData.lastName : ''
-                }`,
+                value: `${firstName} ${lastName}`,
                 action: () => setChangeNameModalOpen(true),
               },
               {
@@ -141,7 +139,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               }}
               buttonProps={{ danger: true }}
             >
-              Delete Account
+              {userData.isGuest ? 'Delete Data' : 'Delete Account'}
             </ConfirmationButton>
           </Space>
         </Card>

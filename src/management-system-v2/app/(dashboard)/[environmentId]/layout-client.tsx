@@ -139,6 +139,7 @@ const Layout: FC<
                       })}
                       width={breakpoint.xs ? 85 : 160}
                       height={breakpoint.xs ? 35 : 63}
+                      style={{ paddingTop: '1.5rem' }}
                       priority
                     />
                   </Link>

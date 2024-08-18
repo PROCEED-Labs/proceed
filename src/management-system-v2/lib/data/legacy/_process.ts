@@ -11,10 +11,10 @@ import {
   saveImage,
   deleteImage,
   getUserTaskIds,
-  getUserTaskHTML,
-  getUserTasksHTML,
-  saveUserTaskHTML,
-  deleteUserTaskHTML,
+  getUserTaskJSON,
+  getUserTasksJSON,
+  saveUserTaskJSON,
+  deleteUserTaskJSON,
   getBPMN,
   getProcessVersion,
   updateProcess as overwriteProcess,
@@ -785,59 +785,51 @@ export async function getProcessBpmn(processDefinitionsId: string) {
   }
 }
 
-/** Returns the filenames of html data for all user tasks in the given process */
+/** Returns the filenames of the data for all user tasks in the given process */
 export async function getProcessUserTasks(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const userTaskIds = await getUserTaskIds(processDefinitionsId);
-    return userTaskIds;
+    return await getUserTaskIds(processDefinitionsId);
   } catch (err) {
     logger.debug(`Error reading user task ids. Reason:\n${err}`);
     throw new Error('Unable to read user task filenames');
   }
 }
 
-/** Returns the html for a specific user task in a process */
-export async function getProcessUserTaskHtml(processDefinitionsId: string, taskFileName: string) {
+/** Returns the form data for a specific user task in a process */
+export async function getProcessUserTaskJSON(processDefinitionsId: string, taskFileName: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const userTaskHtml = await getUserTaskHTML(processDefinitionsId, taskFileName);
-    return userTaskHtml;
+    return await getUserTaskJSON(processDefinitionsId, taskFileName);
   } catch (err) {
-    logger.debug(`Error getting html of user task. Reason:\n${err}`);
-    throw new Error('Unable to get html for user task!');
+    logger.debug(`Error getting data of user task. Reason:\n${err}`);
+    throw new Error('Unable to get data for user task!');
   }
 }
 
-/** Return object mapping from user tasks fileNames to their html */
-export async function getProcessUserTasksHtml(processDefinitionsId: string) {
+/** Return object mapping from user tasks fileNames to their form data */
+export async function getProcessUserTasksJSON(processDefinitionsId: string) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    const userTasksHtml = await getUserTasksHTML(processDefinitionsId);
-    return userTasksHtml;
+    return await getUserTasksJSON(processDefinitionsId);
   } catch (err) {
-    logger.debug(`Error getting user task html. Reason:\n${err}`);
-    throw new Error('Failed getting html for all user tasks');
+    logger.debug(`Error getting user task data. Reason:\n${err}`);
+    throw new Error('Failed getting data for all user tasks');
   }
 }
 
 export async function saveProcessUserTask(
   processDefinitionsId: string,
   userTaskFileName: string,
-  html: string,
+  json: string,
 ) {
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    await saveUserTaskHTML(processDefinitionsId, userTaskFileName, html);
-    eventHandler.dispatch('backend_processTaskHtmlChanged', {
-      processDefinitionsId,
-      userTaskFileName,
-      html,
-    });
+    await saveUserTaskJSON(processDefinitionsId, userTaskFileName, json);
   } catch (err) {
     logger.debug(`Error storing user task data. Reason:\n${err}`);
     throw new Error('Failed to store the user task data');
@@ -852,13 +844,9 @@ export async function deleteProcessUserTask(
   checkIfProcessExists(processDefinitionsId);
 
   try {
-    await deleteUserTaskHTML(processDefinitionsId, userTaskFileName);
-    eventHandler.dispatch('backend_processTaskHtmlChanged', {
-      processDefinitionsId,
-      userTaskFileName,
-    });
+    await deleteUserTaskJSON(processDefinitionsId, userTaskFileName);
   } catch (err) {
-    logger.debug(`Error removing user task html. Reason:\n${err}`);
+    logger.debug(`Error removing user task data. Reason:\n${err}`);
   }
 }
 

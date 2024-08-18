@@ -12,8 +12,8 @@ import {
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
@@ -201,6 +201,10 @@ const DashboardLayout = async ({
     });
   }
 
+  let logo;
+  if (activeEnvironment.isOrganization && organizationHasLogo(activeEnvironment.spaceId))
+    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
+
   return (
     <>
       <SetAbility
@@ -213,6 +217,7 @@ const DashboardLayout = async ({
         userEnvironments={userEnvironments}
         layoutMenuItems={layoutMenuItems}
         activeSpace={activeEnvironment}
+        customLogo={logo}
       >
         {children}
       </Layout>

@@ -9,9 +9,8 @@ import {
   getFilePath,
   getNewFileName,
   hasUuidBeforeUnderscore,
-  removeFilePathFromDB,
-  saveFilePathToDB,
 } from '../helpers/fileManagerHelpers';
+import db from '@/lib/data';
 import { checkIfProcessExists } from './legacy/_process';
 
 // In-memory LRU cache setup
@@ -61,6 +60,33 @@ if (DEPLOYMENT_ENV === 'cloud') {
   setCors(bucket);
 }
 
+async function saveFilePathToDB(fileName: string, filePath: string, processId: string) {
+  await db.processArtifacts.create({
+    data: {
+      fileName: fileName,
+      filePath: filePath,
+      processId: processId,
+    },
+  });
+}
+
+async function removeFilePathFromDB(filePath: string, processId: string) {
+  await db.processArtifacts.delete({ where: { filePath: filePath, processId: processId } });
+}
+
+export async function updateFileDeletableStatus(fileName: string, status: boolean) {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  return await db.processArtifacts.update({
+    where: { fileName: fileName },
+    data: {
+      deletable: status,
+      updatedOn: oneWeekAgo,
+    },
+  });
+}
+
 export async function saveFile(
   fileName: string,
   mimeType: string,
@@ -100,7 +126,7 @@ export async function saveFile(
       if (cache.has(filePath)) cache.delete(filePath);
     }
 
-    await saveFilePathToDB(filePath, processId);
+    await saveFilePathToDB(newFileName, filePath, processId);
 
     return { presignedUrl, fileName: newFileName };
   } catch (error: any) {

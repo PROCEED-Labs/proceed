@@ -16,8 +16,9 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import Modeling, { CommandStack } from 'bpmn-js/lib/features/modeling/Modeling';
+import Modeling, { CommandStack, EventBus } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
+import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -62,6 +63,10 @@ export type BPMNCanvasProps = {
   onSelectionChange?: (oldSelection: ElementLike[], newSelection: ElementLike[]) => void;
   /** Called when the zoom level changed */
   onZoom?: (zoomLevel: number) => void;
+  /** Called when a shape is removed from modeler */
+  onShapeRemove?: (element: Element) => void;
+  /** Called when a shape is removed and undo is done */
+  onShapeRemoveUndo?: (element: Element) => void;
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
@@ -102,6 +107,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onRootChange,
       onSelectionChange,
       onZoom,
+      onShapeRemove,
+      onShapeRemoveUndo,
       resizeWithContainer,
       className,
     },
@@ -233,6 +240,19 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
 
       if (type === 'modeler') {
         modeler.current!.on('commandStack.changed', commandStackChanged);
+
+        modeler.current!.on('shape.remove', (event: { element: Element }) => {
+          onShapeRemove?.(event.element);
+        });
+
+        modeler.current!.on(
+          'commandStack.revert',
+          (event: { command: string; context: { element: Element; id: string } }) => {
+            if (event.command === 'id.updateClaim') {
+              onShapeRemoveUndo?.(event.context.element);
+            }
+          },
+        );
       }
 
       modeler.current!.on('import.done', _onLoaded);

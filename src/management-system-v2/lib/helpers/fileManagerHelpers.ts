@@ -1,4 +1,3 @@
-import db from '@/lib/data';
 import { v4 } from 'uuid';
 
 export type ArtifactType = 'image' | 'html' | 'pdf' | 'script' | 'bpmn' | 'other';
@@ -62,31 +61,4 @@ export function hasUuidBeforeUnderscore(filename: string): boolean {
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_.+/i;
   const res = uuidPattern.test(filename);
   return res;
-}
-
-export async function saveFilePathToDB(filePath: string, processId: string) {
-  await db.processArtifacts.create({
-    data: {
-      filePath: filePath,
-      processId: processId,
-    },
-  });
-}
-
-export async function checkIfFilePathExistsInDB(filePath: string, processId: string) {
-  const res = await db.processArtifacts.findUnique({
-    where: {
-      filePath: filePath,
-      processId: processId,
-    },
-  });
-  return res ? true : false;
-}
-
-export async function removeFilePathFromDB(filePath: string, processId: string) {
-  await db.processArtifacts.delete({ where: { filePath: filePath, processId: processId } });
-}
-
-export async function getAllProcessArtifactsFilePath(processId: string) {
-  return await db.processArtifacts.findMany({ where: { processId: processId } });
 }

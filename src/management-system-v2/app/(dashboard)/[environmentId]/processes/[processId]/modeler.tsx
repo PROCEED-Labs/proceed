@@ -16,6 +16,8 @@ import { useEnvironment } from '@/components/auth-can';
 import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
+import { getMetaDataFromElement } from '@proceed/bpmn-helper';
+import { updateFileDeletableStatus } from '@/lib/data/file-manager';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -221,6 +223,25 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
     }
   }, [messageApi, subprocessId]);
 
+  const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
+    const metaData = getMetaDataFromElement(element.businessObject);
+    if (!metaData.overviewImage) {
+      return;
+    }
+    updateFileDeletableStatus(metaData.overviewImage, true);
+  }, []);
+
+  const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
+    (element) => {
+      const metaData = getMetaDataFromElement(element);
+      if (!metaData.overviewImage) {
+        return;
+      }
+      updateFileDeletableStatus(metaData.overviewImage, false);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (modeler.current) {
       const canvas = modeler.current.getCanvas();
@@ -312,6 +333,8 @@ const Modeler = ({ versionName, process, versions, ...divProps }: ModelerProps) 
         onChange={canEdit ? onChange : undefined}
         onSelectionChange={onSelectionChange}
         onZoom={onZoom}
+        onShapeRemove={onShapeRemove}
+        onShapeRemoveUndo={onShapeRemoveUndo}
       />
     </div>
   );

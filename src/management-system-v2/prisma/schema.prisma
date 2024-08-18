@@ -86,8 +86,11 @@ model Process {
 model ProcessArtifacts {
   id            String  @id @default(uuid())
   filePath      String  @unique
+  fileName      String  @unique
   process       Process @relation(fields: [processId], references: [id])
   processId     String
+  deletable     Boolean? @default(false)
+  updatedOn     DateTime @default(now())
 }
 
 model Space {

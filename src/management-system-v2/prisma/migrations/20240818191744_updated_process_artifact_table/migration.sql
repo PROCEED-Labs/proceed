@@ -66,7 +66,10 @@ CREATE TABLE "Process" (
 CREATE TABLE "ProcessArtifacts" (
     "id" TEXT NOT NULL,
     "filePath" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
     "processId" TEXT NOT NULL,
+    "deletable" BOOLEAN DEFAULT false,
+    "updatedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ProcessArtifacts_pkey" PRIMARY KEY ("id")
 );
@@ -164,6 +167,9 @@ CREATE UNIQUE INDEX "OauthAccount_providerAccountId_key" ON "OauthAccount"("prov
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ProcessArtifacts_filePath_key" ON "ProcessArtifacts"("filePath");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcessArtifacts_fileName_key" ON "ProcessArtifacts"("fileName");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Version_version_key" ON "Version"("version");

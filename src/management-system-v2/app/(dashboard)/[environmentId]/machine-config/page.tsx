@@ -8,6 +8,7 @@ import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
 import ParentConfigList from './parent-config-list';
 import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
 import { env } from '@/lib/env-vars';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 export type ListItem = ParentConfigMetadata;
 
 const MachineConfigPage = async ({
@@ -20,6 +21,9 @@ const MachineConfigPage = async ({
   }
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+
+  if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
+
   const folderContents = (await getParentConfigurations(
     activeEnvironment.spaceId,
     ability,

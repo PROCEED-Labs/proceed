@@ -317,7 +317,8 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => (a.lastEdited || '').localeCompare(b.lastEdited || ''),
+      sorter: (a, b) =>
+        (a.lastEditedOn.toUTCString() || '').localeCompare(b.lastEditedOn.toUTCString() || ''),
       responsive: ['md'],
     },
   ];

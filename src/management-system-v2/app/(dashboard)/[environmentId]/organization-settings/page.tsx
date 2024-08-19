@@ -15,7 +15,9 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment'))
     return redirect('/');
 
-  const organization = getEnvironmentById(activeEnvironment.spaceId) as OrganizationEnvironment;
+  const organization = (await getEnvironmentById(
+    activeEnvironment.spaceId,
+  )) as OrganizationEnvironment;
 
   return (
     <Content title="Organization Settings">

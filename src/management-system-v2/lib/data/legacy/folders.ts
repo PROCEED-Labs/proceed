@@ -158,15 +158,6 @@ export function getFolders(spaceId?: string) {
   return selection.map((folder) => folder!.folder);
 }
 
-export function getFolders(spaceId?: string) {
-  const folders = Object.values(foldersMetaObject.folders);
-  const selection = spaceId
-    ? folders.filter((folder) => folder?.folder.environmentId === spaceId)
-    : folders;
-
-  return selection.map((folder) => folder!.folder);
-}
-
 export async function getFolderChildren(folderId: string, ability?: Ability) {
   if (enableUseDB) {
     const folder = await db.folder.findUnique({

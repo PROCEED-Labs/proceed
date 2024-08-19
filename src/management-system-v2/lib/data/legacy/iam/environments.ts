@@ -17,6 +17,7 @@ import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data';
+import { env } from '@/lib/env-vars.js';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -174,12 +175,16 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   }
 }
 
-export function updateOrganization(
+export async function updateOrganization(
   environmentId: string,
   environmentInput: Partial<UserOrganizationEnvironmentInput>,
   ability?: Ability,
 ) {
-  const environment = getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
+  const environment = await getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
+
+  if (!environment) {
+    throw new Error('Environment not found');
+  }
 
   if (
     ability &&
@@ -187,37 +192,17 @@ export function updateOrganization(
   )
     throw new UnauthorizedError();
 
-  if (!environment.organization) throw new Error('Environment is not an organization');
+  if (!environment.isOrganization) throw new Error('Environment is not an organization');
 
   const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
-  const newEnvironmentData: Environment = { ...environment, ...update };
+  const newEnvironmentData: Environment = { ...environment, ...update } as Environment;
 
-  environmentsMetaObject[environmentId] = newEnvironmentData;
-  store.update('environments', environmentId, newEnvironmentData);
-
-  return newEnvironmentData;
-}
-
-export function updateOrganization(
-  environmentId: string,
-  environmentInput: Partial<UserOrganizationEnvironmentInput>,
-  ability?: Ability,
-) {
-  const environment = getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
-
-  if (
-    ability &&
-    !ability.can('update', toCaslResource('Environment', environment), { environmentId })
-  )
-    throw new UnauthorizedError();
-
-  if (!environment.organization) throw new Error('Environment is not an organization');
-
-  const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
-  const newEnvironmentData: Environment = { ...environment, ...update };
-
-  environmentsMetaObject[environmentId] = newEnvironmentData;
-  store.update('environments', environmentId, newEnvironmentData);
+  if (enableUseDB) {
+    await db.space.update({ where: { id: environment.id }, data: { ...newEnvironmentData } });
+  } else {
+    environmentsMetaObject[environmentId] = newEnvironmentData;
+    store.update('environments', environmentId, newEnvironmentData);
+  }
 
   return newEnvironmentData;
 }

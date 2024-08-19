@@ -261,7 +261,7 @@ export function computeRulesForUser({
   space: Environment;
   roles: Role[];
 }) {
-  if (!space.organization) {
+  if (!space.isOrganization) {
     if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [

@@ -9,6 +9,7 @@ import {
   addUser,
   deleteUser,
   getUserById,
+  getUserByUsername,
   updateUser,
   usersMetaObject,
 } from '@/lib/data/legacy/iam/users';

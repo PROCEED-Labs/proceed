@@ -16,9 +16,8 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import schema from '@/lib/schema';
 import { copyProcessImage } from '@/lib/process-export/copy-process-image';
-import Modeling, { CommandStack, EventBus } from 'bpmn-js/lib/features/modeling/Modeling';
+import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
-import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 
 // Conditionally load the BPMN modeler only on the client, because it uses
 // "window" reference. It won't be included in the initial bundle, but will be
@@ -245,12 +244,21 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           onShapeRemove?.(event.element);
         });
 
+        // Undo fires commandStack.revert
         modeler.current!.on(
           'commandStack.revert',
           (event: { command: string; context: { element: Element; id: string } }) => {
             if (event.command === 'id.updateClaim') {
               onShapeRemoveUndo?.(event.context.element);
             }
+          },
+        );
+
+        // Redo recreates the deleted shape
+        modeler.current!.on(
+          'commandStack.shape.create.executed',
+          (event: { context: { shape: Shape } }) => {
+            onShapeRemoveUndo?.(event.context.shape.businessObject);
           },
         );
       }

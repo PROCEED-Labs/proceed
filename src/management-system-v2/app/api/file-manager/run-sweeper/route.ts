@@ -24,15 +24,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: `${deletableFiles.length} files at least 1 week old deleted successfully`,
+        message: `${deletableFiles.length} files deleted successfully`,
       },
       { status: 200 },
     );
   } catch (error) {
     console.error('Error deleting files:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete files at least 1 week old' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to delete files' }, { status: 500 });
   }
 }

@@ -38,7 +38,7 @@ function getLocalStorageBasePath(): string {
 }
 
 // Base directory for local file storage
-const LOCAL_STORAGE_BASE = path.join(getLocalStorageBasePath(), 'storage');
+const LOCAL_STORAGE_BASE = path.join(getLocalStorageBasePath(), 'process-artifacts');
 
 let bucket: any;
 let storage: any;
@@ -75,14 +75,14 @@ async function removeFilePathFromDB(filePath: string, processId: string) {
 }
 
 export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  //const oneWeekAgo = new Date();
+  //oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   return await db.processArtifacts.update({
     where: { fileName: fileName },
     data: {
       deletable: status,
-      updatedOn: oneWeekAgo,
+      //updatedOn: oneWeekAgo,
     },
   });
 }
@@ -148,7 +148,7 @@ export async function retrieveFile(
       const [url] = await file.getSignedUrl({
         version: 'v4',
         action: 'read',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        expires: Date.now() + 60 * 60 * 1000, // 60 minutes
       });
       return url;
     } else {

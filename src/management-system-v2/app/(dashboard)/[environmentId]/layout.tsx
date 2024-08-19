@@ -204,7 +204,7 @@ const DashboardLayout = async ({
   }
 
   let logo;
-  if (activeEnvironment.isOrganization && organizationHasLogo(activeEnvironment.spaceId))
+  if (activeEnvironment.isOrganization && (await organizationHasLogo(activeEnvironment.spaceId)))
     logo = `/api/private/${activeEnvironment.spaceId}/logo`;
 
   return (

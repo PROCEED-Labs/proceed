@@ -18,7 +18,7 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   const organization = (await getEnvironmentById(
     activeEnvironment.spaceId,
   )) as OrganizationEnvironment;
-  const hasLogo = organizationHasLogo(activeEnvironment.spaceId);
+  const hasLogo = await organizationHasLogo(activeEnvironment.spaceId);
 
   return (
     <Content title="Organization Settings">

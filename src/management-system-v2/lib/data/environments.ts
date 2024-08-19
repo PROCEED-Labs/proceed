@@ -6,7 +6,12 @@ import {
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
 import { UserErrorType, userError } from '../user-error';
-import { addEnvironment, deleteEnvironment, getEnvironmentById } from './legacy/iam/environments';
+import {
+  addEnvironment,
+  deleteEnvironment,
+  getEnvironmentById,
+  updateOrganization as _updateOrganization,
+} from './legacy/iam/environments';
 import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function addOrganizationEnvironment(
@@ -50,5 +55,21 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
 
     console.error(e);
     return userError('Error deleting environment');
+  }
+}
+
+export async function updateOrganization(
+  environmentId: string,
+  data: Partial<UserOrganizationEnvironmentInput>,
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return _updateOrganization(environmentId, data, ability);
+  } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError("You're not allowed to update this organization");
+
+    return userError('Error updating organization');
   }
 }

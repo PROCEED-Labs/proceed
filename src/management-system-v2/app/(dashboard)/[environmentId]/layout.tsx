@@ -6,18 +6,18 @@ import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/membershi
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
-  ProfileOutlined,
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
   ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
 import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { Environment } from '@/lib/data/environment-schema';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
 import { MdOutlineComputer } from 'react-icons/md';
+import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
 import { adminRules } from '@/lib/ability/abilityHelper';
@@ -126,7 +126,7 @@ const DashboardLayout = async ({
   if (env.ENABLE_MACHINE_CONFIG) {
     layoutMenuItems.push({
       key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
       icon: <LuTable2 />,
     });
 
@@ -170,22 +170,40 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Setting')) {
+  if (can('view', 'Setting') || can('manage', 'Environment')) {
+    const children: MenuProps['items'] = [];
+
+    if (can('update', 'Environment') || can('delete', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
+            Organization Settings
+          </Link>
+        ),
+        icon: <GoOrganization />,
+      });
+
+    if (can('view', 'Setting'))
+      children.push({
+        key: 'general-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',
       type: 'group',
-      children: [
-        {
-          key: 'general-settings',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
+      children,
     });
   }
+
+  let logo;
+  if (activeEnvironment.isOrganization && organizationHasLogo(activeEnvironment.spaceId))
+    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
 
   return (
     <>
@@ -199,6 +217,7 @@ const DashboardLayout = async ({
         userEnvironments={userEnvironments}
         layoutMenuItems={layoutMenuItems}
         activeSpace={activeEnvironment}
+        customLogo={logo}
       >
         {children}
       </Layout>

@@ -1,31 +1,39 @@
-//TODO
-
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, App, Collapse, CollapseProps, Typography } from 'antd';
+import { Modal, Form, Input, App, Collapse, CollapseProps, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
-import { useAddControlCallback } from '@/lib/controls-store';
+import { Localization, languageItemsSelect } from '@/lib/data/locale';
 
-type MachineConfigModalProps<T extends { name: string; description: string }> = {
+export type CreateParameterModalReturnType = {
+  key?: string;
+  displayName: string;
+  language: Localization;
+  unit: string;
+  value: string;
+};
+
+type CreateParameterModalProps<T extends CreateParameterModalReturnType> = {
   open: boolean;
   title: string;
   okText?: string;
   onCancel: () => void;
   onSubmit: (values: T[]) => Promise<{ error?: UserError } | void>;
   initialData?: T[];
+  showKey?: boolean;
 };
 
-const MachineConfigModal = <T extends { name: string; description: string }>({
+const CreateParameterModal = <T extends CreateParameterModalReturnType>({
   open,
   title,
   okText,
   onCancel,
   onSubmit,
   initialData,
-}: MachineConfigModalProps<T>) => {
-  const [form] = Form.useForm();
+  showKey,
+}: CreateParameterModalProps<T>) => {
   const formRef = useRef(null);
+  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const { message } = App.useApp();
 
@@ -40,8 +48,8 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   const items: CollapseProps['items'] =
     (initialData?.length ?? 0) > 1
       ? initialData?.map((data, index) => ({
-          label: data.name,
-          children: <MachineConfigInputs index={index} />,
+          label: data.displayName,
+          children: <ParameterInputs index={index} showKey={showKey} />,
         }))
       : undefined;
 
@@ -87,8 +95,6 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
       onCancel={() => {
         onCancel();
       }}
-      // IMPORTANT: This prevents a modal being stored for every row in the
-      // table.
       destroyOnClose
       okButtonProps={{ loading: submitting }}
       okText={okText}
@@ -96,10 +102,10 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
       onOk={onOk}
     >
       <Form
-        form={form}
         ref={formRef}
+        form={form}
         layout="vertical"
-        name="machine_config_form"
+        name="create_parameter_form"
         initialValues={initialData}
         autoComplete="off"
         // This resets the fields when the modal is opened again. (apparently
@@ -107,7 +113,7 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
         preserve={false}
       >
         {!initialData || initialData.length === 1 ? (
-          <MachineConfigInputs index={0} />
+          <ParameterInputs index={0} showKey={showKey} />
         ) : (
           <Collapse style={{ maxHeight: '60vh', overflowY: 'scroll' }} accordion items={items} />
         )}
@@ -116,29 +122,61 @@ const MachineConfigModal = <T extends { name: string; description: string }>({
   );
 };
 
-type MachineConfigInputsProps = {
+type CreateParameterInputsProps = {
   index: number;
+  showKey?: boolean;
 };
 
-const MachineConfigInputs = ({ index }: MachineConfigInputsProps) => {
+const ParameterInputs = ({ index, showKey }: CreateParameterInputsProps) => {
   return (
     <>
+      {showKey && (
+        <Form.Item
+          name={[index, 'key']}
+          label="Key"
+          rules={[{ required: true, message: 'Please fill out the Key' }]}
+        >
+          <Input />
+        </Form.Item>
+      )}
       <Form.Item
-        name={[index, 'name']}
-        label="Configuration Name"
-        rules={[{ required: true, message: 'Please fill out the Configuration Name' }]}
+        name={[index, 'displayName']}
+        label="Display Name"
+        rules={[{ required: true, message: 'Please fill out the Display Name' }]}
       >
         <Input />
       </Form.Item>
       <Form.Item
-        name={[index, 'description']}
-        label="Configuration Description"
-        rules={[{ required: false, message: 'Please fill out the Configuration Description' }]}
+        name={[index, 'value']}
+        label="Value"
+        rules={[{ required: false, message: 'Please fill out the Value' }]}
       >
-        <Input.TextArea showCount rows={4} maxLength={150} />
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'unit']}
+        label="Unit"
+        rules={[{ required: false, message: 'Please fill out the Unit' }]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={[index, 'language']}
+        label="Language"
+        rules={[{ required: false, message: 'Please fill out the Language' }]}
+      >
+        <Select
+          showSearch
+          placeholder="Search to Select"
+          optionFilterProp="label"
+          filterSort={(optionA, optionB) =>
+            (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+          }
+          options={languageItemsSelect}
+        />
       </Form.Item>
     </>
   );
 };
 
-export default MachineConfigModal;
+export default CreateParameterModal;

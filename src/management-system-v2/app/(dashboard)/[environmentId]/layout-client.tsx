@@ -1,25 +1,14 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
-import {
-  Layout as AntLayout,
-  Button,
-  Drawer,
-  Grid,
-  Menu,
-  MenuProps,
-  Modal,
-  Select,
-  Tooltip,
-} from 'antd';
+import { FC, PropsWithChildren, createContext, useState } from 'react';
+import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { create } from 'zustand';
-import { useRouter } from 'next/navigation';
 import { Environment } from '@/lib/data/environment-schema';
 import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
@@ -46,6 +35,7 @@ const Layout: FC<
     layoutMenuItems: NonNullable<MenuProps['items']>;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;
+    customLogo?: string;
   }>
 > = ({
   loggedIn,
@@ -54,6 +44,7 @@ const Layout: FC<
   activeSpace,
   children,
   hideSider,
+  customLogo,
 }) => {
   const session = useSession();
   const userData = session?.data?.user;
@@ -69,6 +60,9 @@ const Layout: FC<
   const layoutMenuItems = _layoutMenuItems.filter(
     (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
   );
+
+  let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
+  if (customLogo) imageSource = customLogo;
 
   const menu = (
     <Menu
@@ -129,21 +123,18 @@ const Layout: FC<
                 breakpoint="xl"
                 trigger={null}
               >
-                <div className={styles.LogoContainer}>
-                  <Link href={spaceURL(activeSpace, `/processes`)}>
-                    <Image
-                      src={breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg'}
-                      alt="PROCEED Logo"
-                      className={cn(breakpoint.xs ? styles.Icon : styles.Logo, {
-                        [styles.collapsed]: collapsed,
-                      })}
-                      width={breakpoint.xs ? 85 : 160}
-                      height={breakpoint.xs ? 35 : 63}
-                      style={{ paddingTop: '1.5rem' }}
-                      priority
-                    />
-                  </Link>
-                </div>
+                <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/processes`)}>
+                  <Image
+                    src={imageSource}
+                    alt="PROCEED Logo"
+                    className={cn(styles.Logo, {
+                      [styles.collapsed]: collapsed,
+                    })}
+                    width={160}
+                    height={63}
+                    priority
+                  />
+                </Link>
 
                 {loggedIn ? menu : null}
               </AntLayout.Sider>

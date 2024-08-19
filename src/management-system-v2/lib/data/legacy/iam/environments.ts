@@ -14,6 +14,7 @@ import {
 } from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
 import { createFolder } from '../folders';
+import { deleteLogo, getLogo, hasLogo, saveLogo } from '../fileHandling.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data';
@@ -173,6 +174,60 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
     delete environmentsMetaObject[environmentId];
     store.remove('environments', environmentId);
   }
+}
+
+export async function saveOrganizationLogo(
+  organizationId: string,
+  image: Buffer,
+  ability?: Ability,
+) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization)
+    throw new Error("You can't save a logo for a personal environment");
+
+  if (ability && ability.can('update', 'Environment', { environmentId: organizationId }))
+    throw new UnauthorizedError();
+
+  try {
+    saveLogo(organizationId, image);
+  } catch (err) {
+    throw new Error('Failed to store image');
+  }
+}
+
+export async function getOrganizationLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  try {
+    return getLogo(organizationId);
+  } catch (err) {
+    return undefined;
+  }
+}
+
+export async function organizationHasLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  return hasLogo(organizationId);
+}
+
+export async function deleteOrganizationLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
+
+  deleteLogo(organizationId);
 }
 
 export async function updateOrganization(

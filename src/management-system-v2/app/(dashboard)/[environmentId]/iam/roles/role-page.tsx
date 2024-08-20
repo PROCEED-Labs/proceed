@@ -29,6 +29,7 @@ import cn from 'classnames';
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 import { spaceURL } from '@/lib/utils';
+import SelectionActions from '@/components/selection-actions';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
@@ -149,26 +150,25 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : <HeaderActions />}
 
-                  {selectedRowKeys.length > 0 ? (
-                    <Space size={20}>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={() => setSelectedRowKeys([])}
-                      />
-                      <span>{selectedRowKeys.length} selected:</span>
-                      <ConfirmationButton
-                        title="Delete Roles"
-                        description="Are you sure you want to delete the selected roles?"
-                        onConfirm={() => deleteRoles(selectedRowKeys)}
-                        buttonProps={{
-                          icon: <DeleteOutlined />,
-                          disabled: cannotDeleteSelected,
-                          type: 'text',
-                        }}
-                      />
-                    </Space>
-                  ) : undefined}
+                  <SelectionActions count={selectedRowKeys.length}>
+                    <Button
+                      type="text"
+                      icon={<CloseOutlined />}
+                      onClick={() => setSelectedRowKeys([])}
+                    />
+                    <ConfirmationButton
+                      title="Delete Roles"
+                      description="Are you sure you want to delete the selected roles?"
+                      onConfirm={() => deleteRoles(selectedRowKeys)}
+                      buttonProps={{
+                        icon: <DeleteOutlined />,
+                        disabled: cannotDeleteSelected,
+                        type: 'text',
+                      }}
+                    />
+                  </SelectionActions>
+
+                  {selectedRowKeys.length > 0 ? <Space size={20}></Space> : undefined}
                 </span>
 
                 {

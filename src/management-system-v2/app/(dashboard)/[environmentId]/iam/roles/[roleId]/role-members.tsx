@@ -25,7 +25,6 @@ const AddUserModal: FC<{
 
   const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     startTransition(async () => {
-      if (clearIds) clearIds();
       await addRoleMappings(
         environment.spaceId,
         users.map((user) => ({
@@ -33,6 +32,7 @@ const AddUserModal: FC<{
           roleId: role.id,
         })),
       );
+      if (clearIds) clearIds();
       router.refresh();
     });
   };

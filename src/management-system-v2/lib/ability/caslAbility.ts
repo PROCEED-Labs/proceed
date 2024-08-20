@@ -258,7 +258,6 @@ export function buildAbility(rules: AbilityRule[], tree?: TreeMap) {
   const ability = builder.build({
     resolveAction,
     anyAction: 'admin',
-    anySubjectType: 'All',
     conditionsMatcher: conditionsMatcherFactory(tree),
     fieldMatcher: fieldPatternMatcher,
   });

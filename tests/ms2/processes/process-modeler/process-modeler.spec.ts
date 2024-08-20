@@ -345,10 +345,12 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.waitForURL(`${clipboardData}`);
 
   // Add the shared process to the workspace
-  await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
-  await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
+  await openModal(newPage, async () => {
+    await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+    await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
+  });
 
-  await newPage.getByRole('button', { name: 'Continue as a Guest' }).click();
+  await newPage.getByRole('button', { name: 'Create a Process' }).click();
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();

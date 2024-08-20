@@ -35,7 +35,7 @@ export async function updateProcessGuestAccessRights(
 }
 
 async function generateProcessShareToken(payload: TokenPayload) {
-  const secretKey = env.JWT_SHARE_SECRET;
+  const secretKey = env.SHARING_ENCRYPTION_SECRET;
   const token = jwt.sign(payload, secretKey!);
   return token;
 }

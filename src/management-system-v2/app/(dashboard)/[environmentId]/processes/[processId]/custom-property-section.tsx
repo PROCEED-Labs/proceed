@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Button, Divider, Form, Input, Space } from 'antd';
 
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 type CustomPropertyFormProperties = {
   isCreationForm: boolean;
@@ -19,26 +19,37 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
   initialValues,
 }) => {
   const [form] = Form.useForm<{ name: string; value: any }>();
-  const [submittable, setSubmittable] = useState(false);
-  const [isNameEditing, setIsNameEditing] = useState(false);
-  const [isValueEditing, setIsValueEditing] = useState(false);
 
+  const [submittable, setSubmittable] = useState(false);
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout>>();
   const values = Form.useWatch([], form);
+
+  const changeValues = () => {
+    if (initialValues.name !== values.name) {
+      // replace custom property with a new name
+      onChange(values.name, values.value, initialValues.name);
+    } else {
+      onChange(values.name, values.value);
+    }
+  };
 
   React.useEffect(() => {
     form.validateFields({ validateOnly: true }).then(
       () => {
         setSubmittable(true);
+        clearTimeout(timeoutId);
+        // Update values with debounce
+        if (values.value !== initialValues.value || values.name !== initialValues.name) {
+          const id = setTimeout(() => changeValues(), 2000);
+          setTimeoutId(id);
+        }
       },
       () => {
         setSubmittable(false);
+        clearTimeout(timeoutId);
       },
     );
   }, [form, values]);
-
-  useEffect(() => {
-    form.setFieldsValue(initialValues);
-  }, [form, initialValues]);
 
   const validateName = async (name: any) => {
     // entered name already exists in other custom property
@@ -73,26 +84,12 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
             name="Name"
             addonBefore="Name"
             placeholder="Custom Name"
-            readOnly={!isCreationForm && !isNameEditing}
-            suffix={
-              !isCreationForm && !isNameEditing ? (
-                <EditOutlined
-                  onClick={() => {
-                    setIsNameEditing(true);
-                  }}
-                ></EditOutlined>
-              ) : null
-            }
             onBlur={() => {
-              if (!isCreationForm && submittable) {
-                if (initialValues.name && initialValues.name !== values.name) {
-                  // replace custom property with a new name
-                  onChange(values.name, values.value, initialValues.name);
-                } else {
-                  onChange(values.name, values.value);
-                }
+              // Skip debounce and change value immediately
+              if (submittable) {
+                clearTimeout(timeoutId);
+                changeValues();
               }
-              setIsNameEditing(false);
             }}
           />
         </Form.Item>
@@ -101,36 +98,19 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
           <Input
             addonBefore="Value"
             placeholder="Custom Value"
-            readOnly={!isCreationForm && !isValueEditing}
-            suffix={
-              !isCreationForm && !isValueEditing ? (
-                <EditOutlined
-                  onClick={() => {
-                    setIsValueEditing(true);
-                  }}
-                ></EditOutlined>
-              ) : null
-            }
             onBlur={() => {
-              if (!isCreationForm && submittable) {
-                onChange(values.name, values.value);
+              // Skip debounce and change value immediately
+              if (submittable) {
+                clearTimeout(timeoutId);
+                changeValues();
               }
-              setIsValueEditing(false);
             }}
           />
         </Form.Item>
       </Space>
       <Form.Item style={{ marginRight: 0, marginLeft: '1rem' }}>
-        <Button
-          disabled={isCreationForm && !submittable}
-          type="text"
-          style={{ padding: 0, fontSize: '0.75rem' }}
-        >
-          {isCreationForm ? (
-            <PlusOutlined onClick={() => onChange(values.name, values.value)}></PlusOutlined>
-          ) : (
-            <DeleteOutlined onClick={() => onChange(values.name)}></DeleteOutlined>
-          )}
+        <Button type="text" style={{ padding: 0, fontSize: '0.75rem' }}>
+          <DeleteOutlined onClick={() => onChange(values.name)}></DeleteOutlined>
         </Button>
       </Form.Item>
     </Form>
@@ -175,10 +155,18 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
     ...customMetaData
   } = metaData;
 
-  const customProperties = [
-    ...Object.entries(customMetaData).map(([key, value]: [string, any]) => ({ name: key, value })),
-    { name: '', value: '' },
-  ];
+  const [customProperties, setCustomProperties] = useState<{ name: string; value: string }[]>([]);
+
+  useEffect(() => {
+    const customMetaDataEntries = Object.entries(customMetaData);
+
+    const newCustomProperties =
+      customMetaDataEntries.length > 0
+        ? customMetaDataEntries.map(([key, value]: [string, any]) => ({ name: key, value }))
+        : [{ name: '', value: '' }];
+
+    setCustomProperties(newCustomProperties);
+  }, [metaData]);
 
   const updateProperty = (
     newCustomPropertyName: string,
@@ -192,6 +180,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
     onChange(customPropertyName, null);
   };
 
+  let timeoutId: string | number | NodeJS.Timeout | undefined = undefined;
   return (
     <Space
       direction="vertical"
@@ -204,21 +193,37 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
           Custom Properties
         </span>
       </Divider>
-      {customProperties.map((element: { name: string; value: any }, index) => (
-        <CustomPropertyForm
-          key={element.name || 'newCustomProperty'}
-          isCreationForm={index === customProperties.length - 1}
-          customMetaData={customMetaData}
-          initialValues={{ name: element.name, value: element.value }}
-          onChange={(name, value, oldName) => {
-            if (!value) {
-              deleteProperty(name);
-            } else {
-              updateProperty(name, value, oldName);
-            }
+      <div>
+        {customProperties.map((element: { name: string; value: any }, index) => (
+          <CustomPropertyForm
+            key={element.name || 'newCustomProperty'}
+            isCreationForm={index === customProperties.length - 1}
+            customMetaData={customMetaData}
+            initialValues={{ name: element.name, value: element.value }}
+            onChange={(name, value, oldName) => {
+              if (!value) {
+                deleteProperty(name);
+              } else {
+                updateProperty(name, value, oldName);
+              }
+            }}
+          ></CustomPropertyForm>
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <Button
+          type="text"
+          size="small"
+          style={{ padding: 0, fontSize: '0.75rem' }}
+          disabled={customProperties.length > Object.keys(customMetaData).length}
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setCustomProperties([...customProperties, { name: '', value: '' }]);
           }}
-        ></CustomPropertyForm>
-      ))}
+        >
+          Add Property
+        </Button>
+      </div>
     </Space>
   );
 };

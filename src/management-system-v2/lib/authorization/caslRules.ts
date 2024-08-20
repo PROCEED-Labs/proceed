@@ -4,20 +4,19 @@ import {
   AbilityRule,
   CaslAbility,
   FolderScopedResources,
-  ResourceActionType,
   ResourceType,
   buildAbility,
   resourceAction,
   resources,
 } from '@/lib/ability/caslAbility';
-import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { adminPermissions, permissionNumberToIdentifiers } from './permissionHelpers';
-import { getEnvironmentById } from '../data/legacy/iam/environments';
 import {
   AllowedResourcesForAdmins,
   globalOrganizationRules,
   globalPersonalSpaceRules,
 } from './globalRules';
+import { Environment } from '../data/environment-schema';
+import { Role } from '../data/role-schema';
 import { env } from '../env-vars';
 
 const sharedResources = new Set<ResourceType>(['Process', 'Project', 'Template']);
@@ -255,16 +254,22 @@ const disallowOutsideOfEnvRule = (environmentId: string) =>
     },
   }) as AbilityRule;
 
-type ReturnOfPromise<Fn> = Fn extends (...args: any) => Promise<infer Return> ? Return : never;
-export type PackedRulesForUser = ReturnOfPromise<typeof computeRulesForUser>;
+export type PackedRulesForUser = ReturnType<typeof computeRulesForUser>;
 
 /** If possible don't use this function directly, use rulesForUser which caches the rules */
-export async function computeRulesForUser(userId: string, environmentId: string) {
-  if (!userId || !environmentId) return { rules: [] };
-
-  const environment = getEnvironmentById(environmentId, undefined, { throwOnNotFound: true });
-  if (!environment.organization) {
-    if (userId !== environmentId) throw new Error("Personal environment doesn't belong to user");
+export function computeRulesForUser({
+  userId,
+  space,
+  roles,
+  purchasedResources,
+}: {
+  userId: string;
+  space: Environment;
+  roles?: Role[];
+  purchasedResources?: ResourceType[];
+}) {
+  if (!space.organization) {
+    if (userId !== space.id) throw new Error("Personal environment doesn't belong to user");
 
     const personalEnvironmentRules = [
       {
@@ -273,28 +278,22 @@ export async function computeRulesForUser(userId: string, environmentId: string)
         subject: AllowedResourcesForAdmins,
         action: 'admin',
       },
-      disallowOutsideOfEnvRule(userId),
+      disallowOutsideOfEnvRule(space.id),
     ] as AbilityRule[];
 
     return { rules: packRules(personalEnvironmentRules.concat(globalPersonalSpaceRules)) };
   }
 
-  // TODO: get bough features from db
-  const getPurhasedFeatures = (_: string) => [];
-
-  const BoughtResources = getPurhasedFeatures(environmentId).filter((resource) =>
-    env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource as any),
+  const AllowedResourcesForOrganization = AllowedResourcesForAdmins.concat(
+    purchasedResources ?? [],
   );
 
-  const AllowedResourcesForOrganization = AllowedResourcesForAdmins.concat(BoughtResources as any);
-
-  const roles = getAppliedRolesForUser(userId, environmentId); // throws error if user isn't a member
   let firstExpiration: null | Date = null;
 
   const translatedRules: AbilityRule[] = [];
 
   // basic role mappings
-  for (const role of roles) {
+  for (const role of roles ?? []) {
     if (!role.permissions) {
       continue;
     }
@@ -305,8 +304,15 @@ export async function computeRulesForUser(userId: string, environmentId: string)
     )
       firstExpiration = new Date(role.expiration);
 
+    let viewActionOnFolderScopedResource = false;
     for (const [resource, actionsNumber] of Object.entries(role.permissions)) {
       const actions = permissionNumberToIdentifiers(actionsNumber);
+
+      if (!viewActionOnFolderScopedResource && FolderScopedResources.includes(resource as any)) {
+        const actionSet = new Set(actions);
+        if (['view', 'manage', 'admin'].some((action) => actionSet.has(action as any)))
+          viewActionOnFolderScopedResource = true;
+      }
 
       translatedRules.push({
         subject:
@@ -322,6 +328,18 @@ export async function computeRulesForUser(userId: string, environmentId: string)
         },
       });
     }
+
+    if (viewActionOnFolderScopedResource) {
+      translatedRules.push({
+        subject: 'Folder',
+        action: 'view',
+        conditions: {
+          conditions: {
+            $: { $property_has_to_be_parent_of: role.parentId },
+          },
+        },
+      });
+    }
   }
 
   const ability = buildAbility(translatedRules);
@@ -331,7 +349,7 @@ export async function computeRulesForUser(userId: string, environmentId: string)
   translatedRules.push(...rulesForRoles(ability, userId));
 
   // Disallow every action on other environments
-  translatedRules.push(disallowOutsideOfEnvRule(environmentId));
+  translatedRules.push(disallowOutsideOfEnvRule(space.id));
 
   // casl uses the ordering of the rules to decide
   // this way inverted rules always decide over normal rules

@@ -5,32 +5,16 @@ import { App, Button, Form, Grid, Input, InputRef, Steps, StepsProps, Typography
 import Image from 'next/image';
 import { SigninOptions } from '@/components/signin-options';
 import { ExtractedProvider } from '../api/auth/[...nextauth]/auth-options';
-import { Select } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { UserOrganizationEnvironmentInputSchema } from '@/lib/data/environment-schema';
-import { CountryCode, getCountries, getCountryCallingCode } from 'libphonenumber-js';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { addOrganizationEnvironment } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { type createInactiveEnvironment } from './page';
+import PhoneInput from '@/components/phone-input';
 import Link from 'next/link';
-
-const getCountryOption = (country: CountryCode) => {
-  const imageUrl = ['SJ', 'AC', 'BQ', 'GF', 'IO', 'GP', 'XK'].includes(country)
-    ? '_unknown'
-    : country;
-
-  return {
-    label: (
-      <span>
-        <Image src={`/flags-32/${imageUrl}.png`} alt={`${country} flag`} width={20} height={20} />{' '}
-        {`${country} +${getCountryCallingCode(country)}`}
-      </span>
-    ),
-    value: country,
-  };
-};
+import { ArrowLeftOutlined } from '@ant-design/icons';
 
 type CreateOrganizationPageProps = {
   needsToAuthenticate: boolean;
@@ -50,14 +34,9 @@ const CreateOrganizationPage = ({
 
   const [form] = Form.useForm();
   const [formErrors, parseInput] = useParseZodErrors(UserOrganizationEnvironmentInputSchema);
-  const phoneNumberRef = useRef<InputRef>(null);
-  const [country, setCountry] = useState<CountryCode>('DE');
   const [isDataValid, setIsDataValid] = useState(false);
   function checkEnvironmentData(dataInput?: any) {
     dataInput = dataInput || form.getFieldsValue();
-    const countryCode = getCountryCallingCode(country);
-    if ('contactPhoneNumber' in dataInput)
-      dataInput.contactPhoneNumber = '+' + countryCode + dataInput.contactPhoneNumber;
 
     const data = parseInput(dataInput);
     setIsDataValid(!!data);
@@ -114,6 +93,11 @@ const CreateOrganizationPage = ({
       }}
     >
       <Content
+        headerLeft={
+          <Button type="primary" icon={<ArrowLeftOutlined />} onClick={router.back}>
+            Back
+          </Button>
+        }
         headerCenter={
           breakpoint.xs ? undefined : (
             <Link
@@ -121,7 +105,6 @@ const CreateOrganizationPage = ({
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                paddingBottom: '15px',
               }}
               href={'/'}
             >
@@ -185,24 +168,7 @@ const CreateOrganizationPage = ({
                 name="contactPhoneNumber"
                 {...antDesignInputProps(formErrors, 'contactPhoneNumber')}
               >
-                <Input
-                  addonBefore={
-                    <Select
-                      showSearch
-                      filterOption={(input, option) =>
-                        !!option?.value.toLowerCase().includes(input.toLowerCase())
-                      }
-                      options={getCountries().map(getCountryOption)}
-                      style={{ minWidth: '8rem' }}
-                      value={country}
-                      onChange={(value) => {
-                        setCountry(value);
-                        phoneNumberRef.current?.focus();
-                      }}
-                    />
-                  }
-                  ref={phoneNumberRef}
-                />
+                <PhoneInput />
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit">

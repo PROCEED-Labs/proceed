@@ -1,6 +1,12 @@
 import { PackedRulesForUser, computeRulesForUser } from './caslRules';
 import Ability from '../ability/abilityHelper';
 import { LRUCache } from 'lru-cache';
+import { TreeMap } from '../ability/caslAbility';
+import { getFolders } from '../data/legacy/folders';
+import { getEnvironmentById } from '../data/legacy/iam/environments';
+import { getRoleMappingByUserId } from '../data/legacy/iam/role-mappings';
+import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
+import { env } from '../env-vars';
 
 type PackedRules = PackedRulesForUser['rules'];
 
@@ -43,10 +49,14 @@ export function cacheRulesForUser(
   }
 }
 
-function getCachedRulesForUser(userId: string, environmentId: string) {
-  const cacheId = `${userId}:${environmentId}` as const;
+export function getSpaceFolderTree(spaceId: string) {
+  const tree: TreeMap = {};
 
-  return rulesCache.get(cacheId);
+  for (const folder of getFolders(spaceId)) {
+    if (folder.parentId) tree[folder.id] = folder.parentId;
+  }
+
+  return tree;
 }
 
 /**
@@ -60,17 +70,38 @@ export async function getUserRules(userId: string, environmentId: string) {
   // cached rules aren't being correctly removed after roles are updated
   let userRules = undefined;
 
-  if (userRules === undefined) {
-    const { rules, expiration } = await computeRulesForUser(userId, environmentId);
+  if (userRules) return userRules;
+
+  const space = getEnvironmentById(environmentId);
+
+  if (!space.organization) {
+    const { rules, expiration } = computeRulesForUser({ userId, space });
     cacheRulesForUser(userId, environmentId, rules, expiration);
-    userRules = rules;
+    return rules;
   }
 
-  return userRules;
+  if (space.active) {
+    const roles = getAppliedRolesForUser(userId, environmentId);
+    // TODO: get bough features from db
+
+    const getPurhasedFeatures = (_: string) => [];
+
+    const purchasedResources = getPurhasedFeatures(environmentId).filter((resource) =>
+      env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource as any),
+    );
+
+    const { rules, expiration } = computeRulesForUser({ userId, space, roles, purchasedResources });
+    cacheRulesForUser(userId, environmentId, rules, expiration);
+    return rules;
+  }
+
+  // Non active organization
+  return [];
 }
 
 export async function getAbilityForUser(userId: string, environmentId: string) {
+  const spaceFolderTree = getSpaceFolderTree(environmentId);
   const userRules = await getUserRules(userId, environmentId);
-  const userAbility = new Ability(userRules, environmentId);
-  return userAbility;
+
+  return new Ability(userRules, environmentId, spaceFolderTree);
 }

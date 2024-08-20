@@ -53,19 +53,18 @@ const AddUserModal: FC<{
         /* ---- */
         users={usersNotInRole}
         loading={loading}
-        columns={(clearSelected, hoveredId, selectedRowKeys) => [
+        columns={(clearSelected, _, selectedRowKeys) => [
           {
             dataIndex: 'id',
             render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
-                  type="text"
+                  type="primary"
                   onClick={() => addUsers([user], clearSelected)}
-                  style={{
-                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
-                  }}
-                />
+                >
+                  Add to role
+                </Button>
               </Tooltip>
             ),
           },

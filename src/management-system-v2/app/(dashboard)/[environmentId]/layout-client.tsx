@@ -90,7 +90,6 @@ const Layout: FC<
             },
           ],
         },
-
         ...layoutMenuItems,
       ];
     }
@@ -105,6 +104,7 @@ const Layout: FC<
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
       items={layoutMenuItems}
+      onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
     />
   );
 

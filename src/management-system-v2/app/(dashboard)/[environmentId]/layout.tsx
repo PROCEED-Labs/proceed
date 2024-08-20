@@ -123,7 +123,7 @@ const DashboardLayout = async ({
     });
   }
 
-  if (env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
     layoutMenuItems.push({
       key: 'machine-config',
       label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,

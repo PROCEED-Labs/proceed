@@ -91,7 +91,6 @@ const RoleMembers: FC<{
   const environment = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
-    clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
@@ -102,6 +101,7 @@ const RoleMembers: FC<{
       })),
     );
 
+    clearIds();
     setLoading(false);
     router.refresh();
   }

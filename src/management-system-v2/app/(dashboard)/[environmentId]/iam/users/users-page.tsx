@@ -24,13 +24,12 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
     startTransition(async () => {
-      unsetIds();
-
       const result = await removeUsersFromEnvironment(environment.spaceId, ids);
 
       if (result && 'error' in result)
         messageApi.open({ type: 'error', content: 'Something went wrong' });
 
+      unsetIds();
       router.refresh();
     });
   }

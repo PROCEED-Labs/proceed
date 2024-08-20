@@ -24,7 +24,7 @@ import { useEnvironment } from './auth-can';
 import Link from 'next/link';
 import { spaceURL } from '@/lib/utils';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();
@@ -55,6 +55,7 @@ const HeaderActions: FC = () => {
       key: 'profile',
       title: 'Profile Settings',
       label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+      icon: <FaUserEdit />,
     },
   ];
 

@@ -26,7 +26,11 @@ export const UserSpacesContext = createContext<Environment[] | null>(null);
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
-export const SpaceContext = createContext({ spaceId: '', isOrganization: false });
+export const SpaceContext = createContext<{
+  spaceId: string;
+  isOrganization: boolean;
+  customLogo?: string;
+}>({ spaceId: '', isOrganization: false });
 
 const Layout: FC<
   PropsWithChildren<{
@@ -75,7 +79,7 @@ const Layout: FC<
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
-      <SpaceContext.Provider value={activeSpace}>
+      <SpaceContext.Provider value={{ ...activeSpace, customLogo }}>
         {userData && !userData.guest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}

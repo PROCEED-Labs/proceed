@@ -3,7 +3,7 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, Space, Grid } from 'antd';
+import { Button, Form, App, Input, Modal, Space, Grid, FloatButton } from 'antd';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
@@ -140,12 +140,13 @@ export const FloatButtonActions: FC = () => {
   return (
     <>
       <AddUsersModal modalOpen={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
+
       <AuthCan create User>
-        {/* TODO: fix icon for float button in button group */}
-        <PlusOutlined
+        <FloatButton
           type="primary"
+          style={{ marginBottom: '60px', zIndex: '101' }}
+          icon={<PlusOutlined />}
           onClick={() => setCreateUserModalOpen(true)}
-          style={{ marginRight: '10px' }}
         />
       </AuthCan>
     </>

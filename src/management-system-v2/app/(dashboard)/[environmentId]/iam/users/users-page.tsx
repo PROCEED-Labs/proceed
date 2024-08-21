@@ -1,8 +1,8 @@
 'use client';
 
 import { FC, useState, useTransition } from 'react';
-import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Tooltip, App, Grid, Button, FloatButton } from 'antd';
+import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Tooltip, App, Grid, Button } from 'antd';
 import HeaderActions, { FloatButtonActions } from './header-actions';
 import UserList, { ListUser } from '@/components/user-list';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -47,18 +47,7 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
       <div style={{ flex: '1' }}>
         {/* <!-- FloatButtonGroup needs a z-index of 101
             since BPMN Logo of the viewer has an z-index of 100 --> */}
-        {!breakpoint.md && (
-          <FloatButton.Group
-            trigger="click"
-            type="primary"
-            style={{ marginBottom: '60px', zIndex: '101' }}
-            icon={<PlusOutlined />}
-          >
-            <Tooltip trigger="hover" placement="left" title="Create an user">
-              <FloatButton icon={<FloatButtonActions />} />
-            </Tooltip>
-          </FloatButton.Group>
-        )}
+        {!breakpoint.md && <FloatButtonActions />}
 
         <UserList
           users={users}

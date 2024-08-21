@@ -47,7 +47,7 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
       <div style={{ flex: '1' }}>
         {/* <!-- FloatButtonGroup needs a z-index of 101
             since BPMN Logo of the viewer has an z-index of 100 --> */}
-        {breakpoint.xl ? undefined : (
+        {!breakpoint.md && (
           <FloatButton.Group
             trigger="click"
             type="primary"

@@ -11,7 +11,9 @@ const EmailListSchema = z.array(z.string().email());
 export async function inviteUsersToEnvironment(
   environmentId: string,
   invitedEmailsInput: string[],
+  roleIds?: string[],
 ) {
+  // TODO: add roles to users
   try {
     const invitedEmails = EmailListSchema.parse(invitedEmailsInput);
 

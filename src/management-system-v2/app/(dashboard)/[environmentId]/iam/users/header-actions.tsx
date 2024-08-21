@@ -3,20 +3,35 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, Grid, FloatButton, Tag } from 'antd';
+import {
+  Button,
+  Form,
+  App,
+  Input,
+  Modal,
+  Grid,
+  FloatButton,
+  Tag,
+  Divider,
+  Select,
+  Typography,
+} from 'antd';
+import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
 const AddUsersModal: FC<{
   modalOpen: boolean;
   close: () => void;
-}> = ({ modalOpen, close }) => {
+  roles?: { id: string; name: string }[];
+}> = ({ modalOpen, close, roles }) => {
   const { message: messageApi } = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
   const [form] = Form.useForm();
 
   const [users, setUsers] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
   useEffect(() => {
     form.resetFields();
@@ -32,7 +47,9 @@ const AddUsersModal: FC<{
   const submitData = () => {
     startTransition(async () => {
       try {
-        const result = inviteUsersToEnvironment(environment.spaceId, users);
+        const roleIds = selectedRoles.map((role) => role.value as string);
+
+        const result = inviteUsersToEnvironment(environment.spaceId, users, roleIds);
 
         if (result && 'error' in result) throw new Error();
 
@@ -104,6 +121,25 @@ const AddUsersModal: FC<{
           </Tag>
         ))}
       </div>
+      {roles && roles.length > 0 && users.length > 0 && (
+        <>
+          <Divider />
+
+          <Typography.Title style={{ marginBottom: 0 }}>Roles</Typography.Title>
+          <Typography.Text style={{ display: 'block', marginBottom: '0.5rem' }}>
+            You can select roles for the users you're inviting
+          </Typography.Text>
+
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: '100%' }}
+            placeholder="Select roles"
+            onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
+            options={roles.map((role) => ({ label: role.name, value: role.id }))}
+          />
+        </>
+      )}
     </Modal>
   );
 };

@@ -2,8 +2,8 @@
 
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import { Button, Form, App, Input, Modal, Space, Grid, FloatButton } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Form, App, Input, Modal, Grid, FloatButton, Tag } from 'antd';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState, useTransition } from 'react';
 
@@ -14,42 +14,31 @@ const AddUsersModal: FC<{
   const { message: messageApi } = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
-
   const [form] = Form.useForm();
-  const breakpoint = Grid.useBreakpoint();
 
-  const [submittable, setSubmittable] = useState(false);
-  const values = Form.useWatch([], form);
-
-  useEffect(() => {
-    form.validateFields({ validateOnly: true }).then(
-      () => {
-        setSubmittable(true);
-      },
-      () => {
-        setSubmittable(false);
-      },
-    );
-  }, [form, values]);
-
-  const [isLoading, startTransition] = useTransition();
+  const [users, setUsers] = useState<string[]>([]);
 
   useEffect(() => {
     form.resetFields();
   }, [form, modalOpen]);
 
-  const submitData = (values: any) => {
+  const closeModal = () => {
+    close();
+    setUsers([]);
+    form.resetFields();
+  };
+
+  const [isLoading, startTransition] = useTransition();
+  const submitData = () => {
     startTransition(async () => {
       try {
-        form.validateFields();
-
-        const result = inviteUsersToEnvironment(environment.spaceId, values.users);
+        const result = inviteUsersToEnvironment(environment.spaceId, users);
 
         if (result && 'error' in result) throw new Error();
 
         messageApi.success({ content: 'User Added' });
+        closeModal();
         router.refresh();
-        close();
       } catch (e) {
         messageApi.error({ content: 'An error ocurred' });
       }
@@ -57,57 +46,64 @@ const AddUsersModal: FC<{
   };
 
   return (
-    <Modal open={modalOpen} onCancel={close} footer={null} title="Add New User">
-      <Form form={form} layout="vertical" onFinish={submitData}>
-        <Form.List name="users">
-          {(fields, { add, remove }, { errors }) => (
-            <>
-              {fields.map((field, index) => (
-                <Space key={field.key} align="start" style={{ width: '100%' }}>
-                  <Form.Item
-                    {...field}
-                    rules={[
-                      { required: true, message: 'User Email is required' },
-                      { type: 'email' },
-                    ]}
-                    style={{ width: '100%' }}
-                  >
-                    <Input placeholder="User Email" />
-                  </Form.Item>
-                  <Button
-                    icon={<MinusCircleOutlined className="dynamic-delete-button" />}
-                    type="text"
-                    onClick={() => remove(field.name)}
-                  />
-                </Space>
-              ))}
+    <Modal
+      open={modalOpen}
+      onCancel={closeModal}
+      title="Invite New Users"
+      closeIcon={null}
+      okText="Invite Users"
+      onOk={submitData}
+      okButtonProps={{ loading: isLoading }}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={({ email }) => {
+          setUsers((prev) => {
+            if (prev.includes(email)) return prev;
+            return prev.concat(email);
+          });
+          form.resetFields();
 
-              <Form.Item>
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  style={{ width: '60%' }}
-                  icon={<PlusOutlined />}
-                >
-                  Add User
-                </Button>
-              </Form.Item>
-            </>
-          )}
-        </Form.List>
+          // This doesn't work without a timeout
+          setTimeout(() => form.getFieldInstance('email').input.focus(), 0);
+        }}
+        style={{
+          marginBottom: '0',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '.5rem' }}>
+          <Form.Item
+            name="email"
+            style={{ flexGrow: 1 }}
+            rules={[{ type: 'email' }, { required: true }]}
+          >
+            <Input />
+          </Form.Item>
 
-        <Form.Item>
-          {breakpoint.xl ? (
-            <Button type="primary" htmlType="submit" loading={isLoading} disabled={!submittable}>
-              Add User
-            </Button>
-          ) : (
-            <Button type="text" htmlType="submit" loading={isLoading} disabled={!submittable}>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
               <PlusOutlined />
             </Button>
-          )}
-        </Form.Item>
+          </Form.Item>
+        </div>
       </Form>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+        {users.map((user, idx) => (
+          <Tag
+            key={idx}
+            onClose={() => setUsers((prev) => prev.filter((_, userIdx) => userIdx !== idx))}
+            closeIcon
+            style={{
+              borderRadius: '20px',
+              padding: '.2rem .7rem',
+            }}
+          >
+            {user}
+          </Tag>
+        ))}
+      </div>
     </Modal>
   );
 };
@@ -135,7 +131,6 @@ const HeaderActions: FC = () => {
 
 export const FloatButtonActions: FC = () => {
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
-  const breakpoint = Grid.useBreakpoint();
 
   return (
     <>

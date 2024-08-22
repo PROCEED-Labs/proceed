@@ -13,9 +13,9 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
 
   const roles = getRoles(activeEnvironment.spaceId, ability);
 
-  for (const role of roles) {
+  for (let i = 0; i < roles.length; i++) {
     // @ts-ignore
-    role.members = role.members.map(({ userId }) => getUserById(userId));
+    roles[i] = { members: roles[i].members.map(({ userId }) => getUserById(userId)), ...roles[i] };
   }
 
   return (

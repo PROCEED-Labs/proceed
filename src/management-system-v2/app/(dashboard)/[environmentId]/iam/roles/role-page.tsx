@@ -35,11 +35,12 @@ function getMembersRepresentation(members: Role['members']) {
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
 import { spaceURL, userRepresentation } from '@/lib/utils';
-import { User } from '@/lib/data/user-schema';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
+type ModifiedRole = Role & { members: AuthenticatedUser[] };
+export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
 
-const RolesPage = ({ roles }: { roles: (Role & { members: User[] })[] }) => {
+const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
   const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();

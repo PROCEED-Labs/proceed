@@ -2,9 +2,9 @@ import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
 import { addMember, isMember } from '@/lib/data/legacy/iam/memberships';
+import { addRoleMappings } from '@/lib/data/legacy/iam/role-mappings';
 import { getRoleById } from '@/lib/data/legacy/iam/roles';
 import { getUserByEmail } from '@/lib/data/legacy/iam/users';
-import { addRoleMappings } from '@/lib/data/role-mappings';
 import { getInvitation as getInvitationFromToken } from '@/lib/invitation-tokens';
 import { Result, ResultProps } from 'antd';
 import { redirect } from 'next/navigation';
@@ -51,8 +51,8 @@ export default async function IvitationPage({ searchParams }: { searchParams: { 
       }
 
       addRoleMappings(
-        invite.spaceId,
         validRoles.map((roleId) => ({
+          environmentId: invite.spaceId,
           roleId,
           userId,
         })),

@@ -15,9 +15,9 @@ const Page = async ({ params }: { params: { environmentId: string } }) => {
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
   const memberships = getMemebers(activeEnvironment.spaceId, ability);
-  const users: ComponentProps<typeof UsersPage>['users'] = memberships.map((user) =>
-    getUserById(user.userId),
-  ) as AuthenticatedUser[];
+  const users: ComponentProps<typeof UsersPage>['users'] = memberships.map((user) => ({
+    ...getUserById(user.userId),
+  })) as AuthenticatedUser[];
 
   for (const user of users) {
     const mappings = getRoleMappingByUserId(user.id, activeEnvironment.spaceId);

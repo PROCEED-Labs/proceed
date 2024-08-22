@@ -70,7 +70,7 @@ const AddUsersModal: FC<{
       closeIcon={null}
       okText="Invite Users"
       onOk={submitData}
-      okButtonProps={{ loading: isLoading }}
+      okButtonProps={{ loading: isLoading, disabled: users.length === 0 }}
     >
       <Form
         form={form}

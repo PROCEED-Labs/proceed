@@ -1,7 +1,12 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { deleteRole, addRole as _addRole, updateRole as _updateRole } from './legacy/iam/roles';
+import {
+  deleteRole,
+  addRole as _addRole,
+  updateRole as _updateRole,
+  getRoles as _getRoles,
+} from './legacy/iam/roles';
 import { redirect } from 'next/navigation';
 import { UserErrorType, userError } from '../user-error';
 
@@ -52,5 +57,15 @@ export async function updateRole(
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
     else return userError('Error updating role');
+  }
+}
+
+export async function getRoles(environmentId: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return _getRoles(environmentId, ability);
+  } catch (_) {
+    return userError("Something wen't wrong");
   }
 }

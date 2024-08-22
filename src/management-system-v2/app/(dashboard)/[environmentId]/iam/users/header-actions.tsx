@@ -2,7 +2,9 @@
 
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
+import { getRoles } from '@/lib/data/roles';
 import { PlusOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 import {
   Button,
   Form,
@@ -23,8 +25,7 @@ import { FC, useEffect, useState, useTransition } from 'react';
 const AddUsersModal: FC<{
   modalOpen: boolean;
   close: () => void;
-  roles?: { id: string; name: string }[];
-}> = ({ modalOpen, close, roles }) => {
+}> = ({ modalOpen, close }) => {
   const { message: messageApi } = App.useApp();
   const router = useRouter();
   const environment = useEnvironment();
@@ -32,6 +33,15 @@ const AddUsersModal: FC<{
 
   const [users, setUsers] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
+
+  const { data: roles } = useQuery({
+    queryFn: async () => {
+      const roles = await getRoles(environment.spaceId);
+      if ('error' in roles) throw new Error();
+      return roles.filter((role) => !['@guest', '@everyone'].includes(role.name));
+    },
+    queryKey: ['roles', environment.spaceId],
+  });
 
   useEffect(() => {
     form.resetFields();

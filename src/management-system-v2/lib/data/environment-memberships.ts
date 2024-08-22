@@ -11,6 +11,9 @@ import renderOrganizationInviteEmail from '../organization-invite-email';
 import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import { generateInvitationToken } from '../invitation-tokens';
+import { getRoleById } from './legacy/iam/roles';
+import { toCaslResource } from '../ability/caslAbility';
+import { RoleMapping } from './legacy/iam/role-mappings';
 
 const EmailListSchema = z.array(z.string().email());
 
@@ -27,15 +30,23 @@ export async function inviteUsersToEnvironment(
 
     const organization = getEnvironmentById(environmentId) as OrganizationEnvironment;
 
-    // TODO  refine ability check
-    // TODO: check roles
-
     // ability check disallows from adding to personal environments
     if (!ability.can('create', 'User'))
       return userError(
         'You do not have permission to invite users to this environment',
         UserErrorType.PermissionError,
       );
+
+    const filteredRoles = roleIds?.filter((roleId) => {
+      return (
+        ability.can('manage', toCaslResource('Role', getRoleById(roleId))) &&
+        ability.can(
+          'create',
+          toCaslResource('RoleMapping', { userId: '', roleId } satisfies Partial<RoleMapping>),
+          { environmentId },
+        )
+      );
+    });
 
     for (const invitedEmail of invitedEmails) {
       const invitedUser = getUserByEmail(invitedEmail);
@@ -46,7 +57,7 @@ export async function inviteUsersToEnvironment(
       const invitationToken = generateInvitationToken(
         {
           spaceId: environmentId,
-          roleIds,
+          roleIds: filteredRoles,
           ...(invitedUser ? { userId: invitedUser.id } : { email: invitedEmail }),
         },
         expirationDate,

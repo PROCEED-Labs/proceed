@@ -63,7 +63,7 @@ const AddUsersModal: FC<{
 
         if (result && 'error' in result) throw new Error();
 
-        messageApi.success({ content: 'User Added' });
+        messageApi.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
         closeModal();
         router.refresh();
       } catch (e) {

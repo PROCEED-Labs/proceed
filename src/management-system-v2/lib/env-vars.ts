@@ -11,6 +11,7 @@ const environmentVariables = {
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
+    INVITATION_ENCRYPTION_SECRET: z.string(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
@@ -38,7 +39,11 @@ const environmentVariables = {
 
     SHARING_ENCRYPTION_SECRET: z.string(),
   },
-  development: {},
+  development: {
+    INVITATION_ENCRYPTION_SECRET: z
+      .string()
+      .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+  },
   test: {},
 } satisfies EnvironmentVariables;
 

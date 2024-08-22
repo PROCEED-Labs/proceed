@@ -26,13 +26,20 @@ import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
+function getMembersRepresentation(members: Role['members']) {
+  if (members.length === 0) return undefined;
+
+  return members.map((member) => userRepresentation(member)).join(', ');
+}
+
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
-import { spaceURL } from '@/lib/utils';
+import { spaceURL, userRepresentation } from '@/lib/utils';
+import { User } from '@/lib/data/user-schema';
 
 export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
 
-const RolesPage = ({ roles }: { roles: Role[] }) => {
+const RolesPage = ({ roles }: { roles: (Role & { members: User[] })[] }) => {
   const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
@@ -93,7 +100,9 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (members: FilteredRole['members']) => members.length,
+      render: (members: FilteredRole['members']) => (
+        <Tooltip title={getMembersRepresentation(members)}>{members.length}</Tooltip>
+      ),
       key: 'username',
     },
     {

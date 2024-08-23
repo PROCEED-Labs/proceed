@@ -14,8 +14,6 @@ const Page = async () => {
   if (user?.isGuest) return <UnauthorizedFallback />;
 
   const environmentIds = await getUserOrganizationEnvironments(userId);
-  console.log(environmentIds);
-
   const organizationEnvironments = (await Promise.all(
     environmentIds.map((environmentId: string) => getEnvironmentById(environmentId)),
   )) as OrganizationEnvironment[];

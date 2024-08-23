@@ -9,7 +9,7 @@ const ProfilePage = async () => {
 
   //TODO take guest into consideration
 
-  const userData = (await getUserById(userId)) as User;
+  const userData = await getUserById(userId);
 
   return (
     <Content>

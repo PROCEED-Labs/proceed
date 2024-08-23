@@ -8,7 +8,6 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  console.log('Active env: ', activeEnvironment.spaceId);
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
   const memberships = await getMemebers(activeEnvironment.spaceId, ability);

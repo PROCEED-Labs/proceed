@@ -49,13 +49,13 @@ export async function getEnvironmentById(
 
     if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 
-    return environment;
+    return environment as Environment;
   }
   const environment = environmentsMetaObject[id];
 
   if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 
-  return environment;
+  return environment as Environment;
 }
 
 /** Sets an environment to active, and adds the given user as an admin */

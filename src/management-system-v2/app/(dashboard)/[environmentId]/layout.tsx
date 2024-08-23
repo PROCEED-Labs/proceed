@@ -32,7 +32,7 @@ const DashboardLayout = async ({
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
-  const userEnvironments: any[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
     return await getEnvironmentById(environmentId);

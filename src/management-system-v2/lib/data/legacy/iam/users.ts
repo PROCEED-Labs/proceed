@@ -41,7 +41,7 @@ export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean
   }
   if (!user && opts && opts.throwIfNotFound) throw new Error('User not found');
 
-  return user;
+  return user as User;
 }
 
 export async function getUserByEmail(email: string, opts?: { throwIfNotFound?: boolean }) {

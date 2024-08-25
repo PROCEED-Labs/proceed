@@ -249,9 +249,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'lastEditedOn',
       key: 'Last Edited',
       render: (date: string) => generateDateString(date, true),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -259,9 +257,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
     {

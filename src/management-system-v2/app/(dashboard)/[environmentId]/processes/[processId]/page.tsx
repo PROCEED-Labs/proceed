@@ -21,7 +21,7 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const { userId } = await getCurrentUser();
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
-  const processes = await getProcesses(userId, ability);
+  const processes = await getProcesses(userId, ability, false);
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new Error('Forbidden.');

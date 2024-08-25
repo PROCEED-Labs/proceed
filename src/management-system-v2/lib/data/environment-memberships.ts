@@ -2,9 +2,24 @@
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
-import { getUserByEmail } from './legacy/iam/users';
-import { addMember, isMember, removeMember } from './legacy/iam/memberships';
 import { z } from 'zod';
+import { enableUseDB } from 'FeatureFlags';
+
+let getUserByEmail: any, addMember: any, removeMember: any;
+
+// Function to load modules based on feature flag
+const loadModules = async () => {
+  const [userModuleImport, membershipModuleImport] = await Promise.all([
+    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
+    enableUseDB ? import('./db/iam/memberships') : import('./legacy/iam/memberships'),
+  ]);
+
+  getUserByEmail = userModuleImport.getUserByEmail;
+  addMember = membershipModuleImport.addMember;
+  removeMember = membershipModuleImport.removeMember;
+};
+
+loadModules().catch(console.error);
 
 const EmailListSchema = z.array(z.string().email());
 

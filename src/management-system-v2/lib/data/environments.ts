@@ -6,13 +6,28 @@ import {
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
 import { UserErrorType, userError } from '../user-error';
-import {
-  addEnvironment,
-  deleteEnvironment,
-  getEnvironmentById,
-  updateOrganization as _updateOrganization,
-} from './legacy/iam/environments';
 import { UnauthorizedError } from '../ability/abilityHelper';
+import { enableUseDB } from 'FeatureFlags';
+
+let addEnvironment: Function;
+let deleteEnvironment: Function;
+let getEnvironmentById: Function;
+let _updateOrganization: Function;
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB
+    ? import('./db/iam/environments')
+    : import('./legacy/iam/environments'));
+
+  ({
+    addEnvironment,
+    deleteEnvironment,
+    getEnvironmentById,
+    updateOrganization: _updateOrganization,
+  } = moduleImport);
+};
+
+loadModules().catch(console.error);
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,

@@ -2,24 +2,6 @@
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '../ability/caslAbility';
-// Workaround because top-level await is not supported in server action modules.
-// The rest of the app can import from process.ts directly, where init is
-// awaited. Since this will always run AFTER init was run and we cache with
-// global, we can ignore init here.
-import {
-  removeProcess,
-  getProcessMetaObjects,
-  addProcess as _addProcess,
-  getProcessBpmn as _getProcessBpmn,
-  updateProcess as _updateProcess,
-  getProcess as _getProcess,
-  getProcessVersionBpmn,
-  addProcessVersion,
-  getProcessUserTaskJSON as _getProcessUserTaskJSON,
-  saveProcessUserTask as _saveProcessUserTask,
-  getProcessImage as _getProcessImage,
-  updateProcessMetaData,
-} from './legacy/_process';
 import {
   addDocumentation,
   generateDefinitionsId,
@@ -45,6 +27,56 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB } from 'FeatureFlags';
 
+type ProcessModule = {
+  removeProcess: Function;
+  addProcess: Function;
+  getProcessMetaObjects?: Function;
+  getProcess: Function;
+  updateProcess: Function;
+  getProcessVersionBpmn: Function;
+  addProcessVersion: Function;
+  getProcessUserTaskJSON?: Function;
+  saveProcessUserTask?: Function;
+  getProcessImage?: Function;
+  updateProcessMetaData: Function;
+  getProcessBpmn: Function;
+};
+
+// Declare variables to hold the process module functions
+let removeProcess: Function;
+let getProcessMetaObjects: Function | undefined;
+let _addProcess: Function;
+let _getProcess: Function;
+let _updateProcess: Function;
+let getProcessVersionBpmn: Function;
+let addProcessVersion: Function;
+let _getProcessUserTaskJSON: Function | undefined;
+let _saveProcessUserTask: Function | undefined;
+let _getProcessImage: Function | undefined;
+let updateProcessMetaData: Function;
+let _getProcessBpmn: Function;
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
+
+  ({
+    removeProcess,
+    getProcessMetaObjects,
+    addProcess: _addProcess,
+    getProcess: _getProcess,
+    updateProcess: _updateProcess,
+    getProcessVersionBpmn,
+    addProcessVersion,
+    getProcessUserTaskJSON: _getProcessUserTaskJSON,
+    saveProcessUserTask: _saveProcessUserTask,
+    getProcessImage: _getProcessImage,
+    updateProcessMetaData,
+    getProcessBpmn: _getProcessBpmn,
+  } = moduleImport as ProcessModule);
+};
+
+loadModules().catch(console.error);
+
 const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
@@ -52,8 +84,9 @@ const checkValidity = async (
 ) => {
   const { ability } = await getCurrentEnvironment(spaceId);
 
-  const processMetaObjects = getProcessMetaObjects();
-  const process = enableUseDB ? await _getProcess(definitionId) : processMetaObjects[definitionId];
+  const process = enableUseDB
+    ? await _getProcess(definitionId)
+    : getProcessMetaObjects!()[definitionId];
 
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
@@ -81,10 +114,10 @@ const checkValidity = async (
 const getBpmnVersion = async (definitionId: string, versionId?: number) => {
   const process = enableUseDB
     ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+    : getProcessMetaObjects!()[definitionId];
 
   if (versionId) {
-    if (!process.versions.some((version) => version.version === versionId)) {
+    if (!process.versions.some((version: { version: number }) => version.version === versionId)) {
       return userError(
         `The requested version does not exist for the requested process.`,
         UserErrorType.NotFoundError,
@@ -100,7 +133,7 @@ const getBpmnVersion = async (definitionId: string, versionId?: number) => {
 export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
   const processMetaObj = enableUseDB
     ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+    : getProcessMetaObjects!()[definitionId];
 
   if (!processMetaObj) {
     return userError(`Process does not exist `);
@@ -127,7 +160,7 @@ export const getProcess = async (definitionId: string, spaceId: string) => {
   if (error) return error;
   const result = enableUseDB
     ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+    : getProcessMetaObjects!()[definitionId];
   return result as Process;
 };
 
@@ -336,7 +369,7 @@ export const createVersion = async (
     versionBasedOn,
   });
 
-  const processMetaObjects: any = getProcessMetaObjects();
+  const processMetaObjects: any = getProcessMetaObjects!();
   const process = enableUseDB ? await _getProcess(processId, true) : processMetaObjects[processId];
 
   await versionUserTasks(process, epochTime, bpmnObj);
@@ -383,7 +416,7 @@ export const getProcessUserTaskData = async (
   if (error) return error;
 
   try {
-    return await _getProcessUserTaskJSON(definitionId, taskFileName);
+    return await _getProcessUserTaskJSON!(definitionId, taskFileName);
   } catch (err) {
     return userError('Unable to get the requested User Task data.', UserErrorType.NotFoundError);
   }
@@ -405,7 +438,7 @@ export const saveProcessUserTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessUserTask(definitionId, taskFileName, json);
+  await _saveProcessUserTask!(definitionId, taskFileName, json);
 };
 
 export const getProcessImage = async (
@@ -417,5 +450,5 @@ export const getProcessImage = async (
 
   if (error) return error;
 
-  return _getProcessImage(definitionId, imageFileName);
+  return _getProcessImage!(definitionId, imageFileName);
 };

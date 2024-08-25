@@ -8,9 +8,7 @@ import {
   SystemAdminUpdateInput,
   SystemAdminUpdateInputSchema,
 } from '../../system-admin-schema';
-import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
-import { IoReturnDownBack } from 'react-icons/io5';
+
 // @ts-ignore
 let firstInit = !global.systemAdminsMetaObjects;
 
@@ -21,43 +19,50 @@ export let systemAdminsMetaObjects: {
   global.systemAdminsMetaObjects || (global.systemAdminsMetaObjects = {});
 
 let inited = false;
+
 /**
- * initializes the system admins meta information objects
+ * Initializes the system admins meta information objects
  */
 export function init() {
   if (!firstInit || inited) return;
-  inited = false;
+  inited = true;
 
   const storedAdmins = store.get('systemAdmins') as SystemAdmin[];
   storedAdmins.forEach((admin) => (systemAdminsMetaObjects[admin.id] = admin));
 }
 init();
 
+/**
+ * Returns all system admins in form of an array
+ */
 export async function getSystemAdmins() {
-  const sysAdmins = enableUseDB
-    ? await db.systemAdmin.findMany({})
-    : Object.values(systemAdminsMetaObjects);
+  const sysAdmins = Object.values(systemAdminsMetaObjects);
   return sysAdmins as SystemAdmin[];
 }
 
+/**
+ * Returns a system admin based on the admin ID
+ */
 export async function getAdminById(id: string) {
-  return enableUseDB
-    ? await db.systemAdmin.findUnique({ where: { id: id } })
-    : systemAdminsMetaObjects[id];
+  return systemAdminsMetaObjects[id];
 }
 
+/**
+ * Returns a system admin based on the user ID
+ */
 export async function getSystemAdminByUserId(userId: string) {
-  if (enableUseDB) {
-    return (await db.systemAdmin.findUnique({ where: { userId: userId } })) as SystemAdmin;
-  } else {
-    for (const admin of Object.values(systemAdminsMetaObjects)) {
-      if (admin!.userId === userId) return admin;
-    }
+  for (const admin of Object.values(systemAdminsMetaObjects)) {
+    if (admin!.userId === userId) return admin;
   }
 }
 
+/**
+ * Adds a new system admin
+ *
+ * @throws {Error}
+ */
 export async function addSystemAdmin(adminInput: SystemAdminCreationInput) {
-  // TODO: decide if permissions should be checkded here
+  // TODO: decide if permissions should be checked here
 
   const now = new Date();
   const admin = SystemAdminSchema.parse({
@@ -66,24 +71,26 @@ export async function addSystemAdmin(adminInput: SystemAdminCreationInput) {
     createdOn: now,
     lastEditedOn: now,
   });
-  if (enableUseDB) {
-    await db.systemAdmin.create({ data: { ...admin } });
-  } else {
-    if (systemAdminsMetaObjects[admin.id]) throw new Error('System admin id already exists');
 
-    systemAdminsMetaObjects[admin.id] = admin;
-    store.add('systemAdmins', admin);
-  }
+  if (systemAdminsMetaObjects[admin.id]) throw new Error('System admin id already exists');
+
+  systemAdminsMetaObjects[admin.id] = admin;
+  store.add('systemAdmins', admin);
 
   return admin;
 }
 
+/**
+ * Updates a system admin by ID
+ *
+ * @throws {Error}
+ */
 export async function updateSystemAdmin(
   adminId: string,
   adminUpdate: Partial<SystemAdminUpdateInput>,
 ) {
-  // TODO: decide if permissions should be checkded here
-  const adminData = enableUseDB ? await getAdminById(adminId) : systemAdminsMetaObjects[adminId];
+  // TODO: decide if permissions should be checked here
+  const adminData = systemAdminsMetaObjects[adminId];
   if (!adminData) throw new Error('System admin not found');
 
   const newAdminData = {
@@ -91,24 +98,23 @@ export async function updateSystemAdmin(
     ...SystemAdminUpdateInputSchema.partial().parse(adminUpdate),
     lastEditedOn: new Date(),
   } as SystemAdmin;
-  if (enableUseDB) {
-    await db.systemAdmin.update({ where: { id: adminId }, data: { ...newAdminData } });
-  } else {
-    store.update('systemAdmins', adminId, newAdminData);
-    systemAdminsMetaObjects[adminId] = newAdminData;
-  }
+
+  store.update('systemAdmins', adminId, newAdminData);
+  systemAdminsMetaObjects[adminId] = newAdminData;
 
   return newAdminData;
 }
 
+/**
+ * Deletes a system admin by ID
+ *
+ * @throws {Error}
+ */
 export async function deleteSystemAdmin(adminId: string) {
-  // TODO: decide if permissions should be checkded here
-  const adminData = enableUseDB ? await getAdminById(adminId) : systemAdminsMetaObjects[adminId];
+  // TODO: decide if permissions should be checked here
+  const adminData = systemAdminsMetaObjects[adminId];
   if (!adminData) throw new Error('System admin not found');
-  if (enableUseDB) {
-    await db.systemAdmin.delete({ where: { id: adminId } });
-  } else {
-    delete systemAdminsMetaObjects[adminId];
-    store.remove('systemAdmins', adminId);
-  }
+
+  delete systemAdminsMetaObjects[adminId];
+  store.remove('systemAdmins', adminId);
 }

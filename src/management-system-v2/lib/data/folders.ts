@@ -2,20 +2,39 @@
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
-import {
-  FolderChildren,
-  createFolder as _createFolder,
-  getFolderById,
-  getFolderContents as _getFolderContent,
-  getRootFolder,
-  moveFolder,
-  updateFolderMetaData,
-  deleteFolder as _deleteFolder,
-} from './legacy/folders';
 import { UserErrorType, userError } from '../user-error';
 import { toCaslResource } from '../ability/caslAbility';
-import { moveProcess } from './legacy/_process';
+
 import { UnauthorizedError } from '../ability/abilityHelper';
+import { enableUseDB } from 'FeatureFlags';
+import { FolderChildren } from './legacy/folders';
+
+let _createFolder: any,
+  _getFolderContent: any,
+  getFolderById: any,
+  getRootFolder: any,
+  moveFolder: any,
+  updateFolderMetaData: any,
+  _deleteFolder: any,
+  moveProcess: any;
+
+const loadModules = async () => {
+  const [folderModule, processModule] = await Promise.all([
+    enableUseDB ? import('./db/folders') : import('./legacy/folders'),
+    enableUseDB ? import('./db/process') : import('./legacy/_process'),
+  ]);
+
+  _createFolder = folderModule.createFolder;
+  _getFolderContent = folderModule.getFolderContents;
+  getFolderById = folderModule.getFolderById;
+  getRootFolder = folderModule.getRootFolder;
+  moveFolder = folderModule.moveFolder;
+  updateFolderMetaData = folderModule.updateFolderMetaData;
+  _deleteFolder = folderModule.deleteFolder;
+  moveProcess = processModule.moveProcess;
+};
+
+loadModules().catch(console.error);
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {

@@ -10,8 +10,6 @@ import store from './store.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { v4 } from 'uuid';
 import { Process, ProcessMetadata } from '../process-schema';
-import db from '@/lib/data';
-import { enableUseDB } from 'FeatureFlags';
 import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 // @ts-ignore
@@ -89,24 +87,6 @@ export function init() {
 init();
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
-  if (enableUseDB) {
-    const rootFolder = await db.folder.findFirst({
-      where: {
-        environmentId: environmentId,
-        parentId: null,
-      },
-    });
-
-    if (!rootFolder) {
-      throw new Error(`MS Error: environment ${environmentId} has no root folder`);
-    }
-
-    if (ability && !ability.can('view', toCaslResource('Folder', rootFolder))) {
-      throw new Error('Permission denied');
-    }
-
-    return rootFolder;
-  }
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
   if (!rootFolderId) throw new Error(`MS Error: environment ${environmentId} has no root folder`);
 
@@ -120,26 +100,6 @@ export async function getRootFolder(environmentId: string, ability?: Ability) {
 }
 
 export async function getFolderById(folderId: string, ability?: Ability) {
-  if (enableUseDB) {
-    const folder = await db.folder.findUnique({
-      where: {
-        id: folderId,
-      },
-      include: {
-        childrenFolder: true,
-      },
-    });
-
-    if (!folder) {
-      throw new Error('Folder not found');
-    }
-
-    if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-      throw new Error('Permission denied');
-    }
-
-    return folder;
-  }
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -159,31 +119,6 @@ export function getFolders(spaceId?: string) {
 }
 
 export async function getFolderChildren(folderId: string, ability?: Ability) {
-  if (enableUseDB) {
-    const folder = await db.folder.findUnique({
-      where: {
-        id: folderId,
-      },
-      include: {
-        childrenFolder: true,
-        processes: true,
-      },
-    });
-
-    if (!folder) {
-      throw new Error('Folder not found');
-    }
-
-    if (ability && !ability.can('view', toCaslResource('Folder', folder))) {
-      throw new Error('Permission denied');
-    }
-
-    const combinedResults = [
-      ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
-      ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
-    ];
-    return combinedResults;
-  }
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -197,7 +132,7 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
   const folderChildren = await getFolderChildren(folderId, ability);
   const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
 
-  if (!enableUseDB) await initProcesses();
+  await initProcesses();
 
   for (let i = 0; i < folderChildren.length; i++) {
     try {
@@ -218,73 +153,6 @@ export async function getFolderContents(folderId: string, ability?: Ability) {
 }
 
 export async function createFolder(folderInput: FolderInput, ability?: Ability) {
-  if (enableUseDB) {
-    const folder = FolderSchema.parse(folderInput);
-    if (!folder.id) folder.id = v4();
-
-    // Checks
-    if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-      throw new Error('Permission denied');
-
-    const existingFolder = await db.folder.findUnique({
-      where: {
-        id: folder.id,
-      },
-    });
-    if (existingFolder) {
-      throw new Error('Folder already exists');
-    }
-
-    if (folder.parentId) {
-      const parentFolder = await db.folder.findUnique({
-        where: {
-          id: folder.parentId,
-        },
-      });
-
-      if (!parentFolder) {
-        throw new Error('Parent folder does not exist');
-      }
-
-      if (parentFolder.environmentId !== folder.environmentId) {
-        throw new Error('Parent folder is in a different environment');
-      }
-      await db.folder.update({
-        where: {
-          id: folder.parentId,
-        },
-        data: {
-          lastEditedOn: new Date(),
-        },
-      });
-    } else {
-      const rootFolder = await db.folder.findFirst({
-        where: {
-          environmentId: folder.environmentId,
-          parentId: null,
-        },
-      });
-
-      if (rootFolder) {
-        throw new Error(`Environment ${folder.environmentId} already has a root folder`);
-      }
-    }
-
-    const createdFolder = await db.folder.create({
-      data: {
-        id: folder.id,
-        name: folder.name,
-        description: folder.description ?? '',
-        parentId: folder.parentId,
-        createdBy: folder.createdBy!,
-        environmentId: folder.environmentId,
-        lastEditedOn: new Date(),
-        createdOn: new Date(),
-      },
-    });
-
-    return createdFolder;
-  }
   const folder = FolderSchema.parse(folderInput);
   if (!folder.id) folder.id = v4();
 
@@ -328,25 +196,6 @@ export async function createFolder(folderInput: FolderInput, ability?: Ability) 
 /** Deletes a folder and every child recursively */
 export async function deleteFolder(folderId: string, ability?: Ability) {
   // NOTE: maybe the ability should do this recursive check
-  if (enableUseDB) {
-    const folderToDelete = await db.folder.findUnique({
-      where: { id: folderId },
-    });
-
-    if (!folderToDelete) {
-      throw new Error('Folder not found');
-    }
-
-    if (ability && !ability.can('delete', toCaslResource('Folder', folderToDelete))) {
-      throw new Error('Permission denied');
-    }
-
-    await db.folder.delete({
-      where: { id: folderId },
-    });
-
-    return { success: true };
-  }
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -397,30 +246,6 @@ export async function updateFolderMetaData(
   newMetaDataInput: Partial<FolderUserInput>,
   ability?: Ability,
 ) {
-  if (enableUseDB) {
-    const folder = await db.folder.findUnique({
-      where: { id: folderId },
-    });
-
-    if (!folder) {
-      throw new Error('Folder not found');
-    }
-
-    if (ability && !ability.can('update', toCaslResource('Folder', folder))) {
-      throw new Error('Permission denied');
-    }
-
-    if (newMetaDataInput.environmentId && newMetaDataInput.environmentId !== folder.environmentId) {
-      throw new Error('environmentId cannot be changed');
-    }
-
-    const updatedFolder = await db.folder.update({
-      where: { id: folderId },
-      data: { ...newMetaDataInput, lastEditedOn: new Date() },
-    });
-
-    return updatedFolder;
-  }
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
@@ -445,32 +270,6 @@ export async function updateFolderMetaData(
 }
 
 async function isInSubtree(rootId: string, nodeId: string) {
-  if (enableUseDB) {
-    const folderData = await db.folder.findUnique({
-      where: { id: rootId },
-      include: { childrenFolder: true },
-    });
-
-    if (!folderData) {
-      throw new Error('RootId not found');
-    }
-
-    const nodeFolder = await db.folder.findUnique({
-      where: { id: nodeId },
-    });
-
-    if (!nodeFolder) {
-      throw new Error('NodeId not found');
-    }
-
-    if (rootId === nodeId) {
-      return true;
-    }
-    for (const child of folderData.childrenFolder) {
-      if (await isInSubtree(child.id, nodeId)) return true;
-    }
-    return false;
-  }
   const folderData = foldersMetaObject.folders[rootId];
   if (!folderData) throw new Error('RootId not found');
 
@@ -486,131 +285,50 @@ async function isInSubtree(rootId: string, nodeId: string) {
 }
 
 export async function moveFolder(folderId: string, newParentId: string, ability?: Ability) {
-  if (enableUseDB) {
-    const folder = await db.folder.findUnique({
-      where: { id: folderId },
-      include: { childrenFolder: true, parentFolder: true },
-    });
+  const folderData = foldersMetaObject.folders[folderId];
+  if (!folderData) throw new Error('Folder not found');
 
-    if (!folder) {
-      throw new Error('Folder not found');
-    }
+  // Checks
+  if (!folderData.folder.parentId) throw new Error('Root folders cannot be moved');
+  if (folderData.folder.parentId === newParentId) return;
 
-    if (!folder.parentId) {
-      throw new Error('Root folders cannot be moved');
-    }
+  const newParentData = foldersMetaObject.folders[newParentId];
+  if (!newParentData) throw new Error('New parent folder not found');
 
-    if (folder.parentId === newParentId) {
-      return;
-    }
+  if (newParentData.folder.environmentId !== folderData.folder.environmentId)
+    throw new Error('Cannot move folder to a different environment');
 
-    const newParentFolder = await db.folder.findUnique({
-      where: { id: newParentId },
-    });
+  const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
+  if (!oldParentData)
+    throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
 
-    if (!newParentFolder) {
-      throw new Error('New parent folder not found');
-    }
+  const folderIndex = oldParentData.children.findIndex(
+    (f) => f.type === 'folder' && f.id === folderId,
+  );
+  if (folderIndex === -1)
+    throw new Error("Consistency error: folder not found in parent's children");
 
-    if (newParentFolder.environmentId !== folder.environmentId) {
-      throw new Error('Cannot move folder to a different environment');
-    }
+  if (
+    ability &&
+    !ability.can('update', toCaslResource('Folder', folderData.folder)) &&
+    !ability.can('update', toCaslResource('Folder', newParentData.folder)) &&
+    !ability.can('update', toCaslResource('Folder', oldParentData.folder))
+  )
+    throw new Error('Permission denied');
 
-    // Check permissions
-    if (
-      ability &&
-      !(
-        ability.can('update', toCaslResource('Folder', folder)) &&
-        ability.can('update', toCaslResource('Folder', newParentFolder)) &&
-        ability.can('update', toCaslResource('Folder', folder.parentFolder!))
-      )
-    ) {
-      throw new Error('Permission denied');
-    }
+  // Folder cannot be movet to it's sub tree
+  if (await isInSubtree(folderId, newParentId))
+    throw new Error('Folder cannot be moved to its children');
 
-    // Check if moving to its own subtree
-    if (await isInSubtree(folderId, newParentId)) {
-      throw new Error('Folder cannot be moved to its children');
-    }
+  // Store
+  oldParentData.children.splice(folderIndex, 1);
+  oldParentData.folder.lastEditedOn = new Date();
+  store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
-    // Update old parent
-    await db.folder.update({
-      where: { id: folder.parentId },
-      data: {
-        childrenFolder: {
-          disconnect: [{ id: folderId }],
-        },
-        lastEditedOn: new Date(),
-      },
-    });
+  folderData.folder.parentId = newParentId;
+  newParentData.children.push({ type: 'folder', id: folderData.folder.id });
+  newParentData.folder.lastEditedOn = new Date();
+  store.update('folders', newParentData.folder.id, newParentData.folder);
 
-    // Update folder
-    await db.folder.update({
-      where: { id: folderId },
-      data: {
-        parentFolder: {
-          connect: { id: newParentId },
-        },
-        lastEditedOn: new Date(),
-      },
-    });
-
-    // Update new parent
-    await db.folder.update({
-      where: { id: newParentId },
-      data: {
-        childrenFolder: {
-          connect: [{ id: folderId }],
-        },
-        lastEditedOn: new Date(),
-      },
-    });
-  } else {
-    const folderData = foldersMetaObject.folders[folderId];
-    if (!folderData) throw new Error('Folder not found');
-
-    // Checks
-    if (!folderData.folder.parentId) throw new Error('Root folders cannot be moved');
-    if (folderData.folder.parentId === newParentId) return;
-
-    const newParentData = foldersMetaObject.folders[newParentId];
-    if (!newParentData) throw new Error('New parent folder not found');
-
-    if (newParentData.folder.environmentId !== folderData.folder.environmentId)
-      throw new Error('Cannot move folder to a different environment');
-
-    const oldParentData = foldersMetaObject.folders[folderData.folder.parentId];
-    if (!oldParentData)
-      throw new Error(`Consistency error: current parent folder of ${folderId} not found`);
-
-    const folderIndex = oldParentData.children.findIndex(
-      (f) => f.type === 'folder' && f.id === folderId,
-    );
-    if (folderIndex === -1)
-      throw new Error("Consistency error: folder not found in parent's children");
-
-    if (
-      ability &&
-      !ability.can('update', toCaslResource('Folder', folderData.folder)) &&
-      !ability.can('update', toCaslResource('Folder', newParentData.folder)) &&
-      !ability.can('update', toCaslResource('Folder', oldParentData.folder))
-    )
-      throw new Error('Permission denied');
-
-    // Folder cannot be movet to it's sub tree
-    if (await isInSubtree(folderId, newParentId))
-      throw new Error('Folder cannot be moved to its children');
-
-    // Store
-    oldParentData.children.splice(folderIndex, 1);
-    oldParentData.folder.lastEditedOn = new Date();
-    store.update('folders', oldParentData.folder.id, oldParentData.folder);
-
-    folderData.folder.parentId = newParentId;
-    newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-    newParentData.folder.lastEditedOn = new Date();
-    store.update('folders', newParentData.folder.id, newParentData.folder);
-
-    store.update('folders', folderId, folderData.folder);
-  }
+  store.update('folders', folderId, folderData.folder);
 }

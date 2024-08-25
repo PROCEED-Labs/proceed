@@ -4,7 +4,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { addRole, deleteRole, getRoleByName, getRoles, roleMetaObjects } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
-import { addMember, getMemebers, membershipMetaObject, removeMember } from './memberships';
+import { addMember, membershipMetaObject, removeMember } from './memberships';
 import {
   Environment,
   EnvironmentInput,
@@ -16,8 +16,6 @@ import { getProcessMetaObjects, removeProcess } from '../_process';
 import { createFolder } from '../folders';
 import { deleteLogo, getLogo, hasLogo, saveLogo } from '../fileHandling.js';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
 import { env } from '@/lib/env-vars.js';
 
 // @ts-ignore
@@ -39,18 +37,6 @@ export async function getEnvironmentById(
   ability?: Ability,
   opts?: { throwOnNotFound?: boolean },
 ) {
-  // TODO: check ability
-  if (enableUseDB) {
-    const environment = await db.space.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
-
-    return environment as Environment;
-  }
   const environment = environmentsMetaObject[id];
 
   if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
@@ -86,12 +72,8 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
   const newEnvironmentWithId = { ...newEnvironment, id };
-  if (enableUseDB) {
-    await db.space.create({ data: { ...newEnvironmentWithId } });
-  } else {
-    environmentsMetaObject[id] = newEnvironmentWithId;
-    store.add('environments', newEnvironmentWithId);
-  }
+  environmentsMetaObject[id] = newEnvironmentWithId;
+  store.add('environments', newEnvironmentWithId);
 
   if (newEnvironment.isOrganization) {
     const adminRole = await addRole({
@@ -142,38 +124,33 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   if (!environment) throw new Error('Environment not found');
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
-  if (enableUseDB) {
-    await db.space.delete({
-      where: { id: environmentId },
-    });
-  } else {
-    const roles = Object.values(roleMetaObjects);
-    for (const role of roles) {
-      if (role.environmentId === environmentId) {
-        deleteRole(role.id); // also deletes role mappings
-      }
-    }
 
-    const processes = Object.values(getProcessMetaObjects());
-    for (const process of processes) {
-      if (process.environmentId === environmentId) {
-        removeProcess(process.id);
-      }
+  const roles = Object.values(roleMetaObjects);
+  for (const role of roles) {
+    if (role.environmentId === environmentId) {
+      deleteRole(role.id); // also deletes role mappings
     }
-
-    if (environment.isOrganization) {
-      const environmentMemberships = membershipMetaObject[environmentId];
-      if (environmentMemberships) {
-        for (const { userId } of environmentMemberships) {
-          removeMember(environmentId, userId);
-        }
-        delete membershipMetaObject[environmentId];
-      }
-    }
-
-    delete environmentsMetaObject[environmentId];
-    store.remove('environments', environmentId);
   }
+
+  const processes = Object.values(getProcessMetaObjects());
+  for (const process of processes) {
+    if (process.environmentId === environmentId) {
+      removeProcess(process.id);
+    }
+  }
+
+  if (environment.isOrganization) {
+    const environmentMemberships = membershipMetaObject[environmentId];
+    if (environmentMemberships) {
+      for (const { userId } of environmentMemberships) {
+        removeMember(environmentId, userId);
+      }
+      delete membershipMetaObject[environmentId];
+    }
+  }
+
+  delete environmentsMetaObject[environmentId];
+  store.remove('environments', environmentId);
 }
 
 export async function saveOrganizationLogo(
@@ -252,12 +229,8 @@ export async function updateOrganization(
   const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
   const newEnvironmentData: Environment = { ...environment, ...update } as Environment;
 
-  if (enableUseDB) {
-    await db.space.update({ where: { id: environment.id }, data: { ...newEnvironmentData } });
-  } else {
-    environmentsMetaObject[environmentId] = newEnvironmentData;
-    store.update('environments', environmentId, newEnvironmentData);
-  }
+  environmentsMetaObject[environmentId] = newEnvironmentData;
+  store.update('environments', environmentId, newEnvironmentData);
 
   return newEnvironmentData;
 }

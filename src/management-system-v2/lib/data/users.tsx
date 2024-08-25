@@ -1,20 +1,54 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import {
-  deleteUser as _deleteUser,
-  updateUser as _updateUser,
-  usersMetaObject,
-  UserHasToDeleteOrganizationsError,
-  getUserById,
-} from './legacy/iam/users';
 import { userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
-import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
 import { enableUseDB } from 'FeatureFlags';
+
+type UserModule = {
+  deleteUser: Function;
+  updateUser: Function;
+  usersMetaObject?: any;
+  UserHasToDeleteOrganizationsError: any;
+  getUserById: Function;
+};
+
+type EnvironmentModule = {
+  getEnvironmentById: Function;
+};
+
+let userModule: UserModule;
+let environmentModule: EnvironmentModule;
+
+let _deleteUser: Function;
+let _updateUser: Function;
+let usersMetaObject: any;
+let UserHasToDeleteOrganizationsError: any;
+let getUserById: Function;
+
+let getEnvironmentById: Function;
+
+const loadModules = async () => {
+  [userModule, environmentModule] = await Promise.all([
+    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
+    enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
+  ]);
+
+  ({
+    deleteUser: _deleteUser,
+    updateUser: _updateUser,
+    usersMetaObject,
+    UserHasToDeleteOrganizationsError,
+    getUserById,
+  } = userModule);
+
+  ({ getEnvironmentById } = environmentModule);
+};
+
+loadModules().catch(console.error);
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -26,7 +60,8 @@ export async function deleteUser() {
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
-        async (orgId) => ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
+        async (orgId: string) =>
+          ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
       );
 
       message = (
@@ -37,7 +72,7 @@ export async function deleteUser() {
           </p>
           <p>The affected organizations are:</p>
           <ul>
-            {conflictingOrgsNames.map((name, idx) => (
+            {conflictingOrgsNames.map((name: string, idx: string | number) => (
               <li>
                 {name}: <Link href={`/${e.conflictingOrgs[idx]}/iam/roles`}>manage roles here</Link>
               </li>

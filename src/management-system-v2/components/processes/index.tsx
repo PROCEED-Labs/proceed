@@ -16,7 +16,7 @@ import ProcessList from '@/components/process-list';
 import MetaData from '@/components/process-info-card';
 import ProcessExportModal from '@/components/process-export';
 import Bar from '@/components/bar';
-import ProcessCreationButton from '@/components/process-creation-button';
+import ProcessCreationButton, { ProcessCreationModal } from '@/components/process-creation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
@@ -29,7 +29,7 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
-import FolderCreationButton from '@/components/folder-creation-button';
+import FolderCreationButton, { FolderCreationModal } from '@/components/folder-creation-button';
 import {
   deleteFolder,
   moveIntoFolder,
@@ -119,6 +119,11 @@ const Processes = ({
   const [updatingFolder, startUpdatingFolderTransition] = useTransition();
   const [updateFolderModal, setUpdateFolderModal] = useState<Folder | undefined>(undefined);
   const [movingItem, startMovingItemTransition] = useTransition();
+  const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
+    typeof window !== 'undefined' &&
+      new URLSearchParams(document.location.search).has('createprocess'),
+  );
+  const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
 
   const [copySelection, setCopySelection] = useState<ProcessListProcess[]>([]);
 
@@ -178,32 +183,21 @@ const Processes = ({
       );
     }
   }
-  const createProcessButton = (
-    <ProcessCreationButton
-      wrapperElement="Create Process"
-      defaultOpen={
-        typeof window !== 'undefined' &&
-        new URLSearchParams(document.location.search).has('createprocess')
-      }
-      modalProps={{
-        onCancel: deleteCreateProcessSearchParams,
-        onOk: deleteCreateProcessSearchParams,
-      }}
-    />
-  );
 
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: createProcessButton,
+      label: 'Create Process',
       icon: <FileOutlined />,
+      onClick: () => setOpenCreateProcessModal(true),
     });
 
   if (ability.can('create', 'Folder'))
     defaultDropdownItems.push({
       key: 'create-folder',
-      label: <FolderCreationButton wrapperElement="Create Folder" />,
+      label: 'Create Folder',
+      onClick: () => setOpenCreateFolderModal(true),
       icon: <FolderOutlined />,
     });
 
@@ -328,10 +322,13 @@ const Processes = ({
                             items: defaultDropdownItems.filter(
                               (item) => item.key !== 'create-process',
                             ),
+                            mode: 'inline',
                           }}
                           type="primary"
                         >
-                          {createProcessButton}
+                          <Button onClick={() => setOpenCreateProcessModal(true)}>
+                            Create Process
+                          </Button>
                         </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
@@ -531,7 +528,6 @@ const Processes = ({
           router.refresh();
         }}
       />
-      <AddUserControls name={'process-list'} />
       <FolderModal
         open={!!updateFolderModal}
         close={() => setUpdateFolderModal(undefined)}
@@ -540,6 +536,18 @@ const Processes = ({
         onSubmit={updateFolder}
         modalProps={{ title: 'Edit folder', okButtonProps: { loading: updatingFolder } }}
         initialValues={updateFolderModal}
+      />
+      <ProcessCreationModal
+        open={openCreateProcessModal}
+        close={() => setOpenCreateProcessModal(false)}
+        modalProps={{
+          onCancel: deleteCreateProcessSearchParams,
+          onOk: deleteCreateProcessSearchParams,
+        }}
+      />
+      <FolderCreationModal
+        open={openCreateFolderModal}
+        close={() => setOpenCreateFolderModal(false)}
       />
     </>
   );

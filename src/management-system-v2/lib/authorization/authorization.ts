@@ -87,7 +87,7 @@ export async function getUserRules(userId: string, environmentId: string) {
     const getPurhasedFeatures = (_: string) => [];
 
     const purchasedResources = getPurhasedFeatures(environmentId).filter((resource) =>
-      env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource as any),
+      env.MS_ENABLED_RESOURCES.includes(resource as any),
     );
 
     const { rules, expiration } = computeRulesForUser({ userId, space, roles, purchasedResources });

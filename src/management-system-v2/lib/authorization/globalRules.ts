@@ -14,7 +14,7 @@ export type BuyableResource = (typeof BuyableResources)[number];
  * bought for the space.
  */
 export const AllowedResourcesForAdmins = Object.freeze(
-  env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.filter(
+  env.MS_ENABLED_RESOURCES.filter(
     (resource) => !BuyableResources.includes(resource as BuyableResource),
   ),
 );
@@ -25,7 +25,7 @@ export const AllowedResourcesForAdmins = Object.freeze(
 function getRulesForTargetResources(allowedResources: readonly ResourceType[]) {
   // filter out resources that aren't currently enabled
   allowedResources = allowedResources.filter((resource) =>
-    env.NEXT_PUBLIC_MS_ENABLED_RESOURCES.includes(resource),
+    env.MS_ENABLED_RESOURCES.includes(resource),
   );
 
   const disabledResources = resources.filter((resource) => !allowedResources.includes(resource));
@@ -39,7 +39,7 @@ function getRulesForTargetResources(allowedResources: readonly ResourceType[]) {
 }
 
 export const globalOrganizationRules = Object.freeze(
-  getRulesForTargetResources(env.NEXT_PUBLIC_MS_ENABLED_RESOURCES),
+  getRulesForTargetResources(env.MS_ENABLED_RESOURCES),
 );
 export const packedGlobalOrganizationRules = Object.freeze(
   packRules<AbilityRule>([...globalOrganizationRules]),
@@ -51,4 +51,13 @@ export const globalPersonalSpaceRules = Object.freeze(
 
 export const packedGlobalUserRules = Object.freeze(
   packRules<AbilityRule>([...globalPersonalSpaceRules]),
+);
+
+export const adminRules = Object.freeze(
+  packRules([
+    {
+      subject: AllowedResourcesForAdmins,
+      action: 'admin',
+    },
+  ] as AbilityRule[]),
 );

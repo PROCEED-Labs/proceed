@@ -12,7 +12,7 @@ const environmentVariables = {
     ENABLE_MACHINE_CONFIG: z.string().optional(), // NOTE: Not sure if it should be optional
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
-    NEXT_PUBLIC_MS_ENABLED_RESOURCES: z.preprocess(
+    MS_ENABLED_RESOURCES: z.preprocess(
       (input) => {
         if (typeof input !== 'string') return input;
         try {

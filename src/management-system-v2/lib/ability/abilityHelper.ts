@@ -1,4 +1,4 @@
-import { PackRule, packRules, unpackRules } from '@casl/ability/extra';
+import { PackRule, unpackRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
@@ -7,7 +7,6 @@ import {
   buildAbility,
   toCaslResource,
 } from './caslAbility';
-import { AllowedResourcesForAdmins } from '../authorization/globalRules';
 
 type CanParams = Parameters<CaslAbility['can']>;
 
@@ -83,12 +82,3 @@ export class UnauthorizedError extends Error {
     this.name = 'UnauthorizedError';
   }
 }
-
-export const adminRules = Object.freeze(
-  packRules([
-    {
-      subject: AllowedResourcesForAdmins,
-      action: 'admin',
-    },
-  ] as AbilityRule[]),
-);

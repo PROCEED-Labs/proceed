@@ -30,10 +30,7 @@ export const SetAbility = ({
 };
 
 export const useAbilityStore = create<AbilityStoreType>((set) => ({
-  ability: new Ability(
-    packRules([{ action: 'admin', subject: AllowedResourcesForAdmins }] as AbilityRule[]),
-    '',
-  ),
+  ability: new Ability(packRules([]), ''),
   abilityFetched: false,
   setAbility(rules, environmentId, treeMap) {
     set({ ability: new Ability(rules, environmentId, treeMap), abilityFetched: true });

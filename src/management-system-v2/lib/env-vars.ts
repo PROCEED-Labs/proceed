@@ -98,7 +98,7 @@ if (!parsingResult.success && !onBuild) {
   process.exit(1);
 }
 
-const data = parsingResult.success && !onBuild ? parsingResult.data : {};
+const data = parsingResult.success ? parsingResult.data : {};
 
 export const env = new Proxy(data as Extract<typeof parsingResult, { success: true }>['data'], {
   get(target, prop) {

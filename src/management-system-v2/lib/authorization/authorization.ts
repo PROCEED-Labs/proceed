@@ -7,6 +7,7 @@ import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { getRoleMappingByUserId } from '../data/legacy/iam/role-mappings';
 import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
 import { env } from '../env-vars';
+import { MSEnabledResources } from './globalRules';
 
 type PackedRules = PackedRulesForUser['rules'];
 
@@ -87,7 +88,7 @@ export async function getUserRules(userId: string, environmentId: string) {
     const getPurhasedFeatures = (_: string) => [];
 
     const purchasedResources = getPurhasedFeatures(environmentId).filter((resource) =>
-      env.MS_ENABLED_RESOURCES.includes(resource as any),
+      MSEnabledResources.includes(resource as any),
     );
 
     const { rules, expiration } = computeRulesForUser({ userId, space, roles, purchasedResources });

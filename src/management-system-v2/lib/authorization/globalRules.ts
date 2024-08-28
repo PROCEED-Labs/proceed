@@ -9,14 +9,16 @@ import { env } from '../env-vars';
 export const BuyableResources = Object.freeze([] satisfies ResourceType[]);
 export type BuyableResource = (typeof BuyableResources)[number];
 
+export const MSEnabledResources: ResourceType[] = env.MS_ENABLED_RESOURCES
+  ? JSON.parse(env.MS_ENABLED_RESOURCES)
+  : resources;
+
 /**
  * These resources are the ones hat are always allowed for admins, regardless of what additional features where
  * bought for the space.
  */
 export const AllowedResourcesForAdmins = Object.freeze(
-  env.MS_ENABLED_RESOURCES.filter(
-    (resource) => !BuyableResources.includes(resource as BuyableResource),
-  ),
+  MSEnabledResources.filter((resource) => !BuyableResources.includes(resource as BuyableResource)),
 );
 
 /**
@@ -24,9 +26,7 @@ export const AllowedResourcesForAdmins = Object.freeze(
  */
 function getRulesForTargetResources(allowedResources: readonly ResourceType[]) {
   // filter out resources that aren't currently enabled
-  allowedResources = allowedResources.filter((resource) =>
-    env.MS_ENABLED_RESOURCES.includes(resource),
-  );
+  allowedResources = allowedResources.filter((resource) => MSEnabledResources.includes(resource));
 
   const disabledResources = resources.filter((resource) => !allowedResources.includes(resource));
   return [
@@ -39,7 +39,7 @@ function getRulesForTargetResources(allowedResources: readonly ResourceType[]) {
 }
 
 export const globalOrganizationRules = Object.freeze(
-  getRulesForTargetResources(env.MS_ENABLED_RESOURCES),
+  getRulesForTargetResources(MSEnabledResources),
 );
 export const packedGlobalOrganizationRules = Object.freeze(
   packRules<AbilityRule>([...globalOrganizationRules]),

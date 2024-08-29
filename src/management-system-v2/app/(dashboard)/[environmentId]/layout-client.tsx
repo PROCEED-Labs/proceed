@@ -22,7 +22,7 @@ export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean
   }),
 );
 
-export const UserSpacesContext = createContext<Environment[] | null>(null);
+export const UserSpacesContext = createContext<Environment[] | undefined>(undefined);
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
@@ -31,7 +31,7 @@ export const SpaceContext = createContext({ spaceId: '', isOrganization: false }
 const Layout: FC<
   PropsWithChildren<{
     loggedIn: boolean;
-    userEnvironments: Environment[];
+    userEnvironments?: Environment[];
     layoutMenuItems: NonNullable<MenuProps['items']>;
     activeSpace: { spaceId: string; isOrganization: boolean };
     hideSider?: boolean;

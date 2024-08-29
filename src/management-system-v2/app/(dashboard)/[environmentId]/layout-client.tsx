@@ -3,7 +3,7 @@
 import styles from './layout.module.scss';
 import { FC, PropsWithChildren, createContext, useState } from 'react';
 import { Layout as AntLayout, Button, Drawer, Grid, Menu, MenuProps, Tooltip } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { AppstoreOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import cn from 'classnames';
 import Link from 'next/link';
@@ -14,6 +14,8 @@ import UserAvatar from '@/components/user-avatar';
 import { spaceURL } from '@/lib/utils';
 import useModelerStateStore from './processes/[processId]/use-modeler-state-store';
 import AuthenticatedUserDataModal from './profile/user-data-modal';
+import SpaceLink from '@/components/space-link';
+import { FaUserEdit } from 'react-icons/fa';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -26,7 +28,11 @@ export const UserSpacesContext = createContext<Environment[] | undefined>(undefi
 
 /** Provide all client components an easy way to read the active space id
  * without filtering the usePath() for /processes etc. */
-export const SpaceContext = createContext({ spaceId: '', isOrganization: false });
+export const SpaceContext = createContext<{
+  spaceId: string;
+  isOrganization: boolean;
+  customLogo?: string;
+}>({ spaceId: '', isOrganization: false });
 
 const Layout: FC<
   PropsWithChildren<{
@@ -57,9 +63,37 @@ const Layout: FC<
   const [collapsed, setCollapsed] = useState(false);
   const breakpoint = Grid.useBreakpoint();
 
-  const layoutMenuItems = _layoutMenuItems.filter(
-    (item) => !(breakpoint.xs && item && 'type' in item && item.type === 'divider'),
-  );
+  let layoutMenuItems = _layoutMenuItems;
+  if (breakpoint.xs) {
+    layoutMenuItems = layoutMenuItems.filter(
+      (item) => !(item && 'type' in item && item.type === 'divider'),
+    );
+
+    if (userData && !userData.guest) {
+      layoutMenuItems = [
+        {
+          label: 'Profile',
+          key: 'profile-settings',
+          type: 'group',
+          children: [
+            {
+              key: 'profile',
+              title: 'Profile Settings',
+              label: <SpaceLink href={`/profile`}>Profile Settings</SpaceLink>,
+              icon: <FaUserEdit />,
+            },
+            {
+              key: 'environments',
+              title: 'My Spaces',
+              label: <SpaceLink href={`/environments`}>My Spaces</SpaceLink>,
+              icon: <AppstoreOutlined />,
+            },
+          ],
+        },
+        ...layoutMenuItems,
+      ];
+    }
+  }
 
   let imageSource = breakpoint.xs ? '/proceed-icon.png' : '/proceed.svg';
   if (customLogo) imageSource = customLogo;
@@ -70,12 +104,13 @@ const Layout: FC<
       style={{ textAlign: collapsed && !breakpoint.xs ? 'center' : 'start' }}
       mode="inline"
       items={layoutMenuItems}
+      onClick={breakpoint.xs ? () => setMobileDrawerOpen(false) : undefined}
     />
   );
 
   return (
     <UserSpacesContext.Provider value={userEnvironments}>
-      <SpaceContext.Provider value={activeSpace}>
+      <SpaceContext.Provider value={{ ...activeSpace, customLogo }}>
         {userData && !userData.guest ? (
           <AuthenticatedUserDataModal
             modalOpen={!userData.username || !userData.lastName || !userData.firstName}
@@ -153,21 +188,13 @@ const Layout: FC<
         <Drawer
           title={
             loggedIn ? (
-              <>
-                <Tooltip title="Account Settings">
-                  <UserAvatar user={userData} />
-                </Tooltip>
-              </>
+              <Tooltip title="Account Settings">
+                <UserAvatar user={userData} />
+              </Tooltip>
             ) : (
-              <>
-                <Button type="text" onClick={() => signIn()}>
-                  <u>Log in</u>
-                </Button>
-
-                <Tooltip title="Log in">
-                  <Button shape="circle" icon={<UserOutlined />} onClick={() => signIn()} />
-                </Tooltip>
-              </>
+              <Button type="text" onClick={() => signIn()}>
+                <u>Sign In</u>
+              </Button>
             )
           }
           placement="right"

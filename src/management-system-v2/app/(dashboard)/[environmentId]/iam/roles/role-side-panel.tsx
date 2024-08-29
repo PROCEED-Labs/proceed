@@ -1,15 +1,68 @@
 'use client';
 
 import { Dispatch, FC, PropsWithChildren, SetStateAction, useRef } from 'react';
-import { Alert, Drawer, Grid, Typography } from 'antd';
+import { Alert, Drawer, Grid, Space, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { FilteredRole } from './role-page';
-import RoleSiderContent from './role-sider-content';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
+import UserAvatar from '@/components/user-avatar';
+import { userRepresentation } from '@/lib/utils';
+
+const RoleContent: FC<{
+  role: (Omit<FilteredRole, 'members'> & { members: AuthenticatedUser[] }) | null;
+}> = ({ role }) => {
+  return (
+    <>
+      {role ? (
+        <>
+          {role.note && (
+            <>
+              <Typography.Title>Note</Typography.Title>
+              <Typography.Text>
+                <Alert type="warning" description={role.note} />
+              </Typography.Text>
+            </>
+          )}
+
+          {role.description && (
+            <>
+              <Typography.Title>Description</Typography.Title>
+              <Typography.Text>{role.description}</Typography.Text>
+            </>
+          )}
+
+          <Typography.Title>Members</Typography.Title>
+          <Typography.Text>{role.members.length}</Typography.Text>
+
+          <Typography.Title>Last Edited</Typography.Title>
+          <Typography.Text>{role.lastEdited}</Typography.Text>
+
+          <Typography.Title>Created On</Typography.Title>
+          <Typography.Text>{role.createdOn}</Typography.Text>
+
+          {role.members.length > 0 && (
+            <>
+              <Typography.Title>Members</Typography.Title>
+              {role.members.map((user) => (
+                <Space>
+                  <UserAvatar user={user} avatarProps={{ size: 30 }} />
+                  <Typography.Text>{userRepresentation(user)}</Typography.Text>
+                </Space>
+              ))}
+            </>
+          )}
+        </>
+      ) : (
+        <Typography.Text>Select a role.</Typography.Text>
+      )}
+    </>
+  );
+};
 
 type RoleSidePanelProps = PropsWithChildren<{
-  role: FilteredRole | null;
+  role: (FilteredRole & { members: AuthenticatedUser[] }) | null;
   setShowMobileRoleSider: Dispatch<SetStateAction<boolean>>;
   showMobileRoleSider: boolean;
 }>;
@@ -72,7 +125,7 @@ const RoleSidePanel: FC<RoleSidePanelProps> = ({
           });
         }}
       >
-        <RoleSiderContent role={role} />
+        <RoleContent role={role} />
       </CollapsibleCard>
     </ResizableElement>
   ) : (
@@ -81,7 +134,7 @@ const RoleSidePanel: FC<RoleSidePanelProps> = ({
       title={role ? role.name.value : ''}
       open={showMobileRoleSider}
     >
-      <RoleSiderContent role={role} />
+      <RoleContent role={role} />
     </Drawer>
   );
 };

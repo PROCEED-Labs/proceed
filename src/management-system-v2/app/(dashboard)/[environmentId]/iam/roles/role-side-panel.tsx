@@ -91,7 +91,7 @@ const RoleSidePanel: FC<RoleSidePanelProps> = ({
       initialWidth={
         sidePanelOpen ? useUserPreferences.getState().preferences['role-page-side-panel'].width : 30
       }
-      minWidth={300}
+      minWidth={sidePanelOpen ? 300 : 30}
       maxWidth={600}
       style={{ position: 'relative', marginLeft: '20px' }}
       onWidthChange={(width) =>

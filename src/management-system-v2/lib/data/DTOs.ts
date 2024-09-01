@@ -13,6 +13,7 @@ import {
   GetEnvironments,
   GetFolderById,
   GetFolderContents,
+  GetFolders,
   GetMembers,
   GetProcess,
   GetUsers,
@@ -40,6 +41,7 @@ import { OptionalKeys } from '../typescript-utils';
 let _getProcess: GetProcess;
 let _getProcesses: GetProcesses;
 let _getFolderContents: GetFolderContents;
+let _getFolders: GetFolders;
 let _getRootFolder: GetRootFolder;
 let _getFolderById: GetFolderById;
 let _getEnvironments: GetEnvironments;
@@ -112,6 +114,7 @@ const loadModules = async () => {
   _getOauthAccountByProviderId = usersModule.getOauthAccountByProviderId;
   _isMember = membershipsModule.isMember;
   _getUserByUsername = usersModule.getUserByUsername;
+  _getFolders = folderModule.getFolders;
 };
 
 loadModules().catch(console.error);
@@ -271,4 +274,9 @@ export async function getUserByUsername(
   await loadModules();
 
   return await _getUserByUsername(username, opts);
+}
+
+export async function getFolders(spaceId: string) {
+  await loadModules();
+  return await _getFolders(spaceId);
 }

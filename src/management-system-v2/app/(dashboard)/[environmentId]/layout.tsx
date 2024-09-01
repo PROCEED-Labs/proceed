@@ -20,10 +20,10 @@ import { MdOutlineComputer } from 'react-icons/md';
 import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
-import { adminRules } from '@/lib/ability/abilityHelper';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { adminRules } from '@/lib/authorization/globalRules';
 
 const DashboardLayout = async ({
   children,
@@ -209,7 +209,7 @@ const DashboardLayout = async ({
       <SetAbility
         rules={userRules}
         environmentId={activeEnvironment.spaceId}
-        treeMap={getSpaceFolderTree(activeEnvironment.spaceId)}
+        treeMap={await getSpaceFolderTree(activeEnvironment.spaceId)}
       />
       <Layout
         loggedIn={!!userId}

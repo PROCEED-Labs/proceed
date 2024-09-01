@@ -5,8 +5,9 @@ import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
 import { getSystemAdminByUserId } from '@/lib/data/DTOs';
-import Ability, { adminRules } from '@/lib/ability/abilityHelper';
+import Ability from '@/lib/ability/abilityHelper';
 import {
+  adminRules,
   packedGlobalOrganizationRules,
   packedGlobalUserRules,
 } from '@/lib/authorization/globalRules';
@@ -44,6 +45,7 @@ export const getCurrentEnvironment = cache(
 
     const isOrganization = activeSpace !== userId;
 
+    // TODO: account for bought resources
     if (systemAdmin) {
       let rules;
       if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);

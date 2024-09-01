@@ -55,9 +55,8 @@ export async function getFolderById(folderId: string, ability?: Ability) {
 export async function getFolders(spaceId?: string) {
   const selection = await db.folder.findMany({
     where: { environmentId: spaceId },
-    include: { childrenFolder: true },
   });
-  return selection.map((folder) => folder!.childrenFolder);
+  return selection;
 }
 
 export async function getFolderChildren(folderId: string, ability?: Ability) {

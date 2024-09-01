@@ -8,6 +8,9 @@ export type GetRootFolder =
 export type GetFolderById =
   | typeof import('./db/folders').getFolderById
   | typeof import('./legacy/folders').getFolderById;
+export type GetFolders =
+  | typeof import('./db/folders').getFolders
+  | typeof import('./legacy/folders').getFolders;
 
 // Process module types
 export type GetProcess =

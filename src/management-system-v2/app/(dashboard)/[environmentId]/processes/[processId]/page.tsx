@@ -2,9 +2,10 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
-import { getProcess, getProcessVersionBpmn, getProcesses } from '@/lib/data/legacy/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import AddUserControls from '@/components/add-user-controls';
+import { getProcess, getProcesses } from '@/lib/data/DTOs';
+import { getProcessBPMN } from '@/lib/data/processes';
 
 type ProcessProps = {
   params: { processId: string; environmentId: string };
@@ -21,17 +22,17 @@ const Process = async ({ params: { processId, environmentId }, searchParams }: P
   const { userId } = await getCurrentUser();
   // Only load bpmn if no version selected.
   const process = await getProcess(processId, !selectedVersionId);
-  const processes = await getProcesses(userId, ability);
+  const processes = await getProcesses(userId, ability, false);
 
   if (!ability.can('view', toCaslResource('Process', process))) {
     throw new Error('Forbidden.');
   }
 
   const selectedVersionBpmn = selectedVersionId
-    ? await getProcessVersionBpmn(processId, selectedVersionId)
+    ? await getProcessBPMN(processId, environmentId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
-    ? process.versions.find((version) => version.version === selectedVersionId)
+    ? process.versions.find((version: { version: number }) => version.version === selectedVersionId)
     : undefined;
 
   // Since the user is able to minimize and close the page, everyting is in a

@@ -3,7 +3,6 @@ import { z } from 'zod';
 export const VersionedObjectInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
-  description: z.string().optional(),
   folderId: z.string().optional(),
 });
 
@@ -13,7 +12,6 @@ import { Prettify, WithRequired } from '../typescript-utils';
 
 export const VersionedObjectInput = VersionedObjectInputSchema.extend({
   environmentId: z.string(),
-  ownerId: z.string(),
 });
 export type VersionedObjectServerInput = z.infer<typeof VersionedObjectInput>;
 

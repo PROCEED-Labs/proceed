@@ -6,8 +6,8 @@ import {
   deleteSystemAdmin,
   getSystemAdminByUserId,
   getSystemAdmins,
-} from '@/lib/data/legacy/iam/system-admins';
-import { getUserById, getUsers } from '@/lib/data/legacy/iam/users';
+} from '@/lib/data/DTOs';
+import { getUserById, getUsers } from '@/lib/data/DTOs';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { redirect } from 'next/navigation';
@@ -58,7 +58,7 @@ async function getNonAdminUsers() {
 
   try {
     const systemAdmins = await getSystemAdmins();
-    return getUsers().filter(
+    return (await getUsers()).filter(
       (user) => !user.isGuest && !systemAdmins.some((admin) => admin.userId === user.id),
     ) as AuthenticatedUser[];
   } catch (e) {

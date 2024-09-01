@@ -1,11 +1,27 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import {
-  deleteRoleMapping as _deleteRoleMapping,
-  addRoleMappings as _addRoleMappings,
-  RoleMappingInput,
-} from './legacy/iam/role-mappings';
+import { enableUseDB } from 'FeatureFlags';
+import { RoleMappingInput } from './legacy/iam/role-mappings';
+import Ability from '../ability/abilityHelper';
+
+let _deleteRoleMapping:
+  | typeof import('./db/iam/role-mappings').deleteRoleMapping
+  | typeof import('./legacy/iam/role-mappings').deleteRoleMapping;
+let _addRoleMappings:
+  | typeof import('./db/iam/role-mappings').addRoleMappings
+  | typeof import('./legacy/iam/role-mappings').addRoleMappings;
+
+const loadRoleMappingModule = async () => {
+  const roleMappingModule = await (enableUseDB
+    ? import('./db/iam/role-mappings')
+    : import('./legacy/iam/role-mappings'));
+
+  ({ deleteRoleMapping: _deleteRoleMapping, addRoleMappings: _addRoleMappings } =
+    roleMappingModule);
+};
+//load modules
+loadRoleMappingModule().catch(console.error);
 
 export async function addRoleMappings(
   environmentId: string,

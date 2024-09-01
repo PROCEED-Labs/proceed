@@ -1,14 +1,17 @@
 import { fileTypeFromBuffer } from 'file-type';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { deleteProcessImage, getProcessImage, saveProcessImage } from '@/lib/data/legacy/_process';
+import {
+  deleteProcessImage,
+  getProcessImage,
+  getProcessMetaObjects,
+  saveProcessImage,
+} from '@/lib/data/legacy/_process';
 import { NextRequest, NextResponse } from 'next/server';
-import stream from 'node:stream';
-import type { ReadableStream } from 'node:stream/web';
 import jwt from 'jsonwebtoken';
 
 import { TokenPayload } from '@/lib/sharing/process-sharing';
-import { getProcess } from '@/lib/data/processes';
+import { invalidRequest, readImage } from '../../../../image-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -16,9 +19,10 @@ export async function GET(
     params: { environmentId, processId, imageFileName },
   }: { params: { environmentId: string; processId: string; imageFileName: string } },
 ) {
-  const processMeta = await getProcess(processId, environmentId);
+  const processMetaObjects = getProcessMetaObjects();
+  const processMeta = processMetaObjects[processId];
 
-  if (!processMeta || 'error' in processMeta) {
+  if (!processMeta) {
     return new NextResponse(null, {
       status: 404,
       statusText: 'Process with this id does not exist.',
@@ -80,7 +84,8 @@ export async function PUT(
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const process = await getProcess(processId, environmentId);
+  const processMetaObjects: any = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
 
   if (!process) {
     return new NextResponse(null, {
@@ -96,57 +101,13 @@ export async function PUT(
     });
   }
 
-  const allowedContentTypes = ['image/jpeg', 'image/svg+xml', 'image/png'];
+  const isInvalidRequest = invalidRequest(request);
+  if (isInvalidRequest) return isInvalidRequest;
 
-  const contentType = request.headers.get('content-Type');
+  const readImageResult = await readImage(request);
+  if (readImageResult.error) return readImageResult.error;
 
-  if (!contentType || !allowedContentTypes.includes(contentType)) {
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'Wrong content type. Image must be of type JPEG, PNG or SVG.',
-    });
-  }
-
-  if (!request.body) {
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'No image was given in request',
-    });
-  }
-
-  const reader = stream.Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
-  const chunks: Uint8Array[] = [];
-  let totalLength = 0;
-  for await (const chunk of reader) {
-    if (chunk) {
-      chunks.push(chunk);
-      totalLength += chunk.length;
-      if (totalLength > 2000000) {
-        // 2MB limit
-        reader.destroy(new Error('Allowed image size of 2MB exceeded'));
-        return new NextResponse(null, {
-          status: 413,
-          statusText: 'Allowed image size of 2MB exceeded',
-        });
-      }
-    }
-  }
-  // Proceed with processing if the size limit is not exceeded
-  const imageBuffer = Buffer.concat(
-    chunks.map((chunk) => Buffer.from(chunk)),
-    totalLength,
-  );
-
-  const fileType = await fileTypeFromBuffer(imageBuffer);
-
-  if (!fileType) {
-    return new NextResponse(null, {
-      status: 415,
-      statusText: 'Can not store image with unknown file type',
-    });
-  }
-
-  await saveProcessImage(processId, imageFileName, imageBuffer);
+  await saveProcessImage(processId, imageFileName, readImageResult.buffer);
 
   return new NextResponse(null, { status: 200, statusText: 'OK' });
 }
@@ -159,7 +120,8 @@ export async function DELETE(
 ) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
-  const process = await getProcess(processId, environmentId);
+  const processMetaObjects = getProcessMetaObjects();
+  const process = processMetaObjects[processId];
 
   if (!process) {
     return new NextResponse(null, {

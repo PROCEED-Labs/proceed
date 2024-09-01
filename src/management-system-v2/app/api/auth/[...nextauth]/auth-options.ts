@@ -5,23 +5,18 @@ import GoogleProvider from 'next-auth/providers/google';
 import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import {
-  addUser,
-  deleteUser,
-  getUserById,
-  getUserByUsername,
-  updateUser,
-  usersMetaObject,
-} from '@/lib/data/legacy/iam/users';
+import { addUser, deleteUser, getUserById, getUserByUsername, updateUser } from '@/lib/data/DTOs';
+import { usersMetaObject } from '@/lib/data/legacy/iam/users';
 import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers';
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
 import renderSigninLinkEmail from './signin-link-email';
+import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
 
 const nextAuthOptions: AuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
   adapter: Adapter,
   session: {
     strategy: 'jwt',
@@ -108,15 +103,15 @@ const nextAuthOptions: AuthOptions = {
   },
 };
 
-if (process.env.NODE_ENV === 'production') {
+if (env.NODE_ENV === 'production') {
   nextAuthOptions.providers.push(
     Auth0Provider({
-      clientId: process.env.AUTH0_CLIENT_ID as string,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET as string,
-      issuer: process.env.AUTH0_ISSUER,
+      clientId: env.AUTH0_CLIENT_ID,
+      clientSecret: env.AUTH0_CLIENT_SECRET,
+      issuer: env.AUTH0_ISSUER,
       authorization: {
         params: {
-          scope: process.env.AUTH0_SCOPE,
+          scope: env.AUTH0_SCOPE,
         },
       },
       profile(profile) {
@@ -131,8 +126,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -145,8 +140,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID as string,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      clientId: env.DISCORD_CLIENT_ID,
+      clientSecret: env.DISCORD_CLIENT_SECRET,
       profile(profile) {
         const image = profile.avatar
           ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
@@ -156,8 +151,8 @@ if (process.env.NODE_ENV === 'production') {
       },
     }),
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID as string,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET as string,
+      clientId: env.TWITTER_CLIENT_ID,
+      clientSecret: env.TWITTER_CLIENT_SECRET,
       version: '2.0',
       profile({ data, email }) {
         const nameParts = data.name.split(' ');
@@ -177,7 +172,7 @@ if (process.env.NODE_ENV === 'production') {
   );
 }
 
-if (process.env.NODE_ENV === 'development') {
+if (env.NODE_ENV === 'development') {
   const developmentUsers = [
     {
       username: 'johndoe',

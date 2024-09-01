@@ -5,7 +5,6 @@ import {
   Alert,
   Avatar,
   Button,
-  ConfigProvider,
   Dropdown,
   MenuProps,
   Modal,
@@ -34,10 +33,6 @@ const HeaderActions: FC = () => {
   const [guestWarningOpen, setGuestWarningOpen] = useState(false);
   const userSpaces = useContext(UserSpacesContext);
   const activeSpace = useEnvironment();
-
-  if (!process.env.NEXT_PUBLIC_USE_AUTH) {
-    return null;
-  }
 
   if (!loggedIn) {
     return (

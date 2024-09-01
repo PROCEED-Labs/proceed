@@ -2,18 +2,18 @@ import { getCurrentEnvironment } from '@/components/auth';
 import UsersPage from './users-page';
 import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { getMemebers } from '@/lib/data/legacy/iam/memberships';
-import { getUserById } from '@/lib/data/legacy/iam/users';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
+import { getMembers } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/DTOs';
+import { AuthenticatedUser, User } from '@/lib/data/user-schema';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  console.log('Active env: ', activeEnvironment.spaceId);
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
-  const memberships = await getMemebers(activeEnvironment.spaceId, ability);
-  const users = (await Promise.all(
-    memberships.map((user) => getUserById(user.userId)),
+  const memberships = await getMembers(activeEnvironment.spaceId, ability);
+  const users = (await asyncMap<(typeof memberships)[0], User>(memberships, (user) =>
+    getUserById(user.userId),
   )) as AuthenticatedUser[];
 
   return (

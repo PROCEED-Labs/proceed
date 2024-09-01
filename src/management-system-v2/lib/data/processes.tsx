@@ -2,24 +2,6 @@
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '../ability/caslAbility';
-// Workaround because top-level await is not supported in server action modules.
-// The rest of the app can import from process.ts directly, where init is
-// awaited. Since this will always run AFTER init was run and we cache with
-// global, we can ignore init here.
-import {
-  removeProcess,
-  getProcessMetaObjects,
-  addProcess as _addProcess,
-  getProcessBpmn as _getProcessBpmn,
-  updateProcess as _updateProcess,
-  getProcess as _getProcess,
-  getProcessVersionBpmn,
-  addProcessVersion,
-  getProcessUserTaskJSON as _getProcessUserTaskJSON,
-  saveProcessUserTask as _saveProcessUserTask,
-  getProcessImage as _getProcessImage,
-  updateProcessMetaData,
-} from './legacy/_process';
 import {
   addDocumentation,
   generateDefinitionsId,
@@ -45,16 +27,74 @@ import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB } from 'FeatureFlags';
 
+// Declare variables to hold the process module functions
+let removeProcess:
+  | typeof import('./db/process').removeProcess
+  | typeof import('./legacy/_process').removeProcess;
+let getProcessMetaObjects: typeof import('./legacy/_process').getProcessMetaObjects;
+let _addProcess:
+  | typeof import('./db/process').addProcess
+  | typeof import('./legacy/_process').addProcess;
+let _getProcess:
+  | typeof import('./db/process').getProcess
+  | typeof import('./legacy/_process').getProcess;
+let _updateProcess:
+  | typeof import('./db/process').updateProcess
+  | typeof import('./legacy/_process').updateProcess;
+let getProcessVersionBpmn:
+  | typeof import('./db/process').getProcessVersionBpmn
+  | typeof import('./legacy/_process').getProcessVersionBpmn;
+let addProcessVersion:
+  | typeof import('./db/process').addProcessVersion
+  | typeof import('./legacy/_process').addProcessVersion;
+let _getProcessUserTaskJSON: //| typeof import('./db/process').getProcessUserTaskJSON
+typeof import('./legacy/_process').getProcessUserTaskJSON;
+let _saveProcessUserTask: //| typeof import('./db/process').saveProcessUserTask
+typeof import('./legacy/_process').saveProcessUserTask;
+let _getProcessImage: //| typeof import('./db/process').getProcessImage
+typeof import('./legacy/_process').getProcessImage;
+let updateProcessMetaData:
+  | typeof import('./db/process').updateProcessMetaData
+  | typeof import('./legacy/_process').updateProcessMetaData;
+let _getProcessBpmn:
+  | typeof import('./db/process').getProcessBpmn
+  | typeof import('./legacy/_process').getProcessBpmn;
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
+
+  ({
+    removeProcess,
+    getProcessMetaObjects,
+    addProcess: _addProcess,
+    getProcess: _getProcess,
+    updateProcess: _updateProcess,
+    getProcessVersionBpmn,
+    addProcessVersion,
+    getProcessUserTaskJSON: _getProcessUserTaskJSON,
+    saveProcessUserTask: _saveProcessUserTask,
+    getProcessImage: _getProcessImage,
+    updateProcessMetaData,
+    getProcessBpmn: _getProcessBpmn,
+  } = moduleImport as typeof import('./db/process') extends { getProcessMetaObjects: undefined }
+    ? typeof import('./db/process')
+    : typeof import('./legacy/_process'));
+};
+
+loadModules().catch(console.error);
+
+// Import necessary functions from processModule
+
 const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
 ) => {
+  await loadModules();
+
   const { ability } = await getCurrentEnvironment(spaceId);
 
-  const processMetaObjects = getProcessMetaObjects();
-  const process = enableUseDB ? await _getProcess(definitionId) : processMetaObjects[definitionId];
-
+  const process = await _getProcess(definitionId);
   if (!process) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
@@ -79,12 +119,12 @@ const checkValidity = async (
 };
 
 const getBpmnVersion = async (definitionId: string, versionId?: number) => {
-  const process = enableUseDB
-    ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+  await loadModules();
+
+  const process = await _getProcess(definitionId);
 
   if (versionId) {
-    if (!process.versions.some((version) => version.version === versionId)) {
+    if (!process.versions.some((version: { version: number }) => version.version === versionId)) {
       return userError(
         `The requested version does not exist for the requested process.`,
         UserErrorType.NotFoundError,
@@ -98,9 +138,9 @@ const getBpmnVersion = async (definitionId: string, versionId?: number) => {
 };
 
 export const getSharedProcessWithBpmn = async (definitionId: string, versionId?: number) => {
-  const processMetaObj = enableUseDB
-    ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+  await loadModules();
+
+  const processMetaObj = await _getProcess(definitionId);
 
   if (!processMetaObj) {
     return userError(`Process does not exist `);
@@ -122,16 +162,18 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionId?:
 };
 
 export const getProcess = async (definitionId: string, spaceId: string) => {
+  await loadModules();
+
   const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
-  const result = enableUseDB
-    ? await _getProcess(definitionId)
-    : getProcessMetaObjects()[definitionId];
+  const result = await _getProcess(definitionId);
   return result as Process;
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {
+  await loadModules();
+
   const error = await checkValidity(definitionId, 'view', spaceId);
 
   if (error) return error;
@@ -140,6 +182,8 @@ export const getProcessBPMN = async (definitionId: string, spaceId: string, vers
 };
 
 export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
+  await loadModules();
+
   for (const definitionId of definitionIds) {
     const error = await checkValidity(definitionId, 'delete', spaceId);
 
@@ -153,6 +197,8 @@ export const addProcesses = async (
   values: { name: string; description: string; bpmn?: string; folderId?: string }[],
   spaceId: string,
 ) => {
+  await loadModules();
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
 
@@ -195,6 +241,8 @@ export const updateProcessShareInfo = async (
   allowIframeTimestamp: number | undefined,
   spaceId: string,
 ) => {
+  await loadModules();
+
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
@@ -214,6 +262,8 @@ export const updateProcess = async (
   name?: string,
   invalidate = false,
 ) => {
+  await loadModules();
+
   const error = await checkValidity(definitionsId, 'update', spaceId);
 
   if (error) return error;
@@ -247,6 +297,8 @@ export const updateProcesses = async (
   }[],
   spaceId: string,
 ) => {
+  await loadModules();
+
   const res = await Promise.all(
     processes.map(async (process) => {
       return await updateProcess(
@@ -274,6 +326,8 @@ export const copyProcesses = async (
   }[],
   spaceId: string,
 ) => {
+  await loadModules();
+
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
   const { userId } = await getCurrentUser();
   const copiedProcesses: Process[] = [];
@@ -323,7 +377,10 @@ export const createVersion = async (
   if (error) return error;
 
   const bpmn = await _getProcessBpmn(processId);
-  const bpmnObj = await toBpmnObject(bpmn!);
+  if (!bpmn) {
+    return null;
+  }
+  const bpmnObj = await toBpmnObject(bpmn);
 
   const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
@@ -336,8 +393,7 @@ export const createVersion = async (
     versionBasedOn,
   });
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = enableUseDB ? await _getProcess(processId, true) : processMetaObjects[processId];
+  const process = (await _getProcess(processId)) as Process;
 
   await versionUserTasks(process, epochTime, bpmnObj);
 
@@ -405,7 +461,7 @@ export const saveProcessUserTask = async (
       UserErrorType.ConstraintError,
     );
 
-  await _saveProcessUserTask(definitionId, taskFileName, json);
+  await _saveProcessUserTask!(definitionId, taskFileName, json);
 };
 
 export const getProcessImage = async (
@@ -417,5 +473,5 @@ export const getProcessImage = async (
 
   if (error) return error;
 
-  return _getProcessImage(definitionId, imageFileName);
+  return _getProcessImage!(definitionId, imageFileName);
 };

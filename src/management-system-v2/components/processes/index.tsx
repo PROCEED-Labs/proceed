@@ -86,9 +86,9 @@ const Processes = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdOn: new Date(),
+        createdOn: null,
         createdBy: '',
-        lastEditedOn: new Date(),
+        lastEditedOn: null,
         environmentId: '',
       },
       ...processes,
@@ -402,11 +402,21 @@ const Processes = ({
                   >
                     <Card
                       style={{
-                        width: 'fit-content',
                         cursor: 'move',
                       }}
                     >
-                      {icon} {item?.name}
+                      <span
+                        style={{
+                          width: 'fit-content',
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          maxWidth: '40ch',
+                        }}
+                      >
+                        {icon} {item?.name}
+                      </span>
                     </Card>
                   </Badge>
                 );

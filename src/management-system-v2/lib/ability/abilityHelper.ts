@@ -1,8 +1,9 @@
-import { PackRule, packRules, unpackRules } from '@casl/ability/extra';
+import { PackRule, unpackRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
   ResourceType,
+  TreeMap,
   buildAbility,
   toCaslResource,
 } from './caslAbility';
@@ -17,9 +18,9 @@ export default class Ability {
   caslAbility: CaslAbility;
   environmentId: string;
 
-  constructor(packedRules: PackRule<AbilityRule>[], environmentId: string) {
+  constructor(packedRules: PackRule<AbilityRule>[], environmentId: string, tree?: TreeMap) {
     this.environmentId = environmentId;
-    this.caslAbility = buildAbility(unpackRules(packedRules));
+    this.caslAbility = buildAbility(unpackRules(packedRules), tree);
   }
 
   can<T extends CanParams[1]>(
@@ -81,12 +82,3 @@ export class UnauthorizedError extends Error {
     this.name = 'UnauthorizedError';
   }
 }
-
-export const adminRules = Object.freeze(
-  packRules([
-    {
-      subject: 'All',
-      action: 'admin',
-    },
-  ] as AbilityRule[]),
-);

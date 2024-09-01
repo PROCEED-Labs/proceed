@@ -1,15 +1,12 @@
 import { getCurrentUser } from '@/components/auth';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
-import {
-  UserHasToDeleteOrganizationsError,
-  deleteUser,
-  getUsers,
-} from '@/lib/data/legacy/iam/users';
+import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getSystemAdminByUserId } from '@/lib/data/DTOs';
+import { deleteUser, getUsers } from '@/lib/data/DTOs';
 import { redirect } from 'next/navigation';
 import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
+import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
 
 async function deleteUsers(userIds: string[]) {
   'use server';

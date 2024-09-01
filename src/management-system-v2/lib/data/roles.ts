@@ -1,12 +1,29 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { deleteRole, addRole as _addRole, updateRole as _updateRole } from './legacy/iam/roles';
 import { redirect } from 'next/navigation';
 import { UserErrorType, userError } from '../user-error';
-
 import { RedirectType } from 'next/dist/client/components/redirect';
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
+import { enableUseDB } from 'FeatureFlags';
+
+let deleteRole:
+  | typeof import('./db/iam/roles').deleteRole
+  | typeof import('./legacy/iam/roles').deleteRole;
+let _addRole: typeof import('./db/iam/roles').addRole | typeof import('./legacy/iam/roles').addRole;
+let _updateRole:
+  | typeof import('./db/iam/roles').updateRole
+  | typeof import('./legacy/iam/roles').updateRole;
+
+const loadModules = async () => {
+  const moduleImport = await (enableUseDB
+    ? import('./db/iam/roles')
+    : import('./legacy/iam/roles'));
+
+  ({ deleteRole, addRole: _addRole, updateRole: _updateRole } = moduleImport);
+};
+
+loadModules().catch(console.error);
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
   const { ability } = await getCurrentEnvironment(envitonmentId);

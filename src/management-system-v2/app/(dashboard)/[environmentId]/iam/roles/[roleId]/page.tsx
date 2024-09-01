@@ -1,11 +1,11 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoleById } from '@/lib/data/legacy/iam/roles';
+import { getRoleById } from '@/lib/data/DTOs';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import RoleId from './role-id-page';
-import { getMemebers } from '@/lib/data/legacy/iam/memberships';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getMembers } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/DTOs';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 
 const Page = async ({
@@ -28,7 +28,7 @@ const Page = async ({
   )) as AuthenticatedUser[];
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
 
-  const memberships = await getMemebers(activeEnvironment.spaceId, ability);
+  const memberships = await getMembers(activeEnvironment.spaceId, ability);
   const usersNotInRole = (await Promise.all(
     memberships
       .filter(({ userId }) => !roleUserSet.has(userId))

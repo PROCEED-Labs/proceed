@@ -4,12 +4,19 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { addRole, deleteRole, getRoleByName, getRoles, roleMetaObjects } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
-import { addMember, getMemebers, membershipMetaObject, removeMember } from './memberships';
-import { Environment, EnvironmentInput, environmentSchema } from '../../environment-schema';
+import { addMember, membershipMetaObject, removeMember } from './memberships';
+import {
+  Environment,
+  EnvironmentInput,
+  UserOrganizationEnvironmentInput,
+  UserOrganizationEnvironmentInputSchema,
+  environmentSchema,
+} from '../../environment-schema';
 import { getProcessMetaObjects, removeProcess } from '../_process';
 import { createFolder } from '../folders';
-import { enableUseDB } from 'FeatureFlags';
-import db from '@/lib/data';
+import { deleteLogo, getLogo, hasLogo, saveLogo } from '../fileHandling.js';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import { env } from '@/lib/env-vars.js';
 
 // @ts-ignore
 let firstInit = !global.environmentMetaObject;
@@ -30,23 +37,11 @@ export async function getEnvironmentById(
   ability?: Ability,
   opts?: { throwOnNotFound?: boolean },
 ) {
-  // TODO: check ability
-  if (enableUseDB) {
-    const environment = await db.space.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
-
-    return environment;
-  }
   const environment = environmentsMetaObject[id];
 
   if (!environment && opts && opts.throwOnNotFound) throw new Error('Environment not found');
 
-  return environment;
+  return environment as Environment;
 }
 
 /** Sets an environment to active, and adds the given user as an admin */
@@ -77,12 +72,8 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
   if (await getEnvironmentById(id)) throw new Error('Environment id already exists');
 
   const newEnvironmentWithId = { ...newEnvironment, id };
-  if (enableUseDB) {
-    await db.space.create({ data: { ...newEnvironmentWithId } });
-  } else {
-    environmentsMetaObject[id] = newEnvironmentWithId;
-    store.add('environments', newEnvironmentWithId);
-  }
+  environmentsMetaObject[id] = newEnvironmentWithId;
+  store.add('environments', newEnvironmentWithId);
 
   if (newEnvironment.isOrganization) {
     const adminRole = await addRole({
@@ -133,38 +124,115 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   if (!environment) throw new Error('Environment not found');
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
-  if (enableUseDB) {
-    await db.space.delete({
-      where: { id: environmentId },
-    });
-  } else {
-    const roles = Object.values(roleMetaObjects);
-    for (const role of roles) {
-      if (role.environmentId === environmentId) {
-        deleteRole(role.id); // also deletes role mappings
-      }
-    }
 
-    const processes = Object.values(getProcessMetaObjects());
-    for (const process of processes) {
-      if (process.environmentId === environmentId) {
-        removeProcess(process.id);
-      }
+  const roles = Object.values(roleMetaObjects);
+  for (const role of roles) {
+    if (role.environmentId === environmentId) {
+      deleteRole(role.id); // also deletes role mappings
     }
-
-    if (environment.isOrganization) {
-      const environmentMemberships = membershipMetaObject[environmentId];
-      if (environmentMemberships) {
-        for (const { userId } of environmentMemberships) {
-          removeMember(environmentId, userId);
-        }
-        delete membershipMetaObject[environmentId];
-      }
-    }
-
-    delete environmentsMetaObject[environmentId];
-    store.remove('environments', environmentId);
   }
+
+  const processes = Object.values(getProcessMetaObjects());
+  for (const process of processes) {
+    if (process.environmentId === environmentId) {
+      removeProcess(process.id);
+    }
+  }
+
+  if (environment.isOrganization) {
+    const environmentMemberships = membershipMetaObject[environmentId];
+    if (environmentMemberships) {
+      for (const { userId } of environmentMemberships) {
+        removeMember(environmentId, userId);
+      }
+      delete membershipMetaObject[environmentId];
+    }
+  }
+
+  delete environmentsMetaObject[environmentId];
+  store.remove('environments', environmentId);
+}
+
+export async function saveOrganizationLogo(
+  organizationId: string,
+  image: Buffer,
+  ability?: Ability,
+) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization)
+    throw new Error("You can't save a logo for a personal environment");
+
+  if (ability && ability.can('update', 'Environment', { environmentId: organizationId }))
+    throw new UnauthorizedError();
+
+  try {
+    saveLogo(organizationId, image);
+  } catch (err) {
+    throw new Error('Failed to store image');
+  }
+}
+
+export async function getOrganizationLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  try {
+    return getLogo(organizationId);
+  } catch (err) {
+    return undefined;
+  }
+}
+
+export async function organizationHasLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  return hasLogo(organizationId);
+}
+
+export async function deleteOrganizationLogo(organizationId: string) {
+  const organization = await getEnvironmentById(organizationId, undefined, {
+    throwOnNotFound: true,
+  });
+  if (!organization?.isOrganization) throw new Error("Personal spaces don' support logos");
+
+  if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
+
+  deleteLogo(organizationId);
+}
+
+export async function updateOrganization(
+  environmentId: string,
+  environmentInput: Partial<UserOrganizationEnvironmentInput>,
+  ability?: Ability,
+) {
+  const environment = await getEnvironmentById(environmentId, ability, { throwOnNotFound: true });
+
+  if (!environment) {
+    throw new Error('Environment not found');
+  }
+
+  if (
+    ability &&
+    !ability.can('update', toCaslResource('Environment', environment), { environmentId })
+  )
+    throw new UnauthorizedError();
+
+  if (!environment.isOrganization) throw new Error('Environment is not an organization');
+
+  const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
+  const newEnvironmentData: Environment = { ...environment, ...update } as Environment;
+
+  environmentsMetaObject[environmentId] = newEnvironmentData;
+  store.update('environments', environmentId, newEnvironmentData);
+
+  return newEnvironmentData;
 }
 
 let inited = false;

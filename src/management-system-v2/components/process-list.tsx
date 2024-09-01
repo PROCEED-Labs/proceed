@@ -51,6 +51,10 @@ function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListPro
   return sorter;
 }
 
+export function ProcessListItemIcon({ item }: { item: { type: ProcessListProcess['type'] } }) {
+  return item.type === 'folder' ? <FolderFilled /> : <FileFilled />;
+}
+
 type BaseProcessListProps = PropsWithChildren<{
   data: ProcessListProcess[];
   folder: Folder;
@@ -201,7 +205,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
               fontStyle: record.id === folder.parentId ? 'italic' : undefined,
             }}
           >
-            {record.type === 'folder' ? <FolderFilled /> : <FileFilled />} {record.name.highlighted}
+            <ProcessListItemIcon item={record} /> {record.name.highlighted}
           </div>
         </SpaceLink>
       ),
@@ -245,9 +249,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'lastEditedOn',
       key: 'Last Edited',
       render: (date: string) => generateDateString(date, true),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.lastEditedOn!.getTime() - a.lastEditedOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -255,9 +257,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       dataIndex: 'createdOn',
       key: 'Created On',
       render: (date: Date) => generateDateString(date, false),
-      sorter: folderAwareSort(
-        (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
-      ),
+      sorter: folderAwareSort((a, b) => b.createdOn!.getTime() - a.createdOn!.getTime()),
       responsive: ['md'],
     },
     {
@@ -459,8 +459,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
                   : undefined
               }
             >
-              {record.type === 'folder' ? <FolderFilled /> : <FileFilled />}{' '}
-              {record.name.highlighted}
+              <ProcessListItemIcon item={record} /> {record.name.highlighted}
             </div>
           );
         },

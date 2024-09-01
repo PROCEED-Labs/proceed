@@ -1,20 +1,46 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import {
-  deleteUser as _deleteUser,
-  updateUser as _updateUser,
-  usersMetaObject,
-  UserHasToDeleteOrganizationsError,
-  getUserById,
-} from './legacy/iam/users';
 import { userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
-import { getEnvironmentById } from './legacy/iam/environments';
 import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
 import { enableUseDB } from 'FeatureFlags';
+import { UserHasToDeleteOrganizationsError } from './legacy/iam/users';
+
+let _deleteUser:
+  | typeof import('./db/iam/users').deleteUser
+  | typeof import('./legacy/iam/users').deleteUser;
+let _updateUser:
+  | typeof import('./db/iam/users').updateUser
+  | typeof import('./legacy/iam/users').updateUser;
+let usersMetaObject: typeof import('./legacy/iam/users').usersMetaObject;
+let getUserById:
+  | typeof import('./db/iam/users').getUserById
+  | typeof import('./legacy/iam/users').getUserById;
+
+let getEnvironmentById: Function;
+
+const loadModules = async () => {
+  const [userModule, environmentModule] = await Promise.all([
+    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
+    enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
+  ]);
+
+  ({
+    deleteUser: _deleteUser,
+    updateUser: _updateUser,
+    usersMetaObject,
+    getUserById,
+  } = userModule as typeof import('./db/iam/users') extends { userMetaObject: undefined }
+    ? typeof import('./db/iam/users')
+    : typeof import('./legacy/iam/users'));
+
+  ({ getEnvironmentById } = environmentModule);
+};
+
+loadModules().catch(console.error);
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
@@ -26,7 +52,8 @@ export async function deleteUser() {
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
       const conflictingOrgsNames = e.conflictingOrgs.map(
-        async (orgId) => ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
+        async (orgId: string) =>
+          ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
       );
 
       message = (

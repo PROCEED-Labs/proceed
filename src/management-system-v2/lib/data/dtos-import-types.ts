@@ -33,6 +33,31 @@ export type OrganizationHasLogo =
   | typeof import('./legacy/iam/environments').organizationHasLogo;
 
 // Users module types
+
+export type GetUserByUsername =
+  | typeof import('./db/iam/users').getUserByUsername
+  | typeof import('./legacy/iam/users').getUserByUsername;
+
+export type AddUser =
+  | typeof import('./db/iam/users').addUser
+  | typeof import('./legacy/iam/users').addUser;
+
+export type GetUserByEmail =
+  | typeof import('./db/iam/users').getUserByEmail
+  | typeof import('./legacy/iam/users').getUserByEmail;
+
+export type UpdateUser =
+  | typeof import('./db/iam/users').updateUser
+  | typeof import('./legacy/iam/users').updateUser;
+
+export type AddOauthAccount =
+  | typeof import('./db/iam/users').addOauthAccount
+  | typeof import('./legacy/iam/users').addOauthAccount;
+
+export type GetOauthAccountByProviderId =
+  | typeof import('./db/iam/users').getOauthAccountByProviderId
+  | typeof import('./legacy/iam/users').getOauthAccountByProviderId;
+
 export type GetUsers =
   | typeof import('./db/iam/users').getUsers
   | typeof import('./legacy/iam/users').getUsers;
@@ -50,6 +75,9 @@ export type GetMembers =
 export type GetUserOrganizationEnvironments =
   | typeof import('./db/iam/memberships').getUserOrganizationEnvironments
   | typeof import('./legacy/iam/memberships').getUserOrganizationEnvironments;
+export type IsMember =
+  | typeof import('./db/iam/memberships').isMember
+  | typeof import('./legacy/iam/memberships').isMember;
 // Roles module types
 export type GetRoleById =
   | typeof import('./db/iam/roles').getRoleById

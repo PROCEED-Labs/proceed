@@ -5,7 +5,7 @@ import {
   updateUser,
   addOauthAccount,
   getOauthAccountByProviderId,
-} from '@/lib/data/legacy/iam/users';
+} from '@/lib/data/DTOs';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { type Adapter, AdapterAccount, VerificationToken } from 'next-auth/adapters';
 

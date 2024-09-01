@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
-import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
+import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import Ability, { adminRules } from '@/lib/ability/abilityHelper';
 import {
   packedGlobalOrganizationRules,

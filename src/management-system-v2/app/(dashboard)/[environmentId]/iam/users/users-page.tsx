@@ -11,8 +11,9 @@ import { useRouter } from 'next/navigation';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { removeUsersFromEnvironment } from '@/lib/data/environment-memberships';
 import { useEnvironment } from '@/components/auth-can';
+import { Role } from '@/lib/data/role-schema';
 
-const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
+const UsersPage: FC<{ users: (AuthenticatedUser & { roles?: Role[] })[] }> = ({ users }) => {
   const { message: messageApi } = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
@@ -24,13 +25,12 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
 
   async function removeUsers(ids: string[], unsetIds: () => void) {
     startTransition(async () => {
-      unsetIds();
-
       const result = await removeUsersFromEnvironment(environment.spaceId, ids);
 
       if (result && 'error' in result)
         messageApi.open({ type: 'error', content: 'Something went wrong' });
 
+      unsetIds();
       router.refresh();
     });
   }
@@ -63,6 +63,17 @@ const UsersPage: FC<{ users: AuthenticatedUser[] }> = ({ users }) => {
         <UserList
           users={users}
           columns={(clearSelected, hoveredId, selectedRowKeys) => [
+            {
+              dataIndex: 'roles',
+              key: 'roles',
+              title: 'Roles',
+              render: (_, user: any) =>
+                user.roles && (
+                  <Tooltip title={user.roles.map((r: Role) => r.name).join(', ')}>
+                    {user.roles.length}
+                  </Tooltip>
+                ),
+            },
             {
               dataIndex: 'id',
               key: 'tooltip',

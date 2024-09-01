@@ -4,6 +4,7 @@ import { enableUseDB } from 'FeatureFlags';
 import Ability from '../ability/abilityHelper';
 
 import {
+  GetUserByUsername,
   AddSystemAdmin,
   DeleteEnvironment,
   DeleteSystemAdmin,
@@ -15,6 +16,7 @@ import {
   GetMembers,
   GetProcess,
   GetUsers,
+  IsMember,
   GetProcesses,
   GetRoleById,
   GetRoles,
@@ -24,9 +26,16 @@ import {
   GetUserById,
   GetUserOrganizationEnvironments,
   OrganizationHasLogo,
+  AddUser,
+  GetUserByEmail,
+  AddOauthAccount,
+  GetOauthAccountByProviderId,
+  UpdateUser,
 } from './dtos-import-types';
 import { SystemAdminCreationInput } from './system-admin-schema';
 import { Environment } from './environment-schema';
+import { AuthenticatedUser, OauthAccount, User } from './user-schema';
+import { OptionalKeys } from '../typescript-utils';
 
 let _getProcess: GetProcess;
 let _getProcesses: GetProcesses;
@@ -48,6 +57,13 @@ let _addSystemAdmin: AddSystemAdmin;
 let _deleteSystemAdmin: DeleteSystemAdmin;
 let _getSystemAdmins: GetSystemAdmins;
 let _deleteUser: DeleteUser;
+let _addUser: AddUser;
+let _getUserByEmail: GetUserByEmail;
+let _updateUser: UpdateUser;
+let _addOauthAccount: AddOauthAccount;
+let _getOauthAccountByProviderId: GetOauthAccountByProviderId;
+let _isMember: IsMember;
+let _getUserByUsername: GetUserByUsername;
 
 const loadModules = async () => {
   const [
@@ -89,6 +105,13 @@ const loadModules = async () => {
   _getSystemAdmins = sysAdminsModule.getSystemAdmins;
   _deleteUser = usersModule.deleteUser;
   _getUsers = usersModule.getUsers;
+  _addUser = usersModule.addUser;
+  _getUserByEmail = usersModule.getUserByEmail;
+  _addOauthAccount = usersModule.addOauthAccount;
+  _updateUser = usersModule.updateUser;
+  _getOauthAccountByProviderId = usersModule.getOauthAccountByProviderId;
+  _isMember = membershipsModule.isMember;
+  _getUserByUsername = usersModule.getUserByUsername;
 };
 
 loadModules().catch(console.error);
@@ -130,7 +153,7 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
 
 export async function getEnvironmentById(environmentId: string, ability?: Ability) {
   await loadModules();
-  return await _getEnvironmentById(environmentId, ability);
+  return (await _getEnvironmentById(environmentId, ability)) as Environment;
 }
 
 export async function getUserOrganizationEnvironments(userId: string) {
@@ -143,7 +166,7 @@ export async function getUserById(
   opts?: { throwIfNotFound?: boolean | undefined } | undefined,
 ) {
   await loadModules();
-  return await _getUserById(userId, opts);
+  return (await _getUserById(userId, opts)) as User;
 }
 
 export async function getMembers(environmentId: string, ability?: Ability) {
@@ -199,4 +222,53 @@ export async function deleteUser(userId: string) {
 export async function getUsers() {
   await loadModules();
   return await _getUsers();
+}
+
+export async function isMember(environmentId: string, userId: string) {
+  await loadModules();
+
+  return await _isMember(environmentId, userId);
+}
+
+export async function addUser(inputUser: OptionalKeys<User, 'id'>) {
+  await loadModules();
+
+  return await _addUser(inputUser);
+}
+
+export async function getUserByEmail(
+  email: string,
+  opts?: {
+    throwIfNotFound?: boolean | undefined;
+  },
+) {
+  await loadModules();
+  return await _getUserByEmail(email, opts);
+}
+
+export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
+  await loadModules();
+
+  return await _updateUser(userId, inputUser);
+}
+
+export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
+  await loadModules();
+
+  return await _addOauthAccount(accountInput);
+}
+
+export async function getOauthAccountByProviderId(provider: string, providerId: string) {
+  await loadModules();
+
+  return await _getOauthAccountByProviderId(provider, providerId);
+}
+
+export async function getUserByUsername(
+  username: string,
+  opts?: { throwIfNotFound?: boolean | undefined } | undefined,
+) {
+  await loadModules();
+
+  return await _getUserByUsername(username, opts);
 }

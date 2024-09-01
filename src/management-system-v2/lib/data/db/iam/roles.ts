@@ -10,7 +10,19 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
   const roles = await db.role.findMany({
     where: environmentId ? { environmentId: environmentId } : undefined,
     include: {
-      members: true,
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   });
 

@@ -5,7 +5,6 @@ import {
   Alert,
   Avatar,
   Button,
-  ConfigProvider,
   Dropdown,
   MenuProps,
   Modal,

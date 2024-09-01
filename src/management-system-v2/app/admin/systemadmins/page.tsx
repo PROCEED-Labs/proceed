@@ -6,7 +6,7 @@ import {
   deleteSystemAdmin,
   getSystemAdminByUserId,
   getSystemAdmins,
-} from '@/lib/data/legacy/iam/system-admins';
+} from '@/lib/data/DTOs';
 import { getUserById, getUsers } from '@/lib/data/DTOs';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { UserErrorType, userError } from '@/lib/user-error';

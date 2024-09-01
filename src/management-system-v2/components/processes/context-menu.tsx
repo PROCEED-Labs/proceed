@@ -150,11 +150,23 @@ const ConextMenuArea: FC<
     contextMenuItems.push(
       {
         type: 'group',
-        label:
-          selectedContextMenuItems.length > 1
-            ? `${selectedContextMenuItems.length} selected`
-            : selectedContextMenuItems[0].name.value,
+        label: (
+          <span
+            style={{
+              display: 'block',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+            }}
+          >
+            {selectedContextMenuItems.length > 1
+              ? `${selectedContextMenuItems.length} selected`
+              : selectedContextMenuItems[0].name.value}
+          </span>
+        ),
         children,
+        style: {
+          textOverflow: 'ellipsis',
+        },
       },
       {
         key: 'item-divider',
@@ -166,6 +178,10 @@ const ConextMenuArea: FC<
     <Dropdown
       menu={{
         items: [...(prefix || []), ...contextMenuItems, ...(suffix || [])],
+        style: {
+          maxWidth: '40ch',
+          whiteSpace: 'nowrap',
+        },
       }}
       trigger={['contextMenu']}
       onOpenChange={(open) => {

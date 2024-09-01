@@ -1,6 +1,6 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import Content from '@/components/content';
-import { getRoles } from '@/lib/data/legacy/iam/roles';
+import { getRoles } from '@/lib/data/DTOs';
 import RolesPage from './role-page';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 

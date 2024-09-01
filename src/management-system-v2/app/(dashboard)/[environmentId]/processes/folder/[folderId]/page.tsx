@@ -1,4 +1,3 @@
-import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
 import Processes from '@/components/processes';
 import Content from '@/components/content';
 import { Button, Space } from 'antd';
@@ -16,6 +15,7 @@ import { LeftOutlined } from '@ant-design/icons';
 import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
+import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/DTOs';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async ({

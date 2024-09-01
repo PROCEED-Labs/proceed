@@ -7,9 +7,13 @@ import { RedirectType } from 'next/dist/client/components/redirect';
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 import { enableUseDB } from 'FeatureFlags';
 
-let deleteRole: (arg0: string, arg1: Ability) => void;
-let _addRole: (arg0: any, arg1: Ability) => any;
-let _updateRole: (arg0: string, arg1: { environmentId: string }, arg2: Ability) => void;
+let deleteRole:
+  | typeof import('./db/iam/roles').deleteRole
+  | typeof import('./legacy/iam/roles').deleteRole;
+let _addRole: typeof import('./db/iam/roles').addRole | typeof import('./legacy/iam/roles').addRole;
+let _updateRole:
+  | typeof import('./db/iam/roles').updateRole
+  | typeof import('./legacy/iam/roles').updateRole;
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB

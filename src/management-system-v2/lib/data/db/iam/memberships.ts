@@ -49,7 +49,7 @@ export async function getUserOrganizationEnvironments(userId: string) {
   ).map((workspace) => workspace.id);
 }
 
-export async function getMemebers(environmentId: string, ability?: Ability) {
+export async function getMembers(environmentId: string, ability?: Ability) {
   //TODO: ability check
   if (ability) ability;
 

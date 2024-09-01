@@ -1,17 +1,13 @@
 import { getCurrentUser } from '@/components/auth';
-import {
-  deleteEnvironment,
-  getEnvironmentById,
-  getEnvironments,
-} from '@/lib/data/legacy/iam/environments';
-import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
+import { deleteEnvironment, getEnvironmentById, getEnvironments } from '@/lib/data/DTOs';
+import { getSystemAdminByUserId } from '@/lib/data/DTOs';
 import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 import { getSpaceRepresentation, getUserName } from './space-representation';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getUserOrganizationEnvironments } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/DTOs';
 import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
@@ -62,7 +58,7 @@ export default async function SysteAdminDashboard({ params }: { params?: { userI
 
     spacesTableRepresentation = await getSpaceRepresentation(userSpaces);
   } else {
-    spacesTableRepresentation = await getSpaceRepresentation(getEnvironments());
+    spacesTableRepresentation = await getSpaceRepresentation(await getEnvironments());
   }
 
   return (

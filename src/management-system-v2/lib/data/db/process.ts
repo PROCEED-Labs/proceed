@@ -16,6 +16,7 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { ProcessType } from '@prisma/client';
+import { UserErrorType, userError } from '@/lib/user-error';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -467,3 +468,83 @@ export async function getProcessBpmn(processDefinitionsId: string) {
 }
 
 // TODO: usertask logic and image handling -> in file manager branch
+
+/** Returns the filenames of the data for all user tasks in the given process */
+export async function getProcessUserTasks(processDefinitionsId: string) {
+  // TODO
+}
+
+/** Returns the form data for a specific user task in a process */
+export async function getProcessUserTaskJSON(processDefinitionsId: string, taskFileName: string) {
+  // TODO
+}
+
+/** Return object mapping from user tasks fileNames to their form data */
+export async function getProcessUserTasksJSON(processDefinitionsId: string) {
+  return userError('Not Implemented in db', UserErrorType.NotFoundError);
+}
+
+export async function saveProcessUserTask(
+  processDefinitionsId: string,
+  userTaskFileName: string,
+  json: string,
+) {
+  // TODO
+}
+
+/** Removes a stored user task from disk */
+export async function deleteProcessUserTask(
+  processDefinitionsId: string,
+  userTaskFileName: string,
+) {
+  // TODO
+}
+
+export async function getProcessImage(processDefinitionsId: string, imageFileName: string) {
+  // TODO
+}
+
+/** Return Array with fileNames of images for given process */
+export async function getProcessImageFileNames(processDefinitionsId: string) {
+  // TODO
+}
+
+/** Return object mapping from images fileNames to their image */
+export async function getProcessImages(processDefinitionsId: string) {
+  // TODO
+}
+
+export async function saveProcessImage(
+  processDefinitionsId: string,
+  imageFileName: string,
+  image: Buffer,
+) {
+  // TODO
+}
+
+export async function deleteProcessImage(processDefinitionsId: string, imageFileName: string) {
+  // TODO
+}
+
+/** Stores the id of the socket wanting to block the process from being deleted inside the process object */
+export function blockProcess(socketId: string, processDefinitionsId: string) {
+  // TODO
+}
+
+/** Removes the id of the socket wanting to unblock the process from the process object */
+export function unblockProcess(socketId: string, processDefinitionsId: string) {
+  // TODO
+}
+
+export function blockTask(socketId: string, processDefinitionsId: string, taskId: string) {
+  // TODO
+}
+
+export function unblockTask(socketId: string, processDefinitionsId: string, taskId: string) {
+  // TODO
+}
+
+/** Will remove all instance adaptation processes that are stored */
+function removeAdaptationProcesses(processes: ProcessMetadata[]) {
+  // TODO
+}

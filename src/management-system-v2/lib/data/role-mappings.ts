@@ -5,16 +5,12 @@ import { enableUseDB } from 'FeatureFlags';
 import { RoleMappingInput } from './legacy/iam/role-mappings';
 import Ability from '../ability/abilityHelper';
 
-let _deleteRoleMapping: (arg0: string, arg1: string, arg2: string, arg3: Ability) => void;
-let _addRoleMappings: (
-  arg0: {
-    environmentId: string;
-    userId: string;
-    expiration?: string | undefined;
-    roleId: string;
-  }[],
-  arg1: Ability,
-) => void;
+let _deleteRoleMapping:
+  | typeof import('./db/iam/role-mappings').deleteRoleMapping
+  | typeof import('./legacy/iam/role-mappings').deleteRoleMapping;
+let _addRoleMappings:
+  | typeof import('./db/iam/role-mappings').addRoleMappings
+  | typeof import('./legacy/iam/role-mappings').addRoleMappings;
 
 const loadRoleMappingModule = async () => {
   const roleMappingModule = await (enableUseDB

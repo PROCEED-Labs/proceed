@@ -11,9 +11,13 @@ import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
 import { getUserOrganizationEnvironments, removeMember } from './memberships';
 import { getRoleMappingByUserId } from './role-mappings';
-import { getRoles } from './roles';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data';
+
+export async function getUsers() {
+  // TODO ability check
+  return (await db.user.findMany({})) as User[];
+}
 
 export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = await db.user.findUnique({ where: { id: id } });

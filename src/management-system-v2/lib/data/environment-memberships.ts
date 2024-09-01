@@ -5,7 +5,17 @@ import { UserErrorType, userError } from '../user-error';
 import { z } from 'zod';
 import { enableUseDB } from 'FeatureFlags';
 
-let getUserByEmail: any, addMember: any, removeMember: any;
+let getUserByEmail:
+  | typeof import('./db/iam/users').getUserByEmail
+  | typeof import('./legacy/iam/users').getUserByEmail;
+
+let addMember:
+  | typeof import('./db/iam/memberships').addMember
+  | typeof import('./legacy/iam/memberships').addMember;
+
+let removeMember:
+  | typeof import('./db/iam/memberships').removeMember
+  | typeof import('./legacy/iam/memberships').removeMember;
 
 // Function to load modules based on feature flag
 const loadModules = async () => {

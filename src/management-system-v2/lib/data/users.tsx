@@ -9,34 +9,33 @@ import Link from 'next/link';
 import { enableUseDB } from 'FeatureFlags';
 import { UserHasToDeleteOrganizationsError } from './legacy/iam/users';
 
-type UserModule = {
-  deleteUser: Function;
-  updateUser: Function;
-  usersMetaObject?: any;
-  getUserById: Function;
-};
-
-type EnvironmentModule = {
-  getEnvironmentById: Function;
-};
-
-let userModule: UserModule;
-let environmentModule: EnvironmentModule;
-
-let _deleteUser: Function;
-let _updateUser: Function;
-let usersMetaObject: any;
-let getUserById: Function;
+let _deleteUser:
+  | typeof import('./db/iam/users').deleteUser
+  | typeof import('./legacy/iam/users').deleteUser;
+let _updateUser:
+  | typeof import('./db/iam/users').updateUser
+  | typeof import('./legacy/iam/users').updateUser;
+let usersMetaObject: typeof import('./legacy/iam/users').usersMetaObject;
+let getUserById:
+  | typeof import('./db/iam/users').getUserById
+  | typeof import('./legacy/iam/users').getUserById;
 
 let getEnvironmentById: Function;
 
 const loadModules = async () => {
-  [userModule, environmentModule] = await Promise.all([
+  const [userModule, environmentModule] = await Promise.all([
     enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
     enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
   ]);
 
-  ({ deleteUser: _deleteUser, updateUser: _updateUser, usersMetaObject, getUserById } = userModule);
+  ({
+    deleteUser: _deleteUser,
+    updateUser: _updateUser,
+    usersMetaObject,
+    getUserById,
+  } = userModule as typeof import('./db/iam/users') extends { userMetaObject: undefined }
+    ? typeof import('./db/iam/users')
+    : typeof import('./legacy/iam/users'));
 
   ({ getEnvironmentById } = environmentModule);
 };

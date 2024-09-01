@@ -2,8 +2,8 @@ import { getCurrentEnvironment } from '@/components/auth';
 import UsersPage from './users-page';
 import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { getMembers } from '@/lib/data/legacy/iam/memberships';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getMembers } from '@/lib/data/DTOs';
+import { getUserById } from '@/lib/data/DTOs';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 
 const Page = async ({ params }: { params: { environmentId: string } }) => {

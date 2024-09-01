@@ -5,7 +5,7 @@ import Content from '@/components/content';
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 import SpaceSettings from './space-settings';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import DeleteOrganizationButton from './delete-organization-button';
 import { AuthCan } from '@/components/auth-can';

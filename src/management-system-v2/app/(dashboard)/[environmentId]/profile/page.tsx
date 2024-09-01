@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/components/auth';
 import UserProfile from './user-profile';
 import Content from '@/components/content';
-import { getUserById } from '@/lib/data/legacy/iam/users';
+import { getUserById } from '@/lib/data/DTOs';
 import { User } from '@/lib/data/user-schema';
 
 const ProfilePage = async () => {

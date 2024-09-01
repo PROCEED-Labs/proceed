@@ -9,10 +9,18 @@ import { UserErrorType, userError } from '../user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import { enableUseDB } from 'FeatureFlags';
 
-let addEnvironment: Function;
-let deleteEnvironment: Function;
-let getEnvironmentById: Function;
-let _updateOrganization: Function;
+let addEnvironment:
+  | typeof import('./db/iam/environments').addEnvironment
+  | typeof import('./legacy/iam/environments').addEnvironment;
+let deleteEnvironment:
+  | typeof import('./db/iam/environments').deleteEnvironment
+  | typeof import('./legacy/iam/environments').deleteEnvironment;
+let getEnvironmentById:
+  | typeof import('./db/iam/environments').getEnvironmentById
+  | typeof import('./legacy/iam/environments').getEnvironmentById;
+let _updateOrganization:
+  | typeof import('./db/iam/environments').updateOrganization
+  | typeof import('./legacy/iam/environments').updateOrganization;
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB
@@ -32,6 +40,8 @@ loadModules().catch(console.error);
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
 ) {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
 
   try {
@@ -50,6 +60,8 @@ export async function addOrganizationEnvironment(
 }
 
 export async function deleteOrganizationEnvironments(environmentIds: string[]) {
+  await loadModules();
+
   try {
     for (const environmentId of environmentIds) {
       const { ability } = await getCurrentEnvironment(environmentId);
@@ -77,6 +89,8 @@ export async function updateOrganization(
   environmentId: string,
   data: Partial<UserOrganizationEnvironmentInput>,
 ) {
+  await loadModules();
+
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
 

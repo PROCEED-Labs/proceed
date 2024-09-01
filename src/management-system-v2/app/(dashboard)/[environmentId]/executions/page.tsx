@@ -3,7 +3,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
 import { env } from '@/lib/env-vars';
 import DeploymentsView from './deployments-view';
-import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/legacy/folders';
+import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/DTOs';
 import { getUsersFavourites } from '@/lib/data/users';
 
 const ExecutionsPage = async ({ params }: { params: { environmentId: string } }) => {

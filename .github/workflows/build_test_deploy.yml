@@ -284,16 +284,17 @@ jobs:
           env_vars: |
             NEXTAUTH_URL=https://${{ env.SUBDOMAIN }}.proceed-labs.org
           region: 'europe-west1'
+          revision_traffic: LATEST=100
 
       # The traffic update has to be its own step, as it needs to run after
       # the deployment.
-      - id: 'update-traffic'
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: 'google-github-actions/deploy-cloudrun@v2'
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          region: 'europe-west1'
-          revision_traffic: LATEST=100
+      #- id: 'update-traffic'
+      #  if: ${{ github.ref == 'refs/heads/main' }}
+      #  uses: 'google-github-actions/deploy-cloudrun@v2'
+      #  with:
+      #    service: ${{ env.SERVICE_NAME }}
+      #   region: 'europe-west1'
+      #   revision_traffic: LATEST=100
 
       - id: 'deploy-preview'
         if: ${{ github.event_name == 'pull_request' }}

@@ -6,6 +6,8 @@ import { getFolders } from '../data/legacy/folders';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { getRoleMappingByUserId } from '../data/legacy/iam/role-mappings';
 import { getAppliedRolesForUser } from './organizationEnvironmentRolesHelper';
+import { env } from '../env-vars';
+import { MSEnabledResources } from './globalRules';
 
 type PackedRules = PackedRulesForUser['rules'];
 
@@ -69,17 +71,33 @@ export async function getUserRules(userId: string, environmentId: string) {
   // cached rules aren't being correctly removed after roles are updated
   let userRules = undefined;
 
-  if (userRules === undefined) {
-    const space = getEnvironmentById(environmentId);
-    const roles =
-      space.organization && space.active ? getAppliedRolesForUser(userId, environmentId) : [];
+  if (userRules) return userRules;
 
-    const { rules, expiration } = computeRulesForUser({ userId, space, roles });
+  const space = getEnvironmentById(environmentId);
+
+  if (!space.organization) {
+    const { rules, expiration } = computeRulesForUser({ userId, space });
     cacheRulesForUser(userId, environmentId, rules, expiration);
-    userRules = rules;
+    return rules;
   }
 
-  return userRules;
+  if (space.active) {
+    const roles = getAppliedRolesForUser(userId, environmentId);
+    // TODO: get bough features from db
+
+    const getPurhasedFeatures = (_: string) => [];
+
+    const purchasedResources = getPurhasedFeatures(environmentId).filter((resource) =>
+      MSEnabledResources.includes(resource as any),
+    );
+
+    const { rules, expiration } = computeRulesForUser({ userId, space, roles, purchasedResources });
+    cacheRulesForUser(userId, environmentId, rules, expiration);
+    return rules;
+  }
+
+  // Non active organization
+  return [];
 }
 
 export async function getAbilityForUser(userId: string, environmentId: string) {

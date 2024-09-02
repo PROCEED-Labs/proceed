@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 import z from 'zod';
+import { resources } from './ability/caslAbility';
 
 // --------------------------------------------
 // Add environment variables here
@@ -12,6 +13,19 @@ const environmentVariables = {
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     INVITATION_ENCRYPTION_SECRET: z.string(),
+    MS_ENABLED_RESOURCES: z
+      .string()
+      .transform((str, ctx) => {
+        try {
+          const json = JSON.parse(str);
+          z.array(z.enum(resources)).parse(json);
+          return str;
+        } catch (e) {
+          ctx.addIssue({ code: 'custom', message: 'Invalid JSON' });
+          return z.NEVER;
+        }
+      })
+      .optional(),
   },
   production: {
     NEXTAUTH_SECRET: z.string(),
@@ -91,7 +105,7 @@ if (!parsingResult.success && !onBuild) {
   process.exit(1);
 }
 
-const data = parsingResult.success && !onBuild ? parsingResult.data : {};
+const data = parsingResult.success ? parsingResult.data : {};
 
 export const env = new Proxy(data as Extract<typeof parsingResult, { success: true }>['data'], {
   get(target, prop) {

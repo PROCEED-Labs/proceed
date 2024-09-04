@@ -38,7 +38,7 @@ const AddUsersModal: FC<{
     queryFn: async () => {
       const roles = await getRoles(environment.spaceId);
       if ('error' in roles) throw new Error();
-      return roles.filter((role) => !['@guest', '@everyone'].includes(role.name));
+      return roles;
     },
     queryKey: ['roles', environment.spaceId],
   });
@@ -146,7 +146,9 @@ const AddUsersModal: FC<{
             style={{ width: '100%' }}
             placeholder="Select roles"
             onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
-            options={roles.map((role) => ({ label: role.name, value: role.id }))}
+            options={roles
+              .filter((role) => !['@guest', '@everyone'].includes(role.name))
+              .map((role) => ({ label: role.name, value: role.id }))}
           />
         </>
       )}

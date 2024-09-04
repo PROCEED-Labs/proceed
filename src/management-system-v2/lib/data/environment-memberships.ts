@@ -17,7 +17,9 @@ import { RoleMapping } from './legacy/iam/role-mappings';
 
 const EmailListSchema = z.array(z.string().email());
 
-const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+/** 30 days in ms */
+const invitationExpirationTime = 30 * 24 * 60 * 60 * 1000;
+
 export async function inviteUsersToEnvironment(
   environmentId: string,
   invitedEmailsInput: string[],
@@ -52,7 +54,7 @@ export async function inviteUsersToEnvironment(
       const invitedUser = getUserByEmail(invitedEmail);
       if (invitedUser && isMember(environmentId, invitedUser.id)) continue;
 
-      const expirationDate = new Date(Date.now() + thirtyDaysInMs);
+      const expirationDate = new Date(Date.now() + invitationExpirationTime);
 
       const invitationToken = generateInvitationToken(
         {

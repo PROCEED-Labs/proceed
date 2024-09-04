@@ -34,7 +34,7 @@ const AddUsersModal: FC<{
   const [users, setUsers] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
-  const { data: roles } = useQuery({
+  const { data } = useQuery({
     queryFn: async () => {
       const roles = await getRoles(environment.spaceId);
       if ('error' in roles) throw new Error();
@@ -42,6 +42,7 @@ const AddUsersModal: FC<{
     },
     queryKey: ['roles', environment.spaceId],
   });
+  const roles = data?.filter((role) => !['@guest', '@everyone'].includes(role.name));
 
   useEffect(() => {
     form.resetFields();
@@ -146,9 +147,7 @@ const AddUsersModal: FC<{
             style={{ width: '100%' }}
             placeholder="Select roles"
             onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
-            options={roles
-              .filter((role) => !['@guest', '@everyone'].includes(role.name))
-              .map((role) => ({ label: role.name, value: role.id }))}
+            options={roles.map((role) => ({ label: role.name, value: role.id }))}
           />
         </>
       )}

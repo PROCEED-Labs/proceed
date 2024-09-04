@@ -36,8 +36,8 @@ export default async function IvitationPage({ searchParams }: { searchParams: { 
   if (session.user.guest || !userId || userId !== session.user.id)
     return <Error title="Wrong user" subTitle="Sign in with the user to whom the token was sent" />;
 
-  const organizaiton = getEnvironmentById(invite.spaceId);
-  if (!organizaiton || !organizaiton.organization || !organizaiton.active)
+  const organization = getEnvironmentById(invite.spaceId);
+  if (!organization || !organization.organization || !organization.active)
     return <Error title="This token is no longer valid" />;
 
   if (!isMember(invite.spaceId, userId)) {

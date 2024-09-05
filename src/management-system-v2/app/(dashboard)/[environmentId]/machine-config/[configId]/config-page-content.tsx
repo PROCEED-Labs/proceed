@@ -46,7 +46,7 @@ const ParameterTreeNode: React.FC<{
     const { displayName, value, unit, language } = parameter.content[0];
     node = (
       <Tooltip
-        placement="top"
+        placement="right"
         title={
           <Space size={3}>
             {displayName}:{value} {unit}({language})
@@ -215,6 +215,10 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
         }}
       >
         <div className={styles.SiderActions}>
+          <Button className={styles.CustomBoxButton} type="default" onClick={handleCollapse}>
+            {!siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </Button>
+
           {siderOpen && (
             <Button
               type="default"
@@ -230,15 +234,12 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
               <FaFolderTree />
             </Button>
           )}
-
-          <Button className={styles.CustomBoxButton} type="default" onClick={handleCollapse}>
-            {!siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          </Button>
         </div>
 
         {siderOpen && (
           <div className={styles.CustomBoxContentWrapper}>
             <ConfigurationTreeView
+              parentConfig={parentConfig}
               editable={editable}
               treeData={treeData}
               expandedKeys={expandedKeys}
@@ -255,7 +256,6 @@ const ConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig }) => {
                 setSelectionId(selection ? selection.id : '');
                 setSelectionType(selection ? selection.type : 'config');
               }}
-              parentConfig={parentConfig}
             />
           </div>
         )}

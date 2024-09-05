@@ -144,6 +144,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   const actionBarGenerator = useCallback(
@@ -212,10 +213,14 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     const { id, name } = values[0];
     // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
     await updateParentConfig(id, { name });
+    setOpenEditModal(false);
     router.refresh();
   }
 
-  // copy multiple items
+  /**
+   * copy multiple items
+   * @param values List of Value-objects, each containing an ID of a config from which values are to be copied
+   */
   async function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
@@ -292,7 +297,6 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     },
     {
       title: 'Description',
-      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => (
         <SpaceLink
           href={`/machine-config/${record.id}`}
@@ -302,12 +306,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
             display: 'block',
           }}
         >
-          {/* {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
-            <>&emsp;</>
-          ) : (
-            record.metadata.description?.content[0].value
-          )} */}
-          {record.metadata ? record.metadata.description?.content[0].value ?? '' : ''}
+          {record.metadata?.description?.content[0].value ?? ''}
         </SpaceLink>
       ),
       responsive: ['sm'],
@@ -317,7 +316,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => (a.lastEdited || '').localeCompare(b.lastEdited || ''),
+      sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
       responsive: ['md'],
     },
   ];

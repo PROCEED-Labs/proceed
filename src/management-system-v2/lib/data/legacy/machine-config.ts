@@ -396,7 +396,9 @@ export async function copyConfig(
 }
 
 /**
- *
+ * @param originalId ID of the config to be copied.
+ * @param machineConfigInput Config the selected config is to be pasted into
+ * @param environmentId
  * @throws {Error} in case:
  * * config ID does not exist.
  * * the folder is not found.
@@ -715,7 +717,11 @@ export async function removeMachineConfig(machineConfigId: string) {
   store.set('techData', 'machineConfigs', storedData.machineConfigs);
 }
 
-/** Removes an existing parent config */
+/**
+ * Removes an existing parent config for a given ID from store.
+ *
+ * @param parentConfigId ID of the ParentConfig that is to be removed.
+ */
 export async function removeParentConfiguration(parentConfigId: string) {
   const parentConfig = storedData.parentConfigs[parentConfigId];
 

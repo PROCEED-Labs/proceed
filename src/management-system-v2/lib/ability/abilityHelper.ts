@@ -1,4 +1,4 @@
-import { PackRule, packRules, unpackRules } from '@casl/ability/extra';
+import { PackRule, unpackRules } from '@casl/ability/extra';
 import {
   AbilityRule,
   CaslAbility,
@@ -82,12 +82,3 @@ export class UnauthorizedError extends Error {
     this.name = 'UnauthorizedError';
   }
 }
-
-export const adminRules = Object.freeze(
-  packRules([
-    {
-      subject: 'All',
-      action: 'admin',
-    },
-  ] as AbilityRule[]),
-);

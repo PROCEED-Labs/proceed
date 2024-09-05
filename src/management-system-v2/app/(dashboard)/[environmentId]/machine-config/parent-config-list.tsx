@@ -339,20 +339,21 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                   </Button>
                 </Dropdown>
               )}
-              <Upload
-                accept=".json"
-                showUploadList={false}
-                beforeUpload={(file: File) => {
-                  importItems(file);
-                  return false; // Prevent automatic upload
-                }}
-              >
-                <Tooltip placement="top" title={'Import'}>
-                  <Button type="primary" style={{ margin: '0 10px' }}>
-                    Import
+
+              {!breakpoint.xs && (
+                <Upload
+                  accept=".json"
+                  showUploadList={false}
+                  beforeUpload={(file: File) => {
+                    importItems(file);
+                    return false; // Prevent automatic upload
+                  }}
+                >
+                  <Button type="default" style={{ margin: '0 10px' }}>
+                    Import Config
                   </Button>
-                </Tooltip>
-              </Upload>
+                </Upload>
+              )}
 
               <SelectionActions count={selectedRowKeys.length}>
                 <Tooltip placement="top" title={'Export'}>

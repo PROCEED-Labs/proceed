@@ -180,15 +180,17 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
 
           <AuthCan delete {...resource}>
             <Tooltip placement="top" title={'Delete'}>
-              <ConfirmationButton
-                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-                description="Are you sure you want to delete the selected process?"
-                onConfirm={() => deleteItems([record])}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
+              <>
+                <ConfirmationButton
+                  title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+                  description="Are you sure you want to delete the selected process?"
+                  onConfirm={() => deleteItems([record])}
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    type: 'text',
+                  }}
+                />
+              </>
             </Tooltip>
           </AuthCan>
         </>
@@ -370,17 +372,19 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                   />
                 </Tooltip>
                 <Tooltip placement="top" title={'Delete'}>
-                  <ConfirmationButton
-                    title="Delete Configuration"
-                    externalOpen={openDeleteModal}
-                    onExternalClose={() => setOpenDeleteModal(false)}
-                    description="Are you sure you want to delete the selected configuration(s)?"
-                    onConfirm={() => deleteItems(selectedRowElements)}
-                    buttonProps={{
-                      icon: <DeleteOutlined />,
-                      type: 'text',
-                    }}
-                  />
+                  <>
+                    <ConfirmationButton
+                      title="Delete Configuration"
+                      externalOpen={openDeleteModal}
+                      onExternalClose={() => setOpenDeleteModal(false)}
+                      description="Are you sure you want to delete the selected configuration(s)?"
+                      onConfirm={() => deleteItems(selectedRowElements)}
+                      buttonProps={{
+                        icon: <DeleteOutlined />,
+                        type: 'text',
+                      }}
+                    />
+                  </>
                 </Tooltip>
               </SelectionActions>
             </span>

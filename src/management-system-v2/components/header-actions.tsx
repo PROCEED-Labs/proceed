@@ -101,6 +101,7 @@ const HeaderActions: FC = () => {
                 label: (
                   <Tooltip title={name} placement="left">
                     <Link
+                      style={{ display: 'block' }}
                       href={spaceURL(
                         { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
                         `/processes`,

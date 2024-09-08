@@ -77,8 +77,9 @@ export default class Ability {
 }
 
 export class UnauthorizedError extends Error {
+  static prefix = '401' as const;
   constructor(message?: string) {
-    super(message ?? 'Unauthorized');
+    super(`${UnauthorizedError.prefix}: ${message || 'Unauthorized'}`);
     this.name = 'UnauthorizedError';
   }
 }

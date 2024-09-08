@@ -8,31 +8,16 @@ import { toCaslResource } from '../ability/caslAbility';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import { FolderChildren } from './legacy/folders';
 import { enableUseDB } from 'FeatureFlags';
+import { TFoldersModule, TProcessModule } from './module-import-types-temp';
 
-let _createFolder:
-    | typeof import('./db/folders').createFolder
-    | typeof import('./legacy/folders').createFolder,
-  _getFolderContent:
-    | typeof import('./db/folders').getFolderContents
-    | typeof import('./legacy/folders').getFolderContents,
-  getFolderById:
-    | typeof import('./db/folders').getFolderById
-    | typeof import('./legacy/folders').getFolderById,
-  getRootFolder:
-    | typeof import('./db/folders').getRootFolder
-    | typeof import('./legacy/folders').getRootFolder,
-  moveFolder:
-    | typeof import('./db/folders').moveFolder
-    | typeof import('./legacy/folders').moveFolder,
-  updateFolderMetaData:
-    | typeof import('./db/folders').updateFolderMetaData
-    | typeof import('./legacy/folders').updateFolderMetaData,
-  _deleteFolder:
-    | typeof import('./db/folders').deleteFolder
-    | typeof import('./legacy/folders').deleteFolder,
-  moveProcess:
-    | typeof import('./db/process').moveProcess
-    | typeof import('./legacy/_process').moveProcess;
+let _createFolder: TFoldersModule['createFolder'],
+  _getFolderContent: TFoldersModule['getFolderContents'],
+  getFolderById: TFoldersModule['getFolderById'],
+  getRootFolder: TFoldersModule['getRootFolder'],
+  moveFolder: TFoldersModule['moveFolder'],
+  updateFolderMetaData: TFoldersModule['updateFolderMetaData'],
+  _deleteFolder: TFoldersModule['deleteFolder'],
+  moveProcess: TProcessModule['moveProcess'];
 
 const loadModules = async () => {
   const [folderModule, processModule] = await Promise.all([

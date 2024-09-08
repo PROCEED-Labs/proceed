@@ -80,6 +80,18 @@ model Process {
   ownerId              String
   departments          String[] @default([])
   variables            Json[]   @default([])
+  processArtifacts     ProcessArtifacts[]
+
+}
+
+model ProcessArtifacts {
+  id            String  @id @default(uuid())
+  filePath      String  @unique
+  fileName      String  @unique
+  process       Process @relation(fields: [processId], references: [id])
+  processId     String
+  deletable     Boolean? @default(false)
+  deletedOn     DateTime @default(now())
 }
 
 model Space {
@@ -136,8 +148,6 @@ model Version {
   lastEditedOn  DateTime
   bpmn          String     @db.Xml
 }
-
-
 
 model Role {
   id           String      @id @default(uuid())

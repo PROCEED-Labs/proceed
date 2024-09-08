@@ -41,7 +41,7 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
     ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
     : Object.values(roleMetaObjects);
 
-  return ability ? ability.filter('view', 'Process', roles) : roles;
+  return ability ? ability.filter('view', 'Role', roles) : roles;
 }
 
 /**

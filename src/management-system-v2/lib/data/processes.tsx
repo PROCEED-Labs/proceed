@@ -26,59 +26,38 @@ import { Process } from './process-schema';
 import { revalidatePath } from 'next/cache';
 import { getUsersFavourites } from './users';
 import { enableUseDB } from 'FeatureFlags';
+import { TProcessModule } from './module-import-types-temp';
+import {
+  getProcessUserTaskJSON as _getProcessUserTaskJSON,
+  getProcessImage as _getProcessImage,
+  saveProcessUserTask as _saveProcessUserTask,
+} from './legacy/_process';
 
 // Declare variables to hold the process module functions
-let removeProcess:
-  | typeof import('./db/process').removeProcess
-  | typeof import('./legacy/_process').removeProcess;
-let getProcessMetaObjects: typeof import('./legacy/_process').getProcessMetaObjects;
-let _addProcess:
-  | typeof import('./db/process').addProcess
-  | typeof import('./legacy/_process').addProcess;
-let _getProcess:
-  | typeof import('./db/process').getProcess
-  | typeof import('./legacy/_process').getProcess;
-let _updateProcess:
-  | typeof import('./db/process').updateProcess
-  | typeof import('./legacy/_process').updateProcess;
-let getProcessVersionBpmn:
-  | typeof import('./db/process').getProcessVersionBpmn
-  | typeof import('./legacy/_process').getProcessVersionBpmn;
-let addProcessVersion:
-  | typeof import('./db/process').addProcessVersion
-  | typeof import('./legacy/_process').addProcessVersion;
-let _getProcessUserTaskJSON: //| typeof import('./db/process').getProcessUserTaskJSON
-typeof import('./legacy/_process').getProcessUserTaskJSON;
-let _saveProcessUserTask: //| typeof import('./db/process').saveProcessUserTask
-typeof import('./legacy/_process').saveProcessUserTask;
-let _getProcessImage: //| typeof import('./db/process').getProcessImage
-typeof import('./legacy/_process').getProcessImage;
-let updateProcessMetaData:
-  | typeof import('./db/process').updateProcessMetaData
-  | typeof import('./legacy/_process').updateProcessMetaData;
-let _getProcessBpmn:
-  | typeof import('./db/process').getProcessBpmn
-  | typeof import('./legacy/_process').getProcessBpmn;
+let removeProcess: TProcessModule['removeProcess'];
+let _addProcess: TProcessModule['addProcess'];
+let _getProcess: TProcessModule['getProcess'];
+let _updateProcess: TProcessModule['updateProcess'];
+let getProcessVersionBpmn: TProcessModule['getProcessVersionBpmn'];
+let addProcessVersion: TProcessModule['addProcessVersion'];
+
+let updateProcessMetaData: TProcessModule['updateProcessMetaData'];
+
+let _getProcessBpmn: TProcessModule['getProcessBpmn'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB ? import('./db/process') : import('./legacy/_process'));
 
   ({
     removeProcess,
-    getProcessMetaObjects,
     addProcess: _addProcess,
     getProcess: _getProcess,
     updateProcess: _updateProcess,
     getProcessVersionBpmn,
     addProcessVersion,
-    getProcessUserTaskJSON: _getProcessUserTaskJSON,
-    saveProcessUserTask: _saveProcessUserTask,
-    getProcessImage: _getProcessImage,
     updateProcessMetaData,
     getProcessBpmn: _getProcessBpmn,
-  } = moduleImport as typeof import('./db/process') extends { getProcessMetaObjects: undefined }
-    ? typeof import('./db/process')
-    : typeof import('./legacy/_process'));
+  } = moduleImport);
 };
 
 loadModules().catch(console.error);

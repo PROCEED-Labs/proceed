@@ -63,6 +63,18 @@ CREATE TABLE "Process" (
 );
 
 -- CreateTable
+CREATE TABLE "ProcessArtifacts" (
+    "id" TEXT NOT NULL,
+    "filePath" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "processId" TEXT NOT NULL,
+    "deletable" BOOLEAN DEFAULT false,
+    "deletedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProcessArtifacts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Space" (
     "id" TEXT NOT NULL,
     "name" TEXT,
@@ -154,6 +166,12 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "OauthAccount_providerAccountId_key" ON "OauthAccount"("providerAccountId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ProcessArtifacts_filePath_key" ON "ProcessArtifacts"("filePath");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcessArtifacts_fileName_key" ON "ProcessArtifacts"("fileName");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Version_version_key" ON "Version"("version");
 
 -- AddForeignKey
@@ -170,6 +188,9 @@ ALTER TABLE "Process" ADD CONSTRAINT "Process_environmentId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "Process" ADD CONSTRAINT "Process_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProcessArtifacts" ADD CONSTRAINT "ProcessArtifacts_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Space" ADD CONSTRAINT "Space_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

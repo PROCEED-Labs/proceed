@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (deletableFiles.length > 0) {
-      console.log(deletableFiles);
       await Promise.all(
         deletableFiles.map((file) => deleteProcessArtifact(file.processId, file.filePath, true)),
       );

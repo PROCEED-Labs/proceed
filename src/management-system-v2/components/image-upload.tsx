@@ -21,7 +21,7 @@ const ImageUpload: React.FC<{
   metadata: {
     entityType: EntityType;
     entityId: string;
-    fileName: string | undefined;
+    fileName?: string;
   };
 }> = ({ imageExists, onImageUpdate, onUploadFail, onReload, endpoints, metadata }) => {
   const { upload, remove } = useFileManager(metadata.entityType);

@@ -32,6 +32,7 @@ import {
   getProcessImage as _getProcessImage,
   saveProcessUserTask as _saveProcessUserTask,
 } from './legacy/_process';
+import { error } from 'console';
 
 // Declare variables to hold the process module functions
 let removeProcess: TProcessModule['removeProcess'];
@@ -160,8 +161,7 @@ export const getProcess = async (definitionId: string, spaceId: 'unauthenticated
   ) {
     return result as Process;
   }
-
-  return undefined;
+  return userError('Permission Error', UserErrorType.PermissionError);
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {

@@ -358,7 +358,6 @@ export async function removeProcess(processDefinitionsId: string) {
   if (!process) {
     return;
   }
-  console.log(process);
   await Promise.all(
     process.processArtifacts.map((artifact) =>
       deleteProcessArtifact(processDefinitionsId, artifact.filePath, true),

@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Image, notification } from 'antd';
 
 import { useParams } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import ImageUpload from '@/components/image-upload';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 type ImageSelectionSectionProperties = {
   imageFileName?: string;
@@ -21,7 +24,7 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
   onImageUpdate,
 }) => {
   const { processId } = useParams();
-
+  const { fileUrl: imageUrlfm, download: getImageURL } = useFileManager(EntityType.PROCESS);
   const environment = useEnvironment();
 
   const [reloadParam, setReloadParam] = useState(0);
@@ -38,7 +41,15 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
 
   const baseUrl = `/api/private/${environment.spaceId}/processes/${processId as string}/images`;
 
-  const imageURL = imageFileName && `${baseUrl}/${imageFileName}?${reloadParam}`;
+  const imageURL =
+    imageFileName &&
+    (enableUseFileManager ? imageUrlfm : `${baseUrl}/${imageFileName}?${reloadParam}`);
+
+  useEffect(() => {
+    if (imageFileName) {
+      getImageURL(processId as string, imageFileName);
+    }
+  }, [imageFileName]);
 
   return (
     <>
@@ -65,6 +76,11 @@ const ImageSelectionSection: React.FC<ImageSelectionSectionProperties> = ({
                 postEndpoint: baseUrl,
                 deleteEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
                 putEndpoint: imageFileName && `${baseUrl}/${imageFileName}`,
+              }}
+              metadata={{
+                entityType: EntityType.PROCESS,
+                entityId: processId as string,
+                fileName: imageFileName,
               }}
             />
           ),

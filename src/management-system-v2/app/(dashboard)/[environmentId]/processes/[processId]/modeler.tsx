@@ -17,7 +17,7 @@ import styles from './modeler.module.scss';
 import ModelerZoombar from './modeler-zoombar';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { updateFileDeletableStatus } from '@/lib/data/file-manager';
+import { updateFileDeletableStatus } from '@/lib/data/file-manager-facade';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;

@@ -39,6 +39,7 @@ import {
 } from './documentation-page-utils';
 import { getAllUserWorkspaces } from '@/lib/sharing/process-sharing';
 import { Environment } from '@/lib/data/environment-schema';
+import { getCurrentEnvironment } from '@/components/auth';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -70,7 +71,6 @@ const BPMNSharedViewer = ({
   const session = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const breakpoint = Grid.useBreakpoint();
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(

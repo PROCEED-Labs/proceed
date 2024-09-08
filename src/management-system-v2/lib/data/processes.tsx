@@ -161,14 +161,28 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionId?:
   return userError(`Access Denied: Process is not shared`, UserErrorType.PermissionError);
 };
 
-export const getProcess = async (definitionId: string, spaceId: string) => {
+export const getProcess = async (definitionId: string, spaceId: 'unauthenticated' | string) => {
   await loadModules();
 
-  const error = await checkValidity(definitionId, 'view', spaceId);
-
-  if (error) return error;
   const result = await _getProcess(definitionId);
-  return result as Process;
+
+  // If the spaceId is authenticated, check validity
+  if (spaceId !== 'unauthenticated') {
+    const error = await checkValidity(definitionId, 'view', spaceId);
+    if (error) return error; // Return error if validity check fails
+    return result as Process; // Otherwise, return the process
+  }
+
+  // If the spaceId is unauthenticated, check if sharing is allowed
+  if (
+    spaceId === 'unauthenticated' &&
+    result.sharedAs &&
+    (result.shareTimestamp > 0 || result.allowIframeTimestamp > 0)
+  ) {
+    return result as Process;
+  }
+
+  return undefined;
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: number) => {

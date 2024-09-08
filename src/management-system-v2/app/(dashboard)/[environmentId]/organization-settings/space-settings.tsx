@@ -11,8 +11,11 @@ import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors'
 import { App, Button, Form, Table, Input, Image, theme, Space, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { fallbackImage } from '../processes/[processId]/image-selection-section';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
 
 const SpaceSettings = ({
   organization,
@@ -49,10 +52,19 @@ const SpaceSettings = ({
     });
   }
 
+  const { download: getLogoUrl } = useFileManager(EntityType.ORGANIZATION);
   const logoUrl = `/api/private/${organization.id}/logo`;
   const [organizationLogo, setOrganizationLogo] = useState(
     organization.hasLogo ? logoUrl : undefined,
   );
+  useEffect(() => {
+    (async () => {
+      if (enableUseFileManager && organization.hasLogo) {
+        const { fileUrl: url } = await getLogoUrl(organization.id, '');
+        setOrganizationLogo(url);
+      }
+    })();
+  }, [organization]);
 
   return (
     <Form form={form} initialValues={organization} onFinish={updateOrganization}>
@@ -117,7 +129,7 @@ const SpaceSettings = ({
                     visible: false,
                     mask: (
                       <ImageUpload
-                        imageExists={!!organizationLogo}
+                        imageExists={organization.hasLogo}
                         onReload={() => {
                           setOrganizationLogo(`${logoUrl}?${Date.now()}`);
                           message.success('Logo updated');
@@ -135,6 +147,11 @@ const SpaceSettings = ({
                           postEndpoint: logoUrl,
                           deleteEndpoint: logoUrl,
                           putEndpoint: logoUrl,
+                        }}
+                        metadata={{
+                          entityType: EntityType.ORGANIZATION,
+                          entityId: organization.id,
+                          fileName: '',
                         }}
                       />
                     ),

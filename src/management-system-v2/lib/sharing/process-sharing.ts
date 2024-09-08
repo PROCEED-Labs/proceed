@@ -7,6 +7,8 @@ import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
 import { getUserOrganizationEnvironments } from '../data/legacy/iam/memberships';
 import { env } from '@/lib/env-vars';
+import Ability from '../ability/abilityHelper';
+import { asyncMap } from '../helpers/javascriptHelpers';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -68,13 +70,13 @@ export async function generateSharedViewerUrl(
 }
 
 export async function getAllUserWorkspaces(userId: string) {
-  const userEnvironments: any[] = [await getEnvironmentById(userId)];
-  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
-    return await getEnvironmentById(environmentId);
-  });
+  //TODO: fix security concerns, how to validate requester ?
 
-  const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+  const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => {
+    return getEnvironmentById(envId);
+  });
 
   userEnvironments.push(...orgEnvironments);
   return userEnvironments;

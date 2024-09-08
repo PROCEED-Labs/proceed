@@ -17,6 +17,8 @@ import db from '@/lib/data';
 import { v4 } from 'uuid';
 import { ProcessType } from '@prisma/client';
 import { UserErrorType, userError } from '@/lib/user-error';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { deleteProcessArtifact } from '../file-manager-facade';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -350,12 +352,18 @@ export async function updateProcessMetaData(
 export async function removeProcess(processDefinitionsId: string) {
   const process = await db.process.findUnique({
     where: { id: processDefinitionsId },
-    include: { folder: true },
+    include: { processArtifacts: true },
   });
 
   if (!process) {
     return;
   }
+  console.log(process);
+  await Promise.all(
+    process.processArtifacts.map((artifact) =>
+      deleteProcessArtifact(processDefinitionsId, artifact.filePath, true),
+    ),
+  );
 
   // Remove from database
   await db.process.delete({ where: { id: processDefinitionsId } });

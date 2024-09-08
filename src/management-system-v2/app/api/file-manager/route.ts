@@ -7,61 +7,72 @@ import type { ReadableStream } from 'node:stream/web';
 import jwt from 'jsonwebtoken';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { getProcess } from '@/lib/data/processes';
-import { deleteFile, retrieveFile, saveFile } from '@/lib/data/file-manager';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import {
+  deleteEntityFile,
+  retrieveEntityFile,
+  saveEnityFile,
+} from '@/lib/data/file-manager-facade';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const processId = searchParams.get('processId');
-  const environmentId = searchParams.get('environmentId') || '1';
+  const entityId = searchParams.get('entityId');
+  const entityType = searchParams.get('entityType');
+  const environmentId = searchParams.get('environmentId') || 'unauthenticated';
   const fileName = searchParams.get('fileName');
-
-  if (!processId || !environmentId || !fileName) {
+  if (!entityId || !entityType || !environmentId) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'processId, environmentId and fileName required as URL search params',
+      statusText: 'entityId,entityType, environmentId and fileName required as URL search params',
     });
   }
 
-  const processMeta = await getProcess(processId, environmentId);
-  if (!processMeta || 'error' in processMeta) {
-    return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
-    });
-  }
+  if (entityType === EntityType.PROCESS) {
+    let canAccess = false;
 
-  let canAccess = false;
-  // if the user is not unauthenticated check if they have access to the process due to being an owner
-  if (environmentId !== 'unauthenticated') {
-    const { ability } = await getCurrentEnvironment(environmentId);
-    canAccess = ability.can('view', toCaslResource('Process', processMeta));
-  }
+    const processMeta = await getProcess(entityId, environmentId);
+    if (!processMeta || 'error' in processMeta) {
+      return new NextResponse(null, {
+        status: 404,
+        statusText: 'Process with this id does not exist.',
+      });
+    }
 
-  // if the user is not an owner check if they have access if a share token is provided in the query data of the url
-  const shareToken = request.nextUrl.searchParams.get('shareToken');
-  if (!canAccess && shareToken) {
-    const key = process.env.SHARING_ENCRYPTION_SECRET!;
-    const {
-      processId: shareProcessId,
-      embeddedMode,
-      timestamp,
-    } = jwt.verify(shareToken, key!) as TokenPayload;
-    canAccess =
-      !embeddedMode && shareProcessId === processId && timestamp === processMeta.shareTimestamp;
-  }
+    if (environmentId === 'unauthenticated') {
+      // if the user is not an owner check if they have access if a share token is provided in the query data of the url
+      const shareToken = searchParams.get('shareToken');
+      if (!canAccess && shareToken) {
+        const key = process.env.SHARING_ENCRYPTION_SECRET!;
+        const {
+          processId: shareProcessId,
+          embeddedMode,
+          timestamp,
+        } = jwt.verify(shareToken, key!) as TokenPayload;
 
-  if (!canAccess) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to access files in this process',
-    });
+        canAccess =
+          !embeddedMode && shareProcessId === entityId && timestamp === processMeta.shareTimestamp;
+      }
+    } else {
+      // if the user is not unauthenticated check if they have access to the process due to being an owner
+      if (environmentId !== 'unauthenticated') {
+        const { ability } = await getCurrentEnvironment(environmentId);
+        canAccess = ability.can('view', toCaslResource('Process', processMeta));
+      }
+    }
+
+    if (!canAccess) {
+      return new NextResponse(null, {
+        status: 403,
+        statusText: 'Not allowed to access files in this process',
+      });
+    }
   }
 
   try {
-    const data = await retrieveFile(fileName, processId);
+    const data = await retrieveEntityFile(entityType as EntityType, entityId, fileName);
 
     const fileType = await fileTypeFromBuffer(data as Buffer);
     if (!fileType) {
@@ -93,29 +104,32 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const processId = searchParams.get('processId');
+  const entityId = searchParams.get('entityId');
+  const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId') || '1';
   const fileName = searchParams.get('fileName');
-  if (!processId || !environmentId || !fileName) {
+  if (!entityId || !environmentId || !entityType || !fileName) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'processId, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
     });
   }
 
   const { ability } = await getCurrentEnvironment(environmentId);
-  const process = await getProcess(processId, environmentId);
-  if (!process) {
-    return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
-    });
-  }
-  if (!ability.can('view', toCaslResource('Process', process))) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to view image in this process',
-    });
+  if (entityType === EntityType.PROCESS) {
+    const process = await getProcess(entityId, environmentId);
+    if (!process) {
+      return new NextResponse(null, {
+        status: 404,
+        statusText: 'Process with this id does not exist.',
+      });
+    }
+    if (!ability.can('view', toCaslResource('Process', process))) {
+      return new NextResponse(null, {
+        status: 403,
+        statusText: 'Not allowed to view image in this process',
+      });
+    }
   }
 
   const reader = Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
@@ -161,7 +175,13 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const { fileName: newFileName } = await saveFile(fileName, fileType.mime, processId, buffer);
+    const { fileName: newFileName } = await saveEnityFile(
+      entityType as EntityType,
+      entityId,
+      fileType.mime,
+      fileName,
+      buffer,
+    );
     return new NextResponse(newFileName, {
       status: 200,
       statusText: 'OK',
@@ -174,37 +194,39 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const processId = searchParams.get('processId');
+  const entityId = searchParams.get('entityId');
+  const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId');
   const fileName = searchParams.get('fileName');
 
-  if (!processId || !environmentId || !fileName) {
+  if (!entityId || !entityType || !environmentId || !fileName) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'processId, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
     });
   }
 
   const { ability } = await getCurrentEnvironment(environmentId);
+  if (entityType === EntityType.PROCESS) {
+    const process = await getProcess(entityId, environmentId);
 
-  const process = await getProcess(processId, environmentId);
+    if (!process) {
+      return new NextResponse(null, {
+        status: 404,
+        statusText: 'Process with this id does not exist.',
+      });
+    }
 
-  if (!process) {
-    return new NextResponse(null, {
-      status: 404,
-      statusText: 'Process with this id does not exist.',
-    });
-  }
-
-  if (!ability.can('delete', toCaslResource('Process', process))) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Not allowed to delete image in this process',
-    });
+    if (!ability.can('delete', toCaslResource('Process', process))) {
+      return new NextResponse(null, {
+        status: 403,
+        statusText: 'Not allowed to delete image in this process',
+      });
+    }
   }
 
   try {
-    await deleteFile(processId, fileName);
+    await deleteEntityFile(entityType as EntityType, entityId, fileName);
     return new NextResponse(null, { status: 200, statusText: 'OK' });
   } catch (error) {
     console.error('Error deleting file:', error);

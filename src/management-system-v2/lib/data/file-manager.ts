@@ -5,13 +5,6 @@ import fse from 'fs-extra';
 import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
-import {
-  getFilePath,
-  getNewFileName,
-  hasUuidBeforeUnderscore,
-} from '../helpers/fileManagerHelpers';
-import db from '@/lib/data';
-import { checkIfProcessExists } from './legacy/_process';
 
 // In-memory LRU cache setup
 const cache = new LRUCache<string, Buffer>({
@@ -38,7 +31,7 @@ function getLocalStorageBasePath(): string {
 }
 
 // Base directory for local file storage
-const LOCAL_STORAGE_BASE = path.join(getLocalStorageBasePath(), 'process-artifacts');
+const LOCAL_STORAGE_BASE = getLocalStorageBasePath(); //path.join(getLocalStorageBasePath(), 'processes-artifacts');
 
 let bucket: any;
 let storage: any;
@@ -57,51 +50,19 @@ const setCors = async (bucket: any) => {
 if (DEPLOYMENT_ENV === 'cloud') {
   storage = new Storage({ keyFilename: process.env.GCP_KEY_PATH });
   bucket = storage.bucket(BUCKET_NAME);
+  console.warn('CORS origin is set to *, fix it for prod');
   setCors(bucket);
 }
 
-async function saveFilePathToDB(fileName: string, filePath: string, processId: string) {
-  await db.processArtifacts.create({
-    data: {
-      fileName: fileName,
-      filePath: filePath,
-      processId: processId,
-    },
-  });
-}
-
-async function removeFilePathFromDB(filePath: string, processId: string) {
-  await db.processArtifacts.delete({ where: { filePath: filePath, processId: processId } });
-}
-
-export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  //const oneWeekAgo = new Date();
-  //oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-  return await db.processArtifacts.update({
-    where: { fileName: fileName },
-    data: {
-      deletable: status,
-      //updatedOn: oneWeekAgo,
-    },
-  });
-}
-
 export async function saveFile(
-  fileName: string,
+  filePath: string,
   mimeType: string,
-  processId: string,
   fileContent?: Buffer | Uint8Array | Blob | string,
-): Promise<{ presignedUrl: string | null; fileName: string }> {
-  const newFileName = !hasUuidBeforeUnderscore(fileName) ? getNewFileName(fileName) : fileName;
-  const filePath = mimeType
-    ? getFilePath(newFileName, processId, mimeType)
-    : getFilePath(newFileName, processId);
+): Promise<{ presignedUrl: string | null; status: boolean }> {
   try {
     let presignedUrl = null;
+    let status = false;
     if (DEPLOYMENT_ENV === 'cloud') {
-      await checkIfProcessExists(processId);
-
       const file = bucket.file(filePath);
       const [url] = await file.getSignedUrl({
         version: 'v4',
@@ -112,7 +73,6 @@ export async function saveFile(
           'x-goog-content-length-range': `${0},${MAX_CONTENT_LENGTH}`,
         },
       });
-
       presignedUrl = url;
     } else {
       if (!fileContent) {
@@ -125,25 +85,16 @@ export async function saveFile(
 
       if (cache.has(filePath)) cache.delete(filePath);
     }
-
-    await saveFilePathToDB(newFileName, filePath, processId);
-
-    return { presignedUrl, fileName: newFileName };
+    status = true;
+    return { presignedUrl, status: status };
   } catch (error: any) {
     throw new Error(`Failed to save file: ${error.message}`);
   }
 }
 
-export async function retrieveFile(
-  fileNameOrPath: string,
-  processId: string,
-  isFilePath: boolean = false,
-): Promise<Buffer | string> {
-  const filePath = isFilePath ? fileNameOrPath : getFilePath(fileNameOrPath, processId);
-
+export async function retrieveFile(filePath: string): Promise<string | Buffer> {
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
-      await checkIfProcessExists(processId);
       const file = bucket.file(filePath);
       const [url] = await file.getSignedUrl({
         version: 'v4',
@@ -170,13 +121,7 @@ export async function retrieveFile(
     throw new Error(`Failed to retrieve file: ${error.message}`);
   }
 }
-export async function deleteFile(
-  fileNameOrPath: string,
-  processId: string,
-  isFilePath: boolean = false,
-): Promise<boolean> {
-  const filePath = isFilePath ? fileNameOrPath : getFilePath(fileNameOrPath, processId);
-
+export async function deleteFile(filePath: string): Promise<boolean> {
   try {
     if (DEPLOYMENT_ENV === 'cloud') {
       const file = bucket.file(filePath);
@@ -190,8 +135,6 @@ export async function deleteFile(
         throw new Error(`File does not exist at path ${fullPath}`);
       }
     }
-
-    await removeFilePathFromDB(filePath, processId);
     return true;
   } catch (error: any) {
     throw new Error(`Failed to delete file: ${error.message}`);

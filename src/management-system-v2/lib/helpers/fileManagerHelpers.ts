@@ -2,6 +2,12 @@ import { v4 } from 'uuid';
 
 export type ArtifactType = 'image' | 'html' | 'pdf' | 'script' | 'bpmn' | 'other';
 
+export enum EntityType {
+  PROCESS = 'PROCESS',
+  ORGANIZATION = 'ORGANISATION',
+  MACHINE = 'MACHINE',
+}
+
 const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
   jpg: 'image',
   jpeg: 'image',

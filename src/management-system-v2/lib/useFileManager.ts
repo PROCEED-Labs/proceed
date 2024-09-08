@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { deleteFile, retrieveFile, saveFile } from './data/file-manager';
 import { useEnvironment } from '@/components/auth-can';
+import { deleteEntityFile, retrieveEntityFile, saveEnityFile } from './data/file-manager-facade';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 type FileOperation = 'upload' | 'download';
 type DeploymentEnv = 'cloud' | 'local';
@@ -18,95 +19,116 @@ interface FileManagerResult {
 interface UseFileManagerReturn {
   upload: (
     file: File | Blob,
-    processId: string,
+    entityId: string,
     fileName?: string,
   ) => Promise<{ ok: boolean; fileName: string }>;
-  download: (processId: string, fileName: string) => Promise<{ ok: boolean }>;
-  remove: (processId: string, fileName: string) => Promise<boolean>;
+  download: (
+    entityId: string,
+    fileName: string,
+    shareToken?: string | null,
+  ) => Promise<{ ok: boolean; fileUrl?: string }>;
+  remove: (entityId: string, fileName: string) => Promise<boolean>;
   reset: () => void;
   isLoading: boolean;
   error: string | null;
-  downloadUrl: string | null;
+  fileUrl: string | null;
 }
 
 const DEPLOYMENT_ENV = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV as DeploymentEnv;
 
-const generateFileName = (file: File | Blob): string => {
-  const timestamp = new Date().getTime();
-  const extension = file instanceof File ? file.name.split('.').pop() : 'blob';
-  return `file_${timestamp}.${extension}`;
-};
-
-const handleCloudUpload = async (file: File | Blob, presignedUrl: string): Promise<Response> => {
-  const response = await fetch(presignedUrl, {
-    method: 'PUT',
-    body: file,
-    headers: {
-      'Content-Type': file.type,
-      'x-goog-content-length-range': `${0},${MAX_CONTENT_LENGTH}`,
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Upload failed! status: ${response.status}`);
-  }
-  return response;
-};
-
-const handleLocalOperation = async (
-  method: 'PUT' | 'GET',
-  spaceId: string,
-  processId: string,
-  fileName: string,
-  file?: File | Blob | null,
-): Promise<Response> => {
-  const url = `${window.location.origin}/api/file-manager?environmentId=${spaceId}&processId=${processId}&fileName=${fileName}`;
-  return fetch(url, { method, body: file });
-};
-
-export function useFileManager(): UseFileManagerReturn {
+export function useFileManager(entityType: EntityType): UseFileManagerReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { spaceId } = useEnvironment();
+
+  const generateFileName = (file: File | Blob): string => {
+    const timestamp = new Date().getTime();
+    const extension = file instanceof File ? file.name.split('.').pop() : 'blob';
+    return `file_${timestamp}.${extension}`;
+  };
+
+  const handleCloudUpload = async (file: File | Blob, presignedUrl: string): Promise<Response> => {
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+        'x-goog-content-length-range': `${0},${MAX_CONTENT_LENGTH}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Upload failed! status: ${response.status}`);
+    }
+    return response;
+  };
+
+  const handleLocalOperation = async (
+    method: 'PUT' | 'GET',
+    spaceId: string,
+    entityId: string,
+    fileName: string,
+    shareToken?: string | null,
+    file?: File | Blob | null,
+  ): Promise<Response> => {
+    const url = `${window.location.origin}/api/file-manager?environmentId=${spaceId}&entityId=${entityId}&entityType=${entityType}&fileName=${fileName}&shareToken=${shareToken}`;
+    return fetch(url, { method, body: file });
+  };
 
   const handleFileOperation = useCallback(
     async (
       operation: FileOperation,
       file: File | Blob | null,
       fileName: string,
-      processId: string,
+      entityId: string,
+      shareToken?: string | null,
     ): Promise<FileManagerResult> => {
       try {
         if (operation === 'upload') {
-          console.log(file?.size);
           if (DEPLOYMENT_ENV === 'cloud') {
-            const { presignedUrl, fileName: newFileName } = await saveFile(
-              fileName,
+            const { presignedUrl, fileName: newFileName } = await saveEnityFile(
+              entityType,
+              entityId,
               file!.type,
-              processId,
+              fileName,
             );
             if (presignedUrl! && typeof presignedUrl === 'string') {
               const uploadResponse = await handleCloudUpload(file!, presignedUrl);
               return { success: true, url: uploadResponse.url, fileName: newFileName };
             }
           } else {
-            const response = await handleLocalOperation('PUT', spaceId, processId, fileName, file!);
+            const response = await handleLocalOperation(
+              'PUT',
+              spaceId,
+              entityId,
+              fileName,
+              shareToken,
+              file!,
+            );
             return { success: response.status === 200, fileName: await response.text() };
           }
         } else if (operation === 'download') {
           if (DEPLOYMENT_ENV === 'cloud') {
-            const presignedGETUrl = await retrieveFile(fileName, processId);
+            const presignedGETUrl = await retrieveEntityFile(entityType, entityId, fileName);
             const fileResponse = await fetch(presignedGETUrl as string);
             if (!fileResponse.ok) {
               throw new Error(`Download failed! status: ${fileResponse.status}`);
             }
             const blob = await fileResponse.blob();
-            return { success: true, data: blob };
+            const downloadUrl = URL.createObjectURL(blob);
+            return { success: true, data: blob, url: downloadUrl };
           } else {
-            const response = await handleLocalOperation('GET', spaceId, processId, fileName);
+            const response = await handleLocalOperation(
+              'GET',
+              spaceId,
+              entityId,
+              fileName,
+              shareToken,
+            );
             if (response.status === 200) {
               const blob = await response.blob();
-              return { success: true, data: blob };
+              const downloadUrl = URL.createObjectURL(blob);
+              return { success: true, data: blob, url: downloadUrl };
             }
             return { success: false };
           }
@@ -126,21 +148,30 @@ export function useFileManager(): UseFileManagerReturn {
   const performOperation = useCallback(
     async (
       operation: FileOperation,
-      processId: string,
+      entityId: string,
       fileName: string,
+      shareToken?: string | null,
       file?: File | Blob,
-    ): Promise<{ ok: boolean; fileName?: string }> => {
+    ): Promise<{ ok: boolean; fileName?: string; fileUrl?: string }> => {
+      // Updated return type
       setIsLoading(true);
       setError(null);
+
       try {
-        const result = await handleFileOperation(operation, file || null, fileName, processId);
+        const result = await handleFileOperation(
+          operation,
+          file || null,
+          fileName,
+          entityId,
+          shareToken,
+        );
         if (!result.success) {
           throw new Error(result.error);
         }
-        if (operation === 'download' && result.data) {
-          setDownloadUrl(URL.createObjectURL(result.data));
+        if (operation === 'download' && result.url) {
+          setFileUrl(result.url);
         }
-        return { ok: true, fileName: result.fileName };
+        return { ok: true, fileName: result.fileName, fileUrl: result.url };
       } catch (err) {
         setError(err instanceof Error ? err.message : `${operation} failed`);
         return { ok: false };
@@ -154,29 +185,31 @@ export function useFileManager(): UseFileManagerReturn {
   const upload = useCallback(
     async (
       file: File | Blob,
-      processId: string,
+      entityId: string,
       fileName?: string,
     ): Promise<{ ok: boolean; fileName: string }> => {
       const actualFileName =
         fileName || (file instanceof File ? file.name : generateFileName(file));
-      const result = await performOperation('upload', processId, actualFileName, file);
+      const result = await performOperation('upload', entityId, actualFileName, null, file);
       return { ok: result.ok, fileName: result.fileName || actualFileName };
     },
     [performOperation],
   );
 
   const download = useCallback(
-    async (processId: string, fileName: string) =>
-      await performOperation('download', processId, fileName),
+    async (entityId: string, fileName: string, shareToken?: string | null) => {
+      const result = await performOperation('download', entityId, fileName, shareToken);
+      return { ok: result.ok, fileUrl: result.fileUrl };
+    },
     [performOperation],
   );
 
-  const remove = useCallback(async (processId: string, fileName: string): Promise<boolean> => {
+  const remove = useCallback(async (entityId: string, fileName: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
-    setDownloadUrl(null);
+    setFileUrl(null);
     try {
-      const result = await deleteFile(fileName, processId);
+      const result = await deleteEntityFile(entityType, entityId, fileName);
       if (!result) {
         throw new Error('Delete failed');
       }
@@ -190,8 +223,9 @@ export function useFileManager(): UseFileManagerReturn {
   }, []);
 
   const reset = () => {
-    setDownloadUrl(null);
+    setFileUrl(null);
     setError(null);
   };
-  return { upload, download, remove, reset, isLoading, error, downloadUrl };
+
+  return { upload, download, remove, reset, isLoading, error, fileUrl };
 }

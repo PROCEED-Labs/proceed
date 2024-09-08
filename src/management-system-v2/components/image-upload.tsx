@@ -4,6 +4,9 @@ import { Button, Space, Upload } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { scaleDownImage } from '@/lib/helpers/imageHelpers';
+import { useFileManager } from '@/lib/useFileManager';
+import { enableUseFileManager } from 'FeatureFlags';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 
 const ImageUpload: React.FC<{
   imageExists?: boolean;
@@ -15,7 +18,13 @@ const ImageUpload: React.FC<{
     deleteEndpoint?: string;
     putEndpoint?: string;
   };
-}> = ({ imageExists, onImageUpdate, onUploadFail, onReload, endpoints }) => {
+  metadata: {
+    entityType: EntityType;
+    entityId: string;
+    fileName: string | undefined;
+  };
+}> = ({ imageExists, onImageUpdate, onUploadFail, onReload, endpoints, metadata }) => {
+  const { upload, remove } = useFileManager(metadata.entityType);
   return (
     <Space>
       <Upload
@@ -35,10 +44,12 @@ const ImageUpload: React.FC<{
           if (imageExists && endpoints.putEndpoint) {
             // Update existing image
             try {
-              const response = await fetch(endpoints.putEndpoint, {
-                method: 'PUT',
-                body: image,
-              });
+              const response = enableUseFileManager
+                ? await upload(image, metadata.entityId, metadata.fileName)
+                : await fetch(endpoints.putEndpoint, {
+                    method: 'PUT',
+                    body: image,
+                  });
 
               if (!response.ok) {
                 onUploadFail?.();
@@ -51,15 +62,18 @@ const ImageUpload: React.FC<{
           } else {
             // Add new Image
             try {
-              const response = await fetch(endpoints.postEndpoint, {
-                method: 'POST',
-                body: image,
-              });
+              const response = enableUseFileManager
+                ? await upload(image, metadata?.entityId!)
+                : await fetch(endpoints.postEndpoint, {
+                    method: 'POST',
+                    body: image,
+                  });
 
               if (!response.ok) {
                 onUploadFail?.();
               } else {
-                const newImageFileName = await response.text();
+                const newImageFileName =
+                  response instanceof Response ? await response.text() : response.fileName;
                 onImageUpdate(newImageFileName);
               }
             } catch (err) {
@@ -76,9 +90,11 @@ const ImageUpload: React.FC<{
       {imageExists && endpoints.deleteEndpoint && (
         <Button
           onClick={async () => {
-            await fetch(endpoints.deleteEndpoint as string, {
-              method: 'DELETE',
-            });
+            enableUseFileManager
+              ? await remove(metadata.entityId, metadata.fileName!)
+              : await fetch(endpoints.deleteEndpoint as string, {
+                  method: 'DELETE',
+                });
             onImageUpdate();
           }}
           type="default"

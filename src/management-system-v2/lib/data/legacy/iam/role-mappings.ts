@@ -89,6 +89,13 @@ export async function addRoleMappings(roleMappingsInput: RoleMappingInput[], abi
     RoleMappingInputSchema.parse(roleMappingInput),
   );
 
+  if (ability) {
+    for (const { roleId } of roleMappings) {
+      const role = await getRoleById(roleId);
+      if (!ability.can('manage', toCaslResource('Process', role))) throw new UnauthorizedError();
+    }
+  }
+
   const allowedRoleMappings = ability
     ? ability.filter('create', 'RoleMapping', roleMappings)
     : roleMappings;

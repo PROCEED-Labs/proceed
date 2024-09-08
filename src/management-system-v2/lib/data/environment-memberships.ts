@@ -3,29 +3,25 @@
 import { getCurrentEnvironment } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
 import { z } from 'zod';
+import { env } from '@/lib/env-vars';
+import { sendEmail } from '../email/mailer';
+import renderOrganizationInviteEmail from '../organization-invite-email';
+import { OrganizationEnvironment } from './environment-schema';
+import { generateInvitationToken } from '../invitation-tokens';
+import { toCaslResource } from '../ability/caslAbility';
+import { RoleMapping } from './legacy/iam/role-mappings';
 import { enableUseDB } from 'FeatureFlags';
+import { TMembershipsModule, TUsersModule } from './module-import-types-temp';
+import { getUserByEmail, getRoleById, getEnvironmentById, isMember } from './DTOs';
 
-let getUserByEmail:
-  | typeof import('./db/iam/users').getUserByEmail
-  | typeof import('./legacy/iam/users').getUserByEmail;
-
-let addMember:
-  | typeof import('./db/iam/memberships').addMember
-  | typeof import('./legacy/iam/memberships').addMember;
-
-let removeMember:
-  | typeof import('./db/iam/memberships').removeMember
-  | typeof import('./legacy/iam/memberships').removeMember;
-
+let addMember: TMembershipsModule['addMember'];
+let removeMember: TMembershipsModule['removeMember'];
 // Function to load modules based on feature flag
 const loadModules = async () => {
-  const [userModuleImport, membershipModuleImport] = await Promise.all([
-    enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
+  const [membershipModuleImport] = await Promise.all([
     enableUseDB ? import('./db/iam/memberships') : import('./legacy/iam/memberships'),
   ]);
 
-  getUserByEmail = userModuleImport.getUserByEmail;
-  addMember = membershipModuleImport.addMember;
   removeMember = membershipModuleImport.removeMember;
 };
 
@@ -33,16 +29,20 @@ loadModules().catch(console.error);
 
 const EmailListSchema = z.array(z.string().email());
 
+/** 30 days in ms */
+const invitationExpirationTime = 30 * 24 * 60 * 60 * 1000;
+
 export async function inviteUsersToEnvironment(
   environmentId: string,
   invitedEmailsInput: string[],
+  roleIds?: string[],
 ) {
   try {
     const invitedEmails = EmailListSchema.parse(invitedEmailsInput);
 
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+    const { ability } = await getCurrentEnvironment(environmentId);
 
-    // TODO refine ability check
+    const organization = (await getEnvironmentById(environmentId)) as OrganizationEnvironment;
 
     // ability check disallows from adding to personal environments
     if (!ability.can('create', 'User'))
@@ -51,16 +51,44 @@ export async function inviteUsersToEnvironment(
         UserErrorType.PermissionError,
       );
 
+    const filteredRoles = roleIds?.filter(async (roleId) => {
+      return (
+        ability.can('manage', toCaslResource('Role', await getRoleById(roleId))) &&
+        ability.can(
+          'create',
+          toCaslResource('RoleMapping', { userId: '', roleId } satisfies Partial<RoleMapping>),
+          { environmentId },
+        )
+      );
+    });
+
     for (const invitedEmail of invitedEmails) {
       const invitedUser = await getUserByEmail(invitedEmail);
+      if (invitedUser && (await isMember(environmentId, invitedUser.id))) continue;
 
-      // TODO: don't directly add users to the environment, send them an email with a link to join
+      const expirationDate = new Date(Date.now() + invitationExpirationTime);
 
-      // don't return an error if the user doesn't exist
-      // to avoid users from finding out who, what emails are registered
-      if (invitedUser) {
-        addMember(activeEnvironment.spaceId, invitedUser.id);
-      }
+      const invitationToken = generateInvitationToken(
+        {
+          spaceId: environmentId,
+          roleIds: filteredRoles,
+          ...(invitedUser ? { userId: invitedUser.id } : { email: invitedEmail }),
+        },
+        expirationDate,
+      );
+
+      const invitationEmail = renderOrganizationInviteEmail({
+        acceptInviteLink: `${env.NEXTAUTH_URL}/accept-invitation?token=${invitationToken}`,
+        expires: expirationDate,
+        organizationName: organization.name,
+      });
+
+      sendEmail({
+        to: invitedEmail,
+        html: invitationEmail.html,
+        text: invitationEmail.text,
+        subject: `PROCEED: you've been invited to ${organization.name}`,
+      });
     }
   } catch (_) {
     return userError('Error inviting users to environment');

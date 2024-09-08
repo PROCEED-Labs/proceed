@@ -90,7 +90,7 @@ export async function updateFileDeletableStatus(fileName: string, status: boolea
     where: { fileName: fileName },
     data: {
       deletable: status,
-      updatedOn: new Date(),
+      deletedOn: new Date(),
     },
   });
 }

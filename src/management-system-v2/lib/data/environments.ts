@@ -8,19 +8,12 @@ import {
 import { UserErrorType, userError } from '../user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import { enableUseDB } from 'FeatureFlags';
+import { TEnvironmentsModule } from './module-import-types-temp';
 
-let addEnvironment:
-  | typeof import('./db/iam/environments').addEnvironment
-  | typeof import('./legacy/iam/environments').addEnvironment;
-let deleteEnvironment:
-  | typeof import('./db/iam/environments').deleteEnvironment
-  | typeof import('./legacy/iam/environments').deleteEnvironment;
-let getEnvironmentById:
-  | typeof import('./db/iam/environments').getEnvironmentById
-  | typeof import('./legacy/iam/environments').getEnvironmentById;
-let _updateOrganization:
-  | typeof import('./db/iam/environments').updateOrganization
-  | typeof import('./legacy/iam/environments').updateOrganization;
+let addEnvironment: TEnvironmentsModule['addEnvironment'];
+let deleteEnvironment: TEnvironmentsModule['deleteEnvironment'];
+let getEnvironmentById: TEnvironmentsModule['getEnvironmentById'];
+let _updateOrganization: TEnvironmentsModule['updateOrganization'];
 
 const loadModules = async () => {
   const moduleImport = await (enableUseDB

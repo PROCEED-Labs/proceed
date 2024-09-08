@@ -90,7 +90,7 @@ model ProcessArtifacts {
   process       Process @relation(fields: [processId], references: [id])
   processId     String
   deletable     Boolean? @default(false)
-  updatedOn     DateTime @default(now())
+  deletedOn     DateTime @default(now())
 }
 
 model Space {
@@ -147,8 +147,6 @@ model Version {
   lastEditedOn  DateTime
   bpmn          String     @db.Xml
 }
-
-
 
 model Role {
   id           String      @id @default(uuid())

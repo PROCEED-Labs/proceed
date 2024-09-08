@@ -8,41 +8,28 @@ import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
 import { enableUseDB } from 'FeatureFlags';
 import { UserHasToDeleteOrganizationsError } from './legacy/iam/users';
+import { TEnvironmentsModule, TUsersModule } from './module-import-types-temp';
+import { usersMetaObject } from './legacy/iam/users';
 
-let _deleteUser:
-  | typeof import('./db/iam/users').deleteUser
-  | typeof import('./legacy/iam/users').deleteUser;
-let _updateUser:
-  | typeof import('./db/iam/users').updateUser
-  | typeof import('./legacy/iam/users').updateUser;
-let usersMetaObject: typeof import('./legacy/iam/users').usersMetaObject;
-let getUserById:
-  | typeof import('./db/iam/users').getUserById
-  | typeof import('./legacy/iam/users').getUserById;
-
-let getEnvironmentById: Function;
+let _deleteUser: TUsersModule['deleteUser'];
+let _updateUser: TUsersModule['updateUser'];
+let getUserById: TUsersModule['getUserById'];
+let getEnvironmentById: TEnvironmentsModule['getEnvironmentById'];
 
 const loadModules = async () => {
   const [userModule, environmentModule] = await Promise.all([
     enableUseDB ? import('./db/iam/users') : import('./legacy/iam/users'),
     enableUseDB ? import('./db/iam/environments') : import('./legacy/iam/environments'),
   ]);
-
-  ({
-    deleteUser: _deleteUser,
-    updateUser: _updateUser,
-    usersMetaObject,
-    getUserById,
-  } = userModule as typeof import('./db/iam/users') extends { userMetaObject: undefined }
-    ? typeof import('./db/iam/users')
-    : typeof import('./legacy/iam/users'));
-
-  ({ getEnvironmentById } = environmentModule);
+  ({ deleteUser: _deleteUser, updateUser: _updateUser, getUserById } = userModule),
+    ({ getEnvironmentById } = environmentModule);
 };
 
 loadModules().catch(console.error);
 
 export async function deleteUser() {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
 
   try {
@@ -82,6 +69,8 @@ export async function deleteUser() {
 }
 
 export async function updateUser(newUserDataInput: AuthenticatedUserData) {
+  await loadModules();
+
   try {
     const { userId } = await getCurrentUser();
 
@@ -94,6 +83,8 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 }
 
 export async function getUsersFavourites(): Promise<String[]> {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
 
   const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
@@ -105,6 +96,8 @@ export async function getUsersFavourites(): Promise<String[]> {
 }
 
 export async function isUserGuest() {
+  await loadModules();
+
   const { userId } = await getCurrentUser();
   const user = enableUseDB ? await getUserById(userId) : usersMetaObject[userId];
 

@@ -198,7 +198,6 @@ export async function getFolders(spaceId: string) {
     ? await folderModuleDB.getFolders(spaceId)
     : await folderModuleLegacy.getFolders(spaceId);
 }
-
 export async function getOrganisationLogo(organisationId: string) {
   return enableUseDB
     ? await environmentModuleDB.getOrganizationLogo(organisationId)

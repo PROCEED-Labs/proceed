@@ -1,34 +1,17 @@
 import { enableUseDB } from 'FeatureFlags';
 import { Role } from '../data/role-schema';
+import { getRoleById, getRoles, isMember } from '../data/DTOs';
+import { TRoleMappingsModule } from '../data/module-import-types-temp';
 
-let getRoleById:
-  | typeof import('@/lib/data/db/iam/roles').getRoleById
-  | typeof import('@/lib/data/legacy/iam/roles').getRoleById;
-let getRoles:
-  | typeof import('@/lib/data/db/iam/roles').getRoles
-  | typeof import('@/lib/data/legacy/iam/roles').getRoles;
-let getRoleMappingByUserId:
-  | typeof import('@/lib/data/db/iam/role-mappings').getRoleMappingByUserId
-  | typeof import('@/lib/data/legacy/iam/role-mappings').getRoleMappingByUserId;
-let isMember:
-  | typeof import('@/lib/data/db/iam/memberships').isMember
-  | typeof import('@/lib/data/legacy/iam/memberships').isMember;
-
+let getRoleMappingByUserId: TRoleMappingsModule['getRoleMappingByUserId'];
 const loadModules = async () => {
-  const [roleModule, roleMappingModule, membershipModule] = await Promise.all([
-    enableUseDB ? import('@/lib/data/db/iam/roles') : import('@/lib/data/legacy/iam/roles'),
+  const [roleMappingModule] = await Promise.all([
     enableUseDB
       ? import('@/lib/data/db/iam/role-mappings')
       : import('@/lib/data/legacy/iam/role-mappings'),
-    enableUseDB
-      ? import('@/lib/data/db/iam/memberships')
-      : import('@/lib/data/legacy/iam/memberships'),
   ]);
 
-  getRoleById = roleModule.getRoleById;
-  getRoles = roleModule.getRoles;
   getRoleMappingByUserId = roleMappingModule.getRoleMappingByUserId;
-  isMember = membershipModule.isMember;
 };
 
 loadModules().catch(console.error);

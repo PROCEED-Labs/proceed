@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/data';
-import { deleteFile } from '@/lib/data/file-manager';
+import { deleteProcessArtifact } from '@/lib/data/file-manager-facade';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const deletableFiles = await db.processArtifacts.findMany({
       where: {
         deletable: true,
-        updatedOn: { lte: oneWeekAgo },
+        deletedOn: { lte: oneWeekAgo },
       },
       select: { filePath: true, processId: true },
     });
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (deletableFiles.length > 0) {
       console.log(deletableFiles);
       await Promise.all(
-        deletableFiles.map((file) => deleteFile(file.filePath, file.processId, true)),
+        deletableFiles.map((file) => deleteProcessArtifact(file.processId, file.filePath, true)),
       );
     }
 

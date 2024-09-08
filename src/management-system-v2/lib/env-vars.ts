@@ -13,6 +13,7 @@ const environmentVariables = {
     NEXT_PUBLIC_ENABLE_EXECUTION: z.string().optional(),
     NEXTAUTH_URL: z.string().default('http://localhost:3000'),
     SHARING_ENCRYPTION_SECRET: z.string(),
+    INVITATION_ENCRYPTION_SECRET: z.string(),
     MS_ENABLED_RESOURCES: z
       .string()
       .transform((str, ctx) => {
@@ -53,7 +54,11 @@ const environmentVariables = {
 
     SHARING_ENCRYPTION_SECRET: z.string(),
   },
-  development: {},
+  development: {
+    INVITATION_ENCRYPTION_SECRET: z
+      .string()
+      .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+  },
   test: {},
 } satisfies EnvironmentVariables;
 

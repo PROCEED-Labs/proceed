@@ -8,8 +8,12 @@ import {
   AuthenticatedUser,
   AuthenticatedUserSchema,
 } from '../../user-schema';
-import { addEnvironment, deleteEnvironment, environmentsMetaObject } from './environments';
+import { addEnvironment, deleteEnvironment } from './environments';
 import { OptionalKeys } from '@/lib/typescript-utils.js';
+import { getUserOrganizationEnvironments, removeMember } from './memberships';
+import { getRoleMappingByUserId } from './role-mappings';
+import { getRoles } from './roles';
+import { addSystemAdmin, getSystemAdmins } from './system-admins';
 
 // @ts-ignore
 let firstInit = !global.usersMetaObject || !global.accountsMetaObject;
@@ -21,6 +25,10 @@ export let usersMetaObject: { [Id: string]: User } =
 export let accountsMetaObject: { [Id: string]: OauthAccount } =
   // @ts-ignore
   global.accountsMetaObject || (global.accountsMetaObject = {});
+
+export function getUsers() {
+  return Object.values(usersMetaObject);
+}
 
 export function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
   const user = usersMetaObject[id];
@@ -51,11 +59,13 @@ export function getUserByUsername(username: string, opts?: { throwIfNotFound?: b
 export function addUser(inputUser: OptionalKeys<User, 'id'>) {
   const user = UserSchema.parse(inputUser);
 
-  if (
-    !user.guest &&
-    ((user.username && getUserByUsername(user.username)) || getUserByEmail(user.email))
-  )
-    throw new Error('User with this email or username already exists');
+  if (!user.guest) {
+    if (user.username && getUserByUsername(user.username))
+      throw new Error('User with this username already exists');
+
+    if (user.email && getUserByEmail(user.email))
+      throw new Error('User with this email already exists');
+  }
 
   if (!user.id) user.id = v4();
 
@@ -69,21 +79,53 @@ export function addUser(inputUser: OptionalKeys<User, 'id'>) {
   usersMetaObject[user.id as string] = user as User;
   store.add('users', user);
 
+  // TODO: change this to a more efficient query when the
+  // persistence layer is implemented
+  if (!user.guest && getSystemAdmins().length === 0)
+    addSystemAdmin({
+      role: 'admin',
+      userId: user.id,
+    });
+
   return user as User;
 }
 
-export function deleteuser(userId: string) {
+export class UserHasToDeleteOrganizationsError extends Error {
+  conflictingOrgs: string[];
+
+  constructor(conflictingOrgs: string[], message?: string) {
+    super(message ?? 'User has to delete organizations before being deleted');
+    this.name = 'UserHasToDeleteOrganizationsError';
+    this.conflictingOrgs = conflictingOrgs;
+  }
+}
+export function deleteUser(userId: string) {
   const user = usersMetaObject[userId];
 
   if (!user) throw new Error("User doesn't exist");
 
-  for (const environmentId of Object.keys(environmentsMetaObject)) {
-    if (environmentsMetaObject[environmentId].ownerId === userId) deleteEnvironment(environmentId);
+  const userOrganizations = getUserOrganizationEnvironments(userId);
+
+  const orgsWithNoNextAdmin: string[] = [];
+  for (const environmentId of userOrganizations) {
+    const userRoles = getRoleMappingByUserId(userId, environmentId);
+    if (!userRoles.find((role) => role.roleName === '@admin')) continue;
+
+    const adminRole = getRoles(environmentId).find((role) => role.name === '@admin');
+    if (!adminRole)
+      throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
+
+    if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
   }
 
-  for (const account of Object.values(accountsMetaObject)) {
-    if (account.userId === userId) deleteOauthAccount(account.id);
+  if (orgsWithNoNextAdmin.length > 0)
+    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+
+  for (const org of userOrganizations) {
+    removeMember(org, userId);
   }
+
+  deleteEnvironment(userId);
 
   delete usersMetaObject[userId];
   store.remove('users', userId);
@@ -113,6 +155,14 @@ export function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>
     }
 
     updatedUser = { ...(user as AuthenticatedUser), ...newUserData };
+
+    // TODO: change this to a more efficient query when the
+    // persistence layer is implemented
+    if (!inputUser.guest && getSystemAdmins().length === 0)
+      addSystemAdmin({
+        role: 'admin',
+        userId: user.id,
+      });
   }
 
   usersMetaObject[user.id] = updatedUser;
@@ -131,7 +181,6 @@ export function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {
   const id = v4();
   if (accountsMetaObject[id]) throw new Error('Account already exists');
 
-  console.log('adding account');
   const account = { ...newAccount, id };
   store.add('accounts', account);
   accountsMetaObject[id] = account;
@@ -151,11 +200,13 @@ export function getOauthAccountByProviderId(provider: string, providerAccountId:
   }
 }
 
+let inited = false;
 /**
  * initializes the environments meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   const storedUsers = store.get('users');
 

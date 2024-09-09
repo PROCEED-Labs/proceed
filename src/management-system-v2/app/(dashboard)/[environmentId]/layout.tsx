@@ -1,44 +1,64 @@
-import { FC, PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout from './layout-client';
-import { getUserOrganizationEnviroments, isMember } from '@/lib/data/legacy/iam/memberships';
-import { redirect } from 'next/navigation';
+import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 import { MenuProps } from 'antd';
 import {
   FileOutlined,
-  ProfileOutlined,
   UnlockOutlined,
   UserOutlined,
   SettingOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { getUserRules } from '@/lib/authorization/authorization';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
+import { getSpaceFolderTree, getUserRules } from '@/lib/authorization/authorization';
 import { Environment } from '@/lib/data/environment-schema';
-import { enableNewMSExecution } from 'FeatureFlags';
 import { LuBoxes, LuTable2 } from 'react-icons/lu';
+import { MdOutlineComputer } from 'react-icons/md';
+import { GoOrganization } from 'react-icons/go';
+import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
+import { RemoveReadOnly } from '@/lib/typescript-utils';
+import { env } from '@/lib/env-vars';
+import { adminRules } from '@/lib/authorization/globalRules';
 
 const DashboardLayout = async ({
   children,
   params,
 }: PropsWithChildren<{ params: { environmentId: string } }>) => {
-  const { userId } = await getCurrentUser();
+  const { userId, systemAdmin } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );
 
-  const userRules = await getUserRules(userId, activeEnvironment.spaceId);
+  const userRules = systemAdmin
+    ? (adminRules as RemoveReadOnly<typeof adminRules>)
+    : await getUserRules(userId, activeEnvironment.spaceId);
 
   const layoutMenuItems: MenuProps['items'] = [];
+
+  if (systemAdmin)
+    layoutMenuItems.push({
+      key: 'ms-admin',
+      label: 'System Admin',
+      type: 'group',
+      children: [
+        {
+          key: 'admin-dashboard',
+          label: <Link href="/admin">System dashboard</Link>,
+          icon: <ControlOutlined />,
+        },
+      ],
+    });
 
   if (can('view', 'Process') || can('view', 'Template')) {
     const children: MenuProps['items'] = [];
@@ -50,12 +70,12 @@ const DashboardLayout = async ({
         icon: <FileOutlined />,
       });
 
-    if (can('view', 'Template'))
-      children.push({
-        key: 'templates',
-        label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
-        icon: <ProfileOutlined />,
-      });
+    // if (can('view', 'Template'))
+    //   children.push({
+    //     key: 'templates',
+    //     label: <Link href={spaceURL(activeEnvironment, `/templates`)}>Templates</Link>,
+    //     icon: <ProfileOutlined />,
+    //   });
 
     layoutMenuItems.push({
       key: 'processes-group',
@@ -69,13 +89,25 @@ const DashboardLayout = async ({
       type: 'divider',
     });
   }
-  if (enableNewMSExecution) {
+  if (env.NEXT_PUBLIC_ENABLE_EXECUTION) {
     const children: MenuProps['items'] = [];
 
     children.push({
       key: 'executions',
       label: <Link href={spaceURL(activeEnvironment, `/executions`)}>Instances</Link>,
       icon: <LuBoxes />,
+    });
+
+    children.push({
+      key: 'engines',
+      label: <Link href={spaceURL(activeEnvironment, `/engines`)}>Engines</Link>,
+      icon: <MdOutlineComputer />,
+    });
+
+    children.push({
+      key: 'tasklist',
+      label: <Link href={spaceURL(activeEnvironment, `/tasklist`)}>Tasklist</Link>,
+      icon: <FaList />,
     });
 
     layoutMenuItems.push({
@@ -91,10 +123,10 @@ const DashboardLayout = async ({
     });
   }
 
-  if (process.env.ENABLE_MACHINE_CONFIG) {
+  if (env.ENABLE_MACHINE_CONFIG && can('view', 'MachineConfig')) {
     layoutMenuItems.push({
       key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Machine Config</Link>,
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Tech Data Sets</Link>,
       icon: <LuTable2 />,
     });
 
@@ -138,31 +170,54 @@ const DashboardLayout = async ({
     });
   }
 
-  if (can('view', 'Setting')) {
+  if (can('view', 'Setting') || can('manage', 'Environment')) {
+    const children: MenuProps['items'] = [];
+
+    if (can('update', 'Environment') || can('delete', 'Environment'))
+      children.push({
+        key: 'organization-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/organization-settings`)}>
+            Organization Settings
+          </Link>
+        ),
+        icon: <GoOrganization />,
+      });
+
+    if (can('view', 'Setting'))
+      children.push({
+        key: 'general-settings',
+        label: (
+          <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
+        ),
+        icon: <SettingOutlined />,
+      });
+
     layoutMenuItems.push({
       key: 'settings-group',
       label: 'Settings',
       type: 'group',
-      children: [
-        {
-          key: 'general-settings',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/general-settings`)}>General Settings</Link>
-          ),
-          icon: <SettingOutlined />,
-        },
-      ],
+      children,
     });
   }
 
+  let logo;
+  if (activeEnvironment.isOrganization && organizationHasLogo(activeEnvironment.spaceId))
+    logo = `/api/private/${activeEnvironment.spaceId}/logo`;
+
   return (
     <>
-      <SetAbility rules={userRules} environmentId={activeEnvironment.spaceId} />
+      <SetAbility
+        rules={userRules}
+        environmentId={activeEnvironment.spaceId}
+        treeMap={getSpaceFolderTree(activeEnvironment.spaceId)}
+      />
       <Layout
         loggedIn={!!userId}
         userEnvironments={userEnvironments}
         layoutMenuItems={layoutMenuItems}
         activeSpace={activeEnvironment}
+        customLogo={logo}
       >
         {children}
       </Layout>

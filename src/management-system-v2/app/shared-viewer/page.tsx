@@ -14,11 +14,12 @@ import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { getUserOrganizationEnviroments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
 import { SettingsOption } from './settings-modal';
+import { env } from '@/lib/env-vars';
 
 interface PageProps {
   searchParams: {
@@ -60,7 +61,7 @@ const getProcessInfo = async (
   }
 
   if (isOwner) {
-    // the user has access to the process so just get the necessary data from the appropiate/regular api
+    // the user has access to the process so just get the necessary data from the appropriate/regular api
     const processMetaData = await getProcess(definitionId, spaceId!);
 
     if (processMetaData && !('error' in processMetaData)) {
@@ -131,14 +132,14 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
 
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );
 
   let isOwner = false;
 
-  const key = process.env.JWT_SHARE_SECRET!;
+  const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
@@ -196,7 +197,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     <>
       <div style={{ height: '100vh' }}>
         {iframeMode ? (
-          <BPMNCanvas type="viewer" bpmn={{ bpmn: processData.bpmn }} />
+          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: processData.bpmn }} />
         ) : (
           <div className={styles.ProcessOverview}>
             <Layout

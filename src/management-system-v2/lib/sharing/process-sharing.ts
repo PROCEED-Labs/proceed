@@ -5,7 +5,8 @@ import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '../data/legacy/iam/environments';
-import { getUserOrganizationEnviroments } from '../data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments } from '../data/legacy/iam/memberships';
+import { env } from '@/lib/env-vars';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -34,7 +35,7 @@ export async function updateProcessGuestAccessRights(
 }
 
 async function generateProcessShareToken(payload: TokenPayload) {
-  const secretKey = process.env.JWT_SHARE_SECRET;
+  const secretKey = env.SHARING_ENCRYPTION_SECRET;
   const token = jwt.sign(payload, secretKey!);
   return token;
 }
@@ -69,7 +70,7 @@ export async function generateSharedViewerUrl(
 export async function getAllUserWorkspaces(userId: string) {
   const userEnvironments: Environment[] = [getEnvironmentById(userId)];
   userEnvironments.push(
-    ...getUserOrganizationEnviroments(userId).map((environmentId) =>
+    ...getUserOrganizationEnvironments(userId).map((environmentId) =>
       getEnvironmentById(environmentId),
     ),
   );

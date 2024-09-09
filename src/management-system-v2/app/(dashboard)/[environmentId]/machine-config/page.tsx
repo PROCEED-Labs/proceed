@@ -1,28 +1,43 @@
 import Content from '@/components/content';
+import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
+import { ComponentProps } from 'react';
 import { Space } from 'antd';
 import { getCurrentEnvironment } from '@/components/auth';
 import { notFound } from 'next/navigation';
-import { getMachineConfig } from '@/lib/data/legacy/machine-config';
-import MachineConfigList from './machine-config-list';
+import { getParentConfigurations } from '@/lib/data/legacy/machine-config';
+import ParentConfigList from './parent-config-list';
+import { ParentConfigMetadata } from '@/lib/data/machine-config-schema';
+import { env } from '@/lib/env-vars';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
+export type ListItem = ParentConfigMetadata;
 
-const MachineConfigPage = async ({ params }: { params: { environmentId: string } }) => {
-  if (!process.env.ENABLE_MACHINE_CONFIG) {
+const MachineConfigPage = async ({
+  params,
+}: {
+  params: { environmentId: string; folderId?: string };
+}) => {
+  if (!env.ENABLE_MACHINE_CONFIG) {
     return notFound();
   }
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
-  const data = getMachineConfig(activeEnvironment.spaceId).concat([
-    { id: '1', name: 'Test', environmentId: activeEnvironment.spaceId },
-    { id: '2', name: 'ABC', environmentId: activeEnvironment.spaceId },
-  ]);
+  if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
+
+  const folderContents = (await getParentConfigurations(
+    activeEnvironment.spaceId,
+    ability,
+  )) satisfies ListItem[];
+  const pathToFolder: ComponentProps<typeof EllipsisBreadcrumb>['items'] = [];
 
   return (
-    <Content title="Machine Config">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <MachineConfigList data={data} />
-      </Space>
-    </Content>
+    <>
+      <Content title={<Space>Tech Data Sets</Space>}>
+        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+          <ParentConfigList data={folderContents} />
+        </Space>
+      </Content>
+    </>
   );
 };
 

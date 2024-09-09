@@ -6,6 +6,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ResourceType, toCaslResource } from '@/lib/ability/caslAbility';
 import { Role, RoleInput, RoleInputSchema } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
+import { getFolderById } from '../folders';
 
 // @ts-ignore
 let firstInit = !global.roleMetaObjects;
@@ -14,11 +15,13 @@ export let roleMetaObjects: Record<string, Role> =
   // @ts-ignore
   global.roleMetaObjects || (global.roleMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the roles meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get roles that were persistently stored
   const storedRoles = store.get('roles') as Role[];
@@ -37,7 +40,25 @@ export function getRoles(environmentId?: string, ability?: Ability) {
     ? Object.values(roleMetaObjects).filter((role) => role.environmentId === environmentId)
     : Object.values(roleMetaObjects);
 
-  return ability ? ability.filter('view', 'Process', roles) : roles;
+  return ability ? ability.filter('view', 'Role', roles) : roles;
+}
+
+/**
+ * Returns all roles in form of an array
+ *
+ * @throws {UnauthorizedError}
+ */
+export function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+  for (const role of Object.values(roleMetaObjects)) {
+    if (role.name === name && role.environmentId === environmentId) {
+      if (ability && !ability.can('view', toCaslResource('Role', role)))
+        throw new UnauthorizedError();
+
+      return role;
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -65,6 +86,11 @@ export function addRole(roleRepresentationInput: RoleInput, ability?: Ability) {
 
   if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation)))
     throw new UnauthorizedError();
+
+  // although the ability check would fail if the parentId doesn't exist
+  // it is not always performed
+  if (roleRepresentation.parentId && !getFolderById(roleRepresentation.parentId))
+    throw new Error('Parent folder does not exist');
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
 

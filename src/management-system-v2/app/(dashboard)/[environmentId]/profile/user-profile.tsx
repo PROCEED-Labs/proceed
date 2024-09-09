@@ -1,7 +1,7 @@
 'use client';
 
-import { FC, useState } from 'react';
-import { Space, Card, Avatar, Typography, App, Table } from 'antd';
+import { FC, ReactNode, useState } from 'react';
+import { Space, Card, Typography, App, Table, Alert } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
@@ -10,22 +10,31 @@ import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 import UserAvatar from '@/components/user-avatar';
+import { CloseOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
   const { message: messageApi } = App.useApp();
 
   async function deleteUser() {
     try {
-      await deleteUserServerAction();
+      const response = await deleteUserServerAction();
+      if (response && 'error' in response) throw response;
 
       messageApi.success({ content: 'Your account was deleted' });
       signOut();
-    } catch (e) {
-      messageApi.error({ content: 'An error ocurred' });
+    } catch (e: unknown) {
+      //@ts-ignore
+      if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
+      else messageApi.error({ content: 'An error ocurred' });
     }
   }
+
+  const firstName = userData.guest ? 'Guest' : userData.firstName || '';
+  const lastName = userData.guest ? '' : userData.lastName || '';
 
   return (
     <>
@@ -58,7 +67,20 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
 
       <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
-          <Typography.Title level={3}>Account Information</Typography.Title>
+          {errorMessage && (
+            <Alert
+              style={{ marginBottom: '1rem', paddingRight: '20px' }}
+              message={errorMessage}
+              type="error"
+              closable={{
+                closeIcon: (
+                  <CloseOutlined style={{ position: 'absolute', top: '10px', right: '10px' }} />
+                ),
+              }}
+              afterClose={() => setErrorMessage(null)}
+            />
+          )}
+          <Typography.Title level={3}>Profile data</Typography.Title>
 
           <UserAvatar
             user={userData}
@@ -68,48 +90,81 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
             }}
           />
 
-          <Table
-            dataSource={[
-              {
-                key: 'name',
-                title: 'Name',
-                value: `${!userData.guest ? userData.firstName : 'Guest'} ${
-                  !userData.guest ? userData.lastName : ''
-                }`,
-                action: () => setChangeNameModalOpen(true),
-              },
-              {
-                key: 'username',
-                title: 'Username',
-                value: !userData.guest ? userData.username : 'Guest',
-                action: () => setChangeNameModalOpen(true),
-              },
-              {
-                key: 'email',
-                title: 'Email',
-                value: !userData.guest ? userData.email : 'Guest',
-              },
-            ]}
-            columns={[
-              { dataIndex: 'title' },
-              { dataIndex: 'value' },
-              {
-                key: 'action',
-                render: (_, row) => row.action && <RightOutlined />,
-              },
-            ]}
-            onRow={(row) =>
-              row.action
-                ? {
-                    onClick: row.action,
+          <div
+            style={{
+              //blur
+              position: 'relative',
+            }}
+          >
+            {userData.guest && (
+              <div
+                style={{
+                  zIndex: 100,
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Alert
+                  message={
+                    <>
+                      To change your profile data <Link href="/signin">Sign in</Link>
+                    </>
                   }
-                : {}
-            }
-            showHeader={false}
-            pagination={false}
-            className={styles.Table}
-            style={{ marginBottom: 16 }}
-          />
+                  type="info"
+                />
+              </div>
+            )}
+            <Table
+              dataSource={[
+                {
+                  key: 'name',
+                  title: 'Name',
+                  value: `${firstName} ${lastName}`,
+                  action: () => setChangeNameModalOpen(true),
+                },
+                {
+                  key: 'username',
+                  title: 'Username',
+                  value: !userData.guest ? userData.username : 'Guest',
+                  action: () => setChangeNameModalOpen(true),
+                },
+                {
+                  key: 'email',
+                  title: 'Email',
+                  value: !userData.guest ? userData.email : 'Guest',
+                },
+              ]}
+              columns={[
+                { dataIndex: 'title' },
+                { dataIndex: 'value' },
+                {
+                  key: 'action',
+                  render: (_, row) => row.action && <RightOutlined />,
+                },
+              ]}
+              onRow={(row) =>
+                row.action
+                  ? {
+                      onClick: row.action,
+                    }
+                  : {}
+              }
+              showHeader={false}
+              pagination={false}
+              className={styles.Table}
+              style={{
+                marginBottom: 16,
+                ...(userData.guest && { filter: 'blur(7px)', pointerEvents: 'none' }),
+              }}
+            />
+          </div>
+
           <Space direction="vertical">
             <ConfirmationButton
               title="Delete Account"
@@ -120,7 +175,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
               }}
               buttonProps={{ danger: true }}
             >
-              Delete Account
+              {userData.guest ? 'Delete Data' : 'Delete Account'}
             </ConfirmationButton>
           </Space>
         </Card>

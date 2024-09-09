@@ -2,9 +2,8 @@
 
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import { App, Button, Space, Table, Typography } from 'antd';
+import { App, Button, Space, Typography } from 'antd';
 import { FC, useState, useTransition } from 'react';
-import CreateEnvironmentButton from './create-environment-button';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import EnvironmentSidePanel from './environments-side-panel';
 import ConfirmationButton from '@/components/confirmation-button';
@@ -12,6 +11,9 @@ import { useSession } from 'next-auth/react';
 import { deleteOrganizationEnvironments } from '@/lib/data/environments';
 import { useRouter } from 'next/navigation';
 import { AiOutlineClose, AiOutlineDelete } from 'react-icons/ai';
+import SelectionActions from '@/components/selection-actions';
+import ElementList from '@/components/item-list-view';
+import styles from '@/components/item-list-view.module.scss';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -33,30 +35,29 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
   });
 
   const [selectedRows, setSelectedRows] = useState<typeof filteredData>([]);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const selectedRowKeys = selectedRows.map((row) => row.id);
   const selectedRow = selectedRows.at(-1);
 
   const session = useSession();
   const userId = session.data?.user?.id || '';
 
-  const [isDeletingEnvironments, startTransition] = useTransition();
-  function deleteEnvironments(environmentIds: string[]) {
-    startTransition(async () => {
-      try {
-        const result = await deleteOrganizationEnvironments(environmentIds);
-        if (result && 'error' in result) throw new Error();
+  async function deleteEnvironments(environmentIds: string[]) {
+    try {
+      const result = await deleteOrganizationEnvironments(environmentIds);
+      if (result && 'error' in result) throw result.error;
 
-        setSelectedRows([]);
-        router.refresh();
-        message.open({
-          content: `Environment${environmentIds.length > 1 && 's'} deleted`,
-          type: 'success',
-        });
-      } catch (e) {
-        message.open({ content: 'Something went wrong', type: 'error' });
-      }
-    });
+      setSelectedRows([]);
+      router.refresh();
+      message.open({
+        content: `Environment${environmentIds.length > 1 ? 's' : ''} deleted`,
+        type: 'success',
+      });
+    } catch (e) {
+      console.log(e);
+      //@ts-ignore
+      const content = (e && e?.message) || 'Something went wrong';
+      message.open({ content, type: 'error' });
+    }
   }
 
   return (
@@ -64,10 +65,12 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
       <div style={{ flexGrow: 1 }}>
         <Bar
           leftNode={
-            selectedRowKeys.length > 0 ? (
-              <Space size={20}>
+            <Space>
+              <Button type="primary" href="/create-organization">
+                New Organization
+              </Button>
+              <SelectionActions count={selectedRowKeys.length}>
                 <Button type="text" icon={<AiOutlineClose />} onClick={() => setSelectedRows([])} />
-                <span>{selectedRowKeys.length} selected:</span>
                 <ConfirmationButton
                   title="Delete Organizations"
                   description={
@@ -87,17 +90,16 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                     type: 'text',
                   }}
                 />
-              </Space>
-            ) : null
+              </SelectionActions>
+            </Space>
           }
           searchProps={{
             value: searchQuery,
             onChange: (e) => setSearchQuery(e.target.value),
             placeholder: 'Search Environments',
           }}
-          rightNode={<CreateEnvironmentButton />}
         />
-        <Table<(typeof filteredData)[number]>
+        <ElementList<(typeof filteredData)[number]>
           columns={[
             { title: 'Name', render: (_, environment) => environment.name.highlighted },
             {
@@ -126,8 +128,8 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
                   canCloseWhileLoading={true}
                   buttonProps={{
                     disabled: environment.id === userId,
+                    className: styles.HoverableTableCell,
                     style: {
-                      opacity: id === hoveredRow ? 1 : 0,
                       // Otherwise the button stretches the row
                       position: 'absolute',
                       margin: 'auto',
@@ -141,17 +143,17 @@ const EnvironmentsPage: FC<{ organizationEnvironments: OrganizationEnvironment[]
               ),
             },
           ]}
-          dataSource={filteredData}
-          rowKey="id"
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (_, rows) => setSelectedRows(rows),
+          data={filteredData}
+          elementSelection={{
+            selectedElements: selectedRows,
+            setSelectionElements: (orgs) => setSelectedRows(orgs),
           }}
-          onRow={(row) => ({
-            onMouseEnter: () => setHoveredRow(row.id),
-            onMouseLeave: () => setHoveredRow(null),
-            onClick: () => setSelectedRows([row]),
-          })}
+          tableProps={{
+            rowKey: 'id',
+            onRow: (row) => ({
+              onClick: () => setSelectedRows([row]),
+            }),
+          }}
         />
       </div>
 

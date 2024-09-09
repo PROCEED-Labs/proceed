@@ -1,4 +1,4 @@
-import Ability from '@/lib/ability/abilityHelper.js';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import {
   Folder,
   FolderInput,
@@ -27,9 +27,11 @@ export let foldersMetaObject: {
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
 
+let inited = false;
 /** initializes the folders meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   foldersMetaObject.folders = {};
   foldersMetaObject.rootFolders = {};
@@ -82,7 +84,7 @@ export function init() {
   }
 }
 init();
-import { removeProcess } from './_process';
+import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -92,19 +94,29 @@ export function getRootFolder(environmentId: string, ability?: Ability) {
   if (!rootFolderData) throw new Error('Root folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', rootFolderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return rootFolderData.folder;
 }
 
+// NOTE: this doesn't check the permissions for the children
 export function getFolderById(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return folderData.folder;
+}
+
+export function getFolders(spaceId?: string) {
+  const folders = Object.values(foldersMetaObject.folders);
+  const selection = spaceId
+    ? folders.filter((folder) => folder?.folder.environmentId === spaceId)
+    : folders;
+
+  return selection.map((folder) => folder!.folder);
 }
 
 export function getFolderChildren(folderId: string, ability?: Ability) {
@@ -112,9 +124,33 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return folderData.children;
+}
+
+export async function getFolderContents(folderId: string, ability?: Ability) {
+  const folderChildren = getFolderChildren(folderId, ability);
+  const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
+
+  await initProcesses();
+
+  for (let i = 0; i < folderChildren.length; i++) {
+    try {
+      const child = folderChildren[i];
+
+      if (child.type !== 'folder') {
+        const process = await getProcess(child.id);
+        // NOTE: this check should probably done inside inside getprocess
+        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        folderContent.push(process);
+      } else {
+        folderContent.push({ ...getFolderById(child.id, ability), type: 'folder' });
+      }
+    } catch (e) {}
+  }
+
+  return folderContent;
 }
 
 export function createFolder(folderInput: FolderInput, ability?: Ability) {
@@ -123,7 +159,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
 
   // Checks
   if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   if (foldersMetaObject.folders[folder.id]) throw new Error('Folder already exists');
 
@@ -134,7 +170,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
     if (parentFolderData.folder.environmentId !== folder.environmentId)
       throw new Error('Parent folder is in a different environment');
 
-    parentFolderData.folder.updatedAt = new Date().toISOString();
+    parentFolderData.folder.lastEdited = new Date().toISOString();
     store.update('folders', parentFolderData.folder.id, parentFolderData.folder);
   } else {
     if (foldersMetaObject.rootFolders[folder.environmentId])
@@ -144,8 +180,8 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
   // Store
   const newFolder = {
     ...folder,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdOn: new Date().toISOString(),
+    lastEdited: new Date().toISOString(),
   } as Folder;
 
   foldersMetaObject.folders[folder.id] = { folder: newFolder, children: [] };
@@ -173,7 +209,7 @@ export function deleteFolder(folderId: string, ability?: Ability) {
 
     parent.children.splice(folderIndex, 1);
 
-    parent.folder.updatedAt = new Date().toISOString();
+    parent.folder.lastEdited = new Date().toISOString();
     store.update('folders', parent.folder.id, parent.folder);
   }
 
@@ -186,7 +222,7 @@ function _deleteFolder(
   ability?: Ability,
 ) {
   if (ability && !ability.can('delete', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   for (const child of folderData.children) {
     if ('type' in child && child.type === 'process') {
@@ -215,11 +251,20 @@ export function updateFolderMetaData(
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('update', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
+  if (
+    newMetaDataInput.environmentId &&
+    newMetaDataInput.environmentId != folderData.folder.environmentId
+  )
+    throw new Error('environmentId cannot be changed');
 
-  const newFolder = { ...folderData.folder, ...newMetaData, updatedAt: new Date().toISOString() };
+  const newFolder: Folder = {
+    ...folderData.folder,
+    ...newMetaData,
+    lastEdited: new Date().toISOString(),
+  };
 
   folderData.folder = newFolder;
   store.update('folders', folderId, newFolder);
@@ -277,12 +322,12 @@ export function moveFolder(folderId: string, newParentId: string, ability?: Abil
 
   // Store
   oldParentData.children.splice(folderIndex, 1);
-  oldParentData.folder.updatedAt = new Date().toISOString();
+  oldParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', oldParentData.folder.id, oldParentData.folder);
 
   folderData.folder.parentId = newParentId;
   newParentData.children.push({ type: 'folder', id: folderData.folder.id });
-  newParentData.folder.updatedAt = new Date().toISOString();
+  newParentData.folder.lastEdited = new Date().toISOString();
   store.update('folders', newParentData.folder.id, newParentData.folder);
 
   store.update('folders', folderId, folderData.folder);

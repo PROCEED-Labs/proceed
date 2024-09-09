@@ -1,14 +1,13 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useState, useTransition } from 'react';
+import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
   DeleteOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  PlusOutlined,
   FolderOutlined,
   FileOutlined,
 } from '@ant-design/icons';
@@ -80,7 +79,6 @@ const Processes = ({
   favourites?: string[];
   folder: Folder;
 }) => {
-  const originalProcesses = processes;
   if (folder.parentId)
     processes = [
       {
@@ -88,9 +86,9 @@ const Processes = ({
         parentId: null,
         type: 'folder',
         id: folder.parentId,
-        createdAt: '',
+        createdOn: '',
         createdBy: '',
-        updatedAt: '',
+        lastEdited: '',
         environmentId: '',
       },
       ...processes,
@@ -140,19 +138,28 @@ const Processes = ({
     return 0;
   });
 
-  useAddControlCallback(
-    'process-list',
-    'selectall',
-    (e) => {
-      e.preventDefault();
-      setSelectedRowElements(filteredData ?? []);
-    },
-    { dependencies: [originalProcesses] },
-  );
+  const selectableElements = useRef(filteredData);
+  selectableElements.current = filteredData;
+
+  useAddControlCallback('process-list', 'selectall', (e) => {
+    e.preventDefault();
+    setSelectedRowElements(selectableElements.current ?? []);
+  });
+
   useAddControlCallback('process-list', 'esc', () => setSelectedRowElements([]));
   useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
-  useAddControlCallback('process-list', 'copy', () => setCopySelection(selectedRowElements));
-  useAddControlCallback('process-list', 'paste', () => setOpenCopyModal(true));
+  useAddControlCallback(
+    'process-list',
+    'copy',
+    () => {
+      setCopySelection(selectedRowElements);
+    },
+    { dependencies: [selectedRowElements] },
+  );
+
+  useAddControlCallback('process-list', 'paste', () => {
+    setOpenCopyModal(true);
+  });
   useAddControlCallback(
     'process-list',
     'export',
@@ -162,11 +169,34 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
+  function deleteCreateProcessSearchParams() {
+    const searchParams = new URLSearchParams(document.location.search);
+    if (searchParams.has('createprocess')) {
+      searchParams.delete('createprocess');
+      router.replace(
+        window.location.origin + window.location.pathname + '?' + searchParams.toString(),
+      );
+    }
+  }
+  const createProcessButton = (
+    <ProcessCreationButton
+      wrapperElement="Create Process"
+      defaultOpen={
+        typeof window !== 'undefined' &&
+        new URLSearchParams(document.location.search).has('createprocess')
+      }
+      modalProps={{
+        onCancel: deleteCreateProcessSearchParams,
+        onOk: deleteCreateProcessSearchParams,
+      }}
+    />
+  );
+
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
       key: 'create-process',
-      label: <ProcessCreationButton wrapperElement="create process" />,
+      label: createProcessButton,
       icon: <FileOutlined />,
     });
 
@@ -178,13 +208,13 @@ const Processes = ({
     });
 
   const updateFolder: ComponentProps<typeof FolderModal>['onSubmit'] = (values) => {
-    if (!folder) return;
+    if (!values) return;
 
     startUpdatingFolderTransition(async () => {
       try {
         const response = updateFolderServer(
           { name: values.name, description: values.description },
-          folder.id,
+          updateFolderModal!.id,
         );
 
         if (response && 'error' in response) throw new Error();
@@ -258,7 +288,7 @@ const Processes = ({
       } catch (e) {
         message.open({
           type: 'error',
-          content: `Someting went wrong`,
+          content: `Something went wrong`,
         });
       }
     });
@@ -271,7 +301,7 @@ const Processes = ({
     moveItems,
   };
 
-  // Here all the loading states shoud be ORed together
+  // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (
@@ -293,16 +323,16 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && (
                       <Space>
-                        <Dropdown
-                          trigger={['click']}
+                        <Dropdown.Button
                           menu={{
-                            items: defaultDropdownItems,
+                            items: defaultDropdownItems.filter(
+                              (item) => item.key !== 'create-process',
+                            ),
                           }}
+                          type="primary"
                         >
-                          <Button type="primary" icon={<PlusOutlined />}>
-                            New
-                          </Button>
-                        </Dropdown>
+                          {createProcessButton}
+                        </Dropdown.Button>
                         <ProcessImportButton type="default">
                           {breakpoint.xl ? 'Import Process' : 'Import'}
                         </ProcessImportButton>
@@ -372,11 +402,21 @@ const Processes = ({
                   >
                     <Card
                       style={{
-                        width: 'fit-content',
                         cursor: 'move',
                       }}
                     >
-                      {icon} {item?.name}
+                      <span
+                        style={{
+                          width: 'fit-content',
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          maxWidth: '40ch',
+                        }}
+                      >
+                        {icon} {item?.name}
+                      </span>
                     </Card>
                   </Badge>
                 );

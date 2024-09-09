@@ -26,6 +26,8 @@ import { ProcessExportOptions } from '@/lib/process-export/export-preparation';
 import { getProcess } from '@/lib/data/processes';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
+import { useAddControlCallback } from '@/lib/controls-store';
+import { set } from 'zod';
 
 type ShareModalProps = {
   onExport: () => void;
@@ -146,6 +148,10 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     checkIfProcessShared();
   };
 
+  useAddControlCallback('modeler', 'shift+enter', handleShareButtonClick, {
+    dependencies: [],
+  });
+
   const optionsMobile = [
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
@@ -167,14 +173,103 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
     },
   ];
 
+  const actionClickOptions = [
+    async () => {
+      setActiveIndex(0);
+    },
+    async () => {
+      setActiveIndex(1);
+    },
+    async () => {
+      setActiveIndex(2);
+      try {
+        if (await copyProcessImage(modeler!)) message.success('Copied to clipboard');
+        else message.info('ClipboardAPI not supported in your browser');
+      } catch (err) {
+        message.error(`${err}`);
+      }
+      setActiveIndex(null);
+    },
+    () => {
+      setActiveIndex(3);
+      handleCopyXMLToClipboard();
+      setActiveIndex(null);
+    },
+    () => {
+      setActiveIndex(4);
+      onExport();
+      setActiveIndex(null);
+    },
+  ];
+
+  useAddControlCallback(
+    'modeler',
+    'control+enter',
+    () => {
+      if (isOpen && activeIndex != null) actionClickOptions[activeIndex]();
+    },
+    { dependencies: [isOpen, activeIndex], level: 2, blocking: isOpen },
+  );
+  useAddControlCallback(
+    'modeler',
+    'left',
+    () => {
+      if (isOpen) {
+        setActiveIndex((prev) => (prev == null || prev == 0 ? 0 : prev - 1));
+      }
+    },
+    { dependencies: [isOpen, activeIndex] },
+  );
+  useAddControlCallback(
+    'modeler',
+    'right',
+    () => {
+      if (isOpen) {
+        setActiveIndex((prev) =>
+          prev == null || prev == optionsDesktop.length - 1 ? optionsDesktop.length - 1 : prev + 1,
+        );
+      }
+    },
+    { dependencies: [isOpen, activeIndex] },
+  );
+
+  // useAddControlCallback(
+  //   'modeler',
+  //   'left',
+  //   () => {
+  //     if (isOpen) {
+  //       if (activeIndex === null || activeIndex === 0) {
+  //         actionClickOptions[0]();
+  //       } else {
+  //         actionClickOptions[activeIndex - 1]();
+  //       }
+  //     }
+  //   },
+  //   { dependencies: [isOpen, activeIndex] },
+  // );
+  // useAddControlCallback(
+  //   'modeler',
+  //   'right',
+  //   () => {
+  //     if (isOpen) {
+  //       if (activeIndex === null) {
+  //         actionClickOptions[0]();
+  //       } else if (activeIndex === actionClickOptions.length - 1) {
+  //         actionClickOptions[actionClickOptions.length - 1]();
+  //       } else {
+  //         actionClickOptions[activeIndex + 1]();
+  //       }
+  //     }
+  //   },
+  //   { dependencies: [isOpen, activeIndex] },
+  // );
+
   const optionsDesktop = [
     {
       optionIcon: <LinkOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Share Public Link',
       optionTitle: 'Share Public Link',
-      optionOnClick: async () => {
-        setActiveIndex(0);
-      },
+      optionOnClick: actionClickOptions[0],
       subOption: (
         <ModelerShareModalOptionPublicLink
           sharedAs={sharedAs}
@@ -192,9 +287,7 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       ),
       optionName: 'Embed in Website',
       optionTitle: 'Embed in Website',
-      optionOnClick: async () => {
-        setActiveIndex(1);
-      },
+      optionOnClick: actionClickOptions[1],
       subOption: (
         <ModelerShareModalOptionEmdedInWeb
           sharedAs={sharedAs}
@@ -207,36 +300,19 @@ const ModelerShareModalButton: FC<ShareModalProps> = ({ onExport, onExportMobile
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
       optionTitle: 'Copy Diagram to Clipboard (PNG)',
       optionName: 'Copy Diagram as PNG',
-      optionOnClick: async () => {
-        setActiveIndex(2);
-        try {
-          if (await copyProcessImage(modeler!)) message.success('Copied to clipboard');
-          else message.info('ClipboardAPI not supported in your browser');
-        } catch (err) {
-          message.error(`${err}`);
-        }
-        setActiveIndex(null);
-      },
+      optionOnClick: actionClickOptions[2],
     },
     {
       optionIcon: <CopyOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Copy Diagram as XML',
       optionTitle: 'Copy BPMN to Clipboard (XML)',
-      optionOnClick: () => {
-        setActiveIndex(3);
-        handleCopyXMLToClipboard();
-        setActiveIndex(null);
-      },
+      optionOnClick: actionClickOptions[3],
     },
     {
       optionIcon: <ExportOutlined style={{ fontSize: '24px' }} />,
       optionName: 'Export as file',
       optionTitle: 'Export as file',
-      optionOnClick: () => {
-        setActiveIndex(4);
-        onExport();
-        setActiveIndex(null);
-      },
+      optionOnClick: actionClickOptions[4],
     },
   ];
 

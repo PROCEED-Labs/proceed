@@ -7,12 +7,15 @@
   margin-left: 10px;
   align-items: center;
   justify-content: center;
-  width: 160px;
+  text-wrap: nowrap;
+  padding: 0 0.5rem;
+  gap: 0.5rem;
 }
 
 .Icons {
-  //display: inline-flex;
+  display: inline-flex;
   width: 45%;
+  gap: 0.25rem;
   //justify-content: space-around;
   //align-items: center;
 }

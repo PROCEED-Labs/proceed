@@ -25,7 +25,6 @@ const AddUserModal: FC<{
 
   const addUsers = (users: AddUserParams[2], clearIds?: AddUserParams[1]) => {
     startTransition(async () => {
-      if (clearIds) clearIds();
       await addRoleMappings(
         environment.spaceId,
         users.map((user) => ({
@@ -33,6 +32,7 @@ const AddUserModal: FC<{
           roleId: role.id,
         })),
       );
+      if (clearIds) clearIds();
       router.refresh();
     });
   };
@@ -48,27 +48,23 @@ const AddUserModal: FC<{
       <UserList
         /* ---- */
         /* TODO: unify role-members and users-page in terms of side panel
-        Pretty sure that many states and prop drilling are not needed that way 
+        Pretty sure that many states and prop drilling are not needed that way
       */
-        selectedUser={null}
-        setShowMobileUserSider={() => {}}
-        showMobileUserSider={false}
         /* ---- */
         users={usersNotInRole}
         loading={loading}
-        columns={(clearSelected, hoveredId, selectedRowKeys) => [
+        columns={(clearSelected, _, selectedRowKeys) => [
           {
             dataIndex: 'id',
             render: (id, user) => (
               <Tooltip placement="top" title="Add to role">
                 <Button
                   icon={<PlusOutlined />}
-                  type="text"
+                  type="primary"
                   onClick={() => addUsers([user], clearSelected)}
-                  style={{
-                    opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
-                  }}
-                />
+                >
+                  Add to role
+                </Button>
               </Tooltip>
             ),
           },
@@ -94,7 +90,6 @@ const RoleMembers: FC<{
   const environment = useEnvironment();
 
   async function deleteMembers(userIds: string[], clearIds: () => void) {
-    clearIds();
     setLoading(true);
 
     await deleteRoleMappings(
@@ -105,6 +100,7 @@ const RoleMembers: FC<{
       })),
     );
 
+    clearIds();
     setLoading(false);
     router.refresh();
   }
@@ -121,11 +117,8 @@ const RoleMembers: FC<{
       <UserList
         /* ---- */
         /* TODO: unify role-members and users-page in terms of side panel
-        Pretty sure that many states and prop drilling are not needed that way 
+        Pretty sure that many states and prop drilling are not needed that way
       */
-        selectedUser={null}
-        setShowMobileUserSider={() => {}}
-        showMobileUserSider={false}
         /* ---- */
         users={usersInRole}
         loading={loading}
@@ -164,11 +157,11 @@ const RoleMembers: FC<{
             />
           </Tooltip>
         )}
-        /*searchBarRightNode={
+        createUserNode={
           <Button type="primary" onClick={() => setAddUserModalOpen(true)}>
             Add Member
           </Button>
-        }*/
+        }
       />
     </>
   );

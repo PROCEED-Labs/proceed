@@ -3,6 +3,7 @@ import {
   AbilityRule,
   CaslAbility,
   ResourceType,
+  TreeMap,
   buildAbility,
   toCaslResource,
 } from './caslAbility';
@@ -17,9 +18,9 @@ export default class Ability {
   caslAbility: CaslAbility;
   environmentId: string;
 
-  constructor(packedRules: PackRule<AbilityRule>[], environmentId: string) {
+  constructor(packedRules: PackRule<AbilityRule>[], environmentId: string, tree?: TreeMap) {
     this.environmentId = environmentId;
-    this.caslAbility = buildAbility(unpackRules(packedRules));
+    this.caslAbility = buildAbility(unpackRules(packedRules), tree);
   }
 
   can<T extends CanParams[1]>(
@@ -76,8 +77,9 @@ export default class Ability {
 }
 
 export class UnauthorizedError extends Error {
+  static prefix = '401' as const;
   constructor(message?: string) {
-    super(message ?? 'Unauthorized');
+    super(`${UnauthorizedError.prefix}: ${message || 'Unauthorized'}`);
     this.name = 'UnauthorizedError';
   }
 }

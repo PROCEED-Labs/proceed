@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -10,9 +10,8 @@ import Icon, {
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
-  FullscreenOutlined,
   FilePdfOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 import { SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
@@ -21,13 +20,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProcessExportModal from '@/components/process-export';
 import VersionCreationButton from '@/components/version-creation-button';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, getProcess, updateProcess } from '@/lib/data/processes';
+import { createVersion, updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import ModelerShareModalButton from './modeler-share-modal';
+import { useAddControlCallback } from '@/lib/controls-store';
 import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
+import UserTaskBuilder from './_user-task-builder';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -50,6 +51,7 @@ const ModelerToolbar = ({
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
+  const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -66,6 +68,15 @@ const ModelerToolbar = ({
       return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
     }
   }, [modeler, selectedElementId, subprocessId]);
+
+  useEffect(() => {
+    if (modeler && (showProcessExportModal || showUserTaskEditor)) {
+      // TODO: maybe  do this without an effect
+      modeler.deactivateKeyboard();
+    } else if (modeler) {
+      modeler.activateKeyboard();
+    }
+  }, [modeler, showProcessExportModal, showUserTaskEditor]);
 
   const createProcessVersion = async (values: {
     versionName: string;
@@ -87,6 +98,12 @@ const ModelerToolbar = ({
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
+  useAddControlCallback('modeler', 'control+enter', () => {
+    setShowPropertiesPanel(true); /* This does not cause rerenders if it is already set to true */
+  });
+  useAddControlCallback('modeler', 'esc', () => {
+    setShowPropertiesPanel(false);
+  });
 
   const handleProcessExportModalToggle = async () => {
     if (!showProcessExportModal && modeler) {
@@ -111,6 +128,10 @@ const ModelerToolbar = ({
     setShowProcessExportModal(!showProcessExportModal);
   };
 
+  useAddControlCallback('modeler', 'export', handleProcessExportModalToggle, {
+    dependencies: [modeler, showProcessExportModal],
+  });
+
   const handleProcessExportModalToggleMobile = async (
     preselectedExportType: ProcessExportTypes,
   ) => {
@@ -127,6 +148,9 @@ const ModelerToolbar = ({
   const handleRedo = () => {
     modeler?.redo();
   };
+
+  useAddControlCallback('modeler', 'undo', handleUndo, { dependencies: [modeler] });
+  useAddControlCallback('modeler', 'redo', handleRedo, { dependencies: [modeler] });
 
   const handleReturnToParent = async () => {
     if (modeler) {
@@ -238,14 +262,19 @@ const ModelerToolbar = ({
 
           <ToolbarGroup>
             {selectedElement &&
-              bpmnIs(selectedElement, 'bpmn:SubProcess') &&
-              selectedElement.collapsed && (
-                <Tooltip title="Open Subprocess">
-                  <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
-                    Open Subprocess
-                  </Button>
-                </Tooltip>
-              )}
+              ((process.env.NEXT_PUBLIC_ENABLE_EXECUTION &&
+                bpmnIs(selectedElement, 'bpmn:UserTask') && (
+                  <Tooltip title="Edit User Task Form">
+                    <Button icon={<FormOutlined />} onClick={() => setShowUserTaskEditor(true)} />
+                  </Tooltip>
+                )) ||
+                (bpmnIs(selectedElement, 'bpmn:SubProcess') && selectedElement.collapsed && (
+                  <Tooltip title="Open Subprocess">
+                    <Button style={{ fontSize: '0.875rem' }} onClick={handleOpeningSubprocess}>
+                      Open Subprocess
+                    </Button>
+                  </Tooltip>
+                )))}
           </ToolbarGroup>
 
           <Space style={{ height: '3rem' }}>
@@ -312,6 +341,13 @@ const ModelerToolbar = ({
         preselectedExportType={preselectedExportType}
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
+      {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
+        <UserTaskBuilder
+          processId={processId}
+          open={showUserTaskEditor}
+          onClose={() => setShowUserTaskEditor(false)}
+        />
+      )}
     </>
   );
 };

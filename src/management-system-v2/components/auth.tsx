@@ -1,18 +1,23 @@
-import { ComponentProps, ComponentType, cache } from 'react';
+import { cache } from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { AuthCan, AuthCanProps } from './auth-can';
 import { getAbilityForUser } from '@/lib/authorization/authorization';
 import nextAuthOptions from '@/app/api/auth/[...nextauth]/auth-options';
-import { headers } from 'next/headers';
-import { URL } from 'url';
 import { isMember } from '@/lib/data/legacy/iam/memberships';
+import { getSystemAdminByUserId } from '@/lib/data/legacy/iam/system-admins';
+import Ability from '@/lib/ability/abilityHelper';
+import {
+  adminRules,
+  packedGlobalOrganizationRules,
+  packedGlobalUserRules,
+} from '@/lib/authorization/globalRules';
 
 export const getCurrentUser = cache(async () => {
   const session = await getServerSession(nextAuthOptions);
   const userId = session?.user.id || '';
+  const systemAdmin = getSystemAdminByUserId(userId);
 
-  return { session, userId };
+  return { session, userId, systemAdmin };
 });
 
 // TODO: To enable PPR move the session redirect into this function, so it will
@@ -29,15 +34,28 @@ export const getCurrentEnvironment = cache(
       permissionErrorHandling: { action: 'redirect' },
     },
   ) => {
-    const { userId } = await getCurrentUser();
+    const { userId, systemAdmin } = await getCurrentUser();
 
     // Use hardcoded environment /my/processes for personal spaces.
     if (spaceIdParam === 'my') {
       // Note: will be undefined for not logged in users
       spaceIdParam = userId;
     }
-
     const activeSpace = decodeURIComponent(spaceIdParam);
+
+    const isOrganization = activeSpace !== userId;
+
+    // TODO: account for bought resources
+    if (systemAdmin) {
+      let rules;
+      if (isOrganization) rules = adminRules.concat(packedGlobalOrganizationRules);
+      else rules = adminRules.concat(packedGlobalUserRules);
+
+      return {
+        ability: new Ability(rules, activeSpace),
+        activeEnvironment: { spaceId: activeSpace, isOrganization },
+      };
+    }
 
     if (!userId || !isMember(decodeURIComponent(activeSpace), userId)) {
       switch (opts?.permissionErrorHandling.action) {
@@ -57,7 +75,7 @@ export const getCurrentEnvironment = cache(
 
     return {
       ability,
-      activeEnvironment: { spaceId: activeSpace, isOrganization: activeSpace !== userId },
+      activeEnvironment: { spaceId: activeSpace, isOrganization },
     };
   },
 );

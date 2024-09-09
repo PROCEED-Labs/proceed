@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 /**
  * this will mock the browsers clipboard API, since it might not be available in the test environment
@@ -46,3 +46,61 @@ export const mockClipboardAPI = async (page: Page) =>
       configurable: true,
     });
   });
+
+/**
+ * Will open a modal using the given trigger function and ensure that it is fully open before returning
+ *
+ * @param page the page the modal will open on
+ * @param triggerFunction the function to run to open the modal
+ *
+ * @returns a locator that can be used to get the newly opened modal
+ */
+export async function openModal(page: Page, triggerFunction: () => Promise<void>) {
+  const alreadyOpenCount = await page
+    .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
+    .and(page.locator(`div[aria-modal="true"]:visible`))
+    .count();
+
+  await triggerFunction();
+
+  // wait for the previous amount of modals + 1 modals to be findable and wait for the new modal to finish its animation
+  // const openModalPromise = waitForAnimationEnd(page.locator(`div[aria-modal="true"].ant-zoom`));
+  await page
+    .locator(`div[aria-modal="true"]:not(.ant-zoom)`)
+    .and(page.locator(`div[aria-modal="true"]:visible`))
+    .nth(alreadyOpenCount)
+    .waitFor({ state: 'visible' });
+
+  return page.locator(`div[aria-modal="true"]:visible`).nth(alreadyOpenCount);
+}
+
+/**
+ * Will close a modal with the given function and wait for it to be closed before returning
+ *
+ * @param modal a locator to the modal to be closed
+ * @param triggerFunction the function that triggers the modal to close
+ */
+export async function closeModal(modal: Locator, triggerFunction: () => Promise<void>) {
+  await triggerFunction();
+  await modal.waitFor({ state: 'hidden' });
+}
+
+/**
+ * Will wait for the page to be fully loaded and hydrated to ensure that the tested functionality can actually work
+ *
+ * @param page the page to be hydrated
+ */
+export async function waitForHydration(page: Page) {
+  // this button should be in the header on every page
+  const accountButton = await page.getByRole('link', { name: 'user' });
+  // the menu that open when hovering over the accountButton only works after the page has been fully hydrated
+  await accountButton.hover();
+  await page
+    .locator('.ant-dropdown:not(.ant-dropdown-hidden)')
+    .and(page.locator('.ant-dropdown:not(.ant-slide-up)'))
+    .getByRole('menuitem', { name: 'Profile Settings' })
+    .waitFor({ state: 'visible' });
+  // move the mouse away from the button to close the menu and go into a "clean" state for further testing
+  await page.mouse.move(0, 0);
+  await page.getByRole('menuitem', { name: 'Account Settings' }).waitFor({ state: 'hidden' });
+}

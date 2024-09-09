@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useState } from 'react';
 import { Button } from 'antd';
-import type { ButtonProps } from 'antd';
+import type { ButtonProps, ModalProps } from 'antd';
 import ProcessModal from './process-modal';
 import { createProcess } from '@/lib/helpers/processHelpers';
 import { addProcesses } from '@/lib/data/processes';
@@ -14,6 +14,8 @@ import { spaceURL } from '@/lib/utils';
 type ProcessCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;
   wrapperElement?: ReactNode;
+  defaultOpen?: boolean;
+  modalProps?: ModalProps;
 };
 
 /**
@@ -23,9 +25,11 @@ type ProcessCreationButtonProps = ButtonProps & {
 const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
   wrapperElement,
   customAction,
+  defaultOpen = false,
+  modalProps,
   ...props
 }) => {
-  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [isProcessModalOpen, setIsProcessModalOpen] = useState(defaultOpen);
   const router = useRouter();
   const environment = useEnvironment();
   const folderId = useParams<{ folderId: string }>().folderId ?? '';
@@ -51,7 +55,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
 
   useAddControlCallback(
     'process-list',
-    'controlenter',
+    ['control+enter', 'new'],
     () => {
       if (!isProcessModalOpen) {
         setIsProcessModalOpen(true);
@@ -87,6 +91,7 @@ const ProcessCreationButton: React.FC<ProcessCreationButtonProps> = ({
         okText="Create"
         onCancel={() => setIsProcessModalOpen(false)}
         onSubmit={createNewProcess}
+        modalProps={modalProps}
       />
     </>
   );

@@ -5,6 +5,7 @@ import { environmentsMetaObject } from './environments';
 import { v4 } from 'uuid';
 import { usersMetaObject } from './users';
 import { Environment } from '../../environment-schema.js';
+import { deleteRoleMapping, getRoleMappingByUserId } from './role-mappings';
 
 const MembershipInputSchema = z.object({
   userId: z.string(),
@@ -27,9 +28,11 @@ export let membershipMetaObject: {
   // @ts-ignore
   global.membershipMetaObject || (global.membershipMetaObject = {});
 
+let inited = false;
 /** initializes the membership meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get roles that were persistently stored
   const storedMemberships = store.get('environmentMemberships') as Membership[];
@@ -56,7 +59,7 @@ function isOrganization(environment: Environment, opts: { throwIfNotFound?: bool
   return true;
 }
 
-export function getUserOrganizationEnviroments(userId: string) {
+export function getUserOrganizationEnvironments(userId: string) {
   return Object.keys(membershipMetaObject).filter((environmentId) =>
     isMember(environmentId, userId),
   );
@@ -116,6 +119,10 @@ export function removeMember(environmentId: string, userId: string, ability?: Ab
   if (ability) ability;
 
   if (!isMember(environmentId, userId)) throw new Error('User is not a member of this environment');
+
+  for (const role of getRoleMappingByUserId(userId, environmentId)) {
+    deleteRoleMapping(userId, role.roleId, environmentId);
+  }
 
   const members = membershipMetaObject[environmentId];
 

@@ -6,7 +6,13 @@ import {
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
 import { UserErrorType, userError } from '../user-error';
-import { addEnvironment, deleteEnvironment, getEnvironmentById } from './legacy/iam/environments';
+import {
+  addEnvironment,
+  deleteEnvironment,
+  getEnvironmentById,
+  updateOrganization as _updateOrganization,
+} from './legacy/iam/environments';
+import { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
@@ -18,6 +24,7 @@ export async function addOrganizationEnvironment(
 
     return addEnvironment({
       ownerId: userId,
+      active: true,
       organization: true,
       ...environmentData,
     });
@@ -28,8 +35,6 @@ export async function addOrganizationEnvironment(
 }
 
 export async function deleteOrganizationEnvironments(environmentIds: string[]) {
-  const { userId } = await getCurrentUser();
-
   try {
     for (const environmentId of environmentIds) {
       const { ability } = await getCurrentEnvironment(environmentId);
@@ -39,17 +44,32 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       if (!environment.organization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
-      //TODO remove this once the ability is checked in deleteEnvironment
-      if (environment.ownerId !== userId)
-        return userError(
-          `You are not the owner of ${environmentId}`,
-          UserErrorType.PermissionError,
-        );
-
       deleteEnvironment(environmentId, ability);
     }
   } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError(
+        "You're not allowed to delete this organization",
+        UserErrorType.PermissionError,
+      );
+
     console.error(e);
     return userError('Error deleting environment');
+  }
+}
+
+export async function updateOrganization(
+  environmentId: string,
+  data: Partial<UserOrganizationEnvironmentInput>,
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    return _updateOrganization(environmentId, data, ability);
+  } catch (e) {
+    if (e instanceof UnauthorizedError)
+      return userError("You're not allowed to update this organization");
+
+    return userError('Error updating organization');
   }
 }

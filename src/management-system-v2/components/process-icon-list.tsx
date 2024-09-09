@@ -1,8 +1,8 @@
 'use client';
 
-import { Dispatch, FC, SetStateAction } from 'react';
+import { Dispatch, FC, SetStateAction, Suspense } from 'react';
 import { InfoCircleOutlined, FolderOutlined } from '@ant-design/icons';
-import Viewer from './bpmn-viewer';
+import { LazyBPMNViewer } from './bpmn-viewer';
 
 import ScrollBar from './scrollbar';
 import { ProcessListProcess } from './processes';
@@ -71,7 +71,7 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
           item.type === 'folder' ? (
             <Card.Meta title={cardTitle} />
           ) : (
-            <Viewer definitionId={item.id} reduceLogo={true} />
+            <LazyBPMNViewer definitionId={item.id} reduceLogo={true} />
           ),
         title: item.type === 'process' && cardTitle,
       },
@@ -79,14 +79,17 @@ const IconView: FC<IconViewProps> = ({ data, elementSelection, setShowMobileMeta
   };
 
   return (
-    <ScrollBar width="12px">
-      <ElementIconView
-        data={data}
-        divisions={[folders, processes]}
-        tabCardPropsGenerator={tabCardPropGenerator}
-        elementSelection={elementSelection}
-      />
-    </ScrollBar>
+    <div style={{ height: 'calc(100vh - 64px - 10px - 72px - 10px - 5px - 22px - 5px)' }}>
+      {/* Header + Padding + Bar + Margin + MarginFooter + Footer + MarginFooter*/}
+      <ScrollBar>
+        <ElementIconView
+          data={data}
+          divisions={[folders, processes]}
+          tabCardPropsGenerator={tabCardPropGenerator}
+          elementSelection={elementSelection}
+        />
+      </ScrollBar>
+    </div>
   );
 };
 

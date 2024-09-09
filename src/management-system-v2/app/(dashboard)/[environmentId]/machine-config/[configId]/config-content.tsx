@@ -102,6 +102,7 @@ const Content: React.FC<MachineDataViewProps> = ({
           </Col>
         </Row>
       )}
+
       <CreateParameterModal
         title={contentType == 'metadata' ? 'Create Meta Data' : 'Create Parameter'}
         open={createFieldOpen}

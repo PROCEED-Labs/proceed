@@ -164,12 +164,14 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
           {currentKeyRef.current[0].toUpperCase() + currentKeyRef.current.slice(1) /*TODO */}
         </Paragraph>
       </Col>
+
       <Col span={21} className="gutter-row">
         <Param
           editingEnabled={editable}
           field={parameter}
           label={keyId[0].toUpperCase() + keyId.slice(1)}
         />
+
         {(editable || (parameter.linkedParameters && parameter.linkedParameters.length > 0)) && (
           <Card style={cardStyle} size="small">
             <Row gutter={[24, 24]} align="middle">
@@ -248,6 +250,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
           </Card>
         )}
       </Col>
+
       <CreateParameterModal
         title="Create Parameter"
         open={createFieldOpen}

@@ -26,7 +26,7 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
     },
   });
 
-  const filteredRoles = ability ? ability.filter('view', 'Process', roles) : roles;
+  const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
 
   return filteredRoles as Role[];
 }

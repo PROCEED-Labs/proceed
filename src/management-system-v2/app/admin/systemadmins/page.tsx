@@ -74,7 +74,7 @@ export default async function ManageAdminsPage() {
   if (!adminData) redirect('/');
   if (adminData.role !== 'admin') return <UnauthorizedFallback />;
 
-  const systemAdmins = async (): Promise<(AuthenticatedUser & { role: 'admin' })[]> => {
+  const getFullSystemAdmins = async (): Promise<(AuthenticatedUser & { role: 'admin' })[]> => {
     const admins = await getSystemAdmins();
     return Promise.all(
       admins.map(async (admin) => {
@@ -84,7 +84,7 @@ export default async function ManageAdminsPage() {
     );
   };
 
-  const adminsList = await systemAdmins();
+  const adminsList = await getFullSystemAdmins();
 
   return (
     <Content title="System admins">

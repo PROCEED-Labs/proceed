@@ -1,3 +1,5 @@
+import { AuthenticatedUser, User } from './data/user-schema';
+
 export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
   if (!date) {
     return '';
@@ -419,4 +421,15 @@ export function getUniqueArray(array: JSONObject[], ids: string | string[] | und
   - Correct type on class itself rather than helper function
   - after using an array method that returns an array (returned array is wrapped in ObjectSetArray) - e.g. .map / .filter / ... - the proxy wraps it, so the return type should not be array but ObjectSetArray
   */
+}
+
+/** Returns a string representation for a user */
+export function userRepresentation(
+  member: Pick<AuthenticatedUser, 'firstName' | 'lastName' | 'username'>,
+) {
+  if (!!member.firstName && !!member.lastName) return `${member.firstName} ${member.lastName}`;
+
+  if (!!member.firstName !== !!member.lastName) return member.firstName || member.lastName;
+
+  return member.username || 'unknown';
 }

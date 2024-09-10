@@ -1,31 +1,22 @@
 import Content from '@/components/content';
-import { getMachineConfigById, saveMachineConfig } from '@/lib/data/legacy/machine-config';
-import MachineConfigEditor from './machine-config-editor';
+//import styles from './page.module.scss';
+import { getDeepParentConfigurationById } from '@/lib/data/legacy/machine-config';
+import ConfigPage from './config-page-content';
 
 type MachineConfigProps = {
-  params: { configId: string; environmentId: string };
+  params: { configId: string };
   searchParams: { version?: string };
 };
 
-type VariableType = {
-  name: string;
-  type: string;
-  value: string;
-};
+const MachineConfigView: React.FC<MachineConfigProps> = async ({ params: { configId } }) => {
+  let machineConfig = await getDeepParentConfigurationById(configId);
 
-export default async function MachineConfigView({
-  params: { configId, environmentId },
-  searchParams,
-}: MachineConfigProps) {
-  let machineConfig = await getMachineConfigById(configId);
-
+  //replace ConfigContent <-> MachineConfigEditor as needed
   return (
-    <Content title="Machine Configuration">
-      <MachineConfigEditor
-        originalMachineConfig={machineConfig}
-        saveMachineConfig={saveMachineConfig}
-        configId={configId}
-      />
+    <Content title={`Tech Data Set: ${machineConfig.name}`}>
+      <ConfigPage parentConfig={machineConfig} />
     </Content>
   );
-}
+};
+
+export default MachineConfigView;

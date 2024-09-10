@@ -19,6 +19,7 @@ export const test = base.extend<MyFixtures>({
     const ms2Page = new MS2Page(page);
     await ms2Page.login();
     await use(ms2Page);
+    await ms2Page.deleteUser();
   },
   processListPage: async ({ page, ms2Page }, use) => {
     const processListPage = new ProcessListPage(page);

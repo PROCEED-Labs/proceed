@@ -40,7 +40,7 @@ export class PropertiesPanelPage {
   }) {
     const { years, months, days, hours, minutes, seconds } = durationValues;
     const modal = await openModal(this.page, () =>
-      this.page.getByTestId('plannedDurationInputEdit').click(),
+      this.page.getByPlaceholder('Planned Duration').click(),
     );
 
     if (years) {
@@ -95,15 +95,22 @@ export class PropertiesPanelPage {
   async addDescription(descriptionText: string) {
     const descriptionSection = this.descriptionSection;
 
-    const initialDescription = await descriptionSection
-      .getByRole('textbox', {
-        name: 'description-viewer',
-      })
-      .textContent();
+    const descriptionViewer = descriptionSection.getByRole('textbox', {
+      name: 'description-viewer',
+    });
+    const isDescriptionViewerVisible = await descriptionViewer.isVisible();
 
-    const modal = await openModal(this.page, () => descriptionSection.getByLabel('edit').click());
+    const modal = await openModal(this.page, () =>
+      (isDescriptionViewerVisible
+        ? descriptionViewer
+        : descriptionSection.getByRole('button', {
+            name: 'Add Description',
+          })
+      ).click(),
+    );
 
-    if (initialDescription) {
+    if (isDescriptionViewerVisible) {
+      const initialDescription = await descriptionViewer.textContent();
       // wait for the editor to be fully loaded
       await modal
         .locator('.toastui-editor-ww-container > .toastui-editor > .ProseMirror')
@@ -123,6 +130,6 @@ export class PropertiesPanelPage {
 
     await customPropertiesSection.getByPlaceholder('Custom Name').fill(name);
     await customPropertiesSection.getByPlaceholder('Custom Value').fill(value);
-    await customPropertiesSection.locator('form').getByRole('button', { name: 'plus' }).click();
+    await customPropertiesSection.getByPlaceholder('Custom Value').blur();
   }
 }

@@ -9,15 +9,14 @@ import Canvas from 'diagram-js/lib/core/Canvas';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as ToastEditorType } from '@toast-ui/editor';
 
-import { Button, message, Tooltip, Typography, Space, Grid, Avatar, Modal } from 'antd';
+import { Button, Tooltip, Typography, Space, Grid } from 'antd';
 
-import { PrinterOutlined, LaptopOutlined } from '@ant-design/icons';
+import { PrinterOutlined } from '@ant-design/icons';
 
 import Content from '@/components/content';
-import { copyProcesses } from '@/lib/data/processes';
+
 import { getProcess } from '@/lib/data/legacy/process';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 
@@ -28,6 +27,7 @@ import { getRootFromElement, getDefinitionsVersionInformation } from '@proceed/b
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
 import TableOfContents, { ElementInfo } from './table-of-content';
 import ProcessDocument, { VersionInfo } from './process-document';
+import WorkspaceSelectionModalButton from './workspace-selection';
 
 import {
   getTitle,
@@ -37,8 +37,6 @@ import {
   ImportsInfo,
   getElementSVG,
 } from './documentation-page-utils';
-import { getAllUserWorkspaces } from '@/lib/sharing/process-sharing';
-import { Environment } from '@/lib/data/environment-schema';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -67,40 +65,12 @@ const BPMNSharedViewer = ({
   availableImports,
 }: BPMNSharedViewerProps) => {
   const router = useRouter();
-  const session = useSession();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const breakpoint = Grid.useBreakpoint();
 
   const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(
     defaultSettings || settingsOptions,
   );
-  const [workspaces, setWorkspaces] = useState<Environment[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (session.status === 'authenticated') {
-        const userWorkspaces = await getAllUserWorkspaces(session.data?.user.id as string);
-        if (!cancelled) {
-          setWorkspaces(userWorkspaces);
-        }
-        // if the page is opened after a user logged in trying to copy the process to their workspace open the modal (unless the user already has the process in their workspace)
-        if (searchParams.get('redirected') === 'true' && !isOwner) {
-          setIsModalOpen(true);
-        }
-      } else {
-        setWorkspaces([]);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session, searchParams]);
 
   const mainContent = useRef<HTMLDivElement>(null);
   const contentTableRef = useRef<HTMLDivElement>(null);
@@ -212,48 +182,6 @@ const BPMNSharedViewer = ({
     }
   }, [processHierarchy, defaultSettings]);
 
-  const redirectToLoginPage = () => {
-    const callbackUrl = `${window.location.origin}${pathname}?token=${searchParams.get('token')}&redirected=true`;
-    const loginPath = `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-    router.push(loginPath);
-  };
-
-  const copyToWorkspace = async (workspace: Environment) => {
-    const processesToCopy = [
-      {
-        name: processData.name,
-        description: processData.description,
-        originalId: processData.id,
-        originalVersion: typeof versionInfo.id === 'number' ? `${versionInfo.id}` : undefined,
-      },
-    ];
-
-    const copiedProcesses = await copyProcesses(processesToCopy, workspace.id);
-
-    if ('error' in copiedProcesses) {
-      message.error(copiedProcesses.error.message);
-    } else {
-      message.success('Diagram has been successfully copied to your workspace');
-      if (copiedProcesses.length === 1) {
-        router.push(
-          `${workspace.organization ? workspace.id : ''}/processes/${copiedProcesses[0].id}`,
-        );
-      }
-    }
-  };
-
-  const userWorkspaces = workspaces.map((workspace, index) => ({
-    label: workspace.organization ? workspace.name : 'My Space',
-    key: `${workspace.id}-${index}`,
-    logo:
-      workspace.organization && workspace.logoUrl ? (
-        <Avatar size={'large'} src={workspace.logoUrl} />
-      ) : (
-        <Avatar size={50} icon={<LaptopOutlined style={{ color: 'black' }} />} />
-      ),
-    optionOnClick: () => copyToWorkspace(workspace),
-  }));
-
   const activeSettings: Partial<{ [key in (typeof checkedSettings)[number]]: boolean }> =
     Object.fromEntries(checkedSettings.map((key) => [key, true]));
 
@@ -281,11 +209,6 @@ const BPMNSharedViewer = ({
     }
   };
 
-  const handleAddToWorkspace = () => {
-    if (session.status === 'authenticated') setIsModalOpen(true);
-    else redirectToLoginPage();
-  };
-
   return (
     <div className={styles.DocumentationPageContent}>
       <Content
@@ -301,46 +224,10 @@ const BPMNSharedViewer = ({
                 Go to PROCEED
               </Button>
               {!isOwner && (
-                <>
-                  <Button size="large" onClick={handleAddToWorkspace}>
-                    Add to your workspace
-                  </Button>
-                  <Modal
-                    title={
-                      <div style={{ textAlign: 'center', padding: '10px' }}>
-                        Select your workspace
-                      </div>
-                    }
-                    open={isModalOpen}
-                    closeIcon={false}
-                    onCancel={() => setIsModalOpen(false)}
-                    zIndex={200}
-                    footer={
-                      <Button
-                        onClick={() => setIsModalOpen(false)}
-                        style={{ border: '1px solid black' }}
-                      >
-                        Close
-                      </Button>
-                    }
-                  >
-                    <Space className={styles.WorkspaceSelection}>
-                      {userWorkspaces.map((workspace) => (
-                        <Button
-                          type="default"
-                          key={workspace.key}
-                          icon={workspace.logo}
-                          className={styles.WorkspaceButton}
-                          onClick={workspace.optionOnClick}
-                        >
-                          <Typography.Text className={styles.WorkspaceButtonLabel}>
-                            {workspace.label}
-                          </Typography.Text>
-                        </Button>
-                      ))}
-                    </Space>
-                  </Modal>
-                </>
+                <WorkspaceSelectionModalButton
+                  processData={processData}
+                  versionInfo={versionInfo}
+                />
               )}
               <Tooltip title="Print">
                 <Button size="large" icon={<PrinterOutlined />} onClick={() => window.print()} />

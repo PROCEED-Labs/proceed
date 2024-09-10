@@ -20,9 +20,9 @@ import { MdOutlineComputer } from 'react-icons/md';
 import { GoOrganization } from 'react-icons/go';
 import { FaList } from 'react-icons/fa';
 import { spaceURL } from '@/lib/utils';
-import { adminRules } from '@/lib/ability/abilityHelper';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import { env } from '@/lib/env-vars';
+import { adminRules } from '@/lib/authorization/globalRules';
 
 const DashboardLayout = async ({
   children,

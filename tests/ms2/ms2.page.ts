@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { mockClipboardAPI, openModal } from './testUtils';
+import { mockClipboardAPI, openModal, waitForHydration } from './testUtils';
 
 export class MS2Page {
   readonly page: Page;
@@ -13,7 +13,7 @@ export class MS2Page {
     const modal = await openModal(this.page, async () => {
       this.page.goto('/');
     });
-    await modal.getByRole('button', { name: 'Continue as a Guest' }).click();
+    await modal.getByRole('button', { name: 'Create a Process' }).click();
     await this.page.waitForURL('**/processes');
   }
 
@@ -29,5 +29,17 @@ export class MS2Page {
     }, readAsText);
 
     return result;
+  }
+
+  async deleteUser() {
+    const page = this.page;
+
+    await page.goto('/profile');
+    await waitForHydration(page);
+
+    await openModal(page, () => page.getByRole('button', { name: 'Delete Data' }).click());
+    await page.getByRole('button', { name: 'Delete Account' }).click();
+
+    await page.waitForURL('**/signin*');
   }
 }

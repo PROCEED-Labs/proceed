@@ -1,4 +1,4 @@
-import Ability from '@/lib/ability/abilityHelper.js';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import {
   Folder,
   FolderInput,
@@ -27,9 +27,11 @@ export let foldersMetaObject: {
   // @ts-ignore
   global.foldersMetaObject || (global.foldersMetaObject = { folders: {}, rootFolders: {} });
 
+let inited = false;
 /** initializes the folders meta information objects */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   foldersMetaObject.folders = {};
   foldersMetaObject.rootFolders = {};
@@ -82,7 +84,7 @@ export function init() {
   }
 }
 init();
-import { removeProcess } from './_process';
+import { getProcess, removeProcess, init as initProcesses } from './_process';
 
 export function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolderId = foldersMetaObject.rootFolders[environmentId];
@@ -92,19 +94,29 @@ export function getRootFolder(environmentId: string, ability?: Ability) {
   if (!rootFolderData) throw new Error('Root folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', rootFolderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return rootFolderData.folder;
 }
 
+// NOTE: this doesn't check the permissions for the children
 export function getFolderById(folderId: string, ability?: Ability) {
   const folderData = foldersMetaObject.folders[folderId];
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return folderData.folder;
+}
+
+export function getFolders(spaceId?: string) {
+  const folders = Object.values(foldersMetaObject.folders);
+  const selection = spaceId
+    ? folders.filter((folder) => folder?.folder.environmentId === spaceId)
+    : folders;
+
+  return selection.map((folder) => folder!.folder);
 }
 
 export function getFolderChildren(folderId: string, ability?: Ability) {
@@ -112,9 +124,33 @@ export function getFolderChildren(folderId: string, ability?: Ability) {
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('view', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   return folderData.children;
+}
+
+export async function getFolderContents(folderId: string, ability?: Ability) {
+  const folderChildren = getFolderChildren(folderId, ability);
+  const folderContent: ((Folder & { type: 'folder' }) | ProcessMetadata)[] = [];
+
+  await initProcesses();
+
+  for (let i = 0; i < folderChildren.length; i++) {
+    try {
+      const child = folderChildren[i];
+
+      if (child.type !== 'folder') {
+        const process = await getProcess(child.id);
+        // NOTE: this check should probably done inside inside getprocess
+        if (ability && !ability.can('view', toCaslResource('Process', process))) continue;
+        folderContent.push(process);
+      } else {
+        folderContent.push({ ...getFolderById(child.id, ability), type: 'folder' });
+      }
+    } catch (e) {}
+  }
+
+  return folderContent;
 }
 
 export function createFolder(folderInput: FolderInput, ability?: Ability) {
@@ -123,7 +159,7 @@ export function createFolder(folderInput: FolderInput, ability?: Ability) {
 
   // Checks
   if (ability && !ability.can('create', toCaslResource('Folder', folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   if (foldersMetaObject.folders[folder.id]) throw new Error('Folder already exists');
 
@@ -186,7 +222,7 @@ function _deleteFolder(
   ability?: Ability,
 ) {
   if (ability && !ability.can('delete', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   for (const child of folderData.children) {
     if ('type' in child && child.type === 'process') {
@@ -215,7 +251,7 @@ export function updateFolderMetaData(
   if (!folderData) throw new Error('Folder not found');
 
   if (ability && !ability.can('update', toCaslResource('Folder', folderData.folder)))
-    throw new Error('Permission denied');
+    throw new UnauthorizedError();
 
   const newMetaData = FolderUserInputSchema.partial().parse(newMetaDataInput);
   if (

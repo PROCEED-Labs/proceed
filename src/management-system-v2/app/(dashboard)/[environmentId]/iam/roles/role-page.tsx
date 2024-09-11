@@ -26,13 +26,22 @@ import styles from './role-page.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
 import cn from 'classnames';
 
+function getMembersRepresentation(members: Role['members']) {
+  if (members.length === 0) return undefined;
+
+  return members.map((member) => userRepresentation(member)).join(', ');
+}
+
 const numberOfRows =
   typeof window !== 'undefined' ? Math.floor((window?.innerHeight - 410) / 47) : 10;
-import { spaceURL } from '@/lib/utils';
+import SelectionActions from '@/components/selection-actions';
+import { spaceURL, userRepresentation } from '@/lib/utils';
+import { AuthenticatedUser } from '@/lib/data/user-schema';
 
-export type FilteredRole = ReplaceKeysWithHighlighted<Role, 'name'>;
+type ModifiedRole = Role & { members: AuthenticatedUser[] };
+export type FilteredRole = ReplaceKeysWithHighlighted<ModifiedRole, 'name'>;
 
-const RolesPage = ({ roles }: { roles: Role[] }) => {
+const RolesPage = ({ roles }: { roles: ModifiedRole[] }) => {
   const { message: messageApi } = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const router = useRouter();
@@ -93,7 +102,9 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
     {
       title: 'Members',
       dataIndex: 'members',
-      render: (members: FilteredRole['members']) => members.length,
+      render: (members: FilteredRole['members']) => (
+        <Tooltip title={getMembersRepresentation(members)}>{members.length}</Tooltip>
+      ),
       key: 'username',
     },
     {
@@ -149,26 +160,25 @@ const RolesPage = ({ roles }: { roles: Role[] }) => {
                 <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   {breakpoint.xs ? null : <HeaderActions />}
 
-                  {selectedRowKeys.length > 0 ? (
-                    <Space size={20}>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={() => setSelectedRowKeys([])}
-                      />
-                      <span>{selectedRowKeys.length} selected:</span>
-                      <ConfirmationButton
-                        title="Delete Roles"
-                        description="Are you sure you want to delete the selected roles?"
-                        onConfirm={() => deleteRoles(selectedRowKeys)}
-                        buttonProps={{
-                          icon: <DeleteOutlined />,
-                          disabled: cannotDeleteSelected,
-                          type: 'text',
-                        }}
-                      />
-                    </Space>
-                  ) : undefined}
+                  <SelectionActions count={selectedRowKeys.length}>
+                    <Button
+                      type="text"
+                      icon={<CloseOutlined />}
+                      onClick={() => setSelectedRowKeys([])}
+                    />
+                    <ConfirmationButton
+                      title="Delete Roles"
+                      description="Are you sure you want to delete the selected roles?"
+                      onConfirm={() => deleteRoles(selectedRowKeys)}
+                      buttonProps={{
+                        icon: <DeleteOutlined />,
+                        disabled: cannotDeleteSelected,
+                        type: 'text',
+                      }}
+                    />
+                  </SelectionActions>
+
+                  {selectedRowKeys.length > 0 ? <Space size={20}></Space> : undefined}
                 </span>
 
                 {

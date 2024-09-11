@@ -1,3 +1,5 @@
+import { AuthenticatedUser, User } from './data/user-schema';
+
 export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
   if (!date) {
     return '';
@@ -67,3 +69,14 @@ export function debounce(func: Function, timeout = 1000) {
 export const spaceURL = (space: { spaceId: string; isOrganization: boolean }, path: string) => {
   return `${space.isOrganization ? '/' + space.spaceId : ''}${path}`;
 };
+
+/** Returns a string representation for a user */
+export function userRepresentation(
+  member: Pick<AuthenticatedUser, 'firstName' | 'lastName' | 'username'>,
+) {
+  if (!!member.firstName && !!member.lastName) return `${member.firstName} ${member.lastName}`;
+
+  if (!!member.firstName !== !!member.lastName) return member.firstName || member.lastName;
+
+  return member.username || 'unknown';
+}

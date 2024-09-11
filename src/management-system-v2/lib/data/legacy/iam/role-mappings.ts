@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 import store from '../store.js';
-import { roleMetaObjects } from './roles';
+import { getRoleById, roleMetaObjects } from './roles';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { z } from 'zod';
@@ -31,11 +31,13 @@ export let roleMappingsMetaObjects: {
   //@ts-ignore
   global.roleMappingsMetaObjects || (global.roleMappingsMetaObjects = {});
 
+let inited = false;
 /**
  * initializes the role mappings meta information objects
  */
 export function init() {
-  if (!firstInit) return;
+  if (!firstInit || inited) return;
+  inited = true;
 
   // get role mappings that were persistently stored
   const storedRoleMappings = store.get('roleMappings');
@@ -82,6 +84,13 @@ export function addRoleMappings(roleMappingsInput: RoleMappingInput[], ability?:
   const roleMappings = roleMappingsInput.map((roleMappingInput) =>
     RoleMappingInputSchema.parse(roleMappingInput),
   );
+
+  if (ability) {
+    for (const { roleId } of roleMappings) {
+      const role = getRoleById(roleId);
+      if (!ability.can('manage', toCaslResource('Process', role))) throw new UnauthorizedError();
+    }
+  }
 
   const allowedRoleMappings = ability
     ? ability.filter('create', 'RoleMapping', roleMappings)

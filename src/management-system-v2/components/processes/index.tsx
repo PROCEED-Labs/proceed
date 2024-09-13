@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './processes.module.scss';
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import { ComponentProps, useEffect, useRef, useState, useTransition } from 'react';
 import { Space, Button, Tooltip, Grid, App, Drawer, Dropdown, Card, Badge, Spin } from 'antd';
 import {
   ExportOutlined,
@@ -169,7 +169,29 @@ const Processes = ({
     { dependencies: [selectedRowKeys.length] },
   );
 
-  const createProcessButton = <ProcessCreationButton wrapperElement="Create Process" />;
+  function deleteCreateProcessSearchParams() {
+    const searchParams = new URLSearchParams(document.location.search);
+    if (searchParams.has('createprocess')) {
+      searchParams.delete('createprocess');
+      router.replace(
+        window.location.origin + window.location.pathname + '?' + searchParams.toString(),
+      );
+    }
+  }
+  const createProcessButton = (
+    <ProcessCreationButton
+      wrapperElement="Create Process"
+      defaultOpen={
+        typeof window !== 'undefined' &&
+        new URLSearchParams(document.location.search).has('createprocess')
+      }
+      modalProps={{
+        onCancel: deleteCreateProcessSearchParams,
+        onOk: deleteCreateProcessSearchParams,
+      }}
+    />
+  );
+
   const defaultDropdownItems = [];
   if (ability.can('create', 'Process'))
     defaultDropdownItems.push({
@@ -266,7 +288,7 @@ const Processes = ({
       } catch (e) {
         message.open({
           type: 'error',
-          content: `Someting went wrong`,
+          content: `Something went wrong`,
         });
       }
     });
@@ -279,7 +301,7 @@ const Processes = ({
     moveItems,
   };
 
-  // Here all the loading states shoud be ORed together
+  // Here all the loading states should be ORed together
   const loading = movingItem;
 
   return (
@@ -380,11 +402,21 @@ const Processes = ({
                   >
                     <Card
                       style={{
-                        width: 'fit-content',
                         cursor: 'move',
                       }}
                     >
-                      {icon} {item?.name}
+                      <span
+                        style={{
+                          width: 'fit-content',
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          maxWidth: '40ch',
+                        }}
+                      >
+                        {icon} {item?.name}
+                      </span>
                     </Card>
                   </Badge>
                 );

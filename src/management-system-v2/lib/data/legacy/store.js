@@ -3,7 +3,7 @@ import path from 'path';
 import { getAppDataPath } from './fileHandling.js';
 import eventHandler from './eventHandler.js';
 
-const keyValueStores = ['config', 'instances', 'deployments'];
+const keyValueStores = ['config', 'instances', 'deployments', 'techData'];
 
 /**
  * Creates a new conf store that is used to store the current state of something
@@ -53,7 +53,16 @@ if (!global.stores) {
   stores.environmentMemberships = { store: getStore('environmentMemberships') };
   stores.folders = { store: getStore('folders') };
   stores.machineConfig = { store: getStore('machineConfig') };
+  stores.techData = {
+    store: getStore('techData', {
+      parentConfigs: {},
+      machineConfigs: {},
+      targetConfigs: {},
+      parameters: {},
+    }),
+  };
   stores.systemAdmins = { store: getStore('systemAdmins') };
+  stores.verificationTokens = { store: getStore('verificationTokens') };
 }
 
 /**

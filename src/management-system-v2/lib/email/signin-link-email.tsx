@@ -15,11 +15,21 @@ import {
   render,
 } from '@react-email/components';
 import * as React from 'react';
+import { env } from '@/lib/env-vars';
 
-const baseUrl = process.env.NEXTAUTH_URL ?? '';
+const baseUrl = env.NEXTAUTH_URL;
 
-function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: Date }) {
-  const expiresIn = expires.getTime() - Date.now();
+type MailProps = {
+  signInLink: string;
+  expires: Date;
+  linkText?: string;
+  headerText?: string;
+  description?: string;
+  footerText?: string;
+};
+
+function SigninUrlMail(mailProps: MailProps) {
+  const expiresIn = mailProps.expires.getTime() - Date.now();
   const linkDuration: number = Math.floor(expiresIn / 1000 / 60 / 60);
   return (
     <Html>
@@ -66,11 +76,12 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
                   marginBottom: '15px',
                 }}
               >
-                Sign in to PROCEED
+                {mailProps.headerText ?? 'Sign in to PROCEED'}
               </Heading>
               <Text style={{ ...text, marginBottom: '14px' }}>
-                Hi, with this mail you can sign in to your PROCEED account. If you don&apos;t have
-                an account yet, a new one will be created for you. Just click on the following link:
+                {mailProps.description ??
+                  `Hi, with this mail you can sign in to your PROCEED account. If you don&apos;t have
+                an account yet, a new one will be created for you. Just click on the following link:`}
               </Text>
 
               <Text
@@ -82,11 +93,11 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
                   fontWeight: 'bold',
                 }}
               >
-                Sign in Link
+                {mailProps.linkText ?? 'Sign in Link'}
               </Text>
 
               <Link
-                href={signInLink}
+                href={mailProps.signInLink}
                 target="_blank"
                 style={{
                   ...link,
@@ -120,8 +131,9 @@ function SigninUrlMail({ signInLink, expires }: { signInLink: string; expires: D
             <Hr />
             <Section style={{ padding: '25px 35px' }}>
               <Text style={{ ...text, margin: '0px' }}>
-                If you have not initiated the sign in, you can simply ignore this mail. Your account
-                is still secure as you can only sign in by email. The PROCEED Crew
+                {mailProps.footerText ??
+                  `If you have not initiated the sign in, you can simply ignore this mail. Your account
+                is still secure as you can only sign in by email. The PROCEED Crew`}
               </Text>
             </Section>
           </Section>
@@ -164,8 +176,8 @@ const text = {
   margin: '24px 0',
 };
 
-export default function renderSigninLinkEmail(signInLink: string, expires: Date) {
-  const email = <SigninUrlMail signInLink={signInLink} expires={expires} />;
+export default function renderSigninLinkEmail(mailProps: MailProps) {
+  const email = <SigninUrlMail {...mailProps} />;
 
   return { html: render(email), text: render(email, { plainText: true }) };
 }

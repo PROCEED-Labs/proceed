@@ -4,8 +4,8 @@ import { Console } from './modules/web-console/console.module';
 import { Config } from './modules/web-config/config.module';
 import { Machine } from './modules/web-machine/machine.module';
 
-// PROCEED Engine needs to be builded before
-const PROCEED = require('../../../../../../build/engine/universal');
+// PROCEED Engine needs to be built before
+const PROCEED = require('../../../../../../build/engine/proceed-engine.js');
 
 const socket = io();
 

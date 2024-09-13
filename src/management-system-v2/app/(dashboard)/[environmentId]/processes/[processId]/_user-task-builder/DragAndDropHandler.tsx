@@ -8,9 +8,7 @@ import {
   PointerSensor,
   DragOverlay,
   ClientRect,
-  Collision,
   getClientRect,
-  UniqueIdentifier,
 } from '@dnd-kit/core';
 import { Active, DroppableContainer, RectMap } from '@dnd-kit/core/dist/store';
 import { Coordinates } from '@dnd-kit/utilities';
@@ -262,7 +260,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
     (draggedNode: Node | null, targetNode: Node, position: { x: number; y: number }) => {
       let index = 0;
 
-      // helper function to iterate over all chilren of a node
+      // helper function to iterate over all children of a node
       function targetIndexInNode(targetNode: Node, comp: (rect: ClientRect) => boolean) {
         let index = 0;
 
@@ -375,7 +373,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       sensors={sensors}
       measuring={{
         droppable: {
-          measure: (element) => {
+          measure: () => {
             // deactivating the default measuring since it sometimes runs before the required data is ready in craft js
             return { top: 0, bottom: 0, left: 0, right: 0, height: 0, width: 0 };
           },

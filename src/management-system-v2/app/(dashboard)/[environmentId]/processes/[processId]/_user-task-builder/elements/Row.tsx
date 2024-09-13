@@ -1,10 +1,12 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDroppable } from '@dnd-kit/core';
+import { useContext } from 'react';
+import DragPreviewContext from '../_utils/drag-preview-context';
 
 /**
  * This component encapsulates column component
  *
- * Every column needs to be inside a row and the can be multiple columns next to each other in a row
+ * Every column needs to be inside a row and there can be multiple columns in a row
  */
 const Row: UserComponent<React.PropsWithChildren> = ({ children }) => {
   const {
@@ -14,13 +16,16 @@ const Row: UserComponent<React.PropsWithChildren> = ({ children }) => {
     return { nodeId: node.id };
   });
 
-  const { setNodeRef } = useDroppable({ id: nodeId });
+  // prevent that a drag preview interacts with the drag and drop functionality of the original object
+  const isDragPreview = useContext(DragPreviewContext);
+  const droppableId = isDragPreview ? '' : nodeId;
+  const { setNodeRef } = useDroppable({ id: droppableId });
 
   return (
     <div
-      id={nodeId}
+      id={droppableId}
       ref={(r) => {
-        r && connect(r);
+        !isDragPreview && r && connect(r);
         setNodeRef(r);
       }}
       className="user-task-form-row"

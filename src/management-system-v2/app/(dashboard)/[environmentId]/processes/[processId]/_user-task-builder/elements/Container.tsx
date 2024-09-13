@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import { InputNumber, ColorPicker, Empty } from 'antd';
 
@@ -7,6 +7,7 @@ import { UserComponent, useEditor, useNode } from '@craftjs/core';
 import { useDroppable } from '@dnd-kit/core';
 
 import { Setting } from '../utils';
+import DragPreviewContext from '../_utils/drag-preview-context';
 
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;
@@ -29,18 +30,20 @@ const Container: UserComponent<ContainerProps> = ({
   const {
     connectors: { connect },
     nodeId,
-    nodeChildren,
   } = useNode((node) => {
     return { nodeId: node.id, nodeChildren: node.data.nodes };
   });
 
-  const { setNodeRef } = useDroppable({ id: nodeId });
+  // prevent that a drag preview interacts with the drag and drop functionality of the original object
+  const isDragPreview = useContext(DragPreviewContext);
+  const droppableId = isDragPreview ? '' : nodeId;
+  const { setNodeRef } = useDroppable({ id: droppableId });
 
   return (
     <div
-      id={nodeId}
+      id={droppableId}
       ref={(r) => {
-        r && connect(r);
+        !isDragPreview && r && connect(r);
         setNodeRef(r);
       }}
       className="user-task-form-container"

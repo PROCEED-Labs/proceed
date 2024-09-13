@@ -1,9 +1,11 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import { useDraggable } from '@dnd-kit/core';
-import { useRef } from 'react';
+import { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useFrame } from 'react-frame-component';
 import useBuilderStateStore from '../use-builder-state-store';
+import DragPreviewContext from '../_utils/drag-preview-context';
+
 /**
  * This component wraps every editor element provides drag handling and some styling
  */
@@ -25,26 +27,27 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
 
   const isTextEditing = useBuilderStateStore((state) => state.isTextEditing);
 
-  const ref = useRef<HTMLDivElement>();
   const frame = useFrame();
 
+  // prevent that a drag preview interacts with the drag and drop functionality of the original object
+  const isDragPreview = useContext(DragPreviewContext);
+  const draggableId = isDragPreview ? '' : nodeId;
   const {
     attributes,
     listeners,
     setNodeRef: setDragNodeRef,
     isDragging,
   } = useDraggable({
-    id: nodeId,
+    id: draggableId,
     disabled: fixed || isTextEditing,
   });
 
   return (
     <>
       <div
-        id={nodeId}
+        id={draggableId}
         ref={(r) => {
-          ref.current = r || undefined;
-          r && connect(r);
+          !isDragPreview && r && connect(r);
           setDragNodeRef(r);
         }}
         className="user-task-form-column"
@@ -58,9 +61,11 @@ const Column: UserComponent<React.PropsWithChildren<{ fixed?: boolean }>> = ({
         {children}
       </div>
       {/* We need to render the drag shadow of this element into the drag overlay that is portaled into the iframe by our CustomDnD component */}
-      {isDragging &&
-        frame.document?.getElementById('dnd-drag-overlay') &&
-        createPortal(<div>{children}</div>, frame.document?.getElementById('dnd-drag-overlay')!)}
+      <DragPreviewContext.Provider value={true}>
+        {isDragging &&
+          frame.document?.getElementById('dnd-drag-overlay') &&
+          createPortal(<div>{children}</div>, frame.document?.getElementById('dnd-drag-overlay')!)}
+      </DragPreviewContext.Provider>
     </>
   );
 };

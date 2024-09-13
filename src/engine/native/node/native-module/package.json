@@ -5,5 +5,9 @@
   "main": "src/index.js",
   "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
 }

@@ -90,7 +90,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
       while (curr) {
         const indexInAncestors = ancestors.findIndex((ancestor) => ancestor.id === curr!.id);
         if (indexInAncestors > -1) {
-          // we want the first container of the dragged node that also is a sibling of the target node since that should be the on affecting the target node on shrink
+          // we want the first container of the dragged node that also is a sibling of the target node since that should be the one affecting the target node on shrink
           // this might be the target node itself if it contains the dragged node
           shrinkNodeIndex = indexInAncestors - 1;
           break;
@@ -176,9 +176,23 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
           // we need to wait until the node is available throught craft js and the dom element is available as well
           if (!dropNodeDom) return [];
 
+          if (!isCreating && draggedNode) {
+            // block elements inside the dragged element from becoming drop targets
+            let ancestor = dropNode;
+            let nestedInDraggedNode = false;
+            while (ancestor.data.parent) {
+              if (ancestor.data.parent === draggedNode.id) {
+                nestedInDraggedNode = true;
+                break;
+              }
+              ancestor = query.node(ancestor.data.parent).get();
+            }
+            if (nestedInDraggedNode) continue;
+          }
+
           let rect = getClientRect(dropNodeDom);
 
-          // treat rows as if they extend to their parents border
+          // treat rows as if they extend to their parents border horizontally
           if (dropNode.data.name === 'Row') {
             const parentContainer = query.node(dropNode.data.parent!).get();
             const parentContainerRect = parentContainer.dom?.getBoundingClientRect();
@@ -461,7 +475,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
         // prevent that an element is moved opposite to the direction it is dragged in
         // this fixes a situation where an element is dragged out of or into a container element (row/container)
         // resulting in a resize which would then reposition the element back in/out of the containing element
-        // which will then oszillate between the two states until the element is in a position that puts it clearly inside or outside event after the resize
+        // which will then oscillate between the two states until the element is in a position that puts it clearly inside or outside event after the resize
         const dragNodeRect = dragNode.dom?.getBoundingClientRect();
         if (dragNodeRect) {
           let { top } = dragNodeRect;
@@ -492,13 +506,6 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
         // check if the positioning has changed
         if (newParent.id !== currentParentRow.id) {
-          // prevent that we try to position an element inside of itself
-          let ancestor = newParent;
-          while (ancestor.data.parent) {
-            if (ancestor.data.parent === dragNode.id) return;
-            ancestor = query.node(ancestor.data.parent).get();
-          }
-
           if (newParent.data.name === 'Container') {
             // when moving into a container we need to create a new row that is the actual target of move since we require columns to be inside rows
             getActionHandler().addNodeTree(

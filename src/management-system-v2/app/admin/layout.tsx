@@ -9,7 +9,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <Layout
       activeSpace={{ spaceId: '', isOrganization: false }}
       loggedIn={true}
-      userEnvironments={[]}
       layoutMenuItems={[
         {
           type: 'group',

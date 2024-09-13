@@ -94,9 +94,11 @@ const CreateOrganizationPage = ({
     >
       <Content
         headerLeft={
-          <Button type="primary" icon={<ArrowLeftOutlined />} onClick={router.back}>
-            Back
-          </Button>
+          !breakpoint.xs && (
+            <Button type="primary" icon={<ArrowLeftOutlined />} onClick={router.back}>
+              Back
+            </Button>
+          )
         }
         headerCenter={
           breakpoint.xs ? undefined : (

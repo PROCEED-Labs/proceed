@@ -5,6 +5,7 @@ import { PackRule, packRules } from '@casl/ability/extra';
 import Ability from './ability/abilityHelper';
 import { AbilityRule, TreeMap } from './ability/caslAbility';
 import { useEffect } from 'react';
+import { AllowedResourcesForAdmins } from './authorization/globalRules';
 
 type AbilityStoreType = {
   ability: Ability;
@@ -29,7 +30,7 @@ export const SetAbility = ({
 };
 
 export const useAbilityStore = create<AbilityStoreType>((set) => ({
-  ability: new Ability(packRules([{ action: 'admin', subject: 'All' }] as AbilityRule[]), ''),
+  ability: new Ability(packRules([]), ''),
   abilityFetched: false,
   setAbility(rules, environmentId, treeMap) {
     set({ ability: new Ability(rules, environmentId, treeMap), abilityFetched: true });

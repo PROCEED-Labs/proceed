@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, ReactNode, useState } from 'react';
-import { Space, Card, Typography, App, Table, Alert } from 'antd';
+import { Space, Card, Typography, App, Table, Alert, Modal, Form, Input } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
@@ -11,13 +11,20 @@ import { User } from '@/lib/data/user-schema';
 import { deleteUser as deleteUserServerAction } from '@/lib/data/users';
 import UserAvatar from '@/components/user-avatar';
 import { CloseOutlined } from '@ant-design/icons';
+import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
+import { z } from 'zod';
+import { requestEmailChange as serverRequestEmailChange } from '@/lib/change-email/server-actions';
 import Link from 'next/link';
 
 const UserProfile: FC<{ userData: User }> = ({ userData }) => {
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
 
-  const { message: messageApi } = App.useApp();
+  const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
+  const [errors, parseEmail] = useParseZodErrors(z.object({ email: z.string().email() }));
+  const [changeEmailForm] = Form.useForm();
+
+  const { message: messageApi, notification } = App.useApp();
 
   async function deleteUser() {
     try {
@@ -30,6 +37,26 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
       //@ts-ignore
       if (e?.error?.message as ReactNode) setErrorMessage(e.error.message);
       else messageApi.error({ content: 'An error ocurred' });
+    }
+  }
+
+  async function requestEmailChange(values: unknown) {
+    try {
+      const data = parseEmail(values);
+      if (!data) return;
+
+      const response = await serverRequestEmailChange(data.email);
+      if (response && 'error' in response) throw response;
+
+      setChangeEmailModalOpen(false);
+      notification.success({
+        message: 'Email change request successful',
+        description: 'Check your Email for the verification link',
+      });
+    } catch (e: unknown) {
+      //@ts-ignore
+      const content = (e?.error?.message as ReactNode) ? e.error.message : 'An error ocurred';
+      messageApi.error({ content });
     }
   }
 
@@ -64,6 +91,31 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
           ],
         }}
       />
+
+      <Modal
+        title="Change your email address"
+        open={changeEmailModalOpen}
+        closeIcon={null}
+        onCancel={() => setChangeEmailModalOpen(false)}
+        onOk={changeEmailForm.submit}
+        destroyOnClose
+      >
+        <Alert
+          type="info"
+          message="We'll send you a verification link to your new email address."
+          style={{ marginBottom: '1rem' }}
+        />
+        <Form
+          initialValues={userData}
+          form={changeEmailForm}
+          layout="vertical"
+          onFinish={requestEmailChange}
+        >
+          <Form.Item label="Email" name="email" required {...antDesignInputProps(errors, 'email')}>
+            <Input type="email" />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Space direction="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
@@ -138,6 +190,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                   key: 'email',
                   title: 'Email',
                   value: !userData.guest ? userData.email : 'Guest',
+                  action: () => setChangeEmailModalOpen(true),
                 },
               ]}
               columns={[
@@ -145,7 +198,7 @@ const UserProfile: FC<{ userData: User }> = ({ userData }) => {
                 { dataIndex: 'value' },
                 {
                   key: 'action',
-                  render: (_, row) => row.action && <RightOutlined />,
+                  render: () => <RightOutlined />,
                 },
               ]}
               onRow={(row) =>

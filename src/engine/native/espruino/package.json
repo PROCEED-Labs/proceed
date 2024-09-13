@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "espruino.js",
+  "types": "./@types/espruino.d.ts",
   "scripts": {
     "dev": "nodemon src/dev.js --watch src",
     "build:pixl": "uglifyjs src/pixl.js --compress --mangle -o ./build/bundle.js ",
@@ -34,5 +35,9 @@
     "webpack-bundle-analyzer": "^3.3.2",
     "webpack-cli": "^3.3.5"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
 }

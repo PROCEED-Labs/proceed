@@ -21,8 +21,13 @@
     "url": "https://github.com/PROCEED-Labs/proceed.git",
     "directory": "src/management-system/"
   },
-  "main": "index.js",
+  "main": "./index.js",
+  "types": "./@types/index.d.ts",
   "dependencies": {
     "vm2": "3.9.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

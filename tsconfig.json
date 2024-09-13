@@ -4,11 +4,18 @@
     "module": "CommonJS",
     "outDir": "dist",
     "allowJs": true,
+    "checkJs": false,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "target": "es6"
+    "target": "es6",
+    "moduleDetection": "force",
+    "declaration": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false
   },
-  "exclude": ["src/management-system-v2/**/*"],
+  "exclude": ["src/management-system-v2/**/*", "**/@types", "node_modules/**/*"],
   "include": ["src/**/*", "tests/**/*"]
 }

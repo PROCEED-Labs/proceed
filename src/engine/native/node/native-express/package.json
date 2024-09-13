@@ -2,7 +2,8 @@
   "name": "@proceed/native-express",
   "version": "1.0.0",
   "description": "Native module that implements the `serve` and `respond` commands.",
-  "main": "src/index.js",
+  "main": "./src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
@@ -12,5 +13,9 @@
     "busboy": "^0.3.1",
     "body-parser": "^1.19.0",
     "stoppable": "^1.1.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

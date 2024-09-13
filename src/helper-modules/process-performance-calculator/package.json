@@ -5,8 +5,11 @@
   "author": "Luisa Wittig",
   "license": "ISC",
   "main": "index.js",
+  "types": "@types/index.d.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "bpmn-moddle": "^6.0.0"

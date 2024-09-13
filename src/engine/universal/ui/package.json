@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "User Interface module for the PROCEED engine",
   "main": "./module.js",
+  "types": "./@types/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "scripts": {
@@ -11,7 +12,9 @@
     "dev-logging": "cross-env TARGET=logging webpack-dev-server --mode=development --open --config ./src/display-items/webpack.config.js",
     "build-tasklist": "cross-env TARGET=tasklist webpack --config ./src/display-items/webpack.config.js",
     "build-configuration": "cross-env TARGET=configuration webpack --config ./src/display-items/webpack.config.js",
-    "build-logging": "cross-env TARGET=logging webpack --config ./src/display-items/webpack.config.js"
+    "build-logging": "cross-env TARGET=logging webpack --config ./src/display-items/webpack.config.js",
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@proceed/distribution": "^1.0.0",

@@ -2,12 +2,20 @@
   "name": "@proceed/native-vm2",
   "version": "1.0.0",
   "description": "Native module that provides a vm2 script executor for the engine.",
-  "main": "src/index.js",
+  "main": "./src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
     "vm2": "^3.8.4",
     "neo-bpmn-engine": "^8.2.2"
+  },
+  "devDependencies": {
+    "@proceed/core": "^1.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

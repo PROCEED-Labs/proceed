@@ -2,7 +2,8 @@
   "name": "@proceed/native-fs",
   "version": "1.0.0",
   "description": "Native module that implements the `read` and `write`commands.",
-  "main": "src/index.js",
+  "main": "./src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
@@ -11,5 +12,9 @@
   },
   "devDependencies": {
     "@types/jest": "^25.1.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

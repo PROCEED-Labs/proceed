@@ -2,11 +2,16 @@
   "name": "@proceed/native",
   "version": "1.0.0",
   "description": "Native part for the PROCEED engine implemented in NodeJS.",
-  "main": "src/index.js",
+  "main": "./src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {
     "@proceed/core": "^1.0.0",
     "is-valid-path": "^0.1.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
   }
 }

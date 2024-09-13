@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Native module class for use in the @proceed/native part",
   "main": "src/index.js",
+  "types": "./@types/src/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT"
 }

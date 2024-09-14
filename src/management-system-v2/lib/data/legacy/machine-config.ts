@@ -161,14 +161,19 @@ await init();
  */
 function nestedParametersFromStorage(parameterIds: string[]) {
   const parameters: Record<string, Parameter> = {};
+  // console.log('getting parameters for parameter IDs: ', parameterIds); //TODO remove
 
   parameterIds.forEach((id) => {
     const storedParameter = storedData.parameters[id];
-    parameters[storedParameter.key] = {
-      ...storedParameter,
-      parameters: nestedParametersFromStorage(storedParameter.parameters),
-    };
+    // TODO remove
+    if (true || (storedParameter && storedParameter.key)) {
+      parameters[storedParameter.key] = {
+        ...storedParameter,
+        parameters: nestedParametersFromStorage(storedParameter.parameters),
+      };
+    }
   });
+  // console.log('returning: ', parameters);  //TODO remove
 
   return parameters;
 }
@@ -235,6 +240,8 @@ export async function getDeepParentConfigurationById(
 
   // TODO: check if the user can access the config
 
+  // console.log('getting data for parent ID: ', parentConfigId); // TODO remove
+
   const parentConfig = {
     ...storedParentConfig,
     metadata: nestedParametersFromStorage(storedParentConfig.metadata),
@@ -259,6 +266,8 @@ export async function getParentConfigurations(
   const storedParentConfigs = Object.values(storedData.parentConfigs).filter(
     (config) => config.environmentId === environmentId,
   );
+
+  // console.log('ID: ', environmentId, '\nAbility: ', ability, '\nstored:\n', storedParentConfigs); //TODO remove
 
   const parentConfigs = await asyncMap(storedParentConfigs, ({ id }) =>
     getDeepParentConfigurationById(id),
@@ -472,6 +481,7 @@ export async function addParentConfig(
   environmentId: string,
   base?: ParentConfig,
 ) {
+  console.log('adding: ', machineConfigInput, '\nfor ID: ', environmentId); //TODO remove
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
     const date = new Date().toUTCString();
@@ -501,10 +511,9 @@ export async function addParentConfig(
       ...parentConfigData,
       ...(base ? base : {}),
     };
-    metadata.id = v4();
-    if (!metadata.folderId) {
-      metadata.folderId = getRootFolder(metadata.environmentId).id;
-    }
+
+    metadata.folderId = getRootFolder(metadata.environmentId).id;
+    metadata.environmentId = environmentId;
 
     const folderData = foldersMetaObject.folders[metadata.folderId];
     if (!folderData) throw new Error('Folder not found');

@@ -248,7 +248,10 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       const importedData: ParentConfig[] = JSON.parse(text);
 
       await asyncForEach(importedData, async (item) => {
-        await addParentConfig(item, space.spaceId, item);
+        const add_return = await addParentConfig(item, space.spaceId, item);
+        if ('error' in add_return) {
+          throw add_return.error.message;
+        }
       });
       message.success('Import successful');
       router.refresh();

@@ -171,7 +171,7 @@ const CustomField: React.FC<CustomFieldProps> = ({ keyId, parameter, editable, p
   return (
     <Row gutter={[24, 24]} /* align="middle" */ style={{ margin: '10px 0 0 0', width: '100%' }}>
       <Col span={3} className="gutter-row">
-        <div style={{ display: 'flex' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline' }}>
           <Paragraph
             editable={
               editable && {

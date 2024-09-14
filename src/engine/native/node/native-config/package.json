@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Native module that implements the `config` command.",
   "main": "./src/index.js",
-  "types": "./@types/src/index.d.ts",
+  "types": "./@types/index.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {

@@ -6,7 +6,7 @@
   "homepage": "https://proceed.snet.tu-berlin.de/",
   "description": "This library transforms the PROCEED process constraints from XML to JSON or vice versa",
   "main": "parser.js",
-  "types": "@types/parser.d.ts",
+  "types": "./@types/parser.d.ts",
   "scripts": {
     "test": "jest",
     "lint": "eslint .",

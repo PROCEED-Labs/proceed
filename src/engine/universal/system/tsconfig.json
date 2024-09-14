@@ -1,6 +1,6 @@
 {
   "extends": "../../../../tsconfig.json",
-  "include": ["./src"],
+  "include": ["./src", "../core", "../distribution/"],
   "compilerOptions": {
     "declarationDir": "./@types",
     "emitDeclarationOnly": true

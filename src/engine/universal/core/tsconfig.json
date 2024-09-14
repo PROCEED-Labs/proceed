@@ -1,6 +1,7 @@
 {
   "extends": "../../../../tsconfig.json",
-  "include": ["./**/*"],
+  "include": ["./src"],
+  "exclude": ["../../../../FeatureFlags.js", "./@types/**/*"],
   "compilerOptions": {
     "declarationDir": "./@types",
     "emitDeclarationOnly": true

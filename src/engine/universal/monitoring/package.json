@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Monitoring module for the PROCEED engine",
   "main": "./src/module.js",
-  "types": "./@types/src/module.d.ts",
+  "types": "./@types/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {

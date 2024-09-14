@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "PROCEED distribution module",
   "main": "src/module.js",
-  "types": "@types/src/module.d.ts",
+  "types": "./@types/src/module.d.ts",
   "author": "PROCEED Project",
   "license": "MIT",
   "dependencies": {

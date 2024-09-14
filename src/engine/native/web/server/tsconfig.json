@@ -1,8 +1,10 @@
 {
   "extends": "../../../../../tsconfig.json",
   "include": ["src", "**/*.json"],
+  "exclude": ["../../../../../build/**/*", "@types"],
   "compilerOptions": {
     "declarationDir": "./@types",
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "rootDir": "."
   }
 }

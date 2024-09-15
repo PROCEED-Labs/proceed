@@ -47,15 +47,15 @@ const folders = _folders as Record<(typeof folderIds)[number], Folder>;
 const processTemplate = {
   environmentId: '1',
   type: 'process',
-  ownerId: 'someid',
+  creatorId: 'someid',
   description: 'This is a testing process',
   versions: [],
   sharedAs: 'protected',
   createdOn: new Date('2024-02-23T15:46:30.243Z'),
   lastEditedOn: new Date('2024-02-23T15:46:30.243Z'),
-  variables: [],
+  //variables: [],
   processIds: [],
-  departments: [],
+  //departments: [],
   shareTimestamp: 0,
   allowIframeTimestamp: 0,
 } satisfies Partial<ProcessMetadata>;

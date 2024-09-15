@@ -26,8 +26,24 @@ export let accountsMetaObject: { [Id: string]: OauthAccount } =
   // @ts-ignore
   global.accountsMetaObject || (global.accountsMetaObject = {});
 
-export function getUsers() {
-  return Object.values(usersMetaObject);
+export function getUsers(page: number = 1, pageSize: number = 10) {
+  const allUsers = Object.values(usersMetaObject);
+  const totalUsers = allUsers.length;
+  const totalPages = Math.ceil(totalUsers / pageSize);
+
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedUsers = allUsers.slice(startIndex, endIndex);
+
+  return {
+    users: paginatedUsers,
+    pagination: {
+      currentPage: page,
+      pageSize: pageSize,
+      totalUsers: totalUsers,
+      totalPages: totalPages,
+    },
+  };
 }
 
 export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {

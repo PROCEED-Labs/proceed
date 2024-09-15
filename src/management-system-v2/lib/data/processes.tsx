@@ -192,7 +192,7 @@ export const addProcesses = async (
 
     const newProcess = {
       bpmn,
-      ownerId: userId,
+      creatorId: userId,
       environmentId: activeEnvironment.spaceId,
     };
 
@@ -324,7 +324,7 @@ export const copyProcesses = async (
 
     // TODO: include variables in copy?
     const newProcess = {
-      ownerId: userId,
+      creatorId: userId,
       definitionId: newId,
       bpmn: newBpmn,
       environmentId: activeEnvironment.spaceId,

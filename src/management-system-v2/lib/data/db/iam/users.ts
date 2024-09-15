@@ -14,9 +14,26 @@ import { getRoleMappingByUserId } from './role-mappings';
 import { addSystemAdmin, getSystemAdmins } from './system-admins';
 import db from '@/lib/data';
 
-export async function getUsers() {
+export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
-  return (await db.user.findMany({})) as User[];
+  const skip = (page - 1) * pageSize;
+  const users = (await db.user.findMany({
+    skip,
+    take: pageSize,
+  })) as User[];
+
+  const totalUsers = await db.user.count();
+  const totalPages = Math.ceil(totalUsers / pageSize);
+
+  return {
+    users,
+    pagination: {
+      currentPage: page,
+      pageSize,
+      totalUsers,
+      totalPages,
+    },
+  };
 }
 
 export async function getUserById(id: string, opts?: { throwIfNotFound?: boolean }) {
@@ -87,6 +104,7 @@ export class UserHasToDeleteOrganizationsError extends Error {
     this.conflictingOrgs = conflictingOrgs;
   }
 }
+
 export async function deleteUser(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User doesn't exist");
@@ -106,10 +124,10 @@ export async function deleteUser(userId: string) {
       throw new Error(`Consistency error: admin role of environment ${environmentId} not found`);
 
     if (adminRole.members.length === 1) orgsWithNoNextAdmin.push(environmentId);
-  }
 
-  if (orgsWithNoNextAdmin.length > 0)
-    throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+    if (orgsWithNoNextAdmin.length > 0)
+      throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);
+  }
 
   await db.space.deleteMany({ where: { ownerId: userId } });
   await db.user.delete({ where: { id: userId } });
@@ -137,9 +155,9 @@ export async function updateUser(userId: string, inputUser: Partial<Authenticate
     updatedUser = { ...user, ...newUserData };
   }
 
-  await db.user.update({ where: { id: userId }, data: updatedUser });
+  const updatedUserFromDB = await db.user.update({ where: { id: userId }, data: updatedUser });
 
-  return user;
+  return updatedUserFromDB;
 }
 
 export async function addOauthAccount(accountInput: Omit<OauthAccount, 'id'>) {

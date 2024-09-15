@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
-import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/legacy/process';
+import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/DTOs';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
@@ -13,8 +13,7 @@ import ErrorMessage from '../../components/error-message';
 import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
-import { getEnvironmentById } from '@/lib/data/legacy/iam/environments';
-import { getUserOrganizationEnvironments } from '@/lib/data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
@@ -130,7 +129,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: any[] = [await getEnvironmentById(userId)];
+  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
     return await getEnvironmentById(environmentId);

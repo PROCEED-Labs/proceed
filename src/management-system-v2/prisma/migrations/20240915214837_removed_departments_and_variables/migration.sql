@@ -1,6 +1,3 @@
--- CreateEnum
-CREATE TYPE "ProcessType" AS ENUM ('Process', 'Template', 'Projects');
-
 -- CreateTable
 CREATE TABLE "SystemAdmin" (
     "id" TEXT NOT NULL,
@@ -48,16 +45,14 @@ CREATE TABLE "Process" (
     "lastEditedOn" TIMESTAMP(3) NOT NULL,
     "inEditingBy" JSONB,
     "processIds" TEXT[],
-    "type" "ProcessType" NOT NULL,
+    "type" TEXT NOT NULL,
     "folderId" TEXT NOT NULL,
     "sharedAs" TEXT NOT NULL,
     "shareTimestamp" BIGINT NOT NULL,
     "allowIframeTimestamp" BIGINT NOT NULL,
     "environmentId" TEXT NOT NULL,
     "bpmn" XML NOT NULL,
-    "ownerId" TEXT NOT NULL,
-    "departments" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "variables" JSONB[] DEFAULT ARRAY[]::JSONB[],
+    "creatorId" TEXT NOT NULL,
 
     CONSTRAINT "Process_pkey" PRIMARY KEY ("id")
 );
@@ -187,7 +182,7 @@ ALTER TABLE "Process" ADD CONSTRAINT "Process_folderId_fkey" FOREIGN KEY ("folde
 ALTER TABLE "Process" ADD CONSTRAINT "Process_environmentId_fkey" FOREIGN KEY ("environmentId") REFERENCES "Space"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Process" ADD CONSTRAINT "Process_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Process" ADD CONSTRAINT "Process_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ProcessArtifacts" ADD CONSTRAINT "ProcessArtifacts_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -15,14 +15,13 @@ import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data';
 import { v4 } from 'uuid';
-import { ProcessType } from '@prisma/client';
 import { UserErrorType, userError } from '@/lib/user-error';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
   const userProcesses = await db.process.findMany({
     where: {
-      ownerId: userId,
+      creatorId: userId,
     },
     select: {
       id: true,
@@ -39,9 +38,9 @@ export async function getProcesses(userId: string, ability: Ability, includeBPMN
       shareTimestamp: true,
       allowIframeTimestamp: true,
       environmentId: true,
-      ownerId: true,
-      departments: true,
-      variables: true,
+      creatorId: true,
+      //departments: true,
+      //variables: true,
       versions: true,
       bpmn: includeBPMN,
     },
@@ -73,9 +72,9 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
       shareTimestamp: true,
       allowIframeTimestamp: true,
       environmentId: true,
-      ownerId: true,
-      departments: true,
-      variables: true,
+      creatorId: true,
+      //departments: true,
+      //variables: true,
       versions: true,
       bpmn: includeBPMN,
     },
@@ -96,7 +95,6 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
 
   const convertedProcess = {
     ...process,
-    type: process.type.toLowerCase(),
     versions: convertedVersions,
     shareTimestamp:
       typeof process.shareTimestamp === 'bigint'
@@ -165,12 +163,6 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
     throw new Error(`Process with id ${processDefinitionsId} already exists!`);
   }
 
-  const processTypeEnum: ProcessType = {
-    process: 'Process',
-    project: 'Project',
-    template: 'Template',
-  }[metadata.type.toLowerCase()] as ProcessType;
-
   // save process info
   try {
     await db.process.create({
@@ -181,16 +173,16 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
         description: metadata.description,
         createdOn: new Date().toISOString(),
         lastEditedOn: new Date().toISOString(),
-        type: processTypeEnum,
+        type: metadata.type,
         processIds: { set: metadata.processIds },
         folderId: metadata.folderId,
         sharedAs: metadata.sharedAs,
         shareTimestamp: metadata.shareTimestamp,
         allowIframeTimestamp: metadata.allowIframeTimestamp,
         environmentId: metadata.environmentId,
-        ownerId: metadata.ownerId,
-        departments: { set: metadata.departments },
-        variables: { set: metadata.variables },
+        creatorId: metadata.creatorId,
+        //departments: { set: metadata.departments },
+        //variables: { set: metadata.variables },
         bpmn: bpmn,
       },
     });

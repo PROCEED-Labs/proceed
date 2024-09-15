@@ -238,7 +238,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
-                  <div>Owner: {processData.ownerId.split('|').pop()}</div>
+                  <div>Owner: {processData.creatorId.split('|').pop()}</div>
                   {version.id ? (
                     <>
                       <div>Version: {version.name || version.id}</div>

@@ -34,6 +34,17 @@ export async function getProcesses(userId: string, ability: Ability, includeBPMN
     : await processModuleLegacy.getProcesses(userId, ability, includeBPMN);
 }
 
+export async function getProcessBpmn(processDefinitionsId: string) {
+  return enableUseDB
+    ? await processModuleDB.getProcessBpmn(processDefinitionsId)
+    : await processModuleLegacy.getProcessBpmn(processDefinitionsId);
+}
+export async function getProcessVersionBpmn(processDefinitionsId: string, version: number) {
+  return enableUseDB
+    ? await processModuleDB.getProcessVersionBpmn(processDefinitionsId, version)
+    : await processModuleLegacy.getProcessVersionBpmn(processDefinitionsId, version);
+}
+
 export async function getFolderContents(folderId: string, ability?: Ability) {
   return enableUseDB
     ? await folderModuleDB.getFolderContents(folderId, ability)
@@ -139,8 +150,10 @@ export async function deleteUser(userId: string) {
     : await usersModuleLegacy.deleteUser(userId);
 }
 
-export async function getUsers() {
-  return enableUseDB ? await usersModuleDB.getUsers() : await usersModuleLegacy.getUsers();
+export async function getUsers(page: number = 1, pageSize: number = 10) {
+  return enableUseDB
+    ? await usersModuleDB.getUsers(page, pageSize)
+    : await usersModuleLegacy.getUsers();
 }
 
 export async function isMember(environmentId: string, userId: string) {

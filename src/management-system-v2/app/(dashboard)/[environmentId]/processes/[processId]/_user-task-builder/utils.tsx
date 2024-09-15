@@ -1,5 +1,5 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useId } from 'react';
+import React, { CSSProperties, ReactElement, useId } from 'react';
 import ReactDOMServer from 'react-dom/server';
 
 import * as Elements from './elements';
@@ -14,7 +14,7 @@ body {
   flex: 1 0 0;
   box-sizing: border-box;
   height: fit-content;
-  border: 2px solid white;
+  border: 2px solid rgba(0,0,0,0);
   padding: 0 10px;
 }
 
@@ -240,13 +240,17 @@ export const defaultForm = `
 }
 `;
 
-export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ label, control }) => {
+export const Setting: React.FC<{
+  label: string;
+  control: ReactElement;
+  style?: React.CSSProperties;
+}> = ({ label, control, style = {} }) => {
   const id = useId();
 
-  const clonedControl = React.cloneElement(control, { id, style: { flexShrink: 1 } });
+  const clonedControl = React.cloneElement(control, { id });
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', margin: '5px' }}>
+    <div style={{ margin: '5px', ...style }}>
       <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
         {label}:
       </label>

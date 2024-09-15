@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Tooltip, Button, Space, Select, SelectProps } from 'antd';
+import { App, Tooltip, Button, Space, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -168,15 +168,21 @@ const ModelerToolbar = ({
     }
   };
 
+  const { message } = App.useApp();
+
   const handleOpenDocumentation = async () => {
     // the timestamp does not matter here since it is overriden by the user being an owner of the process
-    const url = await generateSharedViewerUrl(
-      { processId, timestamp: 0 },
-      selectedVersionId || undefined,
-    );
+    try {
+      const url = await generateSharedViewerUrl(
+        { processId, timestamp: 0 },
+        selectedVersionId || undefined,
+      );
 
-    // open the documentation page in a new tab (unless it is already open in which case just show the tab)
-    window.open(url, `${processId}-${selectedVersionId}-tab`);
+      // open the documentation page in a new tab (unless it is already open in which case just show the tab)
+      window.open(url, `${processId}-${selectedVersionId}-tab`);
+    } catch (err) {
+      message.error('Failed to open the documentation page.');
+    }
   };
 
   const filterOption: SelectProps['filterOption'] = (input, option) =>

@@ -7,6 +7,7 @@ import * as Elements from './elements';
 const styles = `
 body {
   font-size: 16px;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
 .user-task-form-column {

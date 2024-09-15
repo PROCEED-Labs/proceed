@@ -161,7 +161,6 @@ const Processes = ({
     'process-list',
     'del',
     () => {
-      console.log('Hello World', canDeleteSelected);
       if (canDeleteSelected) {
         setOpenDeleteModal(true);
       }

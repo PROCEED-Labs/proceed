@@ -423,6 +423,29 @@ export function getUniqueArray(array: JSONObject[], ids: string | string[] | und
   */
 }
 
+/**
+ * Returns an array of unique objects based on the specified ids.
+ *
+ * @param array - The array of objects.
+ * @param ids - The properties that identify an object. (Can be a single string or an array of strings.)
+ * @returns An array of unique objects.
+ */
+export function getUniqueObjects(array: JSONObject[], ids: string | string[]): JSONObject[] {
+  const uniqueSet = new Set<string>();
+  const uniqueArray: JSONObject[] = [];
+  const idArray = Array.isArray(ids) ? ids : [ids];
+
+  for (const obj of array) {
+    const key = JSON.stringify(Object.fromEntries(idArray.map((id) => [id, obj[id]])));
+    if (!uniqueSet.has(key)) {
+      uniqueSet.add(key);
+      uniqueArray.push(obj);
+    }
+  }
+
+  return uniqueArray;
+}
+
 /** Returns a string representation for a user */
 export function userRepresentation(
   member: Pick<AuthenticatedUser, 'firstName' | 'lastName' | 'username'>,

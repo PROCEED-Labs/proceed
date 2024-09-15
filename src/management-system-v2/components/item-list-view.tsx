@@ -5,7 +5,7 @@ import { PropsWithChildren, ReactNode, SetStateAction, useMemo, useRef } from 'r
 import cn from 'classnames';
 import styles from './item-list-view.module.scss';
 import { MoreOutlined } from '@ant-design/icons';
-import { ObjectSetArray, getUniqueArray } from '@/lib/utils';
+import { getUniqueObjects } from '@/lib/utils';
 
 type ElementListProps<T extends { id: string }> = PropsWithChildren<{
   data: T[];
@@ -140,16 +140,14 @@ const ElementList = <T extends { id: string }>({
           onSelectAll: (selected, selectedRows, changeRows) => {
             elementSelection.setSelectionElements((oldSelection) => {
               if (selected) {
-                return [...new ObjectSetArray([...oldSelection, ...changeRows], 'id')] as T[];
+                return getUniqueObjects([...oldSelection, ...changeRows], 'id') as T[];
               } else {
-                return [
-                  ...new ObjectSetArray(
-                    oldSelection.filter(
-                      ({ id }) => !changeRows.some(({ id: rowId }) => rowId === id),
-                    ),
-                    'id',
+                return getUniqueObjects(
+                  oldSelection.filter(
+                    ({ id }) => !changeRows.some(({ id: rowId }) => rowId === id),
                   ),
-                ] as T[];
+                  'id',
+                ) as T[];
               }
             });
           },

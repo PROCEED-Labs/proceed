@@ -78,6 +78,7 @@ export const InputSettings = () => {
         label="Type"
         control={
           <Select
+            style={{ display: 'block' }}
             options={[
               { value: 'text', label: 'Text' },
               { value: 'number', label: 'Number' },

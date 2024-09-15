@@ -90,6 +90,7 @@ export const ContainerSettings = () => {
       />
       <Setting
         label="Background Color"
+        style={{ display: 'flex', alignItems: 'center' }}
         control={
           <ColorPicker
             value={background}
@@ -120,6 +121,7 @@ export const ContainerSettings = () => {
       />
       <Setting
         label="Border Color"
+        style={{ display: 'flex', alignItems: 'center' }}
         control={
           <ColorPicker
             value={borderColor}

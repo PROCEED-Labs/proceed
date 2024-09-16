@@ -481,7 +481,6 @@ export async function addParentConfig(
   environmentId: string,
   base?: ParentConfig,
 ) {
-  console.log('adding: ', machineConfigInput, '\nfor ID: ', environmentId); //TODO remove
   try {
     const parentConfigData = AbstractConfigInputSchema.parse(machineConfigInput);
     const date = new Date().toUTCString();
@@ -512,7 +511,7 @@ export async function addParentConfig(
       ...(base ? base : {}),
     };
 
-    metadata.folderId = getRootFolder(metadata.environmentId).id;
+    metadata.folderId = getRootFolder(environmentId).id;
     metadata.environmentId = environmentId;
 
     const folderData = foldersMetaObject.folders[metadata.folderId];
@@ -532,6 +531,7 @@ export async function addParentConfig(
 
     return metadata;
   } catch (e) {
+    console.log(e);
     return userError("Couldn't create Machine Config");
   }
 }

@@ -1382,33 +1382,33 @@ test.describe('Favourites', () => {
 
 //   const emptyCol = await page.locator('div.PROCEED-RESIZE-COLUMN');
 
-//   /* Resize the column */
-//   /* ________________________________________________________ */
-//   // await nameColumnHandle.dragTo(emptyCol, {
-//   //   // sourcePosition: {
-//   //   //   x: -20,
-//   //   //   y: 2,
-//   //   // },
-//   //   // targetPosition: {
-//   //   //   x: 50,
-//   //   //   y: 1,
-//   //   // },
-//   //   // force: true,
-//   // });
-//   /* ________________________________________________________ */
+/* Resize the column */
+/* ________________________________________________________ */
+// /* A */
+// await nameColumnHandle.dragTo(emptyCol, {
+//   sourcePosition: {
+//     x: -20,
+//     y: 2,
+//   },
+//   targetPosition: {
+//     x: 50,
+//     y: 1,
+//   },
+//   force: true,
+// });
+// /* ________________________________________________________ */
+// /* B */
+// let x, y;
+// await nameColumnHandle.boundingBox().then((box) => {
+//   x = box.x + box.width * 0.5;
+//   y = box.y + box.height * 0.5;
+// });
 
-//   let x, y;
-//   await nameColumnHandle.boundingBox().then((box) => {
-//     x = box.x + box.width * 0.5;
-//     y = box.y + box.height * 0.5;
-//   });
-
-//   await nameColumnHandle.hover();
-//   await page.mouse.down();
-//   await page.mouse.move(x + 100, y), { steps: 10 };
-//   await page.mouse.up();
-
-//   /* ________________________________________________________ */
+// await nameColumnHandle.hover();
+// await page.mouse.down();
+// await page.mouse.move(x + 100, y), { steps: 10 };
+// await page.mouse.up();
+// /* ________________________________________________________ */
 
 //   // // await nameColumnHandle.hover();
 //   // await page.mouse.move(x, y);

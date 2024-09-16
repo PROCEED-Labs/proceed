@@ -35,9 +35,6 @@ import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
 import classNames from 'classnames';
-import { useColumnWidth } from '@/lib/useColumnWidth';
-
-const DraggableRow = DraggableElementGenerator('tr', 'data-row-key');
 
 /** respects sorting function, but always keeps folders at the beginning */
 function folderAwareSort(sortFunction: (a: ProcessListProcess, b: ProcessListProcess) => number) {
@@ -92,7 +89,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
   const breakpoint = Grid.useBreakpoint();
 
   const selectedColumns = useUserPreferences.use['columns-in-table-view-process-list']();
-  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const { favourites: favProcesses } = useFavouriteProcesses();
@@ -414,6 +410,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
   setShowMobileMetaData,
 }) => {
   const setContextMenuItem = contextMenuStore((store) => store.setSelected);
+  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
 
   return (
     <BaseProcessList
@@ -424,7 +421,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
       onExportProcess={onExportProcess}
       processActions={processActions}
       tableProps={{
-        scroll: { x: breakpoint.xl ? (metaPanelisOpened ? '71vw' : '85.5vw') : '100%' },
+        scroll: { x: metaPanelisOpened ? '71vw' : '85.5vw' },
         onRow: (item) => ({
           // onDoubleClick: () =>
           //   router.push(

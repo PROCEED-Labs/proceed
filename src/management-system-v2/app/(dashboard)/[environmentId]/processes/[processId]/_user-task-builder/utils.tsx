@@ -35,6 +35,7 @@ body {
 
 .user-task-form-container {
   min-height: 100%;
+  border-radius: 8px;
 }
 
 .user-task-form-input {
@@ -48,9 +49,14 @@ body {
   font-size: 1rem;
 }
 
+.user-task-form-input label span {
+  white-space: nowrap !important;
+}
+
 .user-task-form-input input {
   box-sizing: border-box;
   width: 100%;
+  height: fit-content;
   border: 1px solid #d9d9d9;
   padding: 4px 11px;
   font-size: 0.875em;

@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
-  const environmentId = searchParams.get('environmentId') || '1';
+  const environmentId = searchParams.get('environmentId');
   const fileName = searchParams.get('fileName');
   if (!entityId || !environmentId || !entityType || !fileName) {
     return new NextResponse(null, {
@@ -175,13 +175,18 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const { fileName: newFileName } = await saveEnityFile(
+    const res = await saveEnityFile(
       entityType as EntityType,
       entityId,
       fileType.mime,
       fileName,
       buffer,
     );
+
+    if ('error' in res) throw new Error(res.error.message);
+
+    const { fileName: newFileName } = res;
+
     return new NextResponse(newFileName, {
       status: 200,
       statusText: 'OK',

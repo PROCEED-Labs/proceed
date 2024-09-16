@@ -1,15 +1,45 @@
 'use server';
 
-import {
-  getFileCategory,
-  getNewFileName,
-  hasUuidBeforeUnderscore,
-  EntityType,
-} from '../helpers/fileManagerHelpers';
+import { getFileCategory, getNewFileName, EntityType } from '../helpers/fileManagerHelpers';
+import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager';
 import db from '@/lib/data';
 
-//Extend this if needed
+// Allowed content types for files
+const ALLOWED_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'text/html',
+  'application/pdf',
+];
+
+const isContentTypeAllowed = (mimeType: string) => {
+  return ALLOWED_CONTENT_TYPES.includes(mimeType);
+};
+
+const saveArtifactToDB = async (fileName: string, filePath: string, processId: string) => {
+  return db.processArtifacts.create({
+    data: { fileName, filePath, processId },
+  });
+};
+
+const removeArtifactFromDB = async (filePath: string, processId: string) => {
+  return db.processArtifacts.delete({
+    where: { filePath, processId },
+  });
+};
+
+// Utility to handle file paths for process artifacts
+const generateProcessFilePath = (
+  fileName: string,
+  processId: string,
+  mimeType?: string,
+): string => {
+  const artifactType = getFileCategory(fileName, mimeType);
+  return `processes/${processId}/${artifactType}/${fileName}`;
+};
+
 export async function saveEnityFile(
   entityType: EntityType,
   entityId: string,
@@ -17,13 +47,17 @@ export async function saveEnityFile(
   fileName: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
+  if (!isContentTypeAllowed(mimeType)) {
+    return contentTypeNotAllowed(`Content type '${mimeType}' is not allowed`);
+  }
+
   switch (entityType) {
     case EntityType.PROCESS:
       return saveProcessArtifact(entityId, mimeType, fileName, fileContent);
     case EntityType.ORGANIZATION:
       return saveOrganisationLogo(fileName, entityId, mimeType, fileContent);
     case EntityType.MACHINE:
-    //TODO extend
+    // Extend for other entity types
     default:
       return { presignedUrl: null, fileName: null };
   }
@@ -40,7 +74,7 @@ export async function retrieveEntityFile(
     case EntityType.ORGANIZATION:
       return getOrganisationLogo(entityId);
     case EntityType.MACHINE:
-    //TODO extend
+    // Extend for other entity types
     default:
       return null;
   }
@@ -57,59 +91,29 @@ export async function deleteEntityFile(
     case EntityType.ORGANIZATION:
       return deleteOrganisationLogo(entityId);
     case EntityType.MACHINE:
-    //TODO extend
+    // Extend for other entity types
     default:
       return false;
   }
 }
-function getFilePathProcessArtifact(
-  fileName: string,
-  processId: string,
-  mimeType?: string,
-): string {
-  const artifactType = getFileCategory(fileName, mimeType);
-  return `processes/${processId}/${artifactType}/${fileName}`;
-}
 
-async function saveFilePathToDB(fileName: string, filePath: string, processId: string) {
-  await db.processArtifacts.create({
-    data: {
-      fileName: fileName,
-      filePath: filePath,
-      processId: processId,
-    },
-  });
-}
-
-async function removeFilePathFromDB(filePath: string, processId: string) {
-  await db.processArtifacts.delete({ where: { filePath: filePath, processId: processId } });
-}
-
-export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  return await db.processArtifacts.update({
-    where: { fileName: fileName },
-    data: {
-      deletable: status,
-      deletedOn: new Date(),
-    },
-  });
-}
-
+// Functionality for handling process artifact files
 export async function saveProcessArtifact(
   processId: string,
   mimeType: string,
   fileName: string,
   fileContent?: Buffer | Uint8Array | Blob,
 ) {
-  const newFileName = !hasUuidBeforeUnderscore(fileName) ? getNewFileName(fileName) : fileName;
-  const filePath = getFilePathProcessArtifact(newFileName, processId);
+  const newFileName = getNewFileName(fileName);
+  const filePath = generateProcessFilePath(newFileName, processId, mimeType);
 
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
+
   if (status) {
-    await saveFilePathToDB(newFileName, filePath, processId);
+    await saveArtifactToDB(newFileName, filePath, processId);
   }
 
-  return { presignedUrl: presignedUrl, fileName: newFileName };
+  return { presignedUrl, fileName: newFileName };
 }
 
 export async function retrieveProcessArtifact(
@@ -117,13 +121,8 @@ export async function retrieveProcessArtifact(
   fileNameOrPath: string,
   isFilePath = false,
 ) {
-  const filePath = isFilePath
-    ? fileNameOrPath
-    : getFilePathProcessArtifact(fileNameOrPath, processId);
-
-  const res = await retrieveFile(filePath);
-
-  return res;
+  const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
+  return retrieveFile(filePath);
 }
 
 export async function deleteProcessArtifact(
@@ -131,15 +130,17 @@ export async function deleteProcessArtifact(
   fileNameOrPath: string,
   isFilePath = false,
 ) {
-  const filePath = isFilePath
-    ? fileNameOrPath
-    : getFilePathProcessArtifact(fileNameOrPath, processId);
-  const res = await deleteFile(filePath);
-  if (res) {
-    await removeFilePathFromDB(filePath, processId);
+  const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
+  const isDeleted = await deleteFile(filePath);
+
+  if (isDeleted) {
+    await removeArtifactFromDB(filePath, processId);
   }
-  return res;
+
+  return isDeleted;
 }
+
+// Functionality for handling organization logo files
 
 export async function saveOrganisationLogo(
   fileName: string,
@@ -153,10 +154,13 @@ export async function saveOrganisationLogo(
   const { presignedUrl, status } = await saveFile(filePath, mimeType, fileContent);
 
   if (status) {
-    await db.space.update({ where: { id: organisationId }, data: { logo: filePath } });
+    await db.space.update({
+      where: { id: organisationId },
+      data: { logo: filePath },
+    });
   }
 
-  return { presignedUrl: presignedUrl, fileName: newFileName };
+  return { presignedUrl, fileName: newFileName };
 }
 
 export async function getOrganisationLogo(organisationId: string) {
@@ -164,23 +168,41 @@ export async function getOrganisationLogo(organisationId: string) {
     where: { id: organisationId },
     select: { logo: true },
   });
+
   if (result?.logo) {
-    const res = await retrieveFile(result.logo);
-    return res;
+    return retrieveFile(result.logo);
   }
 
   return null;
 }
 
 export async function deleteOrganisationLogo(organisationId: string): Promise<boolean> {
-  const logoPath = await db.space.findUnique({
+  const result = await db.space.findUnique({
     where: { id: organisationId },
     select: { logo: true },
   });
-  if (logoPath?.logo) {
-    const res = await deleteFile(logoPath.logo);
-    if (res) await db.space.update({ where: { id: organisationId }, data: { logo: null } });
-    return res;
+
+  if (result?.logo) {
+    const isDeleted = await deleteFile(result.logo);
+    if (isDeleted) {
+      await db.space.update({
+        where: { id: organisationId },
+        data: { logo: null },
+      });
+    }
+    return isDeleted;
   }
+
   return false;
+}
+
+// Update file status in the database
+export async function updateFileDeletableStatus(fileName: string, status: boolean) {
+  return db.processArtifacts.update({
+    where: { fileName },
+    data: {
+      deletable: status,
+      deletedOn: new Date(),
+    },
+  });
 }

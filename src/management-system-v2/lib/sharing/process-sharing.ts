@@ -7,6 +7,7 @@ import { Environment } from '../data/environment-schema';
 import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
 import { asyncMap } from '../helpers/javascriptHelpers';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -67,7 +68,9 @@ export async function generateSharedViewerUrl(
   return url;
 }
 
-export async function getAllUserWorkspaces(userId: string) {
+export async function getAllUserWorkspaces(userId: string, ability?: Ability) {
+  // if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
+
   const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
   const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>

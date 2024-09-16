@@ -1,39 +1,39 @@
 import { v4 } from 'uuid';
 
-export type ArtifactType = 'image' | 'html' | 'pdf' | 'script' | 'bpmn' | 'other';
+export type ArtifactType = 'images' | 'user-tasks' | 'script-tasks' | 'bpmns' | 'others';
 
 export enum EntityType {
   PROCESS = 'PROCESS',
   ORGANIZATION = 'ORGANISATION',
   MACHINE = 'MACHINE',
-  USERTASK = 'USERTASK', // TODO: clarify in meeting
+  USERTASK = 'USER-TASK',
 }
 
 const FILE_EXTENSION_CATEGORIES: Record<string, ArtifactType> = {
-  jpg: 'image',
-  jpeg: 'image',
-  png: 'image',
-  gif: 'image',
-  svg: 'image',
-  bmp: 'image',
-  webp: 'image',
-  html: 'html',
-  htm: 'html',
-  pdf: 'pdf',
-  js: 'script',
-  bpmn: 'bpmn',
+  jpg: 'images',
+  jpeg: 'images',
+  png: 'images',
+  gif: 'images',
+  svg: 'images',
+  bmp: 'images',
+  webp: 'images',
+  html: 'user-tasks',
+  htm: 'user-tasks',
+  pdf: 'others',
+  js: 'script-tasks',
+  bpmn: 'bpmns',
 };
 
 const MIME_TYPE_CATEGORIES: Record<string, ArtifactType> = {
-  'image/jpeg': 'image',
-  'image/png': 'image',
-  'image/gif': 'image',
-  'image/svg+xml': 'image',
-  'image/bmp': 'image',
-  'image/webp': 'image',
-  'text/html': 'html',
-  'application/pdf': 'pdf',
-  'application/xml': 'bpmn',
+  'image/jpeg': 'images',
+  'image/png': 'images',
+  'image/gif': 'images',
+  'image/svg+xml': 'images',
+  'image/bmp': 'images',
+  'image/webp': 'images',
+  'text/html': 'user-tasks',
+  'application/pdf': 'others',
+  'application/xml': 'bpmns',
 };
 
 export function getFileExtension(fileName: string): string {
@@ -52,7 +52,7 @@ export function getFileCategory(fileName: string, mimeType?: string): ArtifactTy
     return FILE_EXTENSION_CATEGORIES[extension];
   }
 
-  return 'other';
+  return 'others';
 }
 
 export function getFilePath(fileName: string, processId: string, mimeType?: string): string {

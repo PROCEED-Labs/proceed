@@ -14,12 +14,12 @@ datasource db {
 }
 
 model SystemAdmin  {
-  id            String    @id @default(uuid())
-  role          String    @default("admin")
-  user          User      @relation(name: "systemAdmin",fields: [userId],references: [id])
-  userId        String    @unique
-  createdOn     DateTime  @default(now())
-  lastEditedOn  DateTime
+  id            String @id @default(uuid())
+  role          String @default("admin")
+  user          User @relation(name: "systemAdmin",fields: [userId],references: [id])
+  userId        String @unique
+  createdOn     DateTime @default(now())
+  lastEditedOn  DateTime @updatedAt
 }
 
 model User {
@@ -51,22 +51,16 @@ model OauthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum ProcessType {
-  Process
-  Template
-  Projects
-}
-
 model Process {
   id                   String   @id @default(uuid())
   originalId           String
   name                 String
   description          String
   createdOn            DateTime
-  lastEditedOn         DateTime
+  lastEditedOn         DateTime @updatedAt
   inEditingBy          Json?
   processIds           String[]
-  type                 ProcessType
+  type                 String
   folder               Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId             String
   sharedAs             String
@@ -76,10 +70,9 @@ model Process {
   environmentId        String
   versions             Version[]
   bpmn                 String   @db.Xml
-  owner                User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId              String
-  departments          String[] @default([])
-  variables            Json[]   @default([])
+  creator              User?    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId            String
+  //TODO: Departments and Variables add here if needed in future
   processArtifacts     ProcessArtifacts[]
 }
 
@@ -131,7 +124,7 @@ model Folder {
   environmentId  String
   processes      Process[] 
   childrenFolder Folder[]  @relation("folderChildren")
-  lastEditedOn   DateTime
+  lastEditedOn   DateTime  @updatedAt
   createdOn      DateTime 
 }
 
@@ -144,7 +137,7 @@ model Version {
   processId     String
   versionBasedOn BigInt?
   createdOn     DateTime
-  lastEditedOn  DateTime
+  lastEditedOn  DateTime   @updatedAt
   bpmn          String     @db.Xml
 }
 
@@ -159,7 +152,7 @@ model Role {
   expiration   DateTime?
   default      Boolean?
   createdOn    DateTime
-  lastEditedOn DateTime
+  lastEditedOn DateTime   @updatedAt
 
   members      RoleMember[]
 }

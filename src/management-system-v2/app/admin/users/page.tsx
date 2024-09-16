@@ -32,33 +32,40 @@ export default async function UsersPage() {
   const adminData = await getSystemAdminByUserId(user.userId);
   if (!adminData) redirect('/');
 
-  const users = Promise.all(
-    (await getUsers()).map(async (user) => {
-      const orgs = (await getUserOrganizationEnvironments(user.id)).length;
+  async function getProcessedUsers(page: number = 1, pageSize: number = 10) {
+    const { users: paginatedUsers, pagination } = await getUsers(page, pageSize);
 
-      if (orgs > 0) {
-        console.log(await getUserOrganizationEnvironments(user.id));
-      }
+    const processedUsers = await Promise.all(
+      paginatedUsers.map(async (user) => {
+        const orgs = (await getUserOrganizationEnvironments(user.id)).length;
+        if (orgs > 0) {
+          console.log(await getUserOrganizationEnvironments(user.id));
+        }
+        return user.isGuest
+          ? {
+              ...user,
+              isGuest: false as const,
+              email: '',
+              username: 'Guest',
+              firstName: 'Guest',
+              lastName: '',
+              orgs,
+            }
+          : { ...user, orgs };
+      }),
+    );
 
-      return user.isGuest
-        ? {
-            ...user,
-            isGuest: false as const,
-            email: '',
-            username: 'Guest',
-            firstName: 'Guest',
-            lastName: '',
-            orgs,
-          }
-        : { ...user, orgs };
-    }),
-  );
+    return {
+      users: processedUsers,
+      pagination,
+    };
+  }
 
-  const usersList = await users;
+  const { users, pagination } = await getProcessedUsers();
 
   return (
     <Content title="MS users">
-      <UserTable users={usersList} deleteUsers={deleteUsers} />
+      <UserTable users={users} deleteUsers={deleteUsers} />
     </Content>
   );
 }

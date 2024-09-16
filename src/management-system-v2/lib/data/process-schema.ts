@@ -14,7 +14,7 @@ export type ProcessInput = z.infer<typeof ProcessInputSchema>;
 
 export const ProcessServerInputSchema = ProcessInputSchema.extend({
   environmentId: z.string(),
-  ownerId: z.string(),
+  creatorId: z.string(),
 });
 export type ProcessServerInput = z.infer<typeof ProcessServerInputSchema>;
 

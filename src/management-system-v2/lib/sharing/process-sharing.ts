@@ -4,10 +4,8 @@ import jwt from 'jsonwebtoken';
 import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
-import { getEnvironmentById } from '../data/legacy/iam/environments';
-import { getUserOrganizationEnvironments } from '../data/legacy/iam/memberships';
+import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
 import { env } from '@/lib/env-vars';
-import Ability from '../ability/abilityHelper';
 import { asyncMap } from '../helpers/javascriptHelpers';
 
 export interface TokenPayload {
@@ -70,13 +68,11 @@ export async function generateSharedViewerUrl(
 }
 
 export async function getAllUserWorkspaces(userId: string) {
-  //TODO: fix security concerns, how to validate requester ?
-
   const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(userOrgEnvs, (envId) => {
-    return getEnvironmentById(envId);
-  });
+  const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>
+    getEnvironmentById(environmentId),
+  )) as Environment[];
 
   userEnvironments.push(...orgEnvironments);
   return userEnvironments;

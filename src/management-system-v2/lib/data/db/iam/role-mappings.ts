@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getUserById } from './users';
 import { getEnvironmentById } from './environments';
 import db from '@/lib/data';
+import { Prisma } from '@prisma/client';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),
@@ -52,7 +53,7 @@ export async function getRoleMappingByUserId(
   ability?: Ability,
   roleId?: string,
 ) {
-  const whereClause: any = {
+  const whereClause: Prisma.RoleWhereInput = {
     environmentId: environmentId,
     members: {
       some: {

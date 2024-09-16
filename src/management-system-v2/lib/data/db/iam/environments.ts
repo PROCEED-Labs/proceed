@@ -51,9 +51,9 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   const adminRole = await getRoleByName(environmentId, '@admin');
   if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
 
-  addMember(environmentId, userId);
+  await addMember(environmentId, userId);
 
-  addRoleMappings([
+  await addRoleMappings([
     {
       environmentId,
       roleId: adminRole.id,
@@ -78,13 +78,13 @@ export async function addEnvironment(environmentInput: EnvironmentInput, ability
       default: true,
       permissions: { All: adminPermissions },
     });
-    addRole({
+    await addRole({
       environmentId: id,
       name: '@guest',
       default: true,
       permissions: {},
     });
-    addRole({
+    await addRole({
       environmentId: id,
       name: '@everyone',
       default: true,

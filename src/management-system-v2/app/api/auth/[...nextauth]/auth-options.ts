@@ -11,7 +11,7 @@ import { CredentialInput, OAuthProviderButtonStyles } from 'next-auth/providers'
 import Adapter from './adapter';
 import { AuthenticatedUser, User } from '@/lib/data/user-schema';
 import { sendEmail } from '@/lib/email/mailer';
-import renderSigninLinkEmail from './signin-link-email';
+import renderSigninLinkEmail from '@/lib/email/signin-link-email';
 import { env } from '@/lib/env-vars';
 import { enableUseDB } from 'FeatureFlags';
 
@@ -32,7 +32,10 @@ const nextAuthOptions: AuthOptions = {
     }),
     EmailProvider({
       sendVerificationRequest(params) {
-        const signinMail = renderSigninLinkEmail(params.url, params.expires);
+        const signinMail = renderSigninLinkEmail({
+          signInLink: params.url,
+          expires: params.expires,
+        });
 
         sendEmail({
           to: params.identifier,

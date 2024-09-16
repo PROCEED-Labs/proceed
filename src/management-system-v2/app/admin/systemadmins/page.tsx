@@ -49,18 +49,31 @@ async function addAdmin(admins: SystemAdminCreationInput[]) {
 }
 export type addAdmin = typeof addAdmin;
 
-async function getNonAdminUsers() {
+async function getNonAdminUsers(page: number = 1, pageSize: number = 10) {
   'use server';
-
   const { systemAdmin } = await getCurrentUser();
   if (!systemAdmin || systemAdmin.role !== 'admin')
     return userError('Not a system admin', UserErrorType.PermissionError);
 
   try {
     const systemAdmins = await getSystemAdmins();
-    return (await getUsers()).filter(
+    const { users, pagination } = await getUsers(page, pageSize);
+
+    const filteredUsers = users.filter(
       (user) => !user.isGuest && !systemAdmins.some((admin) => admin.userId === user.id),
     ) as AuthenticatedUser[];
+
+    const totalFilteredUsers = filteredUsers.length;
+    const totalPages = Math.ceil(totalFilteredUsers / pageSize);
+
+    return {
+      users: filteredUsers,
+      pagination: {
+        ...pagination,
+        totalUsers: totalFilteredUsers,
+        totalPages,
+      },
+    };
   } catch (e) {
     return userError('Something went wrong');
   }
@@ -74,7 +87,7 @@ export default async function ManageAdminsPage() {
   if (!adminData) redirect('/');
   if (adminData.role !== 'admin') return <UnauthorizedFallback />;
 
-  const systemAdmins = async (): Promise<(AuthenticatedUser & { role: 'admin' })[]> => {
+  const getFullSystemAdmins = async (): Promise<(AuthenticatedUser & { role: 'admin' })[]> => {
     const admins = await getSystemAdmins();
     return Promise.all(
       admins.map(async (admin) => {
@@ -84,7 +97,7 @@ export default async function ManageAdminsPage() {
     );
   };
 
-  const adminsList = await systemAdmins();
+  const adminsList = await getFullSystemAdmins();
 
   return (
     <Content title="System admins">

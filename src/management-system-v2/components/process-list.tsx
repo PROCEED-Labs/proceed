@@ -270,10 +270,10 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
       title: 'Owner',
       dataIndex: 'owner',
       key: 'Owner',
-      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.ownerId),
+      render: (_, item) => (item.type === 'folder' ? item.createdBy : item.creatorId),
       sorter: folderAwareSort((a, b) =>
-        (a.type === 'folder' ? a.createdBy ?? '' : a.ownerId).localeCompare(
-          b.type === 'folder' ? b.createdBy ?? '' : b.ownerId,
+        (a.type === 'folder' ? a.createdBy ?? '' : a.creatorId).localeCompare(
+          b.type === 'folder' ? b.createdBy ?? '' : b.creatorId,
         ),
       ),
       responsive: ['md'],

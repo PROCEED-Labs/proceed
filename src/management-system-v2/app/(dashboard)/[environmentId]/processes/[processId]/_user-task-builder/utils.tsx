@@ -7,6 +7,7 @@ import * as Elements from './elements';
 const styles = `
 body {
   font-size: 16px;
+  line-height: 1.5;
   font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
@@ -188,8 +189,7 @@ export const iframeDocument = `
 
       .frame-content > div {
         box-sizing: border-box;
-        padding: 0 10px;
-        border: 2px solid #d3d3d3 !important;
+        padding: 0 10px;    
       }
 
       .user-task-form-container svg {

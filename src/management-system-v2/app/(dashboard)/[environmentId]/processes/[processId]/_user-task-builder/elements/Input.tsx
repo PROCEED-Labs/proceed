@@ -44,6 +44,7 @@ const Input: UserComponent<InputProps> = ({
       {labelPosition !== 'none' && (
         <div style={{ marginRight: labelPosition === 'left' ? '8px' : 0 }}>
           <EditableText
+            style={{ whiteSpace: 'nowrap' }}
             value={label}
             tagName="label"
             htmlFor={inputId}

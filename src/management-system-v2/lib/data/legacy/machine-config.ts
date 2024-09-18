@@ -300,7 +300,7 @@ export async function getParentConfigurations(
     (config) => config.environmentId === environmentId,
   );
 
-  console.log('ID: ', environmentId, '\nAbility: ', ability, '\nstored:\n', storedParentConfigs); //TODO remove
+  // console.log('ID: ', environmentId, '\nAbility: ', ability, '\nstored:\n', storedParentConfigs); //TODO remove
 
   const parentConfigs = await asyncMap(storedParentConfigs, ({ id }) =>
     getDeepParentConfigurationById(id),

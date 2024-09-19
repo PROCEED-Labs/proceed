@@ -5,6 +5,7 @@ import { Menu, MenuProps } from 'antd';
 
 import * as Elements from './elements';
 import { createPortal } from 'react-dom';
+import useBuilderStateStore from './use-builder-state-store';
 
 const styles = `
 body {
@@ -279,6 +280,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
 
   const touchedElRef = useRef(false);
+
+  const id = useId();
+  const blockDragging = useBuilderStateStore((state) => state.blockDragging);
+  const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+  const open = !!menuPosition;
+  useEffect(() => {
+    if (open) {
+      blockDragging(id);
+
+      return () => {
+        unblockDragging(id);
+      };
+    }
+  }, [id, open]);
 
   useEffect(() => {
     if (menuPosition) {

@@ -1,10 +1,11 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import { Setting } from '../utils';
 import EditableText from '../_utils/EditableText';
+import useBuilderStateStore from '../use-builder-state-store';
 
 type InputProps = {
   label: string;
@@ -25,9 +26,20 @@ const Input: UserComponent<InputProps> = ({
   } = useNode();
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
-  const [defaultEditable, setDefaultEditable] = useState(false);
-
   const inputId = useId();
+
+  const [editingDefault, setEditingDefault] = useState(false);
+  const blockDragging = useBuilderStateStore((state) => state.blockDragging);
+  const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
+  useEffect(() => {
+    if (editingDefault) {
+      blockDragging(inputId);
+
+      return () => {
+        unblockDragging(inputId);
+      };
+    }
+  }, [inputId, editingDefault]);
 
   return (
     <div
@@ -58,19 +70,14 @@ const Input: UserComponent<InputProps> = ({
         id={inputId}
         type={type}
         value={defaultValue}
-        onMouseDownCapture={(e) => defaultEditable && e.stopPropagation()}
-        onDoubleClick={(e) => {
+        onClick={() => {
           if (!editingEnabled) return;
-          e.currentTarget.focus();
-          setDefaultEditable(true);
+          setEditingDefault(true);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur();
-            setDefaultEditable(false);
-          }
+          if (e.key === 'Enter') e.currentTarget.blur();
         }}
-        onBlur={() => setDefaultEditable(false)}
+        onBlur={() => setEditingDefault(false)}
         onChange={(e) => setProp((props: InputProps) => (props.defaultValue = e.target.value))}
       />
     </div>

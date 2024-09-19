@@ -48,10 +48,7 @@ const EditorDnDHandler: React.FC<EditorDnDHandlerProps> = ({
 
   const pointerPosition = useRef({ x: 0, y: 0 });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
-    useSensor(KeyboardSensor),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
   /**
    * This function is used to calculate the most likely changes to a target elements bounding box if the dragged element would be removed from its current position

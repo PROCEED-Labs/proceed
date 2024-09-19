@@ -7,8 +7,8 @@ import { ContextMenu } from '../utils';
 import React, { useState } from 'react';
 
 const defaultHeaderContent =
-  '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b>';
-const defaultContent = 'Double Click Me';
+  '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me To Edit</strong></b>';
+const defaultContent = 'Double Click Me To Edit';
 
 type TableProps = {
   tableData?: string[][];

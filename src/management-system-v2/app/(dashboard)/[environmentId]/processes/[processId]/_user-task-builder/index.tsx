@@ -150,7 +150,12 @@ const EditorModal: React.FC<BuilderModalProps> = ({
                 <Sidebar />
               </Col>
             )}
-            <Col ref={iframeContainerRef} className={styles.HtmlEditor} span={isMobile ? 24 : 20}>
+            <Col
+              style={{ border: '2px solid #d3d3d3', borderRadius: '8px' }}
+              ref={iframeContainerRef}
+              className={styles.HtmlEditor}
+              span={isMobile ? 24 : 20}
+            >
               <IFrame
                 id="user-task-builder-iframe"
                 ref={iframeRef}

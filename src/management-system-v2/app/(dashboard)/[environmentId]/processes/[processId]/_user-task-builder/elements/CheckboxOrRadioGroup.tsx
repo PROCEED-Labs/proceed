@@ -1,12 +1,20 @@
-import { useId } from 'react';
+import { Fragment, useId, useState } from 'react';
 
-import { Select, Button } from 'antd';
+import { Input, MenuProps, Select, Tooltip } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 
 import { UserComponent, useEditor, useNode } from '@craftjs/core';
 
 import EditableText from '../_utils/EditableText';
-import { Setting } from '../utils';
+import { Setting, ContextMenu } from '../utils';
 import { WithRequired } from '@/lib/typescript-utils';
+
+const defaultText = 'Double-Click Me To Edit';
+
+const checkboxValueHint =
+  'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
+const radioValueHint =
+  'This will be the value that is assigned to the variable associated with this group when the radio button is selected at the time the form is submitted.';
 
 type CheckBoxOrRadioGroupProps = {
   type: 'checkbox' | 'radio';
@@ -61,14 +69,20 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   );
 };
 
+type ContextAction = 'add-above' | 'add-below' | 'remove' | undefined;
+
 const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   type,
   variable = 'test',
-  data = [{ label: 'Double-Click Me', value: '', checked: false }],
+  data = [{ label: defaultText, value: '', checked: false }],
 }) => {
   const { query, editingEnabled } = useEditor((state) => ({
     editingEnabled: state.options.enabled,
   }));
+
+  const [contextMenuTarget, setContextMenuTarget] = useState<number>();
+  const [hoveredContextAction, setContextAction] = useState<ContextAction>();
+  const [currentValue, setCurrentValue] = useState('');
 
   const {
     connectors: { connect },
@@ -92,6 +106,19 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     });
   };
 
+  const handleValueChange = (index: number, value: string) => {
+    if (!editingEnabled) return;
+    setProp((props: CheckBoxOrRadioGroupProps) => {
+      props.data = data.map((entry, entryIndex) => {
+        let newValue = entry.value;
+
+        if (entryIndex === index) newValue = value;
+
+        return { ...entry, value: newValue };
+      });
+    });
+  };
+
   const handleClick = (index: number) => {
     if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
@@ -106,9 +133,9 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     if (!editingEnabled) return;
     setProp((props: CheckBoxOrRadioGroupProps) => {
       props.data = [
-        ...data.slice(0, index + 1),
-        { label: 'Double-Click Me', value: '', checked: false },
-        ...data.slice(index + 1),
+        ...data.slice(0, index),
+        { label: defaultText, value: '', checked: false },
+        ...data.slice(index),
       ];
     });
   };
@@ -120,6 +147,70 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     });
   };
 
+  const contextMenu: MenuProps['items'] =
+    contextMenuTarget !== undefined
+      ? [
+          {
+            key: 'add',
+            label: 'Add',
+            children: [
+              {
+                key: 'above',
+                label: 'Above',
+                onClick: () => handleAddButton(contextMenuTarget),
+                onMouseEnter: () => setContextAction('add-above'),
+                onMouseLeave: () => setContextAction(undefined),
+              },
+              {
+                key: 'below',
+                label: 'Below',
+                onClick: () => handleAddButton(contextMenuTarget + 1),
+                onMouseEnter: () => setContextAction('add-below'),
+                onMouseLeave: () => setContextAction(undefined),
+              },
+            ],
+          },
+          {
+            key: 'remove',
+            label: 'Remove',
+            onClick: () => handleRemoveButton(contextMenuTarget),
+            onMouseEnter: () => setContextAction('remove'),
+            onMouseLeave: () => setContextAction(undefined),
+          },
+          {
+            key: 'value',
+            label: (
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  height: '100%',
+                  alignItems: 'center',
+                }}
+              >
+                <Input
+                  addonBefore="Value"
+                  addonAfter={
+                    <Tooltip title={type === 'checkbox' ? checkboxValueHint : radioValueHint}>
+                      <InfoCircleOutlined />
+                    </Tooltip>
+                  }
+                  style={{ width: '250px' }}
+                  value={currentValue}
+                  onChange={(e) => setCurrentValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleValueChange(contextMenuTarget, currentValue);
+                    e.stopPropagation();
+                  }}
+                  onBlur={() => handleValueChange(contextMenuTarget, currentValue)}
+                />
+              </div>
+            ),
+          },
+        ]
+      : [];
+
   return (
     <div
       ref={(r) => {
@@ -127,45 +218,66 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
       }}
     >
       <div className="user-task-form-input-group">
-        {data.map(({ label, value, checked }, index) => (
-          <span key={index}>
-            <CheckboxOrRadioButton
-              type={type}
-              variable={variable}
-              label={label}
-              value={value}
-              checked={checked}
-              onChange={() => handleClick(index)}
-              onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
-            />
-            {editingEnabled && isHovered && (
-              <Button
+        <ContextMenu
+          menu={contextMenu}
+          onClose={() => {
+            setContextMenuTarget(undefined);
+            setContextAction(undefined);
+            setCurrentValue('');
+          }}
+        >
+          {data.map(({ label, value, checked }, index) => (
+            <Fragment key={index}>
+              {index === contextMenuTarget && hoveredContextAction === 'add-above' && (
+                <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
+                  <CheckboxOrRadioButton
+                    type={type}
+                    variable={variable}
+                    label={defaultText}
+                    value={value}
+                    onChange={() => {}}
+                    onLabelChange={() => {}}
+                  />
+                </span>
+              )}
+              <div
+                className="user-task-form-input-group-member"
                 style={{
-                  position: 'absolute',
-                  right: '0',
-                  transform: 'translate(110%,0)',
+                  backgroundColor:
+                    contextMenuTarget === index && hoveredContextAction === 'remove'
+                      ? 'rgba(255,0,0,0.33)'
+                      : undefined,
                 }}
-                title={`Add ${type === 'checkbox' ? 'Checkbox' : 'Radio Button'} Below`}
-                onClick={() => handleAddButton(index)}
-              >
-                +
-              </Button>
-            )}
-            {editingEnabled && isHovered && data.length > 1 && (
-              <Button
-                style={{
-                  position: 'absolute',
-                  right: '0',
-                  transform: 'translate(230%,0)',
+                onContextMenu={() => {
+                  setCurrentValue(value);
+                  setContextMenuTarget(index);
                 }}
-                title={`Remove ${type === 'checkbox' ? 'Checkbox' : 'Radio Button'}`}
-                onClick={() => handleRemoveButton(index)}
               >
-                -
-              </Button>
-            )}
-          </span>
-        ))}
+                <CheckboxOrRadioButton
+                  type={type}
+                  variable={variable}
+                  label={label}
+                  value={value}
+                  checked={checked}
+                  onChange={() => handleClick(index)}
+                  onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
+                />
+              </div>
+              {index === contextMenuTarget && hoveredContextAction === 'add-below' && (
+                <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
+                  <CheckboxOrRadioButton
+                    type={type}
+                    variable={variable}
+                    label={defaultText}
+                    value={value}
+                    onChange={() => {}}
+                    onLabelChange={() => {}}
+                  />
+                </span>
+              )}
+            </Fragment>
+          ))}
+        </ContextMenu>
       </div>
     </div>
   );
@@ -215,7 +327,7 @@ CheckBoxOrRadioGroup.craft = {
   },
   props: {
     variable: 'test',
-    data: [{ label: 'Double-Click Me', value: '', checked: false }],
+    data: [{ label: defaultText, value: '', checked: false }],
   },
 };
 

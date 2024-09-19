@@ -90,7 +90,7 @@ body {
   cursor: pointer;
 }
 
-.user-task-form-input-group > span {
+.user-task-form-input-group-member {
   display: flex;
   align-items: center;
 }

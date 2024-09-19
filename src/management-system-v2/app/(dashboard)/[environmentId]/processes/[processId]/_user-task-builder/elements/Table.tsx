@@ -83,7 +83,7 @@ const TableRow: React.FC<TableRowProps> = ({
       )}
       <tr>
         {tableRowData.map((col, colIndex) => (
-          <>
+          <React.Fragment key={`table-cell-${rowIndex}-${colIndex}`}>
             {hoveredContextMenuAction === 'add-col-left' && targetCol === colIndex && (
               <TableCell
                 type={rowIndex ? 'td' : 'th'}
@@ -114,7 +114,7 @@ const TableRow: React.FC<TableRowProps> = ({
                 style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
               />
             )}
-          </>
+          </React.Fragment>
         ))}
       </tr>
       {hoveredContextMenuAction === 'add-row-below' && targetRow === rowIndex && (
@@ -305,9 +305,9 @@ const Table: UserComponent<TableProps> = ({
         <tbody>
           {[...Array(tableData.length - 1).keys()].map((index) => (
             <TableRow
+              key={`row-${index}`}
               rowIndex={index + 1}
               tableRowData={tableData[index + 1]}
-              key={`row-${index}`}
               onUpdateContent={handleCellEdit}
               onCellContextMenu={(row, col) => setContextMenuTargetCell({ row, col })}
               contextMenuTargetCell={contextMenuTargetCell}

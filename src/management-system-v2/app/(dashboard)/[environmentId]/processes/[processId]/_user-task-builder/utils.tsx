@@ -1,5 +1,5 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useEffect, useId, useState } from 'react';
+import React, { ReactElement, useEffect, useId, useRef, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { Menu, MenuProps } from 'antd';
 
@@ -269,36 +269,51 @@ export const Setting: React.FC<{
 
 const getIframe = () =>
   document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
-const getSelection = () => getIframe()?.contentWindow!.getSelection();
 
 type ContextMenuProps = React.PropsWithChildren<{
-  canOpen?: (openEvent: React.MouseEvent<HTMLElement, MouseEvent>) => boolean;
   onClose?: () => void;
   menu: MenuProps['items'];
 }>;
 
-export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, menu, onClose }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
+
+  const touchedElRef = useRef(false);
 
   useEffect(() => {
-    const handleClick = () => {
-      setShowMenu(false);
-      onClose?.();
-    };
+    if (menuPosition) {
+      const handleClick = () => {
+        setMenuPosition(undefined);
+        onClose?.();
+      };
 
-    window.addEventListener('click', handleClick);
+      const handleContextMenu = (e: MouseEvent) => {
+        if (touchedElRef.current) {
+          e.stopPropagation();
+        } else {
+          setMenuPosition(undefined);
+          onClose?.();
+        }
+        touchedElRef.current = false;
+      };
 
-    getIframe()?.contentWindow?.addEventListener('click', handleClick);
-    return () => {
-      window.removeEventListener('click', handleClick);
-      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
-    };
-  }, [onClose]);
+      window.addEventListener('click', handleClick);
+      window.addEventListener('contextmenu', handleContextMenu);
+
+      getIframe()?.contentWindow?.addEventListener('click', handleClick);
+      getIframe()?.contentWindow?.addEventListener('contextmenu', handleContextMenu);
+      return () => {
+        window.removeEventListener('click', handleClick);
+        window.removeEventListener('contextmenu', handleContextMenu);
+        getIframe()?.contentWindow?.removeEventListener('click', handleClick);
+        getIframe()?.contentWindow?.removeEventListener('contextmenu', handleContextMenu);
+      };
+    }
+  }, [menuPosition, onClose]);
 
   return (
     <>
-      {showMenu &&
+      {menuPosition &&
         createPortal(
           <Menu
             style={{
@@ -315,14 +330,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, men
         )}
       <span
         onContextMenu={(e) => {
-          if (canOpen && !canOpen(e)) return;
           const iframe = getIframe();
           if (!iframe) return;
           const { top, left } = iframe.getBoundingClientRect();
-          e.preventDefault();
-          e.stopPropagation();
-          setShowMenu(true);
           setMenuPosition({ left: left + e.clientX + 5, top: top + e.clientY + 5 });
+          touchedElRef.current = true;
+          e.preventDefault();
         }}
       >
         {children}

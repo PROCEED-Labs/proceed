@@ -1,8 +1,10 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useId } from 'react';
+import React, { ReactElement, ReactNode, useEffect, useId, useState } from 'react';
 import ReactDOMServer from 'react-dom/server';
+import { Menu, MenuProps } from 'antd';
 
 import * as Elements from './elements';
+import { createPortal } from 'react-dom';
 
 const styles = `
 body {
@@ -250,5 +252,69 @@ export const Setting: React.FC<{ label: string; control: ReactElement }> = ({ la
       </label>
       {clonedControl}
     </div>
+  );
+};
+
+const getIframe = () =>
+  document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
+const getSelection = () => getIframe()?.contentWindow!.getSelection();
+
+type ContextMenuProps = React.PropsWithChildren<{
+  canOpen?: (openEvent: React.MouseEvent<HTMLElement, MouseEvent>) => boolean;
+  onClose?: () => void;
+  menu: MenuProps['items'];
+}>;
+
+export const ContextMenu: React.FC<ContextMenuProps> = ({ children, canOpen, menu, onClose }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    const handleClick = () => {
+      setShowMenu(false);
+      onClose?.();
+    };
+
+    window.addEventListener('click', handleClick);
+
+    getIframe()?.contentWindow?.addEventListener('click', handleClick);
+    return () => {
+      window.removeEventListener('click', handleClick);
+      getIframe()?.contentWindow?.removeEventListener('click', handleClick);
+    };
+  }, [onClose]);
+
+  return (
+    <>
+      {showMenu &&
+        createPortal(
+          <Menu
+            style={{
+              borderRadius: '0.5rem',
+              boxShadow:
+                '0 0.375rem 1rem 0 rgba(0, 0, 0, 0.08), 0 0.1875rem 0.375rem -0.25rem rgba(0, 0, 0, 0.12), 0 0.5625rem 1.75rem 0.5rem rgba(0, 0, 0, 0.05)',
+              zIndex: 1000,
+              position: 'absolute',
+              ...menuPosition,
+            }}
+            items={menu}
+          />,
+          document.body,
+        )}
+      <span
+        onContextMenu={(e) => {
+          if (canOpen && !canOpen(e)) return;
+          const iframe = getIframe();
+          if (!iframe) return;
+          const { top, left } = iframe.getBoundingClientRect();
+          e.preventDefault();
+          e.stopPropagation();
+          setShowMenu(true);
+          setMenuPosition({ left: left + e.clientX + 5, top: top + e.clientY + 5 });
+        }}
+      >
+        {children}
+      </span>
+    </>
   );
 };

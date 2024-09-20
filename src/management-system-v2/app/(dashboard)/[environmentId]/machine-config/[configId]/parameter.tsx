@@ -27,7 +27,14 @@ const Param: React.FC<MachineDataViewProps> = ({ editingEnabled: editable, field
   const [openCreateParameterModal, setOpenCreateParameterModal] = useState<boolean>(false);
 
   const addContent = async (values: CreateParameterModalReturnType[]) => {
-    await updateParameter(field.id!, { content: [...field.content, ...values] });
+    const newCon: ParameterContent = {
+      value: values[0].value ?? '',
+      displayName: values[0].displayName,
+      language: values[0].language ?? 'en',
+      unit: values[0].unit ?? '',
+    };
+
+    await updateParameter(field.id!, { content: [...field.content, ...[newCon]] });
     setOpenCreateParameterModal(false);
     router.refresh();
   };
@@ -78,6 +85,7 @@ const Param: React.FC<MachineDataViewProps> = ({ editingEnabled: editable, field
     }
     return list;
   };
+
   const parameterItems = getParameterItems();
   const addButtonTitle = 'Add ' + label + ' Entry';
   return (
@@ -95,6 +103,7 @@ const Param: React.FC<MachineDataViewProps> = ({ editingEnabled: editable, field
             size="small"
             items={parameterItems}
           />
+
           {editable && (
             <Space>
               <AddButton
@@ -106,6 +115,7 @@ const Param: React.FC<MachineDataViewProps> = ({ editingEnabled: editable, field
           )}
         </>
       )}
+
       <CreateParameterModal
         title={'Create ' + label + ' Entry'}
         open={openCreateParameterModal}

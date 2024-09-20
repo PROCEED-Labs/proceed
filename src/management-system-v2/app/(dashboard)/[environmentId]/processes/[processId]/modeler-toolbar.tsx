@@ -63,11 +63,13 @@ const ModelerToolbar = ({
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
-  const selectedElement = useMemo(() => {
-    if (modeler) {
-      return selectedElementId ? modeler.getElement(selectedElementId) : modeler.getCurrentRoot();
-    }
-  }, [modeler, selectedElementId, subprocessId]);
+  const selectedElement = modeler
+    ? selectedElementId
+      ? modeler.getElement(selectedElementId)
+      : modeler.getCurrentRoot()
+    : undefined;
+  // Force rerender when the BPMN changes.
+  useModelerStateStore((state) => state.changeCounter);
 
   useEffect(() => {
     if (modeler && (showProcessExportModal || showUserTaskEditor)) {

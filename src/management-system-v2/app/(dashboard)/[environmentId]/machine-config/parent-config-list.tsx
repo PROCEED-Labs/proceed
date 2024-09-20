@@ -144,6 +144,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   const actionBarGenerator = useCallback(
@@ -179,15 +180,17 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
 
           <AuthCan delete {...resource}>
             <Tooltip placement="top" title={'Delete'}>
-              <ConfirmationButton
-                title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
-                description="Are you sure you want to delete the selected process?"
-                onConfirm={() => deleteItems([record])}
-                buttonProps={{
-                  icon: <DeleteOutlined />,
-                  type: 'text',
-                }}
-              />
+              <>
+                <ConfirmationButton
+                  title={`Delete ${record.type === 'folder' ? 'Folder' : 'Process'}`}
+                  description="Are you sure you want to delete the selected process?"
+                  onConfirm={() => deleteItems([record])}
+                  buttonProps={{
+                    icon: <DeleteOutlined />,
+                    type: 'text',
+                  }}
+                />
+              </>
             </Tooltip>
           </AuthCan>
         </>
@@ -212,10 +215,14 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     const { id, name } = values[0];
     // TODO: handle the description update in the backend (the description is actually a content entry in a metadata entry)
     await updateParentConfig(id, { name });
+    setOpenEditModal(false);
     router.refresh();
   }
 
-  // copy multiple items
+  /**
+   * copy multiple items
+   * @param values List of Value-objects, each containing an ID of a config from which values are to be copied
+   */
   async function handleCopy(
     values: { name: string; description: string; originalId: string }[],
   ): Promise<void> {
@@ -241,7 +248,10 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       const importedData: ParentConfig[] = JSON.parse(text);
 
       await asyncForEach(importedData, async (item) => {
-        await addParentConfig(item, space.spaceId, item);
+        const add_return = await addParentConfig(item, space.spaceId, item);
+        if ('error' in add_return) {
+          throw add_return.error.message;
+        }
       });
       message.success('Import successful');
       router.refresh();
@@ -292,7 +302,6 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
     },
     {
       title: 'Description',
-      sorter: (a, b) => (a.name.value || '').localeCompare(b.name.value || ''),
       render: (_, record) => (
         <SpaceLink
           href={`/machine-config/${record.id}`}
@@ -302,12 +311,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
             display: 'block',
           }}
         >
-          {/* {(record.metadata.description?.content[0].value ?? '').length == 0 ? (
-            <>&emsp;</>
-          ) : (
-            record.metadata.description?.content[0].value
-          )} */}
-          {record.metadata ? record.metadata.description?.content[0].value ?? '' : ''}
+          {record.metadata?.description?.content[0].value ?? ''}
         </SpaceLink>
       ),
       responsive: ['sm'],
@@ -317,8 +321,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) =>
-        (a.lastEditedOn.toUTCString() || '').localeCompare(b.lastEditedOn.toUTCString() || ''),
+      sorter: (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
       responsive: ['md'],
     },
   ];
@@ -341,20 +344,21 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                   </Button>
                 </Dropdown>
               )}
-              <Upload
-                accept=".json"
-                showUploadList={false}
-                beforeUpload={(file: File) => {
-                  importItems(file);
-                  return false; // Prevent automatic upload
-                }}
-              >
-                <Tooltip placement="top" title={'Import'}>
-                  <Button type="primary" style={{ margin: '0 10px' }}>
-                    Import
+
+              {!breakpoint.xs && (
+                <Upload
+                  accept=".json"
+                  showUploadList={false}
+                  beforeUpload={(file: File) => {
+                    importItems(file);
+                    return false; // Prevent automatic upload
+                  }}
+                >
+                  <Button type="default" style={{ margin: '0 10px' }}>
+                    Import Config
                   </Button>
-                </Tooltip>
-              </Upload>
+                </Upload>
+              )}
 
               <SelectionActions count={selectedRowKeys.length}>
                 <Tooltip placement="top" title={'Export'}>
@@ -371,17 +375,19 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
                   />
                 </Tooltip>
                 <Tooltip placement="top" title={'Delete'}>
-                  <ConfirmationButton
-                    title="Delete Configuration"
-                    externalOpen={openDeleteModal}
-                    onExternalClose={() => setOpenDeleteModal(false)}
-                    description="Are you sure you want to delete the selected configuration(s)?"
-                    onConfirm={() => deleteItems(selectedRowElements)}
-                    buttonProps={{
-                      icon: <DeleteOutlined />,
-                      type: 'text',
-                    }}
-                  />
+                  <>
+                    <ConfirmationButton
+                      title="Delete Configuration"
+                      externalOpen={openDeleteModal}
+                      onExternalClose={() => setOpenDeleteModal(false)}
+                      description="Are you sure you want to delete the selected configuration(s)?"
+                      onConfirm={() => deleteItems(selectedRowElements)}
+                      buttonProps={{
+                        icon: <DeleteOutlined />,
+                        type: 'text',
+                      }}
+                    />
+                  </>
                 </Tooltip>
               </SelectionActions>
             </span>

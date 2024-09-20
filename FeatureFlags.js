@@ -46,7 +46,7 @@ module.exports = {
   enableChatbot: false,
 
   //feature to switch to prisma from fs
-  enableUseDB: true,
+  enableUseDB: false,
   enableUseFileManager: false,
 
   // -----------------------------------------------------------------------------

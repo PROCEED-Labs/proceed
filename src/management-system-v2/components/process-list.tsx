@@ -28,12 +28,12 @@ import { ProcessActions, ProcessListProcess } from './processes';
 import ConfirmationButton from './confirmation-button';
 import { Folder } from '@/lib/data/folder-schema';
 import ElementList from './item-list-view';
-import { contextMenuStore } from './processes/context-menu';
-import { DraggableElementGenerator } from './processes/draggable-element';
 import { useResizeableColumnWidth } from '@/lib/useColumnWidth';
 import SpaceLink from './space-link';
 import useFavouriteProcesses from '@/lib/useFavouriteProcesses';
 import FavouriteStar from './favouriteStar';
+import { contextMenuStore } from './processes/context-menu';
+import { DraggableElementGenerator } from './processes/draggable-element';
 import classNames from 'classnames';
 
 /** respects sorting function, but always keeps folders at the beginning */
@@ -309,14 +309,6 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         ),
       responsive: breakpoint.xl ? ['xs'] : ['xs', 'sm'],
     },
-    // {
-    //   width: 'fit-content',
-    //   dataIndex: 'id',
-    //   key: 'auto-sizer',
-    //   title: '',
-    //   render: (id, record) => '',
-    //   responsive: ['xl'],
-    // },
   ];
 
   columns = columns.map((column) => ({

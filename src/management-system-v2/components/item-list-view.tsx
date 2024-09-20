@@ -106,6 +106,7 @@ const ElementList = <T extends { id: string }>({
 
   const selectedElementsKeys = elementSelection?.selectedElements.map(({ id }) => id);
   const { components } = tableProps || {};
+
   return (
     <Table
       // size={breakpoint.xs ? 'large' : 'middle'}

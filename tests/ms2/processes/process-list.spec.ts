@@ -1,6 +1,5 @@
 import { test, expect } from './processes.fixtures';
 import { openModal, closeModal, waitForHydration } from '../testUtils';
-import { name } from 'proceed-management-system/jest.config';
 
 test('create a new process and remove it again', async ({ processListPage }) => {
   const { page } = processListPage;

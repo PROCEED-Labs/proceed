@@ -9,7 +9,7 @@ import {
   getVerificationToken,
   deleteVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
-import { updateUser } from '@/lib/data/legacy/iam/users';
+import { updateUser } from '@/lib/data/DTOs';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';
 

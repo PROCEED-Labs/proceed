@@ -139,9 +139,11 @@ export async function deleteUser(userId: string) {
 export async function updateUser(userId: string, inputUser: Partial<AuthenticatedUser>) {
   const user = await getUserById(userId, { throwIfNotFound: true });
   const isGoingToBeGuest = inputUser.isGuest !== undefined ? inputUser.isGuest : user?.isGuest;
-
   let updatedUser: Prisma.UserUpdateInput;
   if (isGoingToBeGuest) {
+    if (inputUser.username || inputUser.lastName || inputUser.firstName || inputUser.email) {
+      throw new Error('Guest users cannot update their user data');
+    }
     updatedUser = { isGuest: true };
   } else {
     const newUserData = AuthenticatedUserSchema.partial().parse(inputUser);

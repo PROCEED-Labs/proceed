@@ -63,13 +63,13 @@ const Toolbox = () => {
   return (
     <div className={styles.Toolbox}>
       <CreationButton title="Header" icon={<MdTitle />}>
-        <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me</strong></b></h1>' />
+        <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">Double Click Me To Edit</strong></b></h1>' />
       </CreationButton>
       <CreationButton title="Text" icon={<LuText />}>
-        <Text text="Double Click Me" />
+        <Text text="Double Click Me To Edit" />
       </CreationButton>
       <CreationButton title="Input" icon={<LuFormInput />}>
-        <Input type="text" label="Double Click Me" />
+        <Input type="text" label="Double Click Me To Edit" />
       </CreationButton>
       <CreationButton title="Radio" icon={<MdRadioButtonChecked />}>
         <CheckBoxOrRadioGroup type="radio" />

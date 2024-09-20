@@ -10,7 +10,7 @@ import { v4 } from 'uuid';
 
 export function defaultParameter(
   key: string,
-  val: string,
+  val?: string,
   language?: Localization,
   unit?: string,
 ): Parameter {
@@ -20,7 +20,7 @@ export function defaultParameter(
     content: [
       {
         displayName: key[0].toUpperCase() + key.slice(1),
-        value: val,
+        value: val ?? '',
         language: language ?? 'en',
         unit: unit ?? '',
       },

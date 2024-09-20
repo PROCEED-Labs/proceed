@@ -10,9 +10,15 @@ type InputProps = {
   label: string;
   type?: 'text' | 'number' | 'email';
   defaultValue?: string;
+  labelPosition?: 'top' | 'left' | 'none';
 };
 
-const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue = '' }) => {
+const Input: UserComponent<InputProps> = ({
+  label,
+  type = 'text',
+  defaultValue = '',
+  labelPosition = 'top',
+}) => {
   const {
     connectors: { connect },
     actions: { setProp },
@@ -29,16 +35,24 @@ const Input: UserComponent<InputProps> = ({ label, type = 'text', defaultValue =
         r && connect(r);
       }}
       className="user-task-form-input"
+      style={{
+        display: 'flex',
+        flexDirection: labelPosition === 'top' ? 'column' : 'row',
+        alignItems: labelPosition === 'left' ? 'baseline' : undefined,
+      }}
     >
-      <div>
-        <EditableText
-          value={label}
-          tagName="label"
-          htmlFor={inputId}
-          onClick={(e) => e.preventDefault()}
-          onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
-        />
-      </div>
+      {labelPosition !== 'none' && (
+        <div style={{ marginRight: labelPosition === 'left' ? '8px' : 0 }}>
+          <EditableText
+            style={{ whiteSpace: 'nowrap' }}
+            value={label}
+            tagName="label"
+            htmlFor={inputId}
+            onClick={(e) => e.preventDefault()}
+            onChange={(newText) => setProp((props: InputProps) => (props.label = newText))}
+          />
+        </div>
+      )}
 
       <input
         id={inputId}
@@ -67,8 +81,10 @@ export const InputSettings = () => {
   const {
     actions: { setProp },
     type,
+    labelPosition,
   } = useNode((node) => ({
     type: node.data.props.type,
+    labelPosition: node.data.props.labelPosition,
   }));
   const { editingEnabled } = useEditor((state) => ({ editingEnabled: state.options.enabled }));
 
@@ -78,6 +94,7 @@ export const InputSettings = () => {
         label="Type"
         control={
           <Select
+            style={{ display: 'block' }}
             options={[
               { value: 'text', label: 'Text' },
               { value: 'number', label: 'Number' },
@@ -88,6 +105,26 @@ export const InputSettings = () => {
             onChange={(val) =>
               setProp((props: InputProps) => {
                 props.type = val;
+              })
+            }
+          />
+        }
+      />
+      <Setting
+        label="Label"
+        control={
+          <Select
+            style={{ display: 'block' }}
+            options={[
+              { value: 'top', label: 'Above' },
+              { value: 'left', label: 'Left' },
+              { value: 'none', label: 'Hidden' },
+            ]}
+            value={labelPosition}
+            disabled={!editingEnabled}
+            onChange={(val) =>
+              setProp((props: InputProps) => {
+                props.labelPosition = val;
               })
             }
           />
@@ -108,6 +145,7 @@ Input.craft = {
     type: 'text',
     label: 'Double-Click Me',
     defaultValue: '',
+    labelPosition: 'top',
   },
 };
 

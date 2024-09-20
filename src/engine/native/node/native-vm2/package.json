@@ -7,7 +7,7 @@
   "license": "MIT",
   "dependencies": {
     "@proceed/native-module": "^1.0.0",
-    "vm2": "^3.8.4",
-    "neo-bpmn-engine": "^8.2.2"
+    "isolated-vm": "^5.0.1",
+    "fastify": "4.28.1"
   }
 }

@@ -112,7 +112,8 @@ const Processes = ({
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
-  const metaPanelisOpened = useUserPreferences.use['process-meta-data']().open;
+  const { open: metaPanelisOpened, width: metaPanelWidth } =
+    useUserPreferences.use['process-meta-data']();
 
   const [openExportModal, setOpenExportModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
@@ -476,7 +477,11 @@ const Processes = ({
                 ) : (
                   <div
                     style={{
-                      maxWidth: breakpoint.xl ? (metaPanelisOpened ? '71vw' : '85.5vw') : '100%',
+                      maxWidth: breakpoint.xl
+                        ? metaPanelisOpened
+                          ? `calc(87vw - ${metaPanelWidth}px)`
+                          : '85.5vw'
+                        : '100%',
                     }}
                   >
                     <ProcessList

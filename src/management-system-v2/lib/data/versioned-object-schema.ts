@@ -18,18 +18,18 @@ export type VersionedObjectServerInput = z.infer<typeof VersionedObjectInput>;
 export type VersionedObjectMetadata<T> = Prettify<
   WithRequired<VersionedObjectServerInput, 'id' | 'name' | 'folderId'> & {
     type: T;
-    variables: {
-      name: string;
-      type: string;
-      value: string;
-    }[];
-    departments: string[];
+    // variables: {
+    //   name: string;
+    //   type: string;
+    //   value: string;
+    // }[];
+    //departments: string[];
     inEditingBy?: {
       id: string;
       task?: string;
     }[];
-    createdOn: string;
-    lastEdited: string;
+    createdOn: Date;
+    lastEditedOn: Date;
     sharedAs: 'public' | 'protected';
     shareTimestamp: number;
     allowIframeTimestamp: number;

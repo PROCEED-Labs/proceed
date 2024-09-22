@@ -1,8 +1,16 @@
 const ivm = require('isolated-vm');
 
-const [processId, processInstanceId, tokenId, scriptString, token] = process.argv.slice(2);
+const [processId, processInstanceId, tokenId, scriptString, token, processCommunicationAdress] =
+  process.argv.slice(2);
 
-if (!processId || !processInstanceId || !tokenId || !scriptString || !token)
+if (
+  !processId ||
+  !processInstanceId ||
+  !tokenId ||
+  !scriptString ||
+  !token ||
+  !processCommunicationAdress
+)
   throw new Error(
     'Expected the following args processId, processInstanceId, tokenId, scriptString, token',
   );
@@ -11,7 +19,7 @@ async function callToExecutor(endpoint, body) {
   try {
     // TODO: don't hardcode address and port
     const response = await fetch(
-      `http://localhost:33040/${processId}/${processInstanceId}/${endpoint}`,
+      `${processCommunicationAdress}/${processId}/${processInstanceId}/${endpoint}`,
       {
         method: 'POST',
         body: JSON.stringify(body),

@@ -31,11 +31,12 @@ class ScriptExecutor extends NativeModule {
      * >} */
     this.childProcesses = new Map();
 
-    this.#setupRouter(options.processCommunicationPort);
-    this.logChildProcessOutput = !!options.logChildProcessOutput;
+    this.options = options;
+    this.options.processCommunicationPort = options.processCommunicationPort ?? 33040;
+    this.#setupRouter();
   }
 
-  #setupRouter(port = 33040) {
+  #setupRouter() {
     this.fastify = Fastify({
       logger: false,
     });
@@ -84,7 +85,7 @@ class ScriptExecutor extends NativeModule {
       },
     );
 
-    this.fastify.listen({ port });
+    this.fastify.listen({ port: this.options.processCommunicationPort });
   }
 
   #fastifyAuthMiddleware(req, res, done) {
@@ -159,6 +160,7 @@ class ScriptExecutor extends NativeModule {
         tokenId,
         scriptString,
         token,
+        `http://localhost:${this.options.processCommunicationPort}`,
       ]);
 
       const processEntry = {
@@ -173,12 +175,12 @@ class ScriptExecutor extends NativeModule {
       // TODO: handle script failure properly
 
       scriptTask.stdout.on('data', (data) => {
-        if (this.logChildProcessOutput) console.log(`stdout: ${data}`);
+        if (this.options.logChildProcessOutput) console.log(`stdout: ${data}`);
         processEntry.stdout += data.toString();
       });
 
       scriptTask.stderr.on('data', (data) => {
-        if (this.logChildProcessOutput) console.error(`stderr: ${data}`);
+        if (this.options.logChildProcessOutput) console.error(`stderr: ${data}`);
         processEntry.stderr += data.toString();
       });
 

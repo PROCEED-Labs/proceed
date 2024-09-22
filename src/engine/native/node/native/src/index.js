@@ -46,7 +46,7 @@ class Native {
           `,
         );
       } else {
-        this._onAfterEngineLoaded.add(module.id);
+        this._onAfterEngineLoaded.add(module);
       }
     }
   }
@@ -88,7 +88,9 @@ class Native {
         : require.resolve('./injector.js');
 
       const args =
-        this._onAfterEngineLoaded.size > 0 ? Array.from(this._onAfterEngineLoaded.values()) : [];
+        this._onAfterEngineLoaded.size > 0
+          ? Array.from(this._onAfterEngineLoaded.values()).map((module) => module.id)
+          : [];
 
       // Fork universal engine process
       this._engine = childProcess.fork(pathToUniversal, args, { execArgv });
@@ -119,7 +121,9 @@ class Native {
         : require('./injector.js');
 
       // Execute custom code on the universal engine
-      this._engine.injectModules(Array.from(this._onAfterEngineLoaded.values()));
+      for (const module of this._onAfterEngineLoaded.values()) {
+        module.onAfterEngineLoaded(this._engine);
+      }
 
       // Create the "IPC"
       const that = this;

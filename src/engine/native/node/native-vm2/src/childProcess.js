@@ -31,6 +31,8 @@ async function callToExecutor(endpoint, body) {
   } catch (e) {
     // TODO: log error
     console.error(e);
+
+    if (endpoint === 'result') process.exit(1);
   }
 }
 

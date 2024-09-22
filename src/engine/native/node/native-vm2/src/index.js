@@ -41,7 +41,7 @@ class ScriptExecutor extends NativeModule {
     });
 
     this.fastify.post('/:processId/:processInstanceId/result', async (req, res) => {
-      if (req.headers['content-type'] !== 'application/json' || !req.body.result)
+      if (req.headers['content-type'] !== 'application/json')
         return res.code(400).send('You have to send a JSON body that includes a result key.');
 
       // TODO: refactor to middleware/plugin
@@ -56,6 +56,7 @@ class ScriptExecutor extends NativeModule {
       if (token !== process.token) return res.code(401).send();
 
       process.result = req.body.result;
+      return res.code(200);
     });
 
     this.fastify.post(

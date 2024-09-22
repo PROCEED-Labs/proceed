@@ -48,7 +48,7 @@ import ContextMenuArea from './context-menu';
 import { DraggableContext } from './draggable-element';
 import SelectionActions from '../selection-actions';
 
-export function canDeleteItems(
+export function canDoActionOnResource(
   items: ProcessListProcess[],
   action: Parameters<Ability['can']>[0],
   ability: Ability,

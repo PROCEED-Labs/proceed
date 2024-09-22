@@ -40,24 +40,19 @@ class ScriptExecutor extends NativeModule {
       logger: false,
     });
 
-    this.fastify.post('/:processId/:processInstanceId/result', async (req, res) => {
-      if (req.headers['content-type'] !== 'application/json')
-        return res.code(400).send('You have to send a JSON body that includes a result key.');
+    this.fastify.post(
+      '/:processId/:processInstanceId/result',
+      {
+        preHandler: this.#fastifyAuthMiddleware.bind(this),
+      },
+      async (req, res) => {
+        if (req.headers['content-type'] !== 'application/json')
+          return res.code(400).send('You have to send a JSON body that includes a result key.');
 
-      // TODO: refactor to middleware/plugin
-      const { processId, processInstanceId } = req.params;
-      const process = this.#getProcess(processId, processInstanceId);
-      if (!process) return res.code(404).send();
-
-      const auth = req.headers.authorization;
-      if (!auth?.startsWith('Bearer ')) return res.code(401).send();
-      const token = auth.substring('Bearer '.length);
-      // NOTE: a simple comparison may be vulnerable to a timing attack
-      if (token !== process.token) return res.code(401).send();
-
-      process.result = req.body.result;
-      return res.code(200);
-    });
+        req.process.result = req.body.result;
+        return res.code(200);
+      },
+    );
 
     this.fastify.post(
       '/:processId/:processInstanceId/call',
@@ -71,22 +66,12 @@ class ScriptExecutor extends NativeModule {
             },
           },
         },
+        preHandler: this.#fastifyAuthMiddleware.bind(this),
       },
       async (req, res) => {
-        // TODO: refactor to middleware/plugin
-        const { processId, processInstanceId } = req.params;
-        const process = this.#getProcess(processId, processInstanceId);
-        if (!process) return res.code(404).send();
-
-        const auth = req.headers.authorization;
-        if (!auth?.startsWith('Bearer ')) return res.code(401).send();
-        const token = auth.substring('Bearer '.length);
-        // NOTE: a simple comparison may be vulnerable to a timing attack
-        if (token !== process.token) return res.code(401).send();
-
         const { functionName, args } = req.body;
 
-        const targetFunction = process?.dependencies[functionName];
+        const targetFunction = req.process?.dependencies[functionName];
         if (!targetFunction) return res.code(404).send('Function not found');
         if (typeof targetFunction !== 'function') return res.code(500).send('Bad dependency');
 
@@ -100,6 +85,22 @@ class ScriptExecutor extends NativeModule {
     );
 
     this.fastify.listen({ port });
+  }
+
+  #fastifyAuthMiddleware(req, res, done) {
+    const { processId, processInstanceId } = req.params;
+    const process = this.#getProcess(processId, processInstanceId);
+    if (!process) return res.code(404).send();
+
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return res.code(401).send();
+    const token = auth.substring('Bearer '.length);
+    // NOTE: a simple comparison may be vulnerable to a timing attack
+    if (token !== process.token) return res.code(401).send();
+
+    req.process = process;
+
+    done();
   }
 
   /**

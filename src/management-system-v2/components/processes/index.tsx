@@ -29,7 +29,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
-import { AuthCan, useEnvironment } from '@/components/auth-can';
+import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import FolderCreationButton from '@/components/folder-creation-button';
 import {
@@ -108,7 +108,9 @@ const Processes = ({
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
   const selectedRowKeys = selectedRowElements.map((element) => element.id);
-  const canDeleteSelected = canDeleteItems(selectedRowElements, 'delete', ability);
+  const canDeleteSelected = canDoActionOnResource(selectedRowElements, 'delete', ability);
+  const canCreateProcess = ability.can('create', 'Process');
+  const canEditSelected = canDoActionOnResource(selectedRowElements, 'update', ability);
 
   const addPreferences = useUserPreferences.use.addPreferences();
   const iconView = useUserPreferences.use['icon-view-in-process-list']();
@@ -343,48 +345,59 @@ const Processes = ({
                     )}
 
                     <SelectionActions count={selectedRowKeys.length}>
-                      {/* TODO: */}
                       {/* Copy */}
-                      {/* <AuthCan create Process>
+                      {canCreateProcess && (
                         <Tooltip placement="top" title={'Copy'}>
                           <Button
                             // className={classNames(styles.ActionButton)}
                             type="text"
-                            icon={<CopyOutlined />}
+                            icon={<CopyOutlined className={styles.Icon} />}
                             onClick={() => {
-                              const processes = selectedRowKeys.map((definitionId) => ({
-                                definitionId: definitionId as string,
-                              }));
-                              // copyItem(processes);
+                              setCopySelection(selectedRowElements);
+                              setOpenCopyModal(true);
                             }}
                           />
                         </Tooltip>
-                      </AuthCan> */}
+                      )}
                       {/* Export */}
                       <Tooltip placement="top" title={'Export'}>
-                        <ExportOutlined
-                          className={styles.Icon}
+                        <Button
+                          type="text"
                           onClick={() => {
                             setOpenExportModal(true);
                           }}
-                        />
+                          icon={<ExportOutlined className={styles.Icon} />}
+                        ></Button>
                       </Tooltip>
                       {/* Edit (only if one selected) */}
-                      {/* Delete */}
-                      {canDeleteSelected && (
-                        <Tooltip placement="top" title={'Delete'}>
-                          <ConfirmationButton
-                            title="Delete Processes"
-                            externalOpen={openDeleteModal}
-                            onExternalClose={() => setOpenDeleteModal(false)}
-                            description="Are you sure you want to delete the selected processes?"
-                            onConfirm={() => deleteItems(selectedRowElements)}
-                            buttonProps={{
-                              icon: <DeleteOutlined />,
-                              type: 'text',
+                      {selectedRowKeys.length === 1 && canEditSelected && (
+                        <Tooltip placement="top" title={'Edit'}>
+                          <Button
+                            // className={classNames(styles.ActionButton)}
+                            type="text"
+                            icon={<EditOutlined className={styles.Icon} />}
+                            onClick={() => {
+                              editItem(selectedRowElements[0]);
                             }}
                           />
                         </Tooltip>
+                      )}
+                      {/* Delete */}
+                      {canDeleteSelected && (
+                        // <Tooltip placement="top" title={'Delete'}>
+                        <ConfirmationButton
+                          tooltip="Delete"
+                          title="Delete Processes"
+                          externalOpen={openDeleteModal}
+                          onExternalClose={() => setOpenDeleteModal(false)}
+                          description="Are you sure you want to delete the selected processes?"
+                          onConfirm={() => deleteItems(selectedRowElements)}
+                          buttonProps={{
+                            icon: <DeleteOutlined className={styles.Icon} />,
+                            type: 'text',
+                          }}
+                        />
+                        // </Tooltip>
                       )}
                     </SelectionActions>
                   </span>

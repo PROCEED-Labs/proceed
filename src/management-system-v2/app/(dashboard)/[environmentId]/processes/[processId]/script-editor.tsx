@@ -72,7 +72,7 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
       const scriptText = editorRef.current.getValue();
       if (selectedElement && filename) {
         modeler.getModeling().updateProperties(selectedElement, {
-          filename,
+          fileName: filename,
         });
 
         saveProcessScriptTask(processId, filename, scriptText, environment.spaceId).then(

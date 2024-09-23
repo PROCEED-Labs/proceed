@@ -161,9 +161,14 @@ const Processes = ({
     { dependencies: [selectedRowElements] },
   );
 
-  useAddControlCallback('process-list', 'paste', () => {
-    if (copySelection.length) setOpenCopyModal(true);
-  });
+  useAddControlCallback(
+    'process-list',
+    'paste',
+    () => {
+      if (copySelection.length) setOpenCopyModal(true);
+    },
+    { dependencies: [copySelection.length] },
+  );
   useAddControlCallback(
     'process-list',
     'export',

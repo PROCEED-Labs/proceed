@@ -147,7 +147,11 @@ const Processes = ({
   });
 
   useAddControlCallback('process-list', 'esc', () => setSelectedRowElements([]));
-  useAddControlCallback('process-list', 'del', () => setOpenDeleteModal(true));
+  useAddControlCallback('process-list', 'del', () => {
+    setOpenDeleteModal(true);
+    /* Clear copy selection */
+    setCopySelection([]);
+  });
   useAddControlCallback(
     'process-list',
     'copy',
@@ -158,7 +162,7 @@ const Processes = ({
   );
 
   useAddControlCallback('process-list', 'paste', () => {
-    setOpenCopyModal(true);
+    if (copySelection.length) setOpenCopyModal(true);
   });
   useAddControlCallback(
     'process-list',

@@ -88,6 +88,21 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
     }
   };
 
+  const getEditorPositionRange = () => {
+    if (editorRef.current && monacoRef.current) {
+      const position = editorRef.current.getPosition();
+      if (position) {
+        return new monacoRef.current.Range(
+          position.lineNumber,
+          position.column,
+          position.lineNumber,
+          position.column,
+        );
+      }
+    }
+    return null;
+  };
+
   return (
     <Modal
       open={open}
@@ -133,8 +148,38 @@ const ScriptEditor: FC<ScriptEditorProps> = ({ processId, open, onClose, selecte
                   <List.Item style={{ padding: '0.75rem 0' }}>
                     <span>{item}</span>
                     <Space.Compact size="small">
-                      <Button icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}>SET</Button>
-                      <Button icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}>GET</Button>
+                      <Button
+                        icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
+                        onClick={() => {
+                          const editorPositionRange = getEditorPositionRange();
+                          if (editorPositionRange && editorRef.current) {
+                            editorRef.current.executeEdits('', [
+                              {
+                                range: editorPositionRange,
+                                text: `variable.set('${item}', '');\n`,
+                              },
+                            ]);
+                          }
+                        }}
+                      >
+                        SET
+                      </Button>
+                      <Button
+                        icon={<FaArrowRight style={{ fontSize: '0.75rem' }} />}
+                        onClick={() => {
+                          const editorPositionRange = getEditorPositionRange();
+                          if (editorPositionRange && editorRef.current) {
+                            editorRef.current.executeEdits('', [
+                              {
+                                range: editorPositionRange,
+                                text: `variable.get('${item}');\n`,
+                              },
+                            ]);
+                          }
+                        }}
+                      >
+                        GET
+                      </Button>
                     </Space.Compact>
                   </List.Item>
                 )}

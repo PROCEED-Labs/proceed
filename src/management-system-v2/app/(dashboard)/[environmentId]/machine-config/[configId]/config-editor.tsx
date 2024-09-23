@@ -161,10 +161,11 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
     values: {
       name: string;
       description: string;
+      copyTarget: boolean;
     }[],
   ) => {
-    const copyTarget = false;
-    const { name, description } = values[0];
+    console.log('VALUES: ', values[0]);
+    const { name, description, copyTarget } = values[0];
     if (createConfigType === 'target') {
       await addTargetConfig(parentConfig.id, defaultTargetConfiguration(name, description));
     } else {
@@ -411,6 +412,8 @@ const ConfigEditor: React.FC<MachineDataViewProps> = ({
         title={machineConfigModalTitle}
         onCancel={() => setCreateConfigType('')}
         onSubmit={handleCreateConfig}
+        configType={createConfigType}
+        targetConfigExists={!!parentConfig.targetConfig}
       />
     </>
   );

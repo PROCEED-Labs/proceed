@@ -54,6 +54,7 @@ const environmentVariables = {
     SHARING_ENCRYPTION_SECRET: z.string(),
   },
   development: {
+    SHARING_ENCRYPTION_SECRET: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     INVITATION_ENCRYPTION_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),

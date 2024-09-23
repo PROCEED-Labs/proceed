@@ -9,14 +9,14 @@ import {
   getVerificationToken,
   deleteVerificationToken,
 } from '@/lib/data/legacy/verification-tokens';
-import { updateUser } from '@/lib/data/legacy/iam/users';
+import { updateUser } from '@/lib/data/DTOs';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';
 
 export async function requestEmailChange(newEmail: string) {
   try {
     const { session } = await getCurrentUser();
-    if (!session || session.user.guest)
+    if (!session || session.user.isGuest)
       return userError('You must be signed in to change your email');
     const userId = session.user.id;
 
@@ -54,7 +54,7 @@ export async function requestEmailChange(newEmail: string) {
 
 export async function changeEmail(token: string, identifier: string, cancel: boolean = false) {
   const { session, userId } = await getCurrentUser();
-  if (!session || session.user.guest)
+  if (!session || session.user.isGuest)
     return userError('You must be signed in to change your email');
 
   const tokenParams = { identifier, token: await getTokenHash(token) };

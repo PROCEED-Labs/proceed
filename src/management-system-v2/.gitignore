@@ -41,5 +41,7 @@ next-env.d.ts
 # Build storage directory for running the production build locally (in docker)
 /volume
 
+*_key.json
+
 # Partykit
 /.partykit/

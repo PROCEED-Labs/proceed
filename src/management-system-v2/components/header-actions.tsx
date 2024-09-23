@@ -28,7 +28,7 @@ import { FaSignOutAlt, FaUserEdit } from 'react-icons/fa';
 
 const HeaderActions: FC = () => {
   const session = useSession();
-  const isGuest = session.data?.user.guest;
+  const isGuest = session.data?.user.isGuest;
   const loggedIn = session.status === 'authenticated';
   const token = theme.useToken();
   const [guestWarningOpen, setGuestWarningOpen] = useState(false);
@@ -96,14 +96,17 @@ const HeaderActions: FC = () => {
         <div style={{ padding: '1rem' }}>
           <Select
             options={userSpaces.map((space) => {
-              const name = space.organization ? space.name : 'My Space';
+              const name = space.isOrganization ? space.name : 'My Space';
               return {
                 label: (
                   <Tooltip title={name} placement="left">
                     <Link
                       style={{ display: 'block' }}
                       href={spaceURL(
-                        { spaceId: space?.id ?? '', isOrganization: space?.organization ?? false },
+                        {
+                          spaceId: space?.id ?? '',
+                          isOrganization: space?.isOrganization ?? false,
+                        },
                         `/processes`,
                       )}
                     >

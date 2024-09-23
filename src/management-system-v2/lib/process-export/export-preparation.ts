@@ -98,7 +98,7 @@ async function getVersionBpmn(
   const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion);
 
   if (typeof bpmn !== 'string') {
-    throw bpmn.error;
+    throw bpmn!.error;
   }
 
   return bpmn;

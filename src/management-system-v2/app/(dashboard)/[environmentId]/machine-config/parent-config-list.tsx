@@ -321,7 +321,7 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       dataIndex: 'lastEdited',
       key: 'Last Edited',
       render: (date: Date) => generateDateString(date, true),
-      sorter: (a, b) => new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime(),
+      sorter: (a, b) => new Date(b.lastEditedOn).getTime() - new Date(a.lastEditedOn).getTime(),
       responsive: ['md'],
     },
   ];

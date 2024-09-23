@@ -32,22 +32,22 @@ export default async function IvitationPage({ searchParams }: { searchParams: { 
     return <Error title={tokenError} />;
   }
 
-  const userId = 'userId' in invite ? invite.userId : getUserByEmail(invite.email)?.id;
-  if (session.user.guest || !userId || userId !== session.user.id)
+  const userId = 'userId' in invite ? invite.userId : (await getUserByEmail(invite.email))?.id;
+  if (session.user.isGuest || !userId || userId !== session.user.id)
     return <Error title="Wrong user" subTitle="Sign in with the user to whom the token was sent" />;
 
-  const organization = getEnvironmentById(invite.spaceId);
-  if (!organization || !organization.organization || !organization.active)
+  const organization = await getEnvironmentById(invite.spaceId);
+  if (!organization || !organization.isOrganization || !organization.isActive)
     return <Error title="This token is no longer valid" />;
 
-  if (!isMember(invite.spaceId, userId)) {
+  if (!(await isMember(invite.spaceId, userId))) {
     addMember(invite.spaceId, userId);
 
     if (invite.roleIds) {
       const validRoles = [];
       for (const roleId of invite.roleIds) {
         // skip roles that have been deleted
-        if (getRoleById(roleId)) validRoles.push(roleId);
+        if (await getRoleById(roleId)) validRoles.push(roleId);
       }
 
       addRoleMappings(

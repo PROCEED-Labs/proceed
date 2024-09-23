@@ -5,7 +5,7 @@ import Content from '@/components/content';
 import Title from 'antd/es/typography/Title';
 import { redirect } from 'next/navigation';
 import SpaceSettings from './space-settings';
-import { getEnvironmentById, organizationHasLogo } from '@/lib/data/legacy/iam/environments';
+import { getEnvironmentById, organizationHasLogo } from '@/lib/data/DTOs';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import DeleteOrganizationButton from './delete-organization-button';
 import { AuthCan } from '@/components/auth-can';
@@ -15,8 +15,10 @@ const GeneralSettingsPage = async ({ params }: { params: { environmentId: string
   if (!activeEnvironment.isOrganization || !ability.can('manage', 'Environment'))
     return redirect('/');
 
-  const organization = getEnvironmentById(activeEnvironment.spaceId) as OrganizationEnvironment;
-  const hasLogo = organizationHasLogo(activeEnvironment.spaceId);
+  const organization = (await getEnvironmentById(
+    activeEnvironment.spaceId,
+  )) as OrganizationEnvironment;
+  const hasLogo = await organizationHasLogo(activeEnvironment.spaceId);
 
   return (
     <Content title="Organization Settings">

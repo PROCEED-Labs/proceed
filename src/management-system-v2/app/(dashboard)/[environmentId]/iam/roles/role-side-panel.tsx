@@ -37,10 +37,10 @@ const RoleContent: FC<{
           <Typography.Text>{role.members.length}</Typography.Text>
 
           <Typography.Title>Last Edited</Typography.Title>
-          <Typography.Text>{role.lastEdited}</Typography.Text>
+          <Typography.Text>{role.lastEditedOn.toUTCString()}</Typography.Text>
 
           <Typography.Title>Created On</Typography.Title>
-          <Typography.Text>{role.createdOn}</Typography.Text>
+          <Typography.Text>{role.createdOn.toUTCString()}</Typography.Text>
 
           {role.members.length > 0 && (
             <>

@@ -29,6 +29,7 @@ import { ProcessExportTypes } from '@/components/process-export';
 import { spaceURL } from '@/lib/utils';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import UserTaskBuilder from './_user-task-builder';
+import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[processId]/script-editor';
 
 const LATEST_VERSION = { version: -1, name: 'Latest Version', description: '' };
 
@@ -52,6 +53,7 @@ const ModelerToolbar = ({
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [showProcessExportModal, setShowProcessExportModal] = useState(false);
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
+  const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
   const [elementsSelectedForExport, setElementsSelectedForExport] = useState<string[]>([]);
   const [rootLayerIdForExport, setRootLayerIdForExport] = useState<string | undefined>(undefined);
   const [preselectedExportType, setPreselectedExportType] = useState<
@@ -276,6 +278,11 @@ const ModelerToolbar = ({
                       Open Subprocess
                     </Button>
                   </Tooltip>
+                )) ||
+                (bpmnIs(selectedElement, 'bpmn:ScriptTask') && (
+                  <Tooltip title="Edit Script Task">
+                    <Button icon={<FormOutlined />} onClick={() => setShowScriptTaskEditor(true)} />
+                  </Tooltip>
                 )))}
           </ToolbarGroup>
 
@@ -344,11 +351,20 @@ const ModelerToolbar = ({
         resetPreselectedExportType={() => setPreselectedExportType(undefined)}
       />
       {process.env.NEXT_PUBLIC_ENABLE_EXECUTION && (
-        <UserTaskBuilder
-          processId={processId}
-          open={showUserTaskEditor}
-          onClose={() => setShowUserTaskEditor(false)}
-        />
+        <>
+          <UserTaskBuilder
+            processId={processId}
+            open={showUserTaskEditor}
+            onClose={() => setShowUserTaskEditor(false)}
+          />
+
+          <ScriptEditor
+            processId={processId}
+            open={showScriptTaskEditor}
+            onClose={() => setShowScriptTaskEditor(false)}
+            selectedElement={selectedElement}
+          />
+        </>
       )}
     </>
   );

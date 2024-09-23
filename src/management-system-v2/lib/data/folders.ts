@@ -1,14 +1,15 @@
 'use server';
-
+import * as util from 'util';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
+import { Folder, FolderUserInput, FolderUserInputSchema } from './folder-schema';
 import { UserErrorType, userError } from '../user-error';
-import { toCaslResource } from '../ability/caslAbility';
+import { TreeMap, toCaslResource } from '../ability/caslAbility';
 
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 import { FolderChildren } from './legacy/folders';
 import { enableUseDB } from 'FeatureFlags';
 import { TFoldersModule, TProcessModule } from './module-import-types-temp';
+import { getFolders } from './DTOs';
 
 let _createFolder: TFoldersModule['createFolder'],
   _getFolderContent: TFoldersModule['getFolderContents'],
@@ -50,6 +51,43 @@ export async function createFolder(folderInput: FolderUserInput) {
   } catch (e) {
     return userError("Couldn't create folder");
   }
+}
+export type FolderTreeNode = {
+  id: string;
+  name: string;
+  children: FolderTreeNode[];
+};
+
+export async function getSpaceFolderTree(
+  spaceId: string,
+  ability?: Ability,
+): Promise<FolderTreeNode[]> {
+  //TODO: ability check
+
+  const folders = await getFolders(spaceId);
+
+  const folderMap: Record<string, FolderTreeNode> = {};
+
+  // Initialize the folder map with empty children arrays and only id and name
+  for (const folder of folders) {
+    folderMap[folder.id] = { id: folder.id, name: folder.name, children: [] };
+  }
+
+  const rootFolders: FolderTreeNode[] = [];
+
+  for (const folder of folders) {
+    if (folder.parentId) {
+      const parent = folderMap[folder.parentId];
+      if (parent) {
+        parent.children.push(folderMap[folder.id]);
+      }
+    } else {
+      // Folders with no parentId are root folders
+      rootFolders.push(folderMap[folder.id]);
+    }
+  }
+
+  return rootFolders;
 }
 
 export async function moveIntoFolder(items: FolderChildren[], folderId: string) {

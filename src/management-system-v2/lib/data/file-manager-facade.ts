@@ -1,5 +1,6 @@
 'use server';
 
+import { Prisma } from '@prisma/client';
 import { getFileCategory, getNewFileName, EntityType } from '../helpers/fileManagerHelpers';
 import { contentTypeNotAllowed } from './content-upload-error';
 import { deleteFile, retrieveFile, saveFile } from './file-manager';
@@ -39,6 +40,13 @@ const generateProcessFilePath = (
   const artifactType = getFileCategory(fileName, mimeType);
   return `processes/${processId}/${artifactType}/${fileName}`;
 };
+
+export async function getProcessArtifactMetaData(fileNameOrPath: string, isFilePath: boolean) {
+  return await db.processArtifacts.findUnique({
+    where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
+    select: { filePath: true, refCounter: true },
+  });
+}
 
 export async function saveEnityFile(
   entityType: EntityType,
@@ -121,8 +129,12 @@ export async function retrieveProcessArtifact(
   fileNameOrPath: string,
   isFilePath = false,
 ) {
-  const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
-  return retrieveFile(filePath);
+  //TODO: referencing process and referenced procedd validation
+  const resp = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
+  if (!resp) {
+    throw new Error(`${fileNameOrPath} not found`);
+  }
+  return retrieveFile(resp.filePath);
 }
 
 export async function deleteProcessArtifact(
@@ -130,14 +142,27 @@ export async function deleteProcessArtifact(
   fileNameOrPath: string,
   isFilePath = false,
 ) {
-  const filePath = isFilePath ? fileNameOrPath : generateProcessFilePath(fileNameOrPath, processId);
-  const isDeleted = await deleteFile(filePath);
-
-  if (isDeleted) {
-    await removeArtifactFromDB(filePath, processId);
+  const resp = await getProcessArtifactMetaData(fileNameOrPath, isFilePath);
+  if (!resp) {
+    throw new Error(`${fileNameOrPath} not found`);
   }
 
-  return isDeleted;
+  if (resp.refCounter == 0) {
+    const isDeleted = await deleteFile(resp.filePath);
+    if (isDeleted) {
+      await removeArtifactFromDB(resp.filePath, processId);
+    }
+    return isDeleted;
+  } else {
+    await db.processArtifacts.update({
+      where: isFilePath ? { filePath: fileNameOrPath } : { fileName: fileNameOrPath },
+      data: {
+        refCounter: { decrement: 1 },
+      },
+    });
+
+    return true;
+  }
 }
 
 // Functionality for handling organization logo files
@@ -198,11 +223,32 @@ export async function deleteOrganisationLogo(organisationId: string): Promise<bo
 
 // Update file status in the database
 export async function updateFileDeletableStatus(fileName: string, status: boolean) {
-  return db.processArtifacts.update({
+  const artifact = await db.processArtifacts.findUnique({
     where: { fileName },
-    data: {
+    select: { refCounter: true },
+  });
+
+  if (!artifact) throw new Error('File not found');
+
+  let updateData: Prisma.ProcessArtifactsUpdateInput = {};
+
+  // If refCounter >= 1, deletable must remain false
+  if (artifact.refCounter >= 1) {
+    updateData = {
+      deletable: false,
+      refCounter: status ? { decrement: 1 } : { increment: 1 },
+    };
+  } else if (artifact.refCounter < 1) {
+    // If refCounter < 1, allow deletable to change based on the provided status
+    updateData = {
       deletable: status,
       deletedOn: new Date(),
-    },
+      refCounter: status ? { decrement: 1 } : { increment: 1 },
+    };
+  }
+
+  return await db.processArtifacts.update({
+    where: { fileName },
+    data: updateData,
   });
 }

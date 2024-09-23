@@ -23,10 +23,15 @@ export async function GET(request: NextRequest) {
   const entityType = searchParams.get('entityType');
   const environmentId = searchParams.get('environmentId') || 'unauthenticated';
   const fileName = searchParams.get('fileName');
-  if (!entityId || !entityType || !environmentId) {
+  if (
+    !entityId ||
+    !entityType ||
+    !environmentId ||
+    (entityType === EntityType.PROCESS && !fileName)
+  ) {
     return new NextResponse(null, {
       status: 400,
-      statusText: 'entityId,entityType, environmentId and fileName required as URL search params',
+      statusText: 'entityId, entityType, environmentId and fileName required as URL search params',
     });
   }
 
@@ -41,26 +46,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (environmentId === 'unauthenticated') {
-      // if the user is not an owner check if they have access if a share token is provided in the query data of the url
-      const shareToken = searchParams.get('shareToken');
-      if (!canAccess && shareToken) {
-        const key = process.env.SHARING_ENCRYPTION_SECRET!;
-        const {
-          processId: shareProcessId,
-          embeddedMode,
-          timestamp,
-        } = jwt.verify(shareToken, key!) as TokenPayload;
+    if (environmentId !== 'unauthenticated') {
+      const { ability } = await getCurrentEnvironment(environmentId);
 
-        canAccess =
-          !embeddedMode && shareProcessId === entityId && timestamp === processMeta.shareTimestamp;
-      }
-    } else {
-      // if the user is not unauthenticated check if they have access to the process due to being an owner
-      if (environmentId !== 'unauthenticated') {
-        const { ability } = await getCurrentEnvironment(environmentId);
-        canAccess = ability.can('view', toCaslResource('Process', processMeta));
-      }
+      canAccess = ability.can('view', toCaslResource('Process', processMeta));
+    }
+
+    // if the user is not an owner check if they have access if a share token is provided in the query data of the url
+    const shareToken = searchParams.get('shareToken');
+    if (!canAccess && shareToken) {
+      const key = process.env.SHARING_ENCRYPTION_SECRET!;
+      const {
+        processId: shareProcessId,
+        embeddedMode,
+        timestamp,
+      } = jwt.verify(shareToken, key!) as TokenPayload;
+      canAccess =
+        !embeddedMode && shareProcessId === entityId && timestamp === processMeta.shareTimestamp;
     }
 
     if (!canAccess) {
@@ -83,7 +85,6 @@ export async function GET(request: NextRequest) {
     }
 
     const headers = new Headers();
-    console.log(fileType.mime);
     headers.set('Content-Type', fileType.mime);
     return new NextResponse(data, { status: 200, statusText: 'OK', headers });
   } catch (error: any) {

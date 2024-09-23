@@ -36,7 +36,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleImageUpload = async (image: Blob, uploadedFileName: string, imageExists: boolean) => {
     try {
-      alert(image.size);
       let response;
       if (imageExists && endpoints.putEndpoint) {
         // Update existing image

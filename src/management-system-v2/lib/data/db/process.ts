@@ -1,9 +1,12 @@
 import { getFolderById } from './folders';
 import eventHandler from '../legacy/eventHandler.js';
 import logger from '../legacy/logging.js';
-
 import { getProcessInfo, getDefaultProcessMetaInfo } from '../../helpers/processHelpers';
-import { getDefinitionsVersionInformation } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsVersionInformation,
+  getMetaDataFromElement,
+  getAllElements,
+} from '@proceed/bpmn-helper';
 import Ability from '@/lib/ability/abilityHelper';
 import {
   Process,
@@ -18,6 +21,7 @@ import { v4 } from 'uuid';
 import { UserErrorType, userError } from '@/lib/user-error';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { deleteProcessArtifact } from '../file-manager-facade';
+import { toBpmnObject } from '@proceed/bpmn-helper/src/util';
 
 /** Returns all processes for a user */
 export async function getProcesses(userId: string, ability: Ability, includeBPMN = false) {
@@ -128,7 +132,10 @@ export async function checkIfProcessExists(processDefinitionsId: string) {
 }
 
 /** Handles adding a process, makes sure all necessary information gets parsed from bpmn */
-export async function addProcess(processInput: ProcessServerInput & { bpmn: string }) {
+export async function addProcess(
+  processInput: ProcessServerInput & { bpmn: string },
+  referencedProcessId?: string,
+) {
   const { bpmn } = processInput;
 
   const processData = ProcessServerInputSchema.parse(processInput);
@@ -192,11 +199,19 @@ export async function addProcess(processInput: ProcessServerInput & { bpmn: stri
     console.error('Error adding new process: ', error);
   }
 
-  moveProcess({
+  await moveProcess({
     processDefinitionsId,
     newFolderId: metadata.folderId,
     dontUpdateOldFolder: true,
   });
+
+  //if referencedProcessId is present, the process was copied from a shared process
+  if (referencedProcessId) {
+    await db.processArtifacts.updateMany({
+      where: { processId: referencedProcessId },
+      data: { refCounter: { increment: 1 } },
+    });
+  }
 
   eventHandler.dispatch('processAdded', { process: metadata });
 

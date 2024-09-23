@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
       where: {
         deletable: true,
         deletedOn: { lte: oneWeekAgo },
+        refCounter: 0,
       },
       select: { filePath: true, processId: true },
     });

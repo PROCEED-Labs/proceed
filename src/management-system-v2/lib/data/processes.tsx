@@ -31,6 +31,8 @@ import {
   getProcessUserTaskJSON as _getProcessUserTaskJSON,
   getProcessImage as _getProcessImage,
   saveProcessUserTask as _saveProcessUserTask,
+  getProcessScriptTaskScript as _getProcessScriptTaskScript,
+  saveProcessScriptTask as _saveProcessScriptTask,
 } from './legacy/_process';
 
 // Declare variables to hold the process module functions
@@ -441,6 +443,41 @@ export const saveProcessUserTask = async (
     );
 
   await _saveProcessUserTask!(definitionId, taskFileName, json);
+};
+
+export const getProcessScriptTaskData = async (
+  definitionId: string,
+  taskFileName: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId);
+
+  if (error) return error;
+
+  try {
+    return await _getProcessScriptTaskScript(definitionId, taskFileName);
+  } catch (err) {
+    return userError('Unable to get the requested Script Task data.', UserErrorType.NotFoundError);
+  }
+};
+
+export const saveProcessScriptTask = async (
+  definitionId: string,
+  taskFileName: string,
+  script: string,
+  spaceId: string,
+) => {
+  const error = await checkValidity(definitionId, 'update', spaceId);
+
+  if (error) return error;
+
+  if (/-\d+$/.test(taskFileName))
+    return userError(
+      'Illegal attempt to overwrite a script task version!',
+      UserErrorType.ConstraintError,
+    );
+
+  await _saveProcessScriptTask(definitionId, taskFileName, script);
 };
 
 export const getProcessImage = async (

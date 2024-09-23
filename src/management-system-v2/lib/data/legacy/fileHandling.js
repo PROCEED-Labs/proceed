@@ -113,6 +113,15 @@ function getUserTaskDir(id) {
 }
 
 /**
+ * Find the script task directory for the given process
+ *
+ * @param {String} id
+ */
+function getScriptTaskDir(id) {
+  return path.join(getFolder(id), 'script-tasks');
+}
+
+/**
  * Get the bpmn of a specific process as a string
  * @param {String} processDefinitionsId
  * @returns {String} the process description
@@ -150,6 +159,73 @@ export async function saveEnvProfile(id, type, environmentProfile) {
 export async function deleteEnvProfile(id, type) {
   const fileToRemove = getEnvProfileName(id, type);
   await fse.unlinkSync(fileToRemove);
+}
+
+/**
+ * Returns the ids of all tasks of the process with the given dir path
+ *
+ * @param {String} dirPath
+ */
+export function getTaskIds(dirPath) {
+  return new Promise((resolve, reject) => {
+    if (!fse.existsSync(dirPath)) {
+      resolve([]);
+    }
+
+    fse.readdir(dirPath, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const taskIds = [];
+
+      if (files) {
+        files.forEach(async (file) => {
+          const [taskId] = file.split('.');
+          taskIds.push(taskId);
+        });
+      }
+
+      resolve(taskIds);
+    });
+  });
+}
+
+/**
+ * Returns the stored data for tasks in a process. Currently used for User Tasks and Script Tasks
+ *
+ * @param {String} dirPath
+ *
+ * @returns {Promise<object>} Object containing a taskId to form data mapping
+ */
+function getFilesFromTaskDir(dirPath) {
+  return new Promise((resolve, reject) => {
+    if (!fse.existsSync(dirPath)) {
+      resolve({});
+    }
+
+    fse.readdir(dirPath, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const fileMapping = {};
+
+      if (files) {
+        files.forEach(async (file) => {
+          const filePath = path.join(dirPath, file);
+          const fileContents = fse.readFileSync(filePath, 'utf-8');
+          const [taskId] = file.split('.');
+
+          fileMapping[taskId] = fileContents;
+        });
+      }
+
+      resolve(fileMapping);
+    });
+  });
 }
 
 /**
@@ -216,32 +292,9 @@ export function deleteProcess(id) {
  *
  * @param {String} processDefinitionsId
  */
-export function getUserTaskIds(processDefinitionsId) {
-  return new Promise((resolve, reject) => {
-    const userTaskDir = getUserTaskDir(processDefinitionsId);
-
-    if (!fse.existsSync(userTaskDir)) {
-      resolve([]);
-    }
-
-    fse.readdir(userTaskDir, (err, files) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const userTaskIds = [];
-
-      if (files) {
-        files.forEach(async (file) => {
-          const [taskId] = file.split('.');
-          userTaskIds.push(taskId);
-        });
-      }
-
-      resolve(userTaskIds);
-    });
-  });
+export async function getUserTaskIds(processDefinitionsId) {
+  const userTaskDir = getUserTaskDir(processDefinitionsId);
+  return getTaskIds(userTaskDir);
 }
 
 /**
@@ -255,6 +308,29 @@ export async function saveUserTaskJSON(processDefinitionsId, taskId, json) {
   const userTaskDir = getUserTaskDir(processDefinitionsId);
   fse.ensureDirSync(userTaskDir);
   fse.writeFileSync(path.join(userTaskDir, `${taskId}.json`), json);
+}
+
+/**
+ * Returns the ids of all script tasks of the process with the given id
+ *
+ * @param {String} processDefinitionsId
+ */
+export async function getScriptTaskIds(processDefinitionsId) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  return getTaskIds(scriptTaskDir);
+}
+
+/**
+ * Saves the script of a script task
+ *
+ * @param {String} processDefinitionsId the id of the process that contains the script task
+ * @param {String} taskId the id of the specific script task
+ * @param {String} script the script task script
+ */
+export async function saveScriptTaskScript(processDefinitionsId, taskId, script) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  fse.ensureDirSync(scriptTaskDir);
+  fse.writeFileSync(path.join(scriptTaskDir, `${taskId}.ts`), script);
 }
 
 /**
@@ -385,35 +461,9 @@ export function getUserTaskJSON(processDefinitionsId, taskId) {
  * @returns {Promise}
  *    @resolves {Object} Object containing a taskId to form data mapping
  */
-export function getUserTasksJSON(processDefinitionsId) {
-  return new Promise((resolve, reject) => {
-    const userTaskDir = getUserTaskDir(processDefinitionsId);
-
-    if (!fse.existsSync(userTaskDir)) {
-      resolve({});
-    }
-
-    fse.readdir(userTaskDir, (err, files) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const userTasksJSON = {};
-
-      if (files) {
-        files.forEach(async (file) => {
-          const filePath = path.join(userTaskDir, file);
-          const fileContents = fse.readFileSync(filePath, 'utf-8');
-          const [taskId] = file.split('.');
-
-          userTasksJSON[taskId] = fileContents;
-        });
-      }
-
-      resolve(userTasksJSON);
-    });
-  });
+export async function getUserTasksJSON(processDefinitionsId) {
+  const userTaskDir = getUserTaskDir(processDefinitionsId);
+  return getFilesFromTaskDir(userTaskDir);
 }
 
 export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
@@ -425,19 +475,36 @@ export async function deleteUserTaskJSON(processDefinitionsId, taskId) {
 }
 
 /**
- * Saves the script for a scriptTask
+ * Returns the stored script for a script task with the given id in a process
  *
  * @param {String} processDefinitionsId
  * @param {String} taskId
- * @param {String} js
  */
-export async function saveScriptTaskJS(processDefinitionsId, taskId, js) {
-  const currentProcessFolder = getFolder(processDefinitionsId);
-  const folder = path.join(currentProcessFolder, 'Script-Tasks');
+export function getScriptTaskScript(processDefinitionsId, taskId) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  const scriptTaskFile = `${taskId}.ts`;
+  const scriptTaskPath = path.join(scriptTaskDir, scriptTaskFile);
+  return fse.readFileSync(scriptTaskPath, 'utf-8');
+}
 
-  fse.ensureDirSync(folder);
+/**
+ * Returns scripts for all script tasks in a process
+ *
+ * @param {String} processDefinitionsId
+ *
+ * @returns {Promise<object>} Object containing a taskId to form data mapping
+ */
+export async function getScriptTasksScript(processDefinitionsId) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  return getFilesFromTaskDir(scriptTaskDir);
+}
 
-  fse.writeFileSync(path.join(folder, `${taskId}.js`), js);
+export async function deleteScriptTaskScript(processDefinitionsId, taskId) {
+  const scriptTaskDir = getScriptTaskDir(processDefinitionsId);
+  const taskFile = `${taskId}.ts`;
+  const filePath = path.join(scriptTaskDir, taskFile);
+
+  fse.unlinkSync(filePath);
 }
 
 /**

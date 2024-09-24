@@ -80,14 +80,16 @@ for (const objName of Object.keys(structure)) {
   for (const functionName of functionNames) {
     context.evalClosureSync(
       `globalThis["${objName}"]["${functionName}"] = function (...args) {
-        return $0.apply(null, [JSON.stringify(args)], { result: { promise: true, copy: true } });
+        return $0.applySyncPromise(null, [JSON.stringify(args)], {}).copyInto();
       }`,
       [
         new ivm.Reference(async function (args) {
-          return callToExecutor('call', {
+          const result = await callToExecutor('call', {
             functionName: `${objName}.${functionName}`,
             args: JSON.parse(args),
           });
+
+          return new ivm.ExternalCopy(result);
         }),
       ],
     );

@@ -217,7 +217,7 @@ class ScriptExecutor extends NativeModule {
     // NOTE: maybe give a warning?
     if (!scriptTask) return;
 
-    scriptTask.kill();
+    scriptTask.process.kill();
     this.#deleteProcess(processId, processInstanceId);
   }
 

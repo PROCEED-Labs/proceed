@@ -72,13 +72,17 @@ class ScriptExecutor extends NativeModule {
       async (req, res) => {
         const { functionName, args } = req.body;
 
-        const targetFunction = req.process?.dependencies[functionName];
-        if (!targetFunction) return res.code(404).send('Function not found');
-        if (typeof targetFunction !== 'function') return res.code(500).send('Bad dependency');
-
         try {
-          const result = await targetFunction(...args);
-          res.code(200).send({ result });
+          let target = req.process?.dependencies;
+          for (const segment of functionName.split('.')) {
+            target = target[segment];
+
+            if (typeof target === 'undefined') return res.code(404).send('Function not found');
+          }
+
+          if (typeof target === 'function' || typeof target === 'object')
+            return res.code(200).send({ result: await target(...args) });
+          else return res.code(200).send({ result: target });
         } catch (e) {
           return res.code(500).send(`Error: ${e.message}`);
         }

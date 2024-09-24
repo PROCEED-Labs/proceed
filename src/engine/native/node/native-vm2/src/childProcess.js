@@ -64,26 +64,42 @@ context.global.setSync('_stdout_log', function (...args) {
 // NOTE: Extern capabilities (provided by neo-engine)
 // log, console, variable, getService, BpmnEscalation, BpmnError
 // TODO: pass these in as a process argument
-for (const functionName of ['log', 'console', 'variable', 'getService', 'yuhu']) {
-  context.global.setSync(
-    `_${functionName}`,
-    new ivm.Reference(async function (...args) {
-      return callToExecutor('call', { functionName: functionName, args });
-    }),
-  );
 
-  context.evalSync(
-    `function ${functionName}(...args) {
-      return _${functionName}.apply(null, args, { result: { promise: true, copy: true } });
-    }`,
-  );
+const structure = {
+  log: ['get'],
+  console: ['trace', 'debug', 'info', 'warn', 'error', 'log', 'time', 'timeEnd'],
+  variable: ['get', 'set', 'getAll'],
+};
+
+for (const objName of Object.keys(structure)) {
+  const functionNames = structure[objName];
+
+  context.evalSync(`globalThis["${objName}"] = {}`);
+
+  // NOTE: maybe replace JSON for isolated-vm solution
+  for (const functionName of functionNames) {
+    context.evalClosureSync(
+      `globalThis["${objName}"]["${functionName}"] = function (...args) {
+        return $0.apply(null, [JSON.stringify(args)], { result: { promise: true, copy: true } });
+      }`,
+      [
+        new ivm.Reference(async function (args) {
+          return callToExecutor('call', {
+            functionName: `${objName}.${functionName}`,
+            args: JSON.parse(args),
+          });
+        }),
+      ],
+    );
+  }
 }
 
-const hostile = isolate.compileScriptSync(`function main(){ ${scriptString} }; main();`);
-
-hostile
-  .run(context)
+context
+  .eval(`${scriptString}`, { promise: true })
   .then((result) => {
     callToExecutor('result', { result });
   })
-  .catch((err) => console.error(err));
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

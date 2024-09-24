@@ -46,12 +46,12 @@ class ScriptExecutor extends NativeModule {
       {
         preHandler: this.#fastifyAuthMiddleware.bind(this),
       },
-      async (req, res) => {
+      (req, res) => {
         if (req.headers['content-type'] !== 'application/json')
           return res.code(400).send('You have to send a JSON body that includes a result key.');
 
-        req.process.result = req.body.result;
-        return res.code(200);
+        req.process.result = req?.body.result;
+        return res.code(200).send();
       },
     );
 

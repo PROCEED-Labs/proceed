@@ -30,7 +30,7 @@ async function callToExecutor(endpoint, body) {
       },
     );
 
-    if (!response.ok) throw new Error('Response not ok');
+    if (!response.ok) throw new Error(`${endpoint}: Response not ok`);
 
     const contentType = response.headers.get('content-type');
     if (!contentType) return;

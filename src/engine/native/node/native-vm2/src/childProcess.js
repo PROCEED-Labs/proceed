@@ -58,8 +58,6 @@ context.global.setSync('_stdout_log', function (...args) {
 // TODO: pass these in as a process argument
 
 // TODO: setProgress(<number between 0 - 100>)
-// TODO: await setIntervalAsync( <clb>, <number in milliseconds> )
-// TODO: await setTimeoutAsync( <clb>, <number in milliseconds> )
 // TODO: getService('capabilities')
 // TODO: getService('network')
 
@@ -118,6 +116,37 @@ function wrapScriptWithErrorHandling(script) {
   }
   `;
 }
+
+const sleep = new ivm.Reference((ms) => new Promise((res) => setTimeout(res, ms)));
+
+context.evalClosureSync(
+  async function setTimeoutAsync(cb, ms) {
+    await $0.apply(null, [ms], { result: { promise: true } });
+    cb();
+  }.toString() + `globalThis["setTimeoutAsync"] = setTimeoutAsync;`,
+  [sleep],
+);
+
+// NOTE: I thought this was going to eventually reach the maximum stack call size
+// but when testing it, it never happened
+context.evalClosureSync(
+  function setIntervalAsync(cb, ms) {
+    async function recursiveCall(res, rej) {
+      try {
+        await $0.apply(null, [ms], { result: { promise: true } });
+        const stop = await cb();
+
+        if (stop) res();
+        else recursiveCall(res, rej);
+      } catch (_) {
+        rej;
+      }
+    }
+
+    return new Promise((res, rej) => recursiveCall(res, rej));
+  }.toString() + 'globalThis["setIntervalAsync"]=setIntervalAsync;',
+  [sleep],
+);
 
 context
   .eval(wrapScriptWithErrorHandling(scriptString), { promise: true })

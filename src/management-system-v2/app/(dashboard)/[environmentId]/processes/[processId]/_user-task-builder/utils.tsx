@@ -1,5 +1,15 @@
 import { Editor, Frame } from '@craftjs/core';
-import React, { ReactElement, useEffect, useId, useRef, useState } from 'react';
+import React, {
+  Fragment,
+  MouseEventHandler,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { Menu, MenuProps } from 'antd';
 
@@ -80,6 +90,7 @@ body {
   padding: 0.75rem 0.5rem;
   border: 1px solid lightgrey;
   position: relative;
+  font-weight: normal;
 }
 
 .user-task-form-input-group {
@@ -217,7 +228,21 @@ export const iframeDocument = `
         margin: 0 10px;
         cursor: pointer;
         color: white;
-      } 
+      }
+
+      .overlay-mask {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        color: white;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        background-color: rgba(0,0,0,0.5);
+      }
 
       ${styles}
     </style>
@@ -271,20 +296,48 @@ export const Setting: React.FC<{
 const getIframe = () =>
   document.getElementById('user-task-builder-iframe') as HTMLIFrameElement | undefined;
 
+type ContextMenuTriggers = 'click' | 'contextMenu';
+
 type ContextMenuProps = React.PropsWithChildren<{
   onClose?: () => void;
   menu: MenuProps['items'];
+  externalPosition?: { top: number; left: number };
+  triggers?: ContextMenuTriggers[];
 }>;
 
-export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
+export const ContextMenu: React.FC<ContextMenuProps> = ({
+  children,
+  menu,
+  onClose,
+  externalPosition,
+  triggers = ['contextMenu'],
+}) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
 
   const touchedElRef = useRef(false);
 
+  useEffect(() => {
+    if (externalPosition) touchedElRef.current = true;
+  }, [externalPosition]);
+
   const id = useId();
   const blockDragging = useBuilderStateStore((state) => state.blockDragging);
   const unblockDragging = useBuilderStateStore((state) => state.unblockDragging);
-  const open = !!menuPosition;
+
+  const position = useMemo(() => {
+    const iframe = getIframe();
+    if (!iframe || !(externalPosition || menuPosition)) return;
+
+    const pos = { ...(externalPosition || menuPosition)! };
+
+    const { top, left } = iframe.getBoundingClientRect();
+    pos.top += top + 5;
+    pos.left += left + 5;
+
+    return pos;
+  }, [externalPosition, menuPosition]);
+
+  const open = !!position;
   useEffect(() => {
     if (open) {
       blockDragging(id);
@@ -296,10 +349,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
   }, [id, open]);
 
   useEffect(() => {
-    if (menuPosition) {
+    if (position) {
       const handleClick = () => {
-        setMenuPosition(undefined);
-        onClose?.();
+        if (!touchedElRef.current) {
+          setMenuPosition(undefined);
+          onClose?.();
+        }
+        touchedElRef.current = false;
       };
 
       const handleContextMenu = (e: MouseEvent) => {
@@ -324,11 +380,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
         getIframe()?.contentWindow?.removeEventListener('contextmenu', handleContextMenu);
       };
     }
-  }, [menuPosition, onClose]);
+  }, [position, onClose]);
+
+  const handleOpen: MouseEventHandler = (e) => {
+    setMenuPosition({ left: e.clientX, top: e.clientY });
+    touchedElRef.current = true;
+    e.preventDefault();
+  };
 
   return (
     <>
-      {menuPosition &&
+      {position &&
         createPortal(
           <Menu
             style={{
@@ -337,24 +399,47 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClos
                 '0 0.375rem 1rem 0 rgba(0, 0, 0, 0.08), 0 0.1875rem 0.375rem -0.25rem rgba(0, 0, 0, 0.12), 0 0.5625rem 1.75rem 0.5rem rgba(0, 0, 0, 0.05)',
               zIndex: 1000,
               position: 'absolute',
-              ...menuPosition,
+              ...position,
             }}
             items={menu}
           />,
           document.body,
         )}
       <span
-        onContextMenu={(e) => {
-          const iframe = getIframe();
-          if (!iframe) return;
-          const { top, left } = iframe.getBoundingClientRect();
-          setMenuPosition({ left: left + e.clientX + 5, top: top + e.clientY + 5 });
-          touchedElRef.current = true;
-          e.preventDefault();
-        }}
+        onContextMenu={triggers.includes('contextMenu') ? handleOpen : undefined}
+        onClick={
+          triggers.includes('click')
+            ? (e) => {
+                handleOpen(e);
+                e.stopPropagation();
+              }
+            : undefined
+        }
       >
         {children}
       </span>
+    </>
+  );
+};
+
+type OverlayProps = React.PropsWithChildren<{
+  show: boolean;
+  controls: { icon: ReactNode; key: string }[];
+}>;
+
+export const Overlay: React.FC<OverlayProps> = ({ show, controls, children }) => {
+  return (
+    <>
+      {show && (
+        <div className="overlay-mask">
+          {controls.map(({ icon, key }) => (
+            <span style={{ margin: '0 3px' }} key={key}>
+              {icon}
+            </span>
+          ))}
+        </div>
+      )}
+      {children}
     </>
   );
 };

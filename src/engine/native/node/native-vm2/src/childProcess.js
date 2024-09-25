@@ -53,17 +53,15 @@ context.global.setSync('_stdout_log', function (...args) {
   console.log(...args);
 });
 
+// NOTE: Extern capabilities (provided by neo-engine)
+// log, console, variable, getService, BpmnEscalation, BpmnError
+// TODO: pass these in as a process argument
+
 // TODO: setProgress(<number between 0 - 100>)
 // TODO: await setIntervalAsync( <clb>, <number in milliseconds> )
 // TODO: await setTimeoutAsync( <clb>, <number in milliseconds> )
 // TODO: getService('capabilities')
 // TODO: getService('network')
-// TODO: throw new BpmnError( ["<reference>",] "explanation" )
-// TODO: throw new BpmnEscalation( ["<reference>",] "explanation" );
-
-// NOTE: Extern capabilities (provided by neo-engine)
-// log, console, variable, getService, BpmnEscalation, BpmnError
-// TODO: pass these in as a process argument
 
 const structure = {
   log: ['get'],
@@ -96,12 +94,43 @@ for (const objName of Object.keys(structure)) {
   }
 }
 
+const errorClasses = ['BpmnError', 'BpmnEscalation'];
+
+for (const errorName of errorClasses)
+  context.evalClosureSync(
+    `class ${errorName} {
+      constructor(...args) {
+        this.errorArgs = args;
+        this.errorClass = '${errorName}';
+      }
+  }
+  globalThis["${errorName}"] = ${errorName};
+  `,
+  );
+
+function wrapScriptWithErrorHandling(script) {
+  return `try {
+    ${script}
+  } catch(e){
+    if(${errorClasses.map((error) => 'e instanceof ' + error).join(' || ')})
+      throw JSON.stringify(e);
+    else throw e;
+  }
+  `;
+}
+
 context
-  .eval(`${scriptString}`, { promise: true })
+  .eval(wrapScriptWithErrorHandling(scriptString), { promise: true })
   .then((result) => {
     callToExecutor('result', { result });
   })
   .catch((err) => {
-    console.error(err);
-    process.exit(1);
+    let result = err;
+    try {
+      result = JSON.parse(err);
+    } catch (_) {}
+
+    console.error(result);
+
+    callToExecutor('result', { result }).finally(() => process.exit(1));
   });

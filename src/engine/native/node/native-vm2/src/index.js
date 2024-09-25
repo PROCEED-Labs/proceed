@@ -50,7 +50,24 @@ class ScriptExecutor extends NativeModule {
         if (req.headers['content-type'] !== 'application/json')
           return res.code(400).send('You have to send a JSON body that includes a result key.');
 
-        req.process.result = req?.body.result;
+        let result = req?.body.result;
+
+        try {
+          if (
+            result &&
+            result.errorClass in req.process.dependencies &&
+            'errorClass' in result &&
+            typeof result.errorClass === 'string' &&
+            typeof result.errorArgs === 'object' &&
+            'length' in result.errorArgs &&
+            (req.process.dependencies[result.errorClass].prototype instanceof Error ||
+              req.process.dependencies[result.errorClass] === Error)
+          )
+            result = new req.process.dependencies[result.errorClass](result.errorArgs);
+        } catch (_) {}
+
+        req.process.result = result;
+
         return res.code(200).send();
       },
     );
@@ -190,9 +207,8 @@ class ScriptExecutor extends NativeModule {
 
       return new Promise((resolve, reject) => {
         scriptTask.on('close', (code) => {
-          // TODO: use code's output
           if (code === 0) resolve(processEntry.result);
-          else reject();
+          else reject(processEntry.result);
         });
       });
     } catch (e) {

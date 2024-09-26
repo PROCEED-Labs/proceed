@@ -13,7 +13,7 @@ import {
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } from '../utils';
-import React, { MouseEventHandler, useState } from 'react';
+import React, { MouseEventHandler, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const defaultHeaderContent =
@@ -29,26 +29,19 @@ const TableCell: React.FC<
     type: 'th' | 'td';
     content: string;
     style?: React.CSSProperties;
-    onContextMenu?: () => void;
+    onEdit?: () => void;
     onChange?: (newContent: string) => void;
   }>
-> = ({ type, content, style = {}, onChange = () => {}, onContextMenu }) => {
+> = ({ type, content, style = {}, onChange = () => {}, onEdit }) => {
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
-
-  const handleContextMenu: MouseEventHandler | undefined = onContextMenu
-    ? (e) => {
-        onContextMenu();
-        e.preventDefault();
-      }
-    : undefined;
 
   return React.createElement(
     type,
     {
       style,
       className: 'user-task-form-table-cell',
-      onContextMenu: handleContextMenu,
+      onContextMenu: onEdit,
       onMouseEnter: () => setHovered(true),
     },
     <Overlay
@@ -60,7 +53,7 @@ const TableCell: React.FC<
           key: 'edit',
         },
         {
-          icon: <SettingOutlined onClick={handleContextMenu} />,
+          icon: <SettingOutlined onClick={onEdit} />,
           key: 'setting',
         },
       ]}
@@ -85,7 +78,7 @@ const menuOptions = {
   'add-col-right': { label: 'Add Column After', icon: <TbColumnInsertRight size={20} /> },
 } as const;
 
-type ContextMenuAction = keyof typeof menuOptions;
+type CellAction = keyof typeof menuOptions;
 const toMenuItem = MenuItemFactoryFactory(menuOptions);
 
 const SidebarButton = SidebarButtonFactory(menuOptions);
@@ -95,9 +88,9 @@ type TableRowProps = {
   rowIndex: number;
   cellStyle?: React.CSSProperties;
   onUpdateContent: (newContent: string, rowIndex: number, colIndex: number) => void;
-  onCellContextMenu: (rowIndex: number, colIndex: number) => void;
-  contextMenuTargetCell?: { row: number; col: number };
-  hoveredContextMenuAction?: ContextMenuAction;
+  onEditCell: (rowIndex: number, colIndex: number) => void;
+  targetCell?: { row: number; col: number };
+  cellAction?: CellAction;
 };
 
 const TableRow: React.FC<TableRowProps> = ({
@@ -105,31 +98,31 @@ const TableRow: React.FC<TableRowProps> = ({
   rowIndex,
   cellStyle = {},
   onUpdateContent,
-  onCellContextMenu,
-  contextMenuTargetCell,
-  hoveredContextMenuAction,
+  onEditCell,
+  targetCell,
+  cellAction,
 }) => {
   let targetRow = -1;
   let targetCol = -1;
-  if (contextMenuTargetCell) {
-    ({ row: targetRow, col: targetCol } = contextMenuTargetCell);
+  if (targetCell) {
+    ({ row: targetRow, col: targetCol } = targetCell);
   }
 
   return (
     <>
-      {hoveredContextMenuAction === 'add-row-above' && targetRow === rowIndex && (
+      {cellAction === 'add-row-above' && targetRow === rowIndex && (
         <TableRow
           tableRowData={tableRowData.map(() => defaultContent)}
           rowIndex={-2}
           cellStyle={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-          onCellContextMenu={() => {}}
+          onEditCell={() => {}}
           onUpdateContent={() => {}}
         />
       )}
       <tr>
         {tableRowData.map((col, colIndex) => (
           <React.Fragment key={`table-cell-${rowIndex}-${colIndex}`}>
-            {hoveredContextMenuAction === 'add-col-left' && targetCol === colIndex && (
+            {cellAction === 'add-col-left' && targetCol === colIndex && (
               <TableCell
                 type={rowIndex ? 'td' : 'th'}
                 content={rowIndex ? defaultContent : defaultHeaderContent}
@@ -142,17 +135,17 @@ const TableRow: React.FC<TableRowProps> = ({
                 content={col}
                 style={{
                   backgroundColor:
-                    (hoveredContextMenuAction === 'remove-row' && targetRow === rowIndex) ||
-                    (hoveredContextMenuAction === 'remove-col' && targetCol === colIndex)
+                    (cellAction === 'remove-row' && targetRow === rowIndex) ||
+                    (cellAction === 'remove-col' && targetCol === colIndex)
                       ? 'rgba(255,0,0,0.33)'
                       : undefined,
                   ...cellStyle,
                 }}
-                onContextMenu={() => onCellContextMenu(rowIndex, colIndex)}
+                onEdit={() => onEditCell(rowIndex, colIndex)}
                 onChange={(newContent) => onUpdateContent(newContent, rowIndex, colIndex)}
               />
             }
-            {hoveredContextMenuAction === 'add-col-right' && targetCol === colIndex && (
+            {cellAction === 'add-col-right' && targetCol === colIndex && (
               <TableCell
                 type={rowIndex ? 'td' : 'th'}
                 content={rowIndex ? defaultContent : defaultHeaderContent}
@@ -162,12 +155,12 @@ const TableRow: React.FC<TableRowProps> = ({
           </React.Fragment>
         ))}
       </tr>
-      {hoveredContextMenuAction === 'add-row-below' && targetRow === rowIndex && (
+      {cellAction === 'add-row-below' && targetRow === rowIndex && (
         <TableRow
           tableRowData={tableRowData.map(() => defaultContent)}
           rowIndex={-2}
           cellStyle={{ backgroundColor: 'rgba(0,255,0,0.33)' }}
-          onCellContextMenu={() => {}}
+          onEditCell={() => {}}
           onUpdateContent={() => {}}
         />
       )}
@@ -195,9 +188,15 @@ const Table: UserComponent<TableProps> = ({
     return { isSelected: !!parent && parent.events.selected };
   });
 
-  const [contextMenuTargetCell, setContextMenuTargetCell] =
-    useState<TableRowProps['contextMenuTargetCell']>();
-  const [hoveredContextMenuAction, setHoveredContextMenuAction] = useState<ContextMenuAction>();
+  const [targetCell, setTargetCell] = useState<TableRowProps['targetCell']>();
+  const [hoveredAction, setHoveredAction] = useState<CellAction>();
+
+  useEffect(() => {
+    if (!isSelected) {
+      setTargetCell(undefined);
+      setHoveredAction(undefined);
+    }
+  }, [isSelected]);
 
   const addRow = (index: number) => {
     if (!editingEnabled) return;
@@ -257,23 +256,21 @@ const Table: UserComponent<TableProps> = ({
 
   const contextMenu: MenuProps['items'] = [];
 
-  if (contextMenuTargetCell) {
+  if (targetCell) {
     const add: NonNullable<MenuProps['items']>[number] = {
       key: 'table-add',
       label: 'Add',
       children: [],
     };
     contextMenu.push(add);
-    const { row, col } = contextMenuTargetCell;
+    const { row, col } = targetCell;
     if (row) {
-      add.children.push(
-        toMenuItem('add-row-above', () => addRow(row), setHoveredContextMenuAction),
-      );
+      add.children.push(toMenuItem('add-row-above', () => addRow(row), setHoveredAction));
     }
     add.children.push(
-      toMenuItem('add-row-below', () => addRow(row + 1), setHoveredContextMenuAction),
-      toMenuItem('add-col-left', () => addColumn(col), setHoveredContextMenuAction),
-      toMenuItem('add-col-right', () => addColumn(col + 1), setHoveredContextMenuAction),
+      toMenuItem('add-row-below', () => addRow(row + 1), setHoveredAction),
+      toMenuItem('add-col-left', () => addColumn(col), setHoveredAction),
+      toMenuItem('add-col-right', () => addColumn(col + 1), setHoveredAction),
     );
 
     const deleteOptions: NonNullable<MenuProps['items']>[number] = {
@@ -283,13 +280,11 @@ const Table: UserComponent<TableProps> = ({
     };
     contextMenu.push(deleteOptions);
     if (row) {
-      deleteOptions.children.push(
-        toMenuItem('remove-row', () => removeRow(row), setHoveredContextMenuAction),
-      );
+      deleteOptions.children.push(toMenuItem('remove-row', () => removeRow(row), setHoveredAction));
     }
     if (tableData[0].length > 1) {
       deleteOptions.children.push(
-        toMenuItem('remove-col', () => removeColumn(col), setHoveredContextMenuAction),
+        toMenuItem('remove-col', () => removeColumn(col), setHoveredAction),
       );
     }
   }
@@ -298,8 +293,8 @@ const Table: UserComponent<TableProps> = ({
     <ContextMenu
       menu={contextMenu}
       onClose={() => {
-        setContextMenuTargetCell(undefined);
-        setHoveredContextMenuAction(undefined);
+        setTargetCell(undefined);
+        setHoveredAction(undefined);
       }}
     >
       <table
@@ -313,11 +308,11 @@ const Table: UserComponent<TableProps> = ({
             rowIndex={0}
             tableRowData={tableData[0]}
             onUpdateContent={handleCellEdit}
-            onCellContextMenu={(row, col) => {
-              setContextMenuTargetCell({ row, col });
+            onEditCell={(row, col) => {
+              setTargetCell({ row, col });
             }}
-            contextMenuTargetCell={contextMenuTargetCell}
-            hoveredContextMenuAction={hoveredContextMenuAction}
+            targetCell={targetCell}
+            cellAction={hoveredAction}
           />
         </thead>
         <tbody>
@@ -327,17 +322,17 @@ const Table: UserComponent<TableProps> = ({
               rowIndex={index + 1}
               tableRowData={tableData[index + 1]}
               onUpdateContent={handleCellEdit}
-              onCellContextMenu={(row, col) => {
-                setContextMenuTargetCell({ row, col });
+              onEditCell={(row, col) => {
+                setTargetCell({ row, col });
               }}
-              contextMenuTargetCell={contextMenuTargetCell}
-              hoveredContextMenuAction={hoveredContextMenuAction}
+              targetCell={targetCell}
+              cellAction={hoveredAction}
             />
           ))}
         </tbody>
       </table>
       {isSelected &&
-        contextMenuTargetCell &&
+        targetCell &&
         createPortal(
           <>
             <Divider>Cell Settings</Divider>
@@ -345,58 +340,58 @@ const Table: UserComponent<TableProps> = ({
               <Space.Compact>
                 <SidebarButton
                   action="add-row-above"
-                  disabled={contextMenuTargetCell.row === 0}
+                  disabled={targetCell.row === 0}
                   onClick={() => {
-                    addRow(contextMenuTargetCell.row);
-                    setContextMenuTargetCell({
-                      ...contextMenuTargetCell,
-                      row: contextMenuTargetCell.row + 1,
+                    addRow(targetCell.row);
+                    setTargetCell({
+                      ...targetCell,
+                      row: targetCell.row + 1,
                     });
                   }}
-                  onHovered={setHoveredContextMenuAction}
+                  onHovered={setHoveredAction}
                 />
                 <SidebarButton
                   action="add-row-below"
-                  onClick={() => addRow(contextMenuTargetCell.row + 1)}
-                  onHovered={setHoveredContextMenuAction}
+                  onClick={() => addRow(targetCell.row + 1)}
+                  onHovered={setHoveredAction}
                 />
                 <SidebarButton
                   action="remove-row"
-                  disabled={contextMenuTargetCell.row === 0}
+                  disabled={targetCell.row === 0}
                   onClick={() => {
-                    removeRow(contextMenuTargetCell.row);
-                    setContextMenuTargetCell(undefined);
-                    setHoveredContextMenuAction(undefined);
+                    removeRow(targetCell.row);
+                    setTargetCell(undefined);
+                    setHoveredAction(undefined);
                   }}
-                  onHovered={setHoveredContextMenuAction}
+                  onHovered={setHoveredAction}
                 />
               </Space.Compact>
               <Space.Compact>
                 <SidebarButton
                   action="add-col-left"
                   onClick={() => {
-                    addColumn(contextMenuTargetCell.col);
-                    setContextMenuTargetCell({
-                      ...contextMenuTargetCell,
-                      col: contextMenuTargetCell.col + 1,
+                    addColumn(targetCell.col);
+                    setTargetCell({
+                      ...targetCell,
+                      col: targetCell.col + 1,
                     });
                   }}
-                  onHovered={setHoveredContextMenuAction}
+                  onHovered={setHoveredAction}
                 />
                 <SidebarButton
                   action="add-col-right"
-                  onClick={() => addColumn(contextMenuTargetCell.col + 1)}
-                  onHovered={setHoveredContextMenuAction}
+                  onClick={() => addColumn(targetCell.col + 1)}
+                  onHovered={setHoveredAction}
                 />
                 <SidebarButton
                   action="remove-col"
                   disabled={tableData[0].length <= 1}
                   onClick={() => {
-                    removeColumn(contextMenuTargetCell.col);
-                    setContextMenuTargetCell(undefined);
-                    setHoveredContextMenuAction(undefined);
+                    removeColumn(targetCell.col);
+                    setTargetCell(undefined);
+                    setHoveredAction(undefined);
                   }}
-                  onHovered={setHoveredContextMenuAction}
+                  onHovered={setHoveredAction}
                 />
               </Space.Compact>
             </Space>

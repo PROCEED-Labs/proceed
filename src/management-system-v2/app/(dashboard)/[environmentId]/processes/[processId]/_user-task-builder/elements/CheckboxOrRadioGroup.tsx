@@ -1,4 +1,4 @@
-import { Fragment, useId, useState } from 'react';
+import { Fragment, useEffect, useId, useState } from 'react';
 
 import { Divider, Input, MenuProps, Select, Space, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -39,7 +39,7 @@ type CheckBoxOrRadioButtonProps = WithRequired<
   checked?: boolean;
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
-  onContextMenu?: () => void;
+  onEdit?: () => void;
 };
 
 const getNewElementLabel = (type: CheckBoxOrRadioButtonProps['type']) => {
@@ -55,7 +55,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   checked,
   onChange,
   onLabelChange,
-  onContextMenu,
+  onEdit,
 }) => {
   const id = useId();
   const [hovered, setHovered] = useState(false);
@@ -82,7 +82,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               key: 'edit',
             },
             {
-              icon: <SettingOutlined onClick={() => onContextMenu?.()} />,
+              icon: <SettingOutlined onClick={() => onEdit?.()} />,
               key: 'setting',
             },
           ]}
@@ -125,18 +125,29 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     editingEnabled: state.options.enabled,
   }));
 
-  const [contextMenuTarget, setContextMenuTarget] = useState<number>();
+  const [editTarget, setEditTarget] = useState<number>();
   const [hoveredContextAction, setContextAction] = useState<ContextAction>();
   const [currentValue, setCurrentValue] = useState('');
 
   const {
     connectors: { connect },
     actions: { setProp },
-    isHovered,
+    isSelected,
   } = useNode((state) => {
     const parent = state.data.parent && query.node(state.data.parent).get();
-    return { isHovered: !!parent && parent.events.hovered };
+    return {
+      isHovered: !!parent && parent.events.hovered,
+      isSelected: !!parent && parent.events.selected,
+    };
   });
+
+  useEffect(() => {
+    if (!isSelected) {
+      setEditTarget(undefined);
+      setContextAction(undefined);
+      setCurrentValue('');
+    }
+  }, [isSelected]);
 
   const handleLabelEdit = (index: number, text: string) => {
     if (!editingEnabled) return;
@@ -199,21 +210,17 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   );
 
   const contextMenu: MenuProps['items'] =
-    contextMenuTarget !== undefined
+    editTarget !== undefined
       ? [
           {
             key: 'add',
             label: 'Add',
             children: [
-              toMenuItem('add-above', () => handleAddButton(contextMenuTarget), setContextAction),
-              toMenuItem(
-                'add-below',
-                () => handleAddButton(contextMenuTarget + 1),
-                setContextAction,
-              ),
+              toMenuItem('add-above', () => handleAddButton(editTarget), setContextAction),
+              toMenuItem('add-below', () => handleAddButton(editTarget + 1), setContextAction),
             ],
           },
-          toMenuItem('remove', () => handleRemoveButton(contextMenuTarget), setContextAction),
+          toMenuItem('remove', () => handleRemoveButton(editTarget), setContextAction),
           {
             key: 'value',
             label: (
@@ -233,10 +240,10 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   onChange={(e) => setCurrentValue(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleValueChange(contextMenuTarget, currentValue);
+                    if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
                     e.stopPropagation();
                   }}
-                  onBlur={() => handleValueChange(contextMenuTarget, currentValue)}
+                  onBlur={() => handleValueChange(editTarget, currentValue)}
                 />
               </div>
             ),
@@ -248,7 +255,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
     <ContextMenu
       menu={contextMenu}
       onClose={() => {
-        setContextMenuTarget(undefined);
+        setEditTarget(undefined);
         setContextAction(undefined);
         setCurrentValue('');
       }}
@@ -261,7 +268,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         <div className="user-task-form-input-group">
           {data.map(({ label, value, checked }, index) => (
             <Fragment key={index}>
-              {index === contextMenuTarget && hoveredContextAction === 'add-above' && (
+              {index === editTarget && hoveredContextAction === 'add-above' && (
                 <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
                   <CheckboxOrRadioButton
                     type={type}
@@ -277,13 +284,13 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 className="user-task-form-input-group-member"
                 style={{
                   backgroundColor:
-                    contextMenuTarget === index && hoveredContextAction === 'remove'
+                    editTarget === index && hoveredContextAction === 'remove'
                       ? 'rgba(255,0,0,0.33)'
                       : undefined,
                 }}
                 onContextMenu={(e) => {
                   setCurrentValue(value);
-                  setContextMenuTarget(index);
+                  setEditTarget(index);
                   e.preventDefault();
                 }}
               >
@@ -295,13 +302,13 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                   checked={checked}
                   onChange={() => handleClick(index)}
                   onLabelChange={(newLabel) => handleLabelEdit(index, newLabel)}
-                  onContextMenu={() => {
+                  onEdit={() => {
                     setCurrentValue(value);
-                    setContextMenuTarget(index);
+                    setEditTarget(index);
                   }}
                 />
               </div>
-              {index === contextMenuTarget && hoveredContextAction === 'add-below' && (
+              {index === editTarget && hoveredContextAction === 'add-below' && (
                 <span style={{ backgroundColor: 'rgba(0,255,0,0.33)' }}>
                   <CheckboxOrRadioButton
                     type={type}
@@ -315,7 +322,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
               )}
             </Fragment>
           ))}
-          {contextMenuTarget !== undefined &&
+          {editTarget !== undefined &&
             createPortal(
               <>
                 <Divider>{type === 'checkbox' ? 'Checkbox' : 'Radio'} Settings</Divider>
@@ -324,20 +331,20 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                     <SidebarButton
                       action="add-above"
                       onClick={() => {
-                        handleAddButton(contextMenuTarget);
-                        setContextMenuTarget(contextMenuTarget + 1);
+                        handleAddButton(editTarget);
+                        setEditTarget(editTarget + 1);
                       }}
                       onHovered={setContextAction}
                     />
                     <SidebarButton
                       action="add-below"
-                      onClick={() => handleAddButton(contextMenuTarget + 1)}
+                      onClick={() => handleAddButton(editTarget + 1)}
                       onHovered={setContextAction}
                     />
                     <SidebarButton
                       action="remove"
                       disabled={data.length < 2}
-                      onClick={() => handleRemoveButton(contextMenuTarget)}
+                      onClick={() => handleRemoveButton(editTarget)}
                       onHovered={setContextAction}
                     />
                   </Space.Compact>
@@ -350,7 +357,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                           value={currentValue}
                           onChange={(e) => setCurrentValue(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
-                          onBlur={() => handleValueChange(contextMenuTarget, currentValue)}
+                          onBlur={() => handleValueChange(editTarget, currentValue)}
                         />
                       }
                     />
